@@ -1,0 +1,64 @@
+# Visual Studio local state and build outputs
+.vs/
+Debug/
+Release/
+x64/
+Win32/
+ipch/
+*.VC.db
+*.VC.opendb
+*.suo
+*.user
+*.vcxproj.user
+*.pdb
+*.ilk
+*.ipch
+*.iobj
+*.ipdb
+*.idb
+*.tlog
+*.lastbuildstate
+
+# Common Visual Studio output files under Bin without hiding asset folders
+**/Bin/*.exe
+**/Bin/*.dll
+**/Bin/*.pdb
+**/Bin/*.ilk
+**/Bin/*.iobj
+**/Bin/*.ipdb
+**/Bin/*.idb
+
+# Qt/qmake local state and generated files
+build-*/
+.qmake.stash
+*.pro.user*
+moc_*.cpp
+ui_*.h
+qrc_*.cpp
+
+# MinGW/CMake build directories and temporary files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+build-*/Makefile
+build-*/**/*.o
+build-*/**/*.obj
+
+# Local environment files and secrets
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+*.p12
+id_rsa*
+id_ed25519*
+
+# OS/editor noise
+Thumbs.db
+Desktop.ini
+*.tmp
+*.temp
+*.bak
+*.swp

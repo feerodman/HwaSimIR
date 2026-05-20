@@ -1,0 +1,193 @@
+{
+  "DisplayColor": {
+    "A": 255,
+    "B": 0,
+    "G": 225,
+    "R": 0
+  },
+  "DisplayColorEnabled": false,
+  "FXAAEnabled": true,
+  "HotSpotsEnabled": true,
+  "ImageFusionEnabled": false,
+  "LensFocusAffectOTW": true,
+  "ModulationTransferFunctionEnabled": true,
+  "NoiseEffectEnabled": true,
+  "PixelBleedingEnabled": false,
+  "ReflectionsEnabled": true,
+  "SensorType": "Infrared",
+  "ShowCurrentTime": true,
+  "ShowMinMax": true,
+  "ShowOverlays": false,
+  "ShowProcessingTime": false,
+  "SupersamplingLevel": 1,
+  "Systems": {
+    "ColorImagerySystem": {
+      "ColorEffect": true,
+      "VegetationColorEffect": true
+    },
+    "DisplaySystem": {
+      "DigitalZoom": 1,
+      "DigitalZoomOffsetX": 0,
+      "DigitalZoomOffsetY": 0,
+      "DisplayBits": 8,
+      "DisplayGamma": 2.2,
+      "OutputLayout": {
+        "Alpha": 5,
+        "Blue": 0,
+        "Green": 0,
+        "Red": 0
+      }
+    },
+    "DistributedApertureSystem": {
+      "Cameras": [],
+      "Enabled": false
+    },
+    "GainControlSystem": {
+      "Automatic": true,
+      "BlendingWidthForLocalAGC": 0.20000000298023224,
+      "Gain": 0.066388972103595734,
+      "GridSize": 3,
+      "Level": 254.00001525878906,
+      "LocalAGC": false,
+      "Responsiveness": 0.75300002098083496
+    },
+    "ImageFusionSystem": {
+      "Algorithm": "Weighted Average",
+      "Inverts": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "Sources": [
+        "myOndulusIR",
+        "myOndulusIR OTW Intensity",
+        "None",
+        "None"
+      ],
+      "WeightingFactor": 0.5,
+      "Weights": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    "IncidentResponseSystem": {
+      "IncidentResponseEffect": true
+    },
+    "IntensifierConfigurationSystem": {
+      "FilenameMTF": "$(PRESAGIS_ONDULUS_IR_22_0)\/data\/MTF\/IIT_MTF_f50.txt",
+      "FilenameQE": "$(PRESAGIS_ONDULUS_IR_22_0)\/data\/IIT\/QE_GenIII_GaAs.txt",
+      "HaloEffectEnabled": false,
+      "HaloSize": 0.80000001192092896,
+      "IITSyetemMTFMode": 0,
+      "IITSystemEBI": 0.25,
+      "IITSystemEnabled": false,
+      "IITSystemSNR": 20,
+      "LimitResolution": 64,
+      "LuminousSensitivity": 1350,
+      "LuminousTemperature": 2856,
+      "MaximumOutputBrightness": 13.699999809265137,
+      "PeakLuminousGain": 10000,
+      "PeakQuantumEfficiency": 0.30000001192092896,
+      "PeakWavelength": 0.44999998807907104,
+      "PhosphorRelativeEfficiency": 1,
+      "QuantumEfficiencyMode": 2,
+      "RadiantSensitivity": 65,
+      "RadiantWavelength": 0.87999999523162842,
+      "TubeDiameter": 18.000007629394531
+    },
+    "JitterSystem": {
+      "Pattern": 1
+    },
+    "MaterialBlendingSystem": {
+      "Mode": 1,
+      "Size": 1
+    },
+    "SensorConfigurationSystem": {
+      "ADCBitNumber": 12,
+      "AdjustableTemperatureRange": 20,
+      "BackgroundTemperature": 30,
+      "BlackHot": false,
+      "BlurringType": 1,
+      "DarkCurrentDensity": 0.0001,
+      "DetectorConfigurationMode": 1,
+      "DetectorPitch": 0.012500000186264517,
+      "DetectorTemperature": 21.850000381469727,
+      "DetectorType": 1,
+      "FOVH": 45,
+      "FOVV": 33.75,
+      "FocalLength": 50,
+      "FocusDistance": 250,
+      "Height": 480,
+      "HorMaxSpatialFrequency": 250,
+      "HorizontalMTFFile": "$(PRESAGIS_ONDULUS_IR_22_0)\/data\/MTF\/MTF_f100_N8.txt",
+      "IntegrationTime": 200,
+      "LensFnumber": 1.3999999761581421,
+      "LensFocusMode": 0,
+      "NoiseEquivalentPower": 4.9999998736893758e-05,
+      "NoiseEquivalentTemperatureDifference": 100,
+      "ObjectEmissivity": 0.80000001192092896,
+      "PureBlackbodyEnabled": false,
+      "QuamtumEfficiency": 0.64999997615814209,
+      "SpectralResponseRangeHigh": 1.7000000476837158,
+      "SpectralResponseRangeLow": 0.5,
+      "TemperatureAdjustmentEnabled": false,
+      "TemperatureRangeLower": -20,
+      "TemperatureRangeUpper": 100,
+      "ThermalADCOFFSET": 0,
+      "ThermalADCRange": 1,
+      "ThermalGain": 0.20000000298023224,
+      "ThermalGainEnabled": true,
+      "VerMaxSpatialFrequency": 250,
+      "VerticalMTFFile": "$(PRESAGIS_ONDULUS_IR_22_0)\/data\/MTF\/MTF_f100_N8.txt",
+      "WellCapacity": 6000000,
+      "Width": 640
+    },
+    "ShadowSystem": {
+      "ShadowEffect": true
+    },
+    "TaskADCSignal": {
+      "DefectsTexture": "$(PRESAGIS_ONDULUS_IR_22_0)\/data\/textures\/NoDefects.png"
+    },
+    "TaskAvgDistanceCompute": {
+      "RegionSize": 0.05000000074505806,
+      "Responsiveness": 0.5
+    },
+    "TaskFXAA": {
+      "LumaThreshold": 0.5
+    },
+    "TaskGainControl": {
+      "Invert": false
+    },
+    "TaskPixelBleeding": {
+      "Radius": 2,
+      "Threshold": 0.80000001192092896
+    },
+    "TaskRadianceView": {
+      "MaximumRadiance": 68.13360595703125,
+      "MinimumRadiance": 4.9834096671474981e-07
+    },
+    "TaskSSR": {
+      "AutoscaleThickness": true,
+      "LOD": 1,
+      "ObjectThickness": 1,
+      "WaterOnly": true
+    },
+    "TaskTemporalAA": {
+      "BlendFactor": 1,
+      "DistanceThreshold": 10
+    },
+    "TaskThermal": {
+      "MaximumTemperature": 100,
+      "MinimumTemperature": 20
+    },
+    "TaskVignetting": {
+      "VignettingMask": "$(PRESAGIS_ONDULUS_IR_22_0)\/data\/textures\/MaskSingleCircle.png"
+    }
+  },
+  "TemporalAAEnabled": true,
+  "VignettingEnabled": false
+}
+

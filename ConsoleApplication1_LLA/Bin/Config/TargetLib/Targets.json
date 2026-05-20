@@ -1,0 +1,23 @@
+{
+	"targets": 
+	[
+		{
+			"model_id": 0,
+			"model_name":"AIM9X",
+			"model_type":"missle",
+			"model_file_path":"/missle/01_AIM9X/AIM9-1.flt"
+		},
+		{
+			"model_id": 1,
+			"model_name":"AIM120D",
+			"model_type":"missle",
+			"model_file_path":"/missle/02_AIM120D/AIM120.flt"
+		},
+		{
+			"model_id": 2,
+			"model_name":"F35",
+			"model_type":"plane",
+			"model_file_path":"plane/01_F35/f35c.flt"
+		}
+	]
+}

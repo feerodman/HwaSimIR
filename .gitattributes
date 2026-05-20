@@ -1,0 +1,42 @@
+# Normalize text files while keeping binary assets out of textual diffs.
+* text=auto
+
+# Visual Studio project files are commonly edited on Windows.
+*.sln text eol=crlf
+*.vcxproj text eol=crlf
+*.vcxproj.filters text eol=crlf
+
+# Source and project text files.
+*.cpp text
+*.h text
+*.hpp text
+*.pro text
+*.pri text
+*.ui text
+*.qrc text
+*.glsl text
+*.cmake text
+CMakeLists.txt text
+*.csv text
+*.txt text
+*.json text
+*.ini text
+
+# Documents and runtime assets.
+*.pdf binary
+*.zip binary
+*.db binary
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.bmp binary
+*.tif binary
+*.tiff binary
+*.rgb binary
+*.FLT binary
+*.flt binary
+
+# Model files can be large; keep them readable but avoid noisy diffs.
+*.obj text -diff
+*.mtl text
+*.egg text -diff

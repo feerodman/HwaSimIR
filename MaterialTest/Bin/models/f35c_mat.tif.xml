@@ -1,0 +1,50 @@
+<Composite_Material_Table>
+  <Composite_Material index="1" IsVisibleInClassification="True" IsVisibleInPaint="True">
+    <Name>CAR-BODY-PAINTED</Name>
+    <Color>#FFCF5F67</Color>
+    <Primary_Substrate>
+      <Material>
+        <Name>BM_METAL-ALUMINIUM</Name>
+        <Weight>100</Weight>
+      </Material>
+      <Thickness>0.01</Thickness>
+    </Primary_Substrate>
+    <Surface_Substrate>
+      <Material>
+        <Name>BM_PAINT</Name>
+        <Weight>100</Weight>
+      </Material>
+    </Surface_Substrate>
+    <ColorAssignment />
+  </Composite_Material>
+  <Composite_Material index="128" IsVisibleInClassification="True" IsVisibleInPaint="True">
+    <Name>METAL-PAINTED</Name>
+    <Color>#FF869BB0</Color>
+    <Primary_Substrate>
+      <Material>
+        <Name>BM_METAL</Name>
+        <Weight>100</Weight>
+      </Material>
+      <Thickness>0.05</Thickness>
+    </Primary_Substrate>
+    <Surface_Substrate>
+      <Material>
+        <Name>BM_PAINT</Name>
+        <Weight>100</Weight>
+      </Material>
+    </Surface_Substrate>
+    <ColorAssignment />
+  </Composite_Material>
+  <Composite_Material index="255" IsVisibleInClassification="True" IsVisibleInPaint="True">
+    <Name>AIR-EMPTY</Name>
+    <Color>#FFE7F6F7</Color>
+    <Primary_Substrate>
+      <Material>
+        <Name>BM_AIR</Name>
+        <Weight>100</Weight>
+      </Material>
+      <Thickness>1</Thickness>
+    </Primary_Substrate>
+    <ColorAssignment />
+  </Composite_Material>
+</Composite_Material_Table>
