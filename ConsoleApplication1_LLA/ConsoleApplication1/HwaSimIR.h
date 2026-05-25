@@ -163,6 +163,7 @@ private:
 	BYHWICD::InitP2cObjectTrackingCmd m_initSceneData;       // 初始化数据缓存
 	BYHWICD::DisplayC2cObjTrackingData m_realTimeSceneData;  // 实时数据缓存
 	BYHWICD::trackerSensorParam m_sensorParam;               // 传感器参数缓存
+	unsigned long long m_stage0DisplayFrameCount;            // 阶段0基线诊断：实时数据包计数
 
 															 // 控制标记
 	bool m_isAddPlatform;    // 增删标记：true-增加 false-删除
@@ -194,7 +195,6 @@ private:
 	bool m_bSyncRenderMode = false;   // 同步模式标志位
 	std::condition_variable m_cvNewData; // 用于同步模式的条件变量阻塞
 };
-
 
 
 

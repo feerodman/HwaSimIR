@@ -18,7 +18,11 @@ Recommended startup:
 2. Select a Qt 5.12.12 MinGW kit.
 3. Configure, build, and run from Qt Creator.
 
-Command-line builds can also use `qmake` and `mingw32-make` when the Qt toolchain is available in `PATH`.
+Command-line builds can use the repository-local build wrapper, which pins Qt 5.12.12 ahead of Anaconda in `PATH`:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\build_current.ps1 -Target DataDrivenTestQT
+```
 
 ### MaterialTest
 
@@ -35,6 +39,12 @@ Recommended startup:
 3. Select the desired Win32/x64 and Debug/Release configuration.
 4. Build and run from Visual Studio.
 
+Command-line build:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\build_current.ps1 -Target MaterialTest -Configuration Release -Platform x64
+```
+
 ### ConsoleApplication1_LLA
 
 - Solution file: `ConsoleApplication1_LLA/ConsoleApplication1.sln`
@@ -49,6 +59,12 @@ Recommended Visual Studio startup:
 2. Open `ConsoleApplication1_LLA/ConsoleApplication1.sln`.
 3. Select the desired Win32/x64 and Debug/Release configuration.
 4. Build and run from Visual Studio.
+
+Command-line build:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\build_current.ps1 -Target ConsoleApplication1 -Configuration Release -Platform x64
+```
 
 Recommended CMake startup:
 

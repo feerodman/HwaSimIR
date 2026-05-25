@@ -32,7 +32,7 @@ std::string FirstExistingPath(const std::vector<std::string>& paths)
 // ========== HwaSimIRMainApp 类实现 ==========
 HwaSimIR::HwaSimIR(int argc, char** argv)
 	: m_pFramework(new PandaFramework()), m_pMainWindow(nullptr)
-	,m_isAddPlatform(false), m_isSimRunning(false), m_currentRound(0), m_isCameraAttached(false), m_isInitTargetPlatID(false){
+	,m_isAddPlatform(false), m_isSimRunning(false), m_currentRound(0), m_isCameraAttached(false), m_isInitTargetPlatID(false), m_stage0DisplayFrameCount(0){
 	// 关闭垂直同步，突破帧率上限
 	load_prc_file_data("", "sync-video false");
 	// 初始化HwaSimIR框架（解析命令行参数）
@@ -1020,6 +1020,8 @@ bool HwaSimIR::InitUdpThread() {
 	//std::string remoteIp = "192.168.137.247";   // 激励数据软件IP
 	//std::string remoteIp = "192.168.0.10";   // 激励数据软件IP
 	uint16_t remotePort = 9999;           // 激励数据软件UDP端口
+	std::cout << "[Stage0] UDP baseline local=" << localIp << ":" << localPort
+		<< " remote=" << remoteIp << ":" << remotePort << std::endl;
 
 	m_pUdpThread = new UdpCommThread(this, localIp, localPort, remoteIp, remotePort);
 	if (!m_pUdpThread->start()) {
@@ -1038,6 +1040,8 @@ bool HwaSimIR::InitTcpThread()
 	// 配置TCP参数
 	std::string serverIp = "127.0.0.1"; // 服务器IP地址
 	uint16_t serverPort = 5555; // 服务器端口
+	std::cout << "[Stage0] TCP video baseline server=" << serverIp << ":" << serverPort
+		<< " format=length-prefixed JPEG" << std::endl;
 
 	m_pTcpThread = new TcpCommThread(this, serverIp, serverPort);
 	if (!m_pTcpThread->start()) {
@@ -1062,11 +1066,14 @@ void HwaSimIR::handleControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd) 
 	std::cout << "  仿真指令：" << (cmd.simCommand == 1 ? "复位" : (cmd.simCommand == 2 ? "开始" : "停止")) << std::endl;
 	std::cout << "  总回合数：" << cmd.roundCut << std::endl;
 	std::cout << "  当前回合：" << cmd.currentRound << std::endl;
+	std::cout << "[Stage0] Control command received: command=" << cmd.simCommand
+		<< ", round=" << cmd.currentRound << "/" << cmd.roundCut << std::endl;
 
 	// ========== 业务逻辑（后续填充） ==========
 	switch (cmd.simCommand) {
 	case 1: // 复位
 		std::cout << "执行复位逻辑..." << std::endl;
+		m_stage0DisplayFrameCount = 0;
 		// TODO: 实现复位逻辑（清空状态、重置传感器等）
 
 		// 设置增删标记为"删除"
@@ -1129,6 +1136,13 @@ void HwaSimIR::handleInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& cmd) {
 	std::cout << "  挂载平台ID：" << cmd.platID << std::endl;
 	std::cout << "  传感器ID：" << cmd.sensorID << std::endl;
 	std::cout << "  有效平台数：" << cmd.platNumValid << std::endl;
+	const BYHWICD::trackerSensorParam& sensor = cmd.trackingInit.trackerSensor[0];
+	std::cout << "[Stage0] Init baseline: sensorBand=" << sensor.trackerSensorBand
+		<< ", sensorSize=" << sensor.trackerSensorWidth << "x" << sensor.trackerSensorHeight
+		<< ", fov=" << sensor.coarseTrackResolution << "x" << sensor.preciseTrackResolution
+		<< ", videoFps=" << cmd.trackingInit.videoFps
+		<< ", missileMax(AIM120/AIM9/MMD)=" << cmd.MissileMaxCount120 << "/"
+		<< cmd.MissileMaxCount9 << "/" << cmd.MissileMaxCountMMD << std::endl;
 
 	// ========== 初始化业务逻辑（后续填充） ==========
 	std::cout << "执行成像初始化逻辑..." << std::endl;
@@ -1136,6 +1150,7 @@ void HwaSimIR::handleInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& cmd) {
 	//缓存初始化数据
 	m_initSceneData = cmd;
 	m_currentRound = 0; // 重置回合数
+	m_stage0DisplayFrameCount = 0;
 
 	//处理成像初始化数据，生成平台
 	ProcessRealSimSceneInitData();
@@ -1161,6 +1176,15 @@ void HwaSimIR::handleInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& cmd) {
 // 处理实时成像数据包
 void HwaSimIR::handleDisplayData(const BYHWICD::DisplayC2cObjTrackingData& data) {
 	std::lock_guard<std::mutex> lock(m_mtx);
+	++m_stage0DisplayFrameCount;
+	if (m_stage0DisplayFrameCount == 1 || (m_stage0DisplayFrameCount % 100) == 0)
+	{
+		std::cout << "[Stage0] Display packet #" << m_stage0DisplayFrameCount
+			<< ": platID=" << data.platID
+			<< ", sensorID=" << data.sensorID
+			<< ", targetNumValid=" << data.targetNumValid
+			<< ", timeMs=" << data.time << std::endl;
+	}
 
 	/*std::cout << "收到实时成像数据：" << std::endl;
 	std::cout << "  挂载平台ID：" << data.platID << std::endl;
