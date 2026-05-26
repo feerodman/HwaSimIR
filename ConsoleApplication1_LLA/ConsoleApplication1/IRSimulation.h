@@ -4,21 +4,7 @@
 #include <string>
 #include <vector>
 
-enum class IRBand
-{
-	Visible = 0,
-	NearInfrared = 1,
-	ShortWaveInfrared = 2,
-	MidWaveInfrared = 3,
-	LongWaveInfrared = 4
-};
-
-struct IRBandRange
-{
-	IRBand band;
-	double lowUm;
-	double highUm;
-};
+#include "IR/IRTypes.h"
 
 struct IRMaterial
 {

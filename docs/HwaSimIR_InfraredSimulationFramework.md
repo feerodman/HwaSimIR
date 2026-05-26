@@ -807,3 +807,82 @@ illuminator:
 下一步：
 - 在完成一次 Windows 手动冒烟后，把实际启动日志、初始化应答、TCP 视频接收情况补充到 `docs/runbook_windows.md` 或本节成果记录。
 - 阶段 1 开始拆分 IR 配置与数据模型，优先统一 SensorWave、MaterialDatabase、transmittance 的加载入口。
+### 2026-05-25 阶段 0 补充：固定 VS2015 与 Qt 5.12.12 自动构建
+
+完成内容：
+- 固定 VS2015 MSBuild 路径为 `C:\Program Files (x86)\MSBuild\14.0\Bin\MSBuild.exe`。
+- 固定 DataDrivenTestQT 使用 Qt 5.12.12 MinGW 7.3.0 64-bit：`D:\Qt\Qt5.12.12\5.12.12\mingw73_64\bin\qmake.exe`。
+- 增加阶段 0 自动构建脚本，默认构建 HwaSimIR `Release|x64` 与 DataDrivenTestQT `release`。
+- 增加阶段 0 短时启动脚本，用于按正确工作目录启动 `ConsoleApplication1.exe` 和 `DataDrivenTestQT.exe`，并输出日志到 `logs/stage0`。
+- 扩展阶段 0 检查脚本，加入 VS2015 MSBuild、Qt qmake、MinGW make 路径检查。
+
+修改文件：
+- `tools/stage0_build.ps1`
+- `tools/stage0_smoke_run.ps1`
+- `tools/stage0_check.ps1`
+- `docs/runbook_windows.md`
+- `docs/HwaSimIR_InfraredSimulationFramework.md`
+
+验证：
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\stage0_check.ps1 -Strict`
+- 结果：全部 Stage 0 检查通过，包含 VS2015 MSBuild、Qt 5.12.12 qmake、MinGW make 路径检查。
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\stage0_build.ps1`
+- 结果：HwaSimIR 通过 MSBuild `Release|x64` 构建成功，输出 `D:\HwaSimIR\ConsoleApplication1_LLA\Bin\ConsoleApplication1.exe`；DataDrivenTestQT 通过 Qt 5.12.12 MinGW release 构建成功，输出 `D:\HwaSimIR\build-DataDrivenTestQT-codex-mingw73_64-Release\release\DataDrivenTestQT.exe`。
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\stage0_smoke_run.ps1 -Seconds 8`
+- 结果：两个进程均成功启动并保持运行，随后由脚本停止；日志输出到 `logs/stage0`。HwaSimIR 日志确认 UDP/TCP 基线端点、材质库、MODTRAN 透过率、天空云初始化成功。
+
+发现的问题：
+- 首次在沙箱内运行 MSBuild 时无法读取 `C:\Users\kahn1\AppData\Local\Microsoft\MSBuild\v4.0\Microsoft.Cpp.x64.user.props`，使用允许的本机权限重新运行后构建成功。
+- DataDrivenTestQT 短时启动未自动点击复位/初始化/开始按钮，因此本次只验证进程启动，不验证完整按钮流程。
+
+下一步：
+- 如需自动化完整阶段 0 流程，可后续增加 DataDrivenTestQT UI 自动点击或独立 UDP 激励回放脚本。
+
+### 2026-05-26 阶段 1：配置与数据模型重构
+
+完成内容：
+- 新增 `IR/IRTypes.h/.cpp`，集中定义 `IRBand`、默认谱段、协议波段映射、默认 SensorWave 文件名和传感器 profile 数据结构。
+- 新增 `IR/IRConfig.h/.cpp`，读取 `ConsoleApplication1_LLA/Bin/Config/SensorWave/default_*.json`，解析谱范围、宽高、FOV、焦距、探元间距、ADC bit、Display bit、NETD。
+- 保留 `IRSimulation` 兼容 API，`IRRadianceModel::bandFromProtocol/rangeForBand/bandName` 转发到新 IR 类型模块，避免一次性改动辐亮度模型。
+- HwaSimIR 启动时统一加载 SensorWave、MaterialDatabase、transmittance 三类配置输入。
+- HwaSimIR 启动、初始化命令、运行时波段变化时打印当前传感器 profile，包括协议波段、波段名、SensorWave 谱范围、当前物理模型谱范围、尺寸、ADC bit、Display bit、NETD、FOV、来源文件。
+- 增加 `tools/stage1_check.ps1`，检查阶段 1 模块、VS 工程项、协议映射和 SensorWave JSON 字段。
+- 增加 `tools/stage1_band_switch_smoke.ps1`，启动 HwaSimIR 并依次发送 `trackerSensorBand=0,1,2,3,4` 初始化包，验证波段切换日志。
+
+修改文件：
+- `ConsoleApplication1_LLA/ConsoleApplication1/IR/IRTypes.h`
+- `ConsoleApplication1_LLA/ConsoleApplication1/IR/IRTypes.cpp`
+- `ConsoleApplication1_LLA/ConsoleApplication1/IR/IRConfig.h`
+- `ConsoleApplication1_LLA/ConsoleApplication1/IR/IRConfig.cpp`
+- `ConsoleApplication1_LLA/ConsoleApplication1/IRSimulation.h`
+- `ConsoleApplication1_LLA/ConsoleApplication1/IRSimulation.cpp`
+- `ConsoleApplication1_LLA/ConsoleApplication1/HwaSimIR.h`
+- `ConsoleApplication1_LLA/ConsoleApplication1/HwaSimIR.cpp`
+- `ConsoleApplication1_LLA/ConsoleApplication1/ConsoleApplication1.vcxproj`
+- `ConsoleApplication1_LLA/ConsoleApplication1/ConsoleApplication1.vcxproj.filters`
+- `ConsoleApplication1_LLA/ConsoleApplication1/CMakeLists.txt`
+- `tools/stage1_check.ps1`
+- `tools/stage1_band_switch_smoke.ps1`
+- `docs/runbook_windows.md`
+- `docs/HwaSimIR_InfraredSimulationFramework.md`
+
+验证：
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\stage0_check.ps1 -Strict`
+- 结果：通过。
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\stage1_check.ps1 -Strict`
+- 结果：通过；输出 VIS/NIR/SWIR/MWIR/LWIR SensorWave profile 矩阵。
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\stage0_build.ps1`
+- 结果：HwaSimIR `Release|x64` 与 DataDrivenTestQT Qt 5.12.12 release 构建成功。
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\stage0_smoke_run.ps1 -Seconds 8`
+- 结果：两个 exe 成功启动并保持运行；HwaSimIR 日志确认 SensorWave、MaterialDatabase、transmittance 加载成功，并打印 MWIR 启动默认 profile。
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\stage1_band_switch_smoke.ps1`
+- 结果：HwaSimIR 接收 `trackerSensorBand=0,1,2,3,4` 初始化包，并分别打印 SWIR、NIR、MWIR、LWIR、VIS 的谱范围、ADC bit、Display bit、NETD。
+
+发现的问题：
+- SensorWave profile 多数为 `640x480`，而 DataDrivenTestQT 当前初始化协议发送 `640x512`；阶段 1 只记录两者，不改变输出尺寸，阶段 6 再统一传感器输出尺寸。
+- `default_SWIR.json` 的低端谱范围为 `1.5um`，当前物理模型默认 SWIR 为 `1.1-2.5um`；阶段 1 保持旧模型范围以避免改变渲染结果，后续接入真实谱响应时需要决定是否以 SensorWave 为准。
+- VIS/NIR 的 SensorWave 文件目前都覆盖 `0.4-1.1um`，物理模型仍区分 VIS `0.4-0.7um` 和 NIR `0.7-1.1um`。
+- 波段切换冒烟加载 F35C/AIM120 OBJ 时出现 Assimp `.mtl` 缺失 fallback 日志；这不阻塞阶段 1，但阶段 2 材质映射需要处理模型材质文件或材质 ID 贴图。
+
+下一步：
+- 阶段 2 将目标模型材质从平台类型硬编码迁移到 OBJ/MTL/材质 ID 纹理映射，并对缺失 `.mtl` 的资产给出 fallback 或补齐资源。

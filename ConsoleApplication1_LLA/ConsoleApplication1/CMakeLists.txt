@@ -17,6 +17,8 @@ link_directories(${PANDA3D_ROOT}/lib)
 
 add_executable(HwaSim_RK3588 main.cpp
         HwaSimIR.cpp
+        IR/IRConfig.cpp
+        IR/IRTypes.cpp
         IRSimulation.cpp
         UdpCommThread_Linux.cpp)
 

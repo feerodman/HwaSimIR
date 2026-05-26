@@ -70,6 +70,10 @@ $vcxproj = Read-Text "ConsoleApplication1_LLA\ConsoleApplication1\ConsoleApplica
 $qtpro = Read-Text "DataDrivenTestQT\DataDrivenTestQT.pro"
 $qtActive = (($qt -split "`r?`n") | Where-Object { $_ -notmatch '^\s*//' }) -join "`n"
 
+$msbuild = "C:\Program Files (x86)\MSBuild\14.0\Bin\MSBuild.exe"
+$qmake512 = "D:\Qt\Qt5.12.12\5.12.12\mingw73_64\bin\qmake.exe"
+$mingwMake = "D:\Qt\Qt5.12.12\Tools\mingw730_64\bin\mingw32-make.exe"
+
 $udpLocalPort = Match-Value $hwa 'uint16_t\s+localPort\s*=\s*(\d+)'
 $udpRemotePort = Match-Value $hwa 'uint16_t\s+remotePort\s*=\s*(\d+)'
 $tcpPort = Match-Value $hwa 'uint16_t\s+serverPort\s*=\s*(\d+)'
@@ -94,6 +98,9 @@ $checks.Add((Add-Check "DataDrivenTestQT sensor baseline" (($sensorBand -eq "2")
 $checks.Add((Add-Check "DataDrivenTestQT realtime baseline" (($targetCount -eq "3") -and ($timeStep -eq "25")) "targetNumValid=$targetCount timeStepMs=$timeStep"))
 $checks.Add((Add-Check "Visual Studio toolset" ($vcxproj -match '<PlatformToolset>v140</PlatformToolset>') "v140 expected"))
 $checks.Add((Add-Check "Qt project modules" (($qtpro -match 'network') -and ($qtpro -match 'widgets')) "Qt core/gui/network/widgets expected"))
+$checks.Add((Add-Check "VS2015 MSBuild path" (Test-Path -LiteralPath $msbuild) $msbuild))
+$checks.Add((Add-Check "Qt 5.12.12 qmake path" (Test-Path -LiteralPath $qmake512) $qmake512))
+$checks.Add((Add-Check "Qt MinGW make path" (Test-Path -LiteralPath $mingwMake) $mingwMake))
 
 Write-Host "Stage 0 baseline check"
 Write-Host "Workspace: $rootPath"

@@ -45,6 +45,9 @@ build-*/Makefile
 build-*/**/*.o
 build-*/**/*.obj
 
+# Local smoke-test logs
+logs/
+
 # Local environment files and secrets
 .env
 .env.*

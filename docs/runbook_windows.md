@@ -132,3 +132,60 @@ powershell -ExecutionPolicy Bypass -File tools\stage0_check.ps1 -Strict
 - 当前大气数据只有单一路径透过率表，尚缺 path radiance、sky radiance、多天气条件索引。
 - 当前协议结构存在历史差异，后续阶段需要统一 HwaSimIR 与 DataDrivenTestQT 的 ICD 来源。
 
+## 10. 自动构建与短时启动
+
+阶段 0 固定使用以下工具链：
+
+- VS2015 MSBuild：`C:\Program Files (x86)\MSBuild\14.0\Bin\MSBuild.exe`
+- Qt 5.12.12 MinGW 7.3.0 64-bit qmake：`D:\Qt\Qt5.12.12\5.12.12\mingw73_64\bin\qmake.exe`
+- MinGW make：`D:\Qt\Qt5.12.12\Tools\mingw730_64\bin\mingw32-make.exe`
+
+默认构建命令：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\stage0_build.ps1
+```
+
+该命令默认：
+
+- 构建 HwaSimIR：`Release|x64`
+- 构建 DataDrivenTestQT：Qt 5.12.12 `release`
+- 输出 HwaSimIR：`D:\HwaSimIR\ConsoleApplication1_LLA\Bin\ConsoleApplication1.exe`
+- 输出 DataDrivenTestQT：`D:\HwaSimIR\build-DataDrivenTestQT-codex-mingw73_64-Release\release\DataDrivenTestQT.exe`
+
+短时启动冒烟命令：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\stage0_smoke_run.ps1
+```
+
+该命令会按工作目录启动 HwaSimIR 和 DataDrivenTestQT，等待若干秒，记录 stdout/stderr 到 `logs/stage0`，默认清理进程。需要人工继续操作窗口时，可加 `-KeepRunning`。
+
+2026-05-25 验证结果：
+
+- `tools\stage0_check.ps1 -Strict`：通过。
+- `tools\stage0_build.ps1`：HwaSimIR `Release|x64` 构建成功；DataDrivenTestQT Qt 5.12.12 MinGW release 构建成功。
+- `tools\stage0_smoke_run.ps1 -Seconds 8`：`ConsoleApplication1.exe` 与 `DataDrivenTestQT.exe` 均成功启动并保持运行，脚本随后停止进程。
+- 本次未自动点击 DataDrivenTestQT 的复位、初始化、开始、停止按钮，完整按钮流程仍需人工或后续 UI 自动化验证。
+
+## 11. 阶段 1 配置检查
+
+阶段 1 增加 IR 配置/类型模块后，可运行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\stage1_check.ps1 -Strict
+```
+
+该命令会检查：
+
+- `IR/IRTypes.*` 与 `IR/IRConfig.*` 是否存在并被 VS 工程纳入。
+- `trackerSensorBand` 协议映射是否覆盖 SWIR/NIR/MWIR/LWIR/VIS。
+- `SensorWave/default_*.json` 是否能提供谱范围、尺寸、ADC bit、Display bit、NETD。
+
+验证 HwaSimIR 初始化时波段切换：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\stage1_band_switch_smoke.ps1
+```
+
+该命令只启动 HwaSimIR，并依次发送 `trackerSensorBand=0,1,2,3,4` 的初始化 UDP 包。通过日志确认 `Sensor profile (init-command)` 是否分别切换到 SWIR/NIR/MWIR/LWIR/VIS。

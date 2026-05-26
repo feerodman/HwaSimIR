@@ -1102,6 +1102,7 @@ void HwaSimIR::handleControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd) 
 		memset(&m_initSceneData, 0, sizeof(BYHWICD::InitP2cObjectTrackingCmd));
 		memset(&m_realTimeSceneData, 0, sizeof(BYHWICD::DisplayC2cObjTrackingData));
 		memset(&m_sensorParam, 0, sizeof(BYHWICD::trackerSensorParam));
+		m_lastLoggedSensorProtocolBand = -999;
 
 		// 重置仿真状态
 		m_isSimRunning = false;
@@ -1143,6 +1144,7 @@ void HwaSimIR::handleInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& cmd) {
 		<< ", videoFps=" << cmd.trackingInit.videoFps
 		<< ", missileMax(AIM120/AIM9/MMD)=" << cmd.MissileMaxCount120 << "/"
 		<< cmd.MissileMaxCount9 << "/" << cmd.MissileMaxCountMMD << std::endl;
+	LogActiveIRSensorProfile(sensor.trackerSensorBand, "init-command", true);
 
 	// ========== 初始化业务逻辑（后续填充） ==========
 	std::cout << "执行成像初始化逻辑..." << std::endl;
@@ -1273,14 +1275,20 @@ void HwaSimIR::InitInfraredSimulation()
 		"../transmittance/transmittance_0.3_15.txt",
 		"../../transmittance/transmittance_0.3_15.txt"
 	});
+	std::vector<std::string> sensorWaveDirs;
+	sensorWaveDirs.push_back("Config/SensorWave");
+	sensorWaveDirs.push_back("../Bin/Config/SensorWave");
+	sensorWaveDirs.push_back("ConsoleApplication1_LLA/Bin/Config/SensorWave");
+	sensorWaveDirs.push_back("../ConsoleApplication1_LLA/Bin/Config/SensorWave");
 
 	m_irMaterialReady = m_irMaterialDatabase.load(materialPath);
 	m_irAtmosphereReady = m_irAtmosphereModel.loadTransmissionTable(transmittancePath);
+	m_irSensorProfilesReady = m_irSensorProfiles.loadFromDirectoryCandidates(sensorWaveDirs);
 	m_irRadianceModel.setMaterialDatabase(&m_irMaterialDatabase);
 	m_irRadianceModel.setAtmosphereModel(&m_irAtmosphereModel);
 
 	IRRuntimeEnvironment environment;
-	environment.band = IRRadianceModel::bandFromProtocol(m_sensorParam.trackerSensorBand);
+	environment.band = IRBandFromProtocol(2);
 	environment.airTemperatureC = 25.0;
 	environment.visibilityMeters = 23000.0;
 	environment.sunElevationDeg = 45.0;
@@ -1293,6 +1301,12 @@ void HwaSimIR::InitInfraredSimulation()
 		<< "，MODTRAN透过率="
 		<< (m_irAtmosphereReady ? "OK" : "未加载，使用经验透过率")
 		<< " 路径=" << transmittancePath << std::endl;
+	std::cout << "[Stage1] IR配置输入：SensorWave="
+		<< (m_irSensorProfilesReady ? "OK" : "未加载，使用内置传感器默认值")
+		<< " 路径=" << (m_irSensorProfilesReady ? m_irSensorProfiles.loadedDirectory() : "fallback")
+		<< "，MaterialDatabase=" << (m_irMaterialReady ? materialPath : "fallback")
+		<< "，Transmittance=" << (m_irAtmosphereReady ? transmittancePath : "fallback") << std::endl;
+	LogActiveIRSensorProfile(2, "startup-default", true);
 }
 
 void HwaSimIR::InitSkyAndCloudScene()
@@ -1581,12 +1595,35 @@ float HwaSimIR::EstimateRangeToCamera(const NodePath& node) const
 	return std::max(1.0f, range);
 }
 
+void HwaSimIR::LogActiveIRSensorProfile(int protocolBand, const char* reason, bool forceLog)
+{
+	if (!forceLog && protocolBand == m_lastLoggedSensorProtocolBand)
+	{
+		return;
+	}
+	const IRSensorProfile& profile = m_irSensorProfiles.profileForProtocolBand(protocolBand);
+	IRBand band = IRBandFromProtocol(protocolBand);
+	IRBandRange modelRange = IRDefaultRangeForBand(band);
+	std::cout << "[Stage1] Sensor profile (" << reason << "): protocolBand=" << protocolBand
+		<< ", band=" << IRBandName(band)
+		<< ", sensorRange=" << profile.spectralLowUm << "-" << profile.spectralHighUm << "um"
+		<< ", modelRange=" << modelRange.lowUm << "-" << modelRange.highUm << "um"
+		<< ", profileSize=" << profile.width << "x" << profile.height
+		<< ", ADC=" << profile.adcBits << "bit"
+		<< ", display=" << profile.displayBits << "bit"
+		<< ", NETD=" << profile.netdK << "K"
+		<< ", FOV=" << profile.fovHDeg << "x" << profile.fovVDeg
+		<< ", source=" << profile.sourcePath << std::endl;
+	m_lastLoggedSensorProtocolBand = protocolBand;
+}
+
 // 动态更新红外状态
 void HwaSimIR::UpdatePlatformIRStatus() {
 	double current_time = ClockObject::get_global_clock()->get_frame_time();
 
 	IRRuntimeEnvironment environment = m_irRadianceModel.environment();
-	environment.band = IRRadianceModel::bandFromProtocol(m_sensorParam.trackerSensorBand);
+	environment.band = IRBandFromProtocol(m_sensorParam.trackerSensorBand);
+	LogActiveIRSensorProfile(m_sensorParam.trackerSensorBand, "runtime-band", false);
 	environment.airTemperatureC = (m_initSceneData.trackingInit.envTemp > -80.0 && m_initSceneData.trackingInit.envTemp < 80.0)
 		? m_initSceneData.trackingInit.envTemp : 25.0;
 	environment.visibilityMeters = (m_initSceneData.trackingInit.envVisibility > 1.0)

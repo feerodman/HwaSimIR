@@ -156,6 +156,8 @@
     <ClInclude Include="common_data.h" />
     <ClInclude Include="GeoTransform.h" />
     <ClInclude Include="HwaSimIR.h" />
+    <ClInclude Include="IR\IRConfig.h" />
+    <ClInclude Include="IR\IRTypes.h" />
     <ClInclude Include="IRSimulation.h" />
     <ClInclude Include="math_algorithm.h" />
     <ClInclude Include="stdafx.h" />
@@ -167,6 +169,8 @@
     <ClCompile Include="AttitudeTransform.cpp" />
     <ClCompile Include="GeoTransform.cpp" />
     <ClCompile Include="HwaSimIR.cpp" />
+    <ClCompile Include="IR\IRConfig.cpp" />
+    <ClCompile Include="IR\IRTypes.cpp" />
     <ClCompile Include="IRSimulation.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

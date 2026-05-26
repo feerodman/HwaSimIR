@@ -22,6 +22,12 @@
     <Filter Include="源文件\CoordinateConverter">
       <UniqueIdentifier>{aa00a37a-739b-44c6-9374-bcc68fadef44}</UniqueIdentifier>
     </Filter>
+    <Filter Include="头文件\IR">
+      <UniqueIdentifier>{d9937a95-0b77-4d13-92e8-85390ced4b63}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\IR">
+      <UniqueIdentifier>{b3a5316b-6580-46af-b373-1d20b4f8e629}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -48,6 +54,12 @@
     <ClInclude Include="IRSimulation.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="IR\IRConfig.h">
+      <Filter>头文件\IR</Filter>
+    </ClInclude>
+    <ClInclude Include="IR\IRTypes.h">
+      <Filter>头文件\IR</Filter>
+    </ClInclude>
     <ClInclude Include="TcpCommThread.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -73,6 +85,12 @@
     </ClCompile>
     <ClCompile Include="IRSimulation.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="IR\IRConfig.cpp">
+      <Filter>源文件\IR</Filter>
+    </ClCompile>
+    <ClCompile Include="IR\IRTypes.cpp">
+      <Filter>源文件\IR</Filter>
     </ClCompile>
     <ClCompile Include="UdpCommThread.cpp">
       <Filter>源文件</Filter>

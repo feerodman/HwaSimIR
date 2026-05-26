@@ -330,41 +330,17 @@ IRObjectRadianceOutput IRRadianceModel::evaluate(const IRObjectRadianceInput& in
 
 IRBand IRRadianceModel::bandFromProtocol(int protocolBand)
 {
-	switch (protocolBand)
-	{
-	case 1: return IRBand::NearInfrared;
-	case 0: return IRBand::ShortWaveInfrared;
-	case 2: return IRBand::MidWaveInfrared;
-	case 3: return IRBand::LongWaveInfrared;
-	case 4: return IRBand::Visible;
-	default: return IRBand::MidWaveInfrared;
-	}
+	return IRBandFromProtocol(protocolBand);
 }
 
 IRBandRange IRRadianceModel::rangeForBand(IRBand band)
 {
-	switch (band)
-	{
-	case IRBand::Visible: return{ band, 0.40, 0.70 };
-	case IRBand::NearInfrared: return{ band, 0.70, 1.10 };
-	case IRBand::ShortWaveInfrared: return{ band, 1.10, 2.50 };
-	case IRBand::MidWaveInfrared: return{ band, 3.00, 5.00 };
-	case IRBand::LongWaveInfrared: return{ band, 8.00, 14.00 };
-	default: return{ IRBand::MidWaveInfrared, 3.00, 5.00 };
-	}
+	return IRDefaultRangeForBand(band);
 }
 
 const char* IRRadianceModel::bandName(IRBand band)
 {
-	switch (band)
-	{
-	case IRBand::Visible: return "VIS";
-	case IRBand::NearInfrared: return "NIR";
-	case IRBand::ShortWaveInfrared: return "SWIR";
-	case IRBand::MidWaveInfrared: return "MWIR";
-	case IRBand::LongWaveInfrared: return "LWIR";
-	default: return "MWIR";
-	}
+	return IRBandName(band);
 }
 
 double IRRadianceModel::normalizedBlackbodyRadiance(IRBand band, double temperatureK) const

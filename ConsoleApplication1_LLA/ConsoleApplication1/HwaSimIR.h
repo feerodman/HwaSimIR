@@ -32,6 +32,7 @@
 #include "GeoTransform.h"
 #include "AttitudeTransform.h"
 #include "IRSimulation.h"
+#include "IR/IRConfig.h"
 
 #include "shader.h"             // 新增：着色器支持
 #include "clockObject.h"        // 新增：获取全局时间
@@ -108,8 +109,11 @@ private:
 	IRMaterialDatabase m_irMaterialDatabase;                // 材质数据库
 	IRAtmosphereModel m_irAtmosphereModel;                  // MODTRAN透过率近似表
 	IRRadianceModel m_irRadianceModel;                      // CPU低复杂度辐亮度模型
+	IRSensorProfileDatabase m_irSensorProfiles;             // SensorWave传感器配置
 	bool m_irMaterialReady = false;
 	bool m_irAtmosphereReady = false;
+	bool m_irSensorProfilesReady = false;
+	int m_lastLoggedSensorProtocolBand = -999;
 
 	void InitInfraredShader();                              // 初始化着色器代码
 	void InitInfraredSimulation();                          // 初始化低复杂度红外全链路参数
@@ -120,6 +124,7 @@ private:
 	IRObjectRadianceOutput EvaluateNodeRadiance(const std::string& materialName, const NodePath& node, bool engineOn, bool damaged, bool isSky, bool isCloud, double cloudDensity);
 	std::string MaterialNameForPlatform(PLATFORM_TYPE type) const;
 	float EstimateRangeToCamera(const NodePath& node) const;
+	void LogActiveIRSensorProfile(int protocolBand, const char* reason, bool forceLog);
 
 															// 异步任务：每帧刷新着色器动态参数
 	static AsyncTask::DoneStatus shader_update_task(GenericAsyncTask* task, void* data);
@@ -195,6 +200,5 @@ private:
 	bool m_bSyncRenderMode = false;   // 同步模式标志位
 	std::condition_variable m_cvNewData; // 用于同步模式的条件变量阻塞
 };
-
 
 
