@@ -8,15 +8,10 @@ $ErrorActionPreference = "Stop"
 $root = Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")
 $rootPath = $root.Path
 
-$qtRoot = "D:\Qt\Qt5.12.12"
-$qtBin = Join-Path $qtRoot "5.12.12\mingw73_64\bin"
-$mingwBin = Join-Path $qtRoot "Tools\mingw730_64\bin"
-$env:PATH = "$qtBin;$mingwBin;$env:PATH"
-
 $hwaExe = Join-Path $rootPath "ConsoleApplication1_LLA\Bin\ConsoleApplication1.exe"
 $hwaWorkDir = Join-Path $rootPath "ConsoleApplication1_LLA\Bin"
 $qtExe = Join-Path $rootPath "build-DataDrivenTestQT-codex-mingw73_64-Release\release\DataDrivenTestQT.exe"
-$qtWorkDir = Join-Path $rootPath "DataDrivenTestQT"
+$qtWorkDir = Split-Path -Parent $qtExe
 $logDir = Join-Path $rootPath "logs\stage0"
 
 function Assert-Path {

@@ -33,6 +33,7 @@
 #include "AttitudeTransform.h"
 #include "IRSimulation.h"
 #include "IR/IRConfig.h"
+#include "IR/IRSceneMaterialMapper.h"
 
 #include "shader.h"             // 新增：着色器支持
 #include "clockObject.h"        // 新增：获取全局时间
@@ -110,21 +111,30 @@ private:
 	IRAtmosphereModel m_irAtmosphereModel;                  // MODTRAN透过率近似表
 	IRRadianceModel m_irRadianceModel;                      // CPU低复杂度辐亮度模型
 	IRSensorProfileDatabase m_irSensorProfiles;             // SensorWave传感器配置
+	IRSceneMaterialMapper m_irSceneMaterialMapper;          // 阶段2：目标材质ID纹理与物理材质参数绑定器
+	IRWeatherProfile m_irWeatherProfile;                    // 阶段3：温度/太阳高度/方位角环境profile
 	bool m_irMaterialReady = false;
 	bool m_irAtmosphereReady = false;
 	bool m_irSensorProfilesReady = false;
+	bool m_irWeatherReady = false;
 	int m_lastLoggedSensorProtocolBand = -999;
+	int m_lastLoggedEnvironmentHour = -999;
+	int m_lastLoggedEnvironmentWeather = -999;
 
 	void InitInfraredShader();                              // 初始化着色器代码
 	void InitInfraredSimulation();                          // 初始化低复杂度红外全链路参数
 	void InitSkyAndCloudScene();                            // 初始化天空背景和粒子云近似层
 	void ApplyInfraredShader(NodePath& node, bool isBackground); // 挂载着色器并初始化参数
+	NodePath LoadPlatformAssetNode(PLATFORM_TYPE type, const PlatformResPath& res); // 加载模型、基础纹理和阶段2材质绑定
 	void UpdatePlatformIRStatus();                          // 动态更新红外状态（时间、波段、亮斑等）
 	void ApplyRadianceInputs(NodePath& node, const IRObjectRadianceOutput& radiance, int objectKind);
 	IRObjectRadianceOutput EvaluateNodeRadiance(const std::string& materialName, const NodePath& node, bool engineOn, bool damaged, bool isSky, bool isCloud, double cloudDensity);
 	std::string MaterialNameForPlatform(PLATFORM_TYPE type) const;
 	float EstimateRangeToCamera(const NodePath& node) const;
 	void LogActiveIRSensorProfile(int protocolBand, const char* reason, bool forceLog);
+	double CurrentSimulationHour() const;                   // 从实时数据时间换算当前仿真小时，无实时数据时使用正午profile
+	IRRuntimeEnvironment BuildRuntimeEnvironment() const;   // 阶段3：按 UDP > profile > 默认值合成环境状态
+	void LogActiveIREnvironment(const IRRuntimeEnvironment& environment, const char* reason, bool forceLog);
 
 															// 异步任务：每帧刷新着色器动态参数
 	static AsyncTask::DoneStatus shader_update_task(GenericAsyncTask* task, void* data);
@@ -200,5 +210,4 @@ private:
 	bool m_bSyncRenderMode = false;   // 同步模式标志位
 	std::condition_variable m_cvNewData; // 用于同步模式的条件变量阻塞
 };
-
 

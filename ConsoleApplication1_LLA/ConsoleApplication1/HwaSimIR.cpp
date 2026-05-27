@@ -3,8 +3,12 @@
 //#include "stdafx.h"
 
 #include "HwaSimIR.h"
+#include "lvecBase4.h"
+#include "pta_LVecBase4.h"
+#include "pta_float.h"
 #include <chrono>
 #include <algorithm>
+#include <cmath>
 #include <fstream>
 
 namespace
@@ -25,6 +29,24 @@ std::string FirstExistingPath(const std::vector<std::string>& paths)
 		}
 	}
 	return paths.empty() ? std::string() : paths[0];
+}
+
+double WeatherSunStrength(int weatherCode, double sunElevationDeg)
+{
+	if (sunElevationDeg <= 0.0)
+	{
+		return 0.0;
+	}
+	switch (weatherCode)
+	{
+	case 0: return 1.0;   // 晴天：太阳直射完整保留
+	case 1: return 0.65;  // 云：削弱直射，保留部分散射
+	case 2: return 0.45;  // 雨：直射和能见度同时下降
+	case 3: return 0.55;  // 雪：直射下降，但地表反照可后续增强
+	case 4: return 0.30;  // 雾：太阳项大幅衰减，程辐射增强
+	case 5: return 0.42;  // 阴：无明显直射，以漫射近似
+	default: return 0.75;
+	}
 }
 }
 
@@ -230,36 +252,45 @@ void HwaSimIR::InitPlatformModels()
 	m_platformResMap.clear();
 
 	// 初始化各平台的模型路径和纹理路径
-	// 飞机
-	m_platformResMap[J20] = {
-		"Config/TargetLib/models/J20.obj",
-		"Config/TargetLib/models/j20.jpg"
-		
-	};
+	// 飞机：协议 0x11 当前仍默认绑定 F35；F22 已入库但暂未接协议枚举，避免改变现有测试语义。
 	m_platformResMap[F35] = {
-		"Config/TargetLib/models/F35C.obj",
-		"Config/TargetLib/models/f35c.jpg"
+		"Config/TargetLib/models/f35/F35C.obj",
+		"Config/TargetLib/models/f35/f35c.jpg",
+		"Config/TargetLib/models/f35/f35c_mat.tif",
+		"Config/TargetLib/models/f35/f35c_mat.tif.xml",
+		"Config/TargetLib/models/f35",
+		"F35",
+		"BM_METAL-ALUMINIUM"
 	};
 
-	// 导弹
+	// 导弹：资源目录使用新加入的 AIM9X/AIM120D 资产，保持协议类型 0x33/0x22 不变。
 	m_platformResMap[AIM9] = {
-		"Config/TargetLib/models/AIM9.obj",
-		"Config/TargetLib/models/aim9.jpg"
+		"Config/TargetLib/models/aim9x/aim9x.obj",
+		"Config/TargetLib/models/aim9x/TX_AIM9X_Diffuse.png",
+		"Config/TargetLib/models/aim9x/TX_AIM9X_Diffuse_mat.tif",
+		"Config/TargetLib/models/aim9x/TX_AIM9X_Diffuse_mat.tif.xml",
+		"Config/TargetLib/models/aim9x",
+		"AIM9X",
+		"IR_CERAMIC"
 	};
 	m_platformResMap[AIM120] = {
-		"Config/TargetLib/models/AIM120.obj",
-		"Config/TargetLib/models/aim120.jpg"
+		"Config/TargetLib/models/aim120/AIM120.obj",
+		"Config/TargetLib/models/aim120/aim120.jpg",
+		"Config/TargetLib/models/aim120/aim120_mat.tif",
+		"Config/TargetLib/models/aim120/aim120_mat.tif.xml",
+		"Config/TargetLib/models/aim120",
+		"AIM120D",
+		"BM_METAL-STEEL"
 	};
 
 	std::cout << "平台模型路径初始化完成，共加载" << m_platformResMap.size() << "种平台资源" << std::endl;
 
 
-	//Filename aim9_path = Filename::from_os_specific("F:/HwaSim_IR/EdgeSideIRSim_vs/ConsoleApplication1/Bin/Config/TargetLib/models/AIM9.obj");
-	//Filename texture_path = Filename::from_os_specific("F:/HwaSim_IR/EdgeSideIRSim_vs/ConsoleApplication1/Bin/Config/TargetLib/models/aim9.jpg");
+	// 旧的单模型调试代码保留为参考，路径已迁移到新的 AIM9X 资产目录。
 #if 0
 
-	Filename aim9_path = Filename::from_os_specific("Config/TargetLib/models/AIM9.obj");
-	Filename aim9_texture_path = Filename::from_os_specific("Config/TargetLib/models/aim9.jpg");
+	Filename aim9_path = Filename::from_os_specific("Config/TargetLib/models/aim9x/aim9x.obj");
+	Filename aim9_texture_path = Filename::from_os_specific("Config/TargetLib/models/aim9x/TX_AIM9X_Diffuse.png");
 
 	aim9 = m_pMainWindow->load_model(m_renderRoot, aim9_path);
 	PT(Texture) textureaim9 = TexturePool::load_texture(aim9_texture_path);
@@ -549,13 +580,45 @@ PLATFORM_TYPE HwaSimIR::TargetTypeToPlatformType(int targetType)
 	switch (targetType)
 	{
 	case 0x00: return NONE;
-	case 0x11: return F35; // 飞机类型默认F35，可根据ID区分F35/J20
+	case 0x11: return F35; // 飞机类型暂时默认F35
 	case 0x22: return AIM120;
 	case 0x33: return AIM9;
 	case 0x44: return MMD;
 	default: return NONE;
 	}
 }
+
+NodePath HwaSimIR::LoadPlatformAssetNode(PLATFORM_TYPE type, const PlatformResPath& res)
+{
+	Filename modelPath = Filename::from_os_specific(res.modelPath);
+	NodePath modelNode = m_pMainWindow->load_model(m_renderRoot, modelPath);
+	if (modelNode.is_empty())
+	{
+		std::cerr << "模型加载失败：" << res.modelPath << " 类型=" << type << std::endl;
+		return modelNode;
+	}
+
+	// OBJ/MTL 可能带有旧机器的绝对贴图路径，这里显式绑定基础纹理保证 Windows 和 RK3588 路径一致。
+	if (!res.texturePath.empty())
+	{
+		Filename texturePath = Filename::from_os_specific(res.texturePath);
+		PT(Texture) texture = TexturePool::load_texture(texturePath);
+		if (texture != nullptr)
+		{
+			modelNode.set_texture(texture);
+		}
+		else
+		{
+			std::cerr << "基础纹理加载失败：" << res.texturePath << " 类型=" << type << std::endl;
+		}
+	}
+
+	// 先挂红外 shader，再绑定材质 ID 纹理和材质参数数组，确保 shader input 已声明可用。
+	ApplyInfraredShader(modelNode, false);
+	m_irSceneMaterialMapper.bindPlatformNode(modelNode, res, m_irMaterialDatabase);
+	return modelNode;
+}
+
 // 处理PlatParamPak平台增删（飞机平台）
 void HwaSimIR::ProcessAddRemovePakPlatform()
 {
@@ -583,22 +646,11 @@ void HwaSimIR::ProcessAddRemovePakPlatform()
 				std::cerr << "未找到平台类型" << platType << "的资源路径，跳过" << std::endl;
 				continue;
 			}
-			Filename modelPath = Filename::from_os_specific(resIter->second.modelPath);
-			Filename texturePath = Filename::from_os_specific(resIter->second.texturePath);
-
-			// 加载模型
-			NodePath modelNode = m_pMainWindow->load_model(m_renderRoot, modelPath);
+			// 阶段2统一入口：加载模型、基础纹理，并绑定材质ID纹理/材质参数。
+			NodePath modelNode = LoadPlatformAssetNode(platType, resIter->second);
 			if (modelNode.is_empty())
 			{
-				std::cerr << "模型加载失败：" << modelPath << std::endl;
 				continue;
-			}
-
-			// 加载纹理
-			PT(Texture) texture = TexturePool::load_texture(texturePath);
-			if (texture != nullptr)
-			{
-				modelNode.set_texture(texture);
 			}
 
 			// 初始化PakPlatformData
@@ -617,9 +669,6 @@ void HwaSimIR::ProcessAddRemovePakPlatform()
 			// 添加到列表并显示
 			m_pakPlatformList.push_back(newPakPlat);
 			modelNode.show();
-
-			// 【修改点 3】：给飞机挂载红外着色器 (false表示非背景)
-			ApplyInfraredShader(modelNode, false);
 
 			std::cout << "PlatParamPak平台生成成功：类型=" << platType << " ID=" << platParam.id << std::endl;
 			// ========== 绑定相机到第一个平台 ==========
@@ -752,12 +801,9 @@ void HwaSimIR::ProcessAddRemoveTargetPlatform()
 			auto resIter = m_platformResMap.find(platType);
 			if (resIter == m_platformResMap.end()) continue;
 
-			// 加载模型和纹理
-			NodePath modelNode = m_pMainWindow->load_model(m_renderRoot, resIter->second.modelPath);
+			// 阶段2统一入口：加载模型、基础纹理，并绑定材质ID纹理/材质参数。
+			NodePath modelNode = LoadPlatformAssetNode(platType, resIter->second);
 			if (modelNode.is_empty()) continue;
-
-			PT(Texture) texture = TexturePool::load_texture(resIter->second.texturePath);
-			if (texture != nullptr) modelNode.set_texture(texture);
 
 			// 初始化TargetPlatformData
 			TargetPlatformData newTargetPlat;
@@ -787,9 +833,6 @@ void HwaSimIR::ProcessAddRemoveTargetPlatform()
 			m_targetPlatformList.push_back(newTargetPlat);
 			modelNode.show();
 
-			// 【修改点 4】：给导弹挂载红外着色器
-			ApplyInfraredShader(modelNode, false);
-
 			std::cout << "TargetState平台生成成功：类型=" << platType << " 目标ID=" << newTargetPlat.platID << std::endl;
 			/*if (newTargetPlat.platID == 3)
 			{
@@ -811,12 +854,9 @@ void HwaSimIR::ProcessAddRemoveTargetPlatform()
 			auto resIter = m_platformResMap.find(platType);
 			if (resIter == m_platformResMap.end()) continue;
 
-			// 加载模型和纹理
-			NodePath modelNode = m_pMainWindow->load_model(m_renderRoot, resIter->second.modelPath);
+			// 阶段2统一入口：加载模型、基础纹理，并绑定材质ID纹理/材质参数。
+			NodePath modelNode = LoadPlatformAssetNode(platType, resIter->second);
 			if (modelNode.is_empty()) continue;
-
-			PT(Texture) texture = TexturePool::load_texture(resIter->second.texturePath);
-			if (texture != nullptr) modelNode.set_texture(texture);
 
 			// 初始化TargetPlatformData
 			TargetPlatformData newTargetPlat;
@@ -846,9 +886,6 @@ void HwaSimIR::ProcessAddRemoveTargetPlatform()
 			m_targetPlatformList.push_back(newTargetPlat);
 			modelNode.show();
 
-			// 【修改点 4】：给导弹挂载红外着色器
-			ApplyInfraredShader(modelNode, false);
-
 			std::cout << "TargetState平台生成成功：类型=" << platType << " 目标ID=" << newTargetPlat.platID << std::endl;
 		}
 		for (int i = 0; i < m_initSceneData.MissileMaxCountMMD; ++i)
@@ -866,12 +903,9 @@ void HwaSimIR::ProcessAddRemoveTargetPlatform()
 			auto resIter = m_platformResMap.find(platType);
 			if (resIter == m_platformResMap.end()) continue;
 
-			// 加载模型和纹理
-			NodePath modelNode = m_pMainWindow->load_model(m_renderRoot, resIter->second.modelPath);
+			// 阶段2统一入口：MMD 暂无资产时不会进入加载；后续补模型后沿用同一材质绑定流程。
+			NodePath modelNode = LoadPlatformAssetNode(platType, resIter->second);
 			if (modelNode.is_empty()) continue;
-
-			PT(Texture) texture = TexturePool::load_texture(resIter->second.texturePath);
-			if (texture != nullptr) modelNode.set_texture(texture);
 
 			// 初始化TargetPlatformData
 			TargetPlatformData newTargetPlat;
@@ -900,9 +934,6 @@ void HwaSimIR::ProcessAddRemoveTargetPlatform()
 			// 添加到列表并显示
 			m_targetPlatformList.push_back(newTargetPlat);
 			modelNode.show();
-
-			// 【修改点 4】：给导弹挂载红外着色器
-			ApplyInfraredShader(modelNode, false);
 
 			std::cout << "TargetState平台生成成功：类型=" << platType << " 目标ID=" << newTargetPlat.platID << std::endl;
 		}
@@ -1157,6 +1188,11 @@ void HwaSimIR::handleInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& cmd) {
 	//处理成像初始化数据，生成平台
 	ProcessRealSimSceneInitData();
 
+	// 阶段3：初始化后立即合成一次环境状态，保证 UDP 环境参数优先级生效。
+	IRRuntimeEnvironment initEnvironment = BuildRuntimeEnvironment();
+	m_irRadianceModel.setEnvironment(initEnvironment);
+	LogActiveIREnvironment(initEnvironment, "init-command", true);
+
 
 
 
@@ -1275,6 +1311,11 @@ void HwaSimIR::InitInfraredSimulation()
 		"../transmittance/transmittance_0.3_15.txt",
 		"../../transmittance/transmittance_0.3_15.txt"
 	});
+	std::string weatherPath = FirstExistingPath({
+		"temperatures/Temperatures_Yemen_Summer.csv",
+		"../temperatures/Temperatures_Yemen_Summer.csv",
+		"../../temperatures/Temperatures_Yemen_Summer.csv"
+	});
 	std::vector<std::string> sensorWaveDirs;
 	sensorWaveDirs.push_back("Config/SensorWave");
 	sensorWaveDirs.push_back("../Bin/Config/SensorWave");
@@ -1284,15 +1325,27 @@ void HwaSimIR::InitInfraredSimulation()
 	m_irMaterialReady = m_irMaterialDatabase.load(materialPath);
 	m_irAtmosphereReady = m_irAtmosphereModel.loadTransmissionTable(transmittancePath);
 	m_irSensorProfilesReady = m_irSensorProfiles.loadFromDirectoryCandidates(sensorWaveDirs);
+	m_irWeatherReady = m_irWeatherProfile.load(weatherPath);
 	m_irRadianceModel.setMaterialDatabase(&m_irMaterialDatabase);
 	m_irRadianceModel.setAtmosphereModel(&m_irAtmosphereModel);
 
 	IRRuntimeEnvironment environment;
 	environment.band = IRBandFromProtocol(2);
-	environment.airTemperatureC = 25.0;
+	if (m_irWeatherReady)
+	{
+		// 阶段3默认使用正午 profile，真实运行时由实时数据时间换算仿真小时。
+		IRWeatherSample sample = m_irWeatherProfile.sampleForHour(12.0);
+		environment.airTemperatureC = sample.airTemperatureC;
+		environment.sunAzimuthDeg = sample.sunAzimuthDeg;
+		environment.sunElevationDeg = sample.sunElevationDeg;
+		environment.simulationHour = sample.hour;
+	}
+	else
+	{
+		environment.airTemperatureC = 25.0;
+	}
 	environment.visibilityMeters = 23000.0;
-	environment.sunElevationDeg = 45.0;
-	environment.sunStrength = 1.0;
+	environment.sunStrength = WeatherSunStrength(environment.weatherCode, environment.sunElevationDeg);
 	m_irRadianceModel.setEnvironment(environment);
 
 	std::cout << "红外全链路CPU模型初始化：材质库="
@@ -1305,8 +1358,10 @@ void HwaSimIR::InitInfraredSimulation()
 		<< (m_irSensorProfilesReady ? "OK" : "未加载，使用内置传感器默认值")
 		<< " 路径=" << (m_irSensorProfilesReady ? m_irSensorProfiles.loadedDirectory() : "fallback")
 		<< "，MaterialDatabase=" << (m_irMaterialReady ? materialPath : "fallback")
-		<< "，Transmittance=" << (m_irAtmosphereReady ? transmittancePath : "fallback") << std::endl;
+		<< "，Transmittance=" << (m_irAtmosphereReady ? transmittancePath : "fallback")
+		<< "，WeatherProfile=" << (m_irWeatherReady ? weatherPath : "fallback") << std::endl;
 	LogActiveIRSensorProfile(2, "startup-default", true);
+	LogActiveIREnvironment(environment, "startup-default", true);
 }
 
 void HwaSimIR::InitSkyAndCloudScene()
@@ -1388,6 +1443,12 @@ void HwaSimIR::InitInfraredShader() {
     uniform float u_display_gain;
     uniform float u_display_offset;
     uniform float u_cloud_density;
+    uniform sampler2D p3d_Texture1;
+    uniform int u_material_id_ready;
+    uniform int u_debug_material_id;
+    uniform int u_material_param_count;
+    uniform float u_material_ids[8];
+    uniform vec4 u_material_params[8];
 
     // 头部热源参数
     uniform int u_hotspot_front_en;
@@ -1429,6 +1490,24 @@ void HwaSimIR::InitInfraredShader() {
             gl_FragColor = vec4(cloud_intensity, cloud_intensity, cloud_intensity, edge * clamp(u_cloud_density, 0.0, 0.85));
             return;
         }
+
+        vec4 surface_param = vec4(u_emissivity, u_reflectance, 0.0, 0.5);
+        float material_id = texture2D(p3d_Texture1, texcoord).r;
+        if (u_material_id_ready == 1) {
+            if (u_debug_material_id == 1) {
+                gl_FragColor = vec4(material_id, material_id, material_id, texColor.a);
+                return;
+            }
+            for (int i = 0; i < 8; ++i) {
+                if (i < u_material_param_count) {
+                    float hit = 1.0 - step(0.006, abs(material_id - u_material_ids[i]));
+                    surface_param = mix(surface_param, u_material_params[i], hit);
+                }
+            }
+        }
+
+        float surface_emissivity = clamp(surface_param.x, 0.01, 1.0);
+        float surface_reflectance = clamp(surface_param.y, 0.02, 0.95);
 		// 计算基础热辐射与范围热源
         float current_temp = u_base_temperature;
 
@@ -1453,8 +1532,9 @@ void HwaSimIR::InitInfraredShader() {
         float detail_weight = (u_wave_band == 0) ? 0.7 : 0.2; 
         float temp_weight   = (u_wave_band == 0) ? 0.3 : 1.0;
 
-        float final_intensity = current_temp * temp_weight + luminance * detail_weight;
-        float chain_intensity = u_ir_radiance * u_display_gain + u_path_radiance + u_display_offset;
+        float final_intensity = current_temp * temp_weight * (0.75 + 0.25 * surface_emissivity)
+                              + luminance * detail_weight * (0.70 + 0.30 * surface_reflectance);
+        float chain_intensity = u_ir_radiance * surface_emissivity * u_display_gain + u_path_radiance + u_display_offset;
         final_intensity = mix(chain_intensity, final_intensity, 0.28);
 
 		// 计算表面不规则亮斑 (仅在局部生效)
@@ -1509,6 +1589,20 @@ void HwaSimIR::ApplyInfraredShader(NodePath& node, bool isBackground) {
 	node.set_shader_input("u_display_gain", LVecBase2f(1.0f, 0.0f));
 	node.set_shader_input("u_display_offset", LVecBase2f(0.02f, 0.0f));
 	node.set_shader_input("u_cloud_density", LVecBase2f(0.35f, 0.0f));
+
+	// 阶段2材质映射默认值：没有材质ID纹理时仍按整目标默认材质稳定渲染。
+	PTA_float defaultMaterialIds;
+	PTA_LVecBase4f defaultMaterialParams;
+	for (int i = 0; i < 8; ++i)
+	{
+		defaultMaterialIds.push_back(0.0f);
+		defaultMaterialParams.push_back(LVecBase4f(0.85f, 0.15f, 0.40f, 0.50f));
+	}
+	node.set_shader_input("u_material_id_ready", LVecBase2i(0, 0));
+	node.set_shader_input("u_debug_material_id", LVecBase2i(0, 0));
+	node.set_shader_input("u_material_param_count", LVecBase2i(0, 0));
+	node.set_shader_input("u_material_ids", defaultMaterialIds);
+	node.set_shader_input("u_material_params", defaultMaterialParams);
 
 	// 头部亮斑默认配置
 	node.set_shader_input("u_hotspot_front_en", LVecBase2i(0, 0));
@@ -1565,6 +1659,13 @@ IRObjectRadianceOutput HwaSimIR::EvaluateNodeRadiance(const std::string& materia
 
 std::string HwaSimIR::MaterialNameForPlatform(PLATFORM_TYPE type) const
 {
+	// CPU 辐亮度模型当前仍按平台默认材质计算；像素级差异由阶段2 shader 材质ID纹理补充。
+	std::map<PLATFORM_TYPE, PlatformResPath>::const_iterator resIter = m_platformResMap.find(type);
+	if (resIter != m_platformResMap.end() && !resIter->second.defaultMaterialName.empty())
+	{
+		return resIter->second.defaultMaterialName;
+	}
+
 	switch (type)
 	{
 	case F35:
@@ -1617,19 +1718,95 @@ void HwaSimIR::LogActiveIRSensorProfile(int protocolBand, const char* reason, bo
 	m_lastLoggedSensorProtocolBand = protocolBand;
 }
 
+double HwaSimIR::CurrentSimulationHour() const
+{
+	if (m_stage0DisplayFrameCount > 0 && m_realTimeSceneData.time >= 0.0)
+	{
+		double hour = std::fmod(m_realTimeSceneData.time / 3600000.0, 24.0);
+		return hour < 0.0 ? hour + 24.0 : hour;
+	}
+	// 没有实时帧时间时使用正午，便于在功能测试中获得稳定太阳照射。
+	return 12.0;
+}
+
+IRRuntimeEnvironment HwaSimIR::BuildRuntimeEnvironment() const
+{
+	IRRuntimeEnvironment environment = m_irRadianceModel.environment();
+	int protocolBand = (m_sensorParam.trackerSensorBand >= 0 && m_sensorParam.trackerSensorBand <= 4)
+		? m_sensorParam.trackerSensorBand : 2;
+	environment.band = IRBandFromProtocol(protocolBand);
+	environment.simulationHour = CurrentSimulationHour();
+
+	if (m_irWeatherReady)
+	{
+		// 场景 profile 提供地区/日期相关的太阳高度、方位角和逐小时温度。
+		IRWeatherSample sample = m_irWeatherProfile.sampleForHour(environment.simulationHour);
+		environment.airTemperatureC = sample.airTemperatureC;
+		environment.sunAzimuthDeg = sample.sunAzimuthDeg;
+		environment.sunElevationDeg = sample.sunElevationDeg;
+	}
+
+	if (m_isAddPlatform)
+	{
+		// 环境优先级：UDP 初始化参数 > 场景 profile > 内置默认值。
+		if (m_initSceneData.trackingInit.envTemp > -80.0 && m_initSceneData.trackingInit.envTemp < 80.0)
+		{
+			environment.airTemperatureC = m_initSceneData.trackingInit.envTemp;
+		}
+		if (m_initSceneData.trackingInit.envVisibility > 1.0)
+		{
+			environment.visibilityMeters = m_initSceneData.trackingInit.envVisibility;
+		}
+		if (m_initSceneData.trackingInit.envHumidity >= 0.0 && m_initSceneData.trackingInit.envHumidity <= 100.0)
+		{
+			environment.humidityPercent = m_initSceneData.trackingInit.envHumidity;
+		}
+		if (m_initSceneData.trackingInit.envWindV >= 0.0 && m_initSceneData.trackingInit.envWindV < 120.0)
+		{
+			environment.windSpeedMps = m_initSceneData.trackingInit.envWindV;
+		}
+		if (m_initSceneData.trackingInit.envWindDir >= 0.0 && m_initSceneData.trackingInit.envWindDir <= 360.0)
+		{
+			environment.windDirectionDeg = m_initSceneData.trackingInit.envWindDir;
+		}
+		environment.weatherCode = m_initSceneData.trackingInit.envSky;
+	}
+
+	environment.sunStrength = WeatherSunStrength(environment.weatherCode, environment.sunElevationDeg);
+	return environment;
+}
+
+void HwaSimIR::LogActiveIREnvironment(const IRRuntimeEnvironment& environment, const char* reason, bool forceLog)
+{
+	int hourKey = static_cast<int>(std::floor(environment.simulationHour));
+	if (!forceLog && hourKey == m_lastLoggedEnvironmentHour && environment.weatherCode == m_lastLoggedEnvironmentWeather)
+	{
+		return;
+	}
+	std::cout << "[Stage3] Environment (" << reason << "): hour=" << environment.simulationHour
+		<< ", airTempC=" << environment.airTemperatureC
+		<< ", visibilityM=" << environment.visibilityMeters
+		<< ", humidity=" << environment.humidityPercent
+		<< ", wind=" << environment.windSpeedMps << "m/s@" << environment.windDirectionDeg << "deg"
+		<< ", weatherCode=" << environment.weatherCode
+		<< ", sunAzimuth=" << environment.sunAzimuthDeg
+		<< ", sunElevation=" << environment.sunElevationDeg
+		<< ", sunStrength=" << environment.sunStrength
+		<< ", profile=" << (m_irWeatherReady ? m_irWeatherProfile.loadedPath() : "fallback")
+		<< std::endl;
+	m_lastLoggedEnvironmentHour = hourKey;
+	m_lastLoggedEnvironmentWeather = environment.weatherCode;
+}
+
 // 动态更新红外状态
 void HwaSimIR::UpdatePlatformIRStatus() {
 	double current_time = ClockObject::get_global_clock()->get_frame_time();
 
-	IRRuntimeEnvironment environment = m_irRadianceModel.environment();
-	environment.band = IRBandFromProtocol(m_sensorParam.trackerSensorBand);
-	LogActiveIRSensorProfile(m_sensorParam.trackerSensorBand, "runtime-band", false);
-	environment.airTemperatureC = (m_initSceneData.trackingInit.envTemp > -80.0 && m_initSceneData.trackingInit.envTemp < 80.0)
-		? m_initSceneData.trackingInit.envTemp : 25.0;
-	environment.visibilityMeters = (m_initSceneData.trackingInit.envVisibility > 1.0)
-		? m_initSceneData.trackingInit.envVisibility : 23000.0;
-	environment.sunElevationDeg = 45.0;
-	environment.sunStrength = (m_initSceneData.trackingInit.envSky == 0) ? 1.0 : 0.65;
+	IRRuntimeEnvironment environment = BuildRuntimeEnvironment();
+	int protocolBand = (m_sensorParam.trackerSensorBand >= 0 && m_sensorParam.trackerSensorBand <= 4)
+		? m_sensorParam.trackerSensorBand : 2;
+	LogActiveIRSensorProfile(protocolBand, "runtime-band", false);
+	LogActiveIREnvironment(environment, "runtime", false);
 	m_irRadianceModel.setEnvironment(environment);
 
 	if (!m_skyNode.is_empty())
@@ -1660,7 +1837,7 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 			ApplyRadianceInputs(pakPlat.nodePath, radiance, 0);
 
 			// 常开尾喷口亮斑
-			pakPlat.nodePath.set_shader_input("u_hotspot_rear_en", LVecBase2i(1, 0));
+			pakPlat.nodePath.set_shader_input("u_hotspot_rear_en", LVecBase2i(0, 0));
 		}
 	}
 
@@ -1673,11 +1850,12 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 			ApplyRadianceInputs(targetPlat.nodePath, radiance, 0);
 
 			// 发动机开机状态映射为尾部红外亮斑
-			int isEngineOn = targetPlat.targetState.engineState ? 1 : 0;
+			//int isEngineOn = targetPlat.targetState.engineState ? 1 : 0;
+			int isEngineOn = 0;
 			targetPlat.nodePath.set_shader_input("u_hotspot_rear_en", LVecBase2i(isEngineOn, 0));
 
 			// 开启亮斑
-			targetPlat.nodePath.set_shader_input("u_brightspot_en", LVecBase2i(1, 0));
+			targetPlat.nodePath.set_shader_input("u_brightspot_en", LVecBase2i(0, 0));
 			// 设定亮斑位置（在模型的局部坐标系下）
 			targetPlat.nodePath.set_shader_input("u_brightspot_pos", LVecBase3f(-0.3f, 0.5f, 0.0f));
 			// 设定不规则圆形的半径

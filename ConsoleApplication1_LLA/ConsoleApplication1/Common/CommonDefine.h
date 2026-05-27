@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <string>
 #include <map>
+#include "nodePath.h"
 #include "CommonData.h"
 
 //#define LOAD_TARGET_ID  100        //ROLE 挂载目标ID
@@ -46,8 +47,13 @@ enum PLATFORM_TYPE
 // 平台资源路径结构体
 struct PlatformResPath
 {
-	std::string modelPath;   // 模型文件路径
-	std::string texturePath; // 纹理文件路径
+	std::string modelPath;             // 模型文件路径，保持相对 Bin 工作目录，便于 Windows/Linux 共用
+	std::string texturePath;           // 基础可见光纹理路径，用于 shader 的 p3d_Texture0
+	std::string materialIdTexturePath; // 材质 ID 纹理路径，像素值对应材质映射表中的 MaterialId
+	std::string materialMapPath;       // 材质映射表路径，当前优先读取 *_mat.tif.xml
+	std::string assetDirectory;        // 资产目录，后续用于搜索同目录 mtl/纹理/附加热特征文件
+	std::string displayName;           // 日志显示名称
+	std::string defaultMaterialName;   // 缺少材质 ID 或映射失败时使用的默认红外材质
 };
 
 // 平台核心数据结构体

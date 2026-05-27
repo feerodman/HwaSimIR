@@ -886,3 +886,102 @@ illuminator:
 
 下一步：
 - 阶段 2 将目标模型材质从平台类型硬编码迁移到 OBJ/MTL/材质 ID 纹理映射，并对缺失 `.mtl` 的资产给出 fallback 或补齐资源。
+
+### 2026-05-26 阶段 2：材质映射与目标资产绑定
+
+用户补充：
+- 目标模型已迁移到 `ConsoleApplication1_LLA/Bin/Config/TargetLib/models/` 的分目录资产：`f35`、`f22`、`aim120`、`aim9x`。
+- 已删除 J20 资源，新增 F22 资源；当前没有 MMD 模型。
+- 协议映射保持不变：`0x11 -> F35`、`0x22 -> AIM120`、`0x33 -> AIM9`、`0x44 -> MMD`，其中 `0x11` 仍“飞机类型暂时默认F35”。
+
+完成内容：
+- 扩展 `PlatformResPath`，从单纯 `modelPath/texturePath` 扩展为模型、基础纹理、材质 ID 纹理、材质映射 XML、资产目录、显示名、默认红外材质。
+- 新增 `IR/IRSceneMaterialMapper.h/.cpp`，读取 `*_mat.tif.xml` 的 `Composite_Material index`，优先使用 `Surface_Substrate`，没有表层材质时回退到 `Primary_Substrate`，并映射到 `MaterialDatabase.csv` 中的 `BM_*` 物理材质。
+- 将 F35、AIM120D、AIM9X 绑定到新的分目录资源：
+  - F35：`models/f35/F35C.obj`、`f35c.jpg`、`f35c_mat.tif`、`f35c_mat.tif.xml`，默认材质 `BM_METAL-ALUMINIUM`。
+  - AIM120D：`models/aim120/AIM120.obj`、`aim120.jpg`、`aim120_mat.tif`、`aim120_mat.tif.xml`，默认材质 `BM_METAL-STEEL`。
+  - AIM9X：`models/aim9x/aim9x.obj`、`TX_AIM9X_Diffuse.png`、`TX_AIM9X_Diffuse_mat.tif`、`TX_AIM9X_Diffuse_mat.tif.xml`，默认材质 `IR_CERAMIC`。
+- F22 资产已纳入阶段 2 检查，但暂不绑定协议枚举；后续若需要使用 F22，需要新增协议类型或明确是否把 `0x11` 从 F35 改为 F22。
+- MMD 协议映射保留，但因暂无模型资源，运行时不会生成 MMD 资源。
+- 红外 shader 新增材质 ID 通道和材质参数数组：基础纹理使用 `p3d_Texture0`，材质 ID 纹理通过第二个 `TextureStage` 进入 `p3d_Texture1`，材质参数数组提供发射率、反射率、太阳吸收率、粗糙度。
+- 保留 CPU 辐亮度模型的平台默认材质计算；像素级材质差异先在 shader 中按材质 ID 调制局部发射率/反射率。`u_debug_material_id` 默认关闭，后续可打开为灰度材质 ID 调试视图。
+- 修正活动模型 `.mtl` 中残留的旧机器绝对贴图路径，改成同目录相对路径，避免 Windows/RK3588 路径不一致和 Panda3D/Assimp 无效路径日志。
+- 新增 `tools/stage2_check.ps1`，检查阶段 2 代码、VS/CMake 工程项、资源路径、协议映射、MTL 相对路径、材质 XML 解析结果。
+
+修改文件：
+- `ConsoleApplication1_LLA/ConsoleApplication1/Common/CommonDefine.h`
+- `ConsoleApplication1_LLA/ConsoleApplication1/HwaSimIR.h`
+- `ConsoleApplication1_LLA/ConsoleApplication1/HwaSimIR.cpp`
+- `ConsoleApplication1_LLA/ConsoleApplication1/IRSimulation.h`
+- `ConsoleApplication1_LLA/ConsoleApplication1/IRSimulation.cpp`
+- `ConsoleApplication1_LLA/ConsoleApplication1/IR/IRSceneMaterialMapper.h`
+- `ConsoleApplication1_LLA/ConsoleApplication1/IR/IRSceneMaterialMapper.cpp`
+- `ConsoleApplication1_LLA/ConsoleApplication1/ConsoleApplication1.vcxproj`
+- `ConsoleApplication1_LLA/ConsoleApplication1/ConsoleApplication1.vcxproj.filters`
+- `ConsoleApplication1_LLA/ConsoleApplication1/CMakeLists.txt`
+- `ConsoleApplication1_LLA/Bin/Config/TargetLib/models/f35/F35C.mtl`
+- `ConsoleApplication1_LLA/Bin/Config/TargetLib/models/aim120/AIM120.mtl`
+- `ConsoleApplication1_LLA/Bin/Config/TargetLib/models/aim9x/aim9x.mtl`
+- `ConsoleApplication1_LLA/Bin/Config/TargetLib/models/f22/f22.mtl`
+- `tools/stage2_check.ps1`
+- `docs/HwaSimIR_InfraredSimulationFramework.md`
+
+验证：
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\stage2_check.ps1 -Strict`
+- 结果：通过；检查到 F35/AIM120D/AIM9X/F22 的材质 XML 行，包含 `BM_METAL-ALUMINIUM`、`BM_PAINT`、`BM_GLASS`、`BM_METAL-IRON` 等映射。
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\stage0_build.ps1`
+- 结果：HwaSimIR `Release|x64` 与 DataDrivenTestQT Qt 5.12.12 release 构建成功。
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\stage1_band_switch_smoke.ps1 -Bands 2 -DelayMs 500`
+- 结果：HwaSimIR 启动后接收 MWIR 初始化包，实际加载 F35、AIM120D、AIM9X；日志显示 `materialIdTex=OK materialMap=OK entries=4`；stderr 仅保留 Panda3D 启动信息，没有旧绝对 MTL 贴图路径、材质 ID shader input、贴图读取失败或模型加载失败错误。
+
+发现的问题与后续需求：
+- 当前 per-pixel 材质参数已进入 shader，但 CPU 辐亮度模型仍按平台默认材质计算；阶段 3 起需要把材质 ID 对应的温度/热惯量/发动机热源分区继续下沉到物理模型。
+- F22 资源暂不参与运行时生成；如果要切换飞机模型，需要你确认协议类型或目标类型编码。
+- MMD 暂无模型、基础纹理、材质 ID 纹理和材质 XML；如果后续要生成 MMD，需要补齐资产。
+- 如果后续希望对喷口、机头、弹体、舵面等部位设定独立温度或热源，需要提供更细的材质 ID 语义说明或部件标注表。
+
+### 2026-05-27 阶段 3：大气与环境模型
+
+用户补充与设计结论：
+- `Temperatures_Yemen_Summer.csv` 是 Yemen 地区样例 profile。功能测试可继续作为默认 profile，但真实仿真应替换为任务区域的经纬度、日期、逐小时温度、湿度、风速、能见度和太阳位置数据，否则太阳高度、方位角、地表/空气温度日变化会与场景地区不一致。
+- `temperatures/1.新版_太阳位置计算表格.xlsx` 有用，适合作为离线太阳位置计算器和 CSV profile 校验工具；运行时代码不依赖 Excel，后续可把 Excel 结果导出成同结构 CSV。
+- 阶段 3 暂不新增 Panda3D `DirectionalLight/AmbientLight` 模拟太阳/月亮。当前红外图像由辐亮度模型和 shader 参数合成，直接加 Panda3D 光源会影响可见纹理光照但不会自动进入红外物理链路，且可能与太阳反射项重复。后续如果做 VIS/NIR 预览或阴影/遮挡，可再把太阳/月亮光源作为可视化层，同时仍以物理环境参数驱动红外辐射。
+- 用户已临时关闭常开尾喷口亮斑和发动机状态映射尾部亮斑；阶段 3 保持该状态，不重新打开热点。
+
+完成内容：
+- 扩展 `IRRuntimeEnvironment`，增加湿度、风速、风向、太阳方位角、仿真小时、天气码等环境量。
+- 扩展 `IRAtmosphereModel::transmittanceForRange`，在 MODTRAN 平均谱透过率基础上按距离和能见度修正上行透过率，低能见度时目标对比度随距离更快下降。
+- 新增 `IRWeatherProfile`，读取 `Temperatures_Yemen_Summer.csv` 的经纬度、日期、最大太阳辐照度、日温度范围和逐小时 `Time/TemperatureC/SunAzimuth/SunElevation`，并按仿真小时线性插值。
+- 在 HwaSimIR 启动阶段加载 WeatherProfile，默认使用正午样例环境；初始化命令和运行时通过 `BuildRuntimeEnvironment()` 合成环境状态。
+- 环境优先级实现为：UDP 初始化参数 `envTemp/envVisibility/envHumidity/envWindV/envWindDir/envSky` > 场景 profile > 内置默认值。
+- 太阳强度按太阳高度和天气码近似衰减：晴天保留直射，云/雨/雪/雾/阴天按经验系数降低太阳项。
+- `IRRadianceModel::evaluate` 接入环境状态：VIS/NIR/SWIR 更受太阳高度和太阳强度影响，MWIR/LWIR 更受空气温度、湿度、大气程辐射和天空热辐射影响；风速会带来简化冷却项。
+- 天空和云的辐亮度开始受太阳高度、湿度、透过率、云密度影响，为阶段 7 的天空/云物理化保留入口。
+- 新增 `tools/stage3_check.ps1`，检查天气 profile、太阳位置 workbook、环境字段、CSV loader、能见度透过率、UDP 覆盖、仿真时刻和阶段 3 环境日志。
+- 将 `IRSimulation.h` 保存为 UTF-8 BOM，避免 VS2015 用 CP936 误读中文注释导致行注释吞掉下一行声明。
+
+修改文件：
+- `ConsoleApplication1_LLA/ConsoleApplication1/HwaSimIR.h`
+- `ConsoleApplication1_LLA/ConsoleApplication1/HwaSimIR.cpp`
+- `ConsoleApplication1_LLA/ConsoleApplication1/IRSimulation.h`
+- `ConsoleApplication1_LLA/ConsoleApplication1/IRSimulation.cpp`
+- `tools/stage3_check.ps1`
+- `docs/HwaSimIR_InfraredSimulationFramework.md`
+
+验证：
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\stage3_check.ps1 -Strict`
+- 结果：通过；确认天气 CSV、太阳位置 workbook、环境字段、CSV loader、能见度透过率、UDP 覆盖、仿真时刻、阶段 3 环境日志均存在；样例输出读取到 Yemen profile 的 0-5 时温度和太阳角。
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\stage0_build.ps1`
+- 结果：HwaSimIR `Release|x64` 与 DataDrivenTestQT Qt 5.12.12 release 构建成功；`IRSimulation.h` 的 C4819 编码警告已消失，剩余为既有 `math_algorithm.h` 未使用变量和 Panda3D 头文件 DLL/类型转换警告。
+- 命令：`powershell -ExecutionPolicy Bypass -Command "& .\tools\stage1_band_switch_smoke.ps1 -Bands @(0,1,2,3,4) -DelayMs 500"`
+- 结果：HwaSimIR 依次接收 `trackerSensorBand=0,1,2,3,4` 初始化包，分别打印 SWIR、NIR、MWIR、LWIR、VIS profile；阶段 2 材质绑定仍为 `materialIdTex=OK materialMap=OK entries=4`；阶段 3 启动和初始化环境日志正常输出，stderr 仅保留 Panda3D 启动信息。
+- 附加观察：误传 `-Bands 0,1,2,3,4` 给 `powershell -File` 时会被解析成异常 `1234`，程序按非法协议波段 fallback 到 MWIR 且不崩溃；后续脚本调用多值数组建议使用 `powershell -Command "& .\script.ps1 -Bands @(0,1,2,3,4)"`。
+
+发现的问题与后续需求：
+- 当前环境 profile 只包含温度、太阳方位角和太阳高度，湿度/风速/能见度仍主要来自 UDP 或默认值；真实地区仿真需要提供目标区域的逐小时气象 profile 或更完整的 MODTRAN 条件表。
+- 当前 MODTRAN 只有单条件谱透过率，阶段 3 先按能见度做经验缩放；后续若要物理可信，需要提供不同距离、湿度、能见度、气溶胶、观测高度、目标高度的 `tau_up/tau_down/path radiance/sky radiance/solar irradiance` 表。
+- 当前太阳/月亮没有作为 Panda3D 光源加入，红外链路只使用太阳高度/方位角/天气系数；若后续要阴影、遮挡或可见光真实光照，需要确认是否接入 Panda3D 光源和阴影贴图。
+- 当前运行 smoke 只发送初始化包，没有发送实时激励帧，因此 `CurrentSimulationHour()` 的逐帧时刻变化路径由静态检查覆盖，后续可增加实时数据包 smoke 验证昼夜变化。
+
+下一步：
+- 阶段 4 应继续处理目标温度场和动态热源，把材质热惯量、太阳吸收、风冷、发动机/毁伤/喷口热源从平台默认值推进到部位或材质 ID 层级。

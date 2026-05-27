@@ -16,11 +16,13 @@ $qmake = Join-Path $qtRoot "5.12.12\mingw73_64\bin\qmake.exe"
 $mingwMake = Join-Path $qtRoot "Tools\mingw730_64\bin\mingw32-make.exe"
 $qtBin = Join-Path $qtRoot "5.12.12\mingw73_64\bin"
 $mingwBin = Join-Path $qtRoot "Tools\mingw730_64\bin"
+$windeployqt = Join-Path $qtBin "windeployqt.exe"
 
 $vsSolution = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1.sln"
 $qtProject = Join-Path $rootPath "DataDrivenTestQT\DataDrivenTestQT.pro"
 $qtBuildDir = Join-Path $rootPath "build-DataDrivenTestQT-codex-mingw73_64-$Configuration"
 $qtExe = Join-Path $qtBuildDir "$($Configuration.ToLower())\DataDrivenTestQT.exe"
+$qtDataFile = Join-Path $rootPath "DataDrivenTestQT\1.txt"
 $vsExe = Join-Path $rootPath "ConsoleApplication1_LLA\Bin\ConsoleApplication1.exe"
 
 function Assert-Path {
@@ -36,6 +38,7 @@ function Assert-Path {
 Assert-Path $msbuild "VS2015 MSBuild"
 Assert-Path $qmake "Qt 5.12.12 qmake"
 Assert-Path $mingwMake "Qt MinGW make"
+Assert-Path $windeployqt "Qt windeployqt"
 Assert-Path $vsSolution "HwaSimIR solution"
 Assert-Path $qtProject "DataDrivenTestQT project"
 
@@ -84,6 +87,17 @@ if (-not $SkipQt) {
         Pop-Location
     }
     Assert-Path $qtExe "DataDrivenTestQT executable"
+
+    Write-Host "Deploying DataDrivenTestQT Qt runtime..."
+    $deployMode = if ($Configuration -ieq "Release") { "--release" } else { "--debug" }
+    & $windeployqt $deployMode "--compiler-runtime" "--force" $qtExe
+    if ($LASTEXITCODE -ne 0) {
+        throw "windeployqt failed with exit code $LASTEXITCODE"
+    }
+
+    if (Test-Path -LiteralPath $qtDataFile) {
+        Copy-Item -LiteralPath $qtDataFile -Destination (Join-Path (Split-Path -Parent $qtExe) "1.txt") -Force
+    }
 }
 
 Write-Host ""

@@ -8,6 +8,8 @@ set(PANDA3D_ROOT "/opt/panda3d/build_aarch")
 find_package(Threads REQUIRED)
 
 include_directories(
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/Common
         ${PANDA3D_ROOT}/include
        # ${PANDA3D_ROOT}/include/parser-inc
         /usr/include/eigen3
@@ -18,6 +20,7 @@ link_directories(${PANDA3D_ROOT}/lib)
 add_executable(HwaSim_RK3588 main.cpp
         HwaSimIR.cpp
         IR/IRConfig.cpp
+        IR/IRSceneMaterialMapper.cpp
         IR/IRTypes.cpp
         IRSimulation.cpp
         UdpCommThread_Linux.cpp)

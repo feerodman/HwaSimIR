@@ -1,0 +1,65 @@
+<Composite_Material_Table>
+  <Composite_Material index="1" IsVisibleInClassification="True" IsVisibleInPaint="True">
+    <Name>METAL-ALUMINUM</Name>
+    <Color>#FFD3D9E0</Color>
+    <Primary_Substrate>
+      <Material>
+        <Name>BM_METAL-ALUMINIUM</Name>
+        <Weight>100</Weight>
+      </Material>
+      <Thickness>0.01</Thickness>
+    </Primary_Substrate>
+    <ColorAssignment>
+      <Color>#FF808283</Color>
+    </ColorAssignment>
+  </Composite_Material>
+  <Composite_Material index="85" IsVisibleInClassification="True" IsVisibleInPaint="True">
+    <Name>METAL-IRON</Name>
+    <Color>#FFCED6DB</Color>
+    <Primary_Substrate>
+      <Material>
+        <Name>BM_METAL-IRON</Name>
+        <Weight>100</Weight>
+      </Material>
+      <Thickness>0.2</Thickness>
+    </Primary_Substrate>
+    <ColorAssignment>
+      <Color>#FFA09F9F</Color>
+    </ColorAssignment>
+  </Composite_Material>
+  <Composite_Material index="169" IsVisibleInClassification="True" IsVisibleInPaint="True">
+    <Name>METAL-PAINTED</Name>
+    <Color>#FF869BB0</Color>
+    <Primary_Substrate>
+      <Material>
+        <Name>BM_METAL</Name>
+        <Weight>100</Weight>
+      </Material>
+      <Thickness>0.05</Thickness>
+    </Primary_Substrate>
+    <Surface_Substrate>
+      <Material>
+        <Name>BM_PAINT</Name>
+        <Weight>100</Weight>
+      </Material>
+    </Surface_Substrate>
+    <ColorAssignment>
+      <Color>#FFD89325</Color>
+      <Color>#FF7E4740</Color>
+    </ColorAssignment>
+  </Composite_Material>
+  <Composite_Material index="255" IsVisibleInClassification="True" IsVisibleInPaint="True">
+    <Name>WINDOW-GLASS</Name>
+    <Color>#FF008080</Color>
+    <Primary_Substrate>
+      <Material>
+        <Name>BM_GLASS</Name>
+        <Weight>100</Weight>
+      </Material>
+      <Thickness>0.02</Thickness>
+    </Primary_Substrate>
+    <ColorAssignment>
+      <Color>#FF000000</Color>
+    </ColorAssignment>
+  </Composite_Material>
+</Composite_Material_Table>

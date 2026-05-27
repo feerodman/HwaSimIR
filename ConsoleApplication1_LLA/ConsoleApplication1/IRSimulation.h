@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <map>
 #include <string>
@@ -28,13 +28,42 @@ struct IRAtmosphereSample
 	double transmittance;
 };
 
+struct IRWeatherSample
+{
+	double hour;             // 当地小时，范围 0-24
+	double airTemperatureC;  // 对应小时空气温度
+	double sunAzimuthDeg;    // 太阳方位角，来自天气/太阳位置 profile
+	double sunElevationDeg;  // 太阳高度角，低于 0 表示太阳在地平线以下
+
+	IRWeatherSample();
+};
+
+struct IRWeatherMetadata
+{
+	double latitudeDeg;             // profile 观测点纬度
+	double longitudeDeg;            // profile 观测点经度
+	double maximumSolarRadiation;   // profile 记录的最大太阳辐照度
+	double minTemperatureC;         // profile 当日最低温度
+	double maxTemperatureC;         // profile 当日最高温度
+	double meanEarthTemperatureC;   // profile 地表平均温度
+	std::string date;               // profile 日期
+
+	IRWeatherMetadata();
+};
+
 struct IRRuntimeEnvironment
 {
 	IRBand band;
 	double airTemperatureC;
 	double visibilityMeters;
+	double humidityPercent;
+	double windSpeedMps;
+	double windDirectionDeg;
 	double sunElevationDeg;
+	double sunAzimuthDeg;
 	double sunStrength;
+	double simulationHour;
+	int weatherCode;
 
 	IRRuntimeEnvironment();
 };
@@ -73,6 +102,7 @@ class IRMaterialDatabase
 public:
 	bool load(const std::string& filePath);
 	bool empty() const;
+	bool contains(const std::string& name) const; // 材质映射阶段用于判断 XML 中的材质名是否在数据库内
 	const IRMaterial& get(const std::string& name) const;
 	const IRMaterial& defaultMaterial() const;
 
@@ -88,10 +118,29 @@ public:
 	bool empty() const;
 	double averageTransmittance(IRBand band) const;
 	double transmittanceForRange(IRBand band, double rangeMeters) const;
+	double transmittanceForRange(IRBand band, double rangeMeters, double visibilityMeters) const; // 阶段3：能见度调制上行透过率
 
 private:
 	std::vector<IRAtmosphereSample> m_samples;
 	double m_referencePathMeters;
+};
+
+class IRWeatherProfile
+{
+public:
+	bool load(const std::string& filePath);
+	bool empty() const;
+	IRWeatherSample sampleForHour(double hour) const;
+	const IRWeatherMetadata& metadata() const;
+	const std::string& loadedPath() const;
+
+private:
+	double parseCoordinate(const std::string& value) const;
+	double parseClockHour(const std::string& value, double fallback) const;
+
+	std::vector<IRWeatherSample> m_samples;
+	IRWeatherMetadata m_metadata;
+	std::string m_loadedPath;
 };
 
 class IRRadianceModel

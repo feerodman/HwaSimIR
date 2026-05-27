@@ -24,6 +24,10 @@ Command-line builds can use the repository-local build wrapper, which pins Qt 5.
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\build_current.ps1 -Target DataDrivenTestQT
 ```
 
+The wrapper also runs Qt's matching `windeployqt.exe` after a successful build, so the generated
+`build-DataDrivenTestQT-codex-mingw73_64-Release\release\DataDrivenTestQT.exe` can be launched
+directly from its output directory without relying on Qt Creator's runtime environment.
+
 ### MaterialTest
 
 - Solution file: `MaterialTest/MaterialTest.sln`

@@ -34,6 +34,42 @@ function Invoke-CheckedCommand {
     }
 }
 
+function Deploy-QtProject {
+    param(
+        [string]$Executable,
+        [string]$Configuration
+    )
+
+    if (-not (Test-Path -LiteralPath $Executable)) {
+        throw "DataDrivenTestQT executable not found: $Executable"
+    }
+
+    $windeployqt = Join-Path $env:QT_BIN_DIR "windeployqt.exe"
+    if (-not (Test-Path -LiteralPath $windeployqt)) {
+        throw "windeployqt.exe not found: $windeployqt"
+    }
+
+    $deployMode = if ($Configuration -eq "Debug") { "--debug" } else { "--release" }
+
+    Write-Host "Deploying DataDrivenTestQT runtime"
+    Write-Host "windeployqt: $windeployqt"
+    Write-Host "exe       : $Executable"
+
+    Invoke-CheckedCommand -FilePath $windeployqt -Arguments @(
+        $deployMode,
+        "--compiler-runtime",
+        "--force",
+        $Executable
+    ) -FailureMessage "windeployqt failed"
+
+    $dataSource = Join-Path $repoRoot "DataDrivenTestQT\1.txt"
+    if (Test-Path -LiteralPath $dataSource) {
+        $targetDir = Split-Path -Parent $Executable
+        Copy-Item -LiteralPath $dataSource -Destination (Join-Path $targetDir "1.txt") -Force
+        Write-Host "runtime data: copied 1.txt"
+    }
+}
+
 function Resolve-AutoTarget {
     $cwd = (Get-Location).Path
     $dataDrivenRoot = Join-Path $repoRoot "DataDrivenTestQT"
@@ -56,6 +92,8 @@ function Resolve-AutoTarget {
 function Build-QtProject {
     $project = Join-Path $repoRoot "DataDrivenTestQT\DataDrivenTestQT.pro"
     $buildDir = Join-Path $repoRoot "build-DataDrivenTestQT-codex-$QtKit-$Configuration"
+    $outputSubdir = if ($Configuration -eq "Debug") { "debug" } else { "release" }
+    $qtExe = Join-Path $buildDir "$outputSubdir\DataDrivenTestQT.exe"
     $makeName = if ($QtKit -eq "msvc2015_64") { "nmake.exe" } else { "mingw32-make.exe" }
     $spec = if ($QtKit -eq "msvc2015_64") { "win32-msvc" } else { "win32-g++" }
     $configAdd = if ($Configuration -eq "Debug") { "CONFIG+=debug" } else { "CONFIG+=release" }
@@ -79,6 +117,8 @@ function Build-QtProject {
     } finally {
         Pop-Location
     }
+
+    Deploy-QtProject -Executable $qtExe -Configuration $Configuration
 }
 
 function Build-Solution {
