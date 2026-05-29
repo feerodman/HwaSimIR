@@ -157,6 +157,7 @@
     <ClInclude Include="GeoTransform.h" />
     <ClInclude Include="HwaSimIR.h" />
     <ClInclude Include="IR\IRConfig.h" />
+    <ClInclude Include="IR\IRModtranTauLut.h" />
     <ClInclude Include="IR\IRSceneMaterialMapper.h" />
     <ClInclude Include="IR\IRTypes.h" />
     <ClInclude Include="IRSimulation.h" />
@@ -171,6 +172,7 @@
     <ClCompile Include="GeoTransform.cpp" />
     <ClCompile Include="HwaSimIR.cpp" />
     <ClCompile Include="IR\IRConfig.cpp" />
+    <ClCompile Include="IR\IRModtranTauLut.cpp" />
     <ClCompile Include="IR\IRSceneMaterialMapper.cpp" />
     <ClCompile Include="IR\IRTypes.cpp" />
     <ClCompile Include="IRSimulation.cpp" />

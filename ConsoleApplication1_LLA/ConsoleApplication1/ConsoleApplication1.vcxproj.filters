@@ -57,6 +57,9 @@
     <ClInclude Include="IR\IRConfig.h">
       <Filter>头文件\IR</Filter>
     </ClInclude>
+    <ClInclude Include="IR\IRModtranTauLut.h">
+      <Filter>头文件\IR</Filter>
+    </ClInclude>
     <ClInclude Include="IR\IRSceneMaterialMapper.h">
       <Filter>头文件\IR</Filter>
     </ClInclude>
@@ -90,6 +93,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="IR\IRConfig.cpp">
+      <Filter>源文件\IR</Filter>
+    </ClCompile>
+    <ClCompile Include="IR\IRModtranTauLut.cpp">
       <Filter>源文件\IR</Filter>
     </ClCompile>
     <ClCompile Include="IR\IRSceneMaterialMapper.cpp">

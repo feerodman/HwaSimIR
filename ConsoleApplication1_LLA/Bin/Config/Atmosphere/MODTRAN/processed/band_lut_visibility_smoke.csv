@@ -1,0 +1,19 @@
+band,atmosphere_model,aerosol_model,humidity_profile,visibility_km,observer_alt_km,target_alt_km,range_km,solar_zenith_deg,tau_up_band,source_case_ids
+MWIR,Mid-Latitude Summer,Rural,default,5,3,3,50,45,0.180743294,MWIR_transmittance_obs3_tar3_rng50_vis5_aerRural_humdefault
+MWIR,Mid-Latitude Summer,Rural,default,23,3,3,50,45,0.180743294,MWIR_transmittance_obs3_tar3_rng50_vis23_aerRural_humdefault
+MWIR,Mid-Latitude Summer,Rural,default,50,3,3,50,45,0.1840903804,MWIR_transmittance_obs3_tar3_rng50_vis50_aerRural_humdefault
+MWIR,Mid-Latitude Summer,Rural,default,5,10,10,50,45,0.6077509129,MWIR_transmittance_obs10_tar10_rng50_vis5_aerRural_humdefault
+MWIR,Mid-Latitude Summer,Rural,default,23,10,10,50,45,0.6077509129,MWIR_transmittance_obs10_tar10_rng50_vis23_aerRural_humdefault
+MWIR,Mid-Latitude Summer,Rural,default,50,10,10,50,45,0.6077509129,MWIR_transmittance_obs10_tar10_rng50_vis50_aerRural_humdefault
+MWIR,Mid-Latitude Summer,Rural,default,5,20,3,50,45,0.4719670216,MWIR_transmittance_obs20_tar3_rng50_vis5_aerRural_humdefault
+MWIR,Mid-Latitude Summer,Rural,default,23,20,3,50,45,0.4719670216,MWIR_transmittance_obs20_tar3_rng50_vis23_aerRural_humdefault
+MWIR,Mid-Latitude Summer,Rural,default,50,20,3,50,45,0.4723273735,MWIR_transmittance_obs20_tar3_rng50_vis50_aerRural_humdefault
+NIR,Mid-Latitude Summer,Rural,default,5,3,3,50,45,0.2952809057,NIR_transmittance_obs3_tar3_rng50_vis5_aerRural_humdefault
+NIR,Mid-Latitude Summer,Rural,default,23,3,3,50,45,0.2952809057,NIR_transmittance_obs3_tar3_rng50_vis23_aerRural_humdefault
+NIR,Mid-Latitude Summer,Rural,default,50,3,3,50,45,0.4780240948,NIR_transmittance_obs3_tar3_rng50_vis50_aerRural_humdefault
+NIR,Mid-Latitude Summer,Rural,default,5,10,10,50,45,0.9089247669,NIR_transmittance_obs10_tar10_rng50_vis5_aerRural_humdefault
+NIR,Mid-Latitude Summer,Rural,default,23,10,10,50,45,0.9089247669,NIR_transmittance_obs10_tar10_rng50_vis23_aerRural_humdefault
+NIR,Mid-Latitude Summer,Rural,default,50,10,10,50,45,0.9089247669,NIR_transmittance_obs10_tar10_rng50_vis50_aerRural_humdefault
+NIR,Mid-Latitude Summer,Rural,default,5,20,3,50,45,0.7963899305,NIR_transmittance_obs20_tar3_rng50_vis5_aerRural_humdefault
+NIR,Mid-Latitude Summer,Rural,default,23,20,3,50,45,0.7963899305,NIR_transmittance_obs20_tar3_rng50_vis23_aerRural_humdefault
+NIR,Mid-Latitude Summer,Rural,default,50,20,3,50,45,0.816101988,NIR_transmittance_obs20_tar3_rng50_vis50_aerRural_humdefault

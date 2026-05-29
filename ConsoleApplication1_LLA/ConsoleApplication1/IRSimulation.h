@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "IR/IRModtranTauLut.h"
 #include "IR/IRTypes.h"
 
 struct IRMaterial
@@ -77,6 +78,10 @@ struct IRObjectRadianceInput
 	bool isCloud;
 	bool isSky;
 	double cloudDensity;
+	double observerAltitudeMeters;
+	double targetAltitudeMeters;
+	bool hasObserverAltitude;
+	bool hasTargetAltitude;
 
 	IRObjectRadianceInput();
 };
@@ -114,15 +119,27 @@ private:
 class IRAtmosphereModel
 {
 public:
+	IRAtmosphereModel();
+
 	bool loadTransmissionTable(const std::string& filePath);
+	bool loadModtranBandLut(const std::string& filePath);
+	bool modtranTauLutLoaded() const;
+	void setModtranTauDebugEnabled(bool enabled);
+	bool modtranTauDebugEnabled() const;
+	void setUseModtranTauForAtmosphere(bool enabled);
+	bool useModtranTauForAtmosphere() const;
 	bool empty() const;
 	double averageTransmittance(IRBand band) const;
 	double transmittanceForRange(IRBand band, double rangeMeters) const;
 	double transmittanceForRange(IRBand band, double rangeMeters, double visibilityMeters) const; // 阶段3：能见度调制上行透过率
+	double transmittanceForRange(const IRModtranTauQuery& query) const; // 阶段3：可选 MODTRAN tau-active 受控实验
 
 private:
 	std::vector<IRAtmosphereSample> m_samples;
 	double m_referencePathMeters;
+	IRModtranTauLut m_modtranTauLut;
+	bool m_modtranTauDebugEnabled;
+	bool m_useModtranTauForAtmosphere;
 };
 
 class IRWeatherProfile

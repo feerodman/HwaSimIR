@@ -1,0 +1,15 @@
+band,atmosphere_model,aerosol_model,humidity_profile,visibility_km,observer_alt_km,target_alt_km,range_km,solar_zenith_deg,tau_up_band,tau_down_band,path_radiance_band,sky_radiance_band,path_scattering_radiance_band,solar_irradiance_band,unit_radiance,unit_irradiance,source_case_ids
+MWIR,Mid-Latitude Summer,Rural,default,10,5,5,1,45,0.7894240366,,,,,,,,MWIR_transmittance_obs5_tar5_rng1_vis10_aerRural_humdefault
+MWIR,Mid-Latitude Summer,Rural,default,2,3,3,1,45,,,2.562301659e-08,,,,MODOUT2_native,,MWIR_thermal_obs3_tar3_rng1_vis2_aerRural_humdefault
+MWIR,Mid-Latitude Summer,Rural,default,2,3,3,10,45,,,5.360580257e-08,,,,MODOUT2_native,,MWIR_thermal_obs3_tar3_rng10_vis2_aerRural_humdefault
+MWIR,Mid-Latitude Summer,Rural,default,2,3,3,2,45,,,7.838221829e-09,,,,MODOUT2_native,,MWIR_thermal_obs3_tar3_rng2_vis2_aerRural_humdefault
+MWIR,Mid-Latitude Summer,Rural,default,2,3,3,5,45,,,4.347634034e-08,,,,MODOUT2_native,,MWIR_thermal_obs3_tar3_rng5_vis2_aerRural_humdefault
+MWIR,Mid-Latitude Summer,Rural,default,2,5,5,1,45,0.7894240366,,,,,,,,MWIR_transmittance_obs5_tar5_rng1_vis2_aerRural_humdefault
+MWIR,Mid-Latitude Summer,Rural,default,23,5,5,1,45,0.7894240366,,,,,,,,MWIR_transmittance_obs5_tar5_rng1_vis23_aerRural_humdefault
+MWIR,Mid-Latitude Summer,Rural,default,5,5,5,1,45,0.7894240366,,,,,,,,MWIR_transmittance_obs5_tar5_rng1_vis5_aerRural_humdefault
+MWIR,Mid-Latitude Summer,Rural,default,50,5,5,1,45,0.7894240366,,,,,,,,MWIR_transmittance_obs5_tar5_rng1_vis50_aerRural_humdefault
+NIR,Mid-Latitude Summer,Rural,default,10,10,5,50,45,0.7726414238,,,,,,,,NIR_transmittance_obs10_tar5_rng50_vis10_aerRural_humdefault
+NIR,Mid-Latitude Summer,Rural,default,2,10,5,50,45,0.7726414238,,,,,,,,NIR_transmittance_obs10_tar5_rng50_vis2_aerRural_humdefault
+NIR,Mid-Latitude Summer,Rural,default,23,10,5,50,45,0.7726414238,,,,,,,,NIR_transmittance_obs10_tar5_rng50_vis23_aerRural_humdefault
+NIR,Mid-Latitude Summer,Rural,default,5,10,5,50,45,0.7726414238,,,,,,,,NIR_transmittance_obs10_tar5_rng50_vis5_aerRural_humdefault
+NIR,Mid-Latitude Summer,Rural,default,50,10,5,50,45,0.7726414238,,,,,,,,NIR_transmittance_obs10_tar5_rng50_vis50_aerRural_humdefault

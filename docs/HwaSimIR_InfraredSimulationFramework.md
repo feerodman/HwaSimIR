@@ -985,3 +985,290 @@ illuminator:
 
 下一步：
 - 阶段 4 应继续处理目标温度场和动态热源，把材质热惯量、太阳吸收、风冷、发动机/毁伤/喷口热源从平台默认值推进到部位或材质 ID 层级。
+
+### 2026-05-28 MODTRAN LUT 离线数据工具链
+
+完成内容：
+- 按 NIR/MWIR 优先、VIS/SWIR/LWIR 稀疏保底的策略新增 `tools/modtran/modtran_grid_nir_mwir_priority.json`，默认 production sparse grid 为 2616 个 case，未超过 3000 上限。
+- 新增 `tools/modtran/parse_modout2.py`，基于手工保存的 PcModWin5 `MODOUT2` 样例解析 `Transmittance`、`ThermalRadiance`、`DirectSolarIrradiance`、`RadianceWithScattering` 四类输出，并计算 `wavelength_um = 10000 / wavenumber_cm`。
+- 新增 `tools/modtran/build_modtran_cases.py`，支持 `--dry-run` 生成 `case_manifest.csv` 和每个 case 的 `modin`，不调用 MODTRAN。
+- 新增 `tools/modtran/run_modtran_cases.ps1`，为 pilot 运行预留流程；如果无法确认 PcModWin5/MODTRAN5 命令行可执行文件，会停止并说明原因，不伪造结果。
+- 新增 `tools/stage3_modtran_lut_check.ps1` 和 `docs/modtran_lut_format.md`，检查目录、模板、配置、processed 表头、manifest 数量和已生成 modin 是否完整。
+- 新增 `processed/path_lut_spectral.csv`、`solar_lut_spectral.csv`、`sky_lut_spectral.csv`、`band_lut.csv`、`manifest.csv` 和 `qc_report.md` 的表头/占位报告。
+- 未修改 HwaSimIR C++ 主逻辑；新 MODTRAN LUT 仍作为后续可选增强数据源准备，不替换现有 `transmittance_0.3_15.txt`。
+
+验证：
+- 命令：`python tools\modtran\parse_modout2.py --input ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN\raw\templates\MWIR_transmittance_MODOUT2.txt --band MWIR --mode Transmittance --output ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN\raw\samples\MWIR_transmittance_parse_smoke.csv`
+- 结果：通过，解析 1334 行。
+- 命令：`python tools\modtran\parse_modout2.py --input ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN\raw\templates\MWIR_thermal_MODOUT2.txt --band MWIR --mode ThermalRadiance --output ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN\raw\samples\MWIR_thermal_parse_smoke.csv`
+- 结果：通过，解析 1334 行。
+- 命令：`python tools\modtran\parse_modout2.py --input ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN\raw\templates\MWIR_solar_MODOUT2.txt --band MWIR --mode DirectSolarIrradiance --output ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN\raw\samples\MWIR_solar_parse_smoke.csv`
+- 结果：通过，解析 1341 行。
+- 命令：`python tools\modtran\parse_modout2.py --input ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN\raw\templates\NIR_scattering_MODOUT2.txt --band NIR --mode RadianceWithScattering --output ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN\raw\samples\NIR_scattering_parse_smoke.csv`
+- 结果：通过，解析 5196 行。
+- 命令：`python tools\modtran\build_modtran_cases.py --config tools\modtran\modtran_grid_nir_mwir_priority.json --dry-run --clean`
+- 结果：通过；生成 2616 个 case、2616 个 `generated/modin/*_modin.txt`，并同步写入 `processed/manifest.csv`。
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\stage3_modtran_lut_check.ps1 -Strict`
+- 结果：通过；目录、模板、配置、processed 表头、manifest 数量和 generated modin 均检查成功。
+- 命令：`powershell -NoProfile -Command '$errors=$null; [System.Management.Automation.PSParser]::Tokenize((Get-Content -Raw tools\modtran\run_modtran_cases.ps1), [ref]$errors) > $null; if ($errors) { $errors; exit 1 }'`
+- 结果：通过；pilot runner PowerShell 语法检查无错误。
+
+发现的问题与后续需求：
+- 当前只完成 dry-run 和样例解析，没有实际调用 PcModWin5/MODTRAN5 批量运行；正式 pilot 前需要确认可用命令行入口，并用 `run_modtran_cases.ps1 -Pilot -Executable <真实可执行文件>` 小批量验证。
+- VIS/SWIR 的 solar/scattering 手工模板尚未单独提供，dry-run 暂使用 NIR 同模式模板替换波数范围生成保底 case；如果后续需要更可信的 VIS/SWIR solar/scattering，应补齐对应手工模板。
+- `unit_radiance` 和 `unit_irradiance` 先记录为 MODOUT2 native，需要在确认 PcModWin5 单位设置后固化为物理单位。
+
+下一步：
+- 先用 pilot grid 跑不超过 100 个真实 MODTRAN case，确认命令行调用、失败样本归档、processed CSV 追加和 QC 报告链路，再进入 production sparse grid。
+
+### 2026-05-28 MODTRAN LUT 单 case 自动化验证
+
+完成内容：
+- 更新 `.gitignore`，忽略 `MODTRAN/generated/`、`raw/failed/`、`raw/archive/` 和临时 parser smoke CSV，避免 2616 个 dry-run `modin` 进入提交视野。
+- 增强 `tools/stage3_modtran_lut_check.ps1`：Strict 模式下检查 NIR/MWIR 优先模板是否存在、非空、MODOUT2 是否有可识别表头；若 NIR trans/solar 手工模板缺失，会明确提示先从 PcModWin5 GUI 生成，不继续 pilot。
+- 新增 `tools/modtran/find_modtran_entry.ps1`，只扫描 `F:\Programs\PcModWin5\bin` 下的 `*.exe/*.bat/*.cmd`，输出候选路径、大小、修改时间和提示，不盲目执行。
+- 读取 `F:\Programs\PcModWin5\bin\Modtran.bat` 后确认其含 `PAUSE`，不适合自动化；真实命令行引擎为 `F:\Programs\PcModWin5\bin\Mod5.2.1.0.exe`。runner 已补齐 `modin -> tape5`、`TAPE6/7/8 -> MODOUT1/2/3` 的同步流程。
+- 更新 `tools/modtran/run_modtran_cases.ps1` 并新增根入口 `tools/run_modtran_cases.ps1`，支持 `-SingleCase`、`-CaseId`、`-CaseLimit`、`-ModtranExe`、`-PcModWinRoot`、`-NoDeleteRaw`；硬性限制最多 6 个真实 case，禁用 72-case pilot，且使用 lock file 保证单线程。
+- QC 报告改为真实 case 级统计，记录 case_id、band、mode、wavelength range、row count、tau/radiance/irradiance min/max、parser column mapping 和 warnings/errors。
+
+验证：
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\stage3_modtran_lut_check.ps1 -Strict`
+- 结果：通过；优先模板、配置、processed 表头、manifest、generated modin 引用、真实单 case 后的 tau 范围和 wavelength/wavenumber 一致性均检查成功。
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\modtran\find_modtran_entry.ps1 -PcModWinRoot "F:\Programs\PcModWin5"`
+- 结果：通过；候选包括 `Mod5.2.1.0.exe`、`PcModWin5.exe`、`Modtran.bat` 等，未执行任何候选。
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\run_modtran_cases.ps1 -SingleCase -CaseLimit 1 -PcModWinRoot "F:\Programs\PcModWin5" -ModtranExe "F:\Programs\PcModWin5\bin\Mod5.2.1.0.exe" -NoDeleteRaw`
+- 结果：通过；只运行 1 个 `MWIR_transmittance_obs10_tar10_rng20_vis23_aerRural_humdefault` case，MODTRAN5 v5.2.1.0 输出 2000-3330 cm^-1 进度，解析 `usr\MODOUT2` 得到 1334 行；样本复制到 `raw/samples/MWIR_transmittance_obs10_tar10_rng20_vis23_aerRural_humdefault/`。
+
+发现的问题与后续需求：
+- `Modtran.bat` 是有 `PAUSE` 的交互 wrapper，不应作为自动化入口；后续继续使用 `Mod5.2.1.0.exe` 并由 runner 负责 tape 文件同步。
+- 当前只真实运行了 1 个 MWIR Transmittance case。样本不足以做距离/能见度趋势判断，QC 报告只做基础范围检查。
+- 若继续扩展到 6 case，应按固定白名单运行 MWIR trans/thermal/solar 与 NIR trans/solar/scattering，仍不能启动 72-case pilot 或 2616-case production。
+
+下一步：
+- 在确认 1 case 结果可接受后，可运行最多 6 case 的白名单验证，再决定是否生成 band_lut 的矩形响应积分和更完整 QC。
+
+### 2026-05-28 MODTRAN LUT 6 case 白名单验证
+
+完成内容：
+- 新增 `-ValidationSix` 入口，只选择固定白名单：MWIR trans/thermal/solar 与 NIR trans/solar/scattering，各 1 个 case；仍禁用 72-case pilot 和 2616-case production。
+- 6 个 case 均使用 `F:\Programs\PcModWin5\bin\Mod5.2.1.0.exe` 单线程真实运行，输出固定文件名由 runner 串行复制，避免互相覆盖。
+- 每个 case 的 `modin`、`MODOUT1`、`MODOUT2` 已保存到 `ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/raw/samples/<case_id>/`。
+- 解析结果分别追加到 `processed/path_lut_spectral.csv`、`processed/solar_lut_spectral.csv`、`processed/sky_lut_spectral.csv`，`processed/manifest.csv` 记录 6 行且状态为 `validation_succeeded`。
+- 新增 `tools/modtran/build_validation_band_lut.py`，用波长域矩形响应积分生成最小 `processed/band_lut.csv`，当前为 MWIR 和 NIR 两行。
+- `unit_radiance` 和 `unit_irradiance` 继续记录为 `MODOUT2_native`，未伪造 SI 单位；未删除旧 `transmittance_0.3_15.txt`；未修改 HwaSimIR C++ 主逻辑。
+
+验证：
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\run_modtran_cases.ps1 -ValidationSix -CaseLimit 6 -PcModWinRoot "F:\Programs\PcModWin5" -ModtranExe "F:\Programs\PcModWin5\bin\Mod5.2.1.0.exe" -NoDeleteRaw`
+- 结果：通过；只运行 6 个 validation case。解析行数分别为 MWIR Transmittance 1334、MWIR ThermalRadiance 1334、MWIR DirectSolarIrradiance 1341、NIR Transmittance 5196、NIR DirectSolarIrradiance 5206、NIR RadianceWithScattering 5196。
+- 命令：`python tools\modtran\build_validation_band_lut.py --processed-dir ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN\processed`
+- 结果：通过；写入 2 行矩形响应 band LUT。
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\stage3_modtran_lut_check.ps1 -Strict`
+- 结果：通过；检查模板、processed 表头、6 行 manifest、modin 引用、tau 范围、wavelength/wavenumber 一致性和 band_lut tau 范围。
+
+发现的问题与后续需求：
+- 6 case 仍只是白名单 validation，不足以给出 production 级距离/能见度趋势结论；QC 报告只做基础范围检查。
+- `MODOUT2_native` 的辐亮度/辐照度单位仍需从 PcModWin5/MODTRAN5 导出设置中确认后再固化。
+- 后续若要进入 72-case pilot，应由用户明确批准；当前状态不应自动继续运行更多 case。
+
+### 2026-05-28 MODTRAN LUT 72 case Pilot 验证
+
+完成内容：
+- 新增 `tools/modtran/check_validation_outputs.py`，在 Pilot72 前审查 6-case validation 输出：processed 文件存在、manifest 恰好 6 行且 `validation_succeeded`、band_lut 含 NIR/MWIR 两行、tau 范围有效、NIR/MWIR 必要积分字段非空。
+- 新增 `tools/modtran/build_band_lut.py`，按 `band/observer/target/range/visibility/solar_zenith` 合并 transmittance、thermal/solar/scattering 谱积分，生成 pilot `band_lut.csv`。
+- 更新 runner 支持 `-Pilot72 -CaseLimit 72`，固定 grid 为 NIR/MWIR、obs10/tar10、range 1/5/20/50 km、visibility 5/23/50 km、Rural/default、solar_zenith 45；仍单线程运行，失败即停。
+- 72 个 case 已真实运行并保存到 `raw/samples/<case_id>/`，`processed/manifest.csv` 记录 72 行，`status/stage` 为 `pilot72_succeeded`。
+- `qc_report.md` 增加 `Pilot72 Summary`，包含 band/mode 覆盖、tau_up_band 矩阵、MWIR path_radiance 趋势、NIR solar/scattering 非空检查、失败列表和趋势 QC。
+- 未启动 2616-case production sparse grid，未修改 HwaSimIR C++ 主逻辑。
+
+验证：
+- 命令：`python tools/modtran/check_validation_outputs.py --processed-dir ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN\processed`
+- 结果：通过；6-case validation 输出审查通过。
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\run_modtran_cases.ps1 -Pilot72 -CaseLimit 72 -PcModWinRoot "F:\Programs\PcModWin5" -ModtranExe "F:\Programs\PcModWin5\bin\Mod5.2.1.0.exe" -NoDeleteRaw`
+- 结果：通过；只运行 72 个 Pilot case。各 band/mode 均为 12 case。
+- 命令：`python tools\modtran\build_band_lut.py --processed-dir ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN\processed`
+- 结果：通过；写入 24 行矩形响应 band LUT。
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\stage3_modtran_lut_check.ps1 -Strict`
+- 结果：通过；processed 行数为 path 94368、solar 78564、sky 62352、manifest 72、band_lut 24，tau 范围与 wavenumber/wavelength 一致性检查通过。
+
+发现的问题与后续需求：
+- Pilot72 趋势 QC 当前为 `PASS`，失败 case 为 0；但 production 仍需明确授权后才可运行。
+- Pilot72 输出显示同一 range 下不同 visibility 的 band 积分差异很小或相同，应在后续确认 PcModWin5 模板中 visibility 字段是否确实作用于对应模式。
+- 辐亮度/辐照度单位仍为 `MODOUT2_native`，需要确认 PcModWin5/MODTRAN5 单位设置后再固化到 SI 或项目单位。
+
+### 2026-05-28 MODTRAN LUT visibility effect audit 与 smoke
+
+完成内容：
+- 新增 `tools/modtran/check_visibility_effect.py`，从 `processed/band_lut.csv`、`processed/manifest.csv`、`raw/samples/*/modin` 和 `raw/samples/*/MODOUT1` 审计 Pilot72 的 visibility 设置是否进入模板和 MODTRAN 输出。
+- 审计结果记录 requested visibility、`modin` 中疑似 visibility token、`MODOUT1` 中解析到的 aerosol/meteorological range 文本，以及 Pilot72 组合对应的 `tau_up_band`。
+- runner 增加 `-VisibilitySmoke18 -CaseLimit 18`，固定只跑 NIR/MWIR transmittance，altitude pairs 为 `(3,3)`、`(10,10)`、`(20,3)`，range 为 50 km，visibility 为 5/23/50 km，aerosol/humidity 为 Rural/default。
+- smoke 运行保持单线程、失败即停；每个 case 的 `modin`、`MODOUT1`、`MODOUT2` 保存到 `raw/samples/<case_id>/`。
+- smoke 光谱结果追加到 `processed/path_lut_spectral.csv` 和 `processed/manifest.csv`，`status/stage = visibility_smoke_succeeded`。
+- 新增独立的 `processed/band_lut_visibility_smoke.csv`，保存 18 行 smoke band 积分结果，不覆盖 Pilot72 的 `band_lut.csv`。
+- `qc_report.md` 增加 `Visibility Effect Audit` 和 smoke summary；没有启动 production sparse grid，也没有修改 HwaSimIR C++ 主逻辑。
+
+验证：
+- 命令：`python tools\modtran\check_visibility_effect.py --processed-dir ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN\processed --raw-dir ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN\raw\samples`
+- 结果：通过。Pilot72 的 `modin` 和 `MODOUT1` 证据显示 requested visibility 5/23/50 km 已进入输入/输出；Pilot72 的 10 km/10 km 高空水平路径 band 积分 tau 仍可能在不同 visibility 下相同，因此记录为 warning，而不是模板失败。
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\run_modtran_cases.ps1 -VisibilitySmoke18 -CaseLimit 18 -PcModWinRoot "F:\Programs\PcModWin5" -ModtranExe "F:\Programs\PcModWin5\bin\Mod5.2.1.0.exe" -NoDeleteRaw`
+- 结果：通过；真实运行 18 个 MODTRAN case。
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\stage3_modtran_lut_check.ps1 -Strict`
+- 结果：通过；当时 processed 规模为 path 153138 行、solar 78564 行、sky 62352 行、manifest 90 行，Pilot72 `band_lut.csv` 24 行，`band_lut_visibility_smoke.csv` 18 行。
+
+visibility 结论：
+- 低空水平路径 `(obs=3 km, target=3 km, range=50 km)` 对 visibility 有响应。NIR tau 从 5/23 km visibility 的 `0.295281` 增至 50 km 的 `0.478024`；MWIR 从 `0.180743` 小幅增至 `0.184090`。
+- 高空水平路径 `(obs=10 km, target=10 km, range=50 km)` 在两个 band 中变化都很弱，记录为 `high_altitude_low_sensitivity`，不判定为模板失败。
+- 斜穿路径 `(obs=20 km, target=3 km, range=50 km)` 对 visibility 有响应。NIR tau 从 `0.796390` 增至 `0.816102`；MWIR 从 `0.471967` 小幅增至 `0.472327`。
+- 因为 `(3,3)` 和 `(20,3)` smoke 路径都出现非零敏感性，当前不存在 `FAIL_VISIBILITY_NOT_EFFECTIVE`，也没有立即回 PcModWin5 GUI 重建 Rural aerosol 模板的证据。
+
+保留约束：
+- 未经单独批准，不运行 2616/2520 级 production grid。
+- 本阶段不扩展 VIS/SWIR/LWIR production。
+- radiance/irradiance 单位在确认前继续保留为 `MODOUT2_native`，不伪造成 SI。
+
+### 2026-05-28 MODTRAN LUT ProductionNirMwir 运行
+
+完成内容：
+- 新增 `tools/modtran/snapshot_processed.py`，将 Pilot72 加 VisibilitySmoke18 的 processed 成果归档到 `processed_snapshots/pilot72_visibility_smoke_<timestamp>/`。
+- case 生成器增加 `--production-nir-mwir`。请求的 NIR/MWIR sparse grid 理论上为 2520 个 case，其中 510 个斜穿几何因 `range_km < abs(observer_alt_km - target_alt_km)` 对 MODTRAN 不成立，写入 `generated/production_invalid_geometry_manifest.csv`，不计入 runnable production。
+- 单线程分批运行 2010 个 runnable NIR/MWIR case，批次为 `NIR_Transmittance`、`MWIR_Transmittance`、`MWIR_ThermalRadiance`、`Solar_NIR_MWIR`、`NIR_RadianceWithScattering`。
+- `processed/manifest.csv` 记录 2010 行，全部为 `status/stage = production_nir_mwir_succeeded`。
+- 使用矩形响应积分重建 `processed/band_lut.csv`，得到 670 行 NIR/MWIR compact LUT；radiance 和 irradiance 单位仍记录为 `MODOUT2_native`。
+- `tools/stage3_modtran_lut_check.ps1 -Strict` 针对 production 规模 CSV 做了流式检查优化，避免大表检查时内存压力过高。
+
+Production QC：
+- 表结构和解析完整性通过：`path_lut_spectral.csv` 为 2,634,440 行，`solar_lut_spectral.csv` 为 2,193,245 行，`sky_lut_spectral.csv` 为 1,740,660 行，runnable case 失败数为 0。
+- `qc_report.md` 的 `ProductionNirMwir Summary` 当时记录 `overall_status: FAIL`。失败原因是物理/模板 QA 发现，而不是 parser 失败：部分低空或斜穿组合 visibility sensitivity 缺失，且低空水平 MWIR path radiance 在 1 km 到 2 km 处下降，没有按预期增大或趋于饱和。
+- 该 production LUT 在完成后续诊断和分级前，不应直接接入 HwaSimIR C++ 的渲染链路。
+
+保留约束：
+- 当轮没有修改 HwaSimIR C++ 主逻辑或 shader。
+- 没有运行 VIS/SWIR/LWIR production。
+- 没有删除旧 `transmittance_0.3_15.txt`。
+- 没有把 MODOUT2 radiance/irradiance native 值重标为 SI 单位。
+
+### 2026-05-29 阶段 3 补充：MODTRAN tau-only debug loader
+
+完成内容：
+- 新增 `IR/IRModtranTauLut.h/.cpp`，加载 `ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/processed/band_lut.csv`，只读取 `band`、`atmosphere_model`、`aerosol_model`、`humidity_profile`、`visibility_km`、`observer_alt_km`、`target_alt_km`、`range_km`、`solar_zenith_deg`、`tau_up_band`、`tau_down_band`。
+- 第一版固定筛选 `atmosphere_model=Mid-Latitude Summer`、`aerosol_model=Rural`、`humidity_profile=default`；查询 key 为 band、observer altitude、target altitude、range、visibility、solar zenith。
+- tau 查询使用 optical depth 形式：`od = -ln(clamp(tau, 1e-6, 1.0))`，当前运行时先采用 nearest-neighbor OD 查询；找不到精确邻点时输出 `warning=nearest_neighbor`。
+- 扩展 `IRAtmosphereModel`，启动时加载 MODTRAN compact LUT，并增加 `EnableModtranTauDebug` 环境变量开关；默认值保持 `0`。
+- `transmittanceForRange()` 在 debug 打开时打印 `source=band_lut.csv`、band、obs/target/range/visibility、`tau_up`、`tau_down`、interpolation、fallback state、`old_tau/new_tau/diff`。
+- 关键边界：`transmittanceForRange()` 仍然返回旧 `legacyTau`，MODTRAN tau 只做日志对比，不改变 shader uniform，不改变 `IRRadianceModel` 最终输出。
+- 新增 `tools/stage3_modtran_tau_loader_check.ps1`，检查 `band_lut.csv`、tau 范围、旧 `transmittance_0.3_15.txt`、VS/CMake 工程项、debug 默认关闭、仍返回 `legacyTau`、未读取 band radiance 字段驱动 shader。
+- 新增 `tools/stage3_modtran_tau_debug_smoke.ps1`，分别以 `EnableModtranTauDebug=1` 和 `EnableModtranTauDebug=0` 启动 HwaSimIR，发送 NIR/MWIR 初始化包、开始控制包和实时 display 包，验证 debug 打开时有 old/new tau 日志，关闭时无 tau debug 日志。
+
+修改文件：
+- `ConsoleApplication1_LLA/ConsoleApplication1/IR/IRModtranTauLut.h`
+- `ConsoleApplication1_LLA/ConsoleApplication1/IR/IRModtranTauLut.cpp`
+- `ConsoleApplication1_LLA/ConsoleApplication1/IRSimulation.h`
+- `ConsoleApplication1_LLA/ConsoleApplication1/IRSimulation.cpp`
+- `ConsoleApplication1_LLA/ConsoleApplication1/HwaSimIR.cpp`
+- `ConsoleApplication1_LLA/ConsoleApplication1/CMakeLists.txt`
+- `ConsoleApplication1_LLA/ConsoleApplication1/ConsoleApplication1.vcxproj`
+- `ConsoleApplication1_LLA/ConsoleApplication1/ConsoleApplication1.vcxproj.filters`
+- `tools/stage1_band_switch_smoke.ps1`
+- `tools/stage3_modtran_tau_loader_check.ps1`
+- `tools/stage3_modtran_tau_debug_smoke.ps1`
+- `docs/HwaSimIR_InfraredSimulationFramework.md`
+
+验证命令：
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\stage3_modtran_lut_check.ps1 -Strict`
+- 结果：通过；production compact `band_lut.csv` 为 670 行，tau 范围为 `0.180743294` 到 `0.9991499122`，旧 MODTRAN processed 表结构检查仍通过。
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\stage3_modtran_tau_loader_check.ps1 -Strict`
+- 结果：通过；确认 `EnableModtranTauDebug` 默认关闭、loader 已加入 VS/CMake、仍存在旧 `transmittance_0.3_15.txt`、debug 路径仍返回 `legacyTau`，且 tau loader 未读取 `path_radiance_band`、`sky_radiance_band`、`path_scattering_radiance_band`、`solar_irradiance_band`。
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\stage3_modtran_tau_debug_smoke.ps1 -Bands @(1,2) -DelayMs 500`
+- 结果：通过；debug-on 日志出现 `MODTRAN Tau Debug`、`source=band_lut.csv`、NIR/MWIR、`tau_up/tau_down`、`old_tau/new_tau/diff` 和 `fallback_state`；debug-off 日志确认 `EnableModtranTauDebug=0` 且没有 tau debug 输出。
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\stage0_build.ps1`
+- 结果：通过；HwaSimIR `Release|x64` 和 DataDrivenTestQT release 构建成功。
+
+运行时观察：
+- NIR debug 样例：`range_km=5`、`visibility_km=23`、`tau_up=0.98604`、`tau_down=0.982608`、`old_tau=0.106184`、`new_tau=0.98604`、`diff=0.879857`。
+- MWIR debug 样例：`range_km=5`、`visibility_km=23`、`tau_up=0.798684`、`tau_down=0.795256`、`old_tau=0.00271768`、`new_tau=0.798684`、`diff=0.795966`。
+- display 包驱动的场景估算距离会出现 `range_km` 约 1.3 到 1.8 的查询；由于 production grid 是离散点，部分查询记录 `fallback_state=nearest_neighbor`，这是当前 debug-only 版本的预期行为。
+
+发现问题：
+- `powershell -File ... -Bands @(1,2)` 在 Windows PowerShell 命令行中可能只传入单个 `1`；`stage3_modtran_tau_debug_smoke.ps1` 已对该验收写法做兼容，恢复为 NIR/MWIR 双 band smoke。
+- 只发送初始化包不会触发 `UpdatePlatformIRStatus()` 和 `transmittanceForRange()` 的运行时路径；debug smoke 已补发开始控制包和实时 display 包，用于触发阶段 3 运行时 tau 查询。
+- 当前 C++ debug 查询仍固定使用 `observerAltKm=10`、`targetAltKm=10`、`solarZenithDeg=45`，range 来自场景估算，visibility 来自 UDP/default 环境；这足以验证 loader 和日志链路，但不是 tau-active 物理接入。
+
+下一步：
+- 若后续要从 debug-only 进入 tau-active，需要单独批准，并新增开关，不能直接替换当前 `legacyTau` 返回值。
+- 若继续保持阶段 3，可把 observer/target altitude、solar zenith 和更精确 range 查询参数从场景/协议中显式传入 tau 查询，但仍只限 tau，不接 path/sky/solar radiance。
+- path radiance、sky radiance、solar irradiance 仍只允许离线数值检查；进入 shader 或完整辐射链路属于阶段 5 范围，当前不做。
+- 本轮仍属于阶段 3：大气与环境模型；不属于阶段 4 温度场，也不属于阶段 5 完整辐射链路。
+
+### 2026-05-29 阶段 3 补充：MODTRAN tau-active 受控实验准备
+
+完成内容：
+- 对 `git status --short --untracked-files=all` 做分类盘点：源码、脚本、文档和 compact LUT 属于可提交候选；MODTRAN generated、raw samples、failed/archive、processed snapshots、Panda3D cache 和大型 spectral CSV 不应提交。
+- 更新 `.gitignore`，继续忽略 `ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/generated/`、`raw/samples/`、`raw/failed/`、`raw/archive/`、`processed_snapshots/`，并补充忽略 production 级大型 `*_lut_spectral.csv` 和本地 Panda3D cache；未删除任何数据。
+- `IRAtmosphereModel` 增加 `UseModtranTauForAtmosphere` 受控开关，默认值为 `0`。默认状态下即使 MODTRAN 查询成功，`transmittanceForRange()` 仍返回 legacy tau。
+- active 逻辑只允许 NIR/MWIR 且 MODTRAN query 成功时返回 `tau_up`；query 失败、LUT 缺失或 band 为 VIS/SWIR/LWIR 时回退 legacy tau。`tau_down` 只进入 debug 日志，不改变 shader。
+- MODTRAN tau 查询输入从固定调试值推进到运行时状态：observer altitude 来自实时/初始化挂载平台高度，target altitude 来自目标状态高度或节点估算，range 来自传感器到节点的场景距离，visibility 来自阶段 3 环境合成，solar zenith 来自 `90 - sun_elevation_deg`。
+- 如果 observer/target altitude 无法可靠取得，会使用旧默认值并在 debug 日志中标记 `fallback_input`；这仍是阶段 3 的大气查询输入改进，不是阶段 4 温度场。
+- 新增 `tools/stage3_modtran_tau_active_smoke.ps1`，分别以 `EnableModtranTauDebug=1, UseModtranTauForAtmosphere=0` 和 `EnableModtranTauDebug=1, UseModtranTauForAtmosphere=1` 启动 HwaSimIR，发送 NIR/MWIR 初始化包、开始控制包和 display 包。
+- 新增 `tools/stage3_modtran_tau_delta_report.py`，从 runtime debug 日志和 `band_lut.csv` 汇总 `old_tau/new_tau/diff/ratio/fallback_state`，输出 `logs/stage3_modtran_tau_delta_report.csv` 和 `logs/stage3_modtran_tau_delta_report.md`；差异大于阈值只标 WARNING，不标 FAIL。
+- 增强 `tools/stage3_modtran_tau_loader_check.ps1`，检查 `UseModtranTauForAtmosphere` 默认关闭、active gate 只允许 NIR/MWIR、VIS/SWIR/LWIR 仍 fallback legacy，且未读取 band radiance 字段驱动 shader。
+
+修改文件：
+- `.gitignore`
+- `ConsoleApplication1_LLA/ConsoleApplication1/IR/IRModtranTauLut.h`
+- `ConsoleApplication1_LLA/ConsoleApplication1/IR/IRModtranTauLut.cpp`
+- `ConsoleApplication1_LLA/ConsoleApplication1/IRSimulation.h`
+- `ConsoleApplication1_LLA/ConsoleApplication1/IRSimulation.cpp`
+- `ConsoleApplication1_LLA/ConsoleApplication1/HwaSimIR.h`
+- `ConsoleApplication1_LLA/ConsoleApplication1/HwaSimIR.cpp`
+- `tools/stage3_modtran_tau_loader_check.ps1`
+- `tools/stage3_modtran_tau_debug_smoke.ps1`
+- `tools/stage3_modtran_tau_active_smoke.ps1`
+- `tools/stage3_modtran_tau_delta_report.py`
+- `docs/HwaSimIR_InfraredSimulationFramework.md`
+
+验证命令：
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\stage3_modtran_tau_loader_check.ps1 -Strict`
+- 结果：通过；确认 `EnableModtranTauDebug=0`、`UseModtranTauForAtmosphere=0` 均为默认关闭，legacy fallback 文件仍存在，active gate 只允许 NIR/MWIR，且未接入 `path_radiance_band`、`sky_radiance_band`、`path_scattering_radiance_band`、`solar_irradiance_band`。
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\stage3_modtran_tau_debug_smoke.ps1 -Bands @(1,2) -DelayMs 500`
+- 结果：通过；debug-on 输出 NIR/MWIR `MODTRAN Tau Debug`，debug-off 不输出 tau debug 日志。
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\stage3_modtran_tau_active_smoke.ps1 -Bands @(1,2) -DelayMs 500`
+- 结果：通过；active=0 日志为 `return_source=legacy`，active=1 对 NIR/MWIR 输出 `return_source=modtran_tau` 或明确 fallback，日志包含 `old_tau/new_tau/diff`、`fallback_state`，且没有 VIS/SWIR/LWIR 使用 MODTRAN tau。
+- 命令：`python tools\stage3_modtran_tau_delta_report.py`
+- 结果：通过；写入 `logs/stage3_modtran_tau_delta_report.csv` 和 `logs/stage3_modtran_tau_delta_report.md`，当前仅作为 warning 级数值差异报告。
+- 命令：`powershell -ExecutionPolicy Bypass -File tools\stage0_build.ps1`
+- 结果：通过；HwaSimIR `Release|x64` 和 DataDrivenTestQT release 构建成功。
+
+运行时观察：
+- active=0 样例：`active=0 return_source=legacy fallback=legacy`，仍使用旧 `transmittance_0.3_15.txt` 的经验 tau 进入现有渲染链路。
+- active=1 样例：NIR/MWIR 日志出现 `return_source=modtran_tau fallback=none`，但仅在显式设置 `UseModtranTauForAtmosphere=1` 时生效。
+- 新查询输入中 observer altitude 在 smoke 中来自挂载平台高度约 `1 km`，solar zenith 来自天气 profile 的太阳高度，样例为约 `9.2473 deg`；target altitude 如果来自天空/背景或无法可靠映射，会记录 `fallback_input=target_alt`。
+- delta report 当前发现 old/new tau 差异可较大，这是阶段 3 受控实验预期观察项，只标 WARNING，不作为 production QC 失败。
+
+保留约束：
+- 未重跑 MODTRAN production。
+- 未运行 VIS/SWIR/LWIR production。
+- 未修改 shader。
+- 未接入 path radiance、sky radiance、solar irradiance。
+- 未进入阶段 4 温度场。
+- 未进入阶段 5 完整辐射链路。
+- 默认不改变画面，`UseModtranTauForAtmosphere` 必须保持默认 `0`。
+- 旧 `transmittance_0.3_15.txt` 保留为 fallback。
+
+### 2026-05-29 阶段 3 补充：MODTRAN tau-active A/B smoke 与阶段 3 收口建议
+
+完成内容：
+- 新增 `docs/stage3_modtran_tooling_inventory.md`，将当前阶段 3 MODTRAN 工具按 `keep`、`optional`、`historical` 分层记录，便于后续收口时避免继续堆叠重复脚本。
+- 确认 `.gitignore` 已忽略 MODTRAN generated、raw/samples、raw/failed、raw/archive、processed_snapshots、本地 logs 以及大型 spectral CSV；本轮不删除任何数据。
+- 新增 `tools/stage3_modtran_tau_ab_smoke.ps1`，分别以 `UseModtranTauForAtmosphere=0` 和 `UseModtranTauForAtmosphere=1` 启动 HwaSimIR，发送同一组 NIR/MWIR 初始化包、开始控制包和 display 包，提取 `old_tau/new_tau/diff/return_source/fallback_state`。
+- A/B smoke 输出 `logs/stage3_modtran_tau_ab/ab_metrics.csv` 和 `logs/stage3_modtran_tau_ab/ab_summary.md`。当前 smoke 链路只捕获运行日志，不消费输出帧或 JPEG，因此图像帧均值、最小值、最大值和标准差记录为 `frame metrics unavailable`。
+- 增强 `tools/stage3_modtran_tau_loader_check.ps1`，把 A/B smoke 脚本纳入阶段 3 检查面。
+
+阶段边界：
+- `UseModtranTauForAtmosphere` 仍保持默认 `0`，不会默认改变当前画面。
+- `UseModtranTauForAtmosphere=1` 只作为受控实验开关；NIR/MWIR 可以返回 MODTRAN `tau_up`，VIS/SWIR/LWIR 继续使用 legacy fallback。
+- 旧 `transmittance_0.3_15.txt` 继续保留为 fallback。
+- `path_radiance`、`sky_radiance`、`solar_irradiance` 仍未接入 shader 或 `IRRadianceModel` 最终输出；相关接入后置到阶段 5。
+- 本轮仍属于阶段 3 的大气与环境模型收口，不属于阶段 4 温度场，也不属于阶段 5 完整辐射链路。
+
+收口建议：
+- 阶段 3 后续只有在用户明确确认后，才考虑把 MODTRAN tau 作为默认大气透过率来源。
+- 如果不默认启用 MODTRAN tau，阶段 3 可以视为具备受控实验能力并转入阶段 4。

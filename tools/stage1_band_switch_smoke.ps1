@@ -113,6 +113,17 @@ Write-Host "Bands: $($Bands -join ', ')"
 Write-Host "HwaSimIR: $hwaExe"
 Write-Host ""
 
+# Some shells leave both Path and PATH in the process block. Windows process
+# creation treats them as the same key, so normalize before Start-Process.
+$processPathValue = [Environment]::GetEnvironmentVariable("Path", "Process")
+if ([string]::IsNullOrEmpty($processPathValue)) {
+    $processPathValue = [Environment]::GetEnvironmentVariable("PATH", "Process")
+}
+if (-not [string]::IsNullOrEmpty($processPathValue)) {
+    [Environment]::SetEnvironmentVariable("PATH", $null, "Process")
+    [Environment]::SetEnvironmentVariable("Path", $processPathValue, "Process")
+}
+
 $process = $null
 $udp = $null
 try {

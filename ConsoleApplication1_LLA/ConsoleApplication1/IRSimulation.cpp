@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <fstream>
+#include <iostream>
 #include <sstream>
 
 namespace
@@ -101,7 +102,11 @@ IRObjectRadianceInput::IRObjectRadianceInput()
 	damaged(false),
 	isCloud(false),
 	isSky(false),
-	cloudDensity(0.35)
+	cloudDensity(0.35),
+	observerAltitudeMeters(10000.0),
+	targetAltitudeMeters(10000.0),
+	hasObserverAltitude(false),
+	hasTargetAltitude(false)
 {
 }
 
@@ -196,6 +201,13 @@ const IRMaterial& IRMaterialDatabase::defaultMaterial() const
 	return m_defaultMaterial;
 }
 
+IRAtmosphereModel::IRAtmosphereModel()
+	: m_referencePathMeters(500.0),
+	m_modtranTauDebugEnabled(false),
+	m_useModtranTauForAtmosphere(false)
+{
+}
+
 bool IRAtmosphereModel::loadTransmissionTable(const std::string& filePath)
 {
 	std::ifstream file(filePath.c_str());
@@ -241,6 +253,40 @@ bool IRAtmosphereModel::loadTransmissionTable(const std::string& filePath)
 	return !m_samples.empty();
 }
 
+bool IRAtmosphereModel::loadModtranBandLut(const std::string& filePath)
+{
+	if (filePath.empty())
+	{
+		return false;
+	}
+	return m_modtranTauLut.load(filePath);
+}
+
+bool IRAtmosphereModel::modtranTauLutLoaded() const
+{
+	return !m_modtranTauLut.empty();
+}
+
+void IRAtmosphereModel::setModtranTauDebugEnabled(bool enabled)
+{
+	m_modtranTauDebugEnabled = enabled;
+}
+
+bool IRAtmosphereModel::modtranTauDebugEnabled() const
+{
+	return m_modtranTauDebugEnabled;
+}
+
+void IRAtmosphereModel::setUseModtranTauForAtmosphere(bool enabled)
+{
+	m_useModtranTauForAtmosphere = enabled;
+}
+
+bool IRAtmosphereModel::useModtranTauForAtmosphere() const
+{
+	return m_useModtranTauForAtmosphere;
+}
+
 bool IRAtmosphereModel::empty() const
 {
 	return m_samples.empty();
@@ -278,11 +324,73 @@ double IRAtmosphereModel::transmittanceForRange(IRBand band, double rangeMeters)
 
 double IRAtmosphereModel::transmittanceForRange(IRBand band, double rangeMeters, double visibilityMeters) const
 {
-	double referenceTau = std::max(0.01, averageTransmittance(band));
+	IRModtranTauQuery query;
+	query.band = band;
+	query.observerAltKm = 10.0;
+	query.targetAltKm = 10.0;
+	query.rangeKm = std::max(0.0, rangeMeters) / 1000.0;
+	query.visibilityKm = std::max(0.0, visibilityMeters) / 1000.0;
+	query.solarZenithDeg = 45.0;
+	query.fallbackInput = "observer_alt,target_alt,solar_zenith";
+	return transmittanceForRange(query);
+}
+
+double IRAtmosphereModel::transmittanceForRange(const IRModtranTauQuery& query) const
+{
+	double rangeMeters = std::max(0.0, query.rangeKm * 1000.0);
+	double visibilityMeters = std::max(0.0, query.visibilityKm * 1000.0);
+	double referenceTau = std::max(0.01, averageTransmittance(query.band));
 	double visibilityScale = std::max(0.15, std::min(2.0, visibilityMeters / 23000.0));
 	double pathScale = std::max(0.0, rangeMeters) / std::max(1.0, m_referencePathMeters);
 	pathScale /= visibilityScale;
-	return std::max(0.0, std::min(1.0, std::pow(referenceTau, pathScale)));
+	double legacyTau = std::max(0.0, std::min(1.0, std::pow(referenceTau, pathScale)));
+
+	bool supportedBand = (query.band == IRBand::NearInfrared || query.band == IRBand::MidWaveInfrared);
+	IRModtranTauResult result;
+	if (supportedBand)
+	{
+		result = m_modtranTauLut.query(query);
+	}
+	else
+	{
+		result.fallbackState = "unsupported_band";
+	}
+
+	bool useModtranTau = (m_useModtranTauForAtmosphere && supportedBand && result.found);
+	double returnedTau = useModtranTau ? result.tauUp : legacyTau;
+
+	if (m_modtranTauDebugEnabled)
+	{
+		double newTauForLog = result.found ? result.tauUp : legacyTau;
+		double diff = newTauForLog - legacyTau;
+		std::cout << "[Stage3][MODTRAN Tau Debug]"
+			<< " source=" << (result.found ? "band_lut.csv" : "transmittance_0.3_15.txt")
+			<< " path=" << (result.found ? m_modtranTauLut.loadedPath() : "fallback")
+			<< " band=" << IRBandName(query.band)
+			<< " obs_km=" << query.observerAltKm
+			<< " target_km=" << query.targetAltKm
+			<< " range_km=" << query.rangeKm
+			<< " visibility_km=" << query.visibilityKm
+			<< " solar_zenith_deg=" << query.solarZenithDeg
+			<< " tau_up=" << (result.found ? std::to_string(result.tauUp) : "NA")
+			<< " tau_down=" << (result.found ? std::to_string(result.tauDown) : "NA")
+			<< " interpolation=" << (result.found ? result.interpolationMode : "none")
+			<< " fallback_state=" << (result.found ? result.fallbackState : (supportedBand ? "modtran_lut_missing" : "unsupported_band"))
+			<< " fallback_input=" << (query.fallbackInput.empty() ? "none" : query.fallbackInput)
+			<< " active=" << (m_useModtranTauForAtmosphere ? "1" : "0")
+			<< " return_source=" << (useModtranTau ? "modtran_tau" : "legacy")
+			<< " fallback=" << (useModtranTau ? "none" : "legacy")
+			<< " old_tau=" << legacyTau
+			<< " new_tau=" << (result.found ? std::to_string(result.tauUp) : "NA")
+			<< " diff=" << diff;
+		if (result.found && result.usedNearest)
+		{
+			std::cout << " warning=nearest_neighbor";
+		}
+		std::cout << std::endl;
+	}
+
+	return returnedTau;
 }
 
 bool IRWeatherProfile::load(const std::string& filePath)
@@ -497,7 +605,50 @@ IRObjectRadianceOutput IRRadianceModel::evaluate(const IRObjectRadianceInput& in
 	const IRMaterial& material = m_database ? m_database->get(input.materialName) : IRMaterial();
 	double emissivity = clamp(material.thermalEmissivity, 0.01, 1.0);
 	double reflectance = clamp(1.0 - material.solarAbsorptivity - material.transmissivity, 0.02, 0.95);
-	double tau = m_atmosphere ? m_atmosphere->transmittanceForRange(m_environment.band, input.rangeMeters, m_environment.visibilityMeters) : 0.85;
+	IRModtranTauQuery tauQuery;
+	tauQuery.band = m_environment.band;
+	tauQuery.rangeKm = std::max(0.0, input.rangeMeters) / 1000.0;
+	tauQuery.visibilityKm = std::max(0.0, m_environment.visibilityMeters) / 1000.0;
+	tauQuery.solarZenithDeg = clamp(90.0 - m_environment.sunElevationDeg, 0.0, 180.0);
+
+	std::vector<std::string> fallbackInputs;
+	if (input.hasObserverAltitude)
+	{
+		tauQuery.observerAltKm = std::max(0.0, input.observerAltitudeMeters) / 1000.0;
+	}
+	else
+	{
+		tauQuery.observerAltKm = 10.0;
+		fallbackInputs.push_back("observer_alt");
+	}
+	if (input.hasTargetAltitude)
+	{
+		tauQuery.targetAltKm = std::max(0.0, input.targetAltitudeMeters) / 1000.0;
+	}
+	else
+	{
+		tauQuery.targetAltKm = 10.0;
+		fallbackInputs.push_back("target_alt");
+	}
+	if (fallbackInputs.empty())
+	{
+		tauQuery.fallbackInput = "none";
+	}
+	else
+	{
+		std::ostringstream fallbackStream;
+		for (size_t i = 0; i < fallbackInputs.size(); ++i)
+		{
+			if (i > 0)
+			{
+				fallbackStream << "+";
+			}
+			fallbackStream << fallbackInputs[i];
+		}
+		tauQuery.fallbackInput = fallbackStream.str();
+	}
+
+	double tau = m_atmosphere ? m_atmosphere->transmittanceForRange(tauQuery) : 0.85;
 	double envK = m_environment.airTemperatureC + 273.15;
 
 	double sunAngle = std::sin(clamp(m_environment.sunElevationDeg, 0.0, 90.0) * kPi / 180.0);

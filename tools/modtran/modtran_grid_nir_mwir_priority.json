@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "description": "PcModWin5/MODTRAN5 offline LUT grid for HwaSimIR. NIR and MWIR are priority bands; VIS/SWIR/LWIR are sparse support bands.",
+  "modtran_root": "ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN",
+  "atmosphere_model": "Mid-Latitude Summer",
+  "altitude_pairs": [
+    [3, 3],
+    [5, 5],
+    [10, 10],
+    [15, 15],
+    [20, 20],
+    [5, 3],
+    [10, 5],
+    [15, 10],
+    [20, 10],
+    [20, 15],
+    [10, 3],
+    [20, 3]
+  ],
+  "range_km": [1, 2, 5, 10, 20, 35, 50],
+  "visibility_km": [2, 5, 10, 23, 50],
+  "aerosol_model": ["Rural"],
+  "humidity_profile": ["default"],
+  "solar_zenith_deg": [20, 45, 70],
+  "production_solar_zenith_deg": [45],
+  "pilot": {
+    "altitude_pairs": [[10, 10]],
+    "range_km": [1, 5, 20, 50],
+    "visibility_km": [5, 23, 50],
+    "solar_zenith_deg": [45],
+    "bands": ["NIR", "MWIR"],
+    "max_cases": 100
+  },
+  "support_sparse_grid": {
+    "altitude_pairs": [[10, 10]],
+    "range_km": [1, 5, 20, 50],
+    "visibility_km": [5, 23, 50],
+    "solar_zenith_deg": [45]
+  },
+  "max_production_cases": 3000,
+  "priority_bands": {
+    "NIR": {
+      "wavelength_um": [0.70, 1.10],
+      "wavenumber_increment_cm": 1.0,
+      "fwhm_cm": 1.0,
+      "modes": ["Transmittance", "DirectSolarIrradiance", "RadianceWithScattering"]
+    },
+    "MWIR": {
+      "wavelength_um": [3.00, 5.00],
+      "wavenumber_increment_cm": 1.0,
+      "fwhm_cm": 1.0,
+      "modes": ["Transmittance", "ThermalRadiance", "DirectSolarIrradiance"]
+    }
+  },
+  "support_bands": {
+    "VIS": {
+      "wavelength_um": [0.40, 0.70],
+      "wavenumber_increment_cm": 1.0,
+      "fwhm_cm": 1.0,
+      "sparse_only": true,
+      "modes": ["Transmittance", "DirectSolarIrradiance", "RadianceWithScattering"]
+    },
+    "SWIR": {
+      "wavelength_um": [1.10, 2.50],
+      "wavenumber_increment_cm": 1.0,
+      "fwhm_cm": 1.0,
+      "sparse_only": true,
+      "modes": ["Transmittance", "DirectSolarIrradiance", "RadianceWithScattering"]
+    },
+    "LWIR": {
+      "wavelength_um": [8.00, 14.00],
+      "wavenumber_increment_cm": 1.0,
+      "fwhm_cm": 1.0,
+      "sparse_only": true,
+      "modes": ["Transmittance", "ThermalRadiance"]
+    }
+  }
+}

@@ -128,7 +128,7 @@ private:
 	NodePath LoadPlatformAssetNode(PLATFORM_TYPE type, const PlatformResPath& res); // 加载模型、基础纹理和阶段2材质绑定
 	void UpdatePlatformIRStatus();                          // 动态更新红外状态（时间、波段、亮斑等）
 	void ApplyRadianceInputs(NodePath& node, const IRObjectRadianceOutput& radiance, int objectKind);
-	IRObjectRadianceOutput EvaluateNodeRadiance(const std::string& materialName, const NodePath& node, bool engineOn, bool damaged, bool isSky, bool isCloud, double cloudDensity);
+	IRObjectRadianceOutput EvaluateNodeRadiance(const std::string& materialName, const NodePath& node, bool engineOn, bool damaged, bool isSky, bool isCloud, double cloudDensity, double targetAltitudeMeters = -1000000.0);
 	std::string MaterialNameForPlatform(PLATFORM_TYPE type) const;
 	float EstimateRangeToCamera(const NodePath& node) const;
 	void LogActiveIRSensorProfile(int protocolBand, const char* reason, bool forceLog);

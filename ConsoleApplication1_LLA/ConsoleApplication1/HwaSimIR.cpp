@@ -9,6 +9,7 @@
 #include <chrono>
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <fstream>
 
 namespace
@@ -17,6 +18,32 @@ bool FileExists(const std::string& path)
 {
 	std::ifstream file(path.c_str());
 	return file.good();
+}
+
+bool IsReasonableAltitudeMeters(double altitudeMeters)
+{
+	return altitudeMeters > -500.0 && altitudeMeters < 100000.0;
+}
+
+bool ReadProcessEnvFlag(const char* name, bool defaultValue)
+{
+#ifdef _MSC_VER
+	char valueBuffer[16] = {};
+	size_t required = 0;
+	if (getenv_s(&required, valueBuffer, sizeof(valueBuffer), name) != 0 || required == 0)
+	{
+		return defaultValue;
+	}
+	std::string value(valueBuffer);
+#else
+	const char* envValue = std::getenv(name);
+	if (envValue == nullptr)
+	{
+		return defaultValue;
+	}
+	std::string value(envValue);
+#endif
+	return value == "1" || value == "true" || value == "TRUE" || value == "True";
 }
 
 std::string FirstExistingPath(const std::vector<std::string>& paths)
@@ -1311,6 +1338,12 @@ void HwaSimIR::InitInfraredSimulation()
 		"../transmittance/transmittance_0.3_15.txt",
 		"../../transmittance/transmittance_0.3_15.txt"
 	});
+	std::string modtranBandLutPath = FirstExistingPath({
+		"Config/Atmosphere/MODTRAN/processed/band_lut.csv",
+		"../Bin/Config/Atmosphere/MODTRAN/processed/band_lut.csv",
+		"ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/processed/band_lut.csv",
+		"../ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/processed/band_lut.csv"
+	});
 	std::string weatherPath = FirstExistingPath({
 		"temperatures/Temperatures_Yemen_Summer.csv",
 		"../temperatures/Temperatures_Yemen_Summer.csv",
@@ -1324,6 +1357,11 @@ void HwaSimIR::InitInfraredSimulation()
 
 	m_irMaterialReady = m_irMaterialDatabase.load(materialPath);
 	m_irAtmosphereReady = m_irAtmosphereModel.loadTransmissionTable(transmittancePath);
+	bool modtranTauLutReady = m_irAtmosphereModel.loadModtranBandLut(modtranBandLutPath);
+	bool enableModtranTauDebug = ReadProcessEnvFlag("EnableModtranTauDebug", false);
+	bool useModtranTauForAtmosphere = ReadProcessEnvFlag("UseModtranTauForAtmosphere", false);
+	m_irAtmosphereModel.setModtranTauDebugEnabled(enableModtranTauDebug);
+	m_irAtmosphereModel.setUseModtranTauForAtmosphere(useModtranTauForAtmosphere);
 	m_irSensorProfilesReady = m_irSensorProfiles.loadFromDirectoryCandidates(sensorWaveDirs);
 	m_irWeatherReady = m_irWeatherProfile.load(weatherPath);
 	m_irRadianceModel.setMaterialDatabase(&m_irMaterialDatabase);
@@ -1354,6 +1392,12 @@ void HwaSimIR::InitInfraredSimulation()
 		<< "，MODTRAN透过率="
 		<< (m_irAtmosphereReady ? "OK" : "未加载，使用经验透过率")
 		<< " 路径=" << transmittancePath << std::endl;
+	std::cout << "[Stage3] MODTRAN tau-only debug LUT="
+		<< (modtranTauLutReady ? "OK" : "未加载，仅使用旧透过率表")
+		<< " 路径=" << modtranBandLutPath
+		<< " EnableModtranTauDebug=" << (enableModtranTauDebug ? "1" : "0")
+		<< " UseModtranTauForAtmosphere=" << (useModtranTauForAtmosphere ? "1" : "0")
+		<< "（默认仅日志对比；active=1 才返回 MODTRAN tau）" << std::endl;
 	std::cout << "[Stage1] IR配置输入：SensorWave="
 		<< (m_irSensorProfilesReady ? "OK" : "未加载，使用内置传感器默认值")
 		<< " 路径=" << (m_irSensorProfilesReady ? m_irSensorProfiles.loadedDirectory() : "fallback")
@@ -1644,7 +1688,7 @@ void HwaSimIR::ApplyRadianceInputs(NodePath& node, const IRObjectRadianceOutput&
 	node.set_shader_input("u_base_temperature", LVecBase2f(radiance.baseRadiance, 0.0f));
 }
 
-IRObjectRadianceOutput HwaSimIR::EvaluateNodeRadiance(const std::string& materialName, const NodePath& node, bool engineOn, bool damaged, bool isSky, bool isCloud, double cloudDensity)
+IRObjectRadianceOutput HwaSimIR::EvaluateNodeRadiance(const std::string& materialName, const NodePath& node, bool engineOn, bool damaged, bool isSky, bool isCloud, double cloudDensity, double targetAltitudeMeters)
 {
 	IRObjectRadianceInput input;
 	input.materialName = materialName;
@@ -1654,6 +1698,34 @@ IRObjectRadianceOutput HwaSimIR::EvaluateNodeRadiance(const std::string& materia
 	input.isSky = isSky;
 	input.isCloud = isCloud;
 	input.cloudDensity = cloudDensity;
+
+	if (m_stage0DisplayFrameCount > 0 && IsReasonableAltitudeMeters(m_realTimeSceneData.platLoc.alt))
+	{
+		input.observerAltitudeMeters = m_realTimeSceneData.platLoc.alt;
+		input.hasObserverAltitude = true;
+	}
+	else if (m_isAddPlatform && IsReasonableAltitudeMeters(m_initSceneData.platParam[0].spatial.alt))
+	{
+		input.observerAltitudeMeters = m_initSceneData.platParam[0].spatial.alt;
+		input.hasObserverAltitude = true;
+	}
+
+	if (IsReasonableAltitudeMeters(targetAltitudeMeters))
+	{
+		input.targetAltitudeMeters = targetAltitudeMeters;
+		input.hasTargetAltitude = true;
+	}
+	else if (!isSky && !node.is_empty() && !m_renderRoot.is_empty() && input.hasObserverAltitude)
+	{
+		LPoint3f nodePos = node.get_pos(m_renderRoot);
+		double estimatedTargetAltitude = input.observerAltitudeMeters + static_cast<double>(nodePos.get_z());
+		if (IsReasonableAltitudeMeters(estimatedTargetAltitude))
+		{
+			input.targetAltitudeMeters = estimatedTargetAltitude;
+			input.hasTargetAltitude = true;
+		}
+	}
+
 	return m_irRadianceModel.evaluate(input);
 }
 
@@ -1833,7 +1905,7 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 		if (pakPlat.isExist) {
 			// 将 double 强转为 float 后，装入 LVecBase2f
 			pakPlat.nodePath.set_shader_input("u_time", LVecBase2f((float)current_time, 0.0f));
-			IRObjectRadianceOutput radiance = EvaluateNodeRadiance(MaterialNameForPlatform(pakPlat.type), pakPlat.nodePath, true, false, false, false, 0.0);
+			IRObjectRadianceOutput radiance = EvaluateNodeRadiance(MaterialNameForPlatform(pakPlat.type), pakPlat.nodePath, true, false, false, false, 0.0, pakPlat.platParam.spatial.alt);
 			ApplyRadianceInputs(pakPlat.nodePath, radiance, 0);
 
 			// 常开尾喷口亮斑
@@ -1846,7 +1918,7 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 		if (targetPlat.isExist) {
 			targetPlat.nodePath.set_shader_input("u_time", LVecBase2f((float)current_time, 0.0f));
 			bool damaged = (targetPlat.targetState.targetState == 0x02 || targetPlat.targetState.targetState == 0x03);
-			IRObjectRadianceOutput radiance = EvaluateNodeRadiance(MaterialNameForPlatform(targetPlat.type), targetPlat.nodePath, targetPlat.targetState.engineState, damaged, false, false, 0.0);
+			IRObjectRadianceOutput radiance = EvaluateNodeRadiance(MaterialNameForPlatform(targetPlat.type), targetPlat.nodePath, targetPlat.targetState.engineState, damaged, false, false, 0.0, targetPlat.targetState.targetLoc.alt);
 			ApplyRadianceInputs(targetPlat.nodePath, radiance, 0);
 
 			// 发动机开机状态映射为尾部红外亮斑
