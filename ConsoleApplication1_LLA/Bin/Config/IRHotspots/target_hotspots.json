@@ -1,0 +1,131 @@
+{
+  "version": 1,
+  "notes": "Stage4 ThermalHotspot is physical engine/plume heat. BrightSpot is strikeFlag/strikePart controlled special radiation intensity.",
+  "platforms": {
+    "F35": {
+      "engineRear": {
+        "enabledByEngineState": true,
+        "shape": "Sphere",
+        "localPos": [0.0, -3.8, 0.0],
+        "localDir": [0.0, -1.0, 0.0],
+        "size": [0.85, 0.85, 0.85],
+        "targetTempK": 900.0,
+        "heatTauSec": 1.2,
+        "coolTauSec": 8.0,
+        "intensityScale": 1.15
+      },
+      "brightspots": {
+        "head": {
+          "localPos": [0.0, 2.8, 0.0],
+          "radius": 0.28,
+          "intensity": 1.0
+        },
+        "mid": {
+          "localPos": [0.0, 0.0, 0.0],
+          "radius": 0.34,
+          "intensity": 0.8
+        }
+      }
+    },
+    "AIM120": {
+      "engineRear": {
+        "enabledByEngineState": true,
+        "shape": "Sphere",
+        "localPos": [0.0, -1.4, 0.0],
+        "localDir": [0.0, -1.0, 0.0],
+        "size": [0.35, 0.35, 0.35],
+        "targetTempK": 760.0,
+        "heatTauSec": 0.8,
+        "coolTauSec": 4.5,
+        "intensityScale": 0.9
+      },
+      "brightspots": {
+        "head": {
+          "localPos": [0.0, 1.1, 0.0],
+          "radius": 0.18,
+          "intensity": 1.0
+        },
+        "mid": {
+          "localPos": [0.0, 0.0, 0.0],
+          "radius": 0.22,
+          "intensity": 0.75
+        }
+      }
+    },
+    "AIM120D": {
+      "engineRear": {
+        "enabledByEngineState": true,
+        "shape": "Sphere",
+        "localPos": [0.0, -1.4, 0.0],
+        "localDir": [0.0, -1.0, 0.0],
+        "size": [0.35, 0.35, 0.35],
+        "targetTempK": 760.0,
+        "heatTauSec": 0.8,
+        "coolTauSec": 4.5,
+        "intensityScale": 0.9
+      },
+      "brightspots": {
+        "head": {
+          "localPos": [0.0, 1.1, 0.0],
+          "radius": 0.18,
+          "intensity": 1.0
+        },
+        "mid": {
+          "localPos": [0.0, 0.0, 0.0],
+          "radius": 0.22,
+          "intensity": 0.75
+        }
+      }
+    },
+    "AIM9X": {
+      "engineRear": {
+        "enabledByEngineState": true,
+        "shape": "Sphere",
+        "localPos": [0.0, -1.1, 0.0],
+        "localDir": [0.0, -1.0, 0.0],
+        "size": [0.30, 0.30, 0.30],
+        "targetTempK": 720.0,
+        "heatTauSec": 0.7,
+        "coolTauSec": 4.0,
+        "intensityScale": 0.85
+      },
+      "brightspots": {
+        "head": {
+          "localPos": [0.0, 0.9, 0.0],
+          "radius": 0.16,
+          "intensity": 1.0
+        },
+        "mid": {
+          "localPos": [0.0, 0.0, 0.0],
+          "radius": 0.20,
+          "intensity": 0.72
+        }
+      }
+    },
+    "F22": {
+      "engineRear": {
+        "enabledByEngineState": true,
+        "shape": "Sphere",
+        "localPos": [0.0, -3.6, 0.0],
+        "localDir": [0.0, -1.0, 0.0],
+        "size": [0.80, 0.80, 0.80],
+        "targetTempK": 880.0,
+        "heatTauSec": 1.2,
+        "coolTauSec": 8.0,
+        "intensityScale": 1.1
+      },
+      "brightspots": {
+        "head": {
+          "localPos": [0.0, 2.7, 0.0],
+          "radius": 0.27,
+          "intensity": 1.0
+        },
+        "mid": {
+          "localPos": [0.0, 0.0, 0.0],
+          "radius": 0.33,
+          "intensity": 0.8
+        }
+      }
+    }
+  }
+}

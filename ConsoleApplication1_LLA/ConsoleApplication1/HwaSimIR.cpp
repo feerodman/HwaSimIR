@@ -371,6 +371,8 @@ void HwaSimIR::ProcessRealSimSceneInitData()
 
 	// 设置增删标记为"增加"
 	m_isAddPlatform = true;
+	m_irTemperatureModel.resetRuntime();
+	m_lastStage4UpdateTime = -1.0;
 
 	// 调用增删逻辑生成平台
 	ProcessAddRemovePakPlatform();
@@ -446,121 +448,76 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 			<< " 毁伤状态=" << weaponPlat.weaponState.damageFlag << std::endl;
 	}
 
-	// 更新TargetState平台
-	int validTargetNum = std::min(currentData.targetNumValid, 5);
-	//if (!m_isInitTargetPlatID)
-	//{
-	//	for (int i = 0; i < 5; ++i)//todo
-	//	{
-	//		const BYHWICD::TargetState& targetState = currentData.targetState[i];
-	//		for (auto& targetPlat : m_targetPlatformList)
-	//		{
-	//			PLATFORM_TYPE platType = TargetTypeToPlatformType(targetState.targetType);
-	//			if (targetPlat.isExist && targetPlat.type == platType && targetPlat.platID == i)
-	//			{
-	//				targetPlat.platID = targetState.targetID;
-	//			}
-	//		}
-	//	}
-	//	m_isInitTargetPlatID = true;
-	//}
-	if (!m_isInitTargetPlatID)
+	// TargetState[5] 最多携带5组目标数据；targetNumValid只控制前N个是否参与显示，不再限制状态更新。
+	const int visibleTargetNum = std::max(0, std::min(currentData.targetNumValid, 5));
+	for (auto& targetPlat : m_targetPlatformList)
 	{
-		// 记录已完成ID映射的平台索引，避免重复分配
-		std::unordered_set<size_t> mappedPlatformIndices;
-		// 按顺序遍历每个传入的targetState，为其匹配第一个对应类型的平台
-		for (int i = 0; i < validTargetNum; ++i)
+		if (targetPlat.isExist)
 		{
-			const BYHWICD::TargetState& targetState = currentData.targetState[i];
-			PLATFORM_TYPE targetPlatType = TargetTypeToPlatformType(targetState.targetType);
-			int targetID = targetState.targetID;
-
-			// 遍历平台列表，寻找第一个「类型匹配+未被映射+存在」的平台
-			for (size_t platIdx = 0; platIdx < m_targetPlatformList.size(); ++platIdx)
-			{
-				auto& targetPlat = m_targetPlatformList[platIdx];
-				// 匹配条件：平台存在 + 类型一致 + 未被分配过ID
-				if (targetPlat.isExist
-					&& targetPlat.type == targetPlatType
-					&& mappedPlatformIndices.find(platIdx) == mappedPlatformIndices.end())
-				{
-					// 将平台的platID设置为当前targetState的targetID
-					targetPlat.platID = targetID;
-					// 标记该平台已映射，避免重复分配
-					mappedPlatformIndices.insert(platIdx);
-
-					std::cout << "[初始化ID映射] 目标ID=" << targetID
-						<< " 平台类型=" << static_cast<int>(targetPlatType)
-						<< " 平台索引=" << platIdx << std::endl;
-					break; // 找到第一个匹配的平台，退出当前遍历
-				}
-			}
+			targetPlat.nodePath.hide();
 		}
-		m_isInitTargetPlatID = true;
 	}
-	
 
-	// ========== 更新TargetState平台状态和位置 ==========
-	for (int i = 0; i < validTargetNum; ++i)
+	TargetPlatformData* lookAtTarget = nullptr;
+	for (int i = 0; i < 5; ++i)
 	{
 		const BYHWICD::TargetState& targetState = currentData.targetState[i];
-		const BYHWICD::SpatialState& platSpatial = currentData.platLoc;
-		PLATFORM_TYPE platType = TargetTypeToPlatformType(targetState.targetType);
-		int targetID = targetState.targetID;
-		int targetPlatID = currentData.weaponState.targetPlatID;
-		for (auto& targetPlat : m_targetPlatformList)
+		if (!IsValidTargetStateKey(targetState))
 		{
-			// 匹配条件：平台存在 + platID匹配 + 类型匹配
-			if (!targetPlat.isExist
-				|| targetPlat.platID != targetID
-				|| targetPlat.type != platType)
-			{
-				continue;
-			}
+			continue;
+		}
 
-			// 更新目标状态和位置
-			targetPlat.targetState = targetState;
-			const BYHWICD::SpatialState& spatial = targetState.targetLoc;
+		TargetPlatformData* targetPlat = FindOrMapTargetPlatform(targetState, i);
+		if (targetPlat == nullptr)
+		{
+			continue;
+		}
 
-			//double px, py, pz;
-			//m_geoTrans.Wgs84ToPandaXYZ(spatial, px, py, pz);
-			//targetPlat.nodePath.set_pos(px, py, pz);
-			//targetPlat.nodePath.set_pos(spatial.lat, spatial.lon, spatial.alt);
-			//targetPlat.nodePath.set_hpr(-spatial.yaw, spatial.pitch, spatial.roll);
+		// 通过 targetType + targetPlatID + targetID 唯一键更新同一个目标，避免不同挂载平台目标ID冲突。
+		targetPlat->targetState = targetState;
+		targetPlat->platID = targetState.targetID;
 
-			LMatrix4f exactTransform = m_geoTrans.GetPandaMatrix(spatial);
+		const BYHWICD::SpatialState& spatial = targetState.targetLoc;
+		LMatrix4f exactTransform = m_geoTrans.GetPandaMatrix(spatial);
+		targetPlat->nodePath.set_mat(LMatrix4(exactTransform));
 
-			targetPlat.nodePath.set_mat(LMatrix4(exactTransform));
-			std::cout << " targetPlatID(" << targetPlatID << "）----targetID（" << targetID << "）"<< std::endl;
-			if (targetPlatID == targetID)
-			{
-				double range, rel_pitch, rel_yaw;
-				m_attitudeTrans.computeRelativePosition(platSpatial.lat, platSpatial.lon, platSpatial.alt, platSpatial.roll, platSpatial.pitch, platSpatial.yaw,
-					spatial.lat, spatial.lon, spatial.alt, range, rel_pitch, rel_yaw);
+		bool renderVisible = (i < visibleTargetNum) && targetState.viewValid;
+		if (WeaponTargetKeyMatches(currentData.weaponState, *targetPlat) && !currentData.weaponState.viewValid)
+		{
+			renderVisible = false;
+		}
+		if (renderVisible)
+		{
+			targetPlat->nodePath.show();
+		}
+		else
+		{
+			targetPlat->nodePath.hide();
+		}
 
-				m_cameraNode.set_hpr(-rel_yaw, rel_pitch, 0.0);
-				LVecBase3 hpr = m_cameraNode.get_hpr();
-				//std::cout << " 获取传感器姿态(" << hpr[0] << "," << hpr[1] << "," << hpr[2] << ")" << std::endl;
-				//std::cout << " 获取传感器计算姿态(" << -rel_yaw << "," << rel_pitch << "," << 0.0 << ")" << std::endl;
-			}
-			
+		if (WeaponTargetKeyMatches(currentData.weaponState, *targetPlat))
+		{
+			lookAtTarget = targetPlat;
+		}
 
-			
-
-			//m_cameraNode.look_at(targetPlat.nodePath);
-
-			
-
-			/*std::cout << "更新TargetState平台：目标ID=" << targetState.targetID
-				<< " 位置(" << spatial.lat << "," << spatial.lon << "," << spatial.alt << ")"  
-				<< " 姿态(" << -spatial.yaw << "," << spatial.pitch << "," << spatial.roll << ")" << std::endl;*/
-		/*	std::cout << "更新TargetState平台转换后位置：ID=" << targetState.targetID
-				<< " 位置(" << px << "," << py << "," << pz << ")"
-				<< " 姿态(" << -spatial.yaw << "," << spatial.pitch << "," << spatial.roll << ")" << std::endl;*/
-
-			break; // 一个目标ID仅对应一个平台，找到后退出遍历（提升效率）
+		if (m_stage0DisplayFrameCount <= 3 || (m_stage0DisplayFrameCount % 60) == 0)
+		{
+			std::cout << "[TargetMapping]"
+				<< " packet=" << m_stage0DisplayFrameCount
+				<< " index=" << i
+				<< " targetType=0x" << std::hex << targetState.targetType << std::dec
+				<< " targetPlatID=" << targetState.targetPlatID
+				<< " targetID=" << targetState.targetID
+				<< " visibleByTargetNum=" << (i < visibleTargetNum ? "1" : "0")
+				<< " targetViewValid=" << (targetState.viewValid ? "1" : "0")
+				<< " weaponViewValid=" << (currentData.weaponState.viewValid ? "1" : "0")
+				<< " renderVisible=" << (renderVisible ? "1" : "0")
+				<< std::endl;
 		}
 	}
+	m_isInitTargetPlatID = true;
+
+	ApplyWeaponCameraControl(currentData, lookAtTarget);
 
 	//for (int i = 0; i < validTargetNum; ++i)
 	//{
@@ -602,7 +559,7 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 }
 
 
-PLATFORM_TYPE HwaSimIR::TargetTypeToPlatformType(int targetType)
+PLATFORM_TYPE HwaSimIR::TargetTypeToPlatformType(int targetType) const
 {
 	switch (targetType)
 	{
@@ -835,10 +792,10 @@ void HwaSimIR::ProcessAddRemoveTargetPlatform()
 			// 初始化TargetPlatformData
 			TargetPlatformData newTargetPlat;
 			newTargetPlat.type = platType;
-			newTargetPlat.platID = i;
+			newTargetPlat.platID = -1; // 初始化时尚未绑定协议目标ID，Display包到达后按三元组映射
 			newTargetPlat.targetState.targetType = 0x22;
-			newTargetPlat.targetState.targetPlatID = 0;
-			newTargetPlat.targetState.targetID = 0;
+			newTargetPlat.targetState.targetPlatID = -1;
+			newTargetPlat.targetState.targetID = -1;
 			newTargetPlat.targetState.engineState = false;
 			newTargetPlat.targetState.viewValid = false;
 			newTargetPlat.targetState.targetLoc.lat = 0.0;
@@ -858,7 +815,7 @@ void HwaSimIR::ProcessAddRemoveTargetPlatform()
 
 			// 添加到列表并显示
 			m_targetPlatformList.push_back(newTargetPlat);
-			modelNode.show();
+			modelNode.hide(); // 未收到有效TargetState前不渲染
 
 			std::cout << "TargetState平台生成成功：类型=" << platType << " 目标ID=" << newTargetPlat.platID << std::endl;
 			/*if (newTargetPlat.platID == 3)
@@ -888,10 +845,10 @@ void HwaSimIR::ProcessAddRemoveTargetPlatform()
 			// 初始化TargetPlatformData
 			TargetPlatformData newTargetPlat;
 			newTargetPlat.type = platType;
-			newTargetPlat.platID = i;
+			newTargetPlat.platID = -1; // 初始化时尚未绑定协议目标ID，Display包到达后按三元组映射
 			newTargetPlat.targetState.targetType = 0x33;
-			newTargetPlat.targetState.targetPlatID = 0;
-			newTargetPlat.targetState.targetID = 0;
+			newTargetPlat.targetState.targetPlatID = -1;
+			newTargetPlat.targetState.targetID = -1;
 			newTargetPlat.targetState.engineState = false;
 			newTargetPlat.targetState.viewValid = false;
 			newTargetPlat.targetState.targetLoc.lat = 0.0;
@@ -911,7 +868,7 @@ void HwaSimIR::ProcessAddRemoveTargetPlatform()
 
 			// 添加到列表并显示
 			m_targetPlatformList.push_back(newTargetPlat);
-			modelNode.show();
+			modelNode.hide(); // 未收到有效TargetState前不渲染
 
 			std::cout << "TargetState平台生成成功：类型=" << platType << " 目标ID=" << newTargetPlat.platID << std::endl;
 		}
@@ -937,10 +894,10 @@ void HwaSimIR::ProcessAddRemoveTargetPlatform()
 			// 初始化TargetPlatformData
 			TargetPlatformData newTargetPlat;
 			newTargetPlat.type = platType;
-			newTargetPlat.platID = i;
+			newTargetPlat.platID = -1; // 初始化时尚未绑定协议目标ID，Display包到达后按三元组映射
 			newTargetPlat.targetState.targetType = 0x44;
-			newTargetPlat.targetState.targetPlatID = 0;
-			newTargetPlat.targetState.targetID = 0;
+			newTargetPlat.targetState.targetPlatID = -1;
+			newTargetPlat.targetState.targetID = -1;
 			newTargetPlat.targetState.engineState = false;
 			newTargetPlat.targetState.viewValid = false;
 			newTargetPlat.targetState.targetLoc.lat = 0.0;
@@ -960,7 +917,7 @@ void HwaSimIR::ProcessAddRemoveTargetPlatform()
 
 			// 添加到列表并显示
 			m_targetPlatformList.push_back(newTargetPlat);
-			modelNode.show();
+			modelNode.hide(); // 未收到有效TargetState前不渲染
 
 			std::cout << "TargetState平台生成成功：类型=" << platType << " 目标ID=" << newTargetPlat.platID << std::endl;
 		}
@@ -1250,6 +1207,46 @@ void HwaSimIR::handleDisplayData(const BYHWICD::DisplayC2cObjTrackingData& data)
 			<< ", targetNumValid=" << data.targetNumValid
 			<< ", timeMs=" << data.time << std::endl;
 	}
+	const int visibleTargetNumForLog = std::max(0, std::min(data.targetNumValid, 5));
+	int stage4LogTargetCount = 0;
+	bool anyStage4InputSignal = data.weaponState.strikeFlag || data.weaponState.strikePart != 0;
+	for (int i = 0; i < 5; ++i)
+	{
+		const auto& target = data.targetState[i];
+		if (i >= visibleTargetNumForLog && TargetTypeToPlatformType(target.targetType) == NONE)
+		{
+			continue;
+		}
+		++stage4LogTargetCount;
+		anyStage4InputSignal = anyStage4InputSignal || target.engineState;
+		std::cout << "[Stage4 Input]"
+			<< " packet=" << m_stage0DisplayFrameCount
+			<< " targetIndex=" << i
+			<< " targetID=" << target.targetID
+			<< " targetPlatID=" << target.targetPlatID
+			<< " platform=" << Stage4PlatformName(TargetTypeToPlatformType(target.targetType))
+			<< " engineState=" << (target.engineState ? "1" : "0")
+			<< " targetViewValid=" << (target.viewValid ? "1" : "0")
+			<< " visibleByTargetNum=" << (i < visibleTargetNumForLog ? "1" : "0")
+			<< " strikeFlag=" << (data.weaponState.strikeFlag ? "1" : "0")
+			<< " strikePart=" << data.weaponState.strikePart
+			<< " weaponTargetType=0x" << std::hex << data.weaponState.targetType << std::dec
+			<< " weaponTargetID=" << data.weaponState.targetID
+			<< " weaponTargetPlatID=" << data.weaponState.targetPlatID
+			<< " weaponViewValid=" << (data.weaponState.viewValid ? "1" : "0")
+			<< " sourcePacketTimeMs=" << data.time
+			<< std::endl;
+	}
+	if (stage4LogTargetCount == 0 || (!anyStage4InputSignal && (m_stage0DisplayFrameCount % 100) == 0))
+	{
+		std::cout << "[Stage4 Input][WARN] STAGE4_INPUT_NOT_UPDATED"
+			<< " packet=" << m_stage0DisplayFrameCount
+			<< " targetNumValid=" << data.targetNumValid
+			<< " strikeFlag=" << (data.weaponState.strikeFlag ? "1" : "0")
+			<< " strikePart=" << data.weaponState.strikePart
+			<< " reason=" << (stage4LogTargetCount == 0 ? "no_valid_targets" : "no_engine_or_strike_signal")
+			<< std::endl;
+	}
 
 	/*std::cout << "收到实时成像数据：" << std::endl;
 	std::cout << "  挂载平台ID：" << data.platID << std::endl;
@@ -1354,16 +1351,25 @@ void HwaSimIR::InitInfraredSimulation()
 	sensorWaveDirs.push_back("../Bin/Config/SensorWave");
 	sensorWaveDirs.push_back("ConsoleApplication1_LLA/Bin/Config/SensorWave");
 	sensorWaveDirs.push_back("../ConsoleApplication1_LLA/Bin/Config/SensorWave");
+	std::vector<std::string> hotspotConfigPaths;
+	hotspotConfigPaths.push_back("Config/IRHotspots/target_hotspots.json");
+	hotspotConfigPaths.push_back("../Bin/Config/IRHotspots/target_hotspots.json");
+	hotspotConfigPaths.push_back("ConsoleApplication1_LLA/Bin/Config/IRHotspots/target_hotspots.json");
+	hotspotConfigPaths.push_back("../ConsoleApplication1_LLA/Bin/Config/IRHotspots/target_hotspots.json");
 
 	m_irMaterialReady = m_irMaterialDatabase.load(materialPath);
 	m_irAtmosphereReady = m_irAtmosphereModel.loadTransmissionTable(transmittancePath);
 	bool modtranTauLutReady = m_irAtmosphereModel.loadModtranBandLut(modtranBandLutPath);
 	bool enableModtranTauDebug = ReadProcessEnvFlag("EnableModtranTauDebug", false);
 	bool useModtranTauForAtmosphere = ReadProcessEnvFlag("UseModtranTauForAtmosphere", false);
+	m_enableStage4HotspotVisualDebug = ReadProcessEnvFlag("EnableStage4HotspotVisualDebug", false);
+	m_forceStage4BrightSpotVisible = ReadProcessEnvFlag("ForceStage4BrightSpotVisible", false);
+	m_forceStage4RearHotspotVisible = ReadProcessEnvFlag("ForceStage4RearHotspotVisible", false);
 	m_irAtmosphereModel.setModtranTauDebugEnabled(enableModtranTauDebug);
 	m_irAtmosphereModel.setUseModtranTauForAtmosphere(useModtranTauForAtmosphere);
 	m_irSensorProfilesReady = m_irSensorProfiles.loadFromDirectoryCandidates(sensorWaveDirs);
 	m_irWeatherReady = m_irWeatherProfile.load(weatherPath);
+	m_irTemperatureReady = m_irTemperatureModel.loadFromFileCandidates(hotspotConfigPaths);
 	m_irRadianceModel.setMaterialDatabase(&m_irMaterialDatabase);
 	m_irRadianceModel.setAtmosphereModel(&m_irAtmosphereModel);
 
@@ -1404,6 +1410,15 @@ void HwaSimIR::InitInfraredSimulation()
 		<< "，MaterialDatabase=" << (m_irMaterialReady ? materialPath : "fallback")
 		<< "，Transmittance=" << (m_irAtmosphereReady ? transmittancePath : "fallback")
 		<< "，WeatherProfile=" << (m_irWeatherReady ? weatherPath : "fallback") << std::endl;
+	std::cout << "[Stage4] IRHotspots配置："
+		<< (m_irTemperatureReady ? "OK" : "未加载，使用内置安全默认值")
+		<< " 路径=" << (m_irTemperatureReady ? m_irTemperatureModel.loadedPath() : "fallback")
+		<< "（ThermalHotspot与BrightSpot分离；本阶段只处理发动机热源与特殊亮斑）" << std::endl;
+	std::cout << "[Stage4] Visual debug flags:"
+		<< " EnableStage4HotspotVisualDebug=" << (m_enableStage4HotspotVisualDebug ? "1" : "0")
+		<< " ForceStage4BrightSpotVisible=" << (m_forceStage4BrightSpotVisible ? "1" : "0")
+		<< " ForceStage4RearHotspotVisible=" << (m_forceStage4RearHotspotVisible ? "1" : "0")
+		<< "（默认全为0；仅用于可见性接线诊断）" << std::endl;
 	LogActiveIRSensorProfile(2, "startup-default", true);
 	LogActiveIREnvironment(environment, "startup-default", true);
 }
@@ -1493,6 +1508,7 @@ void HwaSimIR::InitInfraredShader() {
     uniform int u_material_param_count;
     uniform float u_material_ids[8];
     uniform vec4 u_material_params[8];
+    uniform int u_stage4_visual_debug; // 阶段4可视化诊断：默认0，只在排查Hotspot/BrightSpot接线时打开
 
     // 头部热源参数
     uniform int u_hotspot_front_en;
@@ -1510,7 +1526,7 @@ void HwaSimIR::InitInfraredShader() {
     uniform int u_brightspot_en;       // 亮斑开关：0-关，1-开
     uniform vec3 u_brightspot_pos;     // 亮斑中心位置(局部坐标)
     uniform float u_brightspot_radius; // 亮斑基础半径
-    uniform float u_brightspot_temp;   // 亮斑亮度/温度增量
+    uniform float u_brightspot_temp;   // legacy命名：阶段4按亮斑intensity使用，不代表Kelvin温度
     // ======================================================
 
     varying vec2 texcoord;
@@ -1554,6 +1570,7 @@ void HwaSimIR::InitInfraredShader() {
         float surface_reflectance = clamp(surface_param.y, 0.02, 0.95);
 		// 计算基础热辐射与范围热源
         float current_temp = u_base_temperature;
+        float stage4_debug_mask = 0.0;
 
         if (u_hotspot_front_en == 1) {
             float dist_front = distance(v_local_pos, u_hotspot_front_pos);
@@ -1565,6 +1582,7 @@ void HwaSimIR::InitInfraredShader() {
             float dist_rear = distance(v_local_pos, u_hotspot_rear_pos);
             float flicker = 0.85 + 0.15 * sin(u_time * 15.0);
             float factor_rear = 1.0 - smoothstep(0.0, u_hotspot_rear_radius, dist_rear);
+            stage4_debug_mask = max(stage4_debug_mask, factor_rear);
             current_temp += factor_rear * (u_hotspot_rear_temp * flicker);
         }
 
@@ -1592,11 +1610,16 @@ void HwaSimIR::InitInfraredShader() {
             
             // 边缘过渡：从 current_radius 的 40% 处开始向外羽化衰减
             float factor_bs = 1.0 - smoothstep(current_radius * 0.4, current_radius, dist_bs);
+            stage4_debug_mask = max(stage4_debug_mask, factor_bs);
             brightspot_intensity = factor_bs * u_brightspot_temp;
         }
 
         // 合成（限制在纯白 1.0 以内）
         final_intensity = clamp(final_intensity + brightspot_intensity, 0.0, 1.0);
+        if (u_stage4_visual_debug == 1 && stage4_debug_mask > 0.0) {
+            // 只在显式打开诊断开关时抬亮mask区域，用于确认uniform已经进入可见像素链路。
+            final_intensity = max(final_intensity, clamp(0.25 + stage4_debug_mask * 0.75, 0.0, 1.0));
+        }
         //float final_intensity = clamp(current_temp * temp_weight + luminance * detail_weight, 0.0, 1.0);
 
         gl_FragColor = vec4(final_intensity, final_intensity, final_intensity, texColor.a);
@@ -1647,6 +1670,7 @@ void HwaSimIR::ApplyInfraredShader(NodePath& node, bool isBackground) {
 	node.set_shader_input("u_material_param_count", LVecBase2i(0, 0));
 	node.set_shader_input("u_material_ids", defaultMaterialIds);
 	node.set_shader_input("u_material_params", defaultMaterialParams);
+	node.set_shader_input("u_stage4_visual_debug", LVecBase2i(0, 0)); // 默认关闭阶段4可视化诊断
 
 	// 头部亮斑默认配置
 	node.set_shader_input("u_hotspot_front_en", LVecBase2i(0, 0));
@@ -1654,18 +1678,18 @@ void HwaSimIR::ApplyInfraredShader(NodePath& node, bool isBackground) {
 	node.set_shader_input("u_hotspot_front_radius", LVecBase2f(0.5f, 0.0f));
 	node.set_shader_input("u_hotspot_front_temp", LVecBase2f(1.0f, 0.0f));
 
-	// 尾部亮斑默认配置
+	// 阶段4 ThermalHotspot 默认关闭；运行时仅由 TargetState.engineState 控制发动机/尾喷热源。
 	node.set_shader_input("u_hotspot_rear_en", LVecBase2i(0, 0));
 	node.set_shader_input("u_hotspot_rear_pos", LVecBase3f(0.0f, 0.0f, 0.0f));
 	node.set_shader_input("u_hotspot_rear_radius", LVecBase2f(2.0f, 0.0f));
 	node.set_shader_input("u_hotspot_rear_temp", LVecBase2f(1.2f, 0.0f));
 
-	// 表面亮斑默认配置
+	// 阶段4 BrightSpot 默认关闭；运行时仅由 WeaponState.strikeFlag/strikePart 控制。
 	node.set_shader_input("u_brightspot_en", LVecBase2i(0, 0)); // 默认关闭
 	// 初始位置
 	node.set_shader_input("u_brightspot_pos", LVecBase3f(0.0f, 0.0f, 2.0f));
 	node.set_shader_input("u_brightspot_radius", LVecBase2f(1.0f, 0.0f)); // 亮斑大小
-	node.set_shader_input("u_brightspot_temp", LVecBase2f(10.0f, 0.0f));   // 增加的亮度值															
+	node.set_shader_input("u_brightspot_temp", LVecBase2f(0.0f, 0.0f));   // legacy命名：传入intensity，不是Kelvin温度
 }
 
 void HwaSimIR::ApplyRadianceInputs(NodePath& node, const IRObjectRadianceOutput& radiance, int objectKind)
@@ -1766,6 +1790,337 @@ float HwaSimIR::EstimateRangeToCamera(const NodePath& node) const
 	LVector3f delta = nodePos - cameraPos;
 	float range = delta.length();
 	return std::max(1.0f, range);
+}
+
+bool HwaSimIR::IsValidTargetStateKey(const BYHWICD::TargetState& targetState) const
+{
+	return TargetTypeToPlatformType(targetState.targetType) != NONE;
+}
+
+bool HwaSimIR::TargetKeyMatches(const BYHWICD::TargetState& targetState, const TargetPlatformData& targetPlat) const
+{
+	if (!targetPlat.isExist || !IsValidTargetStateKey(targetState))
+	{
+		return false;
+	}
+	// TargetState 的唯一目标键为 targetType + targetPlatID + targetID，不能只看 targetID。
+	return targetPlat.type == TargetTypeToPlatformType(targetState.targetType)
+		&& targetPlat.targetState.targetType == targetState.targetType
+		&& targetPlat.targetState.targetPlatID == targetState.targetPlatID
+		&& targetPlat.targetState.targetID == targetState.targetID;
+}
+
+bool HwaSimIR::WeaponTargetKeyMatches(const BYHWICD::WeaponState& weaponState, const TargetPlatformData& targetPlat) const
+{
+	if (!targetPlat.isExist || weaponState.targetType == 0x00)
+	{
+		return false;
+	}
+	// WeaponState 同样使用三元组定位目标；strike/lookat/viewValid 都不能只按 targetID 匹配。
+	return targetPlat.type == TargetTypeToPlatformType(weaponState.targetType)
+		&& targetPlat.targetState.targetType == weaponState.targetType
+		&& targetPlat.targetState.targetPlatID == weaponState.targetPlatID
+		&& targetPlat.targetState.targetID == weaponState.targetID;
+}
+
+TargetPlatformData* HwaSimIR::FindTargetPlatformByTargetState(const BYHWICD::TargetState& targetState)
+{
+	for (auto& targetPlat : m_targetPlatformList)
+	{
+		if (TargetKeyMatches(targetState, targetPlat))
+		{
+			return &targetPlat;
+		}
+	}
+	return nullptr;
+}
+
+TargetPlatformData* HwaSimIR::FindTargetPlatformByWeaponState(const BYHWICD::WeaponState& weaponState)
+{
+	for (auto& targetPlat : m_targetPlatformList)
+	{
+		if (WeaponTargetKeyMatches(weaponState, targetPlat))
+		{
+			return &targetPlat;
+		}
+	}
+	return nullptr;
+}
+
+TargetPlatformData* HwaSimIR::FindOrMapTargetPlatform(const BYHWICD::TargetState& targetState, int targetStateIndex)
+{
+	TargetPlatformData* mappedTarget = FindTargetPlatformByTargetState(targetState);
+	if (mappedTarget != nullptr)
+	{
+		return mappedTarget;
+	}
+
+	const PLATFORM_TYPE platType = TargetTypeToPlatformType(targetState.targetType);
+	for (size_t platIdx = 0; platIdx < m_targetPlatformList.size(); ++platIdx)
+	{
+		TargetPlatformData& targetPlat = m_targetPlatformList[platIdx];
+		const bool unmapped = targetPlat.targetState.targetID < 0;
+		if (targetPlat.isExist && targetPlat.type == platType && unmapped)
+		{
+			targetPlat.platID = targetState.targetID;
+			targetPlat.targetState.targetType = targetState.targetType;
+			targetPlat.targetState.targetPlatID = targetState.targetPlatID;
+			targetPlat.targetState.targetID = targetState.targetID;
+			targetPlat.nodePath.hide();
+			std::cout << "[TargetMapping] bind"
+				<< " index=" << targetStateIndex
+				<< " platformIndex=" << platIdx
+				<< " targetType=0x" << std::hex << targetState.targetType << std::dec
+				<< " targetPlatID=" << targetState.targetPlatID
+				<< " targetID=" << targetState.targetID
+				<< std::endl;
+			return &targetPlat;
+		}
+	}
+
+	if (m_stage0DisplayFrameCount <= 3 || (m_stage0DisplayFrameCount % 60) == 0)
+	{
+		std::cout << "[TargetMapping][WARN] no_free_target_platform"
+			<< " index=" << targetStateIndex
+			<< " targetType=0x" << std::hex << targetState.targetType << std::dec
+			<< " targetPlatID=" << targetState.targetPlatID
+			<< " targetID=" << targetState.targetID
+			<< std::endl;
+	}
+	return nullptr;
+}
+
+void HwaSimIR::ApplyWeaponCameraControl(BYHWICD::DisplayC2cObjTrackingData& currentData, TargetPlatformData* lookAtTarget)
+{
+	if (m_cameraNode.is_empty())
+	{
+		return;
+	}
+
+	BYHWICD::WeaponState& weaponState = currentData.weaponState;
+	if (weaponState.lookatEn)
+	{
+		if (lookAtTarget == nullptr)
+		{
+			std::cout << "[CameraControl][WARN] lookat_target_not_found"
+				<< " targetType=0x" << std::hex << weaponState.targetType << std::dec
+				<< " targetPlatID=" << weaponState.targetPlatID
+				<< " targetID=" << weaponState.targetID
+				<< std::endl;
+			return;
+		}
+
+		const BYHWICD::SpatialState& platSpatial = currentData.platLoc;
+		const BYHWICD::SpatialState& targetSpatial = lookAtTarget->targetState.targetLoc;
+		double range = 0.0;
+		double relPitch = 0.0;
+		double relYaw = 0.0;
+		m_attitudeTrans.computeRelativePosition(
+			platSpatial.lat, platSpatial.lon, platSpatial.alt,
+			platSpatial.roll, platSpatial.pitch, platSpatial.yaw,
+			targetSpatial.lat, targetSpatial.lon, targetSpatial.alt,
+			range, relPitch, relYaw);
+
+		m_cameraNode.set_hpr(-relYaw, relPitch, 0.0);
+		weaponState.offsetAng[0] = relPitch;
+		weaponState.offsetAng[1] = relYaw;
+		if (m_stage0DisplayFrameCount <= 3 || (m_stage0DisplayFrameCount % 60) == 0)
+		{
+			std::cout << "[CameraControl]"
+				<< " mode=lookat"
+				<< " targetPlatID=" << weaponState.targetPlatID
+				<< " targetID=" << weaponState.targetID
+				<< " relPitch=" << relPitch
+				<< " relYaw=" << relYaw
+				<< " range=" << range
+				<< std::endl;
+		}
+		return;
+	}
+
+	// 手动角模式：xxOutAng[0] 是方位角，xxOutAng[1] 是俯仰角；同步写入 offsetAng[pitch,yaw]。
+	const double yaw = weaponState.xxOutAng[0];
+	const double pitch = weaponState.xxOutAng[1];
+	weaponState.offsetAng[0] = pitch;
+	weaponState.offsetAng[1] = yaw;
+	m_cameraNode.set_hpr(-yaw, pitch, 0.0);
+	if (m_stage0DisplayFrameCount <= 3 || (m_stage0DisplayFrameCount % 60) == 0)
+	{
+		std::cout << "[CameraControl]"
+			<< " mode=angle"
+			<< " xxYaw=" << yaw
+			<< " xxPitch=" << pitch
+			<< " offsetPitch=" << weaponState.offsetAng[0]
+			<< " offsetYaw=" << weaponState.offsetAng[1]
+			<< std::endl;
+	}
+}
+
+std::string HwaSimIR::Stage4PlatformName(PLATFORM_TYPE type) const
+{
+	std::map<PLATFORM_TYPE, PlatformResPath>::const_iterator resIter = m_platformResMap.find(type);
+	if (resIter != m_platformResMap.end() && !resIter->second.displayName.empty())
+	{
+		return resIter->second.displayName;
+	}
+
+	switch (type)
+	{
+	case F35: return "F35";
+	case AIM120: return "AIM120";
+	case AIM9: return "AIM9X";
+	case MMD: return "MMD";
+	default: return "default";
+	}
+}
+
+bool HwaSimIR::Stage4WeaponAppliesToTarget(const BYHWICD::WeaponState& weaponState, const TargetPlatformData& targetPlat) const
+{
+	if (!weaponState.strikeFlag)
+	{
+		return false;
+	}
+	return WeaponTargetKeyMatches(weaponState, targetPlat);
+}
+
+void HwaSimIR::ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHWICD::WeaponState& weaponState, float dtSec, float ambientTempK)
+{
+	if (targetPlat.nodePath.is_empty())
+	{
+		return;
+	}
+
+	const std::string platformName = Stage4PlatformName(targetPlat.type);
+	const std::string runtimeKey = platformName + "#plat" + std::to_string(targetPlat.targetState.targetPlatID)
+		+ "#target" + std::to_string(targetPlat.targetState.targetID);
+	const bool engineState = targetPlat.targetState.engineState;
+	IRHotspotState rearHotspot = m_irTemperatureModel.updateEngineRear(platformName, runtimeKey, engineState, dtSec, ambientTempK);
+	float tempSpan = std::max(1.0f, rearHotspot.targetTempK - rearHotspot.ambientTempK);
+	float normalizedTemp = std::max(0.0f, std::min(1.0f, (rearHotspot.currentTempK - rearHotspot.ambientTempK) / tempSpan));
+	float rearIntensity = normalizedTemp * rearHotspot.intensity;
+	float rearRadius = std::max(rearHotspot.size.x, std::max(rearHotspot.size.y, rearHotspot.size.z));
+	bool rearEnabledForShader = rearHotspot.enabled;
+	IRStage4Vec3 rearPosForShader = rearHotspot.localPos;
+	float rearRadiusForShader = rearRadius;
+	float rearIntensityForShader = rearIntensity;
+
+	if (m_enableStage4HotspotVisualDebug && m_forceStage4RearHotspotVisible)
+	{
+		// 诊断模式：覆盖到大半径、强强度，专门确认尾部热源uniform是否能进入像素输出。
+		rearEnabledForShader = true;
+		rearPosForShader = IRStage4Vec3(0.0f, 0.0f, 0.0f);
+		rearRadiusForShader = std::max(rearRadiusForShader, 1000.0f);
+		rearIntensityForShader = std::max(rearIntensityForShader, 1.0f);
+	}
+
+	// 阶段4 ThermalHotspot：只由 engineState 控制发动机/尾喷热源，不读取 strikeFlag。
+	targetPlat.nodePath.set_shader_input("u_stage4_visual_debug", LVecBase2i(m_enableStage4HotspotVisualDebug ? 1 : 0, 0));
+	targetPlat.nodePath.set_shader_input("u_hotspot_rear_en", LVecBase2i(rearEnabledForShader ? 1 : 0, 0));
+	targetPlat.nodePath.set_shader_input("u_hotspot_rear_pos", LVecBase3f(rearPosForShader.x, rearPosForShader.y, rearPosForShader.z));
+	targetPlat.nodePath.set_shader_input("u_hotspot_rear_radius", LVecBase2f(rearRadiusForShader, 0.0f));
+	targetPlat.nodePath.set_shader_input("u_hotspot_rear_temp", LVecBase2f(rearIntensityForShader, 0.0f));
+	std::cout << "[Stage4 ThermalHotspot]"
+		<< " targetPlatID=" << targetPlat.targetState.targetPlatID
+		<< " targetID=" << targetPlat.targetState.targetID
+		<< " platform=" << platformName
+		<< " engineState=" << (engineState ? "1" : "0")
+		<< " currentTempK=" << rearHotspot.currentTempK
+		<< " targetTempK=" << rearHotspot.targetTempK
+		<< " enabled=" << (rearEnabledForShader ? "1" : "0")
+		<< std::endl;
+
+	const bool brightSpotApplies = Stage4WeaponAppliesToTarget(weaponState, targetPlat);
+	bool invalidStrikePart = false;
+	IRBrightSpotState brightSpot = m_irTemperatureModel.resolveBrightSpot(
+		platformName,
+		brightSpotApplies,
+		weaponState.strikePart,
+		&invalidStrikePart);
+	if (m_enableStage4HotspotVisualDebug && m_forceStage4BrightSpotVisible)
+	{
+		// 诊断模式：与协议解耦，强制生成一个覆盖面足够大的亮斑，排查shader/坐标/输出映射。
+		brightSpot.enabled = true;
+		brightSpot.part = IRBrightSpotPart::Head;
+		brightSpot.localPos = IRStage4Vec3(0.0f, 0.0f, 0.0f);
+		brightSpot.radius = std::max(brightSpot.radius, 1000.0f);
+		brightSpot.intensity = std::max(brightSpot.intensity, 1.0f);
+	}
+
+	// 阶段4 BrightSpot：只由 WeaponState.strikeFlag/strikePart 控制；u_brightspot_temp 传 intensity，不是温度。
+	targetPlat.nodePath.set_shader_input("u_brightspot_en", LVecBase2i(brightSpot.enabled ? 1 : 0, 0));
+	targetPlat.nodePath.set_shader_input("u_brightspot_pos", LVecBase3f(brightSpot.localPos.x, brightSpot.localPos.y, brightSpot.localPos.z));
+	targetPlat.nodePath.set_shader_input("u_brightspot_radius", LVecBase2f(brightSpot.radius, 0.0f));
+	targetPlat.nodePath.set_shader_input("u_brightspot_temp", LVecBase2f(brightSpot.intensity, 0.0f));
+	std::cout << "[Stage4 BrightSpot]"
+		<< " targetPlatID=" << targetPlat.targetState.targetPlatID
+		<< " targetID=" << targetPlat.targetState.targetID
+		<< " strikeFlag=" << (weaponState.strikeFlag ? "1" : "0")
+		<< " strikePart=" << weaponState.strikePart
+		<< " part=" << IRBrightSpotPartName(brightSpot.part)
+		<< " localPos=(" << brightSpot.localPos.x << "," << brightSpot.localPos.y << "," << brightSpot.localPos.z << ")"
+		<< " radius=" << brightSpot.radius
+		<< " intensity=" << brightSpot.intensity
+		<< " enabled=" << (brightSpot.enabled ? "1" : "0")
+		<< std::endl;
+
+	const bool hasShader = (targetPlat.nodePath.get_shader() != nullptr);
+	const std::map<PLATFORM_TYPE, PlatformResPath>::const_iterator resIter = m_platformResMap.find(targetPlat.type);
+	bool baseTextureAvailable = false;
+	bool materialIdTexBound = false;
+	if (resIter != m_platformResMap.end())
+	{
+		baseTextureAvailable = !resIter->second.texturePath.empty() && FileExists(resIter->second.texturePath);
+		materialIdTexBound = !resIter->second.materialIdTexturePath.empty() && FileExists(resIter->second.materialIdTexturePath);
+	}
+	const bool logUniform = rearEnabledForShader || brightSpot.enabled || m_enableStage4HotspotVisualDebug
+		|| m_stage0DisplayFrameCount <= 3 || (m_stage0DisplayFrameCount % 60) == 0;
+	if (logUniform)
+	{
+		std::cout << "[Stage4 Uniform]"
+			<< " targetPlatID=" << targetPlat.targetState.targetPlatID
+			<< " targetID=" << targetPlat.targetState.targetID
+			<< " nodeName=" << targetPlat.nodePath.get_name()
+			<< " hasShader=" << (hasShader ? "1" : "0")
+			<< " baseTextureBound=" << (baseTextureAvailable ? "1" : "0")
+			<< " materialIdTexBound=" << (materialIdTexBound ? "1" : "0")
+			<< " hotspotRearEn=" << (rearEnabledForShader ? "1" : "0")
+			<< " brightspotEn=" << (brightSpot.enabled ? "1" : "0")
+			<< " brightspotPos=(" << brightSpot.localPos.x << "," << brightSpot.localPos.y << "," << brightSpot.localPos.z << ")"
+			<< " brightspotRadius=" << brightSpot.radius
+			<< " brightspotIntensity=" << brightSpot.intensity
+			<< std::endl;
+		if (!hasShader)
+		{
+			std::cout << "[Stage4 Uniform][WARN] STAGE4_SHADER_NOT_BOUND"
+				<< " targetPlatID=" << targetPlat.targetState.targetPlatID
+				<< " targetID=" << targetPlat.targetState.targetID
+				<< " nodeName=" << targetPlat.nodePath.get_name()
+				<< std::endl;
+		}
+		if (!baseTextureAvailable || !materialIdTexBound)
+		{
+			std::cout << "[Stage4 Uniform][WARN] STAGE4_TEXTURE_MISSING"
+				<< " targetPlatID=" << targetPlat.targetState.targetPlatID
+				<< " targetID=" << targetPlat.targetState.targetID
+				<< " baseTextureBound=" << (baseTextureAvailable ? "1" : "0")
+				<< " materialIdTexBound=" << (materialIdTexBound ? "1" : "0")
+				<< std::endl;
+		}
+	}
+	if (m_enableStage4HotspotVisualDebug && logUniform)
+	{
+		std::cout << "[Stage4 VisualDebug]"
+			<< " targetPlatID=" << targetPlat.targetState.targetPlatID
+			<< " targetID=" << targetPlat.targetState.targetID
+			<< " enabled=1"
+			<< " forceRear=" << (m_forceStage4RearHotspotVisible ? "1" : "0")
+			<< " forceBright=" << (m_forceStage4BrightSpotVisible ? "1" : "0")
+			<< " rearRadius=" << rearRadiusForShader
+			<< " rearIntensity=" << rearIntensityForShader
+			<< " brightRadius=" << brightSpot.radius
+			<< " brightIntensity=" << brightSpot.intensity
+			<< std::endl;
+	}
 }
 
 void HwaSimIR::LogActiveIRSensorProfile(int protocolBand, const char* reason, bool forceLog)
@@ -1873,8 +2228,15 @@ void HwaSimIR::LogActiveIREnvironment(const IRRuntimeEnvironment& environment, c
 // 动态更新红外状态
 void HwaSimIR::UpdatePlatformIRStatus() {
 	double current_time = ClockObject::get_global_clock()->get_frame_time();
+	float stage4DtSec = 0.033f;
+	if (m_lastStage4UpdateTime >= 0.0)
+	{
+		stage4DtSec = static_cast<float>(current_time - m_lastStage4UpdateTime);
+	}
+	m_lastStage4UpdateTime = current_time;
 
 	IRRuntimeEnvironment environment = BuildRuntimeEnvironment();
+	const float ambientTempK = static_cast<float>(environment.airTemperatureC + 273.15);
 	int protocolBand = (m_sensorParam.trackerSensorBand >= 0 && m_sensorParam.trackerSensorBand <= 4)
 		? m_sensorParam.trackerSensorBand : 2;
 	LogActiveIRSensorProfile(protocolBand, "runtime-band", false);
@@ -1908,7 +2270,7 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 			IRObjectRadianceOutput radiance = EvaluateNodeRadiance(MaterialNameForPlatform(pakPlat.type), pakPlat.nodePath, true, false, false, false, 0.0, pakPlat.platParam.spatial.alt);
 			ApplyRadianceInputs(pakPlat.nodePath, radiance, 0);
 
-			// 常开尾喷口亮斑
+			// 阶段4不为挂载平台恢复常开尾喷；飞机平台暂无协议engineState，默认保持关闭。
 			pakPlat.nodePath.set_shader_input("u_hotspot_rear_en", LVecBase2i(0, 0));
 		}
 	}
@@ -1916,24 +2278,17 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 	// 更新目标导弹平台 (TargetState)
 	for (auto& targetPlat : m_targetPlatformList) {
 		if (targetPlat.isExist) {
+			if (targetPlat.targetState.targetID < 0)
+			{
+				targetPlat.nodePath.hide();
+				continue;
+			}
 			targetPlat.nodePath.set_shader_input("u_time", LVecBase2f((float)current_time, 0.0f));
 			bool damaged = (targetPlat.targetState.targetState == 0x02 || targetPlat.targetState.targetState == 0x03);
 			IRObjectRadianceOutput radiance = EvaluateNodeRadiance(MaterialNameForPlatform(targetPlat.type), targetPlat.nodePath, targetPlat.targetState.engineState, damaged, false, false, 0.0, targetPlat.targetState.targetLoc.alt);
 			ApplyRadianceInputs(targetPlat.nodePath, radiance, 0);
 
-			// 发动机开机状态映射为尾部红外亮斑
-			//int isEngineOn = targetPlat.targetState.engineState ? 1 : 0;
-			int isEngineOn = 0;
-			targetPlat.nodePath.set_shader_input("u_hotspot_rear_en", LVecBase2i(isEngineOn, 0));
-
-			// 开启亮斑
-			targetPlat.nodePath.set_shader_input("u_brightspot_en", LVecBase2i(0, 0));
-			// 设定亮斑位置（在模型的局部坐标系下）
-			targetPlat.nodePath.set_shader_input("u_brightspot_pos", LVecBase3f(-0.3f, 0.5f, 0.0f));
-			// 设定不规则圆形的半径
-			targetPlat.nodePath.set_shader_input("u_brightspot_radius", LVecBase2f(0.2f, 0.0f));
-			// 设定增量（1.0代表叠加纯白）
-			targetPlat.nodePath.set_shader_input("u_brightspot_temp", LVecBase2f(1.0f, 0.0f));
+			ApplyStage4TargetState(targetPlat, m_realTimeSceneData.weaponState, stage4DtSec, ambientTempK);
 		}
 	}
 }

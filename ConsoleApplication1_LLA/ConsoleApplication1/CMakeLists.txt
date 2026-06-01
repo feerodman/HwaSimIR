@@ -22,6 +22,7 @@ add_executable(HwaSim_RK3588 main.cpp
         IR/IRConfig.cpp
         IR/IRModtranTauLut.cpp
         IR/IRSceneMaterialMapper.cpp
+        IR/IRTemperatureModel.cpp
         IR/IRTypes.cpp
         IRSimulation.cpp
         UdpCommThread_Linux.cpp)

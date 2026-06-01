@@ -34,6 +34,7 @@
 #include "IRSimulation.h"
 #include "IR/IRConfig.h"
 #include "IR/IRSceneMaterialMapper.h"
+#include "IR/IRTemperatureModel.h"
 
 #include "shader.h"             // 新增：着色器支持
 #include "clockObject.h"        // 新增：获取全局时间
@@ -94,7 +95,7 @@ public:
 	void SetRenderMode(bool isSync, double targetFPS);
 private:
 	//targetType转PLATFORM_TYPE
-	PLATFORM_TYPE TargetTypeToPlatformType(int targetType);
+	PLATFORM_TYPE TargetTypeToPlatformType(int targetType) const;
 	// 注册自定义按键/功能回调
 	//void register_custom_functions();
 
@@ -113,13 +114,19 @@ private:
 	IRSensorProfileDatabase m_irSensorProfiles;             // SensorWave传感器配置
 	IRSceneMaterialMapper m_irSceneMaterialMapper;          // 阶段2：目标材质ID纹理与物理材质参数绑定器
 	IRWeatherProfile m_irWeatherProfile;                    // 阶段3：温度/太阳高度/方位角环境profile
+	IRTemperatureModel m_irTemperatureModel;                 // 阶段4：发动机热源与特殊亮斑状态模型
 	bool m_irMaterialReady = false;
 	bool m_irAtmosphereReady = false;
 	bool m_irSensorProfilesReady = false;
 	bool m_irWeatherReady = false;
+	bool m_irTemperatureReady = false;
+	bool m_enableStage4HotspotVisualDebug = false; // 阶段4可视化诊断开关，默认关闭，不改变生产渲染
+	bool m_forceStage4BrightSpotVisible = false;   // 阶段4调试：强制特殊亮斑可见
+	bool m_forceStage4RearHotspotVisible = false;  // 阶段4调试：强制尾部热源可见
 	int m_lastLoggedSensorProtocolBand = -999;
 	int m_lastLoggedEnvironmentHour = -999;
 	int m_lastLoggedEnvironmentWeather = -999;
+	double m_lastStage4UpdateTime = -1.0;
 
 	void InitInfraredShader();                              // 初始化着色器代码
 	void InitInfraredSimulation();                          // 初始化低复杂度红外全链路参数
@@ -131,6 +138,16 @@ private:
 	IRObjectRadianceOutput EvaluateNodeRadiance(const std::string& materialName, const NodePath& node, bool engineOn, bool damaged, bool isSky, bool isCloud, double cloudDensity, double targetAltitudeMeters = -1000000.0);
 	std::string MaterialNameForPlatform(PLATFORM_TYPE type) const;
 	float EstimateRangeToCamera(const NodePath& node) const;
+	bool IsValidTargetStateKey(const BYHWICD::TargetState& targetState) const;
+	bool TargetKeyMatches(const BYHWICD::TargetState& targetState, const TargetPlatformData& targetPlat) const;
+	bool WeaponTargetKeyMatches(const BYHWICD::WeaponState& weaponState, const TargetPlatformData& targetPlat) const;
+	TargetPlatformData* FindTargetPlatformByTargetState(const BYHWICD::TargetState& targetState);
+	TargetPlatformData* FindTargetPlatformByWeaponState(const BYHWICD::WeaponState& weaponState);
+	TargetPlatformData* FindOrMapTargetPlatform(const BYHWICD::TargetState& targetState, int targetStateIndex);
+	void ApplyWeaponCameraControl(BYHWICD::DisplayC2cObjTrackingData& currentData, TargetPlatformData* lookAtTarget);
+	std::string Stage4PlatformName(PLATFORM_TYPE type) const;
+	bool Stage4WeaponAppliesToTarget(const BYHWICD::WeaponState& weaponState, const TargetPlatformData& targetPlat) const;
+	void ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHWICD::WeaponState& weaponState, float dtSec, float ambientTempK);
 	void LogActiveIRSensorProfile(int protocolBand, const char* reason, bool forceLog);
 	double CurrentSimulationHour() const;                   // 从实时数据时间换算当前仿真小时，无实时数据时使用正午profile
 	IRRuntimeEnvironment BuildRuntimeEnvironment() const;   // 阶段3：按 UDP > profile > 默认值合成环境状态

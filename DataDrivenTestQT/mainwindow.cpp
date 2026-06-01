@@ -306,6 +306,7 @@ void MainWindow::sendInitCommand()
     cmd.trackingInit.trackerSensor[0].coarseTrackResolution = m_fovHEdit->text().toDouble();
     cmd.trackingInit.trackerSensor[0].preciseTrackResolution = m_fovVEdit->text().toDouble();
 
+
     cmd.MissileMaxCount120 = 5;
     cmd.MissileMaxCount9 = 5;
     cmd.MissileMaxCountMMD = 0;
@@ -357,13 +358,20 @@ void MainWindow::sendRealTimeData()
     data.platLoc.speed = realTimeData.at(dataNum-1).platSpeed;
 
 	// Wg信息
-	data.weaponState.targetType = 0x11;
+    data.weaponState.targetType = 0x22;
 	data.weaponState.targetPlatID = 3;
-	data.weaponState.targetID = 2;
+    data.weaponState.targetID = 3;
 	data.weaponState.xxOutAng[0] = 0.0;
 	data.weaponState.xxOutAng[1] = 0.0;
 	data.weaponState.lookatEn = true;
 	data.weaponState.illuminatorEn = true;
+    if(current_time > 5){
+        //5秒后發動機熄火
+        data.weaponState.strikeFlag = true;
+        data.weaponState.strikePart=2;
+    }else{
+        data.weaponState.strikeFlag = false;
+    }
 
     data.weaponState.viewValid = realTimeData.at(dataNum-1).viewValid;
 
@@ -375,9 +383,9 @@ void MainWindow::sendRealTimeData()
 	data.targetState[0].targetID = 3;
     if(current_time > 5){
         //5秒后發動機熄火
-        data.targetState[0].engineState = false;
-    }else{
         data.targetState[0].engineState = true;
+    }else{
+        data.targetState[0].engineState = false;
     }
 
     data.targetState[0].viewValid = realTimeData.at(dataNum-1).viewValid;
@@ -438,7 +446,7 @@ void MainWindow::sendRealTimeData()
     }
     if(current_time > 12)
     {
-         data.weaponState.targetPlatID = 4;
+         data.weaponState.targetID = 34;
     }
 
 	if (m_udpSocket)
@@ -748,8 +756,8 @@ void MainWindow::readData(QString tmp)
                     break;
                 }
                 }
-                data.viewValid = list1[53].toInt();
-//                data.viewValid = 1;
+                //data.viewValid = list1[53].toInt();
+                data.viewValid = 1;
                 data.damageFlag = list1[29].toInt();
                 data.strikeFlag = list1[28].toInt();
 

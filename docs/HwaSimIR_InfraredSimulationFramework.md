@@ -588,23 +588,30 @@ illuminator:
 - 改变能见度，图像整体雾化/程辐射变化。
 - 改变仿真小时，VIS/SWIR 亮度随太阳高度变化，LWIR 随温度变化。
 
-### 阶段 4：温度场与目标动态热源
+### 阶段 4：发动机/尾喷热源与特殊亮斑控制
 
 目标：
 
-- 实现材质温度随环境和状态变化，发动机/毁伤局部热源真实参与辐射。
+- 在不进入阶段 5 完整辐射链路的前提下，实现目标发动机/尾喷 `ThermalHotspot` 的温度惯性入口。
+- 实现由 `WeaponState.strikeFlag` / `WeaponState.strikePart` 控制的头部/中部 `BrightSpot`，用于特殊辐射效果。
+- 明确区分物理热源 `ThermalHotspot` 与特殊辐射亮斑 `BrightSpot`。
 
 建议任务：
 
-- 首版先按材质热惯量和太阳吸收率估计温度偏移。
-- 发动机/尾喷口/毁伤用局部 mask 或局部坐标 hotspot。
-- 后续加入一维热传导有限差分缓存。
+- 新增 `IRTemperatureModel`，维护 `IRHotspotState` 和 `IRBrightSpotState`。
+- `engineState=true` 时发动机/尾喷热源按 `heatTauSec` 升温，`engineState=false` 时按 `coolTauSec` 向环境温度冷却。
+- `strikeFlag=false` 时关闭特殊亮斑；`strikeFlag=true && strikePart==1` 时启用头部亮斑；`strikeFlag=true && strikePart==2` 时启用中部亮斑。
+- `u_brightspot_temp` 作为 legacy shader uniform 暂时继续使用，但阶段 4 语义为 `intensity`，不代表 Kelvin 温度。
+- 配置文件按平台/模型提供 `engineRear` 和 `brightspots` 默认参数；缺失时使用安全默认值并打印 warning。
 
 验收：
 
-- 发动机关机后 MWIR/LWIR 热斑逐渐衰减，而不是瞬间消失。
-- 毁伤状态切换后出现局部高温。
-- LWIR 常温目标与背景有合理对比。
+- `u_hotspot_rear_en` 默认关闭，不恢复常开尾喷口亮斑。
+- `engineState` 只控制 `ThermalHotspot EngineRear`，不控制 `BrightSpot`。
+- `strikeFlag/strikePart` 只控制 `BrightSpot`，不控制发动机/尾喷热源。
+- 本轮不做毁伤状态，不创建 damage hotspot。
+- `path_radiance`、`sky_radiance`、`solar_irradiance` 接入后置到阶段 5。
+- `UseModtranTauForAtmosphere` 默认仍保持 `0`。
 
 ### 阶段 5：完整辐射链路
 
@@ -1272,3 +1279,56 @@ Production QC：
 收口建议：
 - 阶段 3 后续只有在用户明确确认后，才考虑把 MODTRAN tau 作为默认大气透过率来源。
 - 如果不默认启用 MODTRAN tau，阶段 3 可以视为具备受控实验能力并转入阶段 4。
+
+### 2026-05-29 阶段 4：发动机/尾喷热源与特殊亮斑控制
+
+完成内容：
+- 新增 `docs/stage4_hotspot_brightspot_plan.md`，明确 `ThermalHotspot` 与 `BrightSpot` 的术语边界：前者是带 Kelvin 温度和升/冷却时间常数的物理热源，后者是由 `strikeFlag/strikePart` 控制的特殊辐射亮斑。
+- 新增 `IR/IRTemperatureModel.h/.cpp`，定义 `IRHotspotKind`、`IRHotspotShape`、`IRBrightSpotPart`、`IRHotspotState`、`IRBrightSpotState`，并实现发动机热源温度惯性更新公式 `alpha = 1 - exp(-dt / tau)`。
+- 新增 `ConsoleApplication1_LLA/Bin/Config/IRHotspots/target_hotspots.json`，为 `F35`、`AIM120`、`AIM120D`、`AIM9X` 写入默认发动机尾部热源和头部/中部 BrightSpot 配置；`F22` 仅作为可选配置，不参与协议生成。
+- `HwaSimIR` 初始化时加载阶段 4 配置，缺失时使用内置安全默认值并打印 warning，不中断仿真。
+- 更新运行时 uniform 设置：`engineState` 只驱动 `u_hotspot_rear_en/u_hotspot_rear_pos/u_hotspot_rear_radius/u_hotspot_rear_temp`；`WeaponState.strikeFlag/strikePart` 只驱动 `u_brightspot_en/u_brightspot_pos/u_brightspot_radius/u_brightspot_temp`。
+- `u_hotspot_rear_en` 默认仍为 `0`，未恢复常开尾喷口亮斑。
+- `u_brightspot_temp` 保持 legacy shader 名称，但本阶段代码注释和变量均按 `intensity` 理解，不代表 Kelvin 温度。
+- 新增 `tools/stage4_hotspot_check.ps1` 和 `tools/stage4_hotspot_smoke.ps1`，分别做源码/配置约束检查与四组运行时 smoke。
+
+阶段边界：
+- 本轮不做毁伤状态，不把 `strikeFlag` 解释为 damage，也不创建 damage hotspot。
+- `strikeFlag/strikePart` 不控制发动机/尾喷 `ThermalHotspot`。
+- `engineState` 不控制头部/中部 `BrightSpot`。
+- 未接入 `path_radiance`、`sky_radiance`、`solar_irradiance`，这些仍后置到阶段 5。
+- 未重跑 MODTRAN production，未修改 `UseModtranTauForAtmosphere` 默认值。
+
+验收命令：
+- `powershell -ExecutionPolicy Bypass -File tools\stage0_build.ps1`
+- `powershell -ExecutionPolicy Bypass -File tools\stage3_modtran_tau_loader_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage4_hotspot_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage4_hotspot_smoke.ps1 -Bands @(1,2,3) -DelayMs 500`
+
+#### 阶段 4 补充：Hotspot/BrightSpot 可视化接线诊断
+
+触发背景：
+- 若 `engineState` / `strikeFlag` 日志已经变化，但目标模型仍然黑，优先怀疑状态模型之后的可见像素链路：shader 是否使用 uniform、uniform 是否设置到实际渲染节点、局部坐标/半径是否落在可见表面、基础灰度/AGC/clamp 是否把亮斑压没，或 DataDrivenTestQT 与 smoke 包的协议字段不一致。
+
+补充内容：
+- 新增 `[Stage4 Input]` 日志，在真实 Display 包进入后立即打印 `targetID`、平台、`engineState`、`strikeFlag`、`strikePart` 和 `sourcePacketTimeMs`，用于确认发送端状态进入 HwaSimIR。
+- 新增 `[Stage4 Uniform]` 日志，在目标节点写入 uniform 后打印 `nodeName`、`hasShader`、纹理状态、`hotspotRearEn`、`brightspotEn`、亮斑位置、半径和强度，并对 `STAGE4_SHADER_NOT_BOUND`、纹理缺失输出 warning。
+- 新增默认关闭的 `EnableStage4HotspotVisualDebug=0`。仅当显式设为 `1` 时，shader 使用 Stage4 mask 抬亮 hotspot/brightspot 区域，用于确认 uniform 已进入可见像素输出。
+- 新增默认关闭的 `ForceStage4BrightSpotVisible=0` 与 `ForceStage4RearHotspotVisible=0`。仅诊断时启用，使用大半径和强强度排除 localPos/radius 过小或坐标偏移问题。
+- 新增 `tools/stage4_hotspot_visual_smoke.ps1`，覆盖 baseline、强制亮斑、强制尾部热源、协议 head/mid、协议 engine 多组场景，输出 `logs/stage4/stage4_hotspot_visual_smoke_summary.md` 和 `.csv`。
+
+目标映射补充：
+- `InitP2cObjectTrackingCmd` 仍按 `platParam[2]` 生成载机平台并给第一个载机绑定相机；按 `MissileMaxCount120`、`MissileMaxCount9`、`MissileMaxCountMMD` 预生成三类目标槽位。
+- `DisplayC2cObjTrackingData` 到达后，`TargetState` 使用 `targetType + targetPlatID + targetID` 三元组映射唯一 `TargetPlatformData`，不再只按 `targetID` 匹配。
+- `targetNumValid` 只控制前 N 个 `TargetState` 是否显示；其余 `TargetState` 可继续驱动状态与位置，但节点保持隐藏。
+- `TargetState.viewValid=false` 时对应目标隐藏；若该目标同时是 `WeaponState` 指向目标，`WeaponState.viewValid=false` 也会隐藏它。
+- `WeaponState.lookatEn=true` 时，相机看向 `WeaponState` 三元组指向的目标；`lookatEn=false` 时使用 `xxOutAng[0]` 方位角与 `xxOutAng[1]` 俯仰角驱动相机，并同步写入本帧 `offsetAng[pitch,yaw]`。
+
+边界保持：
+- 仍不做毁伤状态，不把 `strikeFlag` 解释为 damage，不创建 damage hotspot。
+- `engineState` 仍只控制 `ThermalHotspot EngineRear`；`strikeFlag/strikePart` 仍只控制头部/中部 `BrightSpot`。
+- 不接入 `path_radiance`、`sky_radiance`、`solar_irradiance`，不进入阶段 5 完整辐射链路。
+- 不重跑 MODTRAN production，不修改 `UseModtranTauForAtmosphere` 默认关闭状态。
+
+补充验收命令：
+- `powershell -ExecutionPolicy Bypass -File tools\stage4_hotspot_visual_smoke.ps1 -Bands @(1,2,3) -DelayMs 500`

@@ -63,6 +63,9 @@
     <ClInclude Include="IR\IRSceneMaterialMapper.h">
       <Filter>头文件\IR</Filter>
     </ClInclude>
+    <ClInclude Include="IR\IRTemperatureModel.h">
+      <Filter>头文件\IR</Filter>
+    </ClInclude>
     <ClInclude Include="IR\IRTypes.h">
       <Filter>头文件\IR</Filter>
     </ClInclude>
@@ -99,6 +102,9 @@
       <Filter>源文件\IR</Filter>
     </ClCompile>
     <ClCompile Include="IR\IRSceneMaterialMapper.cpp">
+      <Filter>源文件\IR</Filter>
+    </ClCompile>
+    <ClCompile Include="IR\IRTemperatureModel.cpp">
       <Filter>源文件\IR</Filter>
     </ClCompile>
     <ClCompile Include="IR\IRTypes.cpp">
