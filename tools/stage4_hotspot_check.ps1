@@ -95,7 +95,7 @@ $checks.Add((Add-Check "Stage4 logs BrightSpot separately" ($appSourceText -matc
 
 $checks.Add((Add-Check "no damage model in Stage4 model/config" ($stage4ModelText -notmatch "damage|damaged|毁伤|damageFlag") "$modelHeader; $modelSource")) | Out-Null
 $checks.Add((Add-Check "Stage4 does not hook path/sky/solar radiance fields" ($stage4ModelText -notmatch "path_radiance|sky_radiance|solar_irradiance|pathRadiance|skyRadiance") "$modelHeader; $modelSource")) | Out-Null
-$checks.Add((Add-Check "no Stage5 chain added by Stage4 debug" (($appSourceText -notmatch "Stage5") -and ($stage4ModelText -notmatch "Stage5|L_surface|L_aperture|solar_irradiance")) "$appSource; $modelHeader; $modelSource")) | Out-Null
+$checks.Add((Add-Check "Stage4 model remains separate from Stage5 radiance" ($stage4ModelText -notmatch "Stage5|L_surface|L_aperture|solar_irradiance|bodyRadiance|finalGrayDebug") "$modelHeader; $modelSource")) | Out-Null
 $checks.Add((Add-Check "UseModtranTauForAtmosphere default remains off" (($stage3AtmosphereText -match "m_useModtranTauForAtmosphere\(false\)") -and ($appSourceText -match 'ReadProcessEnvFlag\("UseModtranTauForAtmosphere", false\)')) "$stage3AtmosphereSource; $appSource")) | Out-Null
 
 $checks | Format-Table -AutoSize

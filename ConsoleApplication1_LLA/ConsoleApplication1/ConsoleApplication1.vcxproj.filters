@@ -60,7 +60,13 @@
     <ClInclude Include="IR\IRModtranTauLut.h">
       <Filter>头文件\IR</Filter>
     </ClInclude>
+    <ClInclude Include="IR\IRRadianceModelV2.h">
+      <Filter>头文件\IR</Filter>
+    </ClInclude>
     <ClInclude Include="IR\IRSceneMaterialMapper.h">
+      <Filter>头文件\IR</Filter>
+    </ClInclude>
+    <ClInclude Include="IR\IRSensorModel.h">
       <Filter>头文件\IR</Filter>
     </ClInclude>
     <ClInclude Include="IR\IRTemperatureModel.h">
@@ -101,7 +107,13 @@
     <ClCompile Include="IR\IRModtranTauLut.cpp">
       <Filter>源文件\IR</Filter>
     </ClCompile>
+    <ClCompile Include="IR\IRRadianceModelV2.cpp">
+      <Filter>源文件\IR</Filter>
+    </ClCompile>
     <ClCompile Include="IR\IRSceneMaterialMapper.cpp">
+      <Filter>源文件\IR</Filter>
+    </ClCompile>
+    <ClCompile Include="IR\IRSensorModel.cpp">
       <Filter>源文件\IR</Filter>
     </ClCompile>
     <ClCompile Include="IR\IRTemperatureModel.cpp">

@@ -139,11 +139,7 @@ void TcpCommThread::sendFrameThreadFunc() {
 
 		// 沿 X 轴翻转 (代替原先易越界的 memcpy)
 		cv::flip(rawFrame, flippedFrame, 0);
-
-		// 如果拖动边缘导致分辨率轻微变形，强制缩放回服务端期望的 800x800
-		if (width != 800 || height != 800) {
-			cv::resize(flippedFrame, flippedFrame, cv::Size(800, 800));
-		}
+		// Stage6A: encode the current sensor output size. TCP/JPEG framing is unchanged.
 
 		// --- 4. JPEG 压缩编码 ---
 		std::vector<uchar> jpegData;

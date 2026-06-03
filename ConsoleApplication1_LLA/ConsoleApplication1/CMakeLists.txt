@@ -21,7 +21,9 @@ add_executable(HwaSim_RK3588 main.cpp
         HwaSimIR.cpp
         IR/IRConfig.cpp
         IR/IRModtranTauLut.cpp
+        IR/IRRadianceModelV2.cpp
         IR/IRSceneMaterialMapper.cpp
+        IR/IRSensorModel.cpp
         IR/IRTemperatureModel.cpp
         IR/IRTypes.cpp
         IRSimulation.cpp

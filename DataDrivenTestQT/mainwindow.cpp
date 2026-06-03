@@ -299,8 +299,11 @@ void MainWindow::sendInitCommand()
     cmd.trackingInit.videoFps = 30;
     cmd.trackingInit.trackerSensor[0].index = 0;
     cmd.trackingInit.trackerSensor[0].trackerSensorBand = 2; // 中波红外
-    cmd.trackingInit.trackerSensor[0].trackerSensorWidth = 640;
-    cmd.trackingInit.trackerSensor[0].trackerSensorHeight = 512;//hml
+    cmd.trackingInit.trackerSensor[0].trackerSensorWidth = 600;
+    cmd.trackingInit.trackerSensor[0].trackerSensorHeight = 600;//hml
+    cmd.trackingInit.trackerSensor[0].trackerSensorViewMin = 1;
+    cmd.trackingInit.trackerSensor[0].trackerSensorViewMax = 550000;
+    cmd.trackingInit.trackerSensor[0].trackerSensorPixelAngle = 2.18166;
     cmd.trackingInit.trackerSensor[0].coarseTrackEn = true;
     cmd.trackingInit.trackerSensor[0].preciseTrackEn = true;
     cmd.trackingInit.trackerSensor[0].coarseTrackResolution = m_fovHEdit->text().toDouble();

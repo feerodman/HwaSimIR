@@ -34,6 +34,8 @@
 #include "IRSimulation.h"
 #include "IR/IRConfig.h"
 #include "IR/IRSceneMaterialMapper.h"
+#include "IR/IRRadianceModelV2.h"
+#include "IR/IRSensorModel.h"
 #include "IR/IRTemperatureModel.h"
 
 #include "shader.h"             // 新增：着色器支持
@@ -111,6 +113,8 @@ private:
 	IRMaterialDatabase m_irMaterialDatabase;                // 材质数据库
 	IRAtmosphereModel m_irAtmosphereModel;                  // MODTRAN透过率近似表
 	IRRadianceModel m_irRadianceModel;                      // CPU低复杂度辐亮度模型
+	IRRadianceModelV2 m_irRadianceModelV2;                  // Stage5A minimal body/hotspot/brightspot radiance debug model
+	IRSensorModel m_irSensorModel;                          // Stage6A sensor geometry and output size model
 	IRSensorProfileDatabase m_irSensorProfiles;             // SensorWave传感器配置
 	IRSceneMaterialMapper m_irSceneMaterialMapper;          // 阶段2：目标材质ID纹理与物理材质参数绑定器
 	IRWeatherProfile m_irWeatherProfile;                    // 阶段3：温度/太阳高度/方位角环境profile
@@ -123,10 +127,35 @@ private:
 	bool m_enableStage4HotspotVisualDebug = false; // 阶段4可视化诊断开关，默认关闭，不改变生产渲染
 	bool m_forceStage4BrightSpotVisible = false;   // 阶段4调试：强制特殊亮斑可见
 	bool m_forceStage4RearHotspotVisible = false;  // 阶段4调试：强制尾部热源可见
+	bool m_enableStage5RadianceDebug = false;      // Stage5A debug path, default off to keep legacy rendering unchanged
+	int m_stage5DebugViewMode = 0;                 // 0 Composite, 1 BodyOnly, 2 HotspotOnly, 3 BrightSpotOnly
+	std::string m_stage5DebugViewModeName = "Composite";
+	std::string m_stage5DebugToneMapName = "asinh";
+	IRRadianceModelV2DebugConfig m_stage5DebugConfig;
+	IRRadianceModelV2DebugConfig m_stage5DebugConfigs[5];
+	bool m_stage5UseBaseTextureModulation = false;
+	bool m_stage5UseBaseTextureModulationByBand[5] = { false, false, false, false, false };
+	bool m_stage5DebugDisplayConfigReady = false;
+	std::string m_stage5DebugDisplayConfigPath = "fallback";
+	bool m_stage5OutputFrameDumpEnabled = false;    // Stage5A.3 smoke-only frame dump, default off
+	std::string m_stage5OutputFrameDumpPath;
+	int m_stage5OutputFrameDumpEvery = 5;
+	int m_stage5OutputFrameCounter = 0;
+	int m_stage5OutputFrameDumpWrites = 0;
+	bool m_stage5OutputFrameDumpFailureLogged = false;
+	int m_stage5ConsecutiveZeroFrames = 0;
+	int m_stage5ConsecutiveReflectedZeroFrames = 0;
+	bool m_stage5BodyGrayPathHintLogged = false;
+	bool m_stage5BaseTextureFallbackLogged = false;
+	bool m_stage5NormalFallbackHintLogged = false;
 	int m_lastLoggedSensorProtocolBand = -999;
 	int m_lastLoggedEnvironmentHour = -999;
 	int m_lastLoggedEnvironmentWeather = -999;
 	double m_lastStage4UpdateTime = -1.0;
+	IRSensorDisplayConfig m_sensorDisplayConfig;
+	bool m_sensorDisplayConfigReady = false;
+	bool m_stage6FarClipWarningLogged = false;
+	int m_stage6CaptureLogCounter = 0;
 
 	void InitInfraredShader();                              // 初始化着色器代码
 	void InitInfraredSimulation();                          // 初始化低复杂度红外全链路参数
@@ -147,7 +176,10 @@ private:
 	void ApplyWeaponCameraControl(BYHWICD::DisplayC2cObjTrackingData& currentData, TargetPlatformData* lookAtTarget);
 	std::string Stage4PlatformName(PLATFORM_TYPE type) const;
 	bool Stage4WeaponAppliesToTarget(const BYHWICD::WeaponState& weaponState, const TargetPlatformData& targetPlat) const;
-	void ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHWICD::WeaponState& weaponState, float dtSec, float ambientTempK);
+	void ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHWICD::WeaponState& weaponState, float dtSec, float ambientTempK, const IRObjectRadianceOutput& radiance);
+	void ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IRObjectRadianceOutput& radiance, const IRHotspotState& rearHotspot, const IRBrightSpotState& brightSpot, bool rearEnabledForShader, float rearIntensityForShader, const std::string& targetKey);
+	void ApplySensorOutputConfig(const IRSensorDisplayConfig& config, const char* reason);
+	void LogStage6SensorGeometry(const IRSensorDisplayConfig& config, const char* reason) const;
 	void LogActiveIRSensorProfile(int protocolBand, const char* reason, bool forceLog);
 	double CurrentSimulationHour() const;                   // 从实时数据时间换算当前仿真小时，无实时数据时使用正午profile
 	IRRuntimeEnvironment BuildRuntimeEnvironment() const;   // 阶段3：按 UDP > profile > 默认值合成环境状态

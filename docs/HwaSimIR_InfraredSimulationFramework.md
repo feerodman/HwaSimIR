@@ -1,4 +1,4 @@
-# HwaSimIR 基于三维场景的红外成像仿真框架设计
+﻿# HwaSimIR 基于三维场景的红外成像仿真框架设计
 
 生成日期：2026-05-25  
 目标仓库：`D:\HwaSimIR` / `feerodman/HwaSimIR`  
@@ -1332,3 +1332,197 @@ Production QC：
 
 补充验收命令：
 - `powershell -ExecutionPolicy Bypass -File tools\stage4_hotspot_visual_smoke.ps1 -Bands @(1,2,3) -DelayMs 500`
+
+### 2026-06-01 阶段 5A：最小目标自身辐射链路
+
+完成内容：
+- 新增 `IR/IRRadianceModelV2.h/.cpp`，使用 VIS/NIR/SWIR/MWIR/LWIR 波段中心近似和 Planck 函数，输出 `bodyRadiance`、`hotspotRadiance`、`brightspotRadiance`、`finalRadianceDebug`、`bodyGrayBeforeFloor`、`bodyGrayAfterFloor`、`hotspotGray`、`brightspotGray`、`finalGrayDebug`。
+- 新增默认关闭开关 `EnableStage5RadianceDebug=0`。关闭时保持 legacy shader 输出；开启时 shader 使用 Stage5A body/hotspot/brightspot debug 灰度，不改变 TCP/JPEG 输出协议。
+- 目标主体可见性来自材质温度、发射率、`bodyRadiance` 和仅 debug 模式启用的最小灰度 floor；当前 floor 默认为 `0.12`，不作为物理定标，不用整体 Hotspot 代替主体温度。
+- `ThermalHotspot` 仍只由 `engineState` 控制 rear engine/nozzle；`BrightSpot` 仍只由 `strikeFlag/strikePart` 控制头部/中部特殊亮斑。
+- Stage5A shader debug 分支保留 Stage4 局部 mask 叠加，避免 Stage5 body debug 提前返回后吞掉 Hotspot/BrightSpot 可见效果。
+- 新增 `[Stage5 Radiance]` 日志，记录 `targetKey`、`band`、`debugViewMode`、`toneMap`、`materialTempK`、`emissivity`、`tauUp`、`bodyRadiance`、`hotspotRadiance`、`brightspotRadiance`、`bodyGrayBeforeFloor`、`bodyGrayAfterFloor`、`hotspotGray`、`brightspotGray`、`finalGrayDebug`、`debugFloorApplied`。
+- 新增 `tools/stage5_min_radiance_check.ps1` 与 `tools/stage5_min_radiance_smoke.ps1`，分别做源码边界检查和日志级 smoke。
+- 新增 `docs/stage5_min_radiance_plan.md`，记录 Hotspot 与目标主体温度/辐射的区别。
+
+阶段边界：
+- Stage 3 MODTRAN tau-only 默认保持不变，`UseModtranTauForAtmosphere=0`。
+- 不重跑 MODTRAN。
+- Stage5A 不读取或接入 `path_radiance`、`sky_radiance`、`solar_irradiance` 字段。
+- 不做完整太阳入射、天空入射、AGC、MTF、噪声。
+- 不做毁伤 damage，不创建 damage hotspot，不添加 whole-target hotspot。
+- `u_brightspot_temp` 仍是 legacy 命名，表示 intensity，不是 Kelvin 温度。
+
+### 2026-06-01 阶段 5A.1：目标主体可见性与 Debug Tone Mapping 校准
+
+完成内容：
+- 保持 `EnableStage5RadianceDebug=0` 默认关闭；关闭时 legacy 渲染行为不变。
+- 新增 `Stage5DebugViewMode=Composite|BodyOnly|HotspotOnly|BrightSpotOnly`、`Stage5DebugToneMap=linear|log|asinh`、`Stage5BodyRadianceScale`、`Stage5HotspotRadianceScale`、`Stage5BrightspotRadianceScale`、`Stage5DebugMinBodyGray`、`Stage5UseBaseTextureModulation`。
+- 默认采用 `Stage5DebugViewMode=Composite`、`Stage5DebugToneMap=asinh`、`Stage5DebugMinBodyGray=0.12`、`Stage5UseBaseTextureModulation=0`。
+- body、rear hotspot、brightspot 使用独立 debug scale 和灰度输出；Composite 中三者按独立 tone mapping 后合成，避免 `hotspotRadiance` 远大于 `bodyRadiance` 时把主体压黑。
+- `BodyOnly` 只显示 `bodyGrayAfterFloor`，`HotspotOnly` 只显示 rear hotspot mask 与 `hotspotGray`，`BrightSpotOnly` 只显示 brightspot mask 与 `brightspotGray`。
+- Stage5 debug shader 默认不再把主体灰度乘以过暗 base texture；材质/纹理路径保留，可通过 `Stage5UseBaseTextureModulation=1` 开启诊断。
+- 新增 `tools/stage5_body_visibility_smoke.ps1`，输出 `logs/stage5_body_visibility/stage5_body_visibility_metrics.csv` 与 `logs/stage5_body_visibility/stage5_body_visibility_summary.md`。
+
+问题判定：
+- 目标主体黑不是因为需要 whole-target Hotspot，也不应通过给整个目标加 Hotspot 解决。
+- 当前主要原因是 `bodyRadiance` 与 `hotspotRadiance` 动态范围差异很大，例如 body 约 0.422、尾喷约 918；本轮只修 debug 显示映射，不等同最终 AGC。
+- 完整 AGC、noise、MTF 仍后置阶段 6。
+
+新增诊断：
+- 当 `bodyRadiance > 0` 但 `bodyGrayAfterFloor <= 0` 时输出 `STAGE5_BODY_GRAY_ZERO_AFTER_MAPPING`。
+- 当 `bodyGrayAfterFloor > 0.1` 时输出 `CHECK_SHADER_BODY_GRAY_PATH_OR_FRAME_OUTPUT`，用于提示继续检查 shader body gray path 或帧输出链路。
+
+验收命令：
+- `powershell -ExecutionPolicy Bypass -File tools\stage0_build.ps1`
+- `powershell -ExecutionPolicy Bypass -File tools\stage3_modtran_tau_loader_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage4_hotspot_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage4_hotspot_visual_smoke.ps1 -Bands @(1,2,3) -DelayMs 500`
+- `powershell -ExecutionPolicy Bypass -File tools\stage5_min_radiance_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage5_min_radiance_smoke.ps1 -Bands @(0,1,2,3) -DelayMs 500`
+- `powershell -ExecutionPolicy Bypass -File tools\stage5_body_visibility_smoke.ps1 -Bands @(0,1,2,3) -DelayMs 500`
+
+### 2026-06-02 阶段 5A.2：Stage5 实验输出固化与帧级可见性确认
+
+完成内容：
+- 新增 `ConsoleApplication1_LLA/Bin/Config/IRRadiance/stage5_debug_display.json`，按 `VIS/NIR/SWIR/MWIR/LWIR` 配置 Stage5 debug 显示参数。
+- 配置项包括 `Stage5DebugToneMap`、`Stage5BodyRadianceScale`、`Stage5HotspotRadianceScale`、`Stage5BrightspotRadianceScale`、`Stage5DebugMinBodyGray`、`Stage5UseBaseTextureModulation`。
+- 配置文件只固化 debug 显示映射，不能改变 `EnableStage5RadianceDebug=0` 的默认关闭状态；运行时仍需显式打开 debug。
+- `HwaSimIR.cpp` 启动时读取 Stage5 debug display 配置，按当前 band 选择对应 tone map、scale、body floor 和 base texture modulation，并保留环境变量覆盖能力。
+- 新增 `tools/stage5_output_visibility_smoke.ps1`，启动本地 TCP JPEG 接收端，尽量捕获真实输出帧并计算 `mean_luma`、`max_luma`、`bright_pixel_count`。
+- 若无法读取输出帧/JPEG，脚本明确输出 `frame_metrics_unavailable`，并继续用 `[Stage5 Radiance]` 日志判定 `bodyGrayAfterFloor`、`finalGrayDebug`、`hotspotGray`、`brightspotGray`。
+
+阶段边界：
+- 目标主体可见性来自 `materialTemperatureK + emissivity + bodyRadiance`，不是 whole-target Hotspot。
+- rear `ThermalHotspot` 仍只由 `engineState` 控制，作为局部叠加项进入 Stage5 debug output。
+- `BrightSpot` 仍只由 `strikeFlag/strikePart` 控制，`u_brightspot_temp` 仍表示 intensity，不是 Kelvin。
+- 不重跑 MODTRAN；不接入 `path_radiance`、`sky_radiance`、`solar_irradiance`。
+- 不做 AGC、noise、MTF；完整成像系统后置阶段 6。
+
+新增验收命令：
+- `powershell -ExecutionPolicy Bypass -File tools\stage5_output_visibility_smoke.ps1 -Bands @(0,1,2,3) -DelayMs 500`
+
+### 2026-06-02 阶段 5A.3：真实输出帧捕获与 Stage5A 收口
+
+完成内容：
+- 增强 `tools/stage5_output_visibility_smoke.ps1` 的 TCP/JPEG 捕获诊断，继续优先读取现有 `127.0.0.1:5555` length-prefixed JPEG，不改变协议格式。
+- TCP 捕获失败时不再只写 `frame_metrics_unavailable`，而是记录连接、长度头数量、非法长度头、非 JPEG payload、超时次数、读取字节数和首个异常头字节等诊断。
+- 新增 smoke-only render texture PNG fallback：脚本设置 `Stage5OutputFrameDump=1`、`Stage5OutputFrameDumpPath`、`Stage5OutputFrameDumpEvery`，由 HwaSimIR 的 `capture_task()` 把最终 render texture 写入 `logs/stage5_output_visibility/frames/`；写入采用临时 PNG + 原子替换，避免后续失败写把已捕获帧截成 0 字节。
+- 该 fallback 仅在 `EnableStage5RadianceDebug=1` 且运行时显式设置 dump 变量时启用；默认关闭，不改变 `EnableStage5RadianceDebug=0` 的默认状态，也不改变 TCP/JPEG 输出协议。
+- 用户已手动确认 Hotspot / BrightSpot 可见；Stage5A.3 按日志级链路 + 手动视觉确认收口。
+- `stage5_output_visibility_smoke.ps1` 保留为 optional 历史诊断工具，不再作为 Stage5B strict 必跑项；当前脚本采用约 3 km 非贴脸目标，以避免原 1.1 km 近距离目标，同时让 legacy tau 默认路径下局部 Hotspot/BrightSpot 仍可见。
+
+阶段边界：
+- Stage5A 的目标主体来自 `materialTemperatureK + emissivity + bodyRadiance`，不是 whole-target Hotspot。
+- rear `ThermalHotspot` 仍是 `engineState` 控制的局部叠加项；`BrightSpot` 仍是 `strikeFlag/strikePart` 控制的局部亮斑项。
+- 不重跑 MODTRAN；不接入 `path_radiance`、`sky_radiance`、`solar_irradiance`。
+- 不做 AGC、noise、MTF；完整 8-bit 成像系统仍后置阶段 6。
+- Stage5A 已完成日志级与手动视觉可见性确认；自动帧捕获 smoke 后置优化，下一步进入阶段 5B，而不是直接阶段 6。
+
+### 2026-06-02 阶段 5B：太阳反射、材质纹理与法线方向最小接入
+
+完成内容：
+- `IRRadianceModelV2` 新增 direct solar reflection 经验项：`reflectedRadiance = reflectance_band * solarStrength * max(0, dot(normal, sunDir)) * textureLuma * bandSolarWeight`。
+- 该项只使用已有 runtime environment 的 `sunElevationDeg`、`sunAzimuthDeg`、`sunStrength` 和材质反射率，不读取或接入 MODTRAN `solar_irradiance` 表。
+- `stage5_debug_display.json` 新增首版经验权重：`Stage5SolarReflectanceWeight_VIS=1.0`、`NIR=0.8`、`SWIR=0.7`、`MWIR=0.15`、`LWIR=0.0`；LWIR 默认不加太阳反射。
+- CPU 侧根据太阳方位角/高度角推导 `u_stage5_sun_dir_local`，shader 使用可用法线计算像素级 `ndotl`；如果 `p3d_Normal` 不可靠，shader 回退到常量 +Z 方向并输出 `STAGE5_NORMAL_FALLBACK` 提示。
+- shader 使用 `baseColorTex` 的 luma 作为 `textureLuma`，让 VIS/NIR/SWIR 在 debug Composite 中呈现基础纹理和太阳方向差异；缺少基础纹理时输出 `STAGE5_BASE_TEXTURE_FALLBACK`。
+- Stage5 Composite debug 输出调整为 `bodyGray + reflectedGray + hotspotGray * rearHotspotMask + brightspotGray * brightspotMask`。MWIR 仍以 body thermal 和 rear hotspot 为主，只允许弱反射；LWIR 仍以热辐射为主。
+- `[Stage5 Radiance]` 日志新增 `sunElevation`、`sunAzimuth`、`ndotl`、`textureLuma`、`reflectanceBand`、`solarWeight`、`reflectedRadiance`、`reflectedGray`，并在 VIS/NIR/SWIR 反射连续为 0 时输出 `STAGE5_REFLECTED_GRAY_ZERO`。
+- `tools/stage5_min_radiance_check.ps1 -Strict` 保持轻量静态检查，不强制运行 heavy smoke；`stage5_output_visibility_smoke.ps1` 仅保留为 optional。
+
+阶段边界：
+- 不重跑 MODTRAN；不接入 `path_radiance`、`sky_radiance`、`solar_irradiance` 表。
+- 不做 AGC、noise、MTF 或 8-bit 成像系统，完整成像后置阶段 6。
+- 不改变 `UseModtranTauForAtmosphere=0` 默认值。
+- 不添加 whole-target hotspot；目标主体仍来自材质温度、发射率、body radiance 和 Stage5 debug 显示映射。
+- 不把 `BrightSpot` 当 Kelvin 温度；`engineState` 仍只控制 rear `ThermalHotspot`，`strikeFlag/strikePart` 仍只控制 `BrightSpot`。
+
+验收命令：
+- `powershell -ExecutionPolicy Bypass -File tools\stage0_build.ps1`
+- `powershell -ExecutionPolicy Bypass -File tools\stage3_modtran_tau_loader_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage4_hotspot_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage5_min_radiance_check.ps1 -Strict`
+
+### 2026-06-02 阶段 5C：Stage5 输出视觉标定与 legacy 对齐
+
+完成内容：
+- 用户手动对比确认：`EnableStage5RadianceDebug=true` 时目标主体已经可见，但 rear Hotspot / BrightSpot 比 `EnableStage5RadianceDebug=false` 的 legacy 路径偏弱。本轮判定为 Stage5 debug composite 显示标定问题，不继续扩展物理模型。
+- `stage5_debug_display.json` 新增每 band 的 `Stage5BodyDisplayGain`、`Stage5ReflectedDisplayGain`、`Stage5HotspotDisplayGain`、`Stage5BrightspotDisplayGain`、`Stage5CompositeMinGray`、`Stage5CompositeMaxGray`。
+- Stage5 shader debug Composite 改为使用 display gray：`bodyDisplay + reflectedDisplay + rearHotspotDisplay * rearMask + brightspotDisplay * brightMask`，避免局部特征在 Stage5 debug 路径下被 raw tone mapping 压弱。
+- Stage5C 增加 display-only legacy intensity fallback：rear hotspot 使用 `max(stage5HotspotGray * gain, legacyRearHotspotIntensity * gain)`，BrightSpot 使用 `max(stage5BrightspotGray * gain, legacyBrightspotIntensity * gain)`。该 fallback 只影响 debug 显示，不改变 `[Stage5 Radiance]` 中的物理 radiance 数值。
+- 新增 `[Stage5C VisualCalib]` 日志，记录 `bodyGray`、`reflectedGray`、`hotspotGrayRaw`、`hotspotGrayDisplay`、`brightspotGrayRaw`、`brightspotGrayDisplay`、`finalGrayDebug`、`fallbackApplied`；`[Stage5 Radiance]` 增加 `stage5DisplayFallbackApplied` 标记。
+- `EnableStage5RadianceDebug=false` 时继续保持 legacy 输出；Stage5C 不设为默认开启。
+
+边界保持：
+- 不重跑 MODTRAN；不接入 `path_radiance`、`sky_radiance`、`solar_irradiance` 表。
+- 不做 AGC、noise、MTF 或 8-bit 成像系统；Stage5C 不等于阶段 6 AGC。
+- 不修改 `UseModtranTauForAtmosphere=0` 默认值。
+- 不添加 whole-target hotspot；目标主体仍来自材质温度、发射率、body radiance 和 Stage5 debug 显示映射。
+- `engineState` 仍只控制 rear `ThermalHotspot`，`strikeFlag/strikePart` 仍只控制 `BrightSpot`，`BrightSpot` 不当作 Kelvin 温度。
+- `stage5_output_visibility_smoke.ps1` 保留 optional，不作为 strict gate。
+
+验收命令：
+- `powershell -ExecutionPolicy Bypass -File tools\stage0_build.ps1`
+- `powershell -ExecutionPolicy Bypass -File tools\stage3_modtran_tau_loader_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage4_hotspot_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage5_min_radiance_check.ps1 -Strict`
+### 2026-06-02 阶段 5D：波段语义统一与 Stage5 收口
+
+完成内容：
+- 用户手动对比确认：`EnableStage5RadianceDebug=true` 与 `false` 路径下，目标主体、rear Hotspot 和 BrightSpot 均已可见；Stage5C 视觉标定通过。
+- 保持协议到内部波段映射不变：协议 `0=SWIR`、`1=NIR`、`2=MWIR`、`3=LWIR`、`4=VIS`；内部 `IRBand` 仍为 `0=VIS`、`1=NIR`、`2=SWIR`、`3=MWIR`、`4=LWIR`。
+- shader 新增明确 uniform：`u_ir_band_index` 表示内部波段编号，`u_ir_band_class` 表示 `0=reflective`、`1=mixed`、`2=thermal`。
+- `u_wave_band` 保留为 deprecated compatibility uniform，不再作为新 shader 逻辑判断依据。
+- 修正 legacy shader 中旧的 `u_wave_band == 0`、`u_wave_band <= 2` 判断，改为基于 `u_ir_band_class`：VIS/NIR/SWIR 保留纹理/太阳反射细节，MWIR 为热辐射加弱反射混合，LWIR 以热辐射为主。
+- `tools/stage5_min_radiance_check.ps1 -Strict` 新增 Stage5D 静态检查，覆盖协议映射、新 band uniform、禁用旧 `u_wave_band` 判断、默认关闭 debug 和 Stage5 边界。
+
+边界保持：
+- 不重跑 MODTRAN；不接入 `path_radiance`、`sky_radiance`、`solar_irradiance`。
+- 不做 AGC、noise、MTF 或 8-bit 成像系统。
+- 不修改 `UseModtranTauForAtmosphere=0` 默认值。
+- 不添加 whole-target hotspot，不继续调 Hotspot/BrightSpot 亮度。
+- `engineState` 仍只控制 rear `ThermalHotspot`，`strikeFlag/strikePart` 仍只控制 `BrightSpot`，`BrightSpot` 不当作 Kelvin 温度。
+- `stage5_output_visibility_smoke.ps1` 仍为 optional，不作为必跑项。
+
+收口建议：
+- Stage5 当前按日志链路、手动视觉确认、Stage5C 显示标定和 Stage5D 波段语义统一收口。
+- 下一步建议进入 Stage6A，开始成像系统后处理的最小设计与实现，而不是继续扩展 Stage5 物理项。
+
+验收命令：
+- `powershell -ExecutionPolicy Bypass -File tools\stage0_build.ps1`
+- `powershell -ExecutionPolicy Bypass -File tools\stage3_modtran_tau_loader_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage4_hotspot_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage5_min_radiance_check.ps1 -Strict`
+
+### 2026-06-02 阶段 6A：传感器成像几何与最小输出链路
+
+本阶段开始进入成像系统几何，但仍只做最小输出链路，不进入完整 Stage 6 后处理。`trackerSensorPixelAngle` 明确按单像元角分辨率解释，单位为 `µrad/pixel`。不再优先猜测 `degree/pixel` 或 `mrad/pixel`。
+
+实现范围：
+- 新增 `IR/IRSensorModel.h/.cpp`，集中构建 `IRSensorDisplayConfig`。
+- `trackerSensorWidth` 与 `trackerSensorHeight` 用作窗口、render texture、capture 和 TCP/JPEG 输出尺寸；合法范围按 `256..4096`，非法回退 `800`。
+- `trackerSensorPixelAngle` 先乘 `1e-6` 转为弧度，再按 `2 * atan(pixels * tan(pixelAngleRad / 2))` 分别计算水平/垂直 FOV。
+- `trackerSensorViewMin` 与 `trackerSensorViewMax` 按米解释，分别驱动 camera lens 的 near/far clip；非法值回退到 `1.0 / 100000.0`。
+- `TcpCommThread` 与 `TcpCommThread_Linux` 不再把非 `800x800` 帧强制缩放回 `800x800`；TCP/JPEG length-prefixed 协议格式保持不变。
+- 新增日志 `[Stage6 SensorGeometry]`、`[Stage6 Resize]` 和 `[Stage6 Capture]`，用于确认 FOV、near/far、窗口尺寸、render texture 尺寸和 TCP 输出尺寸一致。
+- 当目标距离超过 far clip 时输出 `STAGE6_TARGET_BEYOND_FAR_CLIP`。
+
+边界保持：
+- 不接入 `path_radiance`、`sky_radiance`、`solar_irradiance`。
+- 不改变 `UseModtranTauForAtmosphere=0` 默认状态。
+- 不做完整 AGC、noise、MTF、H264 或 UDP 视频。
+- 不继续调整 Hotspot/BrightSpot 亮度。
+- 不改变 Stage4/Stage5 的语义分离。
+
+新增检查：
+- `tools/stage6_sensor_output_check.ps1 -Strict` 静态检查 IRSensorModel、FOV 公式、ApplySensorOutputConfig、resize/capture/TCP 尺寸链路和边界约束。
+- `tools/stage6_sensor_geometry_smoke.ps1 -DelayMs 500` 发送 `640x512@20 µrad`、`800x800@10 µrad`、`1024x768@5 µrad` 三组初始化包，并检查 Stage6 日志。
+
+验收命令：
+- `powershell -ExecutionPolicy Bypass -File tools\stage0_build.ps1`
+- `powershell -ExecutionPolicy Bypass -File tools\stage3_modtran_tau_loader_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage4_hotspot_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage5_min_radiance_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage6_sensor_output_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage6_sensor_geometry_smoke.ps1 -DelayMs 500`

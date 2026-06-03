@@ -8,9 +8,12 @@
 #include "pta_float.h"
 #include <chrono>
 #include <algorithm>
+#include <cctype>
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <fstream>
+#include <sstream>
 
 namespace
 {
@@ -18,6 +21,36 @@ bool FileExists(const std::string& path)
 {
 	std::ifstream file(path.c_str());
 	return file.good();
+}
+
+double ClampStage5Double(double value, double low, double high)
+{
+	return std::max(low, std::min(high, value));
+}
+
+LVecBase3f Stage5SunDirectionLocal(double sunAzimuthDeg, double sunElevationDeg)
+{
+	const double pi = 3.14159265358979323846;
+	const double az = sunAzimuthDeg * pi / 180.0;
+	const double el = ClampStage5Double(sunElevationDeg, -90.0, 90.0) * pi / 180.0;
+	const double cosEl = std::cos(el);
+	return LVecBase3f(
+		static_cast<float>(std::sin(az) * cosEl),
+		static_cast<float>(std::cos(az) * cosEl),
+		static_cast<float>(std::max(0.0, std::sin(el))));
+}
+
+bool ReadWholeFile(const std::string& path, std::string& text)
+{
+	std::ifstream file(path.c_str());
+	if (!file.is_open())
+	{
+		return false;
+	}
+	std::ostringstream buffer;
+	buffer << file.rdbuf();
+	text = buffer.str();
+	return true;
 }
 
 bool IsReasonableAltitudeMeters(double altitudeMeters)
@@ -44,6 +77,442 @@ bool ReadProcessEnvFlag(const char* name, bool defaultValue)
 	std::string value(envValue);
 #endif
 	return value == "1" || value == "true" || value == "TRUE" || value == "True";
+}
+
+std::string ReadProcessEnvString(const char* name, const std::string& defaultValue)
+{
+#ifdef _MSC_VER
+	char valueBuffer[128] = {};
+	size_t required = 0;
+	if (getenv_s(&required, valueBuffer, sizeof(valueBuffer), name) != 0 || required == 0)
+	{
+		return defaultValue;
+	}
+	return std::string(valueBuffer);
+#else
+	const char* envValue = std::getenv(name);
+	return envValue == nullptr ? defaultValue : std::string(envValue);
+#endif
+}
+
+double ReadProcessEnvDouble(const char* name, double defaultValue)
+{
+	std::string value = ReadProcessEnvString(name, "");
+	if (value.empty())
+	{
+		return defaultValue;
+	}
+	char* end = nullptr;
+	const double parsed = std::strtod(value.c_str(), &end);
+	return (end != value.c_str()) ? parsed : defaultValue;
+}
+
+int ReadProcessEnvInt(const char* name, int defaultValue)
+{
+	std::string value = ReadProcessEnvString(name, "");
+	if (value.empty())
+	{
+		return defaultValue;
+	}
+	char* end = nullptr;
+	const long parsed = std::strtol(value.c_str(), &end, 10);
+	return (end != value.c_str()) ? static_cast<int>(parsed) : defaultValue;
+}
+
+std::string ToLowerAscii(std::string value)
+{
+	std::transform(value.begin(), value.end(), value.begin(),
+		[](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+	return value;
+}
+
+int ParseStage5DebugViewMode(const std::string& value)
+{
+	std::string lower = ToLowerAscii(value);
+	if (lower == "bodyonly" || lower == "body")
+	{
+		return 1;
+	}
+	if (lower == "hotspotonly" || lower == "hotspot")
+	{
+		return 2;
+	}
+	if (lower == "brightspotonly" || lower == "brightspot")
+	{
+		return 3;
+	}
+	return 0;
+}
+
+const char* Stage5DebugViewModeName(int viewMode)
+{
+	switch (viewMode)
+	{
+	case 1: return "BodyOnly";
+	case 2: return "HotspotOnly";
+	case 3: return "BrightSpotOnly";
+	case 0:
+	default:
+		return "Composite";
+	}
+}
+
+IRStage5ToneMap ParseStage5ToneMap(const std::string& value)
+{
+	std::string lower = ToLowerAscii(value);
+	if (lower == "linear")
+	{
+		return IRStage5ToneMap::Linear;
+	}
+	if (lower == "log")
+	{
+		return IRStage5ToneMap::Log;
+	}
+	return IRStage5ToneMap::Asinh;
+}
+
+const char* Stage5ToneMapName(IRStage5ToneMap toneMap)
+{
+	switch (toneMap)
+	{
+	case IRStage5ToneMap::Linear: return "linear";
+	case IRStage5ToneMap::Log: return "log";
+	case IRStage5ToneMap::Asinh:
+	default:
+		return "asinh";
+	}
+}
+
+int Stage5BandIndex(IRBand band)
+{
+	const int index = static_cast<int>(band);
+	return (index >= 0 && index < 5) ? index : static_cast<int>(IRBand::MidWaveInfrared);
+}
+
+double DefaultStage5SolarReflectanceWeight(IRBand band)
+{
+	switch (band)
+	{
+	case IRBand::Visible: return 1.0;
+	case IRBand::NearInfrared: return 0.8;
+	case IRBand::ShortWaveInfrared: return 0.7;
+	case IRBand::MidWaveInfrared: return 0.15;
+	case IRBand::LongWaveInfrared: return 0.0;
+	default:
+		return 0.0;
+	}
+}
+
+IRBand Stage5BandFromIndex(int index)
+{
+	switch (index)
+	{
+	case 0: return IRBand::Visible;
+	case 1: return IRBand::NearInfrared;
+	case 2: return IRBand::ShortWaveInfrared;
+	case 3: return IRBand::MidWaveInfrared;
+	case 4: return IRBand::LongWaveInfrared;
+	default:
+		return IRBand::MidWaveInfrared;
+	}
+}
+
+int IRBandClassForShader(IRBand band)
+{
+	switch (band)
+	{
+	case IRBand::Visible:
+	case IRBand::NearInfrared:
+	case IRBand::ShortWaveInfrared:
+		return 0; // reflective: VIS/NIR/SWIR
+	case IRBand::MidWaveInfrared:
+		return 1; // mixed: MWIR
+	case IRBand::LongWaveInfrared:
+		return 2; // thermal: LWIR
+	default:
+		return 1;
+	}
+}
+
+std::string MakeJsonToken(const std::string& key)
+{
+	return "\"" + key + "\"";
+}
+
+bool MatchJsonObject(const std::string& text, size_t openBrace, std::string& objectText)
+{
+	if (openBrace == std::string::npos || openBrace >= text.size() || text[openBrace] != '{')
+	{
+		return false;
+	}
+
+	bool inString = false;
+	bool escaping = false;
+	int depth = 0;
+	for (size_t i = openBrace; i < text.size(); ++i)
+	{
+		char c = text[i];
+		if (inString)
+		{
+			if (escaping)
+			{
+				escaping = false;
+			}
+			else if (c == '\\')
+			{
+				escaping = true;
+			}
+			else if (c == '"')
+			{
+				inString = false;
+			}
+			continue;
+		}
+
+		if (c == '"')
+		{
+			inString = true;
+		}
+		else if (c == '{')
+		{
+			++depth;
+		}
+		else if (c == '}')
+		{
+			--depth;
+			if (depth == 0)
+			{
+				objectText = text.substr(openBrace, i - openBrace + 1);
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+bool FindJsonObject(const std::string& text, const std::string& key, std::string& objectText)
+{
+	const std::string token = MakeJsonToken(key);
+	size_t pos = text.find(token);
+	while (pos != std::string::npos)
+	{
+		size_t colon = text.find(':', pos + token.size());
+		if (colon == std::string::npos)
+		{
+			return false;
+		}
+		size_t brace = text.find('{', colon + 1);
+		if (brace != std::string::npos && MatchJsonObject(text, brace, objectText))
+		{
+			return true;
+		}
+		pos = text.find(token, pos + token.size());
+	}
+	return false;
+}
+
+bool ExtractJsonNumber(const std::string& text, const std::string& key, double& value)
+{
+	const std::string token = MakeJsonToken(key);
+	size_t pos = text.find(token);
+	if (pos == std::string::npos)
+	{
+		return false;
+	}
+	pos = text.find(':', pos + token.size());
+	if (pos == std::string::npos)
+	{
+		return false;
+	}
+	size_t begin = text.find_first_of("-+0123456789.", pos + 1);
+	if (begin == std::string::npos)
+	{
+		return false;
+	}
+	size_t end = begin;
+	while (end < text.size())
+	{
+		char c = text[end];
+		if (!((c >= '0' && c <= '9') || c == '-' || c == '+' || c == '.' || c == 'e' || c == 'E'))
+		{
+			break;
+		}
+		++end;
+	}
+	char* parsedEnd = nullptr;
+	const std::string numberText = text.substr(begin, end - begin);
+	const double parsed = std::strtod(numberText.c_str(), &parsedEnd);
+	if (parsedEnd == numberText.c_str())
+	{
+		return false;
+	}
+	value = parsed;
+	return true;
+}
+
+bool ExtractJsonBool(const std::string& text, const std::string& key, bool& value)
+{
+	const std::string token = MakeJsonToken(key);
+	size_t pos = text.find(token);
+	if (pos == std::string::npos)
+	{
+		return false;
+	}
+	pos = text.find(':', pos + token.size());
+	if (pos == std::string::npos)
+	{
+		return false;
+	}
+	size_t begin = text.find_first_not_of(" \t\r\n", pos + 1);
+	if (begin == std::string::npos)
+	{
+		return false;
+	}
+	if (text.compare(begin, 4, "true") == 0 || text.compare(begin, 1, "1") == 0)
+	{
+		value = true;
+		return true;
+	}
+	if (text.compare(begin, 5, "false") == 0 || text.compare(begin, 1, "0") == 0)
+	{
+		value = false;
+		return true;
+	}
+	return false;
+}
+
+bool ExtractJsonString(const std::string& text, const std::string& key, std::string& value)
+{
+	const std::string token = MakeJsonToken(key);
+	size_t pos = text.find(token);
+	if (pos == std::string::npos)
+	{
+		return false;
+	}
+	pos = text.find(':', pos + token.size());
+	if (pos == std::string::npos)
+	{
+		return false;
+	}
+	size_t begin = text.find('"', pos + 1);
+	if (begin == std::string::npos)
+	{
+		return false;
+	}
+	size_t end = text.find('"', begin + 1);
+	if (end == std::string::npos)
+	{
+		return false;
+	}
+	value = text.substr(begin + 1, end - begin - 1);
+	return true;
+}
+
+void ApplyStage5DebugConfigObject(const std::string& objectText, IRRadianceModelV2DebugConfig& config, bool& useBaseTextureModulation)
+{
+	std::string toneMapText;
+	if (ExtractJsonString(objectText, "Stage5DebugToneMap", toneMapText))
+	{
+		config.toneMap = ParseStage5ToneMap(toneMapText);
+	}
+	ExtractJsonNumber(objectText, "Stage5BodyRadianceScale", config.bodyRadianceScale);
+	ExtractJsonNumber(objectText, "Stage5HotspotRadianceScale", config.hotspotRadianceScale);
+	ExtractJsonNumber(objectText, "Stage5BrightspotRadianceScale", config.brightspotRadianceScale);
+	ExtractJsonNumber(objectText, "Stage5DebugMinBodyGray", config.minBodyGray);
+	ExtractJsonNumber(objectText, "Stage5SolarReflectanceWeight", config.solarReflectanceWeight);
+	ExtractJsonNumber(objectText, "Stage5BodyDisplayGain", config.bodyDisplayGain);
+	ExtractJsonNumber(objectText, "Stage5ReflectedDisplayGain", config.reflectedDisplayGain);
+	ExtractJsonNumber(objectText, "Stage5HotspotDisplayGain", config.hotspotDisplayGain);
+	ExtractJsonNumber(objectText, "Stage5BrightspotDisplayGain", config.brightspotDisplayGain);
+	ExtractJsonNumber(objectText, "Stage5CompositeMinGray", config.compositeMinGray);
+	ExtractJsonNumber(objectText, "Stage5CompositeMaxGray", config.compositeMaxGray);
+	ExtractJsonBool(objectText, "Stage5UseBaseTextureModulation", useBaseTextureModulation);
+}
+
+bool LoadStage5DebugDisplayConfig(
+	const std::string& path,
+	IRRadianceModelV2DebugConfig configs[5],
+	bool useBaseTextureModulationByBand[5])
+{
+	for (int i = 0; i < 5; ++i)
+	{
+		configs[i] = IRRadianceModelV2DebugConfig();
+		configs[i].solarReflectanceWeight = DefaultStage5SolarReflectanceWeight(Stage5BandFromIndex(i));
+		useBaseTextureModulationByBand[i] = false;
+	}
+
+	std::string text;
+	if (!ReadWholeFile(path, text))
+	{
+		return false;
+	}
+
+	IRRadianceModelV2DebugConfig defaultConfig;
+	bool defaultUseBaseTextureModulation = false;
+	std::string defaultsText;
+	if (FindJsonObject(text, "defaults", defaultsText))
+	{
+		ApplyStage5DebugConfigObject(defaultsText, defaultConfig, defaultUseBaseTextureModulation);
+	}
+	for (int i = 0; i < 5; ++i)
+	{
+		configs[i] = defaultConfig;
+		configs[i].solarReflectanceWeight = DefaultStage5SolarReflectanceWeight(Stage5BandFromIndex(i));
+		useBaseTextureModulationByBand[i] = defaultUseBaseTextureModulation;
+	}
+
+	std::string bandsText;
+	if (!FindJsonObject(text, "bands", bandsText))
+	{
+		return true;
+	}
+
+	const IRBand bands[5] = {
+		IRBand::Visible,
+		IRBand::NearInfrared,
+		IRBand::ShortWaveInfrared,
+		IRBand::MidWaveInfrared,
+		IRBand::LongWaveInfrared
+	};
+	for (int i = 0; i < 5; ++i)
+	{
+		std::string bandText;
+		if (FindJsonObject(bandsText, IRBandName(bands[i]), bandText))
+		{
+			ApplyStage5DebugConfigObject(bandText, configs[Stage5BandIndex(bands[i])], useBaseTextureModulationByBand[Stage5BandIndex(bands[i])]);
+		}
+	}
+	ExtractJsonNumber(text, "Stage5SolarReflectanceWeight_VIS", configs[Stage5BandIndex(IRBand::Visible)].solarReflectanceWeight);
+	ExtractJsonNumber(text, "Stage5SolarReflectanceWeight_NIR", configs[Stage5BandIndex(IRBand::NearInfrared)].solarReflectanceWeight);
+	ExtractJsonNumber(text, "Stage5SolarReflectanceWeight_SWIR", configs[Stage5BandIndex(IRBand::ShortWaveInfrared)].solarReflectanceWeight);
+	ExtractJsonNumber(text, "Stage5SolarReflectanceWeight_MWIR", configs[Stage5BandIndex(IRBand::MidWaveInfrared)].solarReflectanceWeight);
+	ExtractJsonNumber(text, "Stage5SolarReflectanceWeight_LWIR", configs[Stage5BandIndex(IRBand::LongWaveInfrared)].solarReflectanceWeight);
+	return true;
+}
+
+void ApplyStage5EnvOverrides(IRRadianceModelV2DebugConfig configs[5], bool useBaseTextureModulationByBand[5])
+{
+	for (int i = 0; i < 5; ++i)
+	{
+		configs[i].toneMap = ParseStage5ToneMap(ReadProcessEnvString("Stage5DebugToneMap", Stage5ToneMapName(configs[i].toneMap)));
+		configs[i].bodyRadianceScale = ReadProcessEnvDouble("Stage5BodyRadianceScale", configs[i].bodyRadianceScale);
+		configs[i].hotspotRadianceScale = ReadProcessEnvDouble("Stage5HotspotRadianceScale", configs[i].hotspotRadianceScale);
+		configs[i].brightspotRadianceScale = ReadProcessEnvDouble("Stage5BrightspotRadianceScale", configs[i].brightspotRadianceScale);
+		configs[i].minBodyGray = ReadProcessEnvDouble("Stage5DebugMinBodyGray", configs[i].minBodyGray);
+		configs[i].solarReflectanceWeight = ReadProcessEnvDouble("Stage5SolarReflectanceWeight", configs[i].solarReflectanceWeight);
+		configs[i].bodyDisplayGain = ReadProcessEnvDouble("Stage5BodyDisplayGain", configs[i].bodyDisplayGain);
+		configs[i].reflectedDisplayGain = ReadProcessEnvDouble("Stage5ReflectedDisplayGain", configs[i].reflectedDisplayGain);
+		configs[i].hotspotDisplayGain = ReadProcessEnvDouble("Stage5HotspotDisplayGain", configs[i].hotspotDisplayGain);
+		configs[i].brightspotDisplayGain = ReadProcessEnvDouble("Stage5BrightspotDisplayGain", configs[i].brightspotDisplayGain);
+		configs[i].compositeMinGray = ReadProcessEnvDouble("Stage5CompositeMinGray", configs[i].compositeMinGray);
+		configs[i].compositeMaxGray = ReadProcessEnvDouble("Stage5CompositeMaxGray", configs[i].compositeMaxGray);
+		useBaseTextureModulationByBand[i] = ReadProcessEnvFlag("Stage5UseBaseTextureModulation", useBaseTextureModulationByBand[i]);
+	}
+	configs[Stage5BandIndex(IRBand::Visible)].solarReflectanceWeight = ReadProcessEnvDouble("Stage5SolarReflectanceWeight_VIS", configs[Stage5BandIndex(IRBand::Visible)].solarReflectanceWeight);
+	configs[Stage5BandIndex(IRBand::NearInfrared)].solarReflectanceWeight = ReadProcessEnvDouble("Stage5SolarReflectanceWeight_NIR", configs[Stage5BandIndex(IRBand::NearInfrared)].solarReflectanceWeight);
+	configs[Stage5BandIndex(IRBand::ShortWaveInfrared)].solarReflectanceWeight = ReadProcessEnvDouble("Stage5SolarReflectanceWeight_SWIR", configs[Stage5BandIndex(IRBand::ShortWaveInfrared)].solarReflectanceWeight);
+	configs[Stage5BandIndex(IRBand::MidWaveInfrared)].solarReflectanceWeight = ReadProcessEnvDouble("Stage5SolarReflectanceWeight_MWIR", configs[Stage5BandIndex(IRBand::MidWaveInfrared)].solarReflectanceWeight);
+	configs[Stage5BandIndex(IRBand::LongWaveInfrared)].solarReflectanceWeight = ReadProcessEnvDouble("Stage5SolarReflectanceWeight_LWIR", configs[Stage5BandIndex(IRBand::LongWaveInfrared)].solarReflectanceWeight);
 }
 
 std::string FirstExistingPath(const std::vector<std::string>& paths)
@@ -216,18 +685,79 @@ void HwaSimIR::resize_window(int new_width, int new_height) {
 	GraphicsWindow* graphics_win = m_pMainWindow->get_graphics_window();
 	if (!graphics_win) return;
 
+	const WindowProperties old_props = graphics_win->get_properties();
+	const int old_width = old_props.get_x_size();
+	const int old_height = old_props.get_y_size();
+
 	// 复制当前窗口属性，仅修改尺寸
 	WindowProperties new_props = graphics_win->get_properties();
 	new_props.set_size(new_width, new_height);
 
-	// 应用新尺寸并适配渲染布局
-	/*if (graphics_win->set_properties(new_props)) {
-		m_pMainWindow->adjust_dimensions();
-		std::cout << "Window resized to " << new_width << "x" << new_height << std::endl;
+	graphics_win->request_properties(new_props);
+	m_pMainWindow->adjust_dimensions();
+
+	if (m_renderTex != nullptr) {
+		m_renderTex->setup_2d_texture(new_width, new_height, Texture::T_unsigned_byte, Texture::F_rgb);
 	}
-	else {
-		std::cerr << "Failed to resize window!" << std::endl;
-	}*/
+
+	std::cout << "[Stage6 Resize]"
+		<< " oldWindow=" << old_width << "x" << old_height
+		<< " newWindow=" << new_width << "x" << new_height
+		<< " renderTexture=" << new_width << "x" << new_height
+		<< " resizeRequest=1"
+		<< std::endl;
+}
+
+void HwaSimIR::ApplySensorOutputConfig(const IRSensorDisplayConfig& config, const char* reason)
+{
+	m_sensorDisplayConfig = config;
+	m_sensorDisplayConfigReady = true;
+	m_stage6FarClipWarningLogged = false;
+	m_stage6CaptureLogCounter = 0;
+
+	if (m_cameraLens != nullptr) {
+		m_cameraLens->set_fov(config.horizontalFovDeg, config.verticalFovDeg);
+		m_cameraLens->set_near_far(config.nearClipM, config.farClipM);
+	}
+
+	resize_window(config.width, config.height);
+	LogStage6SensorGeometry(config, reason);
+}
+
+void HwaSimIR::LogStage6SensorGeometry(const IRSensorDisplayConfig& config, const char* reason) const
+{
+	const char* safeReason = (reason != nullptr) ? reason : "unknown";
+	std::cout << "[Stage6 SensorGeometry]"
+		<< " reason=" << safeReason
+		<< " width=" << config.width
+		<< " height=" << config.height
+		<< " viewMin=" << config.viewMinM
+		<< " viewMax=" << config.viewMaxM
+		<< " pixelAngleUrad=" << config.pixelAngleUrad
+		<< " horizontalFovDeg=" << config.horizontalFovDeg
+		<< " verticalFovDeg=" << config.verticalFovDeg
+		<< " nearClipM=" << config.nearClipM
+		<< " farClipM=" << config.farClipM
+		<< " fov_source=" << config.fovSource
+		<< std::endl;
+
+	if (config.widthFallback || config.heightFallback || config.nearFallback ||
+		config.farFallback || config.pixelAngleFallback || config.pixelAngleRangeWarning) {
+		std::cout << "[Stage6 SensorGeometry][WARN]"
+			<< " requestedWidth=" << config.requestedWidth
+			<< " requestedHeight=" << config.requestedHeight
+			<< " requestedViewMin=" << config.requestedViewMinM
+			<< " requestedViewMax=" << config.requestedViewMaxM
+			<< " requestedPixelAngleUrad=" << config.requestedPixelAngleUrad
+			<< " widthFallback=" << (config.widthFallback ? "1" : "0")
+			<< " heightFallback=" << (config.heightFallback ? "1" : "0")
+			<< " nearFallback=" << (config.nearFallback ? "1" : "0")
+			<< " farFallback=" << (config.farFallback ? "1" : "0")
+			<< " pixelAngleFallback=" << (config.pixelAngleFallback ? "1" : "0")
+			<< " pixelAngleRangeWarning=" << (config.pixelAngleRangeWarning ? "1" : "0")
+			<< " pixelAngleClamped=" << (config.pixelAngleClamped ? "1" : "0")
+			<< std::endl;
+	}
 }
 
 // 窗口初始化（通用配置）
@@ -353,6 +883,7 @@ void HwaSimIR::InitPlatformModels()
 	m_camera = m_pMainWindow->get_camera(0);
 	m_cameraLens = m_camera->get_lens();
 	m_cameraLens->set_fov(0.1, 0.1);
+	m_cameraLens->set_near_far(1.0, 100000.0);
 
 
 }
@@ -368,6 +899,13 @@ void HwaSimIR::ProcessRealSimSceneInitData()
 	// 缓存传感器参数
 	m_sensorParam = m_initSceneData.trackingInit.trackerSensor[0];
 	std::cout << "传感器参数初始化完成，传感器ID=" << m_initSceneData.sensorID << std::endl;
+	IRSensorDisplayConfig sensorDisplayConfig = m_irSensorModel.BuildSensorDisplayConfig(
+		m_sensorParam.trackerSensorWidth,
+		m_sensorParam.trackerSensorHeight,
+		m_sensorParam.trackerSensorViewMin,
+		m_sensorParam.trackerSensorViewMax,
+		m_sensorParam.trackerSensorPixelAngle);
+	ApplySensorOutputConfig(sensorDisplayConfig, "init-command");
 
 	// 设置增删标记为"增加"
 	m_isAddPlatform = true;
@@ -480,6 +1018,20 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 		const BYHWICD::SpatialState& spatial = targetState.targetLoc;
 		LMatrix4f exactTransform = m_geoTrans.GetPandaMatrix(spatial);
 		targetPlat->nodePath.set_mat(LMatrix4(exactTransform));
+		const float targetRangeM = EstimateRangeToCamera(targetPlat->nodePath);
+		if (m_sensorDisplayConfigReady &&
+			targetRangeM > static_cast<float>(m_sensorDisplayConfig.farClipM) &&
+			!m_stage6FarClipWarningLogged)
+		{
+			std::cout << "STAGE6_TARGET_BEYOND_FAR_CLIP"
+				<< " targetType=0x" << std::hex << targetState.targetType << std::dec
+				<< " targetPlatID=" << targetState.targetPlatID
+				<< " targetID=" << targetState.targetID
+				<< " rangeM=" << targetRangeM
+				<< " farClipM=" << m_sensorDisplayConfig.farClipM
+				<< std::endl;
+			m_stage6FarClipWarningLogged = true;
+		}
 
 		bool renderVisible = (i < visibleTargetNum) && targetState.viewValid;
 		if (WeaponTargetKeyMatches(currentData.weaponState, *targetPlat) && !currentData.weaponState.viewValid)
@@ -661,12 +1213,15 @@ void HwaSimIR::ProcessAddRemovePakPlatform()
 				//m_camera = m_pMainWindow->get_camera();
 				m_cameraNode.reparent_to(modelNode);
 				m_cameraNode.set_pos(0, 0, 0); // 往后15单位，往上8单位
-				m_cameraLens->set_fov(m_sensorParam.coarseTrackResolution, m_sensorParam.preciseTrackResolution);
 				//m_cameraNode.look_at(modelNode);
 												 // 标记相机已绑定
 				m_isCameraAttached = true;
 				std::cout << "相机已绑定到第一个PlatParamPak平台（ID=" << platParam.id << "），偏移：(0, 0, -8)" << std::endl;
-				std::cout << "相机视场角：" << m_sensorParam.coarseTrackResolution << "," << m_sensorParam.preciseTrackResolution <<std::endl;
+				if (m_sensorDisplayConfigReady) {
+					std::cout << "相机视场角(Stage6 SensorGeometry)："
+						<< m_sensorDisplayConfig.horizontalFovDeg << ","
+						<< m_sensorDisplayConfig.verticalFovDeg << std::endl;
+				}
 			}
 		}
 	}
@@ -1118,6 +1673,9 @@ void HwaSimIR::handleControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd) 
 		memset(&m_realTimeSceneData, 0, sizeof(BYHWICD::DisplayC2cObjTrackingData));
 		memset(&m_sensorParam, 0, sizeof(BYHWICD::trackerSensorParam));
 		m_lastLoggedSensorProtocolBand = -999;
+		m_sensorDisplayConfigReady = false;
+		m_stage6FarClipWarningLogged = false;
+		m_stage6CaptureLogCounter = 0;
 
 		// 重置仿真状态
 		m_isSimRunning = false;
@@ -1155,7 +1713,9 @@ void HwaSimIR::handleInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& cmd) {
 	const BYHWICD::trackerSensorParam& sensor = cmd.trackingInit.trackerSensor[0];
 	std::cout << "[Stage0] Init baseline: sensorBand=" << sensor.trackerSensorBand
 		<< ", sensorSize=" << sensor.trackerSensorWidth << "x" << sensor.trackerSensorHeight
-		<< ", fov=" << sensor.coarseTrackResolution << "x" << sensor.preciseTrackResolution
+		<< ", viewMinMax=" << sensor.trackerSensorViewMin << "/" << sensor.trackerSensorViewMax
+		<< ", pixelAngleUrad=" << sensor.trackerSensorPixelAngle
+		<< ", legacyResolution=" << sensor.coarseTrackResolution << "x" << sensor.preciseTrackResolution
 		<< ", videoFps=" << cmd.trackingInit.videoFps
 		<< ", missileMax(AIM120/AIM9/MMD)=" << cmd.MissileMaxCount120 << "/"
 		<< cmd.MissileMaxCount9 << "/" << cmd.MissileMaxCountMMD << std::endl;
@@ -1356,6 +1916,11 @@ void HwaSimIR::InitInfraredSimulation()
 	hotspotConfigPaths.push_back("../Bin/Config/IRHotspots/target_hotspots.json");
 	hotspotConfigPaths.push_back("ConsoleApplication1_LLA/Bin/Config/IRHotspots/target_hotspots.json");
 	hotspotConfigPaths.push_back("../ConsoleApplication1_LLA/Bin/Config/IRHotspots/target_hotspots.json");
+	std::vector<std::string> stage5DebugConfigPaths;
+	stage5DebugConfigPaths.push_back("Config/IRRadiance/stage5_debug_display.json");
+	stage5DebugConfigPaths.push_back("../Bin/Config/IRRadiance/stage5_debug_display.json");
+	stage5DebugConfigPaths.push_back("ConsoleApplication1_LLA/Bin/Config/IRRadiance/stage5_debug_display.json");
+	stage5DebugConfigPaths.push_back("../ConsoleApplication1_LLA/Bin/Config/IRRadiance/stage5_debug_display.json");
 
 	m_irMaterialReady = m_irMaterialDatabase.load(materialPath);
 	m_irAtmosphereReady = m_irAtmosphereModel.loadTransmissionTable(transmittancePath);
@@ -1365,6 +1930,21 @@ void HwaSimIR::InitInfraredSimulation()
 	m_enableStage4HotspotVisualDebug = ReadProcessEnvFlag("EnableStage4HotspotVisualDebug", false);
 	m_forceStage4BrightSpotVisible = ReadProcessEnvFlag("ForceStage4BrightSpotVisible", false);
 	m_forceStage4RearHotspotVisible = ReadProcessEnvFlag("ForceStage4RearHotspotVisible", false);
+	m_stage5DebugDisplayConfigPath = FirstExistingPath(stage5DebugConfigPaths);
+	m_stage5DebugDisplayConfigReady = LoadStage5DebugDisplayConfig(m_stage5DebugDisplayConfigPath, m_stage5DebugConfigs, m_stage5UseBaseTextureModulationByBand);
+	ApplyStage5EnvOverrides(m_stage5DebugConfigs, m_stage5UseBaseTextureModulationByBand);
+	m_enableStage5RadianceDebug = ReadProcessEnvFlag("EnableStage5RadianceDebug", false);
+	m_stage5DebugViewMode = ParseStage5DebugViewMode(ReadProcessEnvString("Stage5DebugViewMode", "Composite"));
+	m_stage5DebugViewModeName = Stage5DebugViewModeName(m_stage5DebugViewMode);
+	m_stage5DebugConfig = m_stage5DebugConfigs[Stage5BandIndex(IRBand::MidWaveInfrared)];
+	m_stage5DebugToneMapName = Stage5ToneMapName(m_stage5DebugConfig.toneMap);
+	m_stage5UseBaseTextureModulation = m_stage5UseBaseTextureModulationByBand[Stage5BandIndex(IRBand::MidWaveInfrared)];
+	m_stage5OutputFrameDumpEnabled = ReadProcessEnvFlag("Stage5OutputFrameDump", false);
+	m_stage5OutputFrameDumpPath = ReadProcessEnvString("Stage5OutputFrameDumpPath", "");
+	m_stage5OutputFrameDumpEvery = std::max(1, ReadProcessEnvInt("Stage5OutputFrameDumpEvery", 5));
+	m_stage5OutputFrameCounter = 0;
+	m_stage5OutputFrameDumpWrites = 0;
+	m_stage5OutputFrameDumpFailureLogged = false;
 	m_irAtmosphereModel.setModtranTauDebugEnabled(enableModtranTauDebug);
 	m_irAtmosphereModel.setUseModtranTauForAtmosphere(useModtranTauForAtmosphere);
 	m_irSensorProfilesReady = m_irSensorProfiles.loadFromDirectoryCandidates(sensorWaveDirs);
@@ -1419,6 +1999,39 @@ void HwaSimIR::InitInfraredSimulation()
 		<< " ForceStage4BrightSpotVisible=" << (m_forceStage4BrightSpotVisible ? "1" : "0")
 		<< " ForceStage4RearHotspotVisible=" << (m_forceStage4RearHotspotVisible ? "1" : "0")
 		<< "（默认全为0；仅用于可见性接线诊断）" << std::endl;
+	std::cout << "[Stage5 Radiance] Stage5DebugDisplayConfig="
+		<< (m_stage5DebugDisplayConfigReady ? "OK" : "fallback")
+		<< " path=" << m_stage5DebugDisplayConfigPath
+		<< "（只配置debug显示映射，不改变EnableStage5RadianceDebug默认关闭状态）" << std::endl;
+	std::cout << "[Stage5 Radiance] EnableStage5RadianceDebug=" << (m_enableStage5RadianceDebug ? "1" : "0");
+	if (!m_enableStage5RadianceDebug)
+	{
+		std::cout << " Stage5 debug disabled, legacy output may remain dark.";
+	}
+	else
+	{
+		std::cout << " 最小目标自身辐射链路启用：bodyRadiance + rear ThermalHotspot + BrightSpot；path/sky/solar radiance disabled."
+			<< " Stage5DebugViewMode=" << m_stage5DebugViewModeName
+			<< " Stage5DebugToneMap=" << m_stage5DebugToneMapName
+			<< " Stage5BodyRadianceScale=" << m_stage5DebugConfig.bodyRadianceScale
+			<< " Stage5HotspotRadianceScale=" << m_stage5DebugConfig.hotspotRadianceScale
+			<< " Stage5BrightspotRadianceScale=" << m_stage5DebugConfig.brightspotRadianceScale
+			<< " Stage5SolarReflectanceWeight=" << m_stage5DebugConfig.solarReflectanceWeight
+			<< " Stage5DebugMinBodyGray=" << m_stage5DebugConfig.minBodyGray
+			<< " Stage5UseBaseTextureModulation=" << (m_stage5UseBaseTextureModulation ? "1" : "0")
+			<< " Stage5BodyDisplayGain=" << m_stage5DebugConfig.bodyDisplayGain
+			<< " Stage5ReflectedDisplayGain=" << m_stage5DebugConfig.reflectedDisplayGain
+			<< " Stage5HotspotDisplayGain=" << m_stage5DebugConfig.hotspotDisplayGain
+			<< " Stage5BrightspotDisplayGain=" << m_stage5DebugConfig.brightspotDisplayGain
+			<< " Stage5CompositeMinGray=" << m_stage5DebugConfig.compositeMinGray
+			<< " Stage5CompositeMaxGray=" << m_stage5DebugConfig.compositeMaxGray;
+	}
+	std::cout << std::endl;
+	std::cout << "[Stage5 OutputCapture] Stage5OutputFrameDump="
+		<< ((m_stage5OutputFrameDumpEnabled && m_enableStage5RadianceDebug) ? "1" : "0")
+		<< " path=" << (m_stage5OutputFrameDumpPath.empty() ? "NA" : m_stage5OutputFrameDumpPath)
+		<< " every=" << m_stage5OutputFrameDumpEvery
+		<< "（smoke-only render texture dump; TCP/JPEG protocol unchanged）" << std::endl;
 	LogActiveIRSensorProfile(2, "startup-default", true);
 	LogActiveIREnvironment(environment, "startup-default", true);
 }
@@ -1469,15 +2082,18 @@ void HwaSimIR::InitInfraredShader() {
     #version 100
     uniform mat4 p3d_ModelViewProjectionMatrix;
     attribute vec4 p3d_Vertex;
+    attribute vec3 p3d_Normal;
     attribute vec2 p3d_MultiTexCoord0;
     
     varying vec2 texcoord;
     varying vec3 v_local_pos; // 传递模型局部坐标系下的三维坐标
+    varying vec3 v_stage5_normal;
 
     void main() {
         gl_Position = p3d_ModelViewProjectionMatrix * p3d_Vertex;
         texcoord = p3d_MultiTexCoord0;
         v_local_pos = p3d_Vertex.xyz; // 提取局部坐标
+        v_stage5_normal = p3d_Normal;
     }
     )";
 
@@ -1490,7 +2106,9 @@ void HwaSimIR::InitInfraredShader() {
     
     uniform int u_is_background;
     uniform int u_object_kind;     // 0:目标 1:天空 2:粒子云
-    uniform int u_wave_band;       // 0: 短波 (SWIR), 1: 中波 (MWIR)
+    uniform int u_wave_band;       // deprecated compatibility uniform; prefer u_ir_band_index/class
+    uniform int u_ir_band_index;   // 0 VIS, 1 NIR, 2 SWIR, 3 MWIR, 4 LWIR
+    uniform int u_ir_band_class;   // 0 reflective, 1 mixed, 2 thermal
     uniform float u_base_temperature;
     uniform float u_time;
     uniform float u_ir_radiance;
@@ -1509,6 +2127,28 @@ void HwaSimIR::InitInfraredShader() {
     uniform float u_material_ids[8];
     uniform vec4 u_material_params[8];
     uniform int u_stage4_visual_debug; // 阶段4可视化诊断：默认0，只在排查Hotspot/BrightSpot接线时打开
+    uniform int u_stage5_radiance_debug_en; // Stage5A minimal radiance debug switch, default 0
+    uniform int u_stage5_debug_view_mode;   // 0 Composite, 1 BodyOnly, 2 HotspotOnly, 3 BrightSpotOnly
+    uniform int u_stage5_use_base_texture_modulation;
+    uniform float u_material_temp_K;
+    uniform float u_material_emissivity;
+    uniform float u_body_radiance_scale;
+    uniform float u_stage5_body_gray;
+    uniform float u_stage5_reflected_radiance;
+    uniform float u_stage5_reflected_gray;
+    uniform float u_stage5_reflectance_band;
+    uniform float u_stage5_solar_weight;
+    uniform vec3 u_stage5_sun_dir_local;
+    uniform float u_stage5_hotspot_gray;
+    uniform float u_stage5_brightspot_gray;
+    uniform float u_stage5_final_gray_debug;
+    uniform float u_stage5_body_display_gray;
+    uniform float u_stage5_reflected_display_gray;
+    uniform float u_stage5_hotspot_display_gray;
+    uniform float u_stage5_brightspot_display_gray;
+    uniform float u_stage5_composite_min_gray;
+    uniform float u_stage5_composite_max_gray;
+    uniform int u_stage5_display_fallback_applied;
 
     // 头部热源参数
     uniform int u_hotspot_front_en;
@@ -1531,12 +2171,13 @@ void HwaSimIR::InitInfraredShader() {
 
     varying vec2 texcoord;
     varying vec3 v_local_pos;
+    varying vec3 v_stage5_normal;
 
     void main() {
         vec4 texColor = texture2D(p3d_Texture0, texcoord);
 
         if (u_object_kind == 1 || u_is_background == 1) {
-            float sky_tint = (u_wave_band <= 2) ? 0.18 : 0.055;
+            float sky_tint = (u_ir_band_class == 0) ? 0.18 : 0.055;
             float bg_intensity = clamp(u_ir_radiance * u_display_gain + sky_tint, 0.0, 1.0);
             gl_FragColor = vec4(bg_intensity, bg_intensity, bg_intensity, 1.0);
             return;
@@ -1571,6 +2212,8 @@ void HwaSimIR::InitInfraredShader() {
 		// 计算基础热辐射与范围热源
         float current_temp = u_base_temperature;
         float stage4_debug_mask = 0.0;
+        float stage5_rear_mask = 0.0;
+        float stage5_bright_mask = 0.0;
 
         if (u_hotspot_front_en == 1) {
             float dist_front = distance(v_local_pos, u_hotspot_front_pos);
@@ -1583,16 +2226,15 @@ void HwaSimIR::InitInfraredShader() {
             float flicker = 0.85 + 0.15 * sin(u_time * 15.0);
             float factor_rear = 1.0 - smoothstep(0.0, u_hotspot_rear_radius, dist_rear);
             stage4_debug_mask = max(stage4_debug_mask, factor_rear);
+            stage5_rear_mask = max(stage5_rear_mask, factor_rear);
             current_temp += factor_rear * (u_hotspot_rear_temp * flicker);
         }
 
         float luminance = dot(texColor.rgb, vec3(0.299, 0.587, 0.114));
 
-        // 短波/中波物理特性
-        // 短波 (0)：高度依赖反射光（表现为纹理明暗细节），对常温热辐射不敏感，但能看到高温热源
-        // 中波 (1)：对热辐射极度敏感，纹理细节会被热量掩盖
-        float detail_weight = (u_wave_band == 0) ? 0.7 : 0.2; 
-        float temp_weight   = (u_wave_band == 0) ? 0.3 : 1.0;
+        // Band class semantics: reflective VIS/NIR/SWIR keep texture detail, MWIR is mixed, LWIR is thermal dominant.
+        float detail_weight = (u_ir_band_class == 0) ? 0.7 : ((u_ir_band_class == 1) ? 0.2 : 0.05);
+        float temp_weight   = (u_ir_band_class == 0) ? 0.3 : 1.0;
 
         float final_intensity = current_temp * temp_weight * (0.75 + 0.25 * surface_emissivity)
                               + luminance * detail_weight * (0.70 + 0.30 * surface_reflectance);
@@ -1611,7 +2253,47 @@ void HwaSimIR::InitInfraredShader() {
             // 边缘过渡：从 current_radius 的 40% 处开始向外羽化衰减
             float factor_bs = 1.0 - smoothstep(current_radius * 0.4, current_radius, dist_bs);
             stage4_debug_mask = max(stage4_debug_mask, factor_bs);
+            stage5_bright_mask = max(stage5_bright_mask, factor_bs);
             brightspot_intensity = factor_bs * u_brightspot_temp;
+        }
+
+        if (u_stage5_radiance_debug_en == 1) {
+            // Stage5 debug uses normalized body/reflection/hotspot/brightspot components only.
+            // Stage5B reflection is a direct empirical term; it intentionally does not use MODTRAN solar irradiance tables.
+            float body_debug = clamp(u_stage5_body_display_gray, 0.0, 1.0);
+            if (u_stage5_use_base_texture_modulation == 1) {
+                body_debug *= clamp(0.65 + 0.35 * luminance, 0.0, 1.0);
+            }
+            vec3 stage5_normal_raw = v_stage5_normal;
+            vec3 stage5_normal = (dot(stage5_normal_raw, stage5_normal_raw) < 0.001)
+                ? vec3(0.0, 0.0, 1.0)
+                : normalize(stage5_normal_raw);
+            vec3 stage5_sun_raw = u_stage5_sun_dir_local;
+            vec3 stage5_sun_dir = (dot(stage5_sun_raw, stage5_sun_raw) < 0.001)
+                ? vec3(0.0, 0.0, 1.0)
+                : normalize(stage5_sun_raw);
+            float ndotl_shader = clamp(dot(stage5_normal, stage5_sun_dir), 0.0, 1.0);
+            float texture_luma_shader = clamp(luminance, 0.0, 1.0);
+            float reflected_debug = clamp(u_stage5_reflected_display_gray, 0.0, 1.0) * ndotl_shader * texture_luma_shader;
+            float rear_hotspot_debug = stage5_rear_mask * clamp(u_stage5_hotspot_display_gray, 0.0, 1.0);
+            float brightspot_debug = stage5_bright_mask * clamp(u_stage5_brightspot_display_gray, 0.0, 1.0);
+            float stage5_intensity = 0.0;
+            if (u_stage5_debug_view_mode == 1) {
+                stage5_intensity = body_debug;
+            } else if (u_stage5_debug_view_mode == 2) {
+                stage5_intensity = rear_hotspot_debug;
+            } else if (u_stage5_debug_view_mode == 3) {
+                stage5_intensity = brightspot_debug;
+            } else {
+                float composite_min = clamp(u_stage5_composite_min_gray, 0.0, 1.0);
+                float composite_max = max(composite_min, clamp(u_stage5_composite_max_gray, 0.0, 1.0));
+                stage5_intensity = clamp(body_debug + reflected_debug + rear_hotspot_debug + brightspot_debug, composite_min, composite_max);
+            }
+            if (u_stage4_visual_debug == 1 && stage4_debug_mask > 0.0) {
+                stage5_intensity = max(stage5_intensity, clamp(0.25 + stage4_debug_mask * 0.75, 0.0, 1.0));
+            }
+            gl_FragColor = vec4(stage5_intensity, stage5_intensity, stage5_intensity, texColor.a);
+            return;
         }
 
         // 合成（限制在纯白 1.0 以内）
@@ -1644,7 +2326,9 @@ void HwaSimIR::ApplyInfraredShader(NodePath& node, bool isBackground) {
 	// 全局与环境参数
 	node.set_shader_input("u_is_background", LVecBase2i(isBackground ? 1 : 0, 0));
 	node.set_shader_input("u_object_kind", LVecBase2i(isBackground ? 1 : 0, 0));
-	node.set_shader_input("u_wave_band", LVecBase2i(3, 0));       // 默认中波
+	node.set_shader_input("u_wave_band", LVecBase2i(3, 0));       // deprecated compatibility: internal IRBand index
+	node.set_shader_input("u_ir_band_index", LVecBase2i(3, 0));   // 默认 MWIR
+	node.set_shader_input("u_ir_band_class", LVecBase2i(1, 0));   // 默认 mixed
 	node.set_shader_input("u_time", LVecBase2f(0.0f, 0.0f));      // 初始化时间，解决报错
 	node.set_shader_input("u_base_temperature", LVecBase2f(0.4f, 0.0f));
 	node.set_shader_input("u_ir_radiance", LVecBase2f(0.25f, 0.0f));
@@ -1671,6 +2355,28 @@ void HwaSimIR::ApplyInfraredShader(NodePath& node, bool isBackground) {
 	node.set_shader_input("u_material_ids", defaultMaterialIds);
 	node.set_shader_input("u_material_params", defaultMaterialParams);
 	node.set_shader_input("u_stage4_visual_debug", LVecBase2i(0, 0)); // 默认关闭阶段4可视化诊断
+	node.set_shader_input("u_stage5_radiance_debug_en", LVecBase2i(0, 0)); // 默认关闭Stage5A最小辐射debug
+	node.set_shader_input("u_stage5_debug_view_mode", LVecBase2i(0, 0));
+	node.set_shader_input("u_stage5_use_base_texture_modulation", LVecBase2i(0, 0));
+	node.set_shader_input("u_material_temp_K", LVecBase2f(300.0f, 0.0f));
+	node.set_shader_input("u_material_emissivity", LVecBase2f(0.85f, 0.0f));
+	node.set_shader_input("u_body_radiance_scale", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_body_gray", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_reflected_radiance", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_reflected_gray", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_reflectance_band", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_solar_weight", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_sun_dir_local", LVecBase3f(0.0f, 0.0f, 1.0f));
+	node.set_shader_input("u_stage5_hotspot_gray", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_brightspot_gray", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_final_gray_debug", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_body_display_gray", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_reflected_display_gray", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_hotspot_display_gray", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_brightspot_display_gray", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_composite_min_gray", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_composite_max_gray", LVecBase2f(1.0f, 0.0f));
+	node.set_shader_input("u_stage5_display_fallback_applied", LVecBase2i(0, 0));
 
 	// 头部亮斑默认配置
 	node.set_shader_input("u_hotspot_front_en", LVecBase2i(0, 0));
@@ -1700,7 +2406,10 @@ void HwaSimIR::ApplyRadianceInputs(NodePath& node, const IRObjectRadianceOutput&
 	}
 
 	node.set_shader_input("u_object_kind", LVecBase2i(objectKind, 0));
-	node.set_shader_input("u_wave_band", LVecBase2i(static_cast<int>(radiance.bandIndex), 0));
+	const IRBand shaderBand = static_cast<IRBand>(static_cast<int>(radiance.bandIndex));
+	node.set_shader_input("u_wave_band", LVecBase2i(static_cast<int>(radiance.bandIndex), 0)); // deprecated compatibility
+	node.set_shader_input("u_ir_band_index", LVecBase2i(static_cast<int>(shaderBand), 0));
+	node.set_shader_input("u_ir_band_class", LVecBase2i(IRBandClassForShader(shaderBand), 0));
 	node.set_shader_input("u_ir_radiance", LVecBase2f(radiance.baseRadiance, 0.0f));
 	node.set_shader_input("u_emissivity", LVecBase2f(radiance.emissivity, 0.0f));
 	node.set_shader_input("u_reflectance", LVecBase2f(radiance.reflectance, 0.0f));
@@ -1710,6 +2419,29 @@ void HwaSimIR::ApplyRadianceInputs(NodePath& node, const IRObjectRadianceOutput&
 	node.set_shader_input("u_display_gain", LVecBase2f(radiance.displayGain, 0.0f));
 	node.set_shader_input("u_display_offset", LVecBase2f(radiance.displayOffset, 0.0f));
 	node.set_shader_input("u_base_temperature", LVecBase2f(radiance.baseRadiance, 0.0f));
+	const int stage5BandIndex = Stage5BandIndex(shaderBand);
+	node.set_shader_input("u_stage5_radiance_debug_en", LVecBase2i(m_enableStage5RadianceDebug ? 1 : 0, 0));
+	node.set_shader_input("u_stage5_debug_view_mode", LVecBase2i(m_stage5DebugViewMode, 0));
+	node.set_shader_input("u_stage5_use_base_texture_modulation", LVecBase2i(m_stage5UseBaseTextureModulationByBand[stage5BandIndex] ? 1 : 0, 0));
+	node.set_shader_input("u_material_temp_K", LVecBase2f(radiance.temperatureK, 0.0f));
+	node.set_shader_input("u_material_emissivity", LVecBase2f(radiance.emissivity, 0.0f));
+	node.set_shader_input("u_body_radiance_scale", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_body_gray", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_reflected_radiance", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_reflected_gray", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_reflectance_band", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_solar_weight", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_sun_dir_local", LVecBase3f(0.0f, 0.0f, 1.0f));
+	node.set_shader_input("u_stage5_hotspot_gray", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_brightspot_gray", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_final_gray_debug", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_body_display_gray", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_reflected_display_gray", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_hotspot_display_gray", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_brightspot_display_gray", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_composite_min_gray", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_composite_max_gray", LVecBase2f(1.0f, 0.0f));
+	node.set_shader_input("u_stage5_display_fallback_applied", LVecBase2i(0, 0));
 }
 
 IRObjectRadianceOutput HwaSimIR::EvaluateNodeRadiance(const std::string& materialName, const NodePath& node, bool engineOn, bool damaged, bool isSky, bool isCloud, double cloudDensity, double targetAltitudeMeters)
@@ -1983,7 +2715,7 @@ bool HwaSimIR::Stage4WeaponAppliesToTarget(const BYHWICD::WeaponState& weaponSta
 	return WeaponTargetKeyMatches(weaponState, targetPlat);
 }
 
-void HwaSimIR::ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHWICD::WeaponState& weaponState, float dtSec, float ambientTempK)
+void HwaSimIR::ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHWICD::WeaponState& weaponState, float dtSec, float ambientTempK, const IRObjectRadianceOutput& radiance)
 {
 	if (targetPlat.nodePath.is_empty())
 	{
@@ -2063,6 +2795,8 @@ void HwaSimIR::ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHW
 		<< " enabled=" << (brightSpot.enabled ? "1" : "0")
 		<< std::endl;
 
+	ApplyStage5RadianceDebug(targetPlat, radiance, rearHotspot, brightSpot, rearEnabledForShader, rearIntensityForShader, runtimeKey);
+
 	const bool hasShader = (targetPlat.nodePath.get_shader() != nullptr);
 	const std::map<PLATFORM_TYPE, PlatformResPath>::const_iterator resIter = m_platformResMap.find(targetPlat.type);
 	bool baseTextureAvailable = false;
@@ -2120,6 +2854,216 @@ void HwaSimIR::ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHW
 			<< " brightRadius=" << brightSpot.radius
 			<< " brightIntensity=" << brightSpot.intensity
 			<< std::endl;
+	}
+}
+
+void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IRObjectRadianceOutput& radiance, const IRHotspotState& rearHotspot, const IRBrightSpotState& brightSpot, bool rearEnabledForShader, float rearIntensityForShader, const std::string& targetKey)
+{
+	if (targetPlat.nodePath.is_empty())
+	{
+		return;
+	}
+
+	const IRBand stage5Band = static_cast<IRBand>(static_cast<int>(radiance.bandIndex));
+	const int stage5BandIndex = Stage5BandIndex(stage5Band);
+	const bool stage5UseBaseTextureModulation = m_stage5UseBaseTextureModulationByBand[stage5BandIndex];
+	targetPlat.nodePath.set_shader_input("u_stage5_radiance_debug_en", LVecBase2i(m_enableStage5RadianceDebug ? 1 : 0, 0));
+	targetPlat.nodePath.set_shader_input("u_stage5_debug_view_mode", LVecBase2i(m_stage5DebugViewMode, 0));
+	targetPlat.nodePath.set_shader_input("u_stage5_use_base_texture_modulation", LVecBase2i(stage5UseBaseTextureModulation ? 1 : 0, 0));
+	if (!m_enableStage5RadianceDebug)
+	{
+		return;
+	}
+
+	IRRadianceModelV2Input stage5Input;
+	stage5Input.band = stage5Band;
+	stage5Input.materialTemperatureK = radiance.temperatureK;
+	stage5Input.materialEmissivity = radiance.emissivity;
+	stage5Input.materialReflectance = radiance.reflectance;
+	stage5Input.tauUp = radiance.tauUp;
+	const IRRuntimeEnvironment environment = m_irRadianceModel.environment();
+	stage5Input.solarStrength = environment.sunStrength;
+	stage5Input.ndotl = 1.0;
+	stage5Input.textureLuma = 1.0;
+	stage5Input.solarReflectanceWeight = m_stage5DebugConfigs[stage5BandIndex].solarReflectanceWeight;
+	stage5Input.hotspotTemperatureK = rearEnabledForShader ? rearHotspot.currentTempK : radiance.temperatureK;
+	stage5Input.hotspotIntensity = rearEnabledForShader ? std::max(0.0f, rearHotspot.intensity) : 0.0f;
+	stage5Input.brightspotIntensity = brightSpot.enabled ? std::max(0.0f, brightSpot.intensity) : 0.0f;
+	stage5Input.enableDebugFloor = true;
+	stage5Input.debugConfig = m_stage5DebugConfigs[stage5BandIndex];
+
+	IRRadianceModelV2Output stage5 = m_irRadianceModelV2.evaluate(stage5Input);
+	const IRRadianceModelV2DebugConfig& displayConfig = m_stage5DebugConfigs[stage5BandIndex];
+	const auto clamp01 = [](double value) -> double {
+		return std::max(0.0, std::min(1.0, value));
+	};
+	double compositeMinGray = clamp01(displayConfig.compositeMinGray);
+	double compositeMaxGray = clamp01(displayConfig.compositeMaxGray);
+	if (compositeMaxGray < compositeMinGray)
+	{
+		compositeMaxGray = compositeMinGray;
+	}
+	const double bodyGrayDisplay = clamp01(stage5.bodyGrayAfterFloor * std::max(0.0, displayConfig.bodyDisplayGain));
+	const double reflectedGrayDisplay = clamp01(stage5.reflectedGray * std::max(0.0, displayConfig.reflectedDisplayGain));
+	const double hotspotGrayRawDisplay = clamp01(stage5.hotspotGray * std::max(0.0, displayConfig.hotspotDisplayGain));
+	const double brightspotGrayRawDisplay = clamp01(stage5.brightspotGray * std::max(0.0, displayConfig.brightspotDisplayGain));
+	const double legacyRearHotspotDisplay = rearEnabledForShader
+		? clamp01(std::max(0.0f, rearIntensityForShader) * std::max(0.0, displayConfig.hotspotDisplayGain))
+		: 0.0;
+	const double legacyBrightspotDisplay = brightSpot.enabled
+		? clamp01(std::max(0.0f, brightSpot.intensity) * std::max(0.0, displayConfig.brightspotDisplayGain))
+		: 0.0;
+	const double hotspotGrayDisplay = std::max(hotspotGrayRawDisplay, legacyRearHotspotDisplay);
+	const double brightspotGrayDisplay = std::max(brightspotGrayRawDisplay, legacyBrightspotDisplay);
+	const bool stage5DisplayFallbackApplied =
+		(hotspotGrayDisplay > hotspotGrayRawDisplay + 1.0e-6) ||
+		(brightspotGrayDisplay > brightspotGrayRawDisplay + 1.0e-6);
+	const double finalGrayDebugDisplay = clamp01(
+		std::max(compositeMinGray, std::min(compositeMaxGray,
+			bodyGrayDisplay + reflectedGrayDisplay + hotspotGrayDisplay + brightspotGrayDisplay)));
+
+	targetPlat.nodePath.set_shader_input("u_material_temp_K", LVecBase2f(static_cast<float>(stage5Input.materialTemperatureK), 0.0f));
+	targetPlat.nodePath.set_shader_input("u_material_emissivity", LVecBase2f(static_cast<float>(stage5Input.materialEmissivity), 0.0f));
+	targetPlat.nodePath.set_shader_input("u_body_radiance_scale", LVecBase2f(static_cast<float>(stage5.bodyGrayBeforeFloor), 0.0f));
+	targetPlat.nodePath.set_shader_input("u_stage5_body_gray", LVecBase2f(static_cast<float>(stage5.bodyGrayAfterFloor), 0.0f));
+	targetPlat.nodePath.set_shader_input("u_stage5_reflected_radiance", LVecBase2f(static_cast<float>(stage5.reflectedRadiance), 0.0f));
+	targetPlat.nodePath.set_shader_input("u_stage5_reflected_gray", LVecBase2f(static_cast<float>(stage5.reflectedGray), 0.0f));
+	targetPlat.nodePath.set_shader_input("u_stage5_reflectance_band", LVecBase2f(static_cast<float>(stage5Input.materialReflectance), 0.0f));
+	targetPlat.nodePath.set_shader_input("u_stage5_solar_weight", LVecBase2f(static_cast<float>(stage5Input.solarReflectanceWeight), 0.0f));
+	targetPlat.nodePath.set_shader_input("u_stage5_sun_dir_local", Stage5SunDirectionLocal(environment.sunAzimuthDeg, environment.sunElevationDeg));
+	targetPlat.nodePath.set_shader_input("u_stage5_hotspot_gray", LVecBase2f(static_cast<float>(stage5.hotspotGray), 0.0f));
+	targetPlat.nodePath.set_shader_input("u_stage5_brightspot_gray", LVecBase2f(static_cast<float>(stage5.brightspotGray), 0.0f));
+	targetPlat.nodePath.set_shader_input("u_stage5_final_gray_debug", LVecBase2f(static_cast<float>(stage5.finalGrayDebug), 0.0f));
+	targetPlat.nodePath.set_shader_input("u_stage5_body_display_gray", LVecBase2f(static_cast<float>(bodyGrayDisplay), 0.0f));
+	targetPlat.nodePath.set_shader_input("u_stage5_reflected_display_gray", LVecBase2f(static_cast<float>(reflectedGrayDisplay), 0.0f));
+	targetPlat.nodePath.set_shader_input("u_stage5_hotspot_display_gray", LVecBase2f(static_cast<float>(hotspotGrayDisplay), 0.0f));
+	targetPlat.nodePath.set_shader_input("u_stage5_brightspot_display_gray", LVecBase2f(static_cast<float>(brightspotGrayDisplay), 0.0f));
+	targetPlat.nodePath.set_shader_input("u_stage5_composite_min_gray", LVecBase2f(static_cast<float>(compositeMinGray), 0.0f));
+	targetPlat.nodePath.set_shader_input("u_stage5_composite_max_gray", LVecBase2f(static_cast<float>(compositeMaxGray), 0.0f));
+	targetPlat.nodePath.set_shader_input("u_stage5_display_fallback_applied", LVecBase2i(stage5DisplayFallbackApplied ? 1 : 0, 0));
+
+	const std::map<PLATFORM_TYPE, PlatformResPath>::const_iterator resIter = m_platformResMap.find(targetPlat.type);
+	bool baseTextureAvailable = false;
+	if (resIter != m_platformResMap.end())
+	{
+		baseTextureAvailable = !resIter->second.texturePath.empty() && FileExists(resIter->second.texturePath);
+	}
+
+	std::cout << "[Stage5 Radiance]"
+		<< " targetKey=" << targetKey
+		<< " band=" << IRBandName(stage5Input.band)
+		<< " debugViewMode=" << m_stage5DebugViewModeName
+		<< " toneMap=" << Stage5ToneMapName(stage5Input.debugConfig.toneMap)
+		<< " useBaseTextureModulation=" << (stage5UseBaseTextureModulation ? "1" : "0")
+		<< " materialTempK=" << stage5Input.materialTemperatureK
+		<< " emissivity=" << stage5Input.materialEmissivity
+		<< " tauUp=" << stage5Input.tauUp
+		<< " sunElevation=" << environment.sunElevationDeg
+		<< " sunAzimuth=" << environment.sunAzimuthDeg
+		<< " ndotl=" << stage5Input.ndotl
+		<< " textureLuma=" << stage5Input.textureLuma
+		<< " reflectanceBand=" << stage5Input.materialReflectance
+		<< " solarWeight=" << stage5Input.solarReflectanceWeight
+		<< " bodyRadiance=" << stage5.bodyRadiance
+		<< " reflectedRadiance=" << stage5.reflectedRadiance
+		<< " hotspotRadiance=" << stage5.hotspotRadiance
+		<< " brightspotRadiance=" << stage5.brightspotRadiance
+		<< " bodyGrayBeforeFloor=" << stage5.bodyGrayBeforeFloor
+		<< " bodyGrayAfterFloor=" << stage5.bodyGrayAfterFloor
+		<< " reflectedGray=" << stage5.reflectedGray
+		<< " hotspotGray=" << stage5.hotspotGray
+		<< " brightspotGray=" << stage5.brightspotGray
+		<< " finalGrayDebug=" << stage5.finalGrayDebug
+		<< " debugFloorApplied=" << (stage5.debugFloorApplied ? "1" : "0")
+		<< " stage5DisplayFallbackApplied=" << (stage5DisplayFallbackApplied ? "1" : "0")
+		<< std::endl;
+
+	std::cout << "[Stage5C VisualCalib]"
+		<< " band=" << IRBandName(stage5Input.band)
+		<< " bodyGray=" << bodyGrayDisplay
+		<< " reflectedGray=" << reflectedGrayDisplay
+		<< " hotspotGrayRaw=" << stage5.hotspotGray
+		<< " hotspotGrayDisplay=" << hotspotGrayDisplay
+		<< " brightspotGrayRaw=" << stage5.brightspotGray
+		<< " brightspotGrayDisplay=" << brightspotGrayDisplay
+		<< " finalGrayDebug=" << finalGrayDebugDisplay
+		<< " fallbackApplied=" << (stage5DisplayFallbackApplied ? "1" : "0")
+		<< " legacyRearHotspotIntensity=" << legacyRearHotspotDisplay
+		<< " legacyBrightspotIntensity=" << legacyBrightspotDisplay
+		<< std::endl;
+
+	if (stage5.bodyRadiance > 0.0 && stage5.bodyGrayAfterFloor <= 0.0)
+	{
+		std::cout << "[Stage5 Radiance][WARN] STAGE5_BODY_GRAY_ZERO_AFTER_MAPPING"
+			<< " targetKey=" << targetKey
+			<< " band=" << IRBandName(stage5Input.band)
+			<< " bodyRadiance=" << stage5.bodyRadiance
+			<< " bodyGrayAfterFloor=" << stage5.bodyGrayAfterFloor
+			<< std::endl;
+	}
+	if (!m_stage5BodyGrayPathHintLogged && stage5.bodyGrayAfterFloor > 0.1)
+	{
+		std::cout << "[Stage5 Radiance][WARN] CHECK_SHADER_BODY_GRAY_PATH_OR_FRAME_OUTPUT"
+			<< " targetKey=" << targetKey
+			<< " band=" << IRBandName(stage5Input.band)
+			<< " bodyGrayAfterFloor=" << stage5.bodyGrayAfterFloor
+			<< " debugViewMode=" << m_stage5DebugViewModeName
+			<< std::endl;
+		m_stage5BodyGrayPathHintLogged = true;
+	}
+	if (!m_stage5BaseTextureFallbackLogged && stage5Input.solarReflectanceWeight > 0.0 && !baseTextureAvailable)
+	{
+		std::cout << "[Stage5 Radiance][WARN] STAGE5_BASE_TEXTURE_FALLBACK"
+			<< " targetKey=" << targetKey
+			<< " band=" << IRBandName(stage5Input.band)
+			<< " textureLumaFallback=1"
+			<< std::endl;
+		m_stage5BaseTextureFallbackLogged = true;
+	}
+	if (!m_stage5NormalFallbackHintLogged)
+	{
+		std::cout << "[Stage5 Radiance][WARN] STAGE5_NORMAL_FALLBACK"
+			<< " mode=shader_constant_plus_z_if_p3d_Normal_missing"
+			<< " targetKey=" << targetKey
+			<< std::endl;
+		m_stage5NormalFallbackHintLogged = true;
+	}
+	if ((stage5Input.band == IRBand::Visible || stage5Input.band == IRBand::NearInfrared || stage5Input.band == IRBand::ShortWaveInfrared)
+		&& stage5Input.solarReflectanceWeight > 0.0
+		&& stage5Input.solarStrength > 0.0
+		&& stage5.reflectedGray <= 0.0)
+	{
+		++m_stage5ConsecutiveReflectedZeroFrames;
+		if (m_stage5ConsecutiveReflectedZeroFrames >= 3)
+		{
+			std::cout << "[Stage5 Radiance][WARN] STAGE5_REFLECTED_GRAY_ZERO"
+				<< " targetKey=" << targetKey
+				<< " band=" << IRBandName(stage5Input.band)
+				<< " solarWeight=" << stage5Input.solarReflectanceWeight
+				<< " solarStrength=" << stage5Input.solarStrength
+				<< " reflectedRadiance=" << stage5.reflectedRadiance
+				<< std::endl;
+		}
+	}
+	else if (stage5.reflectedGray > 0.0)
+	{
+		m_stage5ConsecutiveReflectedZeroFrames = 0;
+	}
+
+	if (stage5.finalGrayDebug <= 0.0)
+	{
+		++m_stage5ConsecutiveZeroFrames;
+		if (m_stage5ConsecutiveZeroFrames >= 3)
+		{
+			std::cout << "[Stage5 Radiance][WARN] STAGE5_TARGET_BODY_RADIANCE_ZERO"
+				<< " targetKey=" << targetKey
+				<< " consecutiveFrames=" << m_stage5ConsecutiveZeroFrames
+				<< std::endl;
+		}
+	}
+	else
+	{
+		m_stage5ConsecutiveZeroFrames = 0;
 	}
 }
 
@@ -2288,7 +3232,13 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 			IRObjectRadianceOutput radiance = EvaluateNodeRadiance(MaterialNameForPlatform(targetPlat.type), targetPlat.nodePath, targetPlat.targetState.engineState, damaged, false, false, 0.0, targetPlat.targetState.targetLoc.alt);
 			ApplyRadianceInputs(targetPlat.nodePath, radiance, 0);
 
-			ApplyStage4TargetState(targetPlat, m_realTimeSceneData.weaponState, stage4DtSec, ambientTempK);
+			IRObjectRadianceOutput stage5BaseRadiance = radiance;
+			if (m_enableStage5RadianceDebug)
+			{
+				// Stage5A body radiance uses the material/environment baseline; engineState stays local to rear ThermalHotspot.
+				stage5BaseRadiance = EvaluateNodeRadiance(MaterialNameForPlatform(targetPlat.type), targetPlat.nodePath, false, false, false, false, 0.0, targetPlat.targetState.targetLoc.alt);
+			}
+			ApplyStage4TargetState(targetPlat, m_realTimeSceneData.weaponState, stage4DtSec, ambientTempK, stage5BaseRadiance);
 		}
 	}
 }
@@ -2367,9 +3317,91 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 		if (ram_image) {
 			int width = self->m_renderTex->get_x_size();
 			int height = self->m_renderTex->get_y_size();
+			int frameWidth = width;
+			int frameHeight = height;
+			const uchar* frameData = ram_image.p();
+			std::vector<uchar> sensorSizedFrame;
+
+			if (self->m_sensorDisplayConfigReady &&
+				(width != self->m_sensorDisplayConfig.width || height != self->m_sensorDisplayConfig.height)) {
+				cv::Mat rawFrame(height, width, CV_8UC3, const_cast<uchar*>(ram_image.p()));
+				cv::Mat resizedFrame;
+				cv::resize(rawFrame, resizedFrame, cv::Size(self->m_sensorDisplayConfig.width, self->m_sensorDisplayConfig.height));
+				frameWidth = self->m_sensorDisplayConfig.width;
+				frameHeight = self->m_sensorDisplayConfig.height;
+				sensorSizedFrame.resize(static_cast<size_t>(frameWidth) * static_cast<size_t>(frameHeight) * 3u);
+				memcpy(sensorSizedFrame.data(), resizedFrame.data, sensorSizedFrame.size());
+				frameData = sensorSizedFrame.data();
+			}
 
 			// 将纯像素数据推送给 TCP 子线程（避免主线程做过多的耗时运算）
-			self->m_pTcpThread->updateFrame(ram_image.p(), width, height);
+			self->m_pTcpThread->updateFrame(frameData, frameWidth, frameHeight);
+			++self->m_stage6CaptureLogCounter;
+			if (self->m_stage6CaptureLogCounter <= 3 || (self->m_stage6CaptureLogCounter % 120) == 0) {
+				std::ostringstream captureLog;
+				/*captureLog << "[Stage6 Capture]"
+					<< " frameWidth=" << frameWidth
+					<< " frameHeight=" << frameHeight
+					<< " tcpWidth=" << frameWidth
+					<< " tcpHeight=" << frameHeight
+					<< " renderTextureWidth=" << width
+					<< " renderTextureHeight=" << height
+					<< " channels=RGB8";*/
+				//std::cout << captureLog.str() << std::endl;
+			}
+
+			if (self->m_stage5OutputFrameDumpEnabled && self->m_enableStage5RadianceDebug && !self->m_stage5OutputFrameDumpPath.empty()) {
+				++self->m_stage5OutputFrameCounter;
+				if (self->m_stage5OutputFrameCounter % self->m_stage5OutputFrameDumpEvery == 0) {
+					try {
+						cv::Mat rawFrame(frameHeight, frameWidth, CV_8UC3, const_cast<uchar*>(frameData));
+						cv::Mat flippedFrame;
+						cv::flip(rawFrame, flippedFrame, 0);
+						cv::Mat bgrFrame;
+						cv::cvtColor(flippedFrame, bgrFrame, cv::COLOR_RGB2BGR);
+						const std::string tempDumpPath = self->m_stage5OutputFrameDumpPath + ".tmp.png";
+						const bool tempWriteOk = cv::imwrite(tempDumpPath, bgrFrame);
+						bool finalWriteOk = false;
+						if (tempWriteOk) {
+							std::remove(self->m_stage5OutputFrameDumpPath.c_str());
+							finalWriteOk = (std::rename(tempDumpPath.c_str(), self->m_stage5OutputFrameDumpPath.c_str()) == 0);
+							if (!finalWriteOk) {
+								std::remove(tempDumpPath.c_str());
+							}
+						}
+						if (finalWriteOk) {
+							++self->m_stage5OutputFrameDumpWrites;
+							if (self->m_stage5OutputFrameDumpWrites <= 3) {
+								std::cout << "[Stage5 OutputCapture] renderTextureDump=OK"
+									<< " path=" << self->m_stage5OutputFrameDumpPath
+									<< " width=" << frameWidth
+									<< " height=" << frameHeight
+									<< " writes=" << self->m_stage5OutputFrameDumpWrites
+									<< std::endl;
+							}
+						}
+						else if (!self->m_stage5OutputFrameDumpFailureLogged) {
+							std::cout << "[Stage5 OutputCapture][WARN] renderTextureDump=FAILED"
+								<< " reason=" << (tempWriteOk ? "rename_failed" : "imwrite_failed")
+								<< " path=" << self->m_stage5OutputFrameDumpPath
+								<< " width=" << frameWidth
+								<< " height=" << frameHeight
+								<< std::endl;
+							self->m_stage5OutputFrameDumpFailureLogged = true;
+						}
+					}
+					catch (const cv::Exception& e) {
+						if (!self->m_stage5OutputFrameDumpFailureLogged) {
+							std::cout << "[Stage5 OutputCapture][WARN] renderTextureDump=FAILED"
+								<< " reason=cv_exception"
+								<< " message=" << e.what()
+								<< " path=" << self->m_stage5OutputFrameDumpPath
+								<< std::endl;
+							self->m_stage5OutputFrameDumpFailureLogged = true;
+						}
+					}
+				}
+			}
 		}
 	}
 	// 返回 DS_cont 让任务在下一帧继续执行
