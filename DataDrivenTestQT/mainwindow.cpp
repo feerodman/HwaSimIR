@@ -89,10 +89,10 @@ void MainWindow::setupUI()
 	//127.0.0.1
 	m_configGroup = new QGroupBox(QStringLiteral("UDP通信配置"));
 	QFormLayout *configLayout = new QFormLayout;
-    //configLayout->addRow(QStringLiteral("本地IP:"), m_localIpEdit = new QLineEdit("192.168.1.188"));
+   // configLayout->addRow(QStringLiteral("本地IP:"), m_localIpEdit = new QLineEdit("192.168.1.188"));
     configLayout->addRow(QStringLiteral("本地IP:"), m_localIpEdit = new QLineEdit("127.0.0.1"));
 	configLayout->addRow(QStringLiteral("本地端口:"), m_localPortEdit = new QLineEdit("9999"));
-    //configLayout->addRow(QStringLiteral("目标IP:"), m_remoteIpEdit = new QLineEdit("192.168.1.121"));
+   // configLayout->addRow(QStringLiteral("目标IP:"), m_remoteIpEdit = new QLineEdit("192.168.1.121"));
     configLayout->addRow(QStringLiteral("目标IP:"), m_remoteIpEdit = new QLineEdit("127.0.0.1"));
 	configLayout->addRow(QStringLiteral("目标端口:"), m_remotePortEdit = new QLineEdit("8888"));
 	m_configGroup->setLayout(configLayout);
@@ -297,17 +297,28 @@ void MainWindow::sendInitCommand()
     cmd.trackingInit.envSky = 0;    // 晴
     cmd.trackingInit.envTemp = 25.0;
     cmd.trackingInit.videoFps = 30;
+
+    cmd.trackingInit.envVisibility = 6000;
+    cmd.trackingInit.envHumidity = 85;
+    cmd.trackingInit.envWindV = 8;
+    cmd.trackingInit.envWindDir = 30;
+    cmd.trackingInit.envRadScaleSky = 1.0;
+    cmd.trackingInit.envRadScaleTerrain = 1.0;
+
     cmd.trackingInit.trackerSensor[0].index = 0;
     cmd.trackingInit.trackerSensor[0].trackerSensorBand = 2; // 中波红外
-    cmd.trackingInit.trackerSensor[0].trackerSensorWidth = 600;
-    cmd.trackingInit.trackerSensor[0].trackerSensorHeight = 600;//hml
+    cmd.trackingInit.trackerSensor[0].trackerSensorWidth = 800;
+    cmd.trackingInit.trackerSensor[0].trackerSensorHeight = 800;//hml
     cmd.trackingInit.trackerSensor[0].trackerSensorViewMin = 1;
-    cmd.trackingInit.trackerSensor[0].trackerSensorViewMax = 550000;
+    cmd.trackingInit.trackerSensor[0].trackerSensorViewMax = 50000;
     cmd.trackingInit.trackerSensor[0].trackerSensorPixelAngle = 2.18166;
+    //2.18166
     cmd.trackingInit.trackerSensor[0].coarseTrackEn = true;
     cmd.trackingInit.trackerSensor[0].preciseTrackEn = true;
     cmd.trackingInit.trackerSensor[0].coarseTrackResolution = m_fovHEdit->text().toDouble();
     cmd.trackingInit.trackerSensor[0].preciseTrackResolution = m_fovVEdit->text().toDouble();
+    cmd.trackingInit.trackerSensor[0].noiseEn =true;
+    cmd.trackingInit.trackerSensor[0].trackerSensorNoise =0.5;
 
 
     cmd.MissileMaxCount120 = 5;

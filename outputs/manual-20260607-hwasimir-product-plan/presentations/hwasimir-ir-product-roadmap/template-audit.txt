@@ -1,0 +1,17 @@
+Source template: 产品规划.pptx, 10 slides, 4:3 aspect ratio, Hwa Create blue-white technology visual system.
+
+Reusable patterns:
+- Cover uses light-blue technology background, satellite/earth ribbon, top-right Hwa Create logo, and company/date footer.
+- Contents slide uses three numbered horizontal rows and a left hexagon contents mark.
+- Section divider slides use a blue top bar, large pale hexagon, chapter number, and vertical divider.
+- Body slides use the same blue top bar, logo, light technology background, and footer. Some body layouts contain placeholders only.
+- Closing slide carries the template thank-you treatment.
+
+Typography and color rules:
+- Chinese business copy should use Microsoft YaHei/微软雅黑-style sans serif.
+- Primary blue follows template dark blue around #124B98, accent blue #4976D1, secondary green #4CB494, risk red #C43D32, neutral gray #E9EEF7.
+- Use compact executive text, not paragraph-heavy proposal prose.
+
+Insertion contract:
+- Because the source deck mostly contains empty placeholders and the new deck needs product, architecture, roadmap, and financial proof objects, the final build uses rendered source-slide backgrounds as the template chrome and overlays editable artifact-tool text/shapes.
+- No source company logo or footer is replaced. No third-party logos are added.

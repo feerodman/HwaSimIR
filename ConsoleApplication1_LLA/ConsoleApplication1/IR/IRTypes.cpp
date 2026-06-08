@@ -12,9 +12,14 @@ IRSensorProfile::IRSensorProfile()
 	fovVDeg(33.75),
 	focalLengthMm(100.0),
 	detectorPitchMm(0.02),
+	lensFNumber(2.0),
 	adcBits(14),
 	displayBits(8),
-	netdK(0.05)
+	netdK(0.05),
+	blackHot(false),
+	usedFields("built-in fallback"),
+	fallbackFields("Width,Height,FOVH,FOVV"),
+	ignoredPresagisFields("non-whitelisted Presagis/Ondulus systems")
 {
 }
 

@@ -33,6 +33,12 @@ function Remove-DisabledIf0 {
     return [System.Text.RegularExpressions.Regex]::Replace($Text, "(?s)#if\s+0.*?#endif[^\r\n]*", "")
 }
 
+function Remove-CppComments {
+    param([string]$Text)
+    $withoutBlocks = [System.Text.RegularExpressions.Regex]::Replace($Text, "(?s)/\*.*?\*/", "")
+    return [System.Text.RegularExpressions.Regex]::Replace($withoutBlocks, "(?m)//.*$", "")
+}
+
 function Add-Check {
     param(
         [string]$Name,
@@ -50,6 +56,7 @@ $sensorHeaderText = Read-Text $sensorHeader
 $sensorSourceText = Read-Text $sensorSource
 $appHeaderText = Read-Text $appHeader
 $appSourceText = Read-Text $appSource
+$appActiveText = Remove-CppComments (Remove-DisabledIf0 $appSourceText)
 $tcpActiveText = Remove-DisabledIf0 (Read-Text $tcpSource)
 $tcpLinuxActiveText = Remove-DisabledIf0 (Read-Text $tcpLinuxSource)
 $cmakeText = Read-Text $cmakePath
@@ -107,13 +114,26 @@ $lensOk = ($appSourceText -match "set_fov\(config\.horizontalFovDeg,\s*config\.v
     ($appSourceText -match "\[Stage6 SensorGeometry\]")
 $checks.Add((Add-Check "camera lens uses Stage6 FOV and near/far" $lensOk $appSource)) | Out-Null
 
+$captureLogActive = ($appActiveText -match "\[Stage6 Capture\]") -and
+    ($appActiveText -match "frameWidth=") -and
+    ($appActiveText -match "frameHeight=") -and
+    ($appActiveText -match "tcpWidth=") -and
+    ($appActiveText -match "tcpHeight=") -and
+    ($appActiveText -match "renderTextureWidth=") -and
+    ($appActiveText -match "renderTextureHeight=") -and
+    ($appActiveText -match "channels=RGB8") -and
+    ($appActiveText -match "std::cout\s*<<\s*captureLog\.str\(\)")
 $captureOk = ($appSourceText -match "capture_task") -and
     ($appSourceText -match "get_x_size\(\)") -and
     ($appSourceText -match "get_y_size\(\)") -and
-    ($appSourceText -match "updateFrame\(frameData,\s*frameWidth,\s*frameHeight\)") -and
-    ($appSourceText -match "\[Stage6 Capture\]") -and
-    ($appSourceText -match "channels=RGB8")
+    ($appSourceText -match "updateFrame\([\s\S]*frameData[\s\S]*frameWidth[\s\S]*frameHeight[\s\S]*\)") -and
+    $captureLogActive
 $checks.Add((Add-Check "capture_task forwards render texture width/height" $captureOk $appSource)) | Out-Null
+$checks.Add((Add-Check "[Stage6 Capture] log is active code" $captureLogActive $appSource)) | Out-Null
+
+$resetAllowsReinit = ($appActiveText -match "m_sensorDisplayConfigReady = false") -and
+    ($appActiveText -match 'ApplySensorOutputConfig\(sensorDisplayConfig,\s*"init-command"\)')
+$checks.Add((Add-Check "reset allows next init to reapply sensor geometry" $resetAllowsReinit $appSource)) | Out-Null
 
 $tcpNo800Resize = ($tcpActiveText -notmatch "cv::Size\(800,\s*800\)") -and
     ($tcpActiveText -notmatch "width\s*!=\s*800\s*\|\|\s*height\s*!=\s*800") -and
@@ -127,8 +147,8 @@ $farClipWarningOk = ($appSourceText -match "STAGE6_TARGET_BEYOND_FAR_CLIP") -and
     ($appSourceText -match "targetRangeM > static_cast<float>\(m_sensorDisplayConfig\.farClipM\)")
 $checks.Add((Add-Check "far clip target warning exists" $farClipWarningOk $appSource)) | Out-Null
 
-$checks.Add((Add-Check "EnableStage5RadianceDebug defaults off" (($appSourceText -match 'ReadProcessEnvFlag\("EnableStage5RadianceDebug", false\)') -and ($appHeaderText -match "m_enableStage5RadianceDebug = false")) "$appHeader; $appSource")) | Out-Null
-$checks.Add((Add-Check "UseModtranTauForAtmosphere default remains off" (($stage3AtmosphereText -match "m_useModtranTauForAtmosphere\(false\)") -and ($appSourceText -match 'ReadProcessEnvFlag\("UseModtranTauForAtmosphere", false\)')) "$stage3AtmosphereSource; $appSource")) | Out-Null
+$checks.Add((Add-Check "EnableStage5RadianceDebug defaults off" (($appSourceText -match 'getBool\("Stage5",\s*"EnableRadianceDebug",\s*"EnableStage5RadianceDebug",\s*false') -and ($appHeaderText -match "m_enableStage5RadianceDebug = false")) "$appHeader; $appSource")) | Out-Null
+$checks.Add((Add-Check "UseModtranTauForAtmosphere default remains off" (($stage3AtmosphereText -match "m_useModtranTauForAtmosphere\(false\)") -and ($appSourceText -match 'getBool\("Stage3",\s*"UseModtranTauForAtmosphere",\s*"UseModtranTauForAtmosphere",\s*false')) "$stage3AtmosphereSource; $appSource")) | Out-Null
 $checks.Add((Add-Check "Stage6A does not add path/sky/solar radiance" ($stage6Text -notmatch "path_radiance|sky_radiance|solar_irradiance|pathRadiance|skyRadiance|solarIrradiance") "$sensorHeader; $sensorSource")) | Out-Null
 $checks.Add((Add-Check "Stage6A does not add AGC/MTF/H264/UDP video" (($stage6Text -notmatch "\bAGC\b|\bMTF\b|H264|H\.264|UDP video") -and ($appSourceText -notmatch "Stage6[^\r\n]*(\bAGC\b|\bMTF\b|H264|H\.264|UDP video)")) "$sensorHeader; $sensorSource; $appSource")) | Out-Null
 $checks.Add((Add-Check "stage6 sensor geometry smoke exists" (Test-Path -LiteralPath $stage6Smoke -PathType Leaf) $stage6Smoke)) | Out-Null

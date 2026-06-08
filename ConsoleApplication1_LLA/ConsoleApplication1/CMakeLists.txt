@@ -20,12 +20,16 @@ link_directories(${PANDA3D_ROOT}/lib)
 add_executable(HwaSim_RK3588 main.cpp
         HwaSimIR.cpp
         IR/IRConfig.cpp
+        IR/IREnginePlumeModel.cpp
         IR/IRModtranTauLut.cpp
         IR/IRRadianceModelV2.cpp
+        IR/IRRuntimeConfig.cpp
         IR/IRSceneMaterialMapper.cpp
         IR/IRSensorModel.cpp
+        IR/IRSensorPostProcess.cpp
         IR/IRTemperatureModel.cpp
         IR/IRTypes.cpp
+        IR/IRWeatherEffects.cpp
         IRSimulation.cpp
         UdpCommThread_Linux.cpp)
 

@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "basePath": "Config/Weather/Textures",
+  "textures": {
+    "cloud_cumulus": "cloud_cumulus.png",
+    "cloud_scattered": "cloud_scattered.png",
+    "cloud_overcast": "cloud_overcast.png",
+    "cloud_storm": "cloud_storm.png",
+    "cloud_few": "cloud_few.png",
+    "rain_shaft": "rain_shaft.png",
+    "rain_rgba": "rain.rgba",
+    "snow_rgba": "snow.rgba",
+    "moon": "moon.png",
+    "sun": "sun.png"
+  }
+}

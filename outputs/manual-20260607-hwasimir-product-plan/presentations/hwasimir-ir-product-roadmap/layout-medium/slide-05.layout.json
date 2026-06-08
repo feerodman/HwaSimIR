@@ -1,0 +1,1195 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/htfotv",
+    "id": "htfotv",
+    "slide": 5,
+    "layoutId": "6872c77c-b311-4b98-a8b9-287f3c9981dd",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "2b2e5535-abf9-4ddf-9c5e-af746f346170",
+    "masterLayoutName": "Master",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 960,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "微软雅黑"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "6872c77c-b311-4b98-a8b9-287f3c9981dd",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "2b2e5535-abf9-4ddf-9c5e-af746f346170",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "2b2e5535-abf9-4ddf-9c5e-af746f346170",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/w3m94fu1",
+      "id": "1",
+      "bbox": [
+        0,
+        0,
+        960,
+        720
+      ],
+      "alt": "template",
+      "contentType": "image/png",
+      "imageFit": "fill",
+      "asset": {
+        "assetId": "05ae3eb4-f1c1-4863-b053-0c4850a127bd",
+        "contentType": "image/png",
+        "byteLength": 261789
+      }
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/qh0fepkz",
+      "id": "2",
+      "bbox": [
+        95,
+        74,
+        760,
+        28
+      ],
+      "geometry": "rect",
+      "text": "03 市场方向：军工先行，低空与航天扩展",
+      "textPreview": "03 市场方向：军工先行，低空与航天扩展",
+      "resolvedFontSize": 21,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 21,
+        "typeface": "微软雅黑",
+        "color": "#FFFFFF",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "03 市场方向：军工先行，低空与航天扩展"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "03 市场方向：军工先行，低空与航天扩展",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "微软雅黑",
+            "color": "#FFFFFF",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "03 市场方向：军工先行，低空与航天扩展",
+              "fontSize": 21,
+              "typeface": "微软雅黑",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/j2t83itg",
+      "id": "3",
+      "bbox": [
+        96,
+        106,
+        720,
+        18
+      ],
+      "geometry": "rect",
+      "text": "核心痛点是实测成本、场景复现、国产化替代和算法数据",
+      "textPreview": "核心痛点是实测成本、场景复现、国产化替代和算法数据",
+      "resolvedFontSize": 10.51,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 10.51,
+        "typeface": "微软雅黑",
+        "color": "#FFFFFF",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "核心痛点是实测成本、场景复现、国产化替代和算法数据"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "核心痛点是实测成本、场景复现、国产化替代和算法数据",
+          "resolvedTextStyle": {
+            "fontSize": 10.51,
+            "typeface": "微软雅黑",
+            "color": "#FFFFFF",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "核心痛点是实测成本、场景复现、国产化替代和算法数据",
+              "fontSize": 10.51,
+              "typeface": "微软雅黑",
+              "color": "#FFFFFF"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8bat47y1",
+      "id": "4",
+      "bbox": [
+        70,
+        180,
+        190,
+        180
+      ],
+      "geometry": "rect",
+      "fillColor": "#F8FBFF",
+      "lineColor": "#C43D32",
+      "lineWidth": 1
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1w7mp0bi",
+      "id": "5",
+      "bbox": [
+        80,
+        190,
+        170,
+        22
+      ],
+      "geometry": "rect",
+      "text": "军工装备",
+      "textPreview": "军工装备",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 13,
+        "typeface": "微软雅黑",
+        "color": "#C43D32",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "军工装备"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "军工装备",
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "typeface": "微软雅黑",
+            "color": "#C43D32",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "军工装备",
+              "fontSize": 13,
+              "typeface": "微软雅黑",
+              "color": "#C43D32",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/q5o7qpg3",
+      "id": "6",
+      "bbox": [
+        82,
+        222,
+        166,
+        130
+      ],
+      "geometry": "rect",
+      "text": "军工研究所\n总体单位\n红外设备厂商\n靶场/试验基地",
+      "textPreview": "军工研究所 | 总体单位 | 红外设备厂商 | 靶场/试验基地",
+      "resolvedFontSize": 11.2,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 11.2,
+        "typeface": "微软雅黑",
+        "color": "#09285C",
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "军工研究所"
+          },
+          {
+            "index": 2,
+            "text": "总体单位"
+          },
+          {
+            "index": 3,
+            "text": "红外设备厂商"
+          },
+          {
+            "index": 4,
+            "text": "靶场/试验基地"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "军工研究所",
+          "resolvedTextStyle": {
+            "fontSize": 11.2,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "军工研究所",
+              "fontSize": 11.2,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "总体单位",
+          "resolvedTextStyle": {
+            "fontSize": 11.2,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "总体单位",
+              "fontSize": 11.2,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 3,
+          "text": "红外设备厂商",
+          "resolvedTextStyle": {
+            "fontSize": 11.2,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "红外设备厂商",
+              "fontSize": 11.2,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 4,
+          "text": "靶场/试验基地",
+          "resolvedTextStyle": {
+            "fontSize": 11.2,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "靶场/试验基地",
+              "fontSize": 11.2,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/jqh0fepk",
+      "id": "7",
+      "bbox": [
+        285,
+        180,
+        190,
+        180
+      ],
+      "geometry": "rect",
+      "fillColor": "#F8FBFF",
+      "lineColor": "#4976D1",
+      "lineWidth": 1
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/c3ylc7u5",
+      "id": "8",
+      "bbox": [
+        295,
+        190,
+        170,
+        22
+      ],
+      "geometry": "rect",
+      "text": "低空经济",
+      "textPreview": "低空经济",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 13,
+        "typeface": "微软雅黑",
+        "color": "#4976D1",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "低空经济"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "低空经济",
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "typeface": "微软雅黑",
+            "color": "#4976D1",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "低空经济",
+              "fontSize": 13,
+              "typeface": "微软雅黑",
+              "color": "#4976D1",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1kre1w7m",
+      "id": "9",
+      "bbox": [
+        297,
+        222,
+        166,
+        130
+      ],
+      "geometry": "rect",
+      "text": "低空监管平台\n无人机运营商\n机场/园区/港口\n反无人机集成商",
+      "textPreview": "低空监管平台 | 无人机运营商 | 机场/园区/港口 | 反无人机集成商",
+      "resolvedFontSize": 11.2,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 11.2,
+        "typeface": "微软雅黑",
+        "color": "#09285C",
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "低空监管平台"
+          },
+          {
+            "index": 2,
+            "text": "无人机运营商"
+          },
+          {
+            "index": 3,
+            "text": "机场/园区/港口"
+          },
+          {
+            "index": 4,
+            "text": "反无人机集成商"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "低空监管平台",
+          "resolvedTextStyle": {
+            "fontSize": 11.2,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "低空监管平台",
+              "fontSize": 11.2,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "无人机运营商",
+          "resolvedTextStyle": {
+            "fontSize": 11.2,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "无人机运营商",
+              "fontSize": 11.2,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 3,
+          "text": "机场/园区/港口",
+          "resolvedTextStyle": {
+            "fontSize": 11.2,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "机场/园区/港口",
+              "fontSize": 11.2,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 4,
+          "text": "反无人机集成商",
+          "resolvedTextStyle": {
+            "fontSize": 11.2,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "反无人机集成商",
+              "fontSize": 11.2,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/5o7qpg3e",
+      "id": "10",
+      "bbox": [
+        500,
+        180,
+        190,
+        180
+      ],
+      "geometry": "rect",
+      "fillColor": "#F8FBFF",
+      "lineColor": "#4CB494",
+      "lineWidth": 1
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/g3ex0nux",
+      "id": "11",
+      "bbox": [
+        510,
+        190,
+        170,
+        22
+      ],
+      "geometry": "rect",
+      "text": "商业航天",
+      "textPreview": "商业航天",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 13,
+        "typeface": "微软雅黑",
+        "color": "#4CB494",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "商业航天"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "商业航天",
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "typeface": "微软雅黑",
+            "color": "#4CB494",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "商业航天",
+              "fontSize": 13,
+              "typeface": "微软雅黑",
+              "color": "#4CB494",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/nih4byhg",
+      "id": "12",
+      "bbox": [
+        512,
+        222,
+        166,
+        130
+      ],
+      "geometry": "rect",
+      "text": "卫星总体单位\n载荷研制单位\n商业航天公司\n地面仿真团队",
+      "textPreview": "卫星总体单位 | 载荷研制单位 | 商业航天公司 | 地面仿真团队",
+      "resolvedFontSize": 11.2,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 11.2,
+        "typeface": "微软雅黑",
+        "color": "#09285C",
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "卫星总体单位"
+          },
+          {
+            "index": 2,
+            "text": "载荷研制单位"
+          },
+          {
+            "index": 3,
+            "text": "商业航天公司"
+          },
+          {
+            "index": 4,
+            "text": "地面仿真团队"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "卫星总体单位",
+          "resolvedTextStyle": {
+            "fontSize": 11.2,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "卫星总体单位",
+              "fontSize": 11.2,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "载荷研制单位",
+          "resolvedTextStyle": {
+            "fontSize": 11.2,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "载荷研制单位",
+              "fontSize": 11.2,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 3,
+          "text": "商业航天公司",
+          "resolvedTextStyle": {
+            "fontSize": 11.2,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "商业航天公司",
+              "fontSize": 11.2,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 4,
+          "text": "地面仿真团队",
+          "resolvedTextStyle": {
+            "fontSize": 11.2,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "地面仿真团队",
+              "fontSize": 11.2,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/yxobm58z",
+      "id": "13",
+      "bbox": [
+        715,
+        180,
+        175,
+        180
+      ],
+      "geometry": "rect",
+      "fillColor": "#F8FBFF",
+      "lineColor": "#D9812B",
+      "lineWidth": 1
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/9cvixcze",
+      "id": "14",
+      "bbox": [
+        725,
+        190,
+        155,
+        22
+      ],
+      "geometry": "rect",
+      "text": "外延用户",
+      "textPreview": "外延用户",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 13,
+        "typeface": "微软雅黑",
+        "color": "#D9812B",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "外延用户"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "外延用户",
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "typeface": "微软雅黑",
+            "color": "#D9812B",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "外延用户",
+              "fontSize": 13,
+              "typeface": "微软雅黑",
+              "color": "#D9812B",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/gr2p8nqx",
+      "id": "15",
+      "bbox": [
+        727,
+        222,
+        151,
+        130
+      ],
+      "geometry": "rect",
+      "text": "安防应急\n高校科研\n工业检测\n内部测试部门",
+      "textPreview": "安防应急 | 高校科研 | 工业检测 | 内部测试部门",
+      "resolvedFontSize": 11.2,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 11.2,
+        "typeface": "微软雅黑",
+        "color": "#09285C",
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "安防应急"
+          },
+          {
+            "index": 2,
+            "text": "高校科研"
+          },
+          {
+            "index": 3,
+            "text": "工业检测"
+          },
+          {
+            "index": 4,
+            "text": "内部测试部门"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "安防应急",
+          "resolvedTextStyle": {
+            "fontSize": 11.2,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "安防应急",
+              "fontSize": 11.2,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "高校科研",
+          "resolvedTextStyle": {
+            "fontSize": 11.2,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "高校科研",
+              "fontSize": 11.2,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 3,
+          "text": "工业检测",
+          "resolvedTextStyle": {
+            "fontSize": 11.2,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "工业检测",
+              "fontSize": 11.2,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 4,
+          "text": "内部测试部门",
+          "resolvedTextStyle": {
+            "fontSize": 11.2,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "内部测试部门",
+              "fontSize": 11.2,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/r65wjudg",
+      "id": "16",
+      "bbox": [
+        120,
+        440,
+        720,
+        74
+      ],
+      "geometry": "rect",
+      "fillColor": "#EEF4FF",
+      "lineColor": "#4976D1",
+      "lineWidth": 1
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ylc7u54z",
+      "id": "17",
+      "bbox": [
+        150,
+        463,
+        660,
+        26
+      ],
+      "geometry": "rect",
+      "text": "优先级建议：军工试点客户定义需求和验收标准；低空经济形成场景包；商业航天做载荷/星地仿真接口储备。",
+      "textPreview": "优先级建议：军工试点客户定义需求和验收标准；低空经济形成场景包；商业航天做载荷/星地仿真接口储备。",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "微软雅黑",
+        "color": "#124B98",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "优先级建议：军工试点客户定义需求和验收标准；低空经济形成场景包；商业航天做载荷/星地仿真接口储"
+          },
+          {
+            "index": 2,
+            "text": "备。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "优先级建议：军工试点客户定义需求和验收标准；低空经济形成场景包；商业航天做载荷/星地仿真接口储备。",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#124B98",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "优先级建议：军工试点客户定义需求和验收标准；低空经济形成场景包；商业航天做载荷/星地仿真接口储备。",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#124B98",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}

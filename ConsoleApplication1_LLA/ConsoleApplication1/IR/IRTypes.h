@@ -32,9 +32,14 @@ struct IRSensorProfile
 	double fovVDeg;
 	double focalLengthMm;
 	double detectorPitchMm;
+	double lensFNumber;
 	int adcBits;
 	int displayBits;
 	double netdK;
+	bool blackHot;
+	std::string usedFields;
+	std::string fallbackFields;
+	std::string ignoredPresagisFields;
 
 	IRSensorProfile();
 };

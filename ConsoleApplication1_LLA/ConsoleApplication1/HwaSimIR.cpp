@@ -6,6 +6,13 @@
 #include "lvecBase4.h"
 #include "pta_LVecBase4.h"
 #include "pta_float.h"
+#include "graphicsEngine.h"
+#include "geom.h"
+#include "geomNode.h"
+#include "geomTriangles.h"
+#include "geomVertexData.h"
+#include "geomVertexFormat.h"
+#include "geomVertexWriter.h"
 #include <chrono>
 #include <algorithm>
 #include <cctype>
@@ -58,65 +65,175 @@ bool IsReasonableAltitudeMeters(double altitudeMeters)
 	return altitudeMeters > -500.0 && altitudeMeters < 100000.0;
 }
 
-bool ReadProcessEnvFlag(const char* name, bool defaultValue)
+PT(PandaNode) CreateStage7SkyDomeNode()
 {
-#ifdef _MSC_VER
-	char valueBuffer[16] = {};
-	size_t required = 0;
-	if (getenv_s(&required, valueBuffer, sizeof(valueBuffer), name) != 0 || required == 0)
+	const int slices = 48;
+	const int stacks = 12;
+	const double pi = 3.14159265358979323846;
+	PT(GeomVertexData) data = new GeomVertexData(
+		"Stage7SkyDomeData",
+		GeomVertexFormat::get_v3n3t2(),
+		Geom::UH_static);
+	GeomVertexWriter vertex(data, "vertex");
+	GeomVertexWriter normal(data, "normal");
+	GeomVertexWriter texcoord(data, "texcoord");
+
+	for (int stack = 0; stack <= stacks; ++stack)
 	{
-		return defaultValue;
+		const double phi = (pi * 0.5) * static_cast<double>(stack) / static_cast<double>(stacks);
+		const double z = std::cos(phi);
+		const double r = std::sin(phi);
+		for (int slice = 0; slice <= slices; ++slice)
+		{
+			const double theta = 2.0 * pi * static_cast<double>(slice) / static_cast<double>(slices);
+			const float x = static_cast<float>(std::cos(theta) * r);
+			const float y = static_cast<float>(std::sin(theta) * r);
+			const float zz = static_cast<float>(z);
+			vertex.add_data3f(x, y, zz);
+			normal.add_data3f(-x, -y, -zz);
+			texcoord.add_data2f(
+				static_cast<float>(slice) / static_cast<float>(slices),
+				static_cast<float>(stack) / static_cast<float>(stacks));
+		}
 	}
-	std::string value(valueBuffer);
-#else
-	const char* envValue = std::getenv(name);
-	if (envValue == nullptr)
+
+	PT(GeomTriangles) triangles = new GeomTriangles(Geom::UH_static);
+	const int rowSize = slices + 1;
+	for (int stack = 0; stack < stacks; ++stack)
 	{
-		return defaultValue;
+		for (int slice = 0; slice < slices; ++slice)
+		{
+			const int a = stack * rowSize + slice;
+			const int b = a + 1;
+			const int c = (stack + 1) * rowSize + slice;
+			const int d = c + 1;
+			triangles->add_vertices(a, c, b);
+			triangles->add_vertices(b, c, d);
+		}
 	}
-	std::string value(envValue);
-#endif
-	return value == "1" || value == "true" || value == "TRUE" || value == "True";
+	triangles->close_primitive();
+
+	PT(Geom) geom = new Geom(data);
+	geom->add_primitive(triangles);
+	PT(GeomNode) node = new GeomNode("Stage7_SkyDome");
+	node->add_geom(geom);
+	return node;
 }
 
-std::string ReadProcessEnvString(const char* name, const std::string& defaultValue)
+PT(PandaNode) CreateStage7LowerHemisphereShellNode()
 {
-#ifdef _MSC_VER
-	char valueBuffer[128] = {};
-	size_t required = 0;
-	if (getenv_s(&required, valueBuffer, sizeof(valueBuffer), name) != 0 || required == 0)
+	const int slices = 48;
+	const int stacks = 12;
+	const double pi = 3.14159265358979323846;
+	PT(GeomVertexData) data = new GeomVertexData(
+		"Stage7LowerHemisphereShellData",
+		GeomVertexFormat::get_v3n3t2(),
+		Geom::UH_static);
+	GeomVertexWriter vertex(data, "vertex");
+	GeomVertexWriter normal(data, "normal");
+	GeomVertexWriter texcoord(data, "texcoord");
+
+	for (int stack = 0; stack <= stacks; ++stack)
 	{
-		return defaultValue;
+		const double phi = (pi * 0.5) + (pi * 0.5) * static_cast<double>(stack) / static_cast<double>(stacks);
+		const double z = std::cos(phi);
+		const double r = std::sin(phi);
+		for (int slice = 0; slice <= slices; ++slice)
+		{
+			const double theta = 2.0 * pi * static_cast<double>(slice) / static_cast<double>(slices);
+			const float x = static_cast<float>(std::cos(theta) * r);
+			const float y = static_cast<float>(std::sin(theta) * r);
+			const float zz = static_cast<float>(z);
+			vertex.add_data3f(x, y, zz);
+			normal.add_data3f(-x, -y, -zz);
+			texcoord.add_data2f(
+				static_cast<float>(slice) / static_cast<float>(slices),
+				static_cast<float>(stack) / static_cast<float>(stacks));
+		}
 	}
-	return std::string(valueBuffer);
-#else
-	const char* envValue = std::getenv(name);
-	return envValue == nullptr ? defaultValue : std::string(envValue);
-#endif
+
+	PT(GeomTriangles) triangles = new GeomTriangles(Geom::UH_static);
+	const int rowSize = slices + 1;
+	for (int stack = 0; stack < stacks; ++stack)
+	{
+		for (int slice = 0; slice < slices; ++slice)
+		{
+			const int a = stack * rowSize + slice;
+			const int b = a + 1;
+			const int c = (stack + 1) * rowSize + slice;
+			const int d = c + 1;
+			triangles->add_vertices(a, c, b);
+			triangles->add_vertices(b, c, d);
+		}
+	}
+	triangles->close_primitive();
+
+	PT(Geom) geom = new Geom(data);
+	geom->add_primitive(triangles);
+	PT(GeomNode) node = new GeomNode("Stage7_LowerHemisphereShell");
+	node->add_geom(geom);
+	return node;
 }
 
-double ReadProcessEnvDouble(const char* name, double defaultValue)
+PT(PandaNode) CreateStage5EnginePlumeBillboardNode()
 {
-	std::string value = ReadProcessEnvString(name, "");
-	if (value.empty())
-	{
-		return defaultValue;
-	}
-	char* end = nullptr;
-	const double parsed = std::strtod(value.c_str(), &end);
-	return (end != value.c_str()) ? parsed : defaultValue;
-}
+	PT(GeomVertexData) data = new GeomVertexData(
+		"Stage5EnginePlumeData",
+		GeomVertexFormat::get_v3n3t2(),
+		Geom::UH_static);
+	GeomVertexWriter vertex(data, "vertex");
+	GeomVertexWriter normal(data, "normal");
+	GeomVertexWriter texcoord(data, "texcoord");
 
-int ReadProcessEnvInt(const char* name, int defaultValue)
-{
-	std::string value = ReadProcessEnvString(name, "");
-	if (value.empty())
+	const LVecBase3f verts[8] = {
+		LVecBase3f(-1.0f, 0.0f, 0.0f),
+		LVecBase3f( 1.0f, 0.0f, 0.0f),
+		LVecBase3f( 1.0f,-1.0f, 0.0f),
+		LVecBase3f(-1.0f,-1.0f, 0.0f),
+		LVecBase3f( 0.0f, 0.0f,-1.0f),
+		LVecBase3f( 0.0f, 0.0f, 1.0f),
+		LVecBase3f( 0.0f,-1.0f, 1.0f),
+		LVecBase3f( 0.0f,-1.0f,-1.0f)
+	};
+	const LVecBase3f norms[8] = {
+		LVecBase3f(0.0f, 0.0f, 1.0f),
+		LVecBase3f(0.0f, 0.0f, 1.0f),
+		LVecBase3f(0.0f, 0.0f, 1.0f),
+		LVecBase3f(0.0f, 0.0f, 1.0f),
+		LVecBase3f(1.0f, 0.0f, 0.0f),
+		LVecBase3f(1.0f, 0.0f, 0.0f),
+		LVecBase3f(1.0f, 0.0f, 0.0f),
+		LVecBase3f(1.0f, 0.0f, 0.0f)
+	};
+	const LVecBase2f uvs[8] = {
+		LVecBase2f(0.0f, 0.0f),
+		LVecBase2f(1.0f, 0.0f),
+		LVecBase2f(1.0f, 1.0f),
+		LVecBase2f(0.0f, 1.0f),
+		LVecBase2f(0.0f, 0.0f),
+		LVecBase2f(1.0f, 0.0f),
+		LVecBase2f(1.0f, 1.0f),
+		LVecBase2f(0.0f, 1.0f)
+	};
+	for (int i = 0; i < 8; ++i)
 	{
-		return defaultValue;
+		vertex.add_data3f(verts[i]);
+		normal.add_data3f(norms[i]);
+		texcoord.add_data2f(uvs[i]);
 	}
-	char* end = nullptr;
-	const long parsed = std::strtol(value.c_str(), &end, 10);
-	return (end != value.c_str()) ? static_cast<int>(parsed) : defaultValue;
+
+	PT(GeomTriangles) triangles = new GeomTriangles(Geom::UH_static);
+	triangles->add_vertices(0, 2, 1);
+	triangles->add_vertices(0, 3, 2);
+	triangles->add_vertices(4, 6, 5);
+	triangles->add_vertices(4, 7, 6);
+	triangles->close_primitive();
+
+	PT(Geom) geom = new Geom(data);
+	geom->add_primitive(triangles);
+	PT(GeomNode) node = new GeomNode("Stage5_EnginePlume");
+	node->add_geom(geom);
+	return node;
 }
 
 std::string ToLowerAscii(std::string value)
@@ -154,6 +271,63 @@ const char* Stage5DebugViewModeName(int viewMode)
 	case 0:
 	default:
 		return "Composite";
+	}
+}
+
+int ParseStage7DebugMode(const std::string& value)
+{
+	const std::string lower = ToLowerAscii(value);
+	if (lower == "skyonly" || lower == "sky")
+	{
+		return 1;
+	}
+	if (lower == "groundonly" || lower == "ground")
+	{
+		return 2;
+	}
+	if (lower == "skygroundcolor" || lower == "color")
+	{
+		return 3;
+	}
+	return 0;
+}
+
+const char* Stage7DebugModeName(int debugMode)
+{
+	switch (debugMode)
+	{
+	case 1: return "SkyOnly";
+	case 2: return "GroundOnly";
+	case 3: return "SkyGroundColor";
+	case 0:
+	default:
+		return "Off";
+	}
+}
+
+int ParseStage7PrecipitationMode(const std::string& value)
+{
+	const std::string lower = ToLowerAscii(value);
+	if (lower == "none" || lower == "off" || lower == "0")
+	{
+		return 0;
+	}
+	if (lower == "cards" || lower == "card" || lower == "3d" || lower == "2")
+	{
+		return 2;
+	}
+	return 1;
+}
+
+const char* Stage7PrecipitationModeName(int mode)
+{
+	switch (mode)
+	{
+	case 0: return "None";
+	case 2: return "Cards";
+	case 1:
+	default:
+		return "ScreenOverlay";
 	}
 }
 
@@ -490,29 +664,29 @@ bool LoadStage5DebugDisplayConfig(
 	return true;
 }
 
-void ApplyStage5EnvOverrides(IRRadianceModelV2DebugConfig configs[5], bool useBaseTextureModulationByBand[5])
+void ApplyStage5RuntimeOverrides(IRRuntimeConfig& runtimeConfig, IRRadianceModelV2DebugConfig configs[5], bool useBaseTextureModulationByBand[5])
 {
 	for (int i = 0; i < 5; ++i)
 	{
-		configs[i].toneMap = ParseStage5ToneMap(ReadProcessEnvString("Stage5DebugToneMap", Stage5ToneMapName(configs[i].toneMap)));
-		configs[i].bodyRadianceScale = ReadProcessEnvDouble("Stage5BodyRadianceScale", configs[i].bodyRadianceScale);
-		configs[i].hotspotRadianceScale = ReadProcessEnvDouble("Stage5HotspotRadianceScale", configs[i].hotspotRadianceScale);
-		configs[i].brightspotRadianceScale = ReadProcessEnvDouble("Stage5BrightspotRadianceScale", configs[i].brightspotRadianceScale);
-		configs[i].minBodyGray = ReadProcessEnvDouble("Stage5DebugMinBodyGray", configs[i].minBodyGray);
-		configs[i].solarReflectanceWeight = ReadProcessEnvDouble("Stage5SolarReflectanceWeight", configs[i].solarReflectanceWeight);
-		configs[i].bodyDisplayGain = ReadProcessEnvDouble("Stage5BodyDisplayGain", configs[i].bodyDisplayGain);
-		configs[i].reflectedDisplayGain = ReadProcessEnvDouble("Stage5ReflectedDisplayGain", configs[i].reflectedDisplayGain);
-		configs[i].hotspotDisplayGain = ReadProcessEnvDouble("Stage5HotspotDisplayGain", configs[i].hotspotDisplayGain);
-		configs[i].brightspotDisplayGain = ReadProcessEnvDouble("Stage5BrightspotDisplayGain", configs[i].brightspotDisplayGain);
-		configs[i].compositeMinGray = ReadProcessEnvDouble("Stage5CompositeMinGray", configs[i].compositeMinGray);
-		configs[i].compositeMaxGray = ReadProcessEnvDouble("Stage5CompositeMaxGray", configs[i].compositeMaxGray);
-		useBaseTextureModulationByBand[i] = ReadProcessEnvFlag("Stage5UseBaseTextureModulation", useBaseTextureModulationByBand[i]);
+		configs[i].toneMap = ParseStage5ToneMap(runtimeConfig.getString("Stage5", "DebugToneMap", "Stage5DebugToneMap", Stage5ToneMapName(configs[i].toneMap)));
+		configs[i].bodyRadianceScale = runtimeConfig.getDouble("Stage5", "BodyRadianceScale", "Stage5BodyRadianceScale", configs[i].bodyRadianceScale);
+		configs[i].hotspotRadianceScale = runtimeConfig.getDouble("Stage5", "HotspotRadianceScale", "Stage5HotspotRadianceScale", configs[i].hotspotRadianceScale);
+		configs[i].brightspotRadianceScale = runtimeConfig.getDouble("Stage5", "BrightspotRadianceScale", "Stage5BrightspotRadianceScale", configs[i].brightspotRadianceScale);
+		configs[i].minBodyGray = runtimeConfig.getDouble("Stage5", "DebugMinBodyGray", "Stage5DebugMinBodyGray", configs[i].minBodyGray);
+		configs[i].solarReflectanceWeight = runtimeConfig.getDouble("Stage5", "SolarReflectanceWeight", "Stage5SolarReflectanceWeight", configs[i].solarReflectanceWeight);
+		configs[i].bodyDisplayGain = runtimeConfig.getDouble("Stage5", "BodyDisplayGain", "Stage5BodyDisplayGain", configs[i].bodyDisplayGain);
+		configs[i].reflectedDisplayGain = runtimeConfig.getDouble("Stage5", "ReflectedDisplayGain", "Stage5ReflectedDisplayGain", configs[i].reflectedDisplayGain);
+		configs[i].hotspotDisplayGain = runtimeConfig.getDouble("Stage5", "HotspotDisplayGain", "Stage5HotspotDisplayGain", configs[i].hotspotDisplayGain);
+		configs[i].brightspotDisplayGain = runtimeConfig.getDouble("Stage5", "BrightspotDisplayGain", "Stage5BrightspotDisplayGain", configs[i].brightspotDisplayGain);
+		configs[i].compositeMinGray = runtimeConfig.getDouble("Stage5", "CompositeMinGray", "Stage5CompositeMinGray", configs[i].compositeMinGray);
+		configs[i].compositeMaxGray = runtimeConfig.getDouble("Stage5", "CompositeMaxGray", "Stage5CompositeMaxGray", configs[i].compositeMaxGray);
+		useBaseTextureModulationByBand[i] = runtimeConfig.getBool("Stage5", "UseBaseTextureModulation", "Stage5UseBaseTextureModulation", useBaseTextureModulationByBand[i]);
 	}
-	configs[Stage5BandIndex(IRBand::Visible)].solarReflectanceWeight = ReadProcessEnvDouble("Stage5SolarReflectanceWeight_VIS", configs[Stage5BandIndex(IRBand::Visible)].solarReflectanceWeight);
-	configs[Stage5BandIndex(IRBand::NearInfrared)].solarReflectanceWeight = ReadProcessEnvDouble("Stage5SolarReflectanceWeight_NIR", configs[Stage5BandIndex(IRBand::NearInfrared)].solarReflectanceWeight);
-	configs[Stage5BandIndex(IRBand::ShortWaveInfrared)].solarReflectanceWeight = ReadProcessEnvDouble("Stage5SolarReflectanceWeight_SWIR", configs[Stage5BandIndex(IRBand::ShortWaveInfrared)].solarReflectanceWeight);
-	configs[Stage5BandIndex(IRBand::MidWaveInfrared)].solarReflectanceWeight = ReadProcessEnvDouble("Stage5SolarReflectanceWeight_MWIR", configs[Stage5BandIndex(IRBand::MidWaveInfrared)].solarReflectanceWeight);
-	configs[Stage5BandIndex(IRBand::LongWaveInfrared)].solarReflectanceWeight = ReadProcessEnvDouble("Stage5SolarReflectanceWeight_LWIR", configs[Stage5BandIndex(IRBand::LongWaveInfrared)].solarReflectanceWeight);
+	configs[Stage5BandIndex(IRBand::Visible)].solarReflectanceWeight = runtimeConfig.getDouble("Stage5", "SolarReflectanceWeight_VIS", "Stage5SolarReflectanceWeight_VIS", configs[Stage5BandIndex(IRBand::Visible)].solarReflectanceWeight);
+	configs[Stage5BandIndex(IRBand::NearInfrared)].solarReflectanceWeight = runtimeConfig.getDouble("Stage5", "SolarReflectanceWeight_NIR", "Stage5SolarReflectanceWeight_NIR", configs[Stage5BandIndex(IRBand::NearInfrared)].solarReflectanceWeight);
+	configs[Stage5BandIndex(IRBand::ShortWaveInfrared)].solarReflectanceWeight = runtimeConfig.getDouble("Stage5", "SolarReflectanceWeight_SWIR", "Stage5SolarReflectanceWeight_SWIR", configs[Stage5BandIndex(IRBand::ShortWaveInfrared)].solarReflectanceWeight);
+	configs[Stage5BandIndex(IRBand::MidWaveInfrared)].solarReflectanceWeight = runtimeConfig.getDouble("Stage5", "SolarReflectanceWeight_MWIR", "Stage5SolarReflectanceWeight_MWIR", configs[Stage5BandIndex(IRBand::MidWaveInfrared)].solarReflectanceWeight);
+	configs[Stage5BandIndex(IRBand::LongWaveInfrared)].solarReflectanceWeight = runtimeConfig.getDouble("Stage5", "SolarReflectanceWeight_LWIR", "Stage5SolarReflectanceWeight_LWIR", configs[Stage5BandIndex(IRBand::LongWaveInfrared)].solarReflectanceWeight);
 }
 
 std::string FirstExistingPath(const std::vector<std::string>& paths)
@@ -525,6 +699,19 @@ std::string FirstExistingPath(const std::vector<std::string>& paths)
 		}
 	}
 	return paths.empty() ? std::string() : paths[0];
+}
+
+std::vector<std::string> BuildRuntimeConfigPathCandidates(const std::string& configuredPath)
+{
+	std::vector<std::string> paths;
+	if (!configuredPath.empty())
+	{
+		paths.push_back(configuredPath);
+		paths.push_back("../Bin/" + configuredPath);
+		paths.push_back("ConsoleApplication1_LLA/Bin/" + configuredPath);
+		paths.push_back("../ConsoleApplication1_LLA/Bin/" + configuredPath);
+	}
+	return paths;
 }
 
 double WeatherSunStrength(int weatherCode, double sunElevationDeg)
@@ -577,10 +764,14 @@ HwaSimIR::HwaSimIR(int argc, char** argv)
 
 
 	SetRenderMode(true, 0);
-	//SetRenderMode(false, 25);
+	//SetRenderMode(false, 0);
 
 	// 窗口初始化+注册自定义功能
 	if (m_pMainWindow) {
+		std::cout << "[BuildStamp] stage6b4_stage7a2_source_active=1"
+			<< " compile_date=" << __DATE__
+			<< " compile_time=" << __TIME__
+			<< std::endl;
 		InitHwaSimIRWindow();
 		//register_custom_functions();
 	// 初始化通讯线程
@@ -592,6 +783,7 @@ HwaSimIR::HwaSimIR(int argc, char** argv)
 
 		// 编译红外着色器
 		InitInfraredShader();
+		SetupStage6FinalPipeline(800, 800, "startup");
 		InitInfraredSimulation();
 		InitSkyAndCloudScene();
 
@@ -654,21 +846,38 @@ void HwaSimIR::run() {
 
 	// 接管主循环
 	while (true) {
+		if (m_requestExit.load()) {
+			break;
+		}
+
+		bool shouldProcessSceneData = false;
 		// 如果是同步模式，且仿真正在运行，则死等UDP数据
-		if (m_bSyncRenderMode && m_isSimRunning) {
+		if (m_bSyncRenderMode && m_isSimRunning.load()) {
 			std::unique_lock<std::mutex> lock(m_mtx);
 
 			// wait_for 会阻塞主线程（暂停渲染），直到 UDP 线程调用 m_cvNewData.notify_one()
 			// 加一个 100ms 的超时是为了防止：如果 UDP 断线了，主窗口仍然能稍微响应一下系统拖拽、关闭等事件
 			m_cvNewData.wait_for(lock, std::chrono::milliseconds(100), [this] { return m_bHasNewData; });
-
 			// 解锁：如果不解锁，接下来的 do_frame 内部任务将无法获取锁，导致死锁
 			lock.unlock();
+		}
+		{
+			std::lock_guard<std::mutex> lock(m_mtx);
+			if (m_bHasNewData) {
+				shouldProcessSceneData = true;
+				m_bHasNewData = false;
+			}
+		}
+		if (shouldProcessSceneData) {
+			ProcessRealSimSceneDrivenData();
 		}
 
 		// 渲染一帧（包含处理网络接收的场景更新任务、UI事件等）
 		// 如果返回 false，说明用户点了右上角的 X 或按了 ESC 请求退出
 		if (!m_pFramework->do_frame(current_thread)) {
+			break;
+		}
+		if (m_requestExit.load()) {
 			break;
 		}
 	}
@@ -713,6 +922,7 @@ void HwaSimIR::ApplySensorOutputConfig(const IRSensorDisplayConfig& config, cons
 	m_sensorDisplayConfig = config;
 	m_sensorDisplayConfigReady = true;
 	m_stage6FarClipWarningLogged = false;
+	m_stage7NearFarClipWarningLogged = false;
 	m_stage6CaptureLogCounter = 0;
 
 	if (m_cameraLens != nullptr) {
@@ -721,6 +931,7 @@ void HwaSimIR::ApplySensorOutputConfig(const IRSensorDisplayConfig& config, cons
 	}
 
 	resize_window(config.width, config.height);
+	SetupStage6FinalPipeline(config.width, config.height, reason);
 	LogStage6SensorGeometry(config, reason);
 }
 
@@ -760,6 +971,1490 @@ void HwaSimIR::LogStage6SensorGeometry(const IRSensorDisplayConfig& config, cons
 	}
 }
 
+void HwaSimIR::ApplyStage6DisplayConfig(const BYHWICD::trackerSensorParam& sensor, const char* reason)
+{
+	IRSensorPostProcessConfig config;
+	std::string whiteHotSource;
+	std::string gainSource;
+	std::string offsetSource;
+	std::string applyToWindowSource;
+	std::string backgroundSource;
+	std::string noiseOverrideSource;
+	std::string noiseEnableSource;
+	std::string noiseSigmaSource;
+	const bool protocolNoisePresent = sensor.noiseEn || sensor.trackerSensorNoise > 0.0;
+
+	config.whiteHot = m_runtimeConfig.getBool("Stage6Display", "WhiteHot", "Stage6WhiteHot", true, &whiteHotSource);
+	config.displayGain = m_runtimeConfig.getDouble("Stage6Display", "DisplayGain", "Stage6DisplayGain", 1.0, &gainSource);
+	config.displayOffset = m_runtimeConfig.getDouble("Stage6Display", "DisplayOffset", "Stage6DisplayOffset", 0.0, &offsetSource);
+	config.applyToWindow = m_runtimeConfig.getBool("Stage6Display", "ApplyToWindow", "Stage6DisplayApplyToWindow", true, &applyToWindowSource);
+	config.applyToCapture = false;
+	config.backgroundDisplayEnable = m_runtimeConfig.getBool("Stage6Display", "BackgroundDisplayEnable", "Stage6BackgroundDisplayEnable", true, &backgroundSource);
+	config.noiseOverrideEnable = m_runtimeConfig.getBool("Stage6Display", "NoiseOverrideEnable", "Stage6NoiseOverrideEnable", true, &noiseOverrideSource);
+
+	const bool configuredNoiseEnable = m_runtimeConfig.getBool("Stage6Display", "NoiseEnable", "Stage6NoiseEnable", false, &noiseEnableSource);
+	const double configuredNoiseSigma = std::max(0.0, m_runtimeConfig.getDouble("Stage6Display", "NoiseSigmaGray", "Stage6NoiseSigmaGray", 0.0, &noiseSigmaSource));
+	if (config.noiseOverrideEnable) {
+		config.noiseEnable = configuredNoiseEnable;
+		config.noiseSigmaGray = configuredNoiseSigma;
+		config.noiseSource = (noiseEnableSource == "env" || noiseSigmaSource == "env") ? "env" :
+			((noiseEnableSource == "ini" || noiseSigmaSource == "ini") ? "ini" : "default");
+	}
+	else if (protocolNoisePresent) {
+		config.noiseEnable = sensor.noiseEn;
+		config.noiseSigmaGray = std::max(0.0, sensor.trackerSensorNoise);
+		config.noiseSource = "protocol";
+	}
+	else {
+		config.noiseEnable = configuredNoiseEnable;
+		config.noiseSigmaGray = configuredNoiseSigma;
+		config.noiseSource = (noiseEnableSource == "env" || noiseSigmaSource == "env") ? "env" :
+			((noiseEnableSource == "ini" || noiseSigmaSource == "ini") ? "ini" : "default");
+	}
+	const bool anyEnvSource = whiteHotSource == "env" || gainSource == "env" || offsetSource == "env" ||
+		applyToWindowSource == "env" || backgroundSource == "env" || noiseOverrideSource == "env" ||
+		config.noiseSource == "env";
+	const bool anyIniSource = whiteHotSource == "ini" || gainSource == "ini" || offsetSource == "ini" ||
+		applyToWindowSource == "ini" || backgroundSource == "ini" || noiseOverrideSource == "ini" ||
+		config.noiseSource == "ini";
+	if (config.noiseSource == "protocol")
+	{
+		config.source = anyEnvSource ? "env+protocol" : (anyIniSource ? "ini+protocol" : "protocol");
+	}
+	else
+	{
+		config.source = anyEnvSource ? "env" : (anyIniSource ? "ini" : "default");
+	}
+
+	m_stage6DisplayConfig = config;
+	m_stage6DisplayConfigReady = true;
+	m_stage6DisplayLogCounter = 0;
+	LogStage6DisplayConfig(config, reason);
+	LogStage6DisplayRoute(config, reason);
+	RefreshStage6DisplayShaderInputs();
+	ApplyStage6FinalPostprocessInputs();
+	LogStage6FinalPipeline(reason);
+}
+
+void HwaSimIR::LogStage6DisplayConfig(const IRSensorPostProcessConfig& config, const char* reason) const
+{
+	const char* safeReason = (reason != nullptr) ? reason : "unknown";
+	std::cout << "[Stage6 Display]"
+		<< " reason=" << safeReason
+		<< " whiteHot=" << (config.whiteHot ? "1" : "0")
+		<< " displayGain=" << config.displayGain
+		<< " displayOffset=" << config.displayOffset
+		<< " noiseEnable=" << (config.noiseEnable ? "1" : "0")
+		<< " noiseSigmaGray=" << config.noiseSigmaGray
+		<< " noiseOverrideEnable=" << (config.noiseOverrideEnable ? "1" : "0")
+		<< " noiseSource=" << config.noiseSource
+		<< " applyToWindow=" << (config.applyToWindow ? "1" : "0")
+		<< " applyToCapture=" << (config.applyToCapture ? "1" : "0")
+		<< " backgroundDisplay=" << (config.backgroundDisplayEnable ? "1" : "0")
+		<< " configSource=" << config.source
+		<< " effectiveWhiteHot=" << (config.whiteHot ? "1" : "0")
+		<< " effectiveNoiseEnable=" << (config.noiseEnable ? "1" : "0")
+		<< " effectiveNoiseSigmaGray=" << config.noiseSigmaGray
+		<< " source=" << config.source
+		<< std::endl;
+}
+
+void HwaSimIR::LogStage6DisplayRoute(const IRSensorPostProcessConfig& config, const char* reason) const
+{
+	const char* safeReason = (reason != nullptr) ? reason : "unknown";
+	std::cout << "[Stage6 DisplayRoute]"
+		<< " reason=" << safeReason
+		<< " route=final_sensor"
+		<< " deprecatedRoute=1"
+		<< " finalRoute=final_sensor"
+		<< " applyToWindow=" << (config.applyToWindow ? "1" : "0")
+		<< " applyToCapture=" << (config.applyToCapture ? "1" : "0")
+		<< " backgroundDisplay=" << (config.backgroundDisplayEnable ? "1" : "0")
+		<< std::endl;
+}
+
+void HwaSimIR::ApplyStage6DisplayShaderInputs(NodePath& node) const
+{
+	if (node.is_empty())
+	{
+		return;
+	}
+
+	const IRSensorPostProcessConfig config = m_stage6DisplayConfigReady ? m_stage6DisplayConfig : IRSensorPostProcessConfig();
+	const bool shaderDisplayEnabled = false;
+	const double offsetNorm = config.displayOffset / 255.0;
+	const double noiseSigmaNorm = config.noiseSigmaGray / 255.0;
+
+	node.set_shader_input("u_stage6_display_en", LVecBase2i(shaderDisplayEnabled ? 1 : 0, 0));
+	node.set_shader_input("u_stage6_white_hot", LVecBase2i(config.whiteHot ? 1 : 0, 0));
+	node.set_shader_input("u_stage6_display_gain", LVecBase2f(static_cast<float>(config.displayGain), 0.0f));
+	node.set_shader_input("u_stage6_display_offset", LVecBase2f(static_cast<float>(offsetNorm), 0.0f));
+	node.set_shader_input("u_stage6_noise_enable", LVecBase2i(config.noiseEnable ? 1 : 0, 0));
+	node.set_shader_input("u_stage6_noise_sigma_norm", LVecBase2f(static_cast<float>(noiseSigmaNorm), 0.0f));
+	node.set_shader_input("u_stage6_background_display_en", LVecBase2i(config.backgroundDisplayEnable ? 1 : 0, 0));
+}
+
+void HwaSimIR::RefreshStage6DisplayShaderInputs()
+{
+	if (!m_skyNode.is_empty())
+	{
+		ApplyStage6DisplayShaderInputs(m_skyNode);
+	}
+	if (!m_stage7LowerShellNode.is_empty())
+	{
+		ApplyStage6DisplayShaderInputs(m_stage7LowerShellNode);
+	}
+	for (size_t i = 0; i < m_cloudNodes.size(); ++i)
+	{
+		ApplyStage6DisplayShaderInputs(m_cloudNodes[i]);
+	}
+	for (auto& pakPlat : m_pakPlatformList)
+	{
+		ApplyStage6DisplayShaderInputs(pakPlat.nodePath);
+	}
+	for (auto& weaponPlat : m_weaponPlatformList)
+	{
+		ApplyStage6DisplayShaderInputs(weaponPlat.nodePath);
+	}
+	for (auto& targetPlat : m_targetPlatformList)
+	{
+		ApplyStage6DisplayShaderInputs(targetPlat.nodePath);
+	}
+}
+
+void HwaSimIR::InitStage6FinalPostShader()
+{
+	std::string vertexShader = R"(
+    #version 100
+    uniform mat4 p3d_ModelViewProjectionMatrix;
+    attribute vec4 p3d_Vertex;
+    attribute vec2 p3d_MultiTexCoord0;
+    varying vec2 texcoord;
+
+    void main() {
+        gl_Position = p3d_ModelViewProjectionMatrix * p3d_Vertex;
+        texcoord = p3d_MultiTexCoord0;
+    }
+    )";
+
+	std::string fragmentShader = R"(
+    #version 100
+    precision mediump float;
+
+    uniform sampler2D p3d_Texture0;
+    uniform int u_stage6_final_white_hot;
+    uniform float u_stage6_final_display_gain;
+    uniform float u_stage6_final_display_offset;
+    uniform int u_stage6_final_noise_enable;
+    uniform float u_stage6_final_noise_sigma_norm;
+    uniform vec2 u_stage6_final_uv_scale;
+    uniform int u_stage7_final_precipitation_mode; // 0 none, 1 screen overlay
+    uniform int u_stage7_final_precipitation_type; // 0 none, 1 rain, 2 snow
+    uniform float u_stage7_final_precipitation_density;
+    uniform float u_stage7_final_precipitation_speed;
+    uniform float u_stage7_final_precipitation_wind_dir_deg;
+    uniform float u_stage7_final_time;
+    uniform float u_stage7_final_sensor_fov_deg;
+
+    varying vec2 texcoord;
+
+    float Stage6FinalNoise(vec2 pixel)
+    {
+        return fract(sin(dot(pixel, vec2(12.9898, 78.233))) * 43758.5453);
+    }
+
+    float Stage7FinalHash(vec2 p)
+    {
+        return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+    }
+
+    float Stage7RainOverlay(vec2 uv)
+    {
+        float density = clamp(u_stage7_final_precipitation_density, 0.0, 1.0);
+        if (density <= 0.001) {
+            return 0.0;
+        }
+        float wind = sin(u_stage7_final_precipitation_wind_dir_deg * 0.01745329252);
+        vec2 grid = vec2(96.0, 72.0);
+        vec2 p = uv * grid + vec2(wind * u_stage7_final_time * 0.35, u_stage7_final_time * max(0.1, u_stage7_final_precipitation_speed) * 1.35);
+        vec2 cell = floor(p);
+        vec2 local = fract(p);
+        float rnd = Stage7FinalHash(cell);
+        float spawn = step(1.0 - density * 0.42, rnd);
+        float slant = 0.10 + wind * 0.22;
+        float center = 0.5 + slant * (local.y - 0.5);
+        float fovNorm = clamp(u_stage7_final_sensor_fov_deg / 9.0, 0.01, 1.0);
+        float width = mix(0.026, 0.014, fovNorm);
+        float line = 1.0 - smoothstep(width, width * 2.8, abs(local.x - center));
+        float segment = 1.0 - smoothstep(0.18, 0.42, abs(local.y - 0.50));
+        return clamp(line * segment * spawn, 0.0, 1.0);
+    }
+
+    float Stage7SnowOverlay(vec2 uv)
+    {
+        float density = clamp(u_stage7_final_precipitation_density, 0.0, 1.0);
+        if (density <= 0.001) {
+            return 0.0;
+        }
+        float wind = sin(u_stage7_final_precipitation_wind_dir_deg * 0.01745329252);
+        vec2 grid = vec2(52.0, 48.0);
+        vec2 p = uv * grid + vec2(wind * u_stage7_final_time * 0.12, u_stage7_final_time * max(0.08, u_stage7_final_precipitation_speed) * 0.28);
+        vec2 cell = floor(p);
+        vec2 local = fract(p);
+        float rnd = Stage7FinalHash(cell);
+        float spawn = step(1.0 - density * 0.34, rnd);
+        float radius = 0.16 + rnd * 0.06;
+        float dotMask = 1.0 - smoothstep(radius * 0.45, radius, length(local - vec2(0.5, 0.5)));
+        return clamp(dotMask * spawn, 0.0, 1.0);
+    }
+
+    float ApplyStage7FinalPrecipitationOverlay(float gray, vec2 uv)
+    {
+        if (u_stage7_final_precipitation_mode != 1 || u_stage7_final_precipitation_type == 0) {
+            return gray;
+        }
+        float density = clamp(u_stage7_final_precipitation_density, 0.0, 1.0);
+        float mask = 0.0;
+        float strength = 0.0;
+        if (u_stage7_final_precipitation_type == 1) {
+            mask = Stage7RainOverlay(uv);
+            strength = 0.10 * density;
+        } else if (u_stage7_final_precipitation_type == 2) {
+            mask = Stage7SnowOverlay(uv);
+            strength = 0.08 * density;
+        }
+        return clamp(gray + mask * strength, 0.0, 1.0);
+    }
+
+    void main() {
+        vec2 sampleUv = texcoord * u_stage6_final_uv_scale;
+        vec4 rawColor = texture2D(p3d_Texture0, sampleUv);
+        float gray = dot(rawColor.rgb, vec3(0.299, 0.587, 0.114));
+        gray = gray * u_stage6_final_display_gain + u_stage6_final_display_offset;
+        if (u_stage6_final_noise_enable == 1 && u_stage6_final_noise_sigma_norm > 0.0) {
+            gray += (Stage6FinalNoise(gl_FragCoord.xy) * 2.0 - 1.0) * u_stage6_final_noise_sigma_norm;
+        }
+        gray = clamp(gray, 0.0, 1.0);
+        if (u_stage6_final_white_hot == 0) {
+            gray = 1.0 - gray;
+        }
+        gray = ApplyStage7FinalPrecipitationOverlay(gray, texcoord);
+        gl_FragColor = vec4(gray, gray, gray, rawColor.a);
+    }
+    )";
+
+	m_stage6FinalPostShader = Shader::make(Shader::SL_GLSL, vertexShader, fragmentShader);
+	if (!m_stage6FinalPostShader)
+	{
+		std::cerr << "Stage6 final sensor postprocess shader compile failed." << std::endl;
+	}
+}
+
+void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reason)
+{
+	if (!m_pMainWindow || !m_pGraphicsWindow || m_cameraNode.is_empty())
+	{
+		return;
+	}
+	if (!m_stage6FinalPostShader)
+	{
+		InitStage6FinalPostShader();
+	}
+	if (m_stage6FinalRoot.is_empty())
+	{
+		m_stage6FinalRoot = NodePath("Stage6FinalSensorRoot");
+	}
+	if (m_stage6FinalCameraNode.is_empty())
+	{
+		PT(Camera) finalCamera = new Camera("Stage6FinalSensorCamera");
+		PT(OrthographicLens) finalLens = new OrthographicLens();
+		finalLens->set_film_size(2.0f, 2.0f);
+		finalLens->set_near_far(-10.0f, 10.0f);
+		finalCamera->set_lens(finalLens);
+		m_stage6FinalCameraNode = m_stage6FinalRoot.attach_new_node(finalCamera);
+		m_stage6FinalCameraNode.set_pos(0.0f, -1.0f, 0.0f);
+		m_stage6FinalCameraNode.set_hpr(0.0f, 0.0f, 0.0f);
+	}
+
+	const int safeWidth = std::max(1, width);
+	const int safeHeight = std::max(1, height);
+	const bool sameSize = m_stage6FinalPipelineReady &&
+		m_stage6FinalWidth == safeWidth &&
+		m_stage6FinalHeight == safeHeight &&
+		m_stage6RawSceneBuffer != nullptr &&
+		m_stage6FinalRegion != nullptr &&
+		!m_stage6FinalCard.is_empty();
+	if (sameSize)
+	{
+		if (m_stage6RawSceneRegion != nullptr)
+		{
+			m_stage6RawSceneRegion->set_dimensions(0.0f, 1.0f, 0.0f, 1.0f);
+			m_stage6RawSceneRegion->set_active(true);
+		}
+		if (m_stage6FinalRegion != nullptr)
+		{
+			m_stage6FinalRegion->set_dimensions(0.0f, 1.0f, 0.0f, 1.0f);
+			m_stage6FinalRegion->set_camera(m_stage6FinalCameraNode);
+			m_stage6FinalRegion->set_active(true);
+		}
+		DisplayRegion* sourceRegion = m_pMainWindow->get_display_region_3d();
+		if (sourceRegion != nullptr)
+		{
+			sourceRegion->set_active(false);
+		}
+		ApplyStage6FinalPostprocessInputs();
+		LogStage6FinalPipeline(reason);
+		return;
+	}
+
+	if (m_stage6RawSceneBuffer != nullptr)
+	{
+		GraphicsEngine::get_global_ptr()->remove_window(m_stage6RawSceneBuffer);
+		m_stage6RawSceneBuffer = nullptr;
+		m_stage6RawSceneRegion = nullptr;
+	}
+	if (!m_stage6FinalCard.is_empty())
+	{
+		m_stage6FinalCard.remove_node();
+	}
+
+	m_stage6RawSceneTex = new Texture("Stage6RawSceneTex");
+	m_stage6RawSceneTex->setup_2d_texture(safeWidth, safeHeight, Texture::T_unsigned_byte, Texture::F_rgb);
+	m_stage6RawSceneBuffer = m_pGraphicsWindow->make_texture_buffer("Stage6RawSceneBuffer", safeWidth, safeHeight, m_stage6RawSceneTex, false);
+	if (m_stage6RawSceneBuffer == nullptr)
+	{
+		m_stage6FinalPipelineReady = false;
+		std::cout << "[Stage6 FinalPipeline][WARN]"
+			<< " reason=" << (reason != nullptr ? reason : "unknown")
+			<< " rawSceneTex=Stage6RawSceneTex"
+			<< " finalSensorTex=Stage6FinalSensorTex"
+			<< " windowSource=raw_scene"
+			<< " tcpSource=final_sensor"
+			<< " sameOutput=0"
+			<< " failure=raw_buffer_unavailable"
+			<< std::endl;
+		return;
+	}
+
+	m_stage6RawSceneBuffer->remove_all_display_regions();
+	m_stage6RawSceneBuffer->set_sort(m_pGraphicsWindow->get_sort() - 10);
+	m_stage6RawSceneRegion = m_stage6RawSceneBuffer->make_display_region(0.0f, 1.0f, 0.0f, 1.0f);
+	DisplayRegion* sourceRegion = m_pMainWindow->get_display_region_3d();
+	if (sourceRegion != nullptr)
+	{
+		m_stage6RawSceneRegion->set_camera(sourceRegion->get_camera());
+		sourceRegion->set_active(false);
+	}
+	m_stage6RawSceneRegion->set_dimensions(0.0f, 1.0f, 0.0f, 1.0f);
+	m_stage6RawSceneRegion->set_sort(0);
+	m_stage6RawSceneRegion->set_clear_color_active(true);
+	m_stage6RawSceneRegion->set_clear_color(LColor(0.0f, 0.0f, 0.0f, 1.0f));
+	m_stage6RawSceneRegion->set_clear_depth_active(true);
+	m_stage6RawSceneRegion->set_active(true);
+
+	if (m_stage6FinalRegion == nullptr)
+	{
+		m_stage6FinalRegion = m_pGraphicsWindow->make_display_region(0.0f, 1.0f, 0.0f, 1.0f);
+	}
+	m_stage6FinalRegion->set_dimensions(0.0f, 1.0f, 0.0f, 1.0f);
+	m_stage6FinalRegion->set_camera(m_stage6FinalCameraNode);
+	m_stage6FinalRegion->set_sort(100);
+	m_stage6FinalRegion->set_clear_color_active(true);
+	m_stage6FinalRegion->set_clear_color(LColor(0.0f, 0.0f, 0.0f, 1.0f));
+	m_stage6FinalRegion->set_clear_depth_active(true);
+	m_stage6FinalRegion->set_active(true);
+
+	CardMaker finalCardMaker("Stage6_FinalSensor_Card");
+	finalCardMaker.set_frame(-1.0f, 1.0f, -1.0f, 1.0f);
+	m_stage6FinalCard = m_stage6FinalRoot.attach_new_node(finalCardMaker.generate());
+	m_stage6FinalCard.set_texture(m_stage6RawSceneTex);
+	if (m_stage6FinalPostShader)
+	{
+		m_stage6FinalCard.set_shader(m_stage6FinalPostShader, 1);
+	}
+	m_stage6FinalCard.set_depth_write(false);
+	m_stage6FinalCard.set_depth_test(false);
+	m_stage6FinalCard.set_bin("fixed", 0);
+
+	if (m_renderTex != nullptr)
+	{
+		m_renderTex->setup_2d_texture(safeWidth, safeHeight, Texture::T_unsigned_byte, Texture::F_rgb);
+	}
+
+	m_stage6FinalWidth = safeWidth;
+	m_stage6FinalHeight = safeHeight;
+	m_stage6FinalPipelineReady = true;
+	ApplyStage6FinalPostprocessInputs();
+	LogStage6FinalPipeline(reason);
+}
+
+void HwaSimIR::ApplyStage6FinalPostprocessInputs()
+{
+	if (m_stage6FinalCard.is_empty())
+	{
+		return;
+	}
+	const IRSensorPostProcessConfig config = m_stage6DisplayConfigReady ? m_stage6DisplayConfig : IRSensorPostProcessConfig();
+	const double offsetNorm = config.displayOffset / 255.0;
+	const double noiseSigmaNorm = config.noiseSigmaGray / 255.0;
+	const int rawW = m_stage6RawSceneTex != nullptr ? m_stage6RawSceneTex->get_x_size() : 0;
+	const int rawH = m_stage6RawSceneTex != nullptr ? m_stage6RawSceneTex->get_y_size() : 0;
+	const float uvScaleU = rawW > 0 ? std::min(1.0f, static_cast<float>(m_stage6FinalWidth) / static_cast<float>(rawW)) : 1.0f;
+	const float uvScaleV = rawH > 0 ? std::min(1.0f, static_cast<float>(m_stage6FinalHeight) / static_cast<float>(rawH)) : 1.0f;
+	const int precipitationType = IRWeatherEffects::precipitationCode(m_stage7WeatherState.precipitationType);
+	const bool screenOverlayActive = m_stage7WeatherEnabled &&
+		m_stage7PrecipitationEnabled &&
+		m_stage7PrecipitationMode == 1 &&
+		precipitationType != 0 &&
+		m_stage7WeatherState.precipitationDensity > 0.001;
+	const double sensorFovDeg = std::max(m_sensorDisplayConfig.horizontalFovDeg, m_sensorDisplayConfig.verticalFovDeg);
+	const double safeSensorFovDeg = std::isfinite(sensorFovDeg) && sensorFovDeg > 0.0 ? sensorFovDeg : 1.0;
+	const double currentTime = ClockObject::get_global_clock() != nullptr ? ClockObject::get_global_clock()->get_frame_time() : 0.0;
+	m_stage6FinalCard.set_shader_input("u_stage6_final_white_hot", LVecBase2i(config.whiteHot ? 1 : 0, 0));
+	m_stage6FinalCard.set_shader_input("u_stage6_final_display_gain", LVecBase2f(static_cast<float>(config.displayGain), 0.0f));
+	m_stage6FinalCard.set_shader_input("u_stage6_final_display_offset", LVecBase2f(static_cast<float>(offsetNorm), 0.0f));
+	m_stage6FinalCard.set_shader_input("u_stage6_final_noise_enable", LVecBase2i(config.noiseEnable ? 1 : 0, 0));
+	m_stage6FinalCard.set_shader_input("u_stage6_final_noise_sigma_norm", LVecBase2f(static_cast<float>(noiseSigmaNorm), 0.0f));
+	m_stage6FinalCard.set_shader_input("u_stage6_final_uv_scale", LVecBase2f(uvScaleU, uvScaleV));
+	m_stage6FinalCard.set_shader_input("u_stage7_final_precipitation_mode", LVecBase2i(screenOverlayActive ? 1 : 0, 0));
+	m_stage6FinalCard.set_shader_input("u_stage7_final_precipitation_type", LVecBase2i(screenOverlayActive ? precipitationType : 0, 0));
+	m_stage6FinalCard.set_shader_input("u_stage7_final_precipitation_density", LVecBase2f(static_cast<float>(screenOverlayActive ? m_stage7WeatherState.precipitationDensity : 0.0), 0.0f));
+	m_stage6FinalCard.set_shader_input("u_stage7_final_precipitation_speed", LVecBase2f(static_cast<float>(m_stage7WeatherState.precipitationSpeed), 0.0f));
+	m_stage6FinalCard.set_shader_input("u_stage7_final_precipitation_wind_dir_deg", LVecBase2f(static_cast<float>(m_stage7WeatherState.windDir), 0.0f));
+	m_stage6FinalCard.set_shader_input("u_stage7_final_time", LVecBase2f(static_cast<float>(currentTime), 0.0f));
+	m_stage6FinalCard.set_shader_input("u_stage7_final_sensor_fov_deg", LVecBase2f(static_cast<float>(safeSensorFovDeg), 0.0f));
+}
+
+void HwaSimIR::LogStage6FinalPipeline(const char* reason)
+{
+	if (!m_stage6FinalPipelineReady)
+	{
+		return;
+	}
+	++m_stage6FinalPipelineLogCounter;
+	if (m_stage6FinalPipelineLogCounter > 3 && (m_stage6FinalPipelineLogCounter % 120) != 0)
+	{
+		return;
+	}
+	std::cout << "[Stage6 FinalPipeline]"
+		<< " reason=" << (reason != nullptr ? reason : "unknown")
+		<< " rawSceneTex=Stage6RawSceneTex"
+		<< " finalSensorTex=Stage6FinalSensorTex"
+		<< " rawSceneSize=" << m_stage6FinalWidth << "x" << m_stage6FinalHeight
+		<< " finalSensorSize=" << m_stage6FinalWidth << "x" << m_stage6FinalHeight
+		<< " windowSource=final_sensor"
+		<< " tcpSource=final_sensor"
+		<< " windowRegion=fullscreen"
+		<< " sameOutput=1"
+		<< std::endl;
+	LogStage6ViewportDiag(reason);
+}
+
+void HwaSimIR::LogStage6ViewportDiag(const char* reason) const
+{
+	const WindowProperties props = m_pGraphicsWindow ? m_pGraphicsWindow->get_properties() : WindowProperties();
+	const int windowW = props.get_x_size();
+	const int windowH = props.get_y_size();
+	const int rawW = m_stage6RawSceneTex != nullptr ? m_stage6RawSceneTex->get_x_size() : 0;
+	const int rawH = m_stage6RawSceneTex != nullptr ? m_stage6RawSceneTex->get_y_size() : 0;
+	const int renderW = m_renderTex != nullptr ? m_renderTex->get_x_size() : 0;
+	const int renderH = m_renderTex != nullptr ? m_renderTex->get_y_size() : 0;
+	const float uvScaleU = rawW > 0 ? std::min(1.0f, static_cast<float>(m_stage6FinalWidth) / static_cast<float>(rawW)) : 0.0f;
+	const float uvScaleV = rawH > 0 ? std::min(1.0f, static_cast<float>(m_stage6FinalHeight) / static_cast<float>(rawH)) : 0.0f;
+	LVecBase4 dims(0.0f, 0.0f, 0.0f, 0.0f);
+	if (m_stage6FinalRegion != nullptr)
+	{
+		dims = m_stage6FinalRegion->get_dimensions();
+	}
+	const bool finalFullscreen =
+		std::fabs(dims[0] - 0.0f) < 0.0001f &&
+		std::fabs(dims[1] - 1.0f) < 0.0001f &&
+		std::fabs(dims[2] - 0.0f) < 0.0001f &&
+		std::fabs(dims[3] - 1.0f) < 0.0001f &&
+		!m_stage6FinalCard.is_empty() &&
+		m_stage6FinalWidth == renderW &&
+		m_stage6FinalHeight == renderH &&
+		rawW >= m_stage6FinalWidth &&
+		rawH >= m_stage6FinalHeight &&
+		uvScaleU > 0.0f &&
+		uvScaleV > 0.0f;
+
+	std::cout << "[Stage6 ViewportDiag]"
+		<< " reason=" << (reason != nullptr ? reason : "unknown")
+		<< " windowSize=" << windowW << "x" << windowH
+		<< " rawSceneTexSize=" << rawW << "x" << rawH
+		<< " rawSceneRequested=" << m_stage6FinalWidth << "x" << m_stage6FinalHeight
+		<< " finalUvScale=" << uvScaleU << "," << uvScaleV
+		<< " finalRegionDimensions=" << dims[0] << "," << dims[1] << "," << dims[2] << "," << dims[3]
+		<< " finalCardBounds=-1,1,-1,1"
+		<< " renderTexSize=" << renderW << "x" << renderH
+		<< " fullscreen=" << (finalFullscreen ? "1" : "0")
+		<< std::endl;
+	if (!finalFullscreen)
+	{
+		std::cout << "STAGE6_FINAL_NOT_FULLSCREEN"
+			<< " reason=" << (reason != nullptr ? reason : "unknown")
+			<< " finalRegionDimensions=" << dims[0] << "," << dims[1] << "," << dims[2] << "," << dims[3]
+			<< " rawSceneTexSize=" << rawW << "x" << rawH
+			<< " rawSceneRequested=" << m_stage6FinalWidth << "x" << m_stage6FinalHeight
+			<< " finalUvScale=" << uvScaleU << "," << uvScaleV
+			<< " renderTexSize=" << renderW << "x" << renderH
+			<< std::endl;
+	}
+}
+
+IRStage7WeatherRuntimeInput HwaSimIR::BuildStage7WeatherInput() const
+{
+	IRStage7WeatherRuntimeInput input;
+	input.useUdpInput = m_stage7UseWeatherUdpInput && m_isAddPlatform;
+	if (m_isAddPlatform)
+	{
+		input.envSky = m_initSceneData.trackingInit.envSky;
+		input.envTerrain = m_initSceneData.trackingInit.envTerrain;
+		input.visibilityM = m_initSceneData.trackingInit.envVisibility;
+		input.humidity = m_initSceneData.trackingInit.envHumidity;
+		input.windV = m_initSceneData.trackingInit.envWindV;
+		input.windDir = m_initSceneData.trackingInit.envWindDir;
+		input.envTempC = m_initSceneData.trackingInit.envTemp;
+		input.envRadScaleSky = m_initSceneData.trackingInit.envRadScaleSky;
+		input.envRadScaleTerrain = m_initSceneData.trackingInit.envRadScaleTerrain;
+		input.envMaxHeightRain = m_initSceneData.trackingInit.envMaxHeightRain;
+		input.envTransHeightRain = m_initSceneData.trackingInit.envTransHeightRain;
+		input.envMaxHeightSnow = m_initSceneData.trackingInit.envMaxHeightSnow;
+		input.envTransHeightSnow = m_initSceneData.trackingInit.envTransHeightSnow;
+		input.envRainSnowSpeedScale = m_initSceneData.trackingInit.envRainSnowSpeedScale;
+	}
+	return input;
+}
+
+IRStage7WeatherState HwaSimIR::EvaluateStage7WeatherState(const IRRuntimeEnvironment& environment) const
+{
+	return m_stage7WeatherEffects.evaluate(
+		BuildStage7WeatherInput(),
+		environment.band,
+		m_stage7WeatherEnabled,
+		m_stage7CloudLayerEnabled,
+		m_stage7FogEnabled,
+		m_stage7PrecipitationEnabled);
+}
+
+void HwaSimIR::ApplyStage7WeatherInputs(NodePath& node, const IRStage7WeatherState& weatherState) const
+{
+	if (node.is_empty())
+	{
+		return;
+	}
+	node.set_shader_input("u_stage7_weather_type", LVecBase2i(weatherState.envSky, 0));
+	node.set_shader_input("u_stage7_cloud_coverage", LVecBase2f(static_cast<float>(weatherState.cloudCoverage), 0.0f));
+	node.set_shader_input("u_stage7_cloud_opacity", LVecBase2f(static_cast<float>(weatherState.cloudOpacity), 0.0f));
+	node.set_shader_input("u_stage7_cloud_temperature_K", LVecBase2f(static_cast<float>(weatherState.cloudTemperatureK), 0.0f));
+	node.set_shader_input("u_stage7_cloud_gray", LVecBase2f(static_cast<float>(weatherState.cloudGray), 0.0f));
+	node.set_shader_input("u_stage7_fog_density", LVecBase2f(static_cast<float>(weatherState.fogDensity), 0.0f));
+	node.set_shader_input("u_stage7_fog_gray", LVecBase2f(static_cast<float>(weatherState.fogGray), 0.0f));
+	node.set_shader_input("u_stage7_precipitation_type", LVecBase2i(IRWeatherEffects::precipitationCode(weatherState.precipitationType), 0));
+	node.set_shader_input("u_stage7_precipitation_density", LVecBase2f(static_cast<float>(weatherState.precipitationDensity), 0.0f));
+	node.set_shader_input("u_stage7_precipitation_speed", LVecBase2f(static_cast<float>(weatherState.precipitationSpeed), 0.0f));
+	node.set_shader_input("u_stage7_sun_direct_scale", LVecBase2f(static_cast<float>(weatherState.sunDirectScale), 0.0f));
+	node.set_shader_input("u_stage7_sky_diffuse_scale", LVecBase2f(static_cast<float>(weatherState.skyDiffuseScale), 0.0f));
+	node.set_shader_input("u_stage7_target_contrast_scale", LVecBase2f(static_cast<float>(weatherState.targetContrastScale), 0.0f));
+}
+
+void HwaSimIR::InitStage7WeatherScene()
+{
+	for (size_t i = 0; i < m_cloudNodes.size(); ++i)
+	{
+		if (!m_cloudNodes[i].is_empty())
+		{
+			m_cloudNodes[i].remove_node();
+		}
+	}
+	for (size_t i = 0; i < m_stage7PrecipitationNodes.size(); ++i)
+	{
+		if (!m_stage7PrecipitationNodes[i].is_empty())
+		{
+			m_stage7PrecipitationNodes[i].remove_node();
+		}
+	}
+	m_cloudNodes.clear();
+	m_stage7PrecipitationNodes.clear();
+	m_stage7WeatherTextureCacheKey.clear();
+	m_stage7CachedCloudTexturePath.clear();
+	m_stage7CachedRainTexturePath.clear();
+	m_stage7CachedSnowTexturePath.clear();
+	m_stage7CloudTexture = nullptr;
+	m_stage7RainTexture = nullptr;
+	m_stage7SnowTexture = nullptr;
+
+	if (!m_stage7WeatherEnabled || m_cameraNode.is_empty())
+	{
+		return;
+	}
+
+	// Stage7C.1: default cloud rendering is a sky-dome shader perturbation.
+	// Camera-attached cloud cards are intentionally not created on the main path.
+	const int cloudCardCount = 0;
+	for (int i = 0; i < cloudCardCount; ++i)
+	{
+		CardMaker cloudMaker("Stage7_CloudLayer_Card");
+		cloudMaker.set_frame(-1.0f, 1.0f, -0.35f, 0.35f);
+		NodePath cloud = m_cameraNode.attach_new_node(cloudMaker.generate());
+		const float x = -900.0f + static_cast<float>((i * 173) % 1800);
+		const float y = 1800.0f + static_cast<float>((i % 5) * 180);
+		const float z = 240.0f + static_cast<float>((i * 97) % 520);
+		const float scale = 180.0f + static_cast<float>((i % 4) * 55);
+		cloud.set_pos(x, y, z);
+		cloud.set_scale(scale * 2.1f, 1.0f, scale);
+		cloud.set_transparency(TransparencyAttrib::M_alpha);
+		cloud.set_depth_write(false);
+		cloud.set_bin("transparent", 10);
+		ApplyInfraredShader(cloud, false);
+		cloud.set_shader_input("u_object_kind", LVecBase2i(2, 0));
+		cloud.hide();
+		m_cloudNodes.push_back(cloud);
+	}
+
+	const int precipitationCount =
+		(m_stage7PrecipitationEnabled && m_stage7PrecipitationMode == 2)
+		? std::max(0, std::min(128, m_stage7PrecipitationMaxParticles))
+		: 0;
+	for (int i = 0; i < precipitationCount; ++i)
+	{
+		CardMaker particleMaker("Stage7_Precipitation_Card");
+		particleMaker.set_frame(-0.035f, 0.035f, -0.55f, 0.55f);
+		NodePath particle = m_cameraNode.attach_new_node(particleMaker.generate());
+		const float x = -700.0f + static_cast<float>((i * 61) % 1400);
+		const float y = 240.0f + static_cast<float>((i % 16) * 28);
+		const float z = -320.0f + static_cast<float>((i * 43) % 760);
+		particle.set_pos(x, y, z);
+		particle.set_scale(30.0f, 1.0f, 120.0f);
+		particle.set_transparency(TransparencyAttrib::M_alpha);
+		particle.set_depth_write(false);
+		particle.set_bin("transparent", 20);
+		ApplyInfraredShader(particle, false);
+		particle.set_shader_input("u_object_kind", LVecBase2i(3, 0));
+		particle.hide();
+		m_stage7PrecipitationNodes.push_back(particle);
+	}
+}
+
+int HwaSimIR::RefreshStage7WeatherTextureCache(const IRStage7WeatherState& weatherState)
+{
+	std::ostringstream key;
+	key << weatherState.cloudTexturePath
+		<< "|" << m_cloudNodes.size()
+		<< "|" << m_stage7PrecipitationNodes.size()
+		<< "|" << m_stage7PrecipitationMode
+		<< "|" << IRWeatherEffects::precipitationCode(weatherState.precipitationType);
+	const std::string cacheKey = key.str();
+	if (cacheKey == m_stage7WeatherTextureCacheKey)
+	{
+		return 0;
+	}
+	m_stage7WeatherTextureCacheKey = cacheKey;
+
+	int loadCount = 0;
+	if (!m_cloudNodes.empty())
+	{
+		const std::string resolvedCloudTexturePath = weatherState.cloudTexturePath.empty()
+			? std::string()
+			: FirstExistingPath(BuildRuntimeConfigPathCandidates(weatherState.cloudTexturePath));
+		if (resolvedCloudTexturePath != m_stage7CachedCloudTexturePath)
+		{
+			m_stage7CachedCloudTexturePath = resolvedCloudTexturePath;
+			m_stage7CloudTexture = nullptr;
+			if (!resolvedCloudTexturePath.empty() && FileExists(resolvedCloudTexturePath))
+			{
+				m_stage7CloudTexture = TexturePool::load_texture(resolvedCloudTexturePath);
+				++loadCount;
+			}
+		}
+		if (m_stage7CloudTexture)
+		{
+			for (size_t i = 0; i < m_cloudNodes.size(); ++i)
+			{
+				if (!m_cloudNodes[i].is_empty())
+				{
+					m_cloudNodes[i].set_texture(m_stage7CloudTexture, 1);
+				}
+			}
+		}
+	}
+
+	if (m_stage7PrecipitationMode == 2 && !m_stage7PrecipitationNodes.empty())
+	{
+		const std::string rainPath = m_stage7WeatherEffects.texturePathForKey("rain_shaft");
+		const std::string snowPath = m_stage7WeatherEffects.texturePathForKey("snow_rgba");
+		const std::string resolvedRainPath = rainPath.empty() ? std::string() : FirstExistingPath(BuildRuntimeConfigPathCandidates(rainPath));
+		const std::string resolvedSnowPath = snowPath.empty() ? std::string() : FirstExistingPath(BuildRuntimeConfigPathCandidates(snowPath));
+
+		if (resolvedRainPath != m_stage7CachedRainTexturePath)
+		{
+			m_stage7CachedRainTexturePath = resolvedRainPath;
+			m_stage7RainTexture = nullptr;
+			if (!resolvedRainPath.empty() && FileExists(resolvedRainPath))
+			{
+				m_stage7RainTexture = TexturePool::load_texture(resolvedRainPath);
+				++loadCount;
+			}
+		}
+		if (resolvedSnowPath != m_stage7CachedSnowTexturePath)
+		{
+			m_stage7CachedSnowTexturePath = resolvedSnowPath;
+			m_stage7SnowTexture = nullptr;
+			if (!resolvedSnowPath.empty() && FileExists(resolvedSnowPath))
+			{
+				m_stage7SnowTexture = TexturePool::load_texture(resolvedSnowPath);
+				++loadCount;
+			}
+		}
+		PT(Texture) activeTexture = weatherState.precipitationType == IRStage7PrecipitationType::Snow
+			? m_stage7SnowTexture
+			: m_stage7RainTexture;
+		if (activeTexture)
+		{
+			for (size_t i = 0; i < m_stage7PrecipitationNodes.size(); ++i)
+			{
+				if (!m_stage7PrecipitationNodes[i].is_empty())
+				{
+					m_stage7PrecipitationNodes[i].set_texture(activeTexture, 1);
+				}
+			}
+		}
+	}
+	return loadCount;
+}
+
+void HwaSimIR::UpdateStage7WeatherNodes(const IRStage7WeatherState& weatherState, double currentTime)
+{
+	const auto totalStart = std::chrono::high_resolution_clock::now();
+	const int textureLoadCountThisFrame = RefreshStage7WeatherTextureCache(weatherState);
+	const auto updateStart = std::chrono::high_resolution_clock::now();
+
+	for (size_t i = 0; i < m_cloudNodes.size(); ++i)
+	{
+		if (m_cloudNodes[i].is_empty())
+		{
+			continue;
+		}
+		if (weatherState.cloudEnable && weatherState.cloudCoverage > 0.01)
+		{
+			m_cloudNodes[i].show();
+		}
+		else
+		{
+			m_cloudNodes[i].hide();
+		}
+		ApplyStage7WeatherInputs(m_cloudNodes[i], weatherState);
+		m_cloudNodes[i].set_shader_input("u_object_kind", LVecBase2i(2, 0));
+		m_cloudNodes[i].set_shader_input("u_cloud_density", LVecBase2f(static_cast<float>(weatherState.cloudCoverage), 0.0f));
+		m_cloudNodes[i].set_shader_input("u_time", LVecBase2f(static_cast<float>(currentTime), 0.0f));
+	}
+
+	const bool precipitationVisible = weatherState.precipitationType != IRStage7PrecipitationType::None &&
+		weatherState.precipitationDensity > 0.01 &&
+		m_stage7PrecipitationMode == 2;
+	for (size_t i = 0; i < m_stage7PrecipitationNodes.size(); ++i)
+	{
+		if (m_stage7PrecipitationNodes[i].is_empty())
+		{
+			continue;
+		}
+		if (precipitationVisible)
+		{
+			m_stage7PrecipitationNodes[i].show();
+		}
+		else
+		{
+			m_stage7PrecipitationNodes[i].hide();
+		}
+		const double drift = weatherState.windV * 0.35 * std::sin((weatherState.windDir + 90.0) * 3.14159265358979323846 / 180.0);
+		const float x = -700.0f + static_cast<float>(((static_cast<int>(i) * 61) % 1400)) + static_cast<float>(std::fmod(currentTime * drift * 20.0, 1400.0));
+		const float y = 240.0f + static_cast<float>((i % 16) * 28);
+		const float fall = static_cast<float>(std::fmod(currentTime * weatherState.precipitationSpeed * 180.0 + i * 43.0, 760.0));
+		const float z = 380.0f - fall;
+		m_stage7PrecipitationNodes[i].set_pos(x, y, z);
+		m_stage7PrecipitationNodes[i].set_scale(weatherState.precipitationType == IRStage7PrecipitationType::Snow ? 38.0f : 28.0f,
+			1.0f,
+			weatherState.precipitationType == IRStage7PrecipitationType::Snow ? 52.0f : 125.0f);
+		ApplyStage7WeatherInputs(m_stage7PrecipitationNodes[i], weatherState);
+		m_stage7PrecipitationNodes[i].set_shader_input("u_object_kind", LVecBase2i(3, 0));
+		m_stage7PrecipitationNodes[i].set_shader_input("u_time", LVecBase2f(static_cast<float>(currentTime), 0.0f));
+	}
+	ApplyStage6FinalPostprocessInputs();
+	const auto updateEnd = std::chrono::high_resolution_clock::now();
+	const double updateWeatherNodesMs = std::chrono::duration<double, std::milli>(updateEnd - updateStart).count();
+	const double totalWeatherMs = std::chrono::duration<double, std::milli>(updateEnd - totalStart).count();
+	const int cloudNodeCount = static_cast<int>(m_cloudNodes.size());
+	const int precipitationNodeCount = static_cast<int>(m_stage7PrecipitationNodes.size());
+	LogStage7Perf(weatherState, cloudNodeCount + precipitationNodeCount, cloudNodeCount, precipitationNodeCount, textureLoadCountThisFrame, updateWeatherNodesMs, totalWeatherMs);
+}
+
+void HwaSimIR::LogStage7Perf(const IRStage7WeatherState& weatherState, int weatherNodeCount, int cloudNodeCount, int precipitationNodeCount, int textureLoadCountThisFrame, double updateWeatherNodesMs, double totalWeatherMs)
+{
+	std::ostringstream state;
+	state << weatherNodeCount
+		<< ":" << cloudNodeCount
+		<< ":" << precipitationNodeCount
+		<< ":" << textureLoadCountThisFrame
+		<< ":" << m_stage7PrecipitationMode
+		<< ":" << IRWeatherEffects::precipitationCode(weatherState.precipitationType)
+		<< ":" << static_cast<int>(weatherState.precipitationDensity * 1000.0);
+	const std::string stateKey = state.str();
+	++m_stage7PerfLogCounter;
+	const bool shouldLog = textureLoadCountThisFrame > 0 ||
+		m_stage7PerfLogCounter <= 3 ||
+		m_stage7LastPerfState != stateKey ||
+		(m_stage7PerfLogCounter % 120) == 0;
+	if (!shouldLog)
+	{
+		return;
+	}
+	std::cout << "[Stage7 Perf]"
+		<< " weatherNodeCount=" << weatherNodeCount
+		<< " cloudNodeCount=" << cloudNodeCount
+		<< " precipitationNodeCount=" << precipitationNodeCount
+		<< " textureLoadCountThisFrame=" << textureLoadCountThisFrame
+		<< " updateWeatherNodesMs=" << updateWeatherNodesMs
+		<< " totalWeatherMs=" << totalWeatherMs
+		<< " precipitationMode=" << m_stage7PrecipitationModeName
+		<< std::endl;
+	if (textureLoadCountThisFrame > 0)
+	{
+		std::cout << "[Stage7 Perf][WARN] STAGE7_TEXTURE_LOAD_IN_FRAME"
+			<< " textureLoadCountThisFrame=" << textureLoadCountThisFrame
+			<< " note=allowed_on_weather_state_change_only"
+			<< std::endl;
+	}
+	m_stage7LastPerfState = stateKey;
+}
+
+void HwaSimIR::CreateEnginePlumeForTarget(TargetPlatformData& targetPlat)
+{
+	if (!m_stage5PlumeOptions.enableEnginePlume ||
+		m_stage5PlumeOptions.maxPlumeNodes <= 0 ||
+		targetPlat.nodePath.is_empty() ||
+		(!targetPlat.enginePlumeCoreNodePath.is_empty() && !targetPlat.enginePlumeHaloNodePath.is_empty()))
+	{
+		return;
+	}
+
+	int plumeNodeCount = 0;
+	for (size_t i = 0; i < m_targetPlatformList.size(); ++i)
+	{
+		if (!m_targetPlatformList[i].enginePlumeCoreNodePath.is_empty())
+		{
+			++plumeNodeCount;
+		}
+		if (!m_targetPlatformList[i].enginePlumeHaloNodePath.is_empty())
+		{
+			++plumeNodeCount;
+		}
+	}
+	if (plumeNodeCount + 2 > m_stage5PlumeOptions.maxPlumeNodes)
+	{
+		return;
+	}
+
+	targetPlat.enginePlumeHaloNodePath = targetPlat.nodePath.attach_new_node(CreateStage5EnginePlumeBillboardNode());
+	targetPlat.enginePlumeHaloNodePath.set_name("Stage5_EnginePlume_Halo_Target");
+	targetPlat.enginePlumeHaloNodePath.set_transparency(TransparencyAttrib::M_alpha);
+	targetPlat.enginePlumeHaloNodePath.set_depth_write(false);
+	targetPlat.enginePlumeHaloNodePath.set_depth_test(true);
+	targetPlat.enginePlumeHaloNodePath.set_two_sided(true);
+	targetPlat.enginePlumeHaloNodePath.set_bin("transparent", 5);
+	ApplyInfraredShader(targetPlat.enginePlumeHaloNodePath, false);
+	targetPlat.enginePlumeHaloNodePath.set_shader_input("u_object_kind", LVecBase2i(4, 0));
+	targetPlat.enginePlumeHaloNodePath.set_shader_input("u_plume_layer", LVecBase2i(2, 0));
+	targetPlat.enginePlumeHaloNodePath.set_shader_input("u_plume_enabled", LVecBase2i(0, 0));
+	targetPlat.enginePlumeHaloNodePath.hide();
+
+	targetPlat.enginePlumeCoreNodePath = targetPlat.nodePath.attach_new_node(CreateStage5EnginePlumeBillboardNode());
+	targetPlat.enginePlumeCoreNodePath.set_name("Stage5_EnginePlume_Core_Target");
+	targetPlat.enginePlumeCoreNodePath.set_transparency(TransparencyAttrib::M_alpha);
+	targetPlat.enginePlumeCoreNodePath.set_depth_write(false);
+	targetPlat.enginePlumeCoreNodePath.set_depth_test(true);
+	targetPlat.enginePlumeCoreNodePath.set_two_sided(true);
+	targetPlat.enginePlumeCoreNodePath.set_bin("transparent", 6);
+	ApplyInfraredShader(targetPlat.enginePlumeCoreNodePath, false);
+	targetPlat.enginePlumeCoreNodePath.set_shader_input("u_object_kind", LVecBase2i(4, 0));
+	targetPlat.enginePlumeCoreNodePath.set_shader_input("u_plume_layer", LVecBase2i(1, 0));
+	targetPlat.enginePlumeCoreNodePath.set_shader_input("u_plume_enabled", LVecBase2i(0, 0));
+	targetPlat.enginePlumeCoreNodePath.hide();
+}
+
+void HwaSimIR::HideEnginePlume(TargetPlatformData& targetPlat)
+{
+	if (!targetPlat.enginePlumeCoreNodePath.is_empty())
+	{
+		targetPlat.enginePlumeCoreNodePath.set_shader_input("u_plume_enabled", LVecBase2i(0, 0));
+		targetPlat.enginePlumeCoreNodePath.hide();
+	}
+	if (!targetPlat.enginePlumeHaloNodePath.is_empty())
+	{
+		targetPlat.enginePlumeHaloNodePath.set_shader_input("u_plume_enabled", LVecBase2i(0, 0));
+		targetPlat.enginePlumeHaloNodePath.hide();
+	}
+}
+
+IREnginePlumeOutput HwaSimIR::UpdateEnginePlumeForTarget(TargetPlatformData& targetPlat, float dtSec, float ambientTempK, IRBand band, bool targetRenderable, double currentTime)
+{
+	IREnginePlumeOutput output;
+	if (targetPlat.nodePath.is_empty())
+	{
+		return output;
+	}
+	if (targetPlat.enginePlumeCoreNodePath.is_empty() && targetPlat.enginePlumeHaloNodePath.is_empty())
+	{
+		HideEnginePlume(targetPlat);
+		return output;
+	}
+
+	const std::string platformName = Stage4PlatformName(targetPlat.type);
+	const std::string runtimeKey = platformName + "#plat" + std::to_string(targetPlat.targetState.targetPlatID)
+		+ "#target" + std::to_string(targetPlat.targetState.targetID);
+	IREnginePlumeInput input;
+	input.platformName = platformName;
+	input.runtimeKey = runtimeKey;
+	input.engineState = targetPlat.targetState.engineState;
+	input.dtSec = dtSec;
+	input.ambientTempK = ambientTempK;
+	input.band = band;
+	input.options = m_stage5PlumeOptions;
+	output = m_irEnginePlumeModel.update(input);
+
+	const bool validTarget = targetPlat.targetState.targetID >= 0 && targetPlat.targetState.viewValid;
+	const bool coreVisible = targetRenderable && validTarget && output.coreNodeVisible;
+	const bool haloVisible = targetRenderable && validTarget && output.haloNodeVisible;
+	auto applyPlumeLayer = [&](NodePath& node, int layer, bool visible, float tempK, float gray, float opacity, float lengthM,
+		float radiusRootM, float radiusTailM, float axialDecay, float radialDecay, float noiseScale, float noiseStrength, float bandGain)
+	{
+		if (node.is_empty())
+		{
+			return;
+		}
+		if (!visible)
+		{
+			node.set_shader_input("u_plume_enabled", LVecBase2i(0, 0));
+			node.hide();
+			return;
+		}
+		node.set_pos(output.localPos.x, output.localPos.y, output.localPos.z);
+		node.set_hpr(0.0f, 0.0f, 0.0f);
+		node.set_scale(
+			std::max(0.01f, radiusRootM),
+			std::max(0.05f, lengthM),
+			std::max(0.01f, radiusRootM));
+		node.set_shader_input("u_wave_band", LVecBase2i(static_cast<int>(band), 0));
+		node.set_shader_input("u_ir_band_index", LVecBase2i(static_cast<int>(band), 0));
+		node.set_shader_input("u_ir_band_class", LVecBase2i(IRBandClassForShader(band), 0));
+		ApplyStage7WeatherInputs(node, m_stage7WeatherState);
+		node.set_shader_input("u_object_kind", LVecBase2i(4, 0));
+		node.set_shader_input("u_plume_layer", LVecBase2i(layer, 0));
+		node.set_shader_input("u_plume_enabled", LVecBase2i(1, 0));
+		node.set_shader_input("u_plume_temperature_K", LVecBase2f(tempK, 0.0f));
+		node.set_shader_input("u_plume_gray", LVecBase2f(gray, 0.0f));
+		node.set_shader_input("u_plume_opacity", LVecBase2f(opacity, 0.0f));
+		node.set_shader_input("u_plume_length", LVecBase2f(lengthM, 0.0f));
+		node.set_shader_input("u_plume_radius_root", LVecBase2f(radiusRootM, 0.0f));
+		node.set_shader_input("u_plume_radius_tail", LVecBase2f(radiusTailM, 0.0f));
+		node.set_shader_input("u_plume_axial_decay", LVecBase2f(axialDecay, 0.0f));
+		node.set_shader_input("u_plume_radial_decay", LVecBase2f(radialDecay, 0.0f));
+		node.set_shader_input("u_plume_noise_scale", LVecBase2f(noiseScale, 0.0f));
+		node.set_shader_input("u_plume_noise_strength", LVecBase2f(noiseStrength, 0.0f));
+		node.set_shader_input("u_plume_band_gain", LVecBase2f(bandGain, 0.0f));
+		node.set_shader_input("u_time", LVecBase2f(static_cast<float>(currentTime), 0.0f));
+		node.show();
+	};
+	applyPlumeLayer(targetPlat.enginePlumeHaloNodePath, 2, haloVisible, output.haloTempK, output.haloGray, output.haloOpacity,
+		output.haloLengthM, output.haloRadiusRootM, output.haloRadiusTailM, output.haloAxialDecay, output.haloRadialDecay,
+		output.haloNoiseScale, output.haloNoiseStrength, output.haloBandGain);
+	applyPlumeLayer(targetPlat.enginePlumeCoreNodePath, 1, coreVisible, output.coreTempK, output.coreGray, output.coreOpacity,
+		output.coreLengthM, output.coreRadiusRootM, output.coreRadiusTailM, output.coreAxialDecay, output.coreRadialDecay,
+		output.coreNoiseScale, output.coreNoiseStrength, output.coreBandGain);
+
+	const bool shouldLog = m_stage5PlumeOptions.enablePlumeDebug ||
+		m_stage5PlumeOptions.forcePlumeVisible ||
+		output.enabled ||
+		m_stage0DisplayFrameCount <= 3 ||
+		(m_stage0DisplayFrameCount % 60) == 0;
+	if (shouldLog)
+	{
+		std::cout << "[Stage5 Plume]"
+			<< " targetType=0x" << std::hex << targetPlat.targetState.targetType << std::dec
+			<< " targetPlatID=" << targetPlat.targetState.targetPlatID
+			<< " targetID=" << targetPlat.targetState.targetID
+			<< " platform=" << platformName
+			<< " engineState=" << (targetPlat.targetState.engineState ? "1" : "0")
+			<< " band=" << IRBandName(band)
+			<< " coreEnabled=" << (output.coreEnabled ? "1" : "0")
+			<< " haloEnabled=" << (output.haloEnabled ? "1" : "0")
+			<< " coreTempK=" << output.coreTempK
+			<< " haloTempK=" << output.haloTempK
+			<< " coreGray=" << output.coreGray
+			<< " haloGray=" << output.haloGray
+			<< " coreOpacity=" << output.coreOpacity
+			<< " haloOpacity=" << output.haloOpacity
+			<< " coreVisible=" << (coreVisible ? "1" : "0")
+			<< " haloVisible=" << (haloVisible ? "1" : "0")
+			<< std::endl;
+	}
+	return output;
+}
+
+void HwaSimIR::LogStage5PlumePerf(int plumeNodeCount, int visiblePlumeCount, double updatePlumeMs)
+{
+	std::ostringstream state;
+	state << plumeNodeCount << ":" << visiblePlumeCount;
+	const std::string stateKey = state.str();
+	++m_stage5PlumePerfLogCounter;
+	const bool shouldLog = m_stage5PlumePerfLogCounter <= 3 ||
+		m_stage5PlumeLastPerfState != stateKey ||
+		(m_stage5PlumePerfLogCounter % 120) == 0;
+	if (!shouldLog)
+	{
+		return;
+	}
+	std::cout << "[Stage5 PlumePerf]"
+		<< " plumeNodeCount=" << plumeNodeCount
+		<< " visiblePlumeCount=" << visiblePlumeCount
+		<< " textureLoadCountThisFrame=0"
+		<< " updatePlumeMs=" << updatePlumeMs
+		<< std::endl;
+	m_stage5PlumeLastPerfState = stateKey;
+}
+
+void HwaSimIR::LogStage7Weather(const IRStage7WeatherState& weatherState, const char* reason, bool forceLog)
+{
+	std::ostringstream state;
+	state << weatherState.envSky
+		<< ":" << weatherState.weatherName
+		<< ":" << static_cast<int>(weatherState.cloudCoverage * 1000.0)
+		<< ":" << static_cast<int>(weatherState.fogDensity * 1000.0)
+		<< ":" << IRWeatherEffects::precipitationCode(weatherState.precipitationType)
+		<< ":" << static_cast<int>(weatherState.precipitationDensity * 1000.0);
+	const std::string stateKey = state.str();
+	++m_stage7WeatherLogCounter;
+	if (!forceLog && m_stage7LastWeatherState == stateKey && m_stage7WeatherLogCounter > 3 && (m_stage7WeatherLogCounter % 120) != 0)
+	{
+		return;
+	}
+
+	std::cout << "[Stage7 Weather]"
+		<< " reason=" << (reason != nullptr ? reason : "unknown")
+		<< " envSky=" << weatherState.envSky
+		<< " weatherName=" << weatherState.weatherName
+		<< " visibilityM=" << weatherState.visibilityM
+		<< " humidity=" << weatherState.humidity
+		<< " windV=" << weatherState.windV
+		<< " windDir=" << weatherState.windDir
+		<< " cloudCoverage=" << weatherState.cloudCoverage
+		<< " fogDensity=" << weatherState.fogDensity
+		<< " precipitationType=" << IRWeatherEffects::precipitationName(weatherState.precipitationType)
+		<< " sunDirectScale=" << weatherState.sunDirectScale
+		<< " skyDiffuseScale=" << weatherState.skyDiffuseScale
+		<< " targetContrastScale=" << weatherState.targetContrastScale
+		<< " source=" << weatherState.source
+		<< std::endl;
+	std::cout << "[Stage7 CloudLayer]"
+		<< " enabled=" << (weatherState.cloudEnable ? "1" : "0")
+		<< " texture=" << (weatherState.cloudTexturePath.empty() ? "procedural" : weatherState.cloudTexturePath)
+		<< " textureFound=" << (weatherState.cloudTextureFound ? "1" : "0")
+		<< " coverage=" << weatherState.cloudCoverage
+		<< " opacity=" << weatherState.cloudOpacity
+		<< " temperatureK=" << weatherState.cloudTemperatureK
+		<< " band=" << IRBandName(BuildRuntimeEnvironment().band)
+		<< " cloudGray=" << weatherState.cloudGray
+		<< std::endl;
+	if (weatherState.cloudEnable && !weatherState.cloudTextureFound)
+	{
+		std::cout << "[Stage7 CloudLayer][WARN] STAGE7_WEATHER_TEXTURE_FALLBACK"
+			<< " textureKey=" << weatherState.cloudTextureKey
+			<< " path=" << weatherState.cloudTexturePath
+			<< std::endl;
+	}
+	std::cout << "[Stage7 Fog]"
+		<< " enabled=" << (weatherState.fogEnable ? "1" : "0")
+		<< " visibilityM=" << weatherState.visibilityM
+		<< " fogDensity=" << weatherState.fogDensity
+		<< " fogGray=" << weatherState.fogGray
+		<< " targetContrastScale=" << weatherState.targetContrastScale
+		<< std::endl;
+	std::cout << "[Stage7 Precipitation]"
+		<< " enabled=" << (weatherState.precipitationType != IRStage7PrecipitationType::None ? "1" : "0")
+		<< " type=" << IRWeatherEffects::precipitationName(weatherState.precipitationType)
+		<< " density=" << weatherState.precipitationDensity
+		<< " speed=" << weatherState.precipitationSpeed
+		<< " windV=" << weatherState.windV
+		<< " windDir=" << weatherState.windDir
+		<< " maxHeight=" << weatherState.maxHeight
+		<< " transHeight=" << weatherState.transHeight
+		<< std::endl;
+	const double sensorFovDeg = std::max(m_sensorDisplayConfig.horizontalFovDeg, m_sensorDisplayConfig.verticalFovDeg);
+	const bool overlayActive = m_stage7WeatherEnabled &&
+		m_stage7PrecipitationEnabled &&
+		m_stage7PrecipitationMode == 1 &&
+		weatherState.precipitationType != IRStage7PrecipitationType::None &&
+		weatherState.precipitationDensity > 0.001;
+	std::cout << "[Stage7 PrecipitationOverlay]"
+		<< " mode=" << m_stage7PrecipitationModeName
+		<< " active=" << (overlayActive ? "1" : "0")
+		<< " type=" << IRWeatherEffects::precipitationName(weatherState.precipitationType)
+		<< " density=" << weatherState.precipitationDensity
+		<< " sensorFovDeg=" << sensorFovDeg
+		<< " pattern=screen_sparse_low_contrast"
+		<< " giantVerticalBars=0"
+		<< " sameOutput=1"
+		<< std::endl;
+	m_stage7LastWeatherState = stateKey;
+}
+
+void HwaSimIR::UpdateStage7SkyHorizon(const IRRuntimeEnvironment& environment, const char* reason, bool forceLog)
+{
+	if (!m_enableStage7SkyHorizon || m_skyNode.is_empty())
+	{
+		return;
+	}
+
+	const int envTerrain = m_isAddPlatform ? m_initSceneData.trackingInit.envTerrain : 0;
+	const int envSky = m_isAddPlatform ? m_initSceneData.trackingInit.envSky : environment.weatherCode;
+	double terrainScale = m_isAddPlatform ? m_initSceneData.trackingInit.envRadScaleTerrain : 1.0;
+	double skyScale = m_isAddPlatform ? m_initSceneData.trackingInit.envRadScaleSky : 1.0;
+	if (!std::isfinite(terrainScale) || terrainScale <= 0.0 || terrainScale > 5.0)
+	{
+		terrainScale = 1.0;
+	}
+	if (!std::isfinite(skyScale) || skyScale <= 0.0 || skyScale > 5.0)
+	{
+		skyScale = 1.0;
+	}
+	m_stage7WeatherState = EvaluateStage7WeatherState(environment);
+
+	double skyGrayBase = 0.62;
+	double groundGrayBase = 0.38;
+	switch (environment.band)
+	{
+	case IRBand::Visible:
+	case IRBand::NearInfrared:
+	case IRBand::ShortWaveInfrared:
+		skyGrayBase = 0.70;
+		groundGrayBase = 0.40;
+		break;
+	case IRBand::MidWaveInfrared:
+		skyGrayBase = 0.65;
+		groundGrayBase = 0.35;
+		break;
+	case IRBand::LongWaveInfrared:
+		skyGrayBase = 0.55;
+		groundGrayBase = 0.38;
+		break;
+	default:
+		break;
+	}
+
+	double skyWeatherFactor = 1.0;
+	switch (envSky)
+	{
+	case 1: skyWeatherFactor = 0.85; break;
+	case 2: skyWeatherFactor = 0.75; break;
+	case 3: skyWeatherFactor = 0.95; break;
+	case 4: skyWeatherFactor = 0.70; break;
+	case 5: skyWeatherFactor = 0.80; break;
+	default: skyWeatherFactor = 1.0; break;
+	}
+
+	double terrainFactor = 1.0;
+	switch (envTerrain)
+	{
+	case 1: terrainFactor = 0.85; break;
+	case 2: terrainFactor = 0.75; break;
+	default: terrainFactor = 1.0; break;
+	}
+
+	const double skyGrayRaw = skyGrayBase * skyWeatherFactor * skyScale *
+		m_stage7WeatherState.skyGrayScale * m_stage7WeatherState.skyDiffuseScale;
+	const double groundGrayRaw = groundGrayBase * terrainFactor * terrainScale *
+		m_stage7WeatherState.groundGrayScale;
+	double skyGray = ClampStage5Double(skyGrayRaw, 0.12, 0.92);
+	double groundGray = ClampStage5Double(groundGrayRaw, 0.18, 0.88);
+	if (m_stage7WeatherState.fogEnable && m_stage7WeatherState.fogDensity > 0.0)
+	{
+		const double fogMix = ClampStage5Double(m_stage7WeatherState.fogDensity * 0.35, 0.0, 0.55);
+		skyGray = skyGray * (1.0 - fogMix) + m_stage7WeatherState.fogGray * fogMix;
+		groundGray = groundGray * (1.0 - fogMix) + m_stage7WeatherState.fogGray * fogMix;
+	}
+	if (std::fabs(skyGray - groundGray) < 0.03)
+	{
+		groundGray = ClampStage5Double(groundGray - 0.04, 0.18, 0.88);
+	}
+	if (m_stage7DebugMode == 3)
+	{
+		skyGray = 0.65;
+		groundGray = 0.35;
+	}
+
+	double farClipM = m_sensorDisplayConfigReady ? m_sensorDisplayConfig.farClipM : 50000.0;
+	if (!std::isfinite(farClipM) || farClipM <= 1.0)
+	{
+		farClipM = 50000.0;
+	}
+	m_stage7SkyDomeRadius = ClampStage5Double(farClipM * 0.85, 1000.0, 200000.0);
+	if (m_stage7SkyDomeRadius >= farClipM)
+	{
+		m_stage7SkyDomeRadius = std::max(1.0, farClipM * 0.85);
+	}
+	if (m_stage7SkyDomeRadius >= farClipM)
+	{
+		m_stage7SkyDomeRadius = std::max(0.5, farClipM - 1.0);
+	}
+	m_stage7LowerShellRadius = m_stage7SkyDomeRadius;
+
+	const LPoint3f cameraPos = m_cameraNode.is_empty()
+		? LPoint3f(0.0f, 0.0f, 0.0f)
+		: m_cameraNode.get_pos(m_renderRoot);
+	m_stage7GroundReferenceZ = m_stage7GroundZOffset;
+
+	const bool skyVisible = m_stage7DebugMode != 2;
+	const bool lowerShellVisible = m_stage7DebugMode != 1;
+
+	if (!m_skyNode.is_empty())
+	{
+		if (skyVisible)
+		{
+			m_skyNode.show();
+		}
+		else
+		{
+			m_skyNode.hide();
+		}
+		m_skyNode.set_pos(m_renderRoot, cameraPos);
+		m_skyNode.set_hpr(m_renderRoot, 0.0f, 0.0f, 0.0f);
+		m_skyNode.set_scale(static_cast<float>(m_stage7SkyDomeRadius));
+		m_skyNode.set_shader_input("u_stage7_sky_horizon_en", LVecBase2i(m_enableStage7SkyHorizon ? 1 : 0, 0));
+		m_skyNode.set_shader_input("u_stage7_background_kind", LVecBase2i(1, 0));
+		m_skyNode.set_shader_input("u_stage7_sky_gray", LVecBase2f(static_cast<float>(skyGray), 0.0f));
+		m_skyNode.set_shader_input("u_stage7_ground_gray", LVecBase2f(static_cast<float>(groundGray), 0.0f));
+		ApplyStage7WeatherInputs(m_skyNode, m_stage7WeatherState);
+	}
+	if (!m_stage7LowerShellNode.is_empty())
+	{
+		if (lowerShellVisible)
+		{
+			m_stage7LowerShellNode.show();
+		}
+		else
+		{
+			m_stage7LowerShellNode.hide();
+		}
+		m_stage7LowerShellNode.set_pos(m_renderRoot, cameraPos);
+		m_stage7LowerShellNode.set_hpr(m_renderRoot, 0.0f, 0.0f, 0.0f);
+		m_stage7LowerShellNode.set_scale(static_cast<float>(m_stage7LowerShellRadius));
+		m_stage7LowerShellNode.set_shader_input("u_stage7_sky_horizon_en", LVecBase2i(m_enableStage7SkyHorizon ? 1 : 0, 0));
+		m_stage7LowerShellNode.set_shader_input("u_stage7_background_kind", LVecBase2i(2, 0));
+		m_stage7LowerShellNode.set_shader_input("u_stage7_sky_gray", LVecBase2f(static_cast<float>(skyGray), 0.0f));
+		m_stage7LowerShellNode.set_shader_input("u_stage7_ground_gray", LVecBase2f(static_cast<float>(groundGray), 0.0f));
+		ApplyStage7WeatherInputs(m_stage7LowerShellNode, m_stage7WeatherState);
+	}
+
+	LogStage7SkyGround(environment, envTerrain, envSky, skyGrayRaw, groundGrayRaw, skyGray, groundGray, farClipM, m_stage7GroundReferenceZ, forceLog, reason);
+	LogStage7Weather(m_stage7WeatherState, reason, forceLog);
+}
+
+void HwaSimIR::LogStage7SkyGround(const IRRuntimeEnvironment& environment, int envTerrain, int envSky, double skyGrayRaw, double groundGrayRaw, double skyGrayFinal, double groundGrayFinal, double farClipM, double groundReferenceZ, bool forceLog, const char* reason)
+{
+	const bool skyVisible = !m_skyNode.is_empty() && !m_skyNode.is_hidden();
+	const bool lowerShellVisible = !m_stage7LowerShellNode.is_empty() && !m_stage7LowerShellNode.is_hidden();
+	const bool radiusLessThanFarClip = m_stage7SkyDomeRadius < farClipM;
+	std::ostringstream state;
+	state << (m_enableStage7SkyHorizon ? 1 : 0)
+		<< ":" << IRBandName(environment.band)
+		<< ":" << envTerrain
+		<< ":" << envSky
+		<< ":" << m_stage7DebugModeName
+		<< ":" << static_cast<int>(skyGrayFinal * 1000.0)
+		<< ":" << static_cast<int>(groundGrayFinal * 1000.0)
+		<< ":" << static_cast<int>(m_stage7SkyDomeRadius)
+		<< ":" << static_cast<int>(m_stage7LowerShellRadius)
+		<< ":" << (skyVisible ? 1 : 0)
+		<< ":" << (lowerShellVisible ? 1 : 0);
+	const std::string stateKey = state.str();
+	++m_stage7SkyHorizonLogCounter;
+	if (forceLog || m_stage7LastSkyHorizonState != stateKey || m_stage7SkyHorizonLogCounter <= 3 || (m_stage7SkyHorizonLogCounter % 120) == 0)
+	{
+		std::cout << "[Stage7 3DSkyGround]"
+			<< " reason=" << (reason != nullptr ? reason : "unknown")
+			<< " enable=" << (m_enableStage7SkyHorizon ? "1" : "0")
+			<< " band=" << IRBandName(environment.band)
+			<< " envTerrain=" << envTerrain
+			<< " envSky=" << envSky
+			<< " skyGrayRaw=" << skyGrayRaw
+			<< " groundGrayRaw=" << groundGrayRaw
+			<< " skyGrayFinal=" << skyGrayFinal
+			<< " groundGrayFinal=" << groundGrayFinal
+			<< " skyGray=" << skyGrayFinal
+			<< " groundGray=" << groundGrayFinal
+			<< " skyDome=" << (!m_skyNode.is_empty() ? "1" : "0")
+			<< " lowerShell=" << (!m_stage7LowerShellNode.is_empty() ? "1" : "0")
+			<< " groundPlane=0"
+			<< " source=env+band_default"
+			<< std::endl;
+		std::cout << "[Stage7 Debug]"
+			<< " mode=" << m_stage7DebugModeName
+			<< " skyVisible=" << (skyVisible ? "1" : "0")
+			<< " groundVisible=" << (lowerShellVisible ? "1" : "0")
+			<< " forcedSkyGray=" << (m_stage7DebugMode == 3 ? "0.65" : "NA")
+			<< " forcedGroundGray=" << (m_stage7DebugMode == 3 ? "0.35" : "NA")
+			<< std::endl;
+		std::cout << "[Stage7 Real3DBackground]"
+			<< " skyDome=" << (!m_skyNode.is_empty() ? "1" : "0")
+			<< " lowerShell=" << (!m_stage7LowerShellNode.is_empty() ? "1" : "0")
+			<< " flatGroundPlane=0"
+			<< " cameraPos=" << (m_cameraNode.is_empty() ? 0.0f : m_cameraNode.get_pos(m_renderRoot)[0])
+			<< "," << (m_cameraNode.is_empty() ? 0.0f : m_cameraNode.get_pos(m_renderRoot)[1])
+			<< "," << (m_cameraNode.is_empty() ? 0.0f : m_cameraNode.get_pos(m_renderRoot)[2])
+			<< " backgroundMode=real_3d"
+			<< std::endl;
+		std::cout << "[Stage7 GroundReference]"
+			<< " mode=reference_zero"
+			<< " groundZOffset=" << m_stage7GroundZOffset
+			<< " finalGroundReferenceZ=" << groundReferenceZ
+			<< std::endl;
+		const LPoint3f cameraPos = m_cameraNode.is_empty()
+			? LPoint3f(0.0f, 0.0f, 0.0f)
+			: m_cameraNode.get_pos(m_renderRoot);
+		const LPoint3f skyDomePos = m_skyNode.is_empty()
+			? LPoint3f(0.0f, 0.0f, 0.0f)
+			: m_skyNode.get_pos(m_renderRoot);
+		std::cout << "[Stage7 SkyDomeDiag]"
+			<< " cameraPos=" << cameraPos[0] << "," << cameraPos[1] << "," << cameraPos[2]
+			<< " skyDomePos=" << skyDomePos[0] << "," << skyDomePos[1] << "," << skyDomePos[2]
+			<< " farClipM=" << farClipM
+			<< " skyRadius=" << m_stage7SkyDomeRadius
+			<< " radius=" << m_stage7SkyDomeRadius
+			<< " radiusSource=farClip_scaled"
+			<< " radiusLessThanFarClip=" << (radiusLessThanFarClip ? "1" : "0")
+			<< " twoSided=1"
+			<< " depthWrite=0"
+			<< " depthTest=0"
+			<< std::endl;
+		const LPoint3f groundPos = m_stage7LowerShellNode.is_empty()
+			? LPoint3f(0.0f, 0.0f, static_cast<float>(groundReferenceZ))
+			: m_stage7LowerShellNode.get_pos(m_renderRoot);
+		std::cout << "[Stage7 GroundDiag]"
+			<< " groundPos=" << groundPos[0] << "," << groundPos[1] << "," << groundPos[2]
+			<< " farClipM=" << farClipM
+			<< " groundSize=" << m_stage7LowerShellRadius
+			<< " lowerShellRadius=" << m_stage7LowerShellRadius
+			<< " groundZOffset=" << m_stage7GroundZOffset
+			<< " envTerrain=" << envTerrain
+			<< " groundGray=" << groundGrayFinal
+			<< std::endl;
+		if (m_stage7DebugMode == 3 && (!skyVisible || !radiusLessThanFarClip))
+		{
+			std::cout << "STAGE7_SKY_DOME_NOT_VISIBLE_AFTER_RADIUS_FIX"
+				<< " skyVisible=" << (skyVisible ? "1" : "0")
+				<< " farClipM=" << farClipM
+				<< " skyRadius=" << m_stage7SkyDomeRadius
+				<< std::endl;
+		}
+		m_stage7LastSkyHorizonState = stateKey;
+	}
+}
+
+void HwaSimIR::LogStage6FrameDiag(const BYHWICD::DisplayC2cObjTrackingData& currentData, int targetMappedCount, int targetVisibleCount, int hiddenByTargetNum, int hiddenByTargetViewValid, int hiddenByWeaponViewValid, int beyondFarClipCount)
+{
+	++m_stage6FrameDiagLogCounter;
+	if (targetVisibleCount <= 0)
+	{
+		++m_stage6NoVisibleTargetFrames;
+	}
+	else
+	{
+		m_stage6NoVisibleTargetFrames = 0;
+	}
+
+	const IRSensorPostProcessConfig displayConfig = m_stage6DisplayConfigReady ? m_stage6DisplayConfig : IRSensorPostProcessConfig();
+	const char* route = "final_sensor";
+	const bool skyVisible = !m_skyNode.is_empty();
+	LVecBase3f cameraHpr = m_cameraNode.is_empty() ? LVecBase3f(0.0f, 0.0f, 0.0f) : m_cameraNode.get_hpr();
+	const double sensorFovH = m_sensorDisplayConfigReady ? m_sensorDisplayConfig.horizontalFovDeg : 0.0;
+	const double sensorFovV = m_sensorDisplayConfigReady ? m_sensorDisplayConfig.verticalFovDeg : 0.0;
+	const double nearClip = m_sensorDisplayConfigReady ? m_sensorDisplayConfig.nearClipM : 0.0;
+	const double farClip = m_sensorDisplayConfigReady ? m_sensorDisplayConfig.farClipM : 0.0;
+	const int protocolBand = (m_sensorParam.trackerSensorBand >= 0 && m_sensorParam.trackerSensorBand <= 4)
+		? m_sensorParam.trackerSensorBand : 2;
+	const IRBand band = IRBandFromProtocol(protocolBand);
+
+	std::ostringstream state;
+	state << targetMappedCount
+		<< ":" << targetVisibleCount
+		<< ":" << hiddenByTargetNum
+		<< ":" << hiddenByTargetViewValid
+		<< ":" << hiddenByWeaponViewValid
+		<< ":" << beyondFarClipCount
+		<< ":" << (skyVisible ? 1 : 0)
+		<< ":" << route
+		<< ":" << (displayConfig.whiteHot ? 1 : 0)
+		<< ":" << static_cast<int>(displayConfig.displayGain * 100.0)
+		<< ":" << static_cast<int>(displayConfig.displayOffset)
+		<< ":" << (displayConfig.noiseEnable ? 1 : 0)
+		<< ":" << static_cast<int>(displayConfig.noiseSigmaGray * 100.0)
+		<< ":" << static_cast<int>(cameraHpr[0] * 10.0)
+		<< ":" << static_cast<int>(cameraHpr[1] * 10.0)
+		<< ":" << static_cast<int>(cameraHpr[2] * 10.0);
+	const std::string stateKey = state.str();
+	const bool shouldLog = (m_stage6FrameDiagLogCounter <= 3) ||
+		((m_stage6FrameDiagLogCounter % 60) == 0) ||
+		(m_stage6LastFrameDiagState != stateKey);
+	if (shouldLog)
+	{
+		std::cout << "[Stage6 FrameDiag]"
+			<< " frameIndex=" << currentData.time
+			<< " packet=" << m_stage0DisplayFrameCount
+			<< " band=" << IRBandName(band)
+			<< " whiteHot=" << (displayConfig.whiteHot ? "1" : "0")
+			<< " displayGain=" << displayConfig.displayGain
+			<< " displayOffset=" << displayConfig.displayOffset
+			<< " noiseEnable=" << (displayConfig.noiseEnable ? "1" : "0")
+			<< " noiseSigmaGray=" << displayConfig.noiseSigmaGray
+			<< " route=" << route
+			<< " targetVisibleCount=" << targetVisibleCount
+			<< " targetMappedCount=" << targetMappedCount
+			<< " hiddenByTargetNum=" << hiddenByTargetNum
+			<< " hiddenByTargetViewValid=" << hiddenByTargetViewValid
+			<< " hiddenByWeaponViewValid=" << hiddenByWeaponViewValid
+			<< " beyondFarClip=" << beyondFarClipCount
+			<< " skyVisible=" << (skyVisible ? "1" : "0")
+			<< " cameraHpr=" << cameraHpr[0] << "," << cameraHpr[1] << "," << cameraHpr[2]
+			<< " sensorFovH=" << sensorFovH
+			<< " sensorFovV=" << sensorFovV
+			<< " near=" << nearClip
+			<< " far=" << farClip
+			<< std::endl;
+		m_stage6LastFrameDiagState = stateKey;
+	}
+
+	if (m_stage6NoVisibleTargetFrames >= 5 &&
+		(m_stage6NoVisibleTargetFrames == 5 || (m_stage6NoVisibleTargetFrames % 60) == 0))
+	{
+		std::cout << "[Stage6 FrameDiag][WARN] NO_VISIBLE_TARGETS"
+			<< " consecutiveFrames=" << m_stage6NoVisibleTargetFrames
+			<< " targetMappedCount=" << targetMappedCount
+			<< " hiddenByTargetNum=" << hiddenByTargetNum
+			<< " hiddenByTargetViewValid=" << hiddenByTargetViewValid
+			<< " hiddenByWeaponViewValid=" << hiddenByWeaponViewValid
+			<< " beyondFarClip=" << beyondFarClipCount
+			<< std::endl;
+		if (skyVisible)
+		{
+			std::cout << "[Stage6 FrameDiag][WARN] BACKGROUND_ONLY_FRAME"
+				<< " consecutiveFrames=" << m_stage6NoVisibleTargetFrames
+				<< " skyVisible=1"
+				<< " targetMappedCount=" << targetMappedCount
+				<< std::endl;
+		}
+	}
+}
+
 // 窗口初始化（通用配置）
 void HwaSimIR::InitHwaSimIRWindow() {
 	m_pMainWindow->enable_keyboard();       // 启用键盘输入
@@ -793,8 +2488,8 @@ void HwaSimIR::InitHwaSimIRWindow() {
 	m_pFramework->define_key("arrow_right", "Move forward", &HwaSimIR::on_key_event, this);
 
 
-	// 配置渲染纹理，让引擎在每次主循环时自动把画面拷贝到内存中
-	m_renderTex = new Texture("CaptureTexture");
+	// Stage6B.3: capture the final sensor image shown in the window.
+	m_renderTex = new Texture("Stage6FinalSensorTex");
 	m_pGraphicsWindow->add_render_texture(m_renderTex, GraphicsOutput::RTM_copy_ram);
 
 	// 向引擎全局任务管理器添加一个捕获任务，保证在主线程安全运行
@@ -899,23 +2594,94 @@ void HwaSimIR::ProcessRealSimSceneInitData()
 	// 缓存传感器参数
 	m_sensorParam = m_initSceneData.trackingInit.trackerSensor[0];
 	std::cout << "传感器参数初始化完成，传感器ID=" << m_initSceneData.sensorID << std::endl;
+	const IRSensorProfile& sensorProfile = m_irSensorProfiles.profileForProtocolBand(m_sensorParam.trackerSensorBand);
+	int sensorWidth = m_sensorParam.trackerSensorWidth;
+	int sensorHeight = m_sensorParam.trackerSensorHeight;
+	double sensorPixelAngleUrad = m_sensorParam.trackerSensorPixelAngle;
+	bool sensorWaveWidthFallback = false;
+	bool sensorWaveHeightFallback = false;
+	bool sensorWavePixelAngleFallback = false;
+	if (sensorWidth <= 0 && sensorProfile.width > 0)
+	{
+		sensorWidth = sensorProfile.width;
+		sensorWaveWidthFallback = true;
+	}
+	if (sensorHeight <= 0 && sensorProfile.height > 0)
+	{
+		sensorHeight = sensorProfile.height;
+		sensorWaveHeightFallback = true;
+	}
+	if (sensorPixelAngleUrad <= 0.0 && sensorProfile.fovHDeg > 0.0 && sensorWidth > 0)
+	{
+		const double pi = 3.14159265358979323846;
+		const double fovRad = sensorProfile.fovHDeg * pi / 180.0;
+		const double pixelAngleRad = 2.0 * std::atan(std::tan(fovRad * 0.5) / static_cast<double>(sensorWidth));
+		sensorPixelAngleUrad = pixelAngleRad * 1.0e6;
+		sensorWavePixelAngleFallback = true;
+	}
+	std::string sensorWidthFallbackSource;
+	std::string sensorHeightFallbackSource;
+	std::string sensorPixelAngleFallbackSource;
+	if (sensorWidth <= 0)
+	{
+		sensorWidth = m_runtimeConfig.getInt("SensorFallback", "Width", "Stage6FallbackSensorWidth", 800, &sensorWidthFallbackSource);
+	}
+	if (sensorHeight <= 0)
+	{
+		sensorHeight = m_runtimeConfig.getInt("SensorFallback", "Height", "Stage6FallbackSensorHeight", 800, &sensorHeightFallbackSource);
+	}
+	if (sensorPixelAngleUrad <= 0.0)
+	{
+		sensorPixelAngleUrad = m_runtimeConfig.getDouble("SensorFallback", "PixelAngleUrad", "Stage6FallbackPixelAngleUrad", 20.0, &sensorPixelAngleFallbackSource);
+	}
+	if (sensorWaveWidthFallback || sensorWaveHeightFallback || sensorWavePixelAngleFallback)
+	{
+		std::cout << "[SensorWave Usage]"
+			<< " band=" << IRBandName(IRBandFromProtocol(m_sensorParam.trackerSensorBand))
+			<< " file=" << sensorProfile.sourcePath
+			<< " fallbackApplied=1"
+			<< " widthFromSensorWave=" << (sensorWaveWidthFallback ? "1" : "0")
+			<< " heightFromSensorWave=" << (sensorWaveHeightFallback ? "1" : "0")
+			<< " pixelAngleFromFOVH=" << (sensorWavePixelAngleFallback ? "1" : "0")
+			<< " priority=UDP_init>SensorWave>RuntimeConfig>default"
+			<< std::endl;
+	}
+	if (!sensorWidthFallbackSource.empty() || !sensorHeightFallbackSource.empty() || !sensorPixelAngleFallbackSource.empty())
+	{
+		std::cout << "[RuntimeConfig] SensorFallback"
+			<< " widthSource=" << (sensorWidthFallbackSource.empty() ? "not_used" : sensorWidthFallbackSource)
+			<< " heightSource=" << (sensorHeightFallbackSource.empty() ? "not_used" : sensorHeightFallbackSource)
+			<< " pixelAngleSource=" << (sensorPixelAngleFallbackSource.empty() ? "not_used" : sensorPixelAngleFallbackSource)
+			<< " priority=UDP_init>SensorWave>RuntimeConfig>default"
+			<< std::endl;
+	}
 	IRSensorDisplayConfig sensorDisplayConfig = m_irSensorModel.BuildSensorDisplayConfig(
-		m_sensorParam.trackerSensorWidth,
-		m_sensorParam.trackerSensorHeight,
+		sensorWidth,
+		sensorHeight,
 		m_sensorParam.trackerSensorViewMin,
 		m_sensorParam.trackerSensorViewMax,
-		m_sensorParam.trackerSensorPixelAngle);
+		sensorPixelAngleUrad);
 	ApplySensorOutputConfig(sensorDisplayConfig, "init-command");
+	ApplyStage6DisplayConfig(m_sensorParam, "init-command");
 
 	// 设置增删标记为"增加"
 	m_isAddPlatform = true;
 	m_irTemperatureModel.resetRuntime();
+	m_irEnginePlumeModel.resetRuntime();
 	m_lastStage4UpdateTime = -1.0;
 
 	// 调用增删逻辑生成平台
 	ProcessAddRemovePakPlatform();
 	ProcessAddRemoveWeaponPlatform();
 	ProcessAddRemoveTargetPlatform();
+	m_stage6FrameDiagLogCounter = 0;
+	m_stage6NoVisibleTargetFrames = 0;
+	m_stage6LastFrameDiagState.clear();
+	m_stage7NearFarClipWarningLogged = false;
+	m_stage7SkyHorizonLogCounter = 0;
+	m_stage7LastSkyHorizonState.clear();
+	UpdateStage7SkyHorizon(BuildRuntimeEnvironment(), "init-command", true);
+	UpdateStage7WeatherNodes(m_stage7WeatherState, ClockObject::get_global_clock()->get_frame_time());
 	BYHWICD::SpatialState spatial;
 	spatial = m_initSceneData.platParam[0].spatial;
 	m_geoTrans.InitReferencePoint(spatial.lat, spatial.lon, spatial.alt);
@@ -931,7 +2697,7 @@ void HwaSimIR::ProcessRealSimSceneInitData()
 void HwaSimIR::ProcessRealSimSceneDrivenData()
 {
 	// 仿真未运行时不处理
-	if (!m_isSimRunning)
+	if (!m_isSimRunning.load())
 	{
 		return;
 	}
@@ -988,6 +2754,12 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 
 	// TargetState[5] 最多携带5组目标数据；targetNumValid只控制前N个是否参与显示，不再限制状态更新。
 	const int visibleTargetNum = std::max(0, std::min(currentData.targetNumValid, 5));
+	int targetMappedCount = 0;
+	int targetVisibleCount = 0;
+	int hiddenByTargetNum = 0;
+	int hiddenByTargetViewValid = 0;
+	int hiddenByWeaponViewValid = 0;
+	int beyondFarClipCount = 0;
 	for (auto& targetPlat : m_targetPlatformList)
 	{
 		if (targetPlat.isExist)
@@ -1010,6 +2782,7 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 		{
 			continue;
 		}
+		++targetMappedCount;
 
 		// 通过 targetType + targetPlatID + targetID 唯一键更新同一个目标，避免不同挂载平台目标ID冲突。
 		targetPlat->targetState = targetState;
@@ -1019,9 +2792,13 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 		LMatrix4f exactTransform = m_geoTrans.GetPandaMatrix(spatial);
 		targetPlat->nodePath.set_mat(LMatrix4(exactTransform));
 		const float targetRangeM = EstimateRangeToCamera(targetPlat->nodePath);
-		if (m_sensorDisplayConfigReady &&
-			targetRangeM > static_cast<float>(m_sensorDisplayConfig.farClipM) &&
-			!m_stage6FarClipWarningLogged)
+		const bool beyondFarClip = m_sensorDisplayConfigReady &&
+			targetRangeM > static_cast<float>(m_sensorDisplayConfig.farClipM);
+		if (beyondFarClip)
+		{
+			++beyondFarClipCount;
+		}
+		if (beyondFarClip && !m_stage6FarClipWarningLogged)
 		{
 			std::cout << "STAGE6_TARGET_BEYOND_FAR_CLIP"
 				<< " targetType=0x" << std::hex << targetState.targetType << std::dec
@@ -1033,10 +2810,48 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 			m_stage6FarClipWarningLogged = true;
 		}
 
-		bool renderVisible = (i < visibleTargetNum) && targetState.viewValid;
-		if (WeaponTargetKeyMatches(currentData.weaponState, *targetPlat) && !currentData.weaponState.viewValid)
+		const bool visibleByTargetNum = i < visibleTargetNum;
+		const bool hiddenByTargetNumNow = !visibleByTargetNum;
+		const bool hiddenByTargetViewValidNow = !targetState.viewValid;
+		const bool weaponMatchesTarget = WeaponTargetKeyMatches(currentData.weaponState, *targetPlat);
+		const bool hiddenByWeaponViewValidNow = weaponMatchesTarget && !currentData.weaponState.viewValid;
+		if (hiddenByTargetNumNow)
+		{
+			++hiddenByTargetNum;
+		}
+		if (hiddenByTargetViewValidNow)
+		{
+			++hiddenByTargetViewValid;
+		}
+		if (hiddenByWeaponViewValidNow)
+		{
+			++hiddenByWeaponViewValid;
+		}
+
+		bool renderVisible = visibleByTargetNum && targetState.viewValid;
+		if (hiddenByWeaponViewValidNow)
 		{
 			renderVisible = false;
+		}
+		if (renderVisible && !beyondFarClip)
+		{
+			++targetVisibleCount;
+		}
+		const bool nearFarClip = renderVisible &&
+			!beyondFarClip &&
+			m_sensorDisplayConfigReady &&
+			targetRangeM > static_cast<float>(m_sensorDisplayConfig.farClipM * 0.9);
+		if (nearFarClip && !m_stage7NearFarClipWarningLogged)
+		{
+			std::cout << "STAGE7_TARGET_NEAR_FAR_CLIP"
+				<< " targetType=0x" << std::hex << targetState.targetType << std::dec
+				<< " targetPlatID=" << targetState.targetPlatID
+				<< " targetID=" << targetState.targetID
+				<< " rangeM=" << targetRangeM
+				<< " farClipM=" << m_sensorDisplayConfig.farClipM
+				<< " ratio=" << (targetRangeM / static_cast<float>(m_sensorDisplayConfig.farClipM))
+				<< std::endl;
+			m_stage7NearFarClipWarningLogged = true;
 		}
 		if (renderVisible)
 		{
@@ -1045,9 +2860,35 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 		else
 		{
 			targetPlat->nodePath.hide();
+			HideEnginePlume(*targetPlat);
+			if ((!targetPlat->enginePlumeCoreNodePath.is_empty() || !targetPlat->enginePlumeHaloNodePath.is_empty()) &&
+				(m_stage5PlumeOptions.enablePlumeDebug || m_stage5PlumeOptions.forcePlumeVisible ||
+					m_stage0DisplayFrameCount <= 3 || (m_stage0DisplayFrameCount % 60) == 0))
+			{
+				const IRBand plumeBand = BuildRuntimeEnvironment().band;
+				std::cout << "[Stage5 Plume]"
+					<< " targetType=0x" << std::hex << targetState.targetType << std::dec
+					<< " targetPlatID=" << targetState.targetPlatID
+					<< " targetID=" << targetState.targetID
+					<< " platform=" << Stage4PlatformName(targetPlat->type)
+					<< " engineState=" << (targetState.engineState ? "1" : "0")
+					<< " band=" << IRBandName(plumeBand)
+					<< " coreEnabled=0"
+					<< " haloEnabled=0"
+					<< " coreTempK=0"
+					<< " haloTempK=0"
+					<< " coreGray=0"
+					<< " haloGray=0"
+					<< " coreOpacity=0"
+					<< " haloOpacity=0"
+					<< " coreVisible=0"
+					<< " haloVisible=0"
+					<< " reason=target_not_renderable"
+					<< std::endl;
+			}
 		}
 
-		if (WeaponTargetKeyMatches(currentData.weaponState, *targetPlat))
+		if (weaponMatchesTarget)
 		{
 			lookAtTarget = targetPlat;
 		}
@@ -1060,9 +2901,10 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 				<< " targetType=0x" << std::hex << targetState.targetType << std::dec
 				<< " targetPlatID=" << targetState.targetPlatID
 				<< " targetID=" << targetState.targetID
-				<< " visibleByTargetNum=" << (i < visibleTargetNum ? "1" : "0")
+				<< " visibleByTargetNum=" << (visibleByTargetNum ? "1" : "0")
 				<< " targetViewValid=" << (targetState.viewValid ? "1" : "0")
 				<< " weaponViewValid=" << (currentData.weaponState.viewValid ? "1" : "0")
+				<< " beyondFarClip=" << (beyondFarClip ? "1" : "0")
 				<< " renderVisible=" << (renderVisible ? "1" : "0")
 				<< std::endl;
 		}
@@ -1070,6 +2912,7 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 	m_isInitTargetPlatID = true;
 
 	ApplyWeaponCameraControl(currentData, lookAtTarget);
+	LogStage6FrameDiag(currentData, targetMappedCount, targetVisibleCount, hiddenByTargetNum, hiddenByTargetViewValid, hiddenByWeaponViewValid, beyondFarClipCount);
 
 	//for (int i = 0; i < validTargetNum; ++i)
 	//{
@@ -1362,6 +3205,7 @@ void HwaSimIR::ProcessAddRemoveTargetPlatform()
 			newTargetPlat.targetState.targetState = 0x01;
 			newTargetPlat.isExist = true;
 			newTargetPlat.nodePath = modelNode;
+			CreateEnginePlumeForTarget(newTargetPlat);
 
 			// 设置初始位置（从目标空间状态读取）
 			const BYHWICD::SpatialState& spatial = newTargetPlat.targetState.targetLoc;
@@ -1415,6 +3259,7 @@ void HwaSimIR::ProcessAddRemoveTargetPlatform()
 			newTargetPlat.targetState.targetState = 0x01;
 			newTargetPlat.isExist = true;
 			newTargetPlat.nodePath = modelNode;
+			CreateEnginePlumeForTarget(newTargetPlat);
 
 			// 设置初始位置（从目标空间状态读取）
 			const BYHWICD::SpatialState& spatial = newTargetPlat.targetState.targetLoc;
@@ -1464,6 +3309,7 @@ void HwaSimIR::ProcessAddRemoveTargetPlatform()
 			newTargetPlat.targetState.targetState = 0x01;
 			newTargetPlat.isExist = true;
 			newTargetPlat.nodePath = modelNode;
+			CreateEnginePlumeForTarget(newTargetPlat);
 
 			// 设置初始位置（从目标空间状态读取）
 			const BYHWICD::SpatialState& spatial = newTargetPlat.targetState.targetLoc;
@@ -1484,6 +3330,14 @@ void HwaSimIR::ProcessAddRemoveTargetPlatform()
 		{
 			if (targetPlat.isExist)
 			{
+				if (!targetPlat.enginePlumeCoreNodePath.is_empty())
+				{
+					targetPlat.enginePlumeCoreNodePath.remove_node();
+				}
+				if (!targetPlat.enginePlumeHaloNodePath.is_empty())
+				{
+					targetPlat.enginePlumeHaloNodePath.remove_node();
+				}
 				targetPlat.nodePath.remove_node();
 				targetPlat.isExist = false;
 			}
@@ -1499,7 +3353,7 @@ void HwaSimIR::on_key_event(const Event * event, void * user_data)
 	
 	LVecBase3 hpr = self->m_cameraNode.get_hpr();
 	LVecBase3 pos = self->m_cameraNode.get_pos();
-	double insu = 3.0;
+	double insu = 30.0;
 
 	const std::string& name = event->get_name();
 
@@ -1674,26 +3528,43 @@ void HwaSimIR::handleControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd) 
 		memset(&m_sensorParam, 0, sizeof(BYHWICD::trackerSensorParam));
 		m_lastLoggedSensorProtocolBand = -999;
 		m_sensorDisplayConfigReady = false;
+		m_stage6DisplayConfigReady = false;
 		m_stage6FarClipWarningLogged = false;
+		m_stage7NearFarClipWarningLogged = false;
 		m_stage6CaptureLogCounter = 0;
+		m_stage6DisplayLogCounter = 0;
+		m_irEnginePlumeModel.resetRuntime();
+		m_stage5PlumeLastPerfState.clear();
+		m_stage5PlumePerfLogCounter = 0;
+		RefreshStage6DisplayShaderInputs();
 
 		// 重置仿真状态
-		m_isSimRunning = false;
+		m_isSimRunning.store(false);
 		std::cout << "复位完成：所有平台已删除，数据已清空" << std::endl;
 		break;
 	case 2: // 开始
 		std::cout << "执行开始仿真逻辑..." << std::endl;
 		// TODO: 实现开始仿真逻辑（启动渲染、数据采集等）
-		m_isSimRunning = true;
+		m_isSimRunning.store(true);
 		
 		std::cout << "仿真开始：当前回合=" << m_currentRound << std::endl;
 		break;
 	case 3: // 停止
 		std::cout << "执行停止仿真逻辑..." << std::endl;
 		// TODO: 实现停止仿真逻辑（停止渲染、保存数据等）
-		m_isSimRunning = false;
+		m_isSimRunning.store(false);
 	
 		std::cout << "仿真停止：当前回合=" << m_currentRound << std::endl;
+		{
+			std::string exitOnStopSource;
+			const bool exitOnStop = m_runtimeConfig.getBool("Debug", "ExitOnStop", "HwaSimIRExitOnStop", false, &exitOnStopSource);
+			if (exitOnStop) {
+				std::cout << "[Stage0] ExitOnStop requested by " << exitOnStopSource << "; closing main loop." << std::endl;
+				m_requestExit.store(true);
+				m_bHasNewData = true;
+				m_cvNewData.notify_one();
+			}
+		}
 		break;
 	default:
 		std::cerr << "未知的仿真指令：" << cmd.simCommand << std::endl;
@@ -1916,40 +3787,155 @@ void HwaSimIR::InitInfraredSimulation()
 	hotspotConfigPaths.push_back("../Bin/Config/IRHotspots/target_hotspots.json");
 	hotspotConfigPaths.push_back("ConsoleApplication1_LLA/Bin/Config/IRHotspots/target_hotspots.json");
 	hotspotConfigPaths.push_back("../ConsoleApplication1_LLA/Bin/Config/IRHotspots/target_hotspots.json");
+	std::vector<std::string> plumeConfigPaths;
+	plumeConfigPaths.push_back("Config/IRPlume/engine_plume_profiles.json");
+	plumeConfigPaths.push_back("../Bin/Config/IRPlume/engine_plume_profiles.json");
+	plumeConfigPaths.push_back("ConsoleApplication1_LLA/Bin/Config/IRPlume/engine_plume_profiles.json");
+	plumeConfigPaths.push_back("../ConsoleApplication1_LLA/Bin/Config/IRPlume/engine_plume_profiles.json");
 	std::vector<std::string> stage5DebugConfigPaths;
 	stage5DebugConfigPaths.push_back("Config/IRRadiance/stage5_debug_display.json");
 	stage5DebugConfigPaths.push_back("../Bin/Config/IRRadiance/stage5_debug_display.json");
 	stage5DebugConfigPaths.push_back("ConsoleApplication1_LLA/Bin/Config/IRRadiance/stage5_debug_display.json");
 	stage5DebugConfigPaths.push_back("../ConsoleApplication1_LLA/Bin/Config/IRRadiance/stage5_debug_display.json");
+	std::vector<std::string> runtimeConfigPaths;
+	runtimeConfigPaths.push_back("Config/HwaSimIRRuntime.ini");
+	runtimeConfigPaths.push_back("../Bin/Config/HwaSimIRRuntime.ini");
+	runtimeConfigPaths.push_back("ConsoleApplication1_LLA/Bin/Config/HwaSimIRRuntime.ini");
+	runtimeConfigPaths.push_back("../ConsoleApplication1_LLA/Bin/Config/HwaSimIRRuntime.ini");
 
+	m_runtimeConfig.loadFromCandidates(runtimeConfigPaths);
 	m_irMaterialReady = m_irMaterialDatabase.load(materialPath);
 	m_irAtmosphereReady = m_irAtmosphereModel.loadTransmissionTable(transmittancePath);
 	bool modtranTauLutReady = m_irAtmosphereModel.loadModtranBandLut(modtranBandLutPath);
-	bool enableModtranTauDebug = ReadProcessEnvFlag("EnableModtranTauDebug", false);
-	bool useModtranTauForAtmosphere = ReadProcessEnvFlag("UseModtranTauForAtmosphere", false);
-	m_enableStage4HotspotVisualDebug = ReadProcessEnvFlag("EnableStage4HotspotVisualDebug", false);
-	m_forceStage4BrightSpotVisible = ReadProcessEnvFlag("ForceStage4BrightSpotVisible", false);
-	m_forceStage4RearHotspotVisible = ReadProcessEnvFlag("ForceStage4RearHotspotVisible", false);
+	std::string stage3TauDebugSource;
+	std::string stage3UseTauSource;
+	std::string stage4VisualSource;
+	std::string stage4BrightSource;
+	std::string stage4RearSource;
+	bool enableModtranTauDebug = m_runtimeConfig.getBool("Stage3", "EnableModtranTauDebug", "EnableModtranTauDebug", false, &stage3TauDebugSource);
+	bool useModtranTauForAtmosphere = m_runtimeConfig.getBool("Stage3", "UseModtranTauForAtmosphere", "UseModtranTauForAtmosphere", false, &stage3UseTauSource);
+	m_enableStage4HotspotVisualDebug = m_runtimeConfig.getBool("Stage4", "EnableHotspotVisualDebug", "EnableStage4HotspotVisualDebug", false, &stage4VisualSource);
+	m_forceStage4BrightSpotVisible = m_runtimeConfig.getBool("Stage4", "ForceBrightSpotVisible", "ForceStage4BrightSpotVisible", false, &stage4BrightSource);
+	m_forceStage4RearHotspotVisible = m_runtimeConfig.getBool("Stage4", "ForceRearHotspotVisible", "ForceStage4RearHotspotVisible", false, &stage4RearSource);
 	m_stage5DebugDisplayConfigPath = FirstExistingPath(stage5DebugConfigPaths);
 	m_stage5DebugDisplayConfigReady = LoadStage5DebugDisplayConfig(m_stage5DebugDisplayConfigPath, m_stage5DebugConfigs, m_stage5UseBaseTextureModulationByBand);
-	ApplyStage5EnvOverrides(m_stage5DebugConfigs, m_stage5UseBaseTextureModulationByBand);
-	m_enableStage5RadianceDebug = ReadProcessEnvFlag("EnableStage5RadianceDebug", false);
-	m_stage5DebugViewMode = ParseStage5DebugViewMode(ReadProcessEnvString("Stage5DebugViewMode", "Composite"));
+	ApplyStage5RuntimeOverrides(m_runtimeConfig, m_stage5DebugConfigs, m_stage5UseBaseTextureModulationByBand);
+	std::string stage5DebugSource;
+	std::string stage5ViewModeSource;
+	std::string stage5DumpSource;
+	std::string stage5DumpPathSource;
+	std::string stage5DumpEverySource;
+	m_enableStage5RadianceDebug = m_runtimeConfig.getBool("Stage5", "EnableRadianceDebug", "EnableStage5RadianceDebug", false, &stage5DebugSource);
+	m_stage5DebugViewMode = ParseStage5DebugViewMode(m_runtimeConfig.getString("Stage5", "DebugViewMode", "Stage5DebugViewMode", "Composite", &stage5ViewModeSource));
 	m_stage5DebugViewModeName = Stage5DebugViewModeName(m_stage5DebugViewMode);
 	m_stage5DebugConfig = m_stage5DebugConfigs[Stage5BandIndex(IRBand::MidWaveInfrared)];
 	m_stage5DebugToneMapName = Stage5ToneMapName(m_stage5DebugConfig.toneMap);
 	m_stage5UseBaseTextureModulation = m_stage5UseBaseTextureModulationByBand[Stage5BandIndex(IRBand::MidWaveInfrared)];
-	m_stage5OutputFrameDumpEnabled = ReadProcessEnvFlag("Stage5OutputFrameDump", false);
-	m_stage5OutputFrameDumpPath = ReadProcessEnvString("Stage5OutputFrameDumpPath", "");
-	m_stage5OutputFrameDumpEvery = std::max(1, ReadProcessEnvInt("Stage5OutputFrameDumpEvery", 5));
+	m_stage5OutputFrameDumpEnabled = m_runtimeConfig.getBool("Stage5", "OutputFrameDump", "Stage5OutputFrameDump", false, &stage5DumpSource);
+	m_stage5OutputFrameDumpPath = m_runtimeConfig.getString("Stage5", "OutputFrameDumpPath", "Stage5OutputFrameDumpPath", "", &stage5DumpPathSource);
+	m_stage5OutputFrameDumpEvery = std::max(1, m_runtimeConfig.getInt("Stage5", "OutputFrameDumpEvery", "Stage5OutputFrameDumpEvery", 5, &stage5DumpEverySource));
 	m_stage5OutputFrameCounter = 0;
 	m_stage5OutputFrameDumpWrites = 0;
 	m_stage5OutputFrameDumpFailureLogged = false;
+	std::string stage7EnableSource;
+	std::string stage7DebugSource;
+	std::string stage7GroundSource;
+	std::string stage7Real3DSource;
+	std::string stage7WeatherEnableSource;
+	std::string stage7WeatherProfileSource;
+	std::string stage7WeatherTextureSource;
+	std::string stage7CloudSource;
+	std::string stage7FogSource;
+	std::string stage7PrecipSource;
+	std::string stage7PrecipModeSource;
+	std::string stage7CloudCardsSource;
+	std::string stage7PrecipParticlesSource;
+	std::string stage7UdpSource;
+	std::string plumeEnableSource;
+	std::string plumePathSource;
+	std::string plumeMaxSource;
+	std::string plumeUseEngineSource;
+	std::string plumeNoiseSource;
+	std::string plumeDebugSource;
+	std::string plumeForceSource;
+	std::string plumeGainSource;
+	std::string plumeCoreGainSource;
+	std::string plumeHaloGainSource;
+	std::string plumeOpacitySource;
+	std::string plumeCoreOpacitySource;
+	std::string plumeHaloOpacitySource;
+	m_enableStage7SkyHorizon = m_runtimeConfig.getBool("Stage7Background", "EnableSkyHorizon", "EnableStage7SkyHorizon", true, &stage7EnableSource);
+	m_stage7DebugMode = ParseStage7DebugMode(m_runtimeConfig.getString("Stage7Background", "DebugMode", "Stage7DebugMode", "Off", &stage7DebugSource));
+	m_stage7DebugModeName = Stage7DebugModeName(m_stage7DebugMode);
+	m_stage7GroundZOffset = m_runtimeConfig.getDouble("Stage7Background", "GroundZOffset", "Stage7GroundZOffset", 0.0, &stage7GroundSource);
+	m_stage7UseReal3DBackground = m_runtimeConfig.getBool("Stage7Background", "UseReal3DBackground", "UseReal3DBackground", true, &stage7Real3DSource);
+	m_stage7WeatherEnabled = m_runtimeConfig.getBool("Stage7Weather", "EnableWeatherEffects", "EnableStage7WeatherEffects", true, &stage7WeatherEnableSource);
+	m_stage7WeatherProfilePath = m_runtimeConfig.getString("Stage7Weather", "WeatherProfilePath", "Stage7WeatherProfilePath", "Config/Weather/weather_profiles.json", &stage7WeatherProfileSource);
+	m_stage7WeatherTextureConfigPath = m_runtimeConfig.getString("Stage7Weather", "WeatherTextureConfig", "Stage7WeatherTextureConfig", "Config/Weather/weather_textures.json", &stage7WeatherTextureSource);
+	m_stage7CloudLayerEnabled = m_runtimeConfig.getBool("Stage7Weather", "EnableCloudLayer", "Stage7EnableCloudLayer", false, &stage7CloudSource);
+	m_stage7FogEnabled = m_runtimeConfig.getBool("Stage7Weather", "EnableFog", "Stage7EnableFog", true, &stage7FogSource);
+	m_stage7PrecipitationEnabled = m_runtimeConfig.getBool("Stage7Weather", "EnablePrecipitation", "Stage7EnablePrecipitation", false, &stage7PrecipSource);
+	m_stage7PrecipitationMode = ParseStage7PrecipitationMode(m_runtimeConfig.getString("Stage7Weather", "Stage7PrecipitationMode", "Stage7PrecipitationMode", "ScreenOverlay", &stage7PrecipModeSource));
+	m_stage7PrecipitationModeName = Stage7PrecipitationModeName(m_stage7PrecipitationMode);
+	m_stage7CloudLayerMaxCards = std::max(0, std::min(64, m_runtimeConfig.getInt("Stage7Weather", "CloudLayerMaxCards", "Stage7CloudLayerMaxCards", 0, &stage7CloudCardsSource)));
+	m_stage7PrecipitationMaxParticles = std::max(0, std::min(512, m_runtimeConfig.getInt("Stage7Weather", "PrecipitationMaxParticles", "Stage7PrecipitationMaxParticles", 0, &stage7PrecipParticlesSource)));
+	m_stage7UseWeatherUdpInput = m_runtimeConfig.getBool("Stage7Weather", "UseWeatherUdpInput", "Stage7UseWeatherUdpInput", true, &stage7UdpSource);
+	m_stage5PlumeOptions.enableEnginePlume = m_runtimeConfig.getBool("Stage5Plume", "EnableEnginePlume", "EnableEnginePlume", true, &plumeEnableSource);
+	m_stage5PlumeProfilePath = m_runtimeConfig.getString("Stage5Plume", "EnginePlumeProfilePath", "EnginePlumeProfilePath", "Config/IRPlume/engine_plume_profiles.json", &plumePathSource);
+	m_stage5PlumeOptions.maxPlumeNodes = std::max(0, std::min(128, m_runtimeConfig.getInt("Stage5Plume", "MaxPlumeNodes", "MaxPlumeNodes", 16, &plumeMaxSource)));
+	m_stage5PlumeOptions.useEngineState = m_runtimeConfig.getBool("Stage5Plume", "UseEngineState", "UseEngineState", true, &plumeUseEngineSource);
+	m_stage5PlumeOptions.useProceduralNoise = m_runtimeConfig.getBool("Stage5Plume", "UseProceduralNoise", "UseProceduralNoise", true, &plumeNoiseSource);
+	m_stage5PlumeOptions.enablePlumeDebug = m_runtimeConfig.getBool("Stage5Plume", "EnablePlumeDebug", "EnablePlumeDebug", false, &plumeDebugSource);
+	m_stage5PlumeOptions.forcePlumeVisible = m_runtimeConfig.getBool("Stage5Plume", "ForcePlumeVisible", "ForcePlumeVisible", false, &plumeForceSource);
+	m_stage5PlumeOptions.displayGain = static_cast<float>(m_runtimeConfig.getDouble("Stage5Plume", "PlumeDisplayGain", "PlumeDisplayGain", 1.0, &plumeGainSource));
+	m_stage5PlumeOptions.coreDisplayGain = static_cast<float>(m_runtimeConfig.getDouble("Stage5Plume", "PlumeCoreDisplayGain", "PlumeCoreDisplayGain", 1.2, &plumeCoreGainSource));
+	m_stage5PlumeOptions.haloDisplayGain = static_cast<float>(m_runtimeConfig.getDouble("Stage5Plume", "PlumeHaloDisplayGain", "PlumeHaloDisplayGain", 0.8, &plumeHaloGainSource));
+	m_stage5PlumeOptions.opacityScale = static_cast<float>(m_runtimeConfig.getDouble("Stage5Plume", "PlumeOpacityScale", "PlumeOpacityScale", 1.0, &plumeOpacitySource));
+	m_stage5PlumeOptions.coreOpacityScale = static_cast<float>(m_runtimeConfig.getDouble("Stage5Plume", "PlumeCoreOpacityScale", "PlumeCoreOpacityScale", 1.0, &plumeCoreOpacitySource));
+	m_stage5PlumeOptions.haloOpacityScale = static_cast<float>(m_runtimeConfig.getDouble("Stage5Plume", "PlumeHaloOpacityScale", "PlumeHaloOpacityScale", 1.0, &plumeHaloOpacitySource));
+	if (!std::isfinite(m_stage5PlumeOptions.displayGain) || m_stage5PlumeOptions.displayGain < 0.0f)
+	{
+		m_stage5PlumeOptions.displayGain = 1.0f;
+	}
+	if (!std::isfinite(m_stage5PlumeOptions.coreDisplayGain) || m_stage5PlumeOptions.coreDisplayGain < 0.0f)
+	{
+		m_stage5PlumeOptions.coreDisplayGain = 1.2f;
+	}
+	if (!std::isfinite(m_stage5PlumeOptions.haloDisplayGain) || m_stage5PlumeOptions.haloDisplayGain < 0.0f)
+	{
+		m_stage5PlumeOptions.haloDisplayGain = 0.8f;
+	}
+	if (!std::isfinite(m_stage5PlumeOptions.opacityScale) || m_stage5PlumeOptions.opacityScale < 0.0f)
+	{
+		m_stage5PlumeOptions.opacityScale = 1.0f;
+	}
+	if (!std::isfinite(m_stage5PlumeOptions.coreOpacityScale) || m_stage5PlumeOptions.coreOpacityScale < 0.0f)
+	{
+		m_stage5PlumeOptions.coreOpacityScale = 1.0f;
+	}
+	if (!std::isfinite(m_stage5PlumeOptions.haloOpacityScale) || m_stage5PlumeOptions.haloOpacityScale < 0.0f)
+	{
+		m_stage5PlumeOptions.haloOpacityScale = 1.0f;
+	}
+	plumeConfigPaths = BuildRuntimeConfigPathCandidates(m_stage5PlumeProfilePath);
+	if (!std::isfinite(m_stage7GroundZOffset))
+	{
+		m_stage7GroundZOffset = 0.0;
+	}
+	m_stage7NearFarClipWarningLogged = false;
+	m_stage7SkyHorizonLogCounter = 0;
+	m_stage7LastSkyHorizonState.clear();
+	m_stage6FrameDiagLogCounter = 0;
+	m_stage6NoVisibleTargetFrames = 0;
+	m_stage6LastFrameDiagState.clear();
 	m_irAtmosphereModel.setModtranTauDebugEnabled(enableModtranTauDebug);
 	m_irAtmosphereModel.setUseModtranTauForAtmosphere(useModtranTauForAtmosphere);
 	m_irSensorProfilesReady = m_irSensorProfiles.loadFromDirectoryCandidates(sensorWaveDirs);
 	m_irWeatherReady = m_irWeatherProfile.load(weatherPath);
+	const bool stage7WeatherProfilesReady = m_stage7WeatherEffects.loadProfilesFromCandidates(BuildRuntimeConfigPathCandidates(m_stage7WeatherProfilePath));
+	const bool stage7WeatherTexturesReady = m_stage7WeatherEffects.loadTextureConfigFromCandidates(BuildRuntimeConfigPathCandidates(m_stage7WeatherTextureConfigPath));
 	m_irTemperatureReady = m_irTemperatureModel.loadFromFileCandidates(hotspotConfigPaths);
+	m_irEnginePlumeReady = m_irEnginePlumeModel.loadFromFileCandidates(plumeConfigPaths);
 	m_irRadianceModel.setMaterialDatabase(&m_irMaterialDatabase);
 	m_irRadianceModel.setAtmosphereModel(&m_irAtmosphereModel);
 
@@ -1972,6 +3958,20 @@ void HwaSimIR::InitInfraredSimulation()
 	environment.sunStrength = WeatherSunStrength(environment.weatherCode, environment.sunElevationDeg);
 	m_irRadianceModel.setEnvironment(environment);
 
+	std::cout << "[RuntimeConfig]"
+		<< " path=" << m_runtimeConfig.loadedPath()
+		<< " loaded=" << (m_runtimeConfig.loaded() ? "1" : "0")
+		<< " envOverrideCount=" << m_runtimeConfig.envOverrideCount()
+		<< " iniValueCount=" << m_runtimeConfig.iniValueCount()
+		<< " sourcePriority=" << m_runtimeConfig.sourcePriority()
+		<< std::endl;
+	if (!m_runtimeConfig.loaded())
+	{
+		std::cout << "[RuntimeConfig][WARN] HwaSimIRRuntime.ini not found; using safe runtime defaults."
+			<< " path=" << m_runtimeConfig.loadedPath()
+			<< std::endl;
+	}
+
 	std::cout << "红外全链路CPU模型初始化：材质库="
 		<< (m_irMaterialReady ? "OK" : "未加载，使用默认材质")
 		<< " 路径=" << materialPath
@@ -1983,6 +3983,7 @@ void HwaSimIR::InitInfraredSimulation()
 		<< " 路径=" << modtranBandLutPath
 		<< " EnableModtranTauDebug=" << (enableModtranTauDebug ? "1" : "0")
 		<< " UseModtranTauForAtmosphere=" << (useModtranTauForAtmosphere ? "1" : "0")
+		<< " source=" << stage3TauDebugSource << "/" << stage3UseTauSource
 		<< "（默认仅日志对比；active=1 才返回 MODTRAN tau）" << std::endl;
 	std::cout << "[Stage1] IR配置输入：SensorWave="
 		<< (m_irSensorProfilesReady ? "OK" : "未加载，使用内置传感器默认值")
@@ -1998,6 +3999,7 @@ void HwaSimIR::InitInfraredSimulation()
 		<< " EnableStage4HotspotVisualDebug=" << (m_enableStage4HotspotVisualDebug ? "1" : "0")
 		<< " ForceStage4BrightSpotVisible=" << (m_forceStage4BrightSpotVisible ? "1" : "0")
 		<< " ForceStage4RearHotspotVisible=" << (m_forceStage4RearHotspotVisible ? "1" : "0")
+		<< " source=" << stage4VisualSource << "/" << stage4BrightSource << "/" << stage4RearSource
 		<< "（默认全为0；仅用于可见性接线诊断）" << std::endl;
 	std::cout << "[Stage5 Radiance] Stage5DebugDisplayConfig="
 		<< (m_stage5DebugDisplayConfigReady ? "OK" : "fallback")
@@ -2032,6 +4034,51 @@ void HwaSimIR::InitInfraredSimulation()
 		<< " path=" << (m_stage5OutputFrameDumpPath.empty() ? "NA" : m_stage5OutputFrameDumpPath)
 		<< " every=" << m_stage5OutputFrameDumpEvery
 		<< "（smoke-only render texture dump; TCP/JPEG protocol unchanged）" << std::endl;
+	std::cout << "[Stage5 PlumeConfig]"
+		<< " EnableEnginePlume=" << (m_stage5PlumeOptions.enableEnginePlume ? "1" : "0")
+		<< " profile=" << (m_irEnginePlumeReady ? "OK" : "fallback")
+		<< " path=" << (m_irEnginePlumeReady ? m_irEnginePlumeModel.loadedPath() : m_stage5PlumeProfilePath)
+		<< " MaxPlumeNodes=" << m_stage5PlumeOptions.maxPlumeNodes
+		<< " UseEngineState=" << (m_stage5PlumeOptions.useEngineState ? "1" : "0")
+		<< " UseProceduralNoise=" << (m_stage5PlumeOptions.useProceduralNoise ? "1" : "0")
+		<< " EnablePlumeDebug=" << (m_stage5PlumeOptions.enablePlumeDebug ? "1" : "0")
+		<< " ForcePlumeVisible=" << (m_stage5PlumeOptions.forcePlumeVisible ? "1" : "0")
+		<< " PlumeDisplayGain=" << m_stage5PlumeOptions.displayGain
+		<< " PlumeCoreDisplayGain=" << m_stage5PlumeOptions.coreDisplayGain
+		<< " PlumeHaloDisplayGain=" << m_stage5PlumeOptions.haloDisplayGain
+		<< " PlumeOpacityScale=" << m_stage5PlumeOptions.opacityScale
+		<< " PlumeCoreOpacityScale=" << m_stage5PlumeOptions.coreOpacityScale
+		<< " PlumeHaloOpacityScale=" << m_stage5PlumeOptions.haloOpacityScale
+		<< " source=" << plumeEnableSource << "/" << plumePathSource << "/" << plumeMaxSource
+		<< "/" << plumeUseEngineSource << "/" << plumeNoiseSource << "/" << plumeDebugSource
+		<< "/" << plumeForceSource << "/" << plumeGainSource << "/" << plumeCoreGainSource << "/" << plumeHaloGainSource
+		<< "/" << plumeOpacitySource << "/" << plumeCoreOpacitySource << "/" << plumeHaloOpacitySource
+		<< "（EnginePlume 独立于 rear ThermalHotspot 与 BrightSpot；path/sky/solar disabled）"
+		<< std::endl;
+	std::cout << "[Stage7 Config]"
+		<< " enableSkyHorizon=" << (m_enableStage7SkyHorizon ? "1" : "0")
+		<< " debugMode=" << m_stage7DebugModeName
+		<< " groundZOffset=" << m_stage7GroundZOffset
+		<< " useReal3DBackground=" << (m_stage7UseReal3DBackground ? "1" : "0")
+		<< " source=" << stage7EnableSource << "/" << stage7DebugSource << "/" << stage7GroundSource << "/" << stage7Real3DSource
+		<< std::endl;
+	std::cout << "[Stage7 WeatherConfig]"
+		<< " enableWeatherEffects=" << (m_stage7WeatherEnabled ? "1" : "0")
+		<< " weatherProfile=" << (stage7WeatherProfilesReady ? "OK" : "fallback")
+		<< " profilePath=" << m_stage7WeatherEffects.profilePath()
+		<< " weatherTextures=" << (stage7WeatherTexturesReady ? "OK" : "fallback")
+		<< " textureConfigPath=" << m_stage7WeatherEffects.textureConfigPath()
+		<< " enableCloudLayer=" << (m_stage7CloudLayerEnabled ? "1" : "0")
+		<< " enableFog=" << (m_stage7FogEnabled ? "1" : "0")
+		<< " enablePrecipitation=" << (m_stage7PrecipitationEnabled ? "1" : "0")
+		<< " precipitationMode=" << m_stage7PrecipitationModeName
+		<< " cloudLayerMaxCards=" << m_stage7CloudLayerMaxCards
+		<< " precipitationMaxParticles=" << m_stage7PrecipitationMaxParticles
+		<< " useWeatherUdpInput=" << (m_stage7UseWeatherUdpInput ? "1" : "0")
+		<< " source=" << stage7WeatherEnableSource << "/" << stage7WeatherProfileSource << "/" << stage7WeatherTextureSource
+		<< "/" << stage7CloudSource << "/" << stage7FogSource << "/" << stage7PrecipSource
+		<< "/" << stage7PrecipModeSource << "/" << stage7CloudCardsSource << "/" << stage7PrecipParticlesSource << "/" << stage7UdpSource
+		<< std::endl;
 	LogActiveIRSensorProfile(2, "startup-default", true);
 	LogActiveIREnvironment(environment, "startup-default", true);
 }
@@ -2040,6 +4087,37 @@ void HwaSimIR::InitSkyAndCloudScene()
 {
 	if (!m_pMainWindow || m_cameraNode.is_empty())
 	{
+		return;
+	}
+
+	m_cloudNodes.clear();
+	if (m_enableStage7SkyHorizon && m_stage7UseReal3DBackground)
+	{
+		m_skyNode = m_renderRoot.attach_new_node(CreateStage7SkyDomeNode());
+		m_skyNode.set_scale(1.0f);
+		m_skyNode.set_depth_write(false);
+		m_skyNode.set_depth_test(false);
+		m_skyNode.set_two_sided(true);
+		m_skyNode.set_bin("background", 0);
+		ApplyInfraredShader(m_skyNode, true);
+		m_skyNode.set_shader_input("u_stage7_background_kind", LVecBase2i(1, 0));
+
+		m_stage7LowerShellNode = m_renderRoot.attach_new_node(CreateStage7LowerHemisphereShellNode());
+		m_stage7LowerShellNode.set_depth_write(false);
+		m_stage7LowerShellNode.set_depth_test(false);
+		m_stage7LowerShellNode.set_two_sided(true);
+		m_stage7LowerShellNode.set_bin("background", 1);
+		ApplyInfraredShader(m_stage7LowerShellNode, true);
+		m_stage7LowerShellNode.set_shader_input("u_stage7_background_kind", LVecBase2i(2, 0));
+
+		IRRuntimeEnvironment environment = BuildRuntimeEnvironment();
+		InitStage7WeatherScene();
+		UpdateStage7SkyHorizon(environment, "init-sky", true);
+		UpdateStage7WeatherNodes(m_stage7WeatherState, ClockObject::get_global_clock()->get_frame_time());
+		std::cout << "Stage7B/7C真实3D背景初始化完成：skyDome=1 lowerShell=1 flatGroundPlane=0 cloud cards="
+			<< m_cloudNodes.size()
+			<< " precipitationCards=" << m_stage7PrecipitationNodes.size()
+			<< std::endl;
 		return;
 	}
 
@@ -2053,7 +4131,6 @@ void HwaSimIR::InitSkyAndCloudScene()
 	m_skyNode.set_bin("background", 0);
 	ApplyInfraredShader(m_skyNode, true);
 
-	m_cloudNodes.clear();
 	for (int i = 0; i < 18; ++i)
 	{
 		CardMaker cloudMaker("IR_Cloud_Particle");
@@ -2105,7 +4182,7 @@ void HwaSimIR::InitInfraredShader() {
     uniform sampler2D p3d_Texture0;
     
     uniform int u_is_background;
-    uniform int u_object_kind;     // 0:目标 1:天空 2:粒子云
+    uniform int u_object_kind;     // 0:目标 1:天空 2:粒子云 3:雨雪card 4:EnginePlume
     uniform int u_wave_band;       // deprecated compatibility uniform; prefer u_ir_band_index/class
     uniform int u_ir_band_index;   // 0 VIS, 1 NIR, 2 SWIR, 3 MWIR, 4 LWIR
     uniform int u_ir_band_class;   // 0 reflective, 1 mixed, 2 thermal
@@ -2149,6 +4226,45 @@ void HwaSimIR::InitInfraredShader() {
     uniform float u_stage5_composite_min_gray;
     uniform float u_stage5_composite_max_gray;
     uniform int u_stage5_display_fallback_applied;
+    uniform int u_stage6_display_en;
+    uniform int u_stage6_white_hot;
+    uniform float u_stage6_display_gain;
+    uniform float u_stage6_display_offset;
+    uniform int u_stage6_noise_enable;
+    uniform float u_stage6_noise_sigma_norm;
+    uniform int u_stage6_background_display_en;
+    uniform int u_stage7_sky_horizon_en;
+    uniform int u_stage7_background_kind; // 0 legacy, 1 3D sky dome, 2 lower ground/sea shell
+    uniform float u_stage7_sky_gray;
+    uniform float u_stage7_ground_gray;
+    uniform float u_stage7_horizon_y;
+    uniform float u_stage7_camera_roll;
+    uniform int u_stage7_weather_type;
+    uniform float u_stage7_cloud_coverage;
+    uniform float u_stage7_cloud_opacity;
+    uniform float u_stage7_cloud_temperature_K;
+    uniform float u_stage7_cloud_gray;
+    uniform float u_stage7_fog_density;
+    uniform float u_stage7_fog_gray;
+    uniform int u_stage7_precipitation_type; // 0 none, 1 rain, 2 snow
+    uniform float u_stage7_precipitation_density;
+    uniform float u_stage7_precipitation_speed;
+    uniform float u_stage7_sun_direct_scale;
+    uniform float u_stage7_sky_diffuse_scale;
+    uniform float u_stage7_target_contrast_scale;
+    uniform int u_plume_enabled;
+    uniform int u_plume_layer; // 1 core, 2 halo
+    uniform float u_plume_temperature_K;
+    uniform float u_plume_gray;
+    uniform float u_plume_opacity;
+    uniform float u_plume_length;
+    uniform float u_plume_radius_root;
+    uniform float u_plume_radius_tail;
+    uniform float u_plume_axial_decay;
+    uniform float u_plume_radial_decay;
+    uniform float u_plume_noise_scale;
+    uniform float u_plume_noise_strength;
+    uniform float u_plume_band_gain;
 
     // 头部热源参数
     uniform int u_hotspot_front_en;
@@ -2173,25 +4289,151 @@ void HwaSimIR::InitInfraredShader() {
     varying vec3 v_local_pos;
     varying vec3 v_stage5_normal;
 
+    float Stage6Noise(vec2 pixel)
+    {
+        return fract(sin(dot(pixel + vec2(u_time * 17.13, u_time * 3.71), vec2(12.9898, 78.233))) * 43758.5453);
+    }
+
+    float ApplyStage6Display(float gray)
+    {
+        gray = clamp(gray, 0.0, 1.0);
+        if (u_stage6_display_en != 1) {
+            return gray;
+        }
+        gray = gray * u_stage6_display_gain + u_stage6_display_offset;
+        if (u_stage6_noise_enable == 1 && u_stage6_noise_sigma_norm > 0.0) {
+            gray += (Stage6Noise(gl_FragCoord.xy) * 2.0 - 1.0) * u_stage6_noise_sigma_norm;
+        }
+        gray = clamp(gray, 0.0, 1.0);
+        if (u_stage6_white_hot == 0) {
+            gray = 1.0 - gray;
+        }
+        return clamp(gray, 0.0, 1.0);
+    }
+
+    vec4 Stage6DisplayColor(float gray, float alpha)
+    {
+        float display_gray = ApplyStage6Display(gray);
+        return vec4(display_gray, display_gray, display_gray, alpha);
+    }
+
+    vec4 Stage6BackgroundDisplayColor(float gray, float alpha)
+    {
+        float safe_gray = clamp(gray, 0.0, 1.0);
+        if (u_stage6_background_display_en != 1) {
+            return vec4(safe_gray, safe_gray, safe_gray, alpha);
+        }
+        return Stage6DisplayColor(safe_gray, alpha);
+    }
+
+    float ApplyStage7WeatherDisplay(float gray)
+    {
+        float safe_gray = clamp(gray, 0.0, 1.0);
+        float contrast = clamp(u_stage7_target_contrast_scale, 0.05, 1.5);
+        safe_gray = clamp(u_stage7_fog_gray + (safe_gray - u_stage7_fog_gray) * contrast, 0.0, 1.0);
+        float fog_mix = clamp(u_stage7_fog_density, 0.0, 0.78);
+        safe_gray = mix(safe_gray, clamp(u_stage7_fog_gray, 0.0, 1.0), fog_mix);
+        return clamp(safe_gray, 0.0, 1.0);
+    }
+
     void main() {
         vec4 texColor = texture2D(p3d_Texture0, texcoord);
 
         if (u_object_kind == 1 || u_is_background == 1) {
+            if (u_stage7_sky_horizon_en == 1) {
+                float stage7_intensity = u_stage7_sky_gray;
+                if (u_stage7_background_kind == 2) {
+                    stage7_intensity = u_stage7_ground_gray;
+                } else if (u_stage7_background_kind == 1) {
+                    float vertical = clamp(v_local_pos.z * 0.5 + 0.5, 0.0, 1.0);
+                    stage7_intensity = clamp(u_stage7_sky_gray + vertical * 0.035, 0.0, 1.0);
+                    if (u_stage7_cloud_coverage > 0.01 && u_stage7_cloud_opacity > 0.01) {
+                        float cloud_noise = 0.5 + 0.25 * sin(v_local_pos.x * 5.7 + u_time * 0.04)
+                                                  + 0.25 * cos(v_local_pos.y * 4.3 - u_time * 0.03);
+                        float cloud_mask = smoothstep(0.42, 0.78, cloud_noise) *
+                                           clamp(u_stage7_cloud_coverage * u_stage7_cloud_opacity, 0.0, 1.0) * 0.55;
+                        stage7_intensity = mix(stage7_intensity, clamp(u_stage7_cloud_gray, 0.0, 1.0), cloud_mask);
+                    }
+                }
+                stage7_intensity = ApplyStage7WeatherDisplay(stage7_intensity);
+                gl_FragColor = vec4(stage7_intensity, stage7_intensity, stage7_intensity, 1.0);
+                return;
+            }
             float sky_tint = (u_ir_band_class == 0) ? 0.18 : 0.055;
             float bg_intensity = clamp(u_ir_radiance * u_display_gain + sky_tint, 0.0, 1.0);
+            bg_intensity = ApplyStage7WeatherDisplay(bg_intensity);
             gl_FragColor = vec4(bg_intensity, bg_intensity, bg_intensity, 1.0);
             return;
         }
 
         if (u_object_kind == 2) {
             float edge = 1.0 - smoothstep(0.45, 1.0, length(v_local_pos.xz));
+            float texture_density = clamp(max(texColor.a, dot(texColor.rgb, vec3(0.299, 0.587, 0.114))), 0.0, 1.0);
+            edge *= mix(0.55, 1.0, texture_density);
             float cloud_noise = 0.65 + 0.20 * sin(v_local_pos.x * 8.0 + u_time * 0.2)
                                       + 0.15 * cos(v_local_pos.y * 11.0);
-            float cloud_intensity = clamp((u_ir_radiance + u_sky_radiance + 0.12) * cloud_noise, 0.0, 1.0);
-            gl_FragColor = vec4(cloud_intensity, cloud_intensity, cloud_intensity, edge * clamp(u_cloud_density, 0.0, 0.85));
+            float cloud_base = clamp((u_ir_radiance + u_sky_radiance + 0.12) * cloud_noise, 0.0, 1.0);
+            float cloud_intensity = mix(cloud_base, clamp(u_stage7_cloud_gray, 0.0, 1.0), 0.70);
+            cloud_intensity = ApplyStage7WeatherDisplay(cloud_intensity);
+            float cloud_alpha = edge * clamp(max(u_cloud_density, u_stage7_cloud_coverage) * u_stage7_cloud_opacity, 0.0, 0.90);
+            gl_FragColor = vec4(cloud_intensity, cloud_intensity, cloud_intensity, cloud_alpha);
             return;
         }
 
+        if (u_object_kind == 3) {
+            float density = clamp(u_stage7_precipitation_density, 0.0, 1.0);
+            float streak = 1.0 - smoothstep(0.0, 0.52, abs(v_local_pos.x));
+            float particle_mask = clamp(max(texColor.a, dot(texColor.rgb, vec3(0.299, 0.587, 0.114))), 0.0, 1.0);
+            float fall_noise = 0.55 + 0.45 * fract(sin(dot(v_local_pos.xy + vec2(u_time * u_stage7_precipitation_speed, 0.0), vec2(17.1, 91.7))) * 43758.5453);
+            float precip_gray = (u_stage7_precipitation_type == 2) ? 0.82 : 0.55;
+            precip_gray = ApplyStage7WeatherDisplay(precip_gray);
+            float alpha = streak * density * fall_noise * mix(0.55, 1.0, particle_mask);
+            if (u_stage7_precipitation_type == 2) {
+                alpha *= 0.65 + 0.35 * (1.0 - smoothstep(0.0, 0.50, length(v_local_pos.xy)));
+            }
+            gl_FragColor = vec4(precip_gray, precip_gray, precip_gray, clamp(alpha, 0.0, 0.82));
+            return;
+        }
+
+        if (u_object_kind == 4) {
+            if (u_plume_enabled != 1) {
+                gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+                return;
+            }
+            bool is_core = (u_plume_layer == 1);
+            float axial = clamp(-v_local_pos.y, 0.0, 1.0);
+            float root_radius = max(0.001, u_plume_radius_root);
+            float tail_radius = max(0.001, u_plume_radius_tail);
+            float radius_norm = mix(1.0, tail_radius / root_radius, axial);
+            float radial = length(v_local_pos.xz) / max(0.001, radius_norm);
+            float axial_mask = exp(-axial * max(0.001, u_plume_axial_decay));
+            float radial_mask = exp(-radial * radial * max(0.001, u_plume_radial_decay));
+            if (is_core) {
+                axial_mask *= mix(1.28, 0.58, axial);
+                radial_mask = pow(radial_mask, 0.82);
+            } else {
+                axial_mask *= smoothstep(0.0, 0.10, axial) * mix(0.92, 0.50, axial);
+                radial_mask = pow(radial_mask, 0.56);
+            }
+            float flicker = 1.0;
+            if (u_plume_noise_strength > 0.0) {
+                float n = sin((v_local_pos.x + axial * 2.0) * u_plume_noise_scale + u_time * 9.0)
+                        * cos((v_local_pos.z - axial) * (u_plume_noise_scale * 0.73) - u_time * 6.0);
+                flicker = clamp(1.0 + n * u_plume_noise_strength, 0.55, 1.35);
+            }
+            float plume_mask = clamp(axial_mask * radial_mask, 0.0, 1.0);
+            float layer_gain = is_core ? 1.12 : 0.86;
+            float plume_intensity = clamp(u_plume_gray * layer_gain * flicker * plume_mask, 0.0, 1.0);
+            plume_intensity = ApplyStage7WeatherDisplay(plume_intensity);
+            float layer_alpha_limit = is_core ? 0.82 : 0.52;
+            float alpha_shape = is_core ? (0.32 + plume_intensity * 0.68) : (0.14 + plume_intensity * 0.44);
+            float plume_alpha = clamp(u_plume_opacity * plume_mask * alpha_shape, 0.0, layer_alpha_limit);
+            gl_FragColor = vec4(plume_intensity, plume_intensity, plume_intensity, plume_alpha);
+            return;
+        }
+
+    )";
+	fragment_shader += R"(
         vec4 surface_param = vec4(u_emissivity, u_reflectance, 0.0, 0.5);
         float material_id = texture2D(p3d_Texture1, texcoord).r;
         if (u_material_id_ready == 1) {
@@ -2257,6 +4499,8 @@ void HwaSimIR::InitInfraredShader() {
             brightspot_intensity = factor_bs * u_brightspot_temp;
         }
 
+    )";
+	fragment_shader += R"(
         if (u_stage5_radiance_debug_en == 1) {
             // Stage5 debug uses normalized body/reflection/hotspot/brightspot components only.
             // Stage5B reflection is a direct empirical term; it intentionally does not use MODTRAN solar irradiance tables.
@@ -2292,10 +4536,13 @@ void HwaSimIR::InitInfraredShader() {
             if (u_stage4_visual_debug == 1 && stage4_debug_mask > 0.0) {
                 stage5_intensity = max(stage5_intensity, clamp(0.25 + stage4_debug_mask * 0.75, 0.0, 1.0));
             }
+            stage5_intensity = ApplyStage7WeatherDisplay(stage5_intensity);
             gl_FragColor = vec4(stage5_intensity, stage5_intensity, stage5_intensity, texColor.a);
             return;
         }
 
+    )";
+	fragment_shader += R"(
         // 合成（限制在纯白 1.0 以内）
         final_intensity = clamp(final_intensity + brightspot_intensity, 0.0, 1.0);
         if (u_stage4_visual_debug == 1 && stage4_debug_mask > 0.0) {
@@ -2304,6 +4551,7 @@ void HwaSimIR::InitInfraredShader() {
         }
         //float final_intensity = clamp(current_temp * temp_weight + luminance * detail_weight, 0.0, 1.0);
 
+        final_intensity = ApplyStage7WeatherDisplay(final_intensity);
         gl_FragColor = vec4(final_intensity, final_intensity, final_intensity, texColor.a);
     }
     )";
@@ -2377,6 +4625,41 @@ void HwaSimIR::ApplyInfraredShader(NodePath& node, bool isBackground) {
 	node.set_shader_input("u_stage5_composite_min_gray", LVecBase2f(0.0f, 0.0f));
 	node.set_shader_input("u_stage5_composite_max_gray", LVecBase2f(1.0f, 0.0f));
 	node.set_shader_input("u_stage5_display_fallback_applied", LVecBase2i(0, 0));
+	node.set_shader_input("u_stage6_background_display_en", LVecBase2i(1, 0));
+	node.set_shader_input("u_stage7_sky_horizon_en", LVecBase2i(0, 0));
+	node.set_shader_input("u_stage7_background_kind", LVecBase2i(0, 0));
+	node.set_shader_input("u_stage7_sky_gray", LVecBase2f(0.12f, 0.0f));
+	node.set_shader_input("u_stage7_ground_gray", LVecBase2f(0.30f, 0.0f));
+	node.set_shader_input("u_stage7_horizon_y", LVecBase2f(0.50f, 0.0f));
+	node.set_shader_input("u_stage7_camera_roll", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage7_weather_type", LVecBase2i(0, 0));
+	node.set_shader_input("u_stage7_cloud_coverage", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage7_cloud_opacity", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage7_cloud_temperature_K", LVecBase2f(255.0f, 0.0f));
+	node.set_shader_input("u_stage7_cloud_gray", LVecBase2f(0.5f, 0.0f));
+	node.set_shader_input("u_stage7_fog_density", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage7_fog_gray", LVecBase2f(0.45f, 0.0f));
+	node.set_shader_input("u_stage7_precipitation_type", LVecBase2i(0, 0));
+	node.set_shader_input("u_stage7_precipitation_density", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage7_precipitation_speed", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage7_sun_direct_scale", LVecBase2f(1.0f, 0.0f));
+	node.set_shader_input("u_stage7_sky_diffuse_scale", LVecBase2f(1.0f, 0.0f));
+	node.set_shader_input("u_stage7_target_contrast_scale", LVecBase2f(1.0f, 0.0f));
+	node.set_shader_input("u_plume_enabled", LVecBase2i(0, 0));
+	node.set_shader_input("u_plume_layer", LVecBase2i(0, 0));
+	node.set_shader_input("u_plume_temperature_K", LVecBase2f(300.0f, 0.0f));
+	node.set_shader_input("u_plume_gray", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_plume_opacity", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_plume_length", LVecBase2f(1.0f, 0.0f));
+	node.set_shader_input("u_plume_radius_root", LVecBase2f(0.1f, 0.0f));
+	node.set_shader_input("u_plume_radius_tail", LVecBase2f(0.3f, 0.0f));
+	node.set_shader_input("u_plume_axial_decay", LVecBase2f(2.4f, 0.0f));
+	node.set_shader_input("u_plume_radial_decay", LVecBase2f(3.8f, 0.0f));
+	node.set_shader_input("u_plume_noise_scale", LVecBase2f(5.0f, 0.0f));
+	node.set_shader_input("u_plume_noise_strength", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_plume_band_gain", LVecBase2f(1.0f, 0.0f));
+	ApplyStage7WeatherInputs(node, m_stage7WeatherState);
+	ApplyStage6DisplayShaderInputs(node);
 
 	// 头部亮斑默认配置
 	node.set_shader_input("u_hotspot_front_en", LVecBase2i(0, 0));
@@ -2419,6 +4702,7 @@ void HwaSimIR::ApplyRadianceInputs(NodePath& node, const IRObjectRadianceOutput&
 	node.set_shader_input("u_display_gain", LVecBase2f(radiance.displayGain, 0.0f));
 	node.set_shader_input("u_display_offset", LVecBase2f(radiance.displayOffset, 0.0f));
 	node.set_shader_input("u_base_temperature", LVecBase2f(radiance.baseRadiance, 0.0f));
+	ApplyStage7WeatherInputs(node, m_stage7WeatherState);
 	const int stage5BandIndex = Stage5BandIndex(shaderBand);
 	node.set_shader_input("u_stage5_radiance_debug_en", LVecBase2i(m_enableStage5RadianceDebug ? 1 : 0, 0));
 	node.set_shader_input("u_stage5_debug_view_mode", LVecBase2i(m_stage5DebugViewMode, 0));
@@ -2442,6 +4726,7 @@ void HwaSimIR::ApplyRadianceInputs(NodePath& node, const IRObjectRadianceOutput&
 	node.set_shader_input("u_stage5_composite_min_gray", LVecBase2f(0.0f, 0.0f));
 	node.set_shader_input("u_stage5_composite_max_gray", LVecBase2f(1.0f, 0.0f));
 	node.set_shader_input("u_stage5_display_fallback_applied", LVecBase2i(0, 0));
+	ApplyStage6DisplayShaderInputs(node);
 }
 
 IRObjectRadianceOutput HwaSimIR::EvaluateNodeRadiance(const std::string& materialName, const NodePath& node, bool engineOn, bool damaged, bool isSky, bool isCloud, double cloudDensity, double targetAltitudeMeters)
@@ -3085,7 +5370,18 @@ void HwaSimIR::LogActiveIRSensorProfile(int protocolBand, const char* reason, bo
 		<< ", display=" << profile.displayBits << "bit"
 		<< ", NETD=" << profile.netdK << "K"
 		<< ", FOV=" << profile.fovHDeg << "x" << profile.fovVDeg
+		<< ", detectorPitch=" << profile.detectorPitchMm
+		<< "mm, focalLength=" << profile.focalLengthMm
+		<< "mm, lensFnumber=" << profile.lensFNumber
+		<< ", blackHot=" << (profile.blackHot ? "1" : "0")
 		<< ", source=" << profile.sourcePath << std::endl;
+	std::cout << "[SensorWave Usage]"
+		<< " band=" << IRBandName(band)
+		<< " file=" << profile.sourcePath
+		<< " usedFields=" << profile.usedFields
+		<< " fallbackFields=" << profile.fallbackFields
+		<< " ignoredPresagisFields=" << profile.ignoredPresagisFields
+		<< std::endl;
 	m_lastLoggedSensorProtocolBand = protocolBand;
 }
 
@@ -3193,17 +5489,18 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 		ApplyRadianceInputs(m_skyNode, skyRadiance, 1);
 		m_skyNode.set_shader_input("u_time", LVecBase2f((float)current_time, 0.0f));
 	}
-
-	for (size_t i = 0; i < m_cloudNodes.size(); ++i)
+	if (!m_stage7LowerShellNode.is_empty())
 	{
-		if (!m_cloudNodes[i].is_empty())
-		{
-			double density = 0.28 + 0.025 * static_cast<double>(i % 8);
-			IRObjectRadianceOutput cloudRadiance = EvaluateNodeRadiance("BM_WATER", m_cloudNodes[i], false, false, false, true, density);
-			ApplyRadianceInputs(m_cloudNodes[i], cloudRadiance, 2);
-			m_cloudNodes[i].set_shader_input("u_cloud_density", LVecBase2f(static_cast<float>(density), 0.0f));
-			m_cloudNodes[i].set_shader_input("u_time", LVecBase2f((float)current_time, 0.0f));
-		}
+		const bool seaTerrain = m_isAddPlatform && m_initSceneData.trackingInit.envTerrain == 2;
+		const char* groundMaterial = seaTerrain ? "BM_WATER-OCEAN" : "BM_SAND";
+		IRObjectRadianceOutput groundRadiance = EvaluateNodeRadiance(groundMaterial, m_stage7LowerShellNode, false, false, false, false, 0.0);
+		ApplyRadianceInputs(m_stage7LowerShellNode, groundRadiance, 1);
+		m_stage7LowerShellNode.set_shader_input("u_time", LVecBase2f((float)current_time, 0.0f));
+	}
+	if (!m_skyNode.is_empty() || !m_stage7LowerShellNode.is_empty())
+	{
+		UpdateStage7SkyHorizon(environment, "runtime", false);
+		UpdateStage7WeatherNodes(m_stage7WeatherState, current_time);
 	}
 
 	// 更新飞机平台 (PlatParamPak)
@@ -3220,11 +5517,23 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 	}
 
 	// 更新目标导弹平台 (TargetState)
+	int stage5PlumeNodeCount = 0;
+	int stage5VisiblePlumeCount = 0;
+	const auto plumeUpdateStart = std::chrono::high_resolution_clock::now();
 	for (auto& targetPlat : m_targetPlatformList) {
 		if (targetPlat.isExist) {
+			if (!targetPlat.enginePlumeCoreNodePath.is_empty())
+			{
+				++stage5PlumeNodeCount;
+			}
+			if (!targetPlat.enginePlumeHaloNodePath.is_empty())
+			{
+				++stage5PlumeNodeCount;
+			}
 			if (targetPlat.targetState.targetID < 0)
 			{
 				targetPlat.nodePath.hide();
+				HideEnginePlume(targetPlat);
 				continue;
 			}
 			targetPlat.nodePath.set_shader_input("u_time", LVecBase2f((float)current_time, 0.0f));
@@ -3239,8 +5548,21 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 				stage5BaseRadiance = EvaluateNodeRadiance(MaterialNameForPlatform(targetPlat.type), targetPlat.nodePath, false, false, false, false, 0.0, targetPlat.targetState.targetLoc.alt);
 			}
 			ApplyStage4TargetState(targetPlat, m_realTimeSceneData.weaponState, stage4DtSec, ambientTempK, stage5BaseRadiance);
+			const bool targetRenderable = targetPlat.targetState.viewValid && !targetPlat.nodePath.is_hidden();
+			IREnginePlumeOutput plumeOutput = UpdateEnginePlumeForTarget(targetPlat, stage4DtSec, ambientTempK, environment.band, targetRenderable, current_time);
+			if (plumeOutput.coreNodeVisible && targetRenderable)
+			{
+				++stage5VisiblePlumeCount;
+			}
+			if (plumeOutput.haloNodeVisible && targetRenderable)
+			{
+				++stage5VisiblePlumeCount;
+			}
 		}
 	}
+	const auto plumeUpdateEnd = std::chrono::high_resolution_clock::now();
+	const double updatePlumeMs = std::chrono::duration<double, std::milli>(plumeUpdateEnd - plumeUpdateStart).count();
+	LogStage5PlumePerf(stage5PlumeNodeCount, stage5VisiblePlumeCount, updatePlumeMs);
 }
 
 
@@ -3278,7 +5600,7 @@ void HwaSimIR::SetRenderMode(bool isSync, double targetFPS) {
 // HwaSimIR 的每帧更新任务回调
 AsyncTask::DoneStatus HwaSimIR::shader_update_task(GenericAsyncTask* task, void* data) {
 	HwaSimIR* self = static_cast<HwaSimIR*>(data);
-	if (self->m_isSimRunning) {
+	if (self->m_isSimRunning.load()) {
 		self->UpdatePlatformIRStatus();
 	}
 	return AsyncTask::DS_cont;
@@ -3334,20 +5656,21 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 				frameData = sensorSizedFrame.data();
 			}
 
-			// 将纯像素数据推送给 TCP 子线程（避免主线程做过多的耗时运算）
+			// 将同源 final sensor 像素推送给 TCP 子线程（避免主线程做过多的耗时运算）
 			self->m_pTcpThread->updateFrame(frameData, frameWidth, frameHeight);
 			++self->m_stage6CaptureLogCounter;
 			if (self->m_stage6CaptureLogCounter <= 3 || (self->m_stage6CaptureLogCounter % 120) == 0) {
 				std::ostringstream captureLog;
-				/*captureLog << "[Stage6 Capture]"
+				captureLog << "[Stage6 Capture]"
 					<< " frameWidth=" << frameWidth
 					<< " frameHeight=" << frameHeight
 					<< " tcpWidth=" << frameWidth
 					<< " tcpHeight=" << frameHeight
 					<< " renderTextureWidth=" << width
 					<< " renderTextureHeight=" << height
-					<< " channels=RGB8";*/
-				//std::cout << captureLog.str() << std::endl;
+					<< " source=final_sensor"
+					<< " channels=RGB8";
+				std::cout << captureLog.str() << std::endl;
 			}
 
 			if (self->m_stage5OutputFrameDumpEnabled && self->m_enableStage5RadianceDebug && !self->m_stage5OutputFrameDumpPath.empty()) {

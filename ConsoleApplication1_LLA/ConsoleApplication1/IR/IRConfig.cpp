@@ -79,6 +79,43 @@ bool extractJsonNumber(const std::string& text, const std::string& key, double& 
 	}
 }
 
+bool extractJsonBool(const std::string& text, const std::string& key, bool& value)
+{
+	const std::string token = "\"" + key + "\"";
+	size_t pos = text.find(token);
+	if (pos == std::string::npos)
+	{
+		return false;
+	}
+	pos = text.find(':', pos + token.size());
+	if (pos == std::string::npos)
+	{
+		return false;
+	}
+	size_t begin = text.find_first_not_of(" \t\r\n", pos + 1);
+	if (begin == std::string::npos)
+	{
+		return false;
+	}
+	if (text.compare(begin, 4, "true") == 0 || text.compare(begin, 4, "True") == 0)
+	{
+		value = true;
+		return true;
+	}
+	if (text.compare(begin, 5, "false") == 0 || text.compare(begin, 5, "False") == 0)
+	{
+		value = false;
+		return true;
+	}
+	double numeric = value ? 1.0 : 0.0;
+	if (extractJsonNumber(text, key, numeric))
+	{
+		value = numeric != 0.0;
+		return true;
+	}
+	return false;
+}
+
 void assignNumber(const std::string& text, const std::string& key, double& target)
 {
 	double value = target;
@@ -94,6 +131,15 @@ void assignNumber(const std::string& text, const std::string& key, int& target)
 	if (extractJsonNumber(text, key, value))
 	{
 		target = static_cast<int>(value + 0.5);
+	}
+}
+
+void assignBool(const std::string& text, const std::string& key, bool& target)
+{
+	bool value = target;
+	if (extractJsonBool(text, key, value))
+	{
+		target = value;
 	}
 }
 }
@@ -193,9 +239,19 @@ bool IRSensorProfileDatabase::loadProfileFromFile(IRBand band, const std::string
 	assignNumber(text, "FOVV", profile.fovVDeg);
 	assignNumber(text, "FocalLength", profile.focalLengthMm);
 	assignNumber(text, "DetectorPitch", profile.detectorPitchMm);
+	assignNumber(text, "LensFnumber", profile.lensFNumber);
 	assignNumber(text, "ADCBitNumber", profile.adcBits);
 	assignNumber(text, "DisplayBits", profile.displayBits);
 	assignNumber(text, "NoiseEquivalentTemperatureDifference", profile.netdK);
+	assignBool(text, "BlackHot", profile.blackHot);
+	profile.usedFields =
+		"SensorConfigurationSystem.Width,Height,ADCBitNumber,DisplayBits,"
+		"SpectralResponseRangeLow,High,NoiseEquivalentTemperatureDifference,"
+		"DetectorPitch,FocalLength,LensFnumber,BlackHot";
+	profile.fallbackFields = "Width,Height,FOVH,FOVV used only when UDP init geometry is invalid or missing";
+	profile.ignoredPresagisFields =
+		"GainControlSystem,MTF,Vignetting,FXAA,TemporalAA,ImageFusionSystem,"
+		"DistributedApertureSystem,IntensifierConfigurationSystem,TaskSSR";
 	m_profiles[band] = profile;
 	return true;
 }

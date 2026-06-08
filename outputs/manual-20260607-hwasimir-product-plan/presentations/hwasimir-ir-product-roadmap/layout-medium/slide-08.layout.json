@@ -1,0 +1,1092 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/cf3pf8",
+    "id": "cf3pf8",
+    "slide": 8,
+    "layoutId": "6872c77c-b311-4b98-a8b9-287f3c9981dd",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "2b2e5535-abf9-4ddf-9c5e-af746f346170",
+    "masterLayoutName": "Master",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 960,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "微软雅黑"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "6872c77c-b311-4b98-a8b9-287f3c9981dd",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "2b2e5535-abf9-4ddf-9c5e-af746f346170",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "2b2e5535-abf9-4ddf-9c5e-af746f346170",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/36hcrmhk",
+      "id": "1",
+      "bbox": [
+        0,
+        0,
+        960,
+        720
+      ],
+      "alt": "template",
+      "contentType": "image/png",
+      "imageFit": "fill",
+      "asset": {
+        "assetId": "d3ad5727-112f-4672-a3ef-f73c4cd5a107",
+        "contentType": "image/png",
+        "byteLength": 261789
+      }
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/x4nap4r6",
+      "id": "2",
+      "bbox": [
+        95,
+        74,
+        760,
+        28
+      ],
+      "geometry": "rect",
+      "text": "06 创新点与难点：自主可控 + 物理可信 + 工程可交付",
+      "textPreview": "06 创新点与难点：自主可控 + 物理可信 + 工程可交付",
+      "resolvedFontSize": 21,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 21,
+        "typeface": "微软雅黑",
+        "color": "#FFFFFF",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "06 创新点与难点：自主可控 + 物理可信 + 工程可交付"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "06 创新点与难点：自主可控 + 物理可信 + 工程可交付",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "微软雅黑",
+            "color": "#FFFFFF",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "06 创新点与难点：自主可控 + 物理可信 + 工程可交付",
+              "fontSize": 21,
+              "typeface": "微软雅黑",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8jqh0fep",
+      "id": "3",
+      "bbox": [
+        96,
+        106,
+        720,
+        18
+      ],
+      "geometry": "rect",
+      "text": "真正的壁垒不是画面效果，而是可解释、可校准、可集成、可复用",
+      "textPreview": "真正的壁垒不是画面效果，而是可解释、可校准、可集成、可复用",
+      "resolvedFontSize": 10.51,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 10.51,
+        "typeface": "微软雅黑",
+        "color": "#FFFFFF",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "真正的壁垒不是画面效果，而是可解释、可校准、可集成、可复用"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "真正的壁垒不是画面效果，而是可解释、可校准、可集成、可复用",
+          "resolvedTextStyle": {
+            "fontSize": 10.51,
+            "typeface": "微软雅黑",
+            "color": "#FFFFFF",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "真正的壁垒不是画面效果，而是可解释、可校准、可集成、可复用",
+              "fontSize": 10.51,
+              "typeface": "微软雅黑",
+              "color": "#FFFFFF"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/fa9w3m94",
+      "id": "4",
+      "bbox": [
+        62,
+        175,
+        250,
+        250
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#4976D1",
+      "lineWidth": 1.5
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/qpg3ex0n",
+      "id": "5",
+      "bbox": [
+        62,
+        175,
+        250,
+        34
+      ],
+      "geometry": "rect",
+      "fillColor": "#4976D1",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/xczed8v6",
+      "id": "6",
+      "bbox": [
+        76,
+        183,
+        222,
+        20
+      ],
+      "geometry": "rect",
+      "text": "创新点",
+      "textPreview": "创新点",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "微软雅黑",
+        "color": "#FFFFFF",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "创新点"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "创新点",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#FFFFFF",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "创新点",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8v6psfil",
+      "id": "7",
+      "bbox": [
+        80,
+        229,
+        214,
+        186
+      ],
+      "geometry": "rect",
+      "text": "国产 ARM 板卡适配\n开源 3D 引擎红外链路\n多波段/温度/大气/热点亮点\n协议化目标与武器状态联动\n可回归验证的工程流程",
+      "textPreview": "国产 ARM 板卡适配 | 开源 3D 引擎红外链路 | 多波段/温度/大气/热点亮点 | 协议化目标与武器状态联动 | 可回归验证的工程流程",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "微软雅黑",
+        "color": "#09285C",
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 5,
+        "lines": [
+          {
+            "index": 1,
+            "text": "国产 ARM 板卡适配"
+          },
+          {
+            "index": 2,
+            "text": "开源 3D 引擎红外链路"
+          },
+          {
+            "index": 3,
+            "text": "多波段/温度/大气/热点亮点"
+          },
+          {
+            "index": 4,
+            "text": "协议化目标与武器状态联动"
+          },
+          {
+            "index": 5,
+            "text": "可回归验证的工程流程"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "国产 ARM 板卡适配",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "国产 ARM 板卡适配",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "开源 3D 引擎红外链路",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "开源 3D 引擎红外链路",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 3,
+          "text": "多波段/温度/大气/热点亮点",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "多波段/温度/大气/热点亮点",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 4,
+          "text": "协议化目标与武器状态联动",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "协议化目标与武器状态联动",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 5,
+          "text": "可回归验证的工程流程",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "可回归验证的工程流程",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/je9cvixc",
+      "id": "8",
+      "bbox": [
+        355,
+        175,
+        250,
+        250
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#D9812B",
+      "lineWidth": 1.5
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/qtcj6tov",
+      "id": "9",
+      "bbox": [
+        355,
+        175,
+        250,
+        34
+      ],
+      "geometry": "rect",
+      "fillColor": "#D9812B",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/svu9knih",
+      "id": "10",
+      "bbox": [
+        369,
+        183,
+        222,
+        20
+      ],
+      "geometry": "rect",
+      "text": "难点",
+      "textPreview": "难点",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "微软雅黑",
+        "color": "#FFFFFF",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "难点"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "难点",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#FFFFFF",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "难点",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/hgn29gr2",
+      "id": "11",
+      "bbox": [
+        373,
+        229,
+        214,
+        186
+      ],
+      "geometry": "rect",
+      "text": "实时帧率与 ARM GPU 优化\n红外物理精度和实测校准\n材料/目标/大气参数库建设\n场景规模与可解释性平衡\n军工交付环境适配",
+      "textPreview": "实时帧率与 ARM GPU 优化 | 红外物理精度和实测校准 | 材料/目标/大气参数库建设 | 场景规模与可解释性平衡 | 军工交付环境适配",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "微软雅黑",
+        "color": "#09285C",
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 5,
+        "lines": [
+          {
+            "index": 1,
+            "text": "实时帧率与 ARM GPU 优化"
+          },
+          {
+            "index": 2,
+            "text": "红外物理精度和实测校准"
+          },
+          {
+            "index": 3,
+            "text": "材料/目标/大气参数库建设"
+          },
+          {
+            "index": 4,
+            "text": "场景规模与可解释性平衡"
+          },
+          {
+            "index": 5,
+            "text": "军工交付环境适配"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "实时帧率与 ARM GPU 优化",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "实时帧率与 ARM GPU 优化",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "红外物理精度和实测校准",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "红外物理精度和实测校准",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 3,
+          "text": "材料/目标/大气参数库建设",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "材料/目标/大气参数库建设",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 4,
+          "text": "场景规模与可解释性平衡",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "场景规模与可解释性平衡",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 5,
+          "text": "军工交付环境适配",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "军工交付环境适配",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ap4r65wj",
+      "id": "12",
+      "bbox": [
+        648,
+        175,
+        250,
+        250
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#4CB494",
+      "lineWidth": 1.5
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/za1gvy90",
+      "id": "13",
+      "bbox": [
+        648,
+        175,
+        250,
+        34
+      ],
+      "geometry": "rect",
+      "fillColor": "#4CB494",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/s36hcrmh",
+      "id": "14",
+      "bbox": [
+        662,
+        183,
+        222,
+        20
+      ],
+      "geometry": "rect",
+      "text": "壁垒形成",
+      "textPreview": "壁垒形成",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "微软雅黑",
+        "color": "#FFFFFF",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "壁垒形成"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "壁垒形成",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#FFFFFF",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "壁垒形成",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/hoza1gvy",
+      "id": "15",
+      "bbox": [
+        666,
+        229,
+        214,
+        186
+      ],
+      "geometry": "rect",
+      "text": "模型库和数据资产\n客户验收指标体系\n软著/专利/技术秘密\n跨平台运行时\nAFSIM/VR/UE5/雷达接口生态",
+      "textPreview": "模型库和数据资产 | 客户验收指标体系 | 软著/专利/技术秘密 | 跨平台运行时 | AFSIM/VR/UE5/雷达接口生态",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "微软雅黑",
+        "color": "#09285C",
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 5,
+        "lines": [
+          {
+            "index": 1,
+            "text": "模型库和数据资产"
+          },
+          {
+            "index": 2,
+            "text": "客户验收指标体系"
+          },
+          {
+            "index": 3,
+            "text": "软著/专利/技术秘密"
+          },
+          {
+            "index": 4,
+            "text": "跨平台运行时"
+          },
+          {
+            "index": 5,
+            "text": "AFSIM/VR/UE5/雷达接口生态"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "模型库和数据资产",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "模型库和数据资产",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "客户验收指标体系",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "客户验收指标体系",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 3,
+          "text": "软著/专利/技术秘密",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "软著/专利/技术秘密",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 4,
+          "text": "跨平台运行时",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "跨平台运行时",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 5,
+          "text": "AFSIM/VR/UE5/雷达接口生态",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "AFSIM/VR/UE5/雷达接口生态",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/a1gvy90j",
+      "id": "16",
+      "bbox": [
+        130,
+        505,
+        700,
+        58
+      ],
+      "geometry": "rect",
+      "fillColor": "#EEF4FF",
+      "lineColor": "#4976D1",
+      "lineWidth": 1
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/zidonyd0",
+      "id": "17",
+      "bbox": [
+        160,
+        522,
+        640,
+        22
+      ],
+      "geometry": "rect",
+      "text": "建议投入重点：不要只追求“画面更像”，要同步建设物理模型、数据校准、接口标准和自动化验收。",
+      "textPreview": "建议投入重点：不要只追求“画面更像”，要同步建设物理模型、数据校准、接口标准和自动化验收。",
+      "resolvedFontSize": 13.51,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 13.51,
+        "typeface": "微软雅黑",
+        "color": "#124B98",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "建议投入重点：不要只追求“画面更像”，要同步建设物理模型、数据校准、接口标准和自动化验收。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "建议投入重点：不要只追求“画面更像”，要同步建设物理模型、数据校准、接口标准和自动化验收。",
+          "resolvedTextStyle": {
+            "fontSize": 13.51,
+            "typeface": "微软雅黑",
+            "color": "#124B98",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "建议投入重点：不要只追求“画面更像”，要同步建设物理模型、数据校准、接口标准和自动化验收。",
+              "fontSize": 13.51,
+              "typeface": "微软雅黑",
+              "color": "#124B98",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}

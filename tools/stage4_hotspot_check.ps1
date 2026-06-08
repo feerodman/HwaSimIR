@@ -81,7 +81,7 @@ $checks.Add((Add-Check "engineState not directly controls brightspot uniform" ($
 $checks.Add((Add-Check "brightspot controlled by WeaponState" (($appSourceText -match "Stage4WeaponAppliesToTarget") -and ($appSourceText -match "resolveBrightSpot") -and ($appSourceText -match "strikePart")) $appSource)) | Out-Null
 $checks.Add((Add-Check "u_brightspot_temp documented as legacy intensity" (($appSourceText -match "u_brightspot_temp.*intensity") -and ($appSourceText -match "Kelvin")) $appSource)) | Out-Null
 
-$checks.Add((Add-Check "Stage4 visual debug defaults off" (($appSourceText -match 'ReadProcessEnvFlag\("EnableStage4HotspotVisualDebug", false\)') -and ($appSourceText -match 'ReadProcessEnvFlag\("ForceStage4BrightSpotVisible", false\)') -and ($appSourceText -match 'ReadProcessEnvFlag\("ForceStage4RearHotspotVisible", false\)')) $appSource)) | Out-Null
+$checks.Add((Add-Check "Stage4 visual debug defaults off" (($appSourceText -match 'getBool\("Stage4",\s*"EnableHotspotVisualDebug",\s*"EnableStage4HotspotVisualDebug",\s*false') -and ($appSourceText -match 'getBool\("Stage4",\s*"ForceBrightSpotVisible",\s*"ForceStage4BrightSpotVisible",\s*false') -and ($appSourceText -match 'getBool\("Stage4",\s*"ForceRearHotspotVisible",\s*"ForceStage4RearHotspotVisible",\s*false')) $appSource)) | Out-Null
 $checks.Add((Add-Check "shader declares Stage4 visual debug uniform" (($appSourceText -match "uniform int u_stage4_visual_debug") -and ($appSourceText -match "stage4_debug_mask") -and ($appSourceText -match "u_stage4_visual_debug == 1")) $appSource)) | Out-Null
 $checks.Add((Add-Check "Stage4 Input log present" ($appSourceText -match "\[Stage4 Input\]") $appSource)) | Out-Null
 $checks.Add((Add-Check "Stage4 Uniform log present" (($appSourceText -match "\[Stage4 Uniform\]") -and ($appSourceText -match "STAGE4_SHADER_NOT_BOUND") -and ($appSourceText -match "STAGE4_TEXTURE_MISSING")) $appSource)) | Out-Null
@@ -96,7 +96,7 @@ $checks.Add((Add-Check "Stage4 logs BrightSpot separately" ($appSourceText -matc
 $checks.Add((Add-Check "no damage model in Stage4 model/config" ($stage4ModelText -notmatch "damage|damaged|毁伤|damageFlag") "$modelHeader; $modelSource")) | Out-Null
 $checks.Add((Add-Check "Stage4 does not hook path/sky/solar radiance fields" ($stage4ModelText -notmatch "path_radiance|sky_radiance|solar_irradiance|pathRadiance|skyRadiance") "$modelHeader; $modelSource")) | Out-Null
 $checks.Add((Add-Check "Stage4 model remains separate from Stage5 radiance" ($stage4ModelText -notmatch "Stage5|L_surface|L_aperture|solar_irradiance|bodyRadiance|finalGrayDebug") "$modelHeader; $modelSource")) | Out-Null
-$checks.Add((Add-Check "UseModtranTauForAtmosphere default remains off" (($stage3AtmosphereText -match "m_useModtranTauForAtmosphere\(false\)") -and ($appSourceText -match 'ReadProcessEnvFlag\("UseModtranTauForAtmosphere", false\)')) "$stage3AtmosphereSource; $appSource")) | Out-Null
+$checks.Add((Add-Check "UseModtranTauForAtmosphere default remains off" (($stage3AtmosphereText -match "m_useModtranTauForAtmosphere\(false\)") -and ($appSourceText -match 'getBool\("Stage3",\s*"UseModtranTauForAtmosphere",\s*"UseModtranTauForAtmosphere",\s*false')) "$stage3AtmosphereSource; $appSource")) | Out-Null
 
 $checks | Format-Table -AutoSize
 

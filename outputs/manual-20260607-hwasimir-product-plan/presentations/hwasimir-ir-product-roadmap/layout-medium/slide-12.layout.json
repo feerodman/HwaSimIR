@@ -1,0 +1,1104 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/av8mq3",
+    "id": "av8mq3",
+    "slide": 12,
+    "layoutId": "6872c77c-b311-4b98-a8b9-287f3c9981dd",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "2b2e5535-abf9-4ddf-9c5e-af746f346170",
+    "masterLayoutName": "Master",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 960,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "微软雅黑"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "6872c77c-b311-4b98-a8b9-287f3c9981dd",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "2b2e5535-abf9-4ddf-9c5e-af746f346170",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "2b2e5535-abf9-4ddf-9c5e-af746f346170",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/7adsji5s",
+      "id": "1",
+      "bbox": [
+        0,
+        0,
+        960,
+        720
+      ],
+      "alt": "template",
+      "contentType": "image/png",
+      "imageFit": "fill",
+      "asset": {
+        "assetId": "b1fa4818-72ae-488b-8932-7aae789300aa",
+        "contentType": "image/png",
+        "byteLength": 261789
+      }
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/xobm58z2",
+      "id": "2",
+      "bbox": [
+        95,
+        74,
+        760,
+        28
+      ],
+      "geometry": "rect",
+      "text": "10 AI 与下一步：把仿真平台升级为数据与评估平台",
+      "textPreview": "10 AI 与下一步：把仿真平台升级为数据与评估平台",
+      "resolvedFontSize": 21,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 21,
+        "typeface": "微软雅黑",
+        "color": "#FFFFFF",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "10 AI 与下一步：把仿真平台升级为数据与评估平台"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "10 AI 与下一步：把仿真平台升级为数据与评估平台",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "微软雅黑",
+            "color": "#FFFFFF",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "10 AI 与下一步：把仿真平台升级为数据与评估平台",
+              "fontSize": 21,
+              "typeface": "微软雅黑",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/83itgfml",
+      "id": "3",
+      "bbox": [
+        96,
+        106,
+        720,
+        18
+      ],
+      "geometry": "rect",
+      "text": "AI 不是口号，落点是场景生成、参数校准、数据合成和自动评测",
+      "textPreview": "AI 不是口号，落点是场景生成、参数校准、数据合成和自动评测",
+      "resolvedFontSize": 10.51,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 10.51,
+        "typeface": "微软雅黑",
+        "color": "#FFFFFF",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "AI 不是口号，落点是场景生成、参数校准、数据合成和自动评测"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "AI 不是口号，落点是场景生成、参数校准、数据合成和自动评测",
+          "resolvedTextStyle": {
+            "fontSize": 10.51,
+            "typeface": "微软雅黑",
+            "color": "#FFFFFF",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "AI 不是口号，落点是场景生成、参数校准、数据合成和自动评测",
+              "fontSize": 10.51,
+              "typeface": "微软雅黑",
+              "color": "#FFFFFF"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/fu18jqh0",
+      "id": "4",
+      "bbox": [
+        70,
+        175,
+        190,
+        205
+      ],
+      "geometry": "rect",
+      "fillColor": "#F8FBFF",
+      "lineColor": "#4976D1",
+      "lineWidth": 1
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/m94fu18j",
+      "id": "5",
+      "bbox": [
+        80,
+        185,
+        170,
+        22
+      ],
+      "geometry": "rect",
+      "text": "AI 场景生成",
+      "textPreview": "AI 场景生成",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 13,
+        "typeface": "微软雅黑",
+        "color": "#4976D1",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "AI 场景生成"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "AI 场景生成",
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "typeface": "微软雅黑",
+            "color": "#4976D1",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "AI 场景生成",
+              "fontSize": 13,
+              "typeface": "微软雅黑",
+              "color": "#4976D1",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/x0nuxc3y",
+      "id": "6",
+      "bbox": [
+        82,
+        217,
+        166,
+        155
+      ],
+      "geometry": "rect",
+      "text": "根据任务描述生成低空/航天/安防场景\n快速形成批量试验工况",
+      "textPreview": "根据任务描述生成低空/航天/安防场景 | 快速形成批量试验工况",
+      "resolvedFontSize": 11.2,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 11.2,
+        "typeface": "微软雅黑",
+        "color": "#09285C",
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "根据任务描述生成低空/航天/安"
+          },
+          {
+            "index": 2,
+            "text": "防场景"
+          },
+          {
+            "index": 3,
+            "text": "快速形成批量试验工况"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "根据任务描述生成低空/航天/安防场景",
+          "resolvedTextStyle": {
+            "fontSize": 11.2,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "根据任务描述生成低空/航天/安防场景",
+              "fontSize": 11.2,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "快速形成批量试验工况",
+          "resolvedTextStyle": {
+            "fontSize": 11.2,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "快速形成批量试验工况",
+              "fontSize": 11.2,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/4fu18jqh",
+      "id": "7",
+      "bbox": [
+        285,
+        175,
+        190,
+        205
+      ],
+      "geometry": "rect",
+      "fillColor": "#F8FBFF",
+      "lineColor": "#4CB494",
+      "lineWidth": 1
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/f6dcbulw",
+      "id": "8",
+      "bbox": [
+        295,
+        185,
+        170,
+        22
+      ],
+      "geometry": "rect",
+      "text": "参数反演校准",
+      "textPreview": "参数反演校准",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 13,
+        "typeface": "微软雅黑",
+        "color": "#4CB494",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "参数反演校准"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "参数反演校准",
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "typeface": "微软雅黑",
+            "color": "#4CB494",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "参数反演校准",
+              "fontSize": 13,
+              "typeface": "微软雅黑",
+              "color": "#4CB494",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/mlkjm1cf",
+      "id": "9",
+      "bbox": [
+        297,
+        217,
+        166,
+        155
+      ],
+      "geometry": "rect",
+      "text": "用实测红外图像反推材质、温度、大气和传感器参数\n提升可信度",
+      "textPreview": "用实测红外图像反推材质、温度、大气和传感器参数 | 提升可信度",
+      "resolvedFontSize": 11.2,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 11.2,
+        "typeface": "微软雅黑",
+        "color": "#09285C",
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "用实测红外图像反推材质、温度"
+          },
+          {
+            "index": 2,
+            "text": "、大气和传感器参数"
+          },
+          {
+            "index": 3,
+            "text": "提升可信度"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "用实测红外图像反推材质、温度、大气和传感器参数",
+          "resolvedTextStyle": {
+            "fontSize": 11.2,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "用实测红外图像反推材质、温度、大气和传感器参数",
+              "fontSize": 11.2,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "提升可信度",
+          "resolvedTextStyle": {
+            "fontSize": 11.2,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "提升可信度",
+              "fontSize": 11.2,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/gbq1oryt",
+      "id": "10",
+      "bbox": [
+        500,
+        175,
+        190,
+        205
+      ],
+      "geometry": "rect",
+      "fillColor": "#F8FBFF",
+      "lineColor": "#D9812B",
+      "lineWidth": 1
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/5wjudg7a",
+      "id": "11",
+      "bbox": [
+        510,
+        185,
+        170,
+        22
+      ],
+      "geometry": "rect",
+      "text": "数据合成服务",
+      "textPreview": "数据合成服务",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 13,
+        "typeface": "微软雅黑",
+        "color": "#D9812B",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "数据合成服务"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "数据合成服务",
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "typeface": "微软雅黑",
+            "color": "#D9812B",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "数据合成服务",
+              "fontSize": 13,
+              "typeface": "微软雅黑",
+              "color": "#D9812B",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/y90je9cv",
+      "id": "12",
+      "bbox": [
+        512,
+        217,
+        166,
+        155
+      ],
+      "geometry": "rect",
+      "text": "生成红外目标识别、跟踪、融合感知训练数据\n服务算法团队",
+      "textPreview": "生成红外目标识别、跟踪、融合感知训练数据 | 服务算法团队",
+      "resolvedFontSize": 11.2,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 11.2,
+        "typeface": "微软雅黑",
+        "color": "#09285C",
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "生成红外目标识别、跟踪、融合"
+          },
+          {
+            "index": 2,
+            "text": "感知训练数据"
+          },
+          {
+            "index": 3,
+            "text": "服务算法团队"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "生成红外目标识别、跟踪、融合感知训练数据",
+          "resolvedTextStyle": {
+            "fontSize": 11.2,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "生成红外目标识别、跟踪、融合感知训练数据",
+              "fontSize": 11.2,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "服务算法团队",
+          "resolvedTextStyle": {
+            "fontSize": 11.2,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "服务算法团队",
+              "fontSize": 11.2,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/nuxc3ylc",
+      "id": "13",
+      "bbox": [
+        715,
+        175,
+        175,
+        205
+      ],
+      "geometry": "rect",
+      "fillColor": "#F8FBFF",
+      "lineColor": "#C43D32",
+      "lineWidth": 1
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/gn29gr2p",
+      "id": "14",
+      "bbox": [
+        725,
+        185,
+        155,
+        22
+      ],
+      "geometry": "rect",
+      "text": "自动评测",
+      "textPreview": "自动评测",
+      "resolvedFontSize": 13,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 13,
+        "typeface": "微软雅黑",
+        "color": "#C43D32",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "自动评测"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "自动评测",
+          "resolvedTextStyle": {
+            "fontSize": 13,
+            "typeface": "微软雅黑",
+            "color": "#C43D32",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "自动评测",
+              "fontSize": 13,
+              "typeface": "微软雅黑",
+              "color": "#C43D32",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/58z25kb6",
+      "id": "15",
+      "bbox": [
+        727,
+        217,
+        151,
+        155
+      ],
+      "geometry": "rect",
+      "text": "批量生成测试用例\n日志诊断\n自动报告和验收指标",
+      "textPreview": "批量生成测试用例 | 日志诊断 | 自动报告和验收指标",
+      "resolvedFontSize": 11.2,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 11.2,
+        "typeface": "微软雅黑",
+        "color": "#09285C",
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "批量生成测试用例"
+          },
+          {
+            "index": 2,
+            "text": "日志诊断"
+          },
+          {
+            "index": 3,
+            "text": "自动报告和验收指标"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "批量生成测试用例",
+          "resolvedTextStyle": {
+            "fontSize": 11.2,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "批量生成测试用例",
+              "fontSize": 11.2,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "日志诊断",
+          "resolvedTextStyle": {
+            "fontSize": 11.2,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "日志诊断",
+              "fontSize": 11.2,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 3,
+          "text": "自动报告和验收指标",
+          "resolvedTextStyle": {
+            "fontSize": 11.2,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "自动报告和验收指标",
+              "fontSize": 11.2,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/yhgn29gr",
+      "id": "16",
+      "bbox": [
+        98,
+        450,
+        765,
+        90
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#9DB8E7",
+      "lineWidth": 1
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/n29gr2p8",
+      "id": "17",
+      "bbox": [
+        125,
+        470,
+        120,
+        24
+      ],
+      "geometry": "rect",
+      "text": "近期建议",
+      "textPreview": "近期建议",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 18,
+        "typeface": "微软雅黑",
+        "color": "#124B98",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "近期建议"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "近期建议",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "微软雅黑",
+            "color": "#124B98",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "近期建议",
+              "fontSize": 18,
+              "typeface": "微软雅黑",
+              "color": "#124B98",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/czed8v6p",
+      "id": "18",
+      "bbox": [
+        245,
+        468,
+        585,
+        35
+      ],
+      "geometry": "rect",
+      "text": "1. 明确 V1.0 必做/不做清单；2. 锁定 2-3 家试点客户；3. 建立跨部门资源池；4. 启动模型库、校准数据和 AI 数据生成预研。",
+      "textPreview": "1. 明确 V1.0 必做/不做清单；2. 锁定 2-3 家试点客户；3. 建立跨部门资源池；4. 启动模型库、校准数据和 AI 数据生成预研。",
+      "resolvedFontSize": 12.8,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 12.8,
+        "typeface": "微软雅黑",
+        "color": "#09285C",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "1. 明确 V1.0 必做/不做清单；2. 锁定 2-3 家试点客户；3. 建立跨部门资源池；4."
+          },
+          {
+            "index": 2,
+            "text": "启动模型库、校准数据和 AI 数据生成预研。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "1. 明确 V1.0 必做/不做清单；2. 锁定 2-3 家试点客户；3. 建立跨部门资源池；4. 启动模型库、校准数据和 AI 数据生成预研。",
+          "resolvedTextStyle": {
+            "fontSize": 12.8,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "1. 明确 V1.0 必做/不做清单；2. 锁定 2-3 家试点客户；3. 建立跨部门资源池；4. 启动模型库、校准数据和 AI 数据生成预研。",
+              "fontSize": 12.8,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}

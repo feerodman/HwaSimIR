@@ -1,0 +1,148 @@
+{
+  "output": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\output\\HwaSimIR_IR_Product_Roadmap.pptx",
+  "outputBytes": 3753080,
+  "slideCount": 13,
+  "slideSize": {
+    "width": 960,
+    "height": 720
+  },
+  "previewDir": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\preview-medium",
+  "previewPaths": [
+    "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\preview-medium\\slide-01.png",
+    "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\preview-medium\\slide-02.png",
+    "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\preview-medium\\slide-03.png",
+    "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\preview-medium\\slide-04.png",
+    "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\preview-medium\\slide-05.png",
+    "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\preview-medium\\slide-06.png",
+    "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\preview-medium\\slide-07.png",
+    "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\preview-medium\\slide-08.png",
+    "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\preview-medium\\slide-09.png",
+    "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\preview-medium\\slide-10.png",
+    "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\preview-medium\\slide-11.png",
+    "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\preview-medium\\slide-12.png",
+    "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\preview-medium\\slide-13.png"
+  ],
+  "layoutDir": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\layout-medium",
+  "layoutResults": [
+    {
+      "layoutPath": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\layout-medium\\slide-01.layout.json"
+    },
+    {
+      "layoutPath": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\layout-medium\\slide-02.layout.json"
+    },
+    {
+      "layoutPath": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\layout-medium\\slide-03.layout.json"
+    },
+    {
+      "layoutPath": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\layout-medium\\slide-04.layout.json"
+    },
+    {
+      "layoutPath": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\layout-medium\\slide-05.layout.json"
+    },
+    {
+      "layoutPath": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\layout-medium\\slide-06.layout.json"
+    },
+    {
+      "layoutPath": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\layout-medium\\slide-07.layout.json"
+    },
+    {
+      "layoutPath": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\layout-medium\\slide-08.layout.json"
+    },
+    {
+      "layoutPath": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\layout-medium\\slide-09.layout.json"
+    },
+    {
+      "layoutPath": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\layout-medium\\slide-10.layout.json"
+    },
+    {
+      "layoutPath": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\layout-medium\\slide-11.layout.json"
+    },
+    {
+      "layoutPath": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\layout-medium\\slide-12.layout.json"
+    },
+    {
+      "layoutPath": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\layout-medium\\slide-13.layout.json"
+    }
+  ],
+  "contactSheet": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\contact-sheet-medium.png",
+  "slides": [
+    {
+      "index": 1,
+      "requestedSlideNumber": 1,
+      "modulePath": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\slides-simple\\slide-01.mjs",
+      "exportName": "slide01"
+    },
+    {
+      "index": 2,
+      "requestedSlideNumber": 2,
+      "modulePath": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\slides-simple\\slide-02.mjs",
+      "exportName": "slide02"
+    },
+    {
+      "index": 3,
+      "requestedSlideNumber": 3,
+      "modulePath": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\slides-simple\\slide-03.mjs",
+      "exportName": "slide03"
+    },
+    {
+      "index": 4,
+      "requestedSlideNumber": 4,
+      "modulePath": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\slides-simple\\slide-04.mjs",
+      "exportName": "slide04"
+    },
+    {
+      "index": 5,
+      "requestedSlideNumber": 5,
+      "modulePath": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\slides-simple\\slide-05.mjs",
+      "exportName": "slide05"
+    },
+    {
+      "index": 6,
+      "requestedSlideNumber": 6,
+      "modulePath": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\slides-simple\\slide-06.mjs",
+      "exportName": "slide06"
+    },
+    {
+      "index": 7,
+      "requestedSlideNumber": 7,
+      "modulePath": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\slides-simple\\slide-07.mjs",
+      "exportName": "slide07"
+    },
+    {
+      "index": 8,
+      "requestedSlideNumber": 8,
+      "modulePath": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\slides-simple\\slide-08.mjs",
+      "exportName": "slide08"
+    },
+    {
+      "index": 9,
+      "requestedSlideNumber": 9,
+      "modulePath": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\slides-simple\\slide-09.mjs",
+      "exportName": "slide09"
+    },
+    {
+      "index": 10,
+      "requestedSlideNumber": 10,
+      "modulePath": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\slides-simple\\slide-10.mjs",
+      "exportName": "slide10"
+    },
+    {
+      "index": 11,
+      "requestedSlideNumber": 11,
+      "modulePath": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\slides-simple\\slide-11.mjs",
+      "exportName": "slide11"
+    },
+    {
+      "index": 12,
+      "requestedSlideNumber": 12,
+      "modulePath": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\slides-simple\\slide-12.mjs",
+      "exportName": "slide12"
+    },
+    {
+      "index": 13,
+      "requestedSlideNumber": 13,
+      "modulePath": "D:\\HwaSimIR\\outputs\\manual-20260607-hwasimir-product-plan\\presentations\\hwasimir-ir-product-roadmap\\slides-simple\\slide-13.mjs",
+      "exportName": "slide13"
+    }
+  ]
+}

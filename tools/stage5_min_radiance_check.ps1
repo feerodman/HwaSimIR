@@ -128,7 +128,7 @@ catch {
     $configParsed = $false
 }
 
-$checks.Add((Add-Check "EnableStage5RadianceDebug defaults off" (($appSourceText -match 'ReadProcessEnvFlag\("EnableStage5RadianceDebug", false\)') -and ($appHeaderText -match "m_enableStage5RadianceDebug = false")) "$appHeader; $appSource")) | Out-Null
+$checks.Add((Add-Check "EnableStage5RadianceDebug defaults off" (($appSourceText -match 'getBool\("Stage5",\s*"EnableRadianceDebug",\s*"EnableStage5RadianceDebug",\s*false') -and ($appHeaderText -match "m_enableStage5RadianceDebug = false")) "$appHeader; $appSource")) | Out-Null
 $checks.Add((Add-Check "stage5 debug display config exists" (Test-Path -LiteralPath $stage5DebugDisplayConfig -PathType Leaf) $stage5DebugDisplayConfig)) | Out-Null
 $checks.Add((Add-Check "stage5 debug display config parses" $configParsed $stage5DebugDisplayConfig)) | Out-Null
 $checks.Add((Add-Check "stage5 debug display config has all bands" $configHasBands $stage5DebugDisplayConfig)) | Out-Null
@@ -159,7 +159,7 @@ $forbiddenBandFields = "path_radiance_band|sky_radiance_band|path_scattering_rad
 $forbiddenRuntimeFields = "path_radiance|sky_radiance|solar_irradiance|pathRadiance|skyRadiance|solarIrradiance"
 $checks.Add((Add-Check "Stage5 V2 does not read path/sky/solar radiance" ($radianceText -notmatch $forbiddenRuntimeFields) "$radianceHeader; $radianceSource")) | Out-Null
 $checks.Add((Add-Check "runtime still does not hook MODTRAN radiance band fields" (($appSourceText -notmatch $forbiddenBandFields) -and ($radianceText -notmatch $forbiddenBandFields)) "$appSource; $radianceHeader; $radianceSource")) | Out-Null
-$checks.Add((Add-Check "UseModtranTauForAtmosphere default remains off" (($stage3AtmosphereText -match "m_useModtranTauForAtmosphere\(false\)") -and ($appSourceText -match 'ReadProcessEnvFlag\("UseModtranTauForAtmosphere", false\)')) "$stage3AtmosphereSource; $appSource")) | Out-Null
+$checks.Add((Add-Check "UseModtranTauForAtmosphere default remains off" (($stage3AtmosphereText -match "m_useModtranTauForAtmosphere\(false\)") -and ($appSourceText -match 'getBool\("Stage3",\s*"UseModtranTauForAtmosphere",\s*"UseModtranTauForAtmosphere",\s*false')) "$stage3AtmosphereSource; $appSource")) | Out-Null
 $checks.Add((Add-Check "no whole-target hotspot added" (($appSourceText -notmatch "wholeTargetHotspot|whole-target hotspot|whole target hotspot") -and ($radianceText -notmatch "wholeTargetHotspot|whole-target hotspot|whole target hotspot")) "$appSource; $radianceHeader; $radianceSource")) | Out-Null
 $checks.Add((Add-Check "u_brightspot_temp remains intensity not Kelvin" (($appSourceText -match "u_brightspot_temp.*intensity") -and ($appSourceText -match "不是Kelvin|Kelvin")) $appSource)) | Out-Null
 $checks.Add((Add-Check "engineState and strikeFlag remain separated" (($appSourceText -match "updateEngineRear\(platformName,\s*runtimeKey,\s*engineState") -and ($appSourceText -match "Stage4WeaponAppliesToTarget") -and ($appSourceText -notmatch 'strikeFlag[^\r\n]*u_hotspot_rear_en|u_hotspot_rear_en[^\r\n]*strikeFlag') -and ($appSourceText -notmatch 'engineState[^\r\n]*u_brightspot_en|u_brightspot_en[^\r\n]*engineState')) $appSource)) | Out-Null

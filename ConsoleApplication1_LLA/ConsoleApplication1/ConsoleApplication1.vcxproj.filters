@@ -57,10 +57,16 @@
     <ClInclude Include="IR\IRConfig.h">
       <Filter>头文件\IR</Filter>
     </ClInclude>
+    <ClInclude Include="IR\IREnginePlumeModel.h">
+      <Filter>头文件\IR</Filter>
+    </ClInclude>
     <ClInclude Include="IR\IRModtranTauLut.h">
       <Filter>头文件\IR</Filter>
     </ClInclude>
     <ClInclude Include="IR\IRRadianceModelV2.h">
+      <Filter>头文件\IR</Filter>
+    </ClInclude>
+    <ClInclude Include="IR\IRRuntimeConfig.h">
       <Filter>头文件\IR</Filter>
     </ClInclude>
     <ClInclude Include="IR\IRSceneMaterialMapper.h">
@@ -69,10 +75,16 @@
     <ClInclude Include="IR\IRSensorModel.h">
       <Filter>头文件\IR</Filter>
     </ClInclude>
+    <ClInclude Include="IR\IRSensorPostProcess.h">
+      <Filter>头文件\IR</Filter>
+    </ClInclude>
     <ClInclude Include="IR\IRTemperatureModel.h">
       <Filter>头文件\IR</Filter>
     </ClInclude>
     <ClInclude Include="IR\IRTypes.h">
+      <Filter>头文件\IR</Filter>
+    </ClInclude>
+    <ClInclude Include="IR\IRWeatherEffects.h">
       <Filter>头文件\IR</Filter>
     </ClInclude>
     <ClInclude Include="TcpCommThread.h">
@@ -104,10 +116,16 @@
     <ClCompile Include="IR\IRConfig.cpp">
       <Filter>源文件\IR</Filter>
     </ClCompile>
+    <ClCompile Include="IR\IREnginePlumeModel.cpp">
+      <Filter>源文件\IR</Filter>
+    </ClCompile>
     <ClCompile Include="IR\IRModtranTauLut.cpp">
       <Filter>源文件\IR</Filter>
     </ClCompile>
     <ClCompile Include="IR\IRRadianceModelV2.cpp">
+      <Filter>源文件\IR</Filter>
+    </ClCompile>
+    <ClCompile Include="IR\IRRuntimeConfig.cpp">
       <Filter>源文件\IR</Filter>
     </ClCompile>
     <ClCompile Include="IR\IRSceneMaterialMapper.cpp">
@@ -116,10 +134,16 @@
     <ClCompile Include="IR\IRSensorModel.cpp">
       <Filter>源文件\IR</Filter>
     </ClCompile>
+    <ClCompile Include="IR\IRSensorPostProcess.cpp">
+      <Filter>源文件\IR</Filter>
+    </ClCompile>
     <ClCompile Include="IR\IRTemperatureModel.cpp">
       <Filter>源文件\IR</Filter>
     </ClCompile>
     <ClCompile Include="IR\IRTypes.cpp">
+      <Filter>源文件\IR</Filter>
+    </ClCompile>
+    <ClCompile Include="IR\IRWeatherEffects.cpp">
       <Filter>源文件\IR</Filter>
     </ClCompile>
     <ClCompile Include="UdpCommThread.cpp">

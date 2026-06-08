@@ -1526,3 +1526,323 @@ Production QC：
 - `powershell -ExecutionPolicy Bypass -File tools\stage5_min_radiance_check.ps1 -Strict`
 - `powershell -ExecutionPolicy Bypass -File tools\stage6_sensor_output_check.ps1 -Strict`
 - `powershell -ExecutionPolicy Bypass -File tools\stage6_sensor_geometry_smoke.ps1 -DelayMs 500`
+
+### 2026-06-03 阶段 6A.1：传感器几何收口与手动验收辅助
+
+Stage6A 传感器成像几何与最小输出链路已完成。本轮只做收口与手动验收辅助，不进入复杂成像后处理，也不修改 Stage5。
+
+收口内容：
+- 恢复 `capture_task()` 的低频 `[Stage6 Capture]` 日志，便于手动确认真实输出宽高，不刷屏。
+- `[Stage6 Capture]` 记录 `frameWidth`、`frameHeight`、`tcpWidth`、`tcpHeight`、`renderTextureWidth`、`renderTextureHeight` 和 `channels=RGB8`。
+- 保持按 `sensorDisplayConfig` 尺寸 fallback resize 的逻辑；当隐藏窗口或底层窗口尺寸尚未及时应用时，TCP/JPEG 输出仍按协议传感器宽高生成。
+- TCP/JPEG length-prefixed 协议格式不变。
+
+手动验收建议：
+- `640x512 @ 20 µrad`：观察窗口尺寸、视场变化、目标是否被 near/far 合理裁剪、`[Stage6 Capture]` 的 `tcpWidth/tcpHeight`。
+- `800x800 @ 10 µrad`：确认方形输出与 FOV 变化。
+- `1024x768 @ 5 µrad`：确认高分辨率输出、窄视场和 TCP/JPEG 输出尺寸。
+
+边界保持：
+- 不接入 `path_radiance`、`sky_radiance`、`solar_irradiance`。
+- 不改变 `UseModtranTauForAtmosphere=0` 默认状态。
+- 不改变 `EnableStage5RadianceDebug=0` 默认状态。
+- 不继续调整 Hotspot/BrightSpot 亮度。
+- 不做完整 AGC、MTF、blur、H264 或 UDP 视频。
+
+下一步建议：
+- 进入 Stage6B：最小显示控制。Stage6B 仍应保持轻量，不直接展开完整 AGC/MTF/noise 系统。
+
+### 2026-06-03 阶段 6B：最小显示控制
+
+Stage6B 进入传感器输出显示层，但只做最小控制能力：白热/黑热、手动 gain/offset，以及默认关闭的轻量噪声开关。本阶段不改变 Stage4 热源/亮斑语义，也不继续修改 Stage5 辐射链路。
+
+实现范围：
+- 新增 `IR/IRSensorPostProcess.h/.cpp`，输入为 RGB8 frame，输出仍为同尺寸 RGB8 frame。
+- 后处理位置放在 `capture_task()` 中、`TcpCommThread::updateFrame(...)` 之前；TCP/JPEG length-prefixed 协议格式不变，`frameWidth/frameHeight` 不变。
+- 灰度转换使用 `gray = 0.299R + 0.587G + 0.114B`，随后应用 `displayGain` 和 `displayOffset`，并 clamp 到 `0..255`。
+- `Stage6WhiteHot=1` 输出白热，`Stage6WhiteHot=0` 输出黑热，即 `255-gray`。
+- `noiseEn / trackerSensorNoise` 协议字段存在且有效时优先作为最小噪声配置；否则使用环境变量 `Stage6NoiseEnable` 与 `Stage6NoiseSigmaGray`。噪声默认关闭，当前只做简单灰度扰动，不做 NETD 标定或固定图样噪声。
+- `[Stage6 Display]` 日志记录 `whiteHot`、`displayGain`、`displayOffset`、`noiseEnable`、`noiseSigmaGray` 和 `source`，用于手动验收配置来源。
+
+边界保持：
+- 不接入 `path_radiance`、`sky_radiance`、`solar_irradiance`。
+- 不改变 `UseModtranTauForAtmosphere=0` 默认状态。
+- 不改变 `EnableStage5RadianceDebug=0` 默认状态。
+- 不继续调整 Hotspot/BrightSpot 亮度。
+- 不做完整 AGC、MTF、blur、H264 或 UDP 视频。
+
+新增检查：
+- `tools/stage6_sensor_display_check.ps1 -Strict` 静态检查后处理模块、工程接入、capture 调用顺序、默认关闭噪声、协议边界和 Stage6B 非目标项。
+- `tools/stage6_sensor_display_smoke.ps1 -DelayMs 500` 只做日志级 smoke，分别用环境变量验证白热、黑热、gain、offset 和轻量噪声配置，不解析 JPEG，不做复杂视觉指标。
+
+验收命令：
+- `powershell -ExecutionPolicy Bypass -File tools\stage0_build.ps1`
+- `powershell -ExecutionPolicy Bypass -File tools\stage3_modtran_tau_loader_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage4_hotspot_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage5_min_radiance_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage6_sensor_output_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage6_sensor_display_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage6_sensor_display_smoke.ps1 -DelayMs 500`
+
+### 2026-06-03 阶段 6B.1：窗口预览显示控制与路由修正
+
+Stage6B.1 修复手动观察 HwaSimIR 主窗口时白热/黑热、gain/offset 和噪声无效果的问题。根因是 Stage6B 初版只在 `capture_task()` 中、`TcpCommThread::updateFrame(...)` 前做 CPU 后处理，因此只影响 TCP/JPEG 输出，不影响 Panda3D 窗口预览。
+
+修正内容：
+- `Stage6WhiteHot` 默认改为 `true`，`Stage6NoiseEnable` 默认改为 `false`，与 `IRSensorPostProcessConfig` 设计保持一致。
+- Stage6 显示配置优先级改为：环境变量优先，然后协议 `trackerSensorParam`，最后 default；如果环境变量指定 `Stage6NoiseEnable` 或 `Stage6NoiseSigmaGray`，不会再被协议噪声字段覆盖。
+- 新增 `Stage6DisplayApplyToWindow`，默认 `1`。
+- shader 新增 `u_stage6_display_en`、`u_stage6_white_hot`、`u_stage6_display_gain`、`u_stage6_display_offset`、`u_stage6_noise_enable` 和 `u_stage6_noise_sigma_norm`。
+- shader 输出前统一调用 Stage6 显示层函数，覆盖背景、云、Stage5 debug、材质 ID debug 和普通目标分支。
+- 默认路由为 `[Stage6 DisplayRoute] route=shader_window_and_tcp`：窗口预览和 render texture/TCP 都看到同一套显示效果。
+- 当 `Stage6DisplayApplyToWindow=0` 时，路由回退为 `route=capture_only_cpu`，仅在 capture/TCP 前执行 `IRSensorPostProcess`，避免 shader 与 CPU 双重处理。
+
+日志：
+- `[Stage6 Display]` 增加 `applyToWindow`、`applyToCapture`、`configSource`、`effectiveWhiteHot`、`effectiveNoiseEnable` 和 `effectiveNoiseSigmaGray`。
+- `[Stage6 DisplayRoute]` 记录 `route=shader_window_and_tcp` 或 `route=capture_only_cpu`。
+
+边界保持：
+- 不进入 Stage6C 或 Stage7。
+- 不改变 Stage4/Stage5 语义，不继续调整 Hotspot/BrightSpot 亮度。
+- 不接入 `path_radiance`、`sky_radiance`、`solar_irradiance`。
+- 不做完整 AGC、MTF、blur、H264 或 UDP 视频。
+
+### 2026-06-03 阶段 6B.2：黑屏诊断与背景安全兜底
+
+Stage6B.2 用于拆分“显示层导致黑屏”和“背景/目标可见性导致黑屏”两个问题。用户手动观察到画面会逐渐变黑，当前日志中的轻量噪声 `noiseSigmaGray=0.5` 不足以解释全黑，因此本阶段优先增加诊断与背景分支隔离，不修改 Stage5 辐射链路。
+
+完成内容：
+- 新增低频 `[Stage6 FrameDiag]` 日志，记录 `frameIndex`、波段、白热/黑热、gain/offset、噪声、显示 route、目标映射数、目标可见数、背景可见、相机 HPR、传感器 FOV、near/far。
+- 在目标更新后统计 `targetMappedCount`、`targetVisibleCount`、`hiddenByTargetNum`、`hiddenByTargetViewValid`、`hiddenByWeaponViewValid` 与 `beyondFarClip`。
+- 连续多帧无可见目标时输出 `[Stage6 FrameDiag][WARN] NO_VISIBLE_TARGETS`；背景存在但目标不可见时输出 `[Stage6 FrameDiag][WARN] BACKGROUND_ONLY_FRAME`。
+- 新增 `Stage6BackgroundDisplayEnable`，默认 `1`。当设为 `0` 时，背景和云不走 Stage6 白热/黑热/noise 显示变换，目标、Hotspot、BrightSpot 仍走 Stage6 显示层。
+- `[Stage6 Display]` 与 `[Stage6 DisplayRoute]` 增加 `backgroundDisplay=0/1`，用于手动判断全黑是否来自背景分支。
+
+边界保持：
+- 不接入 `path_radiance`、`sky_radiance`、`solar_irradiance` 表。
+- 不改变 `UseModtranTauForAtmosphere` 和 `EnableStage5RadianceDebug` 默认值。
+- 不继续调 Hotspot/BrightSpot 亮度。
+- 不做完整 AGC、MTF、blur、H264 或 UDP 视频。
+- 不改变 TCP/JPEG 协议。
+
+### 2026-06-03 阶段 7A：最小天空/地平线背景
+
+Stage7A 只做最小天空/地平线背景，解决旧有限尺寸 sky card 可能露出边缘、背景低亮度覆盖画面以及缺少稳定地平线兜底的问题。本阶段不是完整 Stage7 环境系统，不做真实地形、云粒子扩展或天空辐射表接入。
+
+完成内容：
+- 新增 `EnableStage7SkyHorizon`，默认 `1`。
+- 当 Stage7A 打开时，在 raw 3D scene 中创建跟随相机位置的 sky dome 与大尺寸 ground/sea plane；二者使用 background bin、关闭 depth write/test，并在其后绘制 3D 目标。
+- 旧 camera-attached 有限尺寸 sky card 只作为 `EnableStage7SkyHorizon=0` 时的兼容 fallback，不再是 Stage7A 主背景。
+- 使用协议环境字段 `envTerrain`、`envSky`、`envRadScaleTerrain`、`envRadScaleSky` 以及波段默认值生成 `skyGray` 与 `groundGray`。
+- VIS/NIR/SWIR 默认天空较亮、地面中灰；MWIR 默认天空偏暗、地面中灰；LWIR 默认天空冷暗、地面按环境占位中灰。
+- 打开 Stage7A 时不再创建旧有限尺寸 sky card，也不默认创建云 card，避免旧背景边缘继续进入画面。
+- 新增 `[Stage7 SkyHorizon]` 日志，记录 `enable`、`band`、`envTerrain`、`envSky`、`skyGray`、`groundGray`、`horizonY`、`cameraPitch`、`cameraRoll` 和 `source=env+band_default`。
+
+新增检查：
+- `tools/stage7_sky_horizon_check.ps1 -Strict` 静态检查 Stage7A 开关、日志、fullscreen/camera-attached/background bin/depth off、env 字段使用、Stage6 显示层未破坏，以及未进入复杂地形/成像后处理/视频协议。
+- `tools/stage7_sky_horizon_smoke.ps1 -DelayMs 500` 只做日志级 smoke，发送 MWIR 800x800、10 µrad 初始化与实时帧，覆盖晴/云/雾和戈壁/海面组合，检查 `skyGray/groundGray`、`horizonY` 与 `[Stage6 FrameDiag]`。
+
+验收命令：
+- `powershell -ExecutionPolicy Bypass -File tools\stage0_build.ps1`
+- `powershell -ExecutionPolicy Bypass -File tools\stage3_modtran_tau_loader_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage4_hotspot_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage5_min_radiance_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage6_sensor_output_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage6_sensor_display_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage7_sky_horizon_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage7_sky_horizon_smoke.ps1 -DelayMs 500`
+
+下一步建议：
+- Stage7C 或后续阶段再考虑云、雾、雨雪与更真实的天空/地面辐射建模。
+- Stage6 后续若继续，应单独进入轻量显示控制或完整成像系统阶段，不把 Stage7A 的背景兜底误当作 AGC/MTF/noise 系统。
+
+### 2026-06-04 阶段 7A.3：3D sky/ground 调试与灰度标定
+
+Stage7A.3 聚焦 3D 背景几何和灰度可解释性，不修改 Stage6 final pass，也不扩展真实地形、云粒子或 MODTRAN 天空辐射。
+
+完成内容：
+- 新增 `Stage7DebugMode=Off/SkyOnly/GroundOnly/SkyGroundColor`。`SkyGroundColor` 使用固定亮灰天空与中灰地面，帮助区分几何不可见和环境灰度过暗。
+- 新增 `[Stage7 Debug]`、`[Stage7 SkyDomeDiag]`、`[Stage7 GroundDiag]` 日志，记录节点可见性、相机/sky dome 位置、深度属性与 ground 参考高度。
+- sky dome 跟随相机位置但不跟随旋转，保持 `two_sided=true`、`depth_write=false`、`depth_test=false`。
+- 新增 `Stage7GroundZOffset`，默认 `0`，用于手动校准 ground/sea plane 参考高度。
+- VIS/NIR/SWIR、MWIR、LWIR 使用分波段经验灰度，并对调试阶段的天空和地面分别设置 `0.12`、`0.18` 下限，避免因默认灰度过低误判为几何缺失。
+
+### 2026-06-04 阶段 7A.4：sky/ground 几何尺度随 farClip 自适应
+
+固定 `80000m` sky dome 在传感器 `farClip=30000m` 时会被相机远裁剪面裁掉。`depth_test=false` 和 `depth_write=false` 只控制片元深度测试/写入，不能绕过相机 near/far clip 的几何裁剪。
+
+完成内容：
+- sky dome 半径改为 `clamp(farClipM * 0.85, 1000m, 200000m)`，并额外保证 `skyRadius < farClipM`。
+- ground/sea plane 尺寸改为 `clamp(farClipM * 2.5, 5000m, 300000m)`，继续保留在 raw 3D scene 中。
+- `[Stage7 SkyDomeDiag]` 增加 `farClipM`、`skyRadius`、`radiusSource=farClip_scaled`、`radiusLessThanFarClip`。
+- `[Stage7 GroundDiag]` 增加 `farClipM`、`groundSize`、`groundZOffset`、`envTerrain`。
+- 可见目标距离超过 `farClipM * 0.9` 时输出 `STAGE7_TARGET_NEAR_FAR_CLIP`；超过 far clip 时继续使用 `STAGE6_TARGET_BEYOND_FAR_CLIP`。
+- `tools/stage7_sky_horizon_smoke.ps1` 只做日志级验证，覆盖 `30000m` 与 `80000m` far clip 以及四种 Stage7 debug mode。
+
+传感器配置建议：
+- 若真实目标最远约 `50km`，`trackerSensorViewMax` 建议至少设置为 `60000~80000m`，给目标运动、姿态变化和裁剪裕量留出空间。
+- sky dome 是背景几何，不要求比所有目标更远；其关键约束是位于当前 far clip 内，并且不通过深度状态遮挡目标。
+
+边界保持：
+- 不改变 Stage4 Hotspot/BrightSpot 或 Stage5 辐射链路。
+- 不修改 Stage6 final pass。
+- 不做真实地形、云粒子扩展、AGC、MTF、blur、H264 或 UDP 视频。
+- 不接入 `path_radiance`、`sky_radiance`、`solar_irradiance` 表。
+
+### 2026-06-05 阶段 7B：稳定真实 3D 背景收口
+
+Stage7B 将默认背景从“sky dome + 有限 flat ground plane”收口为“sky dome + lower hemisphere shell”。这个阶段不再扩展调试背景模式，而是修复高空、大视场和 lookat 目标切换时由有限平面边界造成的多带状、反转或露底异常。
+
+完成内容：
+- 默认 Stage7 背景使用上半球 `Stage7_SkyDome` 与下半球 `Stage7_LowerHemisphereShell`，二者共同围绕相机，跟随相机位置但不跟随相机旋转。
+- 下半空间地面/海面背景不再由 finite flat ground plane 决定，默认日志明确 `flatGroundPlane=0`、`lowerShell=1`。
+- sky dome 负责天空半球，lower shell 负责地面/海面半球，地平线由两个半球壳的连续边界产生，不再依赖有限平面的边缘。
+- ground/sea shell 默认使用 `reference_zero` 高度基准；`Stage7GroundZOffset` 仍保留为可选微调，但正常运行不依赖 `groundZ=-platAlt`。
+- 新增 `[Stage7 Real3DBackground]` 日志，记录 `skyDome=1`、`lowerShell=1`、`flatGroundPlane=0`、`cameraPos`、`backgroundMode=real_3d`。
+- 新增 `[Stage7 GroundReference]` 日志，记录 `mode=reference_zero`、`groundZOffset`、`finalGroundReferenceZ`。
+- white-hot 默认视觉语义调整为天空较亮、地面/海面较深；例如 MWIR 默认 `skyGray≈0.65`、`groundGray≈0.35`。
+
+运行语义：
+- 12 秒后 DataDrivenTestQT 切换 lookat 目标时，地平线倾斜、上下移动以及 sky/ground 占比变化是允许的。
+- 不允许因有限平面边界导致 `sky-ground-sky` 或 `ground-sky-ground` 多带状结构。
+- Stage7B 不通过冻结相机姿态修问题，而是通过默认 3D 背景几何结构消除 flat plane 边界。
+
+边界保持：
+- 不改变 Stage4 Hotspot/BrightSpot。
+- 不改变 Stage5 辐射链路。
+- 不改变 Stage6 final sensor 同源输出路线。
+- 不做真实地形、云粒子扩展、AGC、MTF、blur、H264 或 UDP 视频。
+- 不接入 MODTRAN `path_radiance`、`sky_radiance`、`solar_irradiance` 表。
+
+### 2026-06-05 配置化收口：RuntimeConfig 与 SensorWave 使用边界
+
+本轮不继续调画面，先把运行参数、SensorWave profile、UDP 初始化/实时数据和临时环境变量的职责边界收口，避免 `default_MWIR.json`、`HwaSimIRRuntime.ini`、`$env` 和 UDP 初始化包互相覆盖。
+
+配置优先级：
+- 运行开关、显示策略、调试开关：`env > HwaSimIRRuntime.ini > default`。
+- 传感器固有参数：`UDP init > SensorWave/default_*.json > HwaSimIRRuntime.ini fallback > default`。
+- 实时仿真输入：`UDP realtime > default`。`targetState`、`weaponState`、`viewValid`、`engineState`、`strikeFlag`、`strikePart`、`lookatEn` 不允许 ini/env 覆盖。
+- 天气环境：UDP init 环境字段优先，Stage7 weather profile/config 提供天气语义、纹理和缺省 fallback；RuntimeConfig 只控制开关与路径。
+
+完成内容：
+- 新增 `IR/IRRuntimeConfig.h/.cpp`，读取 `Config/HwaSimIRRuntime.ini`，支持 section.key、bool/int/double/string 查询，文件缺失时使用安全默认值并打印 warning。
+- 新增 `ConsoleApplication1_LLA/Bin/Config/HwaSimIRRuntime.ini`，集中管理 Stage3/4/5/6/7 与 Debug 运行开关，并用中文注释说明参数用途。
+- HwaSimIR 启动后打印 `[RuntimeConfig] path=... loaded=... envOverrideCount=... iniValueCount=... sourcePriority=env>ini>default`。
+- Stage3、Stage4、Stage5、Stage6Display、Stage7Background、Debug 的旧直接环境变量读取迁移到 RuntimeConfig；环境变量仍保留为临时最高优先级覆盖。
+- Stage7Weather 新增运行入口：`EnableWeatherEffects`、`WeatherProfilePath`、`WeatherTextureConfig`、`EnableCloudLayer`、`EnableFog`、`EnablePrecipitation`、`CloudLayerMaxCards`、`PrecipitationMaxParticles`、`UseWeatherUdpInput`。
+- Stage6 新增 `NoiseOverrideEnable`，默认 `1`。当它为 `1` 时，ini/env 的 `NoiseEnable/NoiseSigmaGray` 覆盖协议噪声字段；当它为 `0` 时，协议 `noiseEn/trackerSensorNoise` 优先。
+- `[Stage6 Display]` 日志增加 `noiseOverrideEnable` 与 `noiseSource=env/ini/protocol/default`。
+
+SensorWave 使用边界：
+- 不删除 Presagis/Ondulus IR 原始 `default_*.json`，后续仍按波段保留独立 profile。
+- 当前只读取 HwaSimIR 白名单字段：`Width`、`Height`、`ADCBitNumber`、`DisplayBits`、`SpectralResponseRangeLow/High`、`NoiseEquivalentTemperatureDifference`、`DetectorPitch`、`FocalLength`、`LensFnumber`、`BlackHot`。
+- `Width/Height/FOVH/FOVV` 不覆盖有效 UDP 初始化几何；`FOVH/FOVV` 只在 `trackerSensorPixelAngle` 无效时作为 fallback/reference。
+- `[SensorWave Usage]` 日志记录 `usedFields`、`fallbackFields`、`ignoredPresagisFields` 和 `priority=UDP_init>SensorWave>RuntimeConfig>default`。
+- 新增 `docs/sensorwave_config_usage.md`，用中文说明当前使用字段、fallback 字段、明确不使用字段和后续可能接入字段。
+
+边界保持：
+- 不改 UDP 协议结构。
+- 不改 DataDrivenTestQT 实时数据逻辑。
+- 不改变 Stage4 Hotspot/BrightSpot 语义。
+- 不改变 Stage5 辐射链路。
+- 不做 AGC、MTF、blur、H264 或 UDP 视频新功能。
+- 不接入 MODTRAN `path_radiance`、`sky_radiance`、`solar_irradiance` 表。
+
+新增检查：
+- `tools/runtime_config_check.ps1 -Strict` 静态检查 RuntimeConfig 文件、ini、工程接入、配置优先级、SensorWave 白名单、Stage6 噪声优先级与禁止项边界。
+
+### 2026-06-07 阶段 7C：最小天气、云、雾、雨雪效果
+
+Stage7C 在 Stage7B 的真实 3D 背景上接入最小天气显示层，使用用户放入 `天气资源/` 的贴图资源，但不进入完整体积云、真实地形或 MODTRAN 天空/路径/太阳辐射表。天气效果仍属于 raw 3D scene 与背景/显示语义层，最终窗口和 TCP/JPEG 继续共用 Stage6 final sensor output。
+
+完成内容：
+- 新增 `IR/IRWeatherEffects.h/.cpp`，集中把 `envSky`、能见度、湿度、风速、风向、温度、雨雪高度和天气 profile 合成为 `IRStage7WeatherState`。
+- 新增 `ConsoleApplication1_LLA/Bin/Config/Weather/weather_profiles.json`，定义 `envSky=0..5` 对应 Clear、Cloudy、Rain、Snow、Fog、Overcast，并配置 sky/ground 灰度缩放、云量、云温、雾密度、雨雪类型、太阳直射缩放、天空漫射缩放和目标对比度缩放。
+- 新增 `ConsoleApplication1_LLA/Bin/Config/Weather/weather_textures.json`，索引 `cloud_*`、`rain_shaft`、`rain_rgba`、`snow_rgba`、`sun`、`moon` 等贴图；资源复制到 `ConsoleApplication1_LLA/Bin/Config/Weather/Textures/`。
+- `HwaSimIRRuntime.ini` 新增 `[Stage7Weather]`，正式管理 Stage7C 天气开关、profile 路径、贴图索引路径、云层/雾/雨雪开关和轻量 card 数量上限。
+- Stage7C 增加 camera-relative 云层 billboard 与雨雪 billboard 粒子层，仍进入 raw 3D scene，再由 Stage6 final pass 输出到窗口和 TCP。
+- shader 新增 Stage7 weather uniforms，云层使用 texture alpha/luma 作为密度 mask，雨雪使用轻量 billboard/streak 表示，雾只做灰度与对比度混合，不做真实大气程辐射。
+- 新增日志 `[Stage7 Weather]`、`[Stage7 CloudLayer]`、`[Stage7 Fog]`、`[Stage7 Precipitation]`、`[Stage7 WeatherConfig]`，记录天气名、云量、雾密度、雨雪类型、太阳/天空缩放、目标对比度和配置来源。
+
+职责边界：
+- UDP init 的环境字段仍负责当前天气输入；RuntimeConfig 负责开关和配置路径；weather profile 负责天气码到显示参数的映射与 fallback。
+- Stage7C 不覆盖实时目标、武器、可见性、发动机和毁伤状态字段。
+- 不修改 Stage4 Hotspot/BrightSpot 语义，不修改 Stage5 辐射链路。
+- 不接入 `path_radiance`、`sky_radiance`、`solar_irradiance` 表。
+- 不做 AGC、MTF、blur、H264 或 UDP 视频新功能。
+
+### 2026-06-08 阶段 5E.1：EnginePlume 双层尾焰/羽流
+
+Stage5E.1 将 EnginePlume 从单层半透明羽流升级为低成本双层结构：
+
+- `core plume`：短、亮、细，表示喷口后方高温核心喷流。
+- `halo plume`：长、宽、淡，表示外扩热羽流。
+- 每个目标最多创建两个 plume node：`enginePlumeCoreNodePath` 与 `enginePlumeHaloNodePath`。节点在目标创建时生成，目标删除时清理；每帧只更新 transform、uniform 和 show/hide，不创建/删除节点，不加载纹理。
+- `engine_plume_profiles.json` 的 `defaults`、`F35`、`AIM120D`、`AIM9X` 均支持 `core`/`halo` 分层 profile。旧单层字段仍可兼容读取，并自动派生 halo 层。
+- `[Stage5Plume]` 新增 `PlumeCoreDisplayGain`、`PlumeHaloDisplayGain`、`PlumeCoreOpacityScale`、`PlumeHaloOpacityScale`，亮度不再只靠提高 `temperatureK`。
+- shader 保留 `u_object_kind=4` 表示 EnginePlume，并新增 `u_plume_layer=1/2` 区分 core/halo。core 根部更亮、横向更集中；halo 更柔和、更透明，仍通过 Stage6 final sensor pass 输出，窗口和 TCP/JPEG 保持同源。
+
+职责边界保持不变：
+
+- rear ThermalHotspot 仍表示喷口局部热源，由 `engineState` 控制。
+- EnginePlume 仍只表示喷口后方热羽流，由 `engineState` 控制，并保留热惯性。
+- BrightSpot 仍只由 `strikeFlag/strikePart` 控制，不参与 EnginePlume。
+- 当前仍是低成本实时近似，不是 CFD 或真实气体辐射；后续可再做 plume alpha mask、分段喷流、纹理扰动和发动机工况耦合，但本轮不做。
+
+新增检查：
+- `tools/stage7_weather_check.ps1 -Strict` 静态检查天气模块、配置文件、资源复制、工程接入、日志、shader 分支和禁止项边界。
+- `tools/stage7_weather_smoke.ps1 -DelayMs 500` 只做日志级 smoke，覆盖晴、云、雨、雪、雾、阴六类天气，不解析 JPEG，也不做复杂视觉指标。
+
+### 2026-06-03 阶段 6B.3：统一最终显示后处理管线
+
+Stage6B.3 回到用户的核心目标：HwaSimIR 主窗口看到的图像，必须和 TCP/JPEG 往外发送的视频流图像一致。此前 `Stage6DisplayApplyToWindow=0` 时窗口是 raw scene、TCP 是 CPU postprocess；`Stage6DisplayApplyToWindow=1` 时显示逻辑分散在目标/背景/云 shader 中，容易和 capture 路径混在一起。两种方式都不适合作为最终路线。
+
+完成内容：
+- 建立统一输出管线：`raw scene render target -> final sensor postprocess pass -> window + TCP`。Stage7 的 3D sky dome、lower hemisphere shell 与 3D 目标共同进入 raw scene，再由 final sensor pass 统一处理。
+- 新增 Stage6 final postprocess shader/pass，输入 `Stage6RawSceneTex`，输出窗口显示的 final sensor 图像；窗口再 copy 到 `Stage6FinalSensorTex`，TCP/JPEG 从该 final texture 的 RAM image 读取。
+- final pass 统一执行最小显示控制：RGB8 灰度化、手动 `Stage6DisplayGain`、`Stage6DisplayOffset`、轻量噪声、白热/黑热和 clamp。
+- 目标、天空、云、材质 ID debug、Stage5 debug 分支只输出 raw scene gray，不再默认执行 Stage6 显示变换。
+- `capture_task()` 不再对 final sensor frame 做第二次 `IRSensorPostProcess::processRgb8()`；CPU postprocess 模块保留为兼容/诊断工具，不作为默认输出路线。
+- `[Stage6 FinalPipeline]` 日志记录 `rawSceneTex`、`finalSensorTex`、`windowSource=final_sensor`、`tcpSource=final_sensor`、`sameOutput=1`。
+- `[Stage6 DisplayRoute]` 中旧 `Stage6DisplayApplyToWindow` 路由标为 deprecated；主路线固定为 final sensor 同源输出。
+
+边界保持：
+- 不改变 Stage4 Hotspot/BrightSpot 语义。
+- 不改变 Stage5 辐射链路。
+- 不接入 `path_radiance`、`sky_radiance`、`solar_irradiance` 表。
+- 不做完整 AGC、MTF、blur、H264 或 UDP 视频。
+- 不改变 TCP/JPEG length-prefixed JPEG 协议格式。
+
+验收命令：
+- `powershell -ExecutionPolicy Bypass -File tools\stage0_build.ps1`
+- `powershell -ExecutionPolicy Bypass -File tools\stage3_modtran_tau_loader_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage4_hotspot_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage5_min_radiance_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage6_sensor_output_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage6_sensor_display_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage7_sky_horizon_check.ps1 -Strict`
+- `powershell -ExecutionPolicy Bypass -File tools\stage6_sensor_display_smoke.ps1 -DelayMs 500`
+
+### 2026-06-08 阶段 5E：EnginePlume / Tail Plume
+
+Stage5E 新增目标发动机尾焰/羽流红外特效。它是喷口后方独立的半透明热辐射体，不是 BrightSpot，也不是简单放大 rear ThermalHotspot。当前实现仍保持低成本：每个目标使用少量 plume node 与 shader 衰减/扰动，不使用大量粒子，不加载 plume 贴图。
+
+完成内容：
+- 新增 `IR/IREnginePlumeModel.h/.cpp`，读取 `engine_plume_profiles.json`，按平台、运行键、`engineState`、时间步长、环境温度和当前波段更新 plume 状态。
+- 新增 `ConsoleApplication1_LLA/Bin/Config/IRPlume/engine_plume_profiles.json`，包含 `defaults` 与 `F35`、`AIM120D`、`AIM9X` 平台 profile。
+- `HwaSimIRRuntime.ini` 新增 `[Stage5Plume]`，运行开关包括 `EnableEnginePlume`、`EnginePlumeProfilePath`、`MaxPlumeNodes`、`UseEngineState`、`UseProceduralNoise`、`EnablePlumeDebug`、`ForcePlumeVisible`、`PlumeDisplayGain`、`PlumeOpacityScale`。
+- 在 `TargetPlatformData` 生命周期内为目标创建 EnginePlume 节点，目标删除时随目标清理；每帧只更新 transform、uniform 和 show/hide，不每帧创建节点或加载纹理。
+- shader 新增 `u_object_kind=4` 的 EnginePlume 分支，以及 `u_plume_*` uniforms。plume 进入 raw scene，再统一经过 Stage6 final sensor pass，因此窗口和 TCP/JPEG 继续同源。
+- 新增 `[Stage5 Plume]` 与 `[Stage5 PlumePerf]` 日志，记录 `engineState`、温度、形状、opacity、bandGain、灰度、节点可见性、plume 节点数量和 `textureLoadCountThisFrame=0`。
+
+职责边界：
+- rear ThermalHotspot 仍是喷口局部热源，由 `TargetState.engineState` 控制。
+- EnginePlume 是喷口后方半透明热羽流，也由 `engineState` 控制，并带热惯性。
+- BrightSpot 仍是 `strikeFlag/strikePart` 控制的头部/中部特殊亮斑，不参与 EnginePlume。
+- 当前不是 CFD 或真实气体辐射；后续如需更真实，可接发动机工况、马赫数、高度、大气和 MODTRAN path radiance，本阶段不做。
+- 不接入 `path_radiance`、`sky_radiance`、`solar_irradiance` 表。
+- 不做 AGC、MTF、blur、H264 或 UDP 视频新功能。
+
+新增检查：
+- `tools/stage5_plume_check.ps1 -Strict` 静态检查 plume 模型、profile、runtime 配置、shader 分支、目标节点生命周期、engineState 控制、strikeFlag 隔离、无每帧贴图加载/节点创建和禁止项边界。
+- `tools/stage5_plume_smoke.ps1 -DelayMs 500` 只做日志级 smoke，覆盖 MWIR engine off/on、LWIR/NIR/SWIR band gain、`ForcePlumeVisible=1`、`viewValid=false` 和 Stage6 `sameOutput=1`。

@@ -12,6 +12,7 @@
 #include <map>
 #include <unordered_set>
 #include <vector>
+#include <atomic>
 
 
 #include "pandaSystem.h"
@@ -33,18 +34,28 @@
 #include "AttitudeTransform.h"
 #include "IRSimulation.h"
 #include "IR/IRConfig.h"
+#include "IR/IREnginePlumeModel.h"
 #include "IR/IRSceneMaterialMapper.h"
 #include "IR/IRRadianceModelV2.h"
+#include "IR/IRRuntimeConfig.h"
 #include "IR/IRSensorModel.h"
+#include "IR/IRSensorPostProcess.h"
 #include "IR/IRTemperatureModel.h"
+#include "IR/IRWeatherEffects.h"
 
 #include "shader.h"             // 新增：着色器支持
 #include "clockObject.h"        // 新增：获取全局时间
 #include "cardMaker.h"
 #include "transparencyAttrib.h"
+#include "graphicsOutput.h"
+#include "displayRegion.h"
+#include "camera.h"
+#include "orthographicLens.h"
+#include "pandaNode.h"
 
 #include "load_prc_file.h"
 #include <condition_variable>
+#include <atomic>
 
 /**
 * 主应用类
@@ -115,15 +126,20 @@ private:
 	IRRadianceModel m_irRadianceModel;                      // CPU低复杂度辐亮度模型
 	IRRadianceModelV2 m_irRadianceModelV2;                  // Stage5A minimal body/hotspot/brightspot radiance debug model
 	IRSensorModel m_irSensorModel;                          // Stage6A sensor geometry and output size model
+	IRSensorPostProcess m_irSensorPostProcess;              // Stage6B minimal display output postprocess
 	IRSensorProfileDatabase m_irSensorProfiles;             // SensorWave传感器配置
 	IRSceneMaterialMapper m_irSceneMaterialMapper;          // 阶段2：目标材质ID纹理与物理材质参数绑定器
 	IRWeatherProfile m_irWeatherProfile;                    // 阶段3：温度/太阳高度/方位角环境profile
+	IRWeatherEffects m_stage7WeatherEffects;                // 阶段7C：最小天气/云/雾/雨雪效果
 	IRTemperatureModel m_irTemperatureModel;                 // 阶段4：发动机热源与特殊亮斑状态模型
+	IREnginePlumeModel m_irEnginePlumeModel;                // Stage5E：发动机尾焰/羽流独立热辐射体
+	IRRuntimeConfig m_runtimeConfig;                         // 运行配置：env > HwaSimIRRuntime.ini > default
 	bool m_irMaterialReady = false;
 	bool m_irAtmosphereReady = false;
 	bool m_irSensorProfilesReady = false;
 	bool m_irWeatherReady = false;
 	bool m_irTemperatureReady = false;
+	bool m_irEnginePlumeReady = false;
 	bool m_enableStage4HotspotVisualDebug = false; // 阶段4可视化诊断开关，默认关闭，不改变生产渲染
 	bool m_forceStage4BrightSpotVisible = false;   // 阶段4调试：强制特殊亮斑可见
 	bool m_forceStage4RearHotspotVisible = false;  // 阶段4调试：强制尾部热源可见
@@ -145,6 +161,10 @@ private:
 	bool m_stage5OutputFrameDumpFailureLogged = false;
 	int m_stage5ConsecutiveZeroFrames = 0;
 	int m_stage5ConsecutiveReflectedZeroFrames = 0;
+	IREnginePlumeRuntimeOptions m_stage5PlumeOptions;
+	std::string m_stage5PlumeProfilePath = "Config/IRPlume/engine_plume_profiles.json";
+	std::string m_stage5PlumeLastPerfState;
+	int m_stage5PlumePerfLogCounter = 0;
 	bool m_stage5BodyGrayPathHintLogged = false;
 	bool m_stage5BaseTextureFallbackLogged = false;
 	bool m_stage5NormalFallbackHintLogged = false;
@@ -154,13 +174,87 @@ private:
 	double m_lastStage4UpdateTime = -1.0;
 	IRSensorDisplayConfig m_sensorDisplayConfig;
 	bool m_sensorDisplayConfigReady = false;
+	IRSensorPostProcessConfig m_stage6DisplayConfig;
+	bool m_stage6DisplayConfigReady = false;
 	bool m_stage6FarClipWarningLogged = false;
 	int m_stage6CaptureLogCounter = 0;
+	int m_stage6DisplayLogCounter = 0;
+	int m_stage6FrameDiagLogCounter = 0;
+	int m_stage6NoVisibleTargetFrames = 0;
+	std::string m_stage6LastFrameDiagState;
+	PT(Shader) m_stage6FinalPostShader;
+	PT(Texture) m_stage6RawSceneTex;
+	PT(GraphicsOutput) m_stage6RawSceneBuffer;
+	PT(DisplayRegion) m_stage6RawSceneRegion;
+	PT(DisplayRegion) m_stage6FinalRegion;
+	NodePath m_stage6FinalRoot;
+	NodePath m_stage6FinalCameraNode;
+	NodePath m_stage6FinalCard;
+	bool m_stage6FinalPipelineReady = false;
+	int m_stage6FinalPipelineLogCounter = 0;
+	int m_stage6FinalWidth = 0;
+	int m_stage6FinalHeight = 0;
+	std::atomic<bool> m_requestExit{ false };
+	bool m_enableStage7SkyHorizon = true;
+	int m_stage7DebugMode = 0;
+	std::string m_stage7DebugModeName = "Off";
+	double m_stage7GroundZOffset = 0.0;
+	bool m_stage7UseReal3DBackground = true;
+	double m_stage7SkyDomeRadius = 42500.0;
+	double m_stage7LowerShellRadius = 42500.0;
+	double m_stage7GroundReferenceZ = 0.0;
+	bool m_stage7NearFarClipWarningLogged = false;
+	int m_stage7SkyHorizonLogCounter = 0;
+	std::string m_stage7LastSkyHorizonState;
+	NodePath m_stage7LowerShellNode;
+	bool m_stage7WeatherEnabled = true;
+	bool m_stage7CloudLayerEnabled = false;
+	bool m_stage7FogEnabled = true;
+	bool m_stage7PrecipitationEnabled = false;
+	bool m_stage7UseWeatherUdpInput = true;
+	int m_stage7PrecipitationMode = 1; // 0 None, 1 ScreenOverlay, 2 Cards
+	std::string m_stage7PrecipitationModeName = "ScreenOverlay";
+	int m_stage7CloudLayerMaxCards = 0;
+	int m_stage7PrecipitationMaxParticles = 0;
+	std::string m_stage7WeatherProfilePath = "Config/Weather/weather_profiles.json";
+	std::string m_stage7WeatherTextureConfigPath = "Config/Weather/weather_textures.json";
+	IRStage7WeatherState m_stage7WeatherState;
+	int m_stage7WeatherLogCounter = 0;
+	std::string m_stage7LastWeatherState;
+	int m_stage7PerfLogCounter = 0;
+	std::string m_stage7LastPerfState;
+	std::string m_stage7WeatherTextureCacheKey;
+	std::string m_stage7CachedCloudTexturePath;
+	std::string m_stage7CachedRainTexturePath;
+	std::string m_stage7CachedSnowTexturePath;
+	PT(Texture) m_stage7CloudTexture;
+	PT(Texture) m_stage7RainTexture;
+	PT(Texture) m_stage7SnowTexture;
+	std::vector<NodePath> m_stage7PrecipitationNodes;
 
 	void InitInfraredShader();                              // 初始化着色器代码
+	void InitStage6FinalPostShader();
+	void SetupStage6FinalPipeline(int width, int height, const char* reason);
+	void ApplyStage6FinalPostprocessInputs();
 	void InitInfraredSimulation();                          // 初始化低复杂度红外全链路参数
 	void InitSkyAndCloudScene();                            // 初始化天空背景和粒子云近似层
 	void ApplyInfraredShader(NodePath& node, bool isBackground); // 挂载着色器并初始化参数
+	void ApplyStage6DisplayShaderInputs(NodePath& node) const;
+	void RefreshStage6DisplayShaderInputs();
+	void UpdateStage7SkyHorizon(const IRRuntimeEnvironment& environment, const char* reason, bool forceLog);
+	void LogStage7SkyGround(const IRRuntimeEnvironment& environment, int envTerrain, int envSky, double skyGrayRaw, double groundGrayRaw, double skyGrayFinal, double groundGrayFinal, double farClipM, double groundReferenceZ, bool forceLog, const char* reason);
+	void InitStage7WeatherScene();
+	IRStage7WeatherRuntimeInput BuildStage7WeatherInput() const;
+	IRStage7WeatherState EvaluateStage7WeatherState(const IRRuntimeEnvironment& environment) const;
+	void ApplyStage7WeatherInputs(NodePath& node, const IRStage7WeatherState& weatherState) const;
+	int RefreshStage7WeatherTextureCache(const IRStage7WeatherState& weatherState);
+	void UpdateStage7WeatherNodes(const IRStage7WeatherState& weatherState, double currentTime);
+	void LogStage7Weather(const IRStage7WeatherState& weatherState, const char* reason, bool forceLog);
+	void LogStage7Perf(const IRStage7WeatherState& weatherState, int weatherNodeCount, int cloudNodeCount, int precipitationNodeCount, int textureLoadCountThisFrame, double updateWeatherNodesMs, double totalWeatherMs);
+	void CreateEnginePlumeForTarget(TargetPlatformData& targetPlat);
+	IREnginePlumeOutput UpdateEnginePlumeForTarget(TargetPlatformData& targetPlat, float dtSec, float ambientTempK, IRBand band, bool targetRenderable, double currentTime);
+	void HideEnginePlume(TargetPlatformData& targetPlat);
+	void LogStage5PlumePerf(int plumeNodeCount, int visiblePlumeCount, double updatePlumeMs);
 	NodePath LoadPlatformAssetNode(PLATFORM_TYPE type, const PlatformResPath& res); // 加载模型、基础纹理和阶段2材质绑定
 	void UpdatePlatformIRStatus();                          // 动态更新红外状态（时间、波段、亮斑等）
 	void ApplyRadianceInputs(NodePath& node, const IRObjectRadianceOutput& radiance, int objectKind);
@@ -180,6 +274,12 @@ private:
 	void ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IRObjectRadianceOutput& radiance, const IRHotspotState& rearHotspot, const IRBrightSpotState& brightSpot, bool rearEnabledForShader, float rearIntensityForShader, const std::string& targetKey);
 	void ApplySensorOutputConfig(const IRSensorDisplayConfig& config, const char* reason);
 	void LogStage6SensorGeometry(const IRSensorDisplayConfig& config, const char* reason) const;
+	void ApplyStage6DisplayConfig(const BYHWICD::trackerSensorParam& sensor, const char* reason);
+	void LogStage6DisplayConfig(const IRSensorPostProcessConfig& config, const char* reason) const;
+	void LogStage6DisplayRoute(const IRSensorPostProcessConfig& config, const char* reason) const;
+	void LogStage6FinalPipeline(const char* reason);
+	void LogStage6ViewportDiag(const char* reason) const;
+	void LogStage6FrameDiag(const BYHWICD::DisplayC2cObjTrackingData& currentData, int targetMappedCount, int targetVisibleCount, int hiddenByTargetNum, int hiddenByTargetViewValid, int hiddenByWeaponViewValid, int beyondFarClipCount);
 	void LogActiveIRSensorProfile(int protocolBand, const char* reason, bool forceLog);
 	double CurrentSimulationHour() const;                   // 从实时数据时间换算当前仿真小时，无实时数据时使用正午profile
 	IRRuntimeEnvironment BuildRuntimeEnvironment() const;   // 阶段3：按 UDP > profile > 默认值合成环境状态
@@ -231,7 +331,7 @@ private:
 
 															 // 控制标记
 	bool m_isAddPlatform;    // 增删标记：true-增加 false-删除
-	bool m_isSimRunning;     // 仿真运行标记：true-运行 false-停止
+	std::atomic<bool> m_isSimRunning{ false };     // 仿真运行标记：true-运行 false-停止
 	int m_currentRound;      // 当前仿真回合数
 
 

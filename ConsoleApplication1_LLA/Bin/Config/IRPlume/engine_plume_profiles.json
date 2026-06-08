@@ -1,0 +1,194 @@
+{
+  "version": 2,
+  "notes": "Stage5E.1 EnginePlume is an independent two-layer thermal plume body. Core is the short hot jet, halo is the longer diffuse plume. It is not BrightSpot and does not replace rear ThermalHotspot.",
+  "defaults": {
+    "enabled": true,
+    "enabledByEngineState": true,
+    "localPos": [0.0, -1.2, 0.0],
+    "localDir": [0.0, -1.0, 0.0],
+    "ambientMixK": 310.0,
+    "heatTauSec": 0.45,
+    "coolTauSec": 2.8,
+    "core": {
+      "enabled": true,
+      "temperatureK": 1520.0,
+      "opacity": 0.72,
+      "lengthM": 2.4,
+      "radiusRootM": 0.18,
+      "radiusTailM": 0.42,
+      "axialDecay": 3.25,
+      "radialDecay": 5.25,
+      "noiseScale": 6.2,
+      "noiseStrength": 0.10,
+      "bandGain": {
+        "VIS": 0.0,
+        "NIR": 0.08,
+        "SWIR": 0.18,
+        "MWIR": 1.25,
+        "LWIR": 0.42
+      }
+    },
+    "halo": {
+      "enabled": true,
+      "temperatureK": 1180.0,
+      "opacity": 0.34,
+      "lengthM": 5.2,
+      "radiusRootM": 0.34,
+      "radiusTailM": 1.15,
+      "axialDecay": 1.45,
+      "radialDecay": 1.95,
+      "noiseScale": 3.6,
+      "noiseStrength": 0.24,
+      "bandGain": {
+        "VIS": 0.0,
+        "NIR": 0.04,
+        "SWIR": 0.10,
+        "MWIR": 0.58,
+        "LWIR": 0.30
+      }
+    }
+  },
+  "platforms": {
+    "F35": {
+      "enabled": true,
+      "enabledByEngineState": true,
+      "localPos": [0.0, -3.8, 0.0],
+      "localDir": [0.0, -1.0, 0.0],
+      "ambientMixK": 315.0,
+      "heatTauSec": 0.65,
+      "coolTauSec": 5.0,
+      "core": {
+        "enabled": true,
+        "temperatureK": 1580.0,
+        "opacity": 0.66,
+        "lengthM": 4.2,
+        "radiusRootM": 0.42,
+        "radiusTailM": 0.92,
+        "axialDecay": 2.9,
+        "radialDecay": 4.7,
+        "noiseScale": 5.5,
+        "noiseStrength": 0.11,
+        "bandGain": {
+          "VIS": 0.0,
+          "NIR": 0.06,
+          "SWIR": 0.16,
+          "MWIR": 1.10,
+          "LWIR": 0.52
+        }
+      },
+      "halo": {
+        "enabled": true,
+        "temperatureK": 1210.0,
+        "opacity": 0.30,
+        "lengthM": 10.5,
+        "radiusRootM": 0.78,
+        "radiusTailM": 2.35,
+        "axialDecay": 1.18,
+        "radialDecay": 1.55,
+        "noiseScale": 2.8,
+        "noiseStrength": 0.27,
+        "bandGain": {
+          "VIS": 0.0,
+          "NIR": 0.03,
+          "SWIR": 0.08,
+          "MWIR": 0.50,
+          "LWIR": 0.34
+        }
+      }
+    },
+    "AIM120D": {
+      "enabled": true,
+      "enabledByEngineState": true,
+      "localPos": [0.0, -1.85, 0.0],
+      "localDir": [0.0, -1.0, 0.0],
+      "ambientMixK": 310.0,
+      "heatTauSec": 0.35,
+      "coolTauSec": 2.4,
+      "core": {
+        "enabled": true,
+        "temperatureK": 1800.0,
+        "opacity": 0.95,
+        "lengthM": 2.2,
+        "radiusRootM": 0.12,
+        "radiusTailM": 0.35,
+        "axialDecay": 1.0,
+        "radialDecay": 1.4,
+        "noiseScale": 3.8,
+        "noiseStrength": 0.25,
+        "bandGain": {
+          "VIS": 0.0,
+          "NIR": 0.25,
+          "SWIR": 0.55,
+          "MWIR": 2.5,
+          "LWIR": 1.2
+        }
+      },
+      "halo": {
+        "enabled": true,
+        "temperatureK": 1100.0,
+        "opacity": 0.45,
+        "lengthM": 5.0,
+        "radiusRootM": 0.25,
+        "radiusTailM": 1.0,
+        "axialDecay": 1.8,
+        "radialDecay": 2.2,
+        "noiseScale": 3.8,
+        "noiseStrength": 0.45,
+        "bandGain": {
+          "VIS": 0.0,
+          "NIR": 0.10,
+          "SWIR": 0.25,
+          "MWIR": 1.3,
+          "LWIR": 0.75
+        }
+      }
+    },
+    "AIM9X": {
+      "enabled": true,
+      "enabledByEngineState": true,
+      "localPos": [0.0, -1.5, 0.0],
+      "localDir": [0.0, -1.0, 0.0],
+      "ambientMixK": 310.0,
+      "heatTauSec": 0.32,
+      "coolTauSec": 2.2,
+      "core": {
+        "enabled": true,
+        "temperatureK": 1800.0,
+        "opacity": 0.95,
+        "lengthM": 2.2,
+        "radiusRootM": 0.12,
+        "radiusTailM": 0.35,
+        "axialDecay": 1.0,
+        "radialDecay": 1.4,
+        "noiseScale": 3.8,
+        "noiseStrength": 0.25,
+        "bandGain": {
+          "VIS": 0.0,
+          "NIR": 0.25,
+          "SWIR": 0.55,
+          "MWIR": 2.5,
+          "LWIR": 1.2
+        }
+      },
+      "halo": {
+        "enabled": true,
+        "temperatureK": 1100.0,
+        "opacity": 0.45,
+        "lengthM": 5.0,
+        "radiusRootM": 0.25,
+        "radiusTailM": 1.0,
+        "axialDecay": 1.8,
+        "radialDecay": 2.2,
+        "noiseScale": 3.8,
+        "noiseStrength": 0.45,
+        "bandGain": {
+          "VIS": 0.0,
+          "NIR": 0.10,
+          "SWIR": 0.25,
+          "MWIR": 1.3,
+          "LWIR": 0.75
+        }
+      }
+    }
+  }
+}

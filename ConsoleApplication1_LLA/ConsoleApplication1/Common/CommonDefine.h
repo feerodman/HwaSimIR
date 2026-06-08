@@ -82,6 +82,8 @@ struct TargetPlatformData
 	int platID;                          // 平台ID
 	BYHWICD::TargetState targetState;	 // 目标状态
 	NodePath nodePath;                   // 节点路径
+	NodePath enginePlumeCoreNodePath;    // Stage5E EnginePlume core 节点，每个目标最多一个
+	NodePath enginePlumeHaloNodePath;    // Stage5E EnginePlume halo 节点，每个目标最多一个
 	bool isExist;                        // 是否存在标记
 };
 

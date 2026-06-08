@@ -1,0 +1,1064 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/eap5pr",
+    "id": "eap5pr",
+    "slide": 4,
+    "layoutId": "6872c77c-b311-4b98-a8b9-287f3c9981dd",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "2b2e5535-abf9-4ddf-9c5e-af746f346170",
+    "masterLayoutName": "Master",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 960,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "微软雅黑"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "6872c77c-b311-4b98-a8b9-287f3c9981dd",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "2b2e5535-abf9-4ddf-9c5e-af746f346170",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "2b2e5535-abf9-4ddf-9c5e-af746f346170",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "image",
+      "scope": "slide",
+      "aid": "im/m58z25kb",
+      "id": "1",
+      "bbox": [
+        0,
+        0,
+        960,
+        720
+      ],
+      "alt": "template",
+      "contentType": "image/png",
+      "imageFit": "fill",
+      "asset": {
+        "assetId": "15813df7-9b81-4beb-8feb-11d4c57c35fa",
+        "contentType": "image/png",
+        "byteLength": 261789
+      }
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8nqxs72x",
+      "id": "2",
+      "bbox": [
+        95,
+        74,
+        760,
+        28
+      ],
+      "geometry": "rect",
+      "text": "02 产品概述：从红外仿真内核到可交付产品",
+      "textPreview": "02 产品概述：从红外仿真内核到可交付产品",
+      "resolvedFontSize": 21,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 21,
+        "typeface": "微软雅黑",
+        "color": "#FFFFFF",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "02 产品概述：从红外仿真内核到可交付产品"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "02 产品概述：从红外仿真内核到可交付产品",
+          "resolvedTextStyle": {
+            "fontSize": 21,
+            "typeface": "微软雅黑",
+            "color": "#FFFFFF",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "02 产品概述：从红外仿真内核到可交付产品",
+              "fontSize": 21,
+              "typeface": "微软雅黑",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/18jqh0fe",
+      "id": "3",
+      "bbox": [
+        96,
+        106,
+        720,
+        18
+      ],
+      "geometry": "rect",
+      "text": "产品要能配置、能接入、能部署、能验收，而不是只停留在 demo",
+      "textPreview": "产品要能配置、能接入、能部署、能验收，而不是只停留在 demo",
+      "resolvedFontSize": 10.51,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 10.51,
+        "typeface": "微软雅黑",
+        "color": "#FFFFFF",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "产品要能配置、能接入、能部署、能验收，而不是只停留在 demo"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "产品要能配置、能接入、能部署、能验收，而不是只停留在 demo",
+          "resolvedTextStyle": {
+            "fontSize": 10.51,
+            "typeface": "微软雅黑",
+            "color": "#FFFFFF",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "产品要能配置、能接入、能部署、能验收，而不是只停留在 demo",
+              "fontSize": 10.51,
+              "typeface": "微软雅黑",
+              "color": "#FFFFFF"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/q5o7qpg3",
+      "id": "4",
+      "bbox": [
+        62,
+        175,
+        250,
+        250
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#4976D1",
+      "lineWidth": 1.5
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/jqh0fepk",
+      "id": "5",
+      "bbox": [
+        62,
+        175,
+        250,
+        34
+      ],
+      "geometry": "rect",
+      "fillColor": "#4976D1",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8bat47y1",
+      "id": "6",
+      "bbox": [
+        76,
+        183,
+        222,
+        20
+      ],
+      "geometry": "rect",
+      "text": "产品是什么",
+      "textPreview": "产品是什么",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "微软雅黑",
+        "color": "#FFFFFF",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "产品是什么"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "产品是什么",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#FFFFFF",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "产品是什么",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1w7mp0bi",
+      "id": "7",
+      "bbox": [
+        80,
+        229,
+        214,
+        186
+      ],
+      "geometry": "rect",
+      "text": "三维场景红外成像仿真平台\n\n输入：场景、目标、材质、温度、大气、传感器参数\n输出：多波段红外图像/序列、状态日志、测试报告",
+      "textPreview": "三维场景红外成像仿真平台 |  | 输入：场景、目标、材质、温度、大气、传感器参数 | 输出：多波段红外图像/序列、状态日志、测试报告",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "微软雅黑",
+        "color": "#09285C",
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 6,
+        "lines": [
+          {
+            "index": 1,
+            "text": "三维场景红外成像仿真平台"
+          },
+          {
+            "index": 2,
+            "text": ""
+          },
+          {
+            "index": 3,
+            "text": "输入：场景、目标、材质、温度、"
+          },
+          {
+            "index": 4,
+            "text": "大气、传感器参数"
+          },
+          {
+            "index": 5,
+            "text": "输出：多波段红外图像/序列、状"
+          },
+          {
+            "index": 6,
+            "text": "态日志、测试报告"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "三维场景红外成像仿真平台",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "三维场景红外成像仿真平台",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 3,
+          "text": "输入：场景、目标、材质、温度、大气、传感器参数",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "输入：场景、目标、材质、温度、大气、传感器参数",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 4,
+          "text": "输出：多波段红外图像/序列、状态日志、测试报告",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "输出：多波段红外图像/序列、状态日志、测试报告",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/uxc3ylc7",
+      "id": "8",
+      "bbox": [
+        355,
+        175,
+        250,
+        250
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#4CB494",
+      "lineWidth": 1.5
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ji5snelo",
+      "id": "9",
+      "bbox": [
+        355,
+        175,
+        250,
+        34
+      ],
+      "geometry": "rect",
+      "fillColor": "#4CB494",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/vu9knih4",
+      "id": "10",
+      "bbox": [
+        369,
+        183,
+        222,
+        20
+      ],
+      "geometry": "rect",
+      "text": "产品细化",
+      "textPreview": "产品细化",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "微软雅黑",
+        "color": "#FFFFFF",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "产品细化"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "产品细化",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#FFFFFF",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "产品细化",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/29gr2p8n",
+      "id": "11",
+      "bbox": [
+        373,
+        229,
+        214,
+        186
+      ],
+      "geometry": "rect",
+      "text": "GUI：场景与参数配置\n接口：SDK/API/协议封装\n模型库：目标/材料/大气/温度\n工具链：批量试验、日志、报告\n适配：Windows/Linux/国产 ARM",
+      "textPreview": "GUI：场景与参数配置 | 接口：SDK/API/协议封装 | 模型库：目标/材料/大气/温度 | 工具链：批量试验、日志、报告 | 适配：Windows/Linux/国产 ARM",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "微软雅黑",
+        "color": "#09285C",
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 6,
+        "lines": [
+          {
+            "index": 1,
+            "text": "GUI：场景与参数配置"
+          },
+          {
+            "index": 2,
+            "text": "接口：SDK/API/协议封装"
+          },
+          {
+            "index": 3,
+            "text": "模型库：目标/材料/大气/温度"
+          },
+          {
+            "index": 4,
+            "text": "工具链：批量试验、日志、报告"
+          },
+          {
+            "index": 5,
+            "text": "适配：Windows/Linux/国产"
+          },
+          {
+            "index": 6,
+            "text": "ARM"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "GUI：场景与参数配置",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "GUI：场景与参数配置",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "接口：SDK/API/协议封装",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "接口：SDK/API/协议封装",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 3,
+          "text": "模型库：目标/材料/大气/温度",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "模型库：目标/材料/大气/温度",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 4,
+          "text": "工具链：批量试验、日志、报告",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "工具链：批量试验、日志、报告",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 5,
+          "text": "适配：Windows/Linux/国产 ARM",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "适配：Windows/Linux/国产 ARM",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/d0z61032",
+      "id": "12",
+      "bbox": [
+        648,
+        175,
+        250,
+        250
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#D9812B",
+      "lineWidth": 1.5
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/kf6dcbul",
+      "id": "13",
+      "bbox": [
+        648,
+        175,
+        250,
+        34
+      ],
+      "geometry": "rect",
+      "fillColor": "#D9812B",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/v6psfil0",
+      "id": "14",
+      "bbox": [
+        662,
+        183,
+        222,
+        20
+      ],
+      "geometry": "rect",
+      "text": "扩展方向",
+      "textPreview": "扩展方向",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "微软雅黑",
+        "color": "#FFFFFF",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "扩展方向"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "扩展方向",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#FFFFFF",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "扩展方向",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#FFFFFF",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/2lszqtcj",
+      "id": "15",
+      "bbox": [
+        666,
+        229,
+        214,
+        186
+      ],
+      "geometry": "rect",
+      "text": "UE5 高保真场景\nAFSIM/VR 联合仿真\n红外 + 雷达多模态\nAI 合成数据与自动评测\n半实物/硬件在环接口",
+      "textPreview": "UE5 高保真场景 | AFSIM/VR 联合仿真 | 红外 + 雷达多模态 | AI 合成数据与自动评测 | 半实物/硬件在环接口",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "微软雅黑",
+        "color": "#09285C",
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 5,
+        "lines": [
+          {
+            "index": 1,
+            "text": "UE5 高保真场景"
+          },
+          {
+            "index": 2,
+            "text": "AFSIM/VR 联合仿真"
+          },
+          {
+            "index": 3,
+            "text": "红外 + 雷达多模态"
+          },
+          {
+            "index": 4,
+            "text": "AI 合成数据与自动评测"
+          },
+          {
+            "index": 5,
+            "text": "半实物/硬件在环接口"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "UE5 高保真场景",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "UE5 高保真场景",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "AFSIM/VR 联合仿真",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "AFSIM/VR 联合仿真",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 3,
+          "text": "红外 + 雷达多模态",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "红外 + 雷达多模态",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 4,
+          "text": "AI 合成数据与自动评测",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "AI 合成数据与自动评测",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 5,
+          "text": "半实物/硬件在环接口",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "微软雅黑",
+            "color": "#09285C",
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "半实物/硬件在环接口",
+              "fontSize": 14,
+              "typeface": "微软雅黑",
+              "color": "#09285C"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/d8bat47y",
+      "id": "16",
+      "bbox": [
+        130,
+        505,
+        700,
+        58
+      ],
+      "geometry": "rect",
+      "fillColor": "#EEF4FF",
+      "lineColor": "#4976D1",
+      "lineWidth": 1
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/knih4byh",
+      "id": "17",
+      "bbox": [
+        160,
+        522,
+        640,
+        22
+      ],
+      "geometry": "rect",
+      "text": "建议边界：V1.0 先做红外仿真平台最小可交付闭环；UE5、雷达、AI 能力分阶段进入，不抢占首版交付节奏。",
+      "textPreview": "建议边界：V1.0 先做红外仿真平台最小可交付闭环；UE5、雷达、AI 能力分阶段进入，不抢占首版交付节奏。",
+      "resolvedFontSize": 13.51,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 13.51,
+        "typeface": "微软雅黑",
+        "color": "#124B98",
+        "bold": true,
+        "alignment": "center",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "建议边界：V1.0 先做红外仿真平台最小可交付闭环；UE5、雷达、AI"
+          },
+          {
+            "index": 2,
+            "text": "能力分阶段进入，不抢占首版交付节奏。"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "建议边界：V1.0 先做红外仿真平台最小可交付闭环；UE5、雷达、AI 能力分阶段进入，不抢占首版交付节奏。",
+          "resolvedTextStyle": {
+            "fontSize": 13.51,
+            "typeface": "微软雅黑",
+            "color": "#124B98",
+            "bold": true,
+            "alignment": "center"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "建议边界：V1.0 先做红外仿真平台最小可交付闭环；UE5、雷达、AI 能力分阶段进入，不抢占首版交付节奏。",
+              "fontSize": 13.51,
+              "typeface": "微软雅黑",
+              "color": "#124B98",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}
