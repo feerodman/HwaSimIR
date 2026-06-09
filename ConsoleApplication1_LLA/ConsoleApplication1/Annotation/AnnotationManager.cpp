@@ -1,7 +1,16 @@
 ﻿#include "AnnotationManager.h"
 
+#include <chrono>
 #include <iostream>
 #include <sstream>
+
+namespace
+{
+double NowMs()
+{
+	return std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+}
+}
 
 void AnnotationManager::initialize(const NodePath& overlayRoot)
 {
@@ -80,17 +89,22 @@ AnnotationFrameRecord AnnotationManager::updateFrame(
 		return m_latestRecord;
 	}
 
+	const double totalBeginMs = NowMs();
+	m_projector.beginFrame(frameIndex, targets, m_config, renderRoot);
 	for (size_t i = 0; i < targets.size(); ++i)
 	{
 		TargetAnnotation targetAnnotation;
-		if (m_projector.buildTargetAnnotation(targets[i], m_config, renderRoot, cameraNode, cameraLens, width, height, targetAnnotation))
+		if (m_projector.buildTargetAnnotation(targets[i], targets, m_config, renderRoot, cameraNode, cameraLens, width, height, targetAnnotation))
 		{
 			record.targets.push_back(targetAnnotation);
 		}
 	}
 
 	m_latestRecord = record;
+	const double overlayBeginMs = NowMs();
 	m_overlay.drawFrame(m_latestRecord, m_config.drawOptions());
+	const double overlayMs = NowMs() - overlayBeginMs;
+	const double totalMs = NowMs() - totalBeginMs;
 	++m_updateCounter;
 
 	if (m_updateCounter <= 3 || (m_updateCounter % 120) == 0)
@@ -103,6 +117,20 @@ AnnotationFrameRecord AnnotationManager::updateFrame(
 		{
 			logTargetRecord(m_latestRecord.targets[i]);
 		}
+		const AnnotationProjector::PerfStats& perf = m_projector.perfStats();
+		std::cout << "[AnnotationPerf]"
+			<< " frame=" << m_latestRecord.frameIndex
+			<< " targets=" << m_latestRecord.targets.size()
+			<< " keypoints=" << perf.keypoints
+			<< " bboxMs=" << perf.bboxMs
+			<< " collisionBuildMs=" << perf.collisionBuildMs
+			<< " surfaceMs=" << perf.surfaceMs
+			<< " occlusionMs=" << perf.occlusionMs
+			<< " overlayMs=" << overlayMs
+			<< " totalMs=" << totalMs
+			<< " collisionBuilds=" << perf.collisionBuilds
+			<< " collisionTriangles=" << perf.collisionTriangles
+			<< std::endl;
 	}
 
 	return m_latestRecord;

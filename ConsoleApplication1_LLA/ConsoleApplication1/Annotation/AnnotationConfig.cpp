@@ -318,6 +318,9 @@ void ApplyBBoxConfig(const std::string& objectText, AnnotationBBoxConfig& bbox)
 void ApplyKeyPointConfig(const std::string& objectText, AnnotationKeyPointConfig& point)
 {
 	ExtractJsonBool(objectText, "visible", point.visible);
+	ExtractJsonBool(objectText, "surface", point.surface);
+	ExtractJsonBool(objectText, "snapToMeshSurface", point.snapToMeshSurface);
+	ExtractJsonString(objectText, "surfaceSearchMode", point.surfaceSearchMode);
 	if (ExtractJsonVec3(objectText, "localPos", point.localPos))
 	{
 		point.hasLocalPos = true;
@@ -367,6 +370,9 @@ void SetExplicitPoint(AnnotationKeyPointConfig& point, const LPoint3f& localPos)
 	point.localPos = localPos;
 	point.hasLocalPos = true;
 	point.visible = true;
+	point.surface = true;
+	point.snapToMeshSurface = true;
+	point.surfaceSearchMode = "nearest_mesh_vertex";
 }
 
 TargetAnnotationConfig MakeFallbackConfig(const std::string& label, const LPoint3f& head, const LPoint3f& middle)
@@ -411,11 +417,11 @@ void AnnotationConfig::resetToFallback()
 	m_loadedPath.clear();
 	m_drawOptions = AnnotationDrawOptions();
 
-	m_defaultConfig = MakeFallbackConfig("UNKNOWN", LPoint3f(0.0f, 1.0f, 0.0f), LPoint3f(0.0f, 0.0f, 0.0f));
-	m_configs[F35] = MakeFallbackConfig("F35", LPoint3f(0.0f, 2.8f, 0.0f), LPoint3f(0.0f, 0.0f, 0.0f));
-	m_configs[AIM120] = MakeFallbackConfig("AIM120D", LPoint3f(0.0f, 1.1f, 0.0f), LPoint3f(0.0f, 0.0f, 0.0f));
-	m_configs[AIM9] = MakeFallbackConfig("AIM9X", LPoint3f(0.0f, 0.9f, 0.0f), LPoint3f(0.0f, 0.0f, 0.0f));
-	m_configs[MMD] = MakeFallbackConfig("MMD", LPoint3f(0.0f, 1.0f, 0.0f), LPoint3f(0.0f, 0.0f, 0.0f));
+	m_defaultConfig = MakeFallbackConfig("UNKNOWN", LPoint3f(0.0f, 1.0f, 0.0f), LPoint3f(0.0f, 0.0f, 0.1f));
+	m_configs[F35] = MakeFallbackConfig("F35", LPoint3f(0.0f, 2.8f, 0.2f), LPoint3f(0.0f, 0.0f, 0.5f));
+	m_configs[AIM120] = MakeFallbackConfig("AIM120D", LPoint3f(0.0f, 1.1f, 0.0f), LPoint3f(0.0f, 0.0f, 0.08f));
+	m_configs[AIM9] = MakeFallbackConfig("AIM9X", LPoint3f(0.0f, 0.9f, 0.0f), LPoint3f(0.0f, 0.0f, 0.08f));
+	m_configs[MMD] = MakeFallbackConfig("MMD", LPoint3f(0.0f, 1.0f, 0.0f), LPoint3f(0.0f, 0.0f, 0.1f));
 }
 
 bool AnnotationConfig::loadFromCandidates(const std::vector<std::string>& filePaths, const std::string& configuredPath, const std::string& source)
@@ -501,6 +507,16 @@ bool AnnotationConfig::loadFromCandidates(const std::vector<std::string>& filePa
 void AnnotationConfig::applyRuntimeOptions(const AnnotationRuntimeOptions& options)
 {
 	m_drawOptions = options.drawOptions;
+	m_occlusion = options.occlusion;
+	if (m_occlusion.mode.empty())
+	{
+		m_occlusion.mode = "mesh_collision";
+	}
+	m_occlusion.epsilonM = std::max(0.0f, m_occlusion.epsilonM);
+	m_occlusion.collisionMaskBit = std::max(0, std::min(31, m_occlusion.collisionMaskBit));
+	m_surfaceKeyPointEnabled = options.surfaceKeyPointEnabled;
+	m_surfaceSnapEnabled = options.surfaceSnapEnabled;
+	m_surfaceSnapMode = options.surfaceSnapMode.empty() ? "profile_surface" : options.surfaceSnapMode;
 	const int marginPx = std::max(0, options.bboxMarginPx);
 	const int minSizePx = std::max(1, options.minBBoxSizePx);
 	const std::string mode = options.bboxMode.empty() ? "mesh_body" : options.bboxMode;
@@ -535,6 +551,26 @@ std::string AnnotationConfig::labelForTargetType(int targetType) const
 const AnnotationDrawOptions& AnnotationConfig::drawOptions() const
 {
 	return m_drawOptions;
+}
+
+const AnnotationOcclusionConfig& AnnotationConfig::occlusion() const
+{
+	return m_occlusion;
+}
+
+bool AnnotationConfig::surfaceKeyPointEnabled() const
+{
+	return m_surfaceKeyPointEnabled;
+}
+
+bool AnnotationConfig::surfaceSnapEnabled() const
+{
+	return m_surfaceSnapEnabled;
+}
+
+const std::string& AnnotationConfig::surfaceSnapMode() const
+{
+	return m_surfaceSnapMode;
 }
 
 bool AnnotationConfig::loaded() const

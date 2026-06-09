@@ -814,3 +814,250 @@ enum class ModelForwardAxis {
 - 需要多目标场景验证框不再被其它目标或尾焰明显拉大，允许真实投影视角下的框重叠。
 - 关重点 localPos 仍是初始值，后续需根据用户补充的最终模型坐标系继续微调。
 - 遮挡检测仍保留 Stage1 接口，缺少统一 collision solids 时继续降级为 projection-only。
+
+### 2026-06-09 阶段 1.3：收口验收结论
+
+收口结论：
+
+- Stage1 窗口实时标注主体功能已完成，可作为后续 Stage2 的稳定基线。
+- 已支持 `trackerSensorParam.realtimeAnnotation` 控制窗口 overlay 与 `latestRecord` 内存快照；关闭时清空 overlay 和 `latestRecord`，不影响原渲染和 TCP/JPEG 输出。
+- 已支持目标型号标签、目标 2D 框、`head(x,y)` 和 `middle(x,y)` 关重点像素标签。
+- bbox 使用 `mesh_body` 主路径，递归读取目标本体 Geom 顶点投影，排除 `EnginePlume`、`Plume`、`Annotation`、`Hotspot` 等节点/子树，避免尾焰/热点把目标框拉大。
+- keypoint 使用 `Config/Annotation/annotation_profiles.json` 中的 `localPos`，当前 F35/AIM120D/AIM9X/MMD 已有初始配置；后续模型坐标系确认后可继续微调。
+- `DebugOverlay=false` 为默认状态，不显示 `ANNO_TEST`；只有 `realtimeAnnotation=true` 且 `DebugOverlay=true` 时才显示左上角自检文字。
+- 遮挡检测未完成：`AnnotationProjector::isKeyPointVisibleByRay(...)` 当前仅保留 Stage2 接口，未配置统一 collision solids 时降级为 `projection_only`，实际返回可见；不要把当前关重点可见性解释为真实遮挡结果。
+- 帧图像保存、JSONL 标注保存、TCP flip 后坐标同步均未完成，留到后续阶段处理。
+- 后续需要实现 `FrameOutputCoordinator` 或类似帧输出协调模块，统一管理本地图像帧保存、视频保存、`AnnotationFrameRecord` 逐帧保存、实时 `DisplayC2cObjTrackingData` 逐帧保存，以及对外传输同步。
+- 保存/传输阶段必须保证每一帧图像对应一组标注信息和一组实时数据，`frameIndex`、`simTimeMs`、`sensorID`、`width`、`height` 必须作为同步主键或校验字段，避免图像、标注和实时状态错帧。
+- TCP 对外传输已有 demo，但尚未集成到当前项目主链路；后续集成时需要同时处理 TCP `cv::flip(..., 0)` 后的图像坐标与标注坐标一致性。
+- 保存和传输集成暂缓，等 Stage2A 真实遮挡检测完成后再实施，避免在关键点可见性规则未定时提前固化输出格式。
+
+Stage1.3 验收清单：
+
+1. `realtimeAnnotation=false`：窗口无标注，overlay 和 `latestRecord` 被清空。
+2. `realtimeAnnotation=true` 且 `DebugOverlay=false`：可见目标显示目标框、型号、`head/middle`，不显示 `ANNO_TEST`。
+3. `DebugOverlay=true`：左上角显示 `ANNO_TEST`，用于确认 final overlay 在 Stage6 最终图像上方。
+4. `targetNumValid=1`：单目标 bbox 贴合目标本体，不包含尾焰/羽流。
+5. `targetNumValid=3`：多目标 bbox 可按真实投影重叠，但型号标签不串号。
+6. 修改 `trackerSensorWidth/Height` 后：标注坐标和 overlay 跟随 Stage6 最终输出尺寸，不硬编码 `800x800`。
+7. 遮挡场景：当前不保证关重点遮挡正确，日志应说明 `fallback=projection_only`、`collisionSolids=unconfigured`、`stage2=required`。
+
+工程和配置检查：
+
+- `ConsoleApplication1_LLA/ConsoleApplication1/Annotation/` 已纳入 VS 工程和 `CMakeLists.txt` 编译。
+- `ConsoleApplication1_LLA/Bin/Config/Annotation/annotation_profiles.json` 已存在，并由 `[Annotation].ProfilePath=Config/Annotation/annotation_profiles.json` 加载。
+- `ConsoleApplication1_LLA/Bin/Config/HwaSimIRRuntime.ini` 已包含 `[Annotation]` 段和 `DebugOverlay/BBoxMode/BBoxMarginPx/MinBBoxSizePx/DrawKeyPoints/DrawModelLabel/DrawBBox` 配置。
+
+Stage1.3 边界：
+
+- 未修改 `CommonData.h`、UDP 解析流程、TCP/JPEG 传输格式。
+- 未修改红外辐射、材质、大气、AGC、MTF、Stage3/4/5/6/7 物理链路。
+- 未新增图片、视频、JSONL 保存功能。
+- 未重构 Stage1.1 final overlay display region。
+- 未实现真实遮挡检测。
+
+下一阶段建议：
+
+- Stage2A：实现真实遮挡检测，可评估 Panda3D CollisionRay、模型 collision solids 或深度图采样方案。
+- Stage2B：实现 `FrameOutputCoordinator`，完成帧图像、视频、JSONL 标注、实时 `DisplayC2cObjTrackingData` 的逐帧同步保存，并统一 TCP `cv::flip(..., 0)` 后的坐标转换规则。
+
+### 2026-06-09 阶段 2A：keypoint 遮挡检测基线（已被 Stage2A.2 替换）
+
+本轮目标：
+
+- 替换 Stage1.3 中 `AnnotationProjector::isKeyPointVisibleByRay(...)` 的 `projection_only` 固定返回路径，为 `head/middle` 关重点增加相机到关键点的遮挡判断。
+- 保持 Stage1 已稳定的 bbox、型号标签、final overlay display region、`latestRecord` 内存快照结构不变。
+- 不修改 `CommonData.h`、UDP/TCP 协议，不新增图片/视频/JSONL 保存，不改红外辐射、材质、大气、AGC、MTF、Stage3/4/5/6/7 物理链路。
+
+调研结论：
+
+- 当前工程搜索未发现可直接复用的 Panda3D `CollisionNode`、`CollisionSolid`、`CollisionRay` 碰撞体配置；目标库以 OBJ/EGG/BAM 模型资源为主。
+- 因此 Stage2A 不假装已有精确 collision solids，而是选择可验证、可降级的 body-only bounds 近似方案：使用 Stage1.2 已验证的本体节点过滤规则，排除 `EnginePlume`、`Plume`、`Annotation`、`Hotspot` 等节点/子树后，对其它可见目标生成简化本体包围盒作为遮挡几何。
+
+实现方案：
+
+- `[Annotation]` 新增运行配置：
+  - `OcclusionEnable=true`
+  - `OcclusionMode=collision_ray`
+  - `OcclusionEpsilonM=0.25`
+- `AnnotationConfig` 新增 `AnnotationOcclusionConfig`，由 `HwaSimIRRuntime.ini` 注入，不经过 UDP 初始化协议结构体。
+- `AnnotationManager::updateFrame(...)` 将当前 `m_targetPlatformList` 全量只读传入 `AnnotationProjector`，用于多目标互相遮挡判断。
+- `AnnotationProjector` 对每个已投影到视口内的 keypoint 执行相机到 keypoint 的线段测试：
+  - 跳过 keypoint 所属目标，避免所属目标本体表面造成自遮挡误判。
+  - 仅检查其它 `isExist=true`、`viewValid=true`、`nodePath` 非空且未隐藏的目标。
+  - 对候选遮挡目标构建 body-only tight bounds，射线段转换到候选目标局部坐标后与 AABB 相交。
+  - 若命中距离满足 `epsilon < hitDistance < keypointDistance - epsilon`，认为该 keypoint 被遮挡，不绘制、不进入 `latestRecord`。
+  - 若存在候选遮挡目标但无法取得可用 body-only bounds，则降级 `projection_only`，继续显示 keypoint，并输出低频 WARN。
+
+日志规则：
+
+- 首次启用 `collision_ray` 时输出：
+  - `[AnnotationOcclusion][WARN] pandaCollisionSolids=0 geometry=body_bounds_approx mode=collision_ray`
+- 低频输出遮挡判断：
+  - `[AnnotationOcclusion] targetID=... point=head visible=... mode=collision_ray geometry=body_bounds_approx hit=... hitTargetID=... distance=... keyDistance=...`
+- 遮挡几何不可用时输出：
+  - `[Annotation][WARN] occlusion geometry unavailable targetID=... point=... fallback=projection_only mode=collision_ray checks=...`
+
+当前能力边界：
+
+- 已支持其它可见目标对 `head/middle` 的近似遮挡判断。
+- bbox 和型号标签不受 keypoint 遮挡影响，仍按 Stage1.2 规则显示。
+- 当前基线使用 body-only AABB 近似，不是逐三角形、深度图或像素级遮挡；近距离、斜视、复杂凹形模型可能存在保守误判。
+- 当前跳过所属目标，因此尚不解决目标自身机体对自身 head/middle 的精细自遮挡；如需自遮挡，后续应接真实 collision solids 或深度图采样。
+- 保存、传输、TCP `cv::flip(..., 0)` 后坐标同步仍未实现，继续留到 Stage2B 或后续阶段。
+
+Stage2A 验收清单：
+
+1. `OcclusionEnable=false` 或 `OcclusionMode=projection_only`：关重点按 Stage1 投影规则显示，不做遮挡隐藏。
+2. 无其它可见遮挡目标：`head/middle` 正常显示。
+3. 其它目标 body-only bounds 位于相机到 keypoint 之间：对应 keypoint 隐藏，并从 `latestRecord` 的 `keyPoints` 中省略。
+4. 候选遮挡目标没有可用 body-only bounds：输出 `fallback=projection_only` WARN，不误报遮挡。
+5. bbox、型号标签、多目标三元组匹配、Stage6 final overlay 显示不受本轮修改影响。
+
+### 2026-06-09 阶段 2A.2：真实 mesh collision 遮挡检测与 surface keypoint
+
+本轮结论：
+
+- Stage2A 的 body-only AABB 遮挡基线已被 Stage2A.2 替换；遮挡判断不再使用 `body_bounds_approx` 或 AABB 兜底。
+- 当前遮挡主路径为 `OcclusionMode=mesh_collision`，从目标真实 body-only mesh 三角面生成 Panda3D `CollisionNode/CollisionPolygon`，使用 `CollisionTraverser + CollisionRay + CollisionHandlerQueue` 做 keypoint 级遮挡判断。
+- bbox、型号标签、final overlay、`latestRecord` 主结构保持 Stage1/Stage2A 既有逻辑，不因 keypoint 遮挡而隐藏目标框或型号。
+
+配置更新：
+
+- `[Annotation]` 当前推荐配置：
+  - `OcclusionEnable=true`
+  - `OcclusionMode=mesh_collision`
+  - `OcclusionEpsilonM=0.25`
+  - `OcclusionCollisionMaskBit=20`
+  - `SurfaceKeyPointEnable=true`
+  - `SurfaceSnapEnable=true`
+- `annotation_profiles.json` 中 `head/middle` 增加表面点配置：
+  - `surface=true`
+  - `snapToMeshSurface=true`
+  - `surfaceSearchMode=nearest_mesh_vertex`
+- `localPos` 现在作为表面点 seed 使用；开启 snap 后，最终参与投影和遮挡判断的是吸附到 body-only mesh 顶点后的 `surfaceLocal`，不再把模型内部中心点当作真实关重点。
+
+mesh collision 构建规则：
+
+- 遍历 `targetPlat.nodePath` 下的 `GeomNode`，跳过 hidden 节点。
+- 继续沿用 Stage1.2 body-only 过滤，跳过名称包含 `EnginePlume`、`Plume`、`Annotation`、`Hotspot` 的节点/子树。
+- 对每个 `Geom` 调用 `decompose()` 统一三角化，再读取 `GeomPrimitive` 三角索引和 `GeomVertexData` 顶点。
+- 每个有效三角面创建一个 `CollisionPolygon`，挂到目标节点下的 `AnnotationCollision_Target`。
+- collision 节点使用专用 mask bit，当前默认 `BitMask32::bit(20)`。
+- 每个目标 collision mesh 按 `targetType + targetPlatID + targetID` key 构建并缓存；同一目标不会每帧重建。
+
+surface keypoint 规则：
+
+- `head/middle` 必须先通过 body-only mesh surface snap 得到外表面点。
+- 当前实现支持 `nearest_mesh_vertex`：在目标局部坐标系下查找距离 seed 最近的 body-only mesh 顶点作为 `surfaceLocal`。
+- 如果无法吸附到 mesh 表面，keypoint 不显示，并输出 `[AnnotationSurfacePoint][WARN]`；不会把内部 seed 当作真实表面点继续做遮挡。
+- `axis_surface` 作为后续可扩展模式预留，当前配置文件使用 `nearest_mesh_vertex`。
+
+遮挡判断规则：
+
+- 射线从相机世界位置指向 keypoint 世界位置。
+- 检测所有当前可见目标的 annotation collision mesh，包括 keypoint 所属目标自身。
+- 若最近命中距离 `hitDistance < keyDistance - OcclusionEpsilonM`，认为 keypoint 被自身或其它目标遮挡，不绘制、不进入 `latestRecord`。
+- 若最近命中距离 `hitDistance >= keyDistance - OcclusionEpsilonM`，认为命中的是 keypoint 所在近侧表面，keypoint 可见。
+- 如果 collision mesh 构建失败，不使用 AABB 兜底，只输出 `[AnnotationOcclusion][WARN] mesh_collision_unavailable ... noAabbFallback=1`，并按 projection-only 可见处理，避免误隐藏。
+
+日志：
+
+- collision mesh 构建：
+  - `[AnnotationCollision] targetID=... platform=... triangles=... solids=... built=1`
+- surface keypoint：
+  - `[AnnotationSurfacePoint] targetID=... point=head seedLocal=... surfaceLocal=... snapped=...`
+- mesh collision 遮挡：
+  - `[AnnotationOcclusion] targetID=... point=head visible=... mode=mesh_collision hit=... hitTargetID=... hitDistance=... keyDistance=...`
+- mesh collision 不可用：
+  - `[AnnotationOcclusion][WARN] mesh_collision_unavailable targetID=... noAabbFallback=1`
+
+Stage2A.2 验收清单：
+
+1. Release x64 编译通过。
+2. `head/middle` 来自 mesh 外表面吸附点，不再直接使用内部中心点。
+3. keypoint 位于自身近侧表面时，应显示。
+4. keypoint 位于自身背侧时，可被自身 mesh 更近表面遮挡。
+5. 其它目标真实挡在相机到 keypoint 之间时，对应 keypoint 消失。
+6. collision mesh 构建失败时，不使用 AABB 兜底，不误隐藏 keypoint。
+7. bbox 和型号标签不受遮挡影响。
+
+当前遗留：
+
+- 当前 surface snap 使用最近 mesh 顶点，精度高于内部点但仍受模型顶点密度影响；若需要更高精度，可后续实现 triangle nearest point、depth/ID mask 或专门的 keypoint locator 节点。
+- `axis_surface` 尚未作为独立算法实现，当前配置保持 `nearest_mesh_vertex`。
+- 未做帧图像/视频/JSONL 保存，未处理 TCP `cv::flip(..., 0)` 后的坐标同步。
+
+### 2026-06-09 阶段 2A.3：mesh collision 正确性和性能修复
+
+本轮目标：
+
+- 保留 Stage2A.2 的 Panda3D `CollisionPolygon / CollisionRay / CollisionTraverser` 真实 mesh collision 主路径。
+- 修复 keypoint 误隐藏和帧率下降问题，优先保证其它目标遮挡正确、窗口实时标注可用。
+- 不修改 `CommonData.h`、UDP/TCP、图片/视频/JSONL 保存、红外辐射、材质、大气、AGC、MTF、Stage3/4/5/6/7 链路。
+
+误隐藏根因判断：
+
+- Stage2A.2 默认 `SurfaceSnapEnable=true` 时，`nearest_mesh_vertex` 每帧可能把 profile seed 吸附到不符合人工语义的模型表面顶点，导致下方目标未被其它目标遮挡时 `head/middle` 仍可能落到不期望的位置。
+- Stage2A.2 默认允许所属目标自身 mesh 参与遮挡，表面点不够稳定时容易被自身 mesh 更近表面误判为背侧遮挡。
+- Stage2A.3 将默认策略改为 `profile_surface + OcclusionSelfTarget=false`：默认认为 `annotation_profiles.json` 中的 `localPos` 已是模型外表面点，先只判断其它目标遮挡；自身遮挡后续再用更可靠的表面点、法线或 depth/ID mask 处理。
+
+帧率下降根因判断：
+
+- Stage2A.2 每个 keypoint 都会新建 `CollisionRay / CollisionHandlerQueue / CollisionTraverser`。
+- Stage2A.2 每个 keypoint 都 `traverse(renderRoot)`，遍历根包含完整场景树。
+- Stage2A.2 每个 keypoint 都可能 `ensure` 所有目标 collision mesh。
+- `SurfaceSnapEnable=true` 时，`nearest_mesh_vertex` 可能每帧全模型搜索。
+- 真实渲染 mesh 三角面直接生成 `CollisionPolygon`，目标模型三角数较高时 collision solids 数量很大；Stage2A.3 先加高三角日志，不在本轮做降采样。
+
+配置更新：
+
+- `[Annotation]` 当前默认：
+  - `OcclusionEnable=true`
+  - `OcclusionMode=mesh_collision`
+  - `OcclusionEpsilonM=0.25`
+  - `OcclusionCollisionMaskBit=20`
+  - `OcclusionSelfTarget=false`
+  - `SurfaceKeyPointEnable=true`
+  - `SurfaceSnapEnable=false`
+  - `SurfaceSnapMode=profile_surface`
+- `SurfaceSnapEnable=false` 时，keypoint 直接使用 profile `localPos`，日志输出：
+  - `[AnnotationSurfacePoint] targetID=... point=head mode=profile_surface local=... pixel=...`
+- `SurfaceSnapEnable=true` 且 `SurfaceSnapMode!=profile_surface` 时，才走 `nearest_mesh_vertex`，并按 `targetType + targetPlatID + targetID + pointName` 缓存；snap 失败不会隐藏 keypoint，只输出 WARN 并继续使用 profile 点。
+
+性能修复：
+
+- `AnnotationProjector::beginFrame(...)` 每帧只准备一次 collision root、可见目标 collision mesh 和候选列表。
+- `AnnotationCollision_Target` 不再挂在目标节点下参与 `renderRoot` 遍历，而是挂到专用 `AnnotationCollisionRoot` 下；每帧同步目标相对 `renderRoot` 的 transform。
+- 遮挡检测只 `traverse(AnnotationCollisionRoot)`，不再 `traverse(renderRoot)`。
+- `CollisionRay / CollisionHandlerQueue / CollisionTraverser` 复用，不再每个 keypoint 反复 new/delete。
+- collision mesh 继续按 `targetType + targetPlatID + targetID` 缓存，不每帧重建 `CollisionPolygon`。
+- keypoint 遮挡前用目标 2D bbox 缓存做候选预筛，明显不覆盖 keypoint 像素的目标不激活 collision mesh。
+- `OcclusionSelfTarget=false` 时，所属目标 collision mesh 不参与当前 keypoint 遮挡；命中处理阶段也按完整 key 过滤 self hit。
+
+日志：
+
+- 性能低频日志：
+  - `[AnnotationPerf] frame=... targets=... keypoints=... bboxMs=... collisionBuildMs=... surfaceMs=... occlusionMs=... overlayMs=... totalMs=...`
+- 遮挡命中隐藏：
+  - `[AnnotationOcclusion] targetID=... point=head visible=0 reason=mesh_hit hitTargetID=... selfHit=0 hitDistance=... keyDistance=...`
+- 无遮挡：
+  - `[AnnotationOcclusion] targetID=... point=head visible=1 reason=no_hit ...`
+- 三角面过多：
+  - `[AnnotationCollision][WARN] highTriangleCount targetID=... triangles=...`
+
+Stage2A.3 验收清单：
+
+1. Release x64 编译通过。
+2. `OcclusionEnable=false` 时，遮挡检测不运行，帧率应接近 Stage1.2。
+3. `OcclusionEnable=true`、3 个目标、6 个 keypoint 下，重点观察 `[AnnotationPerf] totalMs` 是否稳定在 3-5 ms 目标范围内。
+4. 下方目标未被其它目标真实遮挡时，`head/middle` 不应因自身 mesh 或错误 snap 消失。
+5. 其它目标真实挡住 keypoint 时，对应 keypoint 消失。
+6. bbox、型号标签、overlay、`latestRecord` 主结构不变。
+7. `CommonData.h`、UDP/TCP、红外物理链路无 diff。
+
+当前遗留：
+
+- 当前默认关闭自身遮挡；自身遮挡建议后续结合精确 surface point、法线朝向或 depth/ID mask 单独开启。
+- 当前 collision mesh 仍来自完整渲染 mesh；RK3588 60fps 目标下，后续应制作低模 collision mesh 或改用 depth/ID mask。
+- 本轮只完成编译验证，未在真实窗口/UDP 场景中采集 `[AnnotationPerf]` 前后数值。

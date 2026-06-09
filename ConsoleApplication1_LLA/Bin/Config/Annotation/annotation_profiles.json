@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "notes": "Runtime annotation profile. BBox is body-only, keypoints are configurable local offsets.",
+  "notes": "Runtime annotation profile. BBox is body-only. Keypoint localPos is a surface seed and is snapped to body-only mesh surface when enabled.",
   "defaults": {
     "enabled": true,
     "label": "UNKNOWN",
@@ -14,8 +14,8 @@
       "enabled": true,
       "forwardAxis": "PositiveY",
       "points": {
-        "head": { "localPos": [0.0, 1.0, 0.0], "visible": true },
-        "middle": { "localPos": [0.0, 0.0, 0.0], "visible": true }
+        "head": { "localPos": [0.0, 1.0, 0.0], "visible": true, "surface": true, "snapToMeshSurface": true, "surfaceSearchMode": "nearest_mesh_vertex" },
+        "middle": { "localPos": [0.0, 0.0, 0.1], "visible": true, "surface": true, "snapToMeshSurface": true, "surfaceSearchMode": "nearest_mesh_vertex" }
       }
     }
   },
@@ -24,8 +24,8 @@
       "label": "F35",
       "keypoints": {
         "points": {
-          "head": { "localPos": [0.0, 2.8, 0.0], "visible": true },
-          "middle": { "localPos": [0.0, 0.0, 0.0], "visible": true }
+          "head": { "localPos": [0.0, 2.8, 0.2], "visible": true, "surface": true, "snapToMeshSurface": true, "surfaceSearchMode": "nearest_mesh_vertex" },
+          "middle": { "localPos": [0.0, 0.0, 0.5], "visible": true, "surface": true, "snapToMeshSurface": true, "surfaceSearchMode": "nearest_mesh_vertex" }
         }
       }
     },
@@ -33,8 +33,8 @@
       "label": "AIM120D",
       "keypoints": {
         "points": {
-          "head": { "localPos": [0.0, 1.1, 0.0], "visible": true },
-          "middle": { "localPos": [0.0, 0.0, 0.0], "visible": true }
+          "head": { "localPos": [0.0, 1.1, 0.0], "visible": true, "surface": true, "snapToMeshSurface": true, "surfaceSearchMode": "nearest_mesh_vertex" },
+          "middle": { "localPos": [0.0, 0.0, 0.08], "visible": true, "surface": true, "snapToMeshSurface": true, "surfaceSearchMode": "nearest_mesh_vertex" }
         }
       }
     },
@@ -42,8 +42,8 @@
       "label": "AIM9X",
       "keypoints": {
         "points": {
-          "head": { "localPos": [0.0, 0.9, 0.0], "visible": true },
-          "middle": { "localPos": [0.0, 0.0, 0.0], "visible": true }
+          "head": { "localPos": [0.0, 0.9, 0.0], "visible": true, "surface": true, "snapToMeshSurface": true, "surfaceSearchMode": "nearest_mesh_vertex" },
+          "middle": { "localPos": [0.0, 0.0, 0.08], "visible": true, "surface": true, "snapToMeshSurface": true, "surfaceSearchMode": "nearest_mesh_vertex" }
         }
       }
     },

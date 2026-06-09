@@ -32,6 +32,18 @@ struct AnnotationKeyPointConfig
 	bool visible = true;
 	bool hasLocalPos = false;
 	LPoint3f localPos = LPoint3f(0.0f, 0.0f, 0.0f);
+	bool surface = true;
+	bool snapToMeshSurface = true;
+	std::string surfaceSearchMode = "nearest_mesh_vertex";
+};
+
+struct AnnotationOcclusionConfig
+{
+	bool enabled = true;
+	std::string mode = "mesh_collision";
+	float epsilonM = 0.25f;
+	int collisionMaskBit = 20;
+	bool selfTarget = false;
 };
 
 struct TargetAnnotationConfig
@@ -53,6 +65,10 @@ struct AnnotationRuntimeOptions
 	std::string bboxMode = "mesh_body";
 	int bboxMarginPx = 3;
 	int minBBoxSizePx = 4;
+	AnnotationOcclusionConfig occlusion;
+	bool surfaceKeyPointEnabled = true;
+	bool surfaceSnapEnabled = false;
+	std::string surfaceSnapMode = "profile_surface";
 };
 
 class AnnotationConfig
@@ -66,6 +82,10 @@ public:
 	const TargetAnnotationConfig& configForPlatform(PLATFORM_TYPE type) const;
 	std::string labelForTargetType(int targetType) const;
 	const AnnotationDrawOptions& drawOptions() const;
+	const AnnotationOcclusionConfig& occlusion() const;
+	bool surfaceKeyPointEnabled() const;
+	bool surfaceSnapEnabled() const;
+	const std::string& surfaceSnapMode() const;
 	bool loaded() const;
 	const std::string& loadedPath() const;
 	const std::string& configuredPath() const;
@@ -76,6 +96,10 @@ private:
 	std::map<PLATFORM_TYPE, TargetAnnotationConfig> m_configs;
 	TargetAnnotationConfig m_defaultConfig;
 	AnnotationDrawOptions m_drawOptions;
+	AnnotationOcclusionConfig m_occlusion;
+	bool m_surfaceKeyPointEnabled = true;
+	bool m_surfaceSnapEnabled = false;
+	std::string m_surfaceSnapMode = "profile_surface";
 	bool m_loaded = false;
 	std::string m_loadedPath;
 	std::string m_configuredPath = "Config/Annotation/annotation_profiles.json";

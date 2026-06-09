@@ -411,7 +411,12 @@ void MainWindow::sendRealTimeData()
 	data.targetState[0].targetLoc.lat = m_currMissile_pos.x;
 	data.targetState[0].targetLoc.lon = m_currMissile_pos.y;
 	data.targetState[0].targetLoc.alt = m_currMissile_pos.z;
-	data.targetState[0].targetLoc.yaw = m_currMissile_att.yaw;
+    adddate = adddate+0.5;
+    if(adddate>360)
+    {
+        adddate=1.0;
+    }
+    data.targetState[0].targetLoc.yaw = m_currMissile_att.yaw+adddate;
 	data.targetState[0].targetLoc.pitch = m_currMissile_att.pitch;
 	data.targetState[0].targetLoc.roll = m_currMissile_att.roll;
 	data.targetState[0].targetState = 0x01;

@@ -149,6 +149,7 @@ private:
     //讀取文件中的位置
     QVector<realtimeInfo> realTimeData;
     int dataNum = 1;
+    double adddate = 1.0;
 
 };
 
