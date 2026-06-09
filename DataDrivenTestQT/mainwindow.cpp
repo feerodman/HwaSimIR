@@ -305,6 +305,7 @@ void MainWindow::sendInitCommand()
     cmd.trackingInit.envRadScaleSky = 1.0;
     cmd.trackingInit.envRadScaleTerrain = 1.0;
 
+
     cmd.trackingInit.trackerSensor[0].index = 0;
     cmd.trackingInit.trackerSensor[0].trackerSensorBand = 2; // 中波红外
     cmd.trackingInit.trackerSensor[0].trackerSensorWidth = 800;
@@ -313,6 +314,9 @@ void MainWindow::sendInitCommand()
     cmd.trackingInit.trackerSensor[0].trackerSensorViewMax = 50000;
     cmd.trackingInit.trackerSensor[0].trackerSensorPixelAngle = 2.18166;
     //2.18166
+
+    cmd.trackingInit.trackerSensor[0].realtimeAnnotation = true;
+
     cmd.trackingInit.trackerSensor[0].coarseTrackEn = true;
     cmd.trackingInit.trackerSensor[0].preciseTrackEn = true;
     cmd.trackingInit.trackerSensor[0].coarseTrackResolution = m_fovHEdit->text().toDouble();

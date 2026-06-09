@@ -1,4 +1,4 @@
-# HwaSimIR 实时标注功能模块设计文档
+﻿# HwaSimIR 实时标注功能模块设计文档
 
 ## 1. 文档目的
 
@@ -59,7 +59,7 @@ case 0x44: return MMD;
    - 关重部位标签：每个目标暂设两个点，一个“头部”，一个“中间部位”，输出窗口像素坐标 `(x, y)`，位置可调；若该部位到相机之间存在阻挡，相机实际看不见该部位，则该部位标签不显示也不输出。
    - 目标框：用目标模型 3D 包围盒投影到 2D 渲染界面的最大外接矩形框住目标。
 5. 所有标注信息按视频帧保存，后续与视频帧图像一一同步。
-6. 当前成像分辨率暂按 `800x800` 设计和验证；后续再根据 `CommonData.h` 中 `trackerSensorWidth`、`trackerSensorHeight` 接入真实成像分辨率。
+6. 当前成像分辨率已由 Stage6 SensorGeometry 接入；标注宽高应优先使用 `m_stage6FinalWidth`、`m_stage6FinalHeight`，未 ready 时再 fallback 到 `m_sensorDisplayConfig`、`m_renderTex` 或窗口尺寸，不硬编码 `800x800`。
 7. 当前阶段先记录视频帧保存同步方案，实际保存功能与后续视频帧保存模块配合实现。
 
 ## 4. 设计边界
@@ -89,7 +89,7 @@ case 0x44: return MMD;
 - 目标协议状态已经不在视场，但模型节点仍残留在画面中，导致标注和显示状态不一致。
 - 目标整体可见，但头部或中部被遮挡时仍输出错误关重部位坐标。
 
-分辨率规则先保持保守：阶段 1 继续使用当前 `800x800` 基线，减少对窗口、纹理、TCP 输出链路的联动影响；阶段 2 再统一接入 `trackerSensorWidth` 和 `trackerSensorHeight`。如果后续发现窗口尺寸、渲染纹理尺寸和保存帧尺寸不一致，需要先确认哪一个是标注坐标的唯一基准。
+分辨率规则以 Stage6 最终显示/输出尺寸为准：阶段 1 不再硬编码 `800x800`，优先读取 `m_stage6FinalWidth`、`m_stage6FinalHeight`。如果后续发现窗口尺寸、渲染纹理尺寸、TCP flip 后图像尺寸和保存帧尺寸不一致，需要先确认哪一个是标注坐标的唯一基准。
 
 ## 5. 推荐模块框架
 
@@ -383,7 +383,7 @@ Scene_UpdateTask -> Annotation_UpdateTask -> CaptureTask / FrameSaveTask
 
 ### 6.4 成像分辨率接入
 
-当前阶段分辨率暂定为 `800x800`，与现有窗口初始化和部分输出链路保持一致。标注模块中的像素坐标、目标框和 JSONL 示例均先按 `800x800` 验证。
+当前阶段标注分辨率跟随 Stage6 最终显示/输出尺寸，不再硬编码 `800x800`。标注模块中的像素坐标、目标框和后续 JSONL 示例都应使用同一帧最终显示/输出图像的宽高。
 
 后续需要根据 `CommonData.h` 的成像初始化参数接入真实分辨率：
 
@@ -394,8 +394,8 @@ int trackerSensorHeight;  // 成像高度
 
 推荐策略：
 
-1. 阶段 1：先统一使用当前渲染窗口或渲染纹理实际尺寸，暂定 `800x800`。
-2. 阶段 2：初始化时读取 `m_sensorParam.trackerSensorWidth` 和 `m_sensorParam.trackerSensorHeight`，同步调整窗口、渲染纹理、投影换算和标注输出尺寸。
+1. 阶段 1：优先使用 `m_stage6FinalWidth`、`m_stage6FinalHeight`；未 ready 时依次使用 `m_sensorDisplayConfig`、`m_renderTex`、窗口尺寸。
+2. 阶段 2：继续校验 `m_sensorParam.trackerSensorWidth`、`m_sensorParam.trackerSensorHeight` 与最终显示/输出图像尺寸的一致性。
 3. 如果窗口尺寸、渲染纹理尺寸和协议成像尺寸不一致，必须先确认最终以哪个尺寸作为标注坐标基准，再修改代码。
 
 原则上，标注坐标必须与最终保存的视频帧图像使用同一个宽高和同一个坐标原点；在该规则不明确时，需要先向用户确认。
@@ -581,7 +581,7 @@ enum class ModelForwardAxis {
   - 目标框。
   - 通过遮挡检测的关重部位点与像素坐标。
 - 先不保存图像和标注文件，只保证窗口显示正确。
-- 分辨率暂按 `800x800` 验证。
+- 分辨率跟随 Stage6 最终显示/输出尺寸，不硬编码 `800x800`。
 
 建议改动：
 
@@ -605,7 +605,7 @@ enum class ModelForwardAxis {
 
 - 根据用户补充的 `F35`、`F22`、`AIM120D`、`AIM9X`、`MMD` 模型，校准包围盒和关重部位 offsets。
 - 处理部分出屏、近裁剪面、窗口缩放和不同分辨率。
-- 将标注坐标从暂定 `800x800` 迁移到 `trackerSensorWidth`、`trackerSensorHeight` 或用户确认的最终图像尺寸。
+- 继续校验标注坐标、Stage6 输出尺寸、TCP/JPEG 最终显示尺寸之间的翻转和同步关系。
 - 校准关重部位遮挡检测，包括目标自身遮挡和目标之间互相遮挡。
 - 如果 `0x11` 同时可能表示 F35/F22，补充类型区分机制。
 
@@ -689,7 +689,7 @@ enum class ModelForwardAxis {
 3. 每类模型局部坐标系说明：头部朝哪个轴，模型原点在哪里，单位和缩放是否统一。
 4. 两个关重部位的期望位置：头部、中间部位是否要贴近具体部件，是否需要更多部位。
 5. 遮挡检测精度要求：是否需要使用精确模型三角面，还是阶段 1 可接受包围盒或简化碰撞体近似。
-6. 最终标注坐标对应的图像尺寸：继续使用 `800x800`，还是严格按 `trackerSensorWidth`、`trackerSensorHeight`。
+6. 最终保存阶段是否需要把内存标注坐标转换到 TCP `cv::flip(..., 0)` 后的图像坐标。
 7. 标注输出格式偏好：JSONL、COCO、YOLO、自定义 txt，或多格式同时输出。
 8. 图像保存格式偏好：PNG、JPG、BMP，是否保存带标注图和无标注原图。
 9. 坐标原点约定：当前建议图像左上角为 `(0,0)`，向右为 x 正方向，向下为 y 正方向。
@@ -740,11 +740,77 @@ enum class ModelForwardAxis {
 - “窗口中显示的目标都要标注”解释为：已经进入视场并实际显示的目标需要标注。
 - 关重部位标签增加遮挡判断；相机到关重点之间有阻挡时，该关重点不显示、不输出。
 - 目标整体可见时，目标框和型号标签仍可显示；关重部位按点分别判断可见性。
-- 成像分辨率阶段 1 暂按 `800x800`；后续根据 `trackerSensorWidth`、`trackerSensorHeight` 或用户确认的最终图像尺寸统一调整。
+- 成像分辨率阶段 1 后续应跟随 Stage6 输出尺寸；2026-06-08 阶段 1 已按该规则更新，不再硬编码 `800x800`。
 - 记录执行约束：不确定功能需求先问用户；后续代码修改需要添加中文注释。
 
 后续工作影响：
 
 - 阶段 1 实现时，需同步处理目标节点显示/隐藏和标注跳过逻辑。
 - 阶段 1 至少预留关重部位遮挡检测接口；若碰撞几何不足，可先记录近似方案和限制。
-- 阶段 2 需要校准模型关重点 offsets、遮挡检测精度和真实成像分辨率。
+- 阶段 2 需要校准模型关重点 offsets、遮挡检测精度，以及 TCP flip/帧保存后的坐标同步关系。
+
+### 2026-06-08 阶段 1：实时窗口标注最小可用版
+
+已完成：
+
+- 新增 `ConsoleApplication1_LLA/ConsoleApplication1/Annotation/` 标注模块，包含 `AnnotationTypes`、`AnnotationConfig`、`AnnotationProjector`、`AnnotationOverlay`、`AnnotationManager`。
+- `AnnotationManager` 按 `m_sensorParam.realtimeAnnotation` 启停；关闭时清空 overlay 和 `latestRecord`，开启时只生成窗口 overlay 和内存快照。
+- 标注模块只读 `m_targetPlatformList`，过滤 `isExist`、`nodePath`、`targetID`、`targetState.viewValid`、`nodePath.is_hidden()` 和包围盒投影结果，不修改目标 show/hide 主逻辑。
+- 新增型号标签映射：`0x11 -> F35`、`0x22 -> AIM120D`、`0x33 -> AIM9X`、`0x44 -> MMD`，未修改 `PLATFORM_TYPE` 枚举。
+- 用目标 local tight bounds 的 8 个角点投影生成 2D 外接框，并裁剪到最终显示/输出图像范围；小于 `4x4` 像素跳过。
+- Stage 1 先用包围盒估算 `head` 和 `middle` 关重部位，并预留 `forwardAxis` 与 explicit local offset 配置。
+- 预留 `isKeyPointVisibleByRay` 遮挡检测接口；当前没有统一 collision solids 时降级为仅投影可见，并低频输出 `[Annotation][WARN] occlusion geometry unavailable`。
+- overlay 使用 Panda3D `aspect2d`、`LineSegs`、`TextNode` 绘制目标框、型号标签、关重部位十字和 `head(x,y)`、`middle(x,y)` 像素坐标。
+- 标注坐标按最终显示/输出图像左上角坐标系记录，`x` 向右、`y` 向下；Stage 1 不处理 TCP `cv::flip(..., 0)` 后的保存坐标转换。
+- 标注宽高优先使用 `m_stage6FinalWidth`、`m_stage6FinalHeight`，未 ready 时 fallback 到 `m_sensorDisplayConfig`、`m_renderTex` 或窗口尺寸，不硬编码 `800x800`。
+- `HwaSimIR` 集成点：初始化 `AnnotationManager`，初始化命令后按 `realtimeAnnotation` 设置开关，`ProcessRealSimSceneDrivenData()` 末尾刷新标注，复位/删除目标/析构时清空 overlay 和快照。
+- 已更新 VS 工程文件和 CMakeLists，使新增模块参与构建。
+
+验证结果：
+
+- 已运行 `MSBuild.exe ConsoleApplication1_LLA/ConsoleApplication1.sln /p:Configuration=Release /p:Platform=x64 /m`。
+- 构建成功，输出 `ConsoleApplication1_LLA/Bin/ConsoleApplication1.exe`。
+- 构建仍有 18 个既有/依赖相关 warning，主要来自 Panda3D STL DLL 接口、`math_algorithm.h` 未引用局部变量、`size_t` 到 `int` 转换；无新增编译错误。
+
+降级项和遗留问题：
+
+- Stage 1 未实现精确遮挡检测；缺少统一 collision solids 时只按投影可见输出关重部位，并明确低频告警。
+- 未做图片、视频、JSONL 保存，未修改 UDP/TCP 协议，未输出标注网络包。
+- 未做运行态人工冒烟测试；需要后续配合 DataDrivenTestQT 验证 `realtimeAnnotation=true/false`、目标移动、`targetNumValid` 减少、`viewValid=false` 和多目标不串号。
+- 后续阶段需要校准各模型头部轴向、local offsets，以及 TCP flip/帧保存时的坐标同步规则。
+
+### 2026-06-08 阶段 1.2：目标框和关重点校准 + 配置文件化
+
+已完成：
+
+- 新增 `ConsoleApplication1_LLA/Bin/Config/Annotation/annotation_profiles.json`，采用独立 Annotation profile，不直接依赖 `Config/IRHotspots/target_hotspots.json`，避免把红外亮斑语义和标注关键点语义耦合。
+- 在 `ConsoleApplication1_LLA/Bin/Config/HwaSimIRRuntime.ini` 增加 `[Annotation]` 段，支持 `ProfilePath`、`DebugOverlay`、`BBoxMode`、`BBoxMarginPx`、`MinBBoxSizePx`、`DrawKeyPoints`、`DrawModelLabel`、`DrawBBox`。
+- `AnnotationConfig` 新增轻量 JSON 读取逻辑，解析 defaults、platforms、bbox、keypoints、localPos、excludeNodeNameContains；配置文件缺失时使用代码 fallback。
+- `AnnotationManager` 增加 profile 加载和 runtime option 应用接口，保持 `latestRecord` 仍为内存快照，不输出网络包、不落盘。
+- `AnnotationOverlay` 改为 `DebugOverlay=true` 时才显示 `ANNO_TEST`；默认 `DebugOverlay=false` 时不显示自检文字。
+- `AnnotationProjector` 的 bbox 主路径改为 `mesh_body`：递归遍历目标节点下 GeomNode，跳过 hidden 节点和名称包含 `EnginePlume`、`Plume`、`Annotation`、`Hotspot` 的节点/子树，逐顶点投影后求 2D bbox。
+- bbox 失败回退顺序为：`mesh_body` 顶点投影 -> body-only tight bounds -> legacy whole-node tight bounds，并低频输出 `[AnnotationBBox][WARN] fallback=...`。
+- bbox 结果按最终输出图像范围裁剪，应用 `BBoxMarginPx`，小于 `MinBBoxSizePx` 的目标框跳过。
+- head/middle 优先使用 profile 中的 explicit `localPos`，当前初始值为 F35 head `[0.0, 2.8, 0.0]`、AIM120D head `[0.0, 1.1, 0.0]`、AIM9X head `[0.0, 0.9, 0.0]`、middle `[0.0, 0.0, 0.0]`；平台缺少配置时回退到内置默认值和 forwardAxis 估算。
+- 新增低频日志：`[AnnotationConfig] profilePath=... loaded=... source=...`、`[AnnotationBBox] ... mode=mesh_body vertexCount=... bbox=...`、`[AnnotationKeyPoint] ... headLocal=... middleLocal=... headPixel=... middlePixel=...`。
+
+验证结果：
+
+- 运行 `MSBuild.exe ConsoleApplication1_LLA/ConsoleApplication1.sln /p:Configuration=Release /p:Platform=x64 /m`。
+- 第一次编译时新增文件缺少 UTF-8 BOM，VS936 代码页把中文注释后的代码吞入注释，已通过 UTF-8 BOM 转换修复。
+- 第二次编译 C++ 通过但链接失败，原因是正在运行的 `ConsoleApplication1.exe` 占用输出文件。
+- 进程退出后重新构建成功，Release x64 输出 `ConsoleApplication1_LLA/Bin/ConsoleApplication1.exe`，最终结果 `7 warning / 0 error`；warning 来自 Panda3D STL DLL 接口和 `size_t` 到 `int` 转换。
+
+未变更和边界：
+
+- 未修改 `CommonData.h`、UDP 解析流程、TCP/JPEG 传输格式。
+- 未修改红外辐射、材质、大气、AGC、MTF、Stage3/4/5/6/7 物理链路文件和物理逻辑。
+- 未新增 JSONL、图片、视频保存功能，未输出标注网络包。
+- 未改 Stage1.1 final overlay display region，只复用现有 overlay 显示路径。
+
+遗留问题：
+
+- 需要用实际运行数据手动校验单目标 AIM120D/AIM9X 的 bbox 是否贴近本体且不包含尾焰。
+- 需要多目标场景验证框不再被其它目标或尾焰明显拉大，允许真实投影视角下的框重叠。
+- 关重点 localPos 仍是初始值，后续需根据用户补充的最终模型坐标系继续微调。
+- 遮挡检测仍保留 Stage1 接口，缺少统一 collision solids 时继续降级为 projection-only。

@@ -802,6 +802,8 @@ HwaSimIR::HwaSimIR(int argc, char** argv)
 
 HwaSimIR::~HwaSimIR() {
 
+	m_annotationManager.clear();
+
 	// 删除所有平台
 	m_isAddPlatform = false;
 	ProcessAddRemovePakPlatform();
@@ -1304,6 +1306,7 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 		}
 		ApplyStage6FinalPostprocessInputs();
 		LogStage6FinalPipeline(reason);
+		SetupAnnotationOverlayRegion(reason);
 		return;
 	}
 
@@ -1386,6 +1389,59 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 	m_stage6FinalPipelineReady = true;
 	ApplyStage6FinalPostprocessInputs();
 	LogStage6FinalPipeline(reason);
+	SetupAnnotationOverlayRegion(reason);
+}
+
+void HwaSimIR::SetupAnnotationOverlayRegion(const char* reason)
+{
+	if (!m_pGraphicsWindow)
+	{
+		return;
+	}
+
+	if (m_annotationRoot.is_empty())
+	{
+		m_annotationRoot = NodePath("AnnotationFinalOverlayRoot");
+	}
+	if (m_annotationCameraNode.is_empty())
+	{
+		PT(Camera) annotationCamera = new Camera("AnnotationFinalOverlayCamera");
+		PT(OrthographicLens) annotationLens = new OrthographicLens();
+		annotationLens->set_film_size(2.0f, 2.0f);
+		annotationLens->set_near_far(-10.0f, 10.0f);
+		annotationCamera->set_lens(annotationLens);
+		m_annotationCameraNode = m_annotationRoot.attach_new_node(annotationCamera);
+		m_annotationCameraNode.set_pos(0.0f, -1.0f, 0.0f);
+		m_annotationCameraNode.set_hpr(0.0f, 0.0f, 0.0f);
+	}
+
+	if (m_annotationRegion == nullptr)
+	{
+		m_annotationRegion = m_pGraphicsWindow->make_display_region(0.0f, 1.0f, 0.0f, 1.0f);
+	}
+
+	const int overlaySort = 200;
+	m_annotationRegion->set_dimensions(0.0f, 1.0f, 0.0f, 1.0f);
+	m_annotationRegion->set_camera(m_annotationCameraNode);
+	m_annotationRegion->set_sort(overlaySort);
+	m_annotationRegion->set_clear_color_active(false);
+	m_annotationRegion->set_clear_depth_active(false);
+	m_annotationRegion->set_active(true);
+
+	// Stage1.1 标注必须画在 Stage6 final sensor card 之后，但不进入灰度/噪声/天气后处理。
+	m_annotationManager.initialize(m_annotationRoot);
+
+	++m_annotationOverlayLogCounter;
+	if (m_annotationOverlayLogCounter <= 3 || (m_annotationOverlayLogCounter % 120) == 0)
+	{
+		std::cout << "[AnnotationOverlay]"
+			<< " mode=final_region"
+			<< " regionReady=" << (m_annotationRegion != nullptr ? "1" : "0")
+			<< " rootEmpty=" << (m_annotationRoot.is_empty() ? "1" : "0")
+			<< " sort=" << overlaySort
+			<< " reason=" << (reason != nullptr ? reason : "unknown")
+			<< std::endl;
+	}
 }
 
 void HwaSimIR::ApplyStage6FinalPostprocessInputs()
@@ -2455,6 +2511,83 @@ void HwaSimIR::LogStage6FrameDiag(const BYHWICD::DisplayC2cObjTrackingData& curr
 	}
 }
 
+bool HwaSimIR::ResolveAnnotationOutputSize(int& width, int& height) const
+{
+	width = 0;
+	height = 0;
+
+	if (m_stage6FinalWidth > 0 && m_stage6FinalHeight > 0)
+	{
+		width = m_stage6FinalWidth;
+		height = m_stage6FinalHeight;
+		return true;
+	}
+
+	if (m_sensorDisplayConfigReady && m_sensorDisplayConfig.width > 0 && m_sensorDisplayConfig.height > 0)
+	{
+		width = m_sensorDisplayConfig.width;
+		height = m_sensorDisplayConfig.height;
+		return true;
+	}
+
+	if (m_renderTex != nullptr && m_renderTex->get_x_size() > 0 && m_renderTex->get_y_size() > 0)
+	{
+		width = m_renderTex->get_x_size();
+		height = m_renderTex->get_y_size();
+		return true;
+	}
+
+	if (m_pGraphicsWindow != nullptr)
+	{
+		const WindowProperties props = m_pGraphicsWindow->get_properties();
+		if (props.get_x_size() > 0 && props.get_y_size() > 0)
+		{
+			width = props.get_x_size();
+			height = props.get_y_size();
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void HwaSimIR::RefreshAnnotationOverlay(const BYHWICD::DisplayC2cObjTrackingData& currentData)
+{
+	if (!m_sensorParam.realtimeAnnotation)
+	{
+		if (m_annotationManager.isEnabled())
+		{
+			m_annotationManager.setEnabled(false);
+		}
+		return;
+	}
+
+	if (!m_annotationManager.isEnabled())
+	{
+		m_annotationManager.setEnabled(true);
+	}
+
+	int outputWidth = 0;
+	int outputHeight = 0;
+	if (!ResolveAnnotationOutputSize(outputWidth, outputHeight))
+	{
+		m_annotationManager.clear();
+		return;
+	}
+
+	// 标注像素坐标以最终显示/输出图像左上角为原点；TCP 内部 flip 不在 Stage1 修改。
+	m_annotationManager.updateFrame(
+		m_stage0DisplayFrameCount,
+		currentData.time,
+		currentData.sensorID,
+		outputWidth,
+		outputHeight,
+		m_targetPlatformList,
+		m_renderRoot,
+		m_cameraNode,
+		m_cameraLens);
+}
+
 // 窗口初始化（通用配置）
 void HwaSimIR::InitHwaSimIRWindow() {
 	m_pMainWindow->enable_keyboard();       // 启用键盘输入
@@ -2663,6 +2796,9 @@ void HwaSimIR::ProcessRealSimSceneInitData()
 		sensorPixelAngleUrad);
 	ApplySensorOutputConfig(sensorDisplayConfig, "init-command");
 	ApplyStage6DisplayConfig(m_sensorParam, "init-command");
+	// Stage1 标注跟随初始化开关；重新初始化时先清空上一回合 overlay 和内存快照。
+	m_annotationManager.clear();
+	m_annotationManager.setEnabled(m_sensorParam.realtimeAnnotation);
 
 	// 设置增删标记为"增加"
 	m_isAddPlatform = true;
@@ -2913,6 +3049,7 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 
 	ApplyWeaponCameraControl(currentData, lookAtTarget);
 	LogStage6FrameDiag(currentData, targetMappedCount, targetVisibleCount, hiddenByTargetNum, hiddenByTargetViewValid, hiddenByWeaponViewValid, beyondFarClipCount);
+	RefreshAnnotationOverlay(currentData);
 
 	//for (int i = 0; i < validTargetNum; ++i)
 	//{
@@ -3326,6 +3463,7 @@ void HwaSimIR::ProcessAddRemoveTargetPlatform()
 	else
 	{
 		// 删除TargetState平台
+		m_annotationManager.clear();
 		for (auto& targetPlat : m_targetPlatformList)
 		{
 			if (targetPlat.isExist)
@@ -3498,6 +3636,8 @@ void HwaSimIR::handleControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd) 
 	case 1: // 复位
 		std::cout << "执行复位逻辑..." << std::endl;
 		m_stage0DisplayFrameCount = 0;
+		m_annotationManager.clear();
+		m_annotationManager.setEnabled(false);
 		// TODO: 实现复位逻辑（清空状态、重置传感器等）
 
 		// 设置增删标记为"删除"
@@ -3812,11 +3952,31 @@ void HwaSimIR::InitInfraredSimulation()
 	std::string stage4VisualSource;
 	std::string stage4BrightSource;
 	std::string stage4RearSource;
+	std::string annotationProfileSource;
+	std::string annotationDebugSource;
+	std::string annotationBBoxModeSource;
+	std::string annotationBBoxMarginSource;
+	std::string annotationMinBBoxSource;
+	std::string annotationDrawKeyPointsSource;
+	std::string annotationDrawModelLabelSource;
+	std::string annotationDrawBBoxSource;
 	bool enableModtranTauDebug = m_runtimeConfig.getBool("Stage3", "EnableModtranTauDebug", "EnableModtranTauDebug", false, &stage3TauDebugSource);
 	bool useModtranTauForAtmosphere = m_runtimeConfig.getBool("Stage3", "UseModtranTauForAtmosphere", "UseModtranTauForAtmosphere", false, &stage3UseTauSource);
 	m_enableStage4HotspotVisualDebug = m_runtimeConfig.getBool("Stage4", "EnableHotspotVisualDebug", "EnableStage4HotspotVisualDebug", false, &stage4VisualSource);
 	m_forceStage4BrightSpotVisible = m_runtimeConfig.getBool("Stage4", "ForceBrightSpotVisible", "ForceStage4BrightSpotVisible", false, &stage4BrightSource);
 	m_forceStage4RearHotspotVisible = m_runtimeConfig.getBool("Stage4", "ForceRearHotspotVisible", "ForceStage4RearHotspotVisible", false, &stage4RearSource);
+	AnnotationRuntimeOptions annotationOptions;
+	annotationOptions.profilePath = m_runtimeConfig.getString("Annotation", "ProfilePath", "AnnotationProfilePath", "Config/Annotation/annotation_profiles.json", &annotationProfileSource);
+	annotationOptions.profilePathSource = annotationProfileSource;
+	annotationOptions.drawOptions.debugOverlay = m_runtimeConfig.getBool("Annotation", "DebugOverlay", "AnnotationDebugOverlay", false, &annotationDebugSource);
+	annotationOptions.bboxMode = m_runtimeConfig.getString("Annotation", "BBoxMode", "AnnotationBBoxMode", "mesh_body", &annotationBBoxModeSource);
+	annotationOptions.bboxMarginPx = std::max(0, m_runtimeConfig.getInt("Annotation", "BBoxMarginPx", "AnnotationBBoxMarginPx", 3, &annotationBBoxMarginSource));
+	annotationOptions.minBBoxSizePx = std::max(1, m_runtimeConfig.getInt("Annotation", "MinBBoxSizePx", "AnnotationMinBBoxSizePx", 4, &annotationMinBBoxSource));
+	annotationOptions.drawOptions.drawKeyPoints = m_runtimeConfig.getBool("Annotation", "DrawKeyPoints", "AnnotationDrawKeyPoints", true, &annotationDrawKeyPointsSource);
+	annotationOptions.drawOptions.drawModelLabel = m_runtimeConfig.getBool("Annotation", "DrawModelLabel", "AnnotationDrawModelLabel", true, &annotationDrawModelLabelSource);
+	annotationOptions.drawOptions.drawBBox = m_runtimeConfig.getBool("Annotation", "DrawBBox", "AnnotationDrawBBox", true, &annotationDrawBBoxSource);
+	m_annotationManager.loadProfileFromCandidates(BuildRuntimeConfigPathCandidates(annotationOptions.profilePath), annotationOptions.profilePath, annotationProfileSource);
+	m_annotationManager.applyRuntimeOptions(annotationOptions);
 	m_stage5DebugDisplayConfigPath = FirstExistingPath(stage5DebugConfigPaths);
 	m_stage5DebugDisplayConfigReady = LoadStage5DebugDisplayConfig(m_stage5DebugDisplayConfigPath, m_stage5DebugConfigs, m_stage5UseBaseTextureModulationByBand);
 	ApplyStage5RuntimeOverrides(m_runtimeConfig, m_stage5DebugConfigs, m_stage5UseBaseTextureModulationByBand);

@@ -150,6 +150,11 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Annotation\AnnotationConfig.h" />
+    <ClInclude Include="Annotation\AnnotationManager.h" />
+    <ClInclude Include="Annotation\AnnotationOverlay.h" />
+    <ClInclude Include="Annotation\AnnotationProjector.h" />
+    <ClInclude Include="Annotation\AnnotationTypes.h" />
     <ClInclude Include="AttitudeTransform.h" />
     <ClInclude Include="Common\CommonData.h" />
     <ClInclude Include="Common\CommonDefine.h" />
@@ -175,6 +180,10 @@
     <ClInclude Include="UdpCommThread.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Annotation\AnnotationConfig.cpp" />
+    <ClCompile Include="Annotation\AnnotationManager.cpp" />
+    <ClCompile Include="Annotation\AnnotationOverlay.cpp" />
+    <ClCompile Include="Annotation\AnnotationProjector.cpp" />
     <ClCompile Include="AttitudeTransform.cpp" />
     <ClCompile Include="GeoTransform.cpp" />
     <ClCompile Include="HwaSimIR.cpp" />

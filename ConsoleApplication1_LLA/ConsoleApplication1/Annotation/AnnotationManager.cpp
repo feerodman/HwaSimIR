@@ -1,0 +1,131 @@
+﻿#include "AnnotationManager.h"
+
+#include <iostream>
+#include <sstream>
+
+void AnnotationManager::initialize(const NodePath& overlayRoot)
+{
+	m_overlay.initialize(overlayRoot);
+	m_initialized = !overlayRoot.is_empty();
+	clear();
+}
+
+bool AnnotationManager::loadProfileFromCandidates(const std::vector<std::string>& filePaths, const std::string& configuredPath, const std::string& source)
+{
+	return m_config.loadFromCandidates(filePaths, configuredPath, source);
+}
+
+void AnnotationManager::applyRuntimeOptions(const AnnotationRuntimeOptions& options)
+{
+	m_config.applyRuntimeOptions(options);
+}
+
+void AnnotationManager::setEnabled(bool enabled)
+{
+	if (m_enabled == enabled)
+	{
+		return;
+	}
+
+	m_enabled = enabled;
+	std::cout << "[Annotation] enabled=" << (m_enabled ? "1" : "0") << std::endl;
+	if (!m_enabled)
+	{
+		clear();
+	}
+}
+
+bool AnnotationManager::isEnabled() const
+{
+	return m_enabled;
+}
+
+void AnnotationManager::clear()
+{
+	m_latestRecord = AnnotationFrameRecord();
+	if (m_initialized)
+	{
+		m_overlay.clear();
+	}
+}
+
+AnnotationFrameRecord AnnotationManager::updateFrame(
+	unsigned long long frameIndex,
+	double simTimeMs,
+	int sensorID,
+	int width,
+	int height,
+	const std::vector<TargetPlatformData>& targets,
+	const NodePath& renderRoot,
+	const NodePath& cameraNode,
+	Lens* cameraLens)
+{
+	if (!m_enabled || !m_initialized)
+	{
+		clear();
+		return m_latestRecord;
+	}
+
+	AnnotationFrameRecord record;
+	record.frameIndex = frameIndex;
+	record.simTimeMs = simTimeMs;
+	record.sensorID = sensorID;
+	record.width = width;
+	record.height = height;
+
+	if (width <= 0 || height <= 0 || renderRoot.is_empty() || cameraNode.is_empty() || cameraLens == nullptr)
+	{
+		m_latestRecord = record;
+		m_overlay.clear();
+		return m_latestRecord;
+	}
+
+	for (size_t i = 0; i < targets.size(); ++i)
+	{
+		TargetAnnotation targetAnnotation;
+		if (m_projector.buildTargetAnnotation(targets[i], m_config, renderRoot, cameraNode, cameraLens, width, height, targetAnnotation))
+		{
+			record.targets.push_back(targetAnnotation);
+		}
+	}
+
+	m_latestRecord = record;
+	m_overlay.drawFrame(m_latestRecord, m_config.drawOptions());
+	++m_updateCounter;
+
+	if (m_updateCounter <= 3 || (m_updateCounter % 120) == 0)
+	{
+		std::cout << "[Annotation] frame=" << m_latestRecord.frameIndex
+			<< " size=" << m_latestRecord.width << "x" << m_latestRecord.height
+			<< " targets=" << m_latestRecord.targets.size()
+			<< std::endl;
+		for (size_t i = 0; i < m_latestRecord.targets.size(); ++i)
+		{
+			logTargetRecord(m_latestRecord.targets[i]);
+		}
+	}
+
+	return m_latestRecord;
+}
+
+const AnnotationFrameRecord& AnnotationManager::latestRecord() const
+{
+	return m_latestRecord;
+}
+
+void AnnotationManager::logTargetRecord(const TargetAnnotation& target) const
+{
+	std::ostringstream log;
+	log << "[Annotation]"
+		<< " targetID=" << target.targetID
+		<< " targetPlatID=" << target.targetPlatID
+		<< " type=" << target.modelLabel
+		<< " bbox=(" << target.bbox.x << "," << target.bbox.y << ","
+		<< target.bbox.width << "," << target.bbox.height << ")";
+	for (size_t i = 0; i < target.keyPoints.size(); ++i)
+	{
+		const AnnotationPoint2D& point = target.keyPoints[i];
+		log << " " << point.name << "=(" << point.x << "," << point.y << ")";
+	}
+	std::cout << log.str() << std::endl;
+}

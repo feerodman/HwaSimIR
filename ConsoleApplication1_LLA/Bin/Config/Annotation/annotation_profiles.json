@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "notes": "Runtime annotation profile. BBox is body-only, keypoints are configurable local offsets.",
+  "defaults": {
+    "enabled": true,
+    "label": "UNKNOWN",
+    "bbox": {
+      "mode": "mesh_body",
+      "marginPx": 3,
+      "minSizePx": 4,
+      "excludeNodeNameContains": ["EnginePlume", "Plume", "Annotation", "Hotspot"]
+    },
+    "keypoints": {
+      "enabled": true,
+      "forwardAxis": "PositiveY",
+      "points": {
+        "head": { "localPos": [0.0, 1.0, 0.0], "visible": true },
+        "middle": { "localPos": [0.0, 0.0, 0.0], "visible": true }
+      }
+    }
+  },
+  "platforms": {
+    "F35": {
+      "label": "F35",
+      "keypoints": {
+        "points": {
+          "head": { "localPos": [0.0, 2.8, 0.0], "visible": true },
+          "middle": { "localPos": [0.0, 0.0, 0.0], "visible": true }
+        }
+      }
+    },
+    "AIM120D": {
+      "label": "AIM120D",
+      "keypoints": {
+        "points": {
+          "head": { "localPos": [0.0, 1.1, 0.0], "visible": true },
+          "middle": { "localPos": [0.0, 0.0, 0.0], "visible": true }
+        }
+      }
+    },
+    "AIM9X": {
+      "label": "AIM9X",
+      "keypoints": {
+        "points": {
+          "head": { "localPos": [0.0, 0.9, 0.0], "visible": true },
+          "middle": { "localPos": [0.0, 0.0, 0.0], "visible": true }
+        }
+      }
+    },
+    "MMD": {
+      "label": "MMD"
+    }
+  }
+}

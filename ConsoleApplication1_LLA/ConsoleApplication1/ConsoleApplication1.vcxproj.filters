@@ -28,6 +28,12 @@
     <Filter Include="源文件\IR">
       <UniqueIdentifier>{b3a5316b-6580-46af-b373-1d20b4f8e629}</UniqueIdentifier>
     </Filter>
+    <Filter Include="头文件\Annotation">
+      <UniqueIdentifier>{0f05a9de-1434-4975-b3a2-b8d50129fd3e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\Annotation">
+      <UniqueIdentifier>{ecfb48bb-8502-43d7-83d0-e09e90b56e35}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -102,6 +108,21 @@
     <ClInclude Include="math_algorithm.h">
       <Filter>头文件\CoordinateConverter</Filter>
     </ClInclude>
+    <ClInclude Include="Annotation\AnnotationConfig.h">
+      <Filter>头文件\Annotation</Filter>
+    </ClInclude>
+    <ClInclude Include="Annotation\AnnotationManager.h">
+      <Filter>头文件\Annotation</Filter>
+    </ClInclude>
+    <ClInclude Include="Annotation\AnnotationOverlay.h">
+      <Filter>头文件\Annotation</Filter>
+    </ClInclude>
+    <ClInclude Include="Annotation\AnnotationProjector.h">
+      <Filter>头文件\Annotation</Filter>
+    </ClInclude>
+    <ClInclude Include="Annotation\AnnotationTypes.h">
+      <Filter>头文件\Annotation</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -157,6 +178,18 @@
     </ClCompile>
     <ClCompile Include="AttitudeTransform.cpp">
       <Filter>源文件\CoordinateConverter</Filter>
+    </ClCompile>
+    <ClCompile Include="Annotation\AnnotationConfig.cpp">
+      <Filter>源文件\Annotation</Filter>
+    </ClCompile>
+    <ClCompile Include="Annotation\AnnotationManager.cpp">
+      <Filter>源文件\Annotation</Filter>
+    </ClCompile>
+    <ClCompile Include="Annotation\AnnotationOverlay.cpp">
+      <Filter>源文件\Annotation</Filter>
+    </ClCompile>
+    <ClCompile Include="Annotation\AnnotationProjector.cpp">
+      <Filter>源文件\Annotation</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

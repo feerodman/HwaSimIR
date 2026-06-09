@@ -42,6 +42,7 @@
 #include "IR/IRSensorPostProcess.h"
 #include "IR/IRTemperatureModel.h"
 #include "IR/IRWeatherEffects.h"
+#include "Annotation/AnnotationManager.h"
 
 #include "shader.h"             // 新增：着色器支持
 #include "clockObject.h"        // 新增：获取全局时间
@@ -187,11 +188,15 @@ private:
 	PT(GraphicsOutput) m_stage6RawSceneBuffer;
 	PT(DisplayRegion) m_stage6RawSceneRegion;
 	PT(DisplayRegion) m_stage6FinalRegion;
+	PT(DisplayRegion) m_annotationRegion;
 	NodePath m_stage6FinalRoot;
 	NodePath m_stage6FinalCameraNode;
 	NodePath m_stage6FinalCard;
+	NodePath m_annotationRoot;
+	NodePath m_annotationCameraNode;
 	bool m_stage6FinalPipelineReady = false;
 	int m_stage6FinalPipelineLogCounter = 0;
+	int m_annotationOverlayLogCounter = 0;
 	int m_stage6FinalWidth = 0;
 	int m_stage6FinalHeight = 0;
 	std::atomic<bool> m_requestExit{ false };
@@ -235,6 +240,7 @@ private:
 	void InitInfraredShader();                              // 初始化着色器代码
 	void InitStage6FinalPostShader();
 	void SetupStage6FinalPipeline(int width, int height, const char* reason);
+	void SetupAnnotationOverlayRegion(const char* reason);
 	void ApplyStage6FinalPostprocessInputs();
 	void InitInfraredSimulation();                          // 初始化低复杂度红外全链路参数
 	void InitSkyAndCloudScene();                            // 初始化天空背景和粒子云近似层
@@ -280,6 +286,8 @@ private:
 	void LogStage6FinalPipeline(const char* reason);
 	void LogStage6ViewportDiag(const char* reason) const;
 	void LogStage6FrameDiag(const BYHWICD::DisplayC2cObjTrackingData& currentData, int targetMappedCount, int targetVisibleCount, int hiddenByTargetNum, int hiddenByTargetViewValid, int hiddenByWeaponViewValid, int beyondFarClipCount);
+	bool ResolveAnnotationOutputSize(int& width, int& height) const;
+	void RefreshAnnotationOverlay(const BYHWICD::DisplayC2cObjTrackingData& currentData);
 	void LogActiveIRSensorProfile(int protocolBand, const char* reason, bool forceLog);
 	double CurrentSimulationHour() const;                   // 从实时数据时间换算当前仿真小时，无实时数据时使用正午profile
 	IRRuntimeEnvironment BuildRuntimeEnvironment() const;   // 阶段3：按 UDP > profile > 默认值合成环境状态
@@ -320,6 +328,7 @@ private:
 	std::vector<PakPlatformData> m_pakPlatformList;     // PlatParamPak平台
 	std::vector<WeaponPlatformData> m_weaponPlatformList;// WeaponState平台
 	std::vector<TargetPlatformData> m_targetPlatformList;// TargetState平台
+	AnnotationManager m_annotationManager;              // Stage1：实时窗口标注与内存快照
 
 	bool m_isInitTargetPlatID;	//TargetState平台初始化ID映射标记
 

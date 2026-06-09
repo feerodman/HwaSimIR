@@ -19,6 +19,10 @@ link_directories(${PANDA3D_ROOT}/lib)
 
 add_executable(HwaSim_RK3588 main.cpp
         HwaSimIR.cpp
+        Annotation/AnnotationConfig.cpp
+        Annotation/AnnotationManager.cpp
+        Annotation/AnnotationOverlay.cpp
+        Annotation/AnnotationProjector.cpp
         IR/IRConfig.cpp
         IR/IREnginePlumeModel.cpp
         IR/IRModtranTauLut.cpp
