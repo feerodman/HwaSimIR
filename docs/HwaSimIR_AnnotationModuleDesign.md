@@ -1061,3 +1061,162 @@ Stage2A.3 验收清单：
 - 当前默认关闭自身遮挡；自身遮挡建议后续结合精确 surface point、法线朝向或 depth/ID mask 单独开启。
 - 当前 collision mesh 仍来自完整渲染 mesh；RK3588 60fps 目标下，后续应制作低模 collision mesh 或改用 depth/ID mask。
 - 本轮只完成编译验证，未在真实窗口/UDP 场景中采集 `[AnnotationPerf]` 前后数值。
+
+### 2026-06-09 阶段 2B：TCP 视频帧 + 实时数据 + 标注信息同步传输
+
+本轮目标：
+
+- 将 `HwaSimIR_TCP传输demo` 中“JPEG 视频帧随包携带 `DisplayC2cObjTrackingData`”的方法迁移到当前 HwaSimIR 主工程。
+- 在同一个 TCP 显示帧包中同步发送三类数据：`DisplayC2cObjTrackingData`、`AnnotationFrameRecord` 转换得到的 UTF-8 JSON、JPEG 图像。
+- 修改 `HwaSim_IR_VideoDisplay` 接收端，使其兼容旧的 `trackingData + JPEG` 显示帧包，并解析新的 `trackingData + annotationJson + JPEG` 显示帧包。
+- 接收端保存视频时新增 `target_annotations.txt`，每保存一帧视频就追加一行 UTF-8 JSON 标注；原 `annotations.txt` 实时数据 CSV 保持不改名、不混入标注 JSON。
+- 不修改 `CommonData.h`、UDP 0x41/0x36/0x38 解析流程、TCP 初始化/控制命令格式、红外辐射/材质/大气/AGC/MTF/Stage3-7 物理链路，不做 HwaSimIR 本地图像/视频/JSONL 保存。
+
+TCP 新显示帧包格式：
+
+```text
+totalLen:uint32 big-endian
+structLen1:uint32 big-endian
+struct1: BYHWICD::DisplayC2cObjTrackingData
+structLen2:uint32 big-endian
+struct2: annotationJson UTF-8
+structLen3:uint32 big-endian
+struct3: JPEG bytes
+```
+
+说明：
+
+- `totalLen` 继续沿用 demo 的总长度语义，包含自身 4 字节长度头。
+- `struct1.flag` 仍为 `0x38`，不向 `CommonData.h` 新增字段。
+- TCP 后台线程只使用主线程复制好的 RGB 帧、实时数据和标注快照，不访问 Panda3D `NodePath`、`AnnotationManager` 或 HwaSimIR 场景对象。
+- 发送使用 `sendAll` 循环，避免大 JPEG/JSON 包被单次 `send` 截断。
+
+`annotationJson` 字段：
+
+```json
+{
+  "version": 1,
+  "enabled": true,
+  "frameIndex": 123,
+  "simTimeMs": 456.0,
+  "sensorID": 0,
+  "width": 800,
+  "height": 800,
+  "targets": [
+    {
+      "targetType": 34,
+      "targetTypeHex": "0x22",
+      "modelLabel": "AIM120D",
+      "targetPlatID": 1,
+      "targetID": 2,
+      "bboxCorners": [
+        {"x": 310, "y": 220},
+        {"x": 390, "y": 220},
+        {"x": 390, "y": 246},
+        {"x": 310, "y": 246}
+      ],
+      "keyPoints": [
+        {"name": "head", "x": 376, "y": 228, "visible": true},
+        {"name": "middle", "x": 344, "y": 232, "visible": true}
+      ]
+    }
+  ]
+}
+```
+
+标注关闭或本帧无标注目标时：
+
+```json
+{"version":1,"enabled":false,"frameIndex":123,"simTimeMs":456.0,"sensorID":0,"width":800,"height":800,"targets":[]}
+```
+
+坐标与 `cv::flip(..., 0)` 结论：
+
+- `AnnotationFrameRecord` 的坐标已定义为最终显示/输出图像左上角坐标，`x` 向右，`y` 向下。
+- 当前 TCP 发送前的 `cv::flip(rawFrame, flippedFrame, 0)` 用于把 Panda3D RAM 图像翻成接收端 JPEG 正常显示方向；翻转后的 JPEG 与 `AnnotationFrameRecord` 使用同一个左上角坐标系。
+- 因此 Stage2B 发送 `annotationJson` 时不再对 `y` 做二次翻转。
+- 若未来去掉 TCP flip 或改变 capture RAM 图像方向，必须同步复核此结论，避免接收端图像和标注上下颠倒。
+- 若 `AnnotationFrameRecord.width/height` 与最终 TCP JPEG 宽高不同，发送端按最终 JPEG 宽高对 bbox/keypoint 做等比例坐标缩放后输出 JSON。
+
+接收端保存规则：
+
+- `HwaSim_IR_VideoDisplay` 在每个回合目录中继续生成：
+  - `output.mp4`
+  - 原实时数据文件 `annotations.txt`
+  - 新增标注文件 `target_annotations.txt`
+- `target_annotations.txt` 使用 `.txt` 扩展名，但每行内容为 UTF-8 JSON。
+- 每写入一帧视频，就写入一行标注 JSON；行数应与视频帧数一一对应。
+- 新三段式包携带的 JSON 优先原样保存；旧包未携带 JSON 时，接收端生成 `enabled=false` 占位 JSON，保证行数同步。
+- 停止、复位和析构时通过 `CloseStorage()` flush 并 close 视频、原实时数据文件和 `target_annotations.txt`。
+
+兼容性：
+
+- 0x36 初始化命令和 0x41 控制命令解析逻辑保持不变。
+- 0x38 显示帧支持新三段式包。
+- 0x38 显示帧尽量兼容旧 `trackingData + JPEG` 两段式包。
+- 接收端额外兼容最老的 `4 字节 JPEG 长度 + JPEG` 纯图像包；此时实时数据为空快照，标注文件写 `enabled=false` 占位 JSON。
+
+当前遗留：
+
+- 本轮只做 TCP 对外传输和接收端随视频保存标注，不实现 HwaSimIR 本地 `FrameOutputCoordinator`。
+- HwaSimIR 本地图像帧、视频、逐帧标注、逐帧实时数据统一保存仍留到后续阶段。
+- 未做真实联机人工验收；需要启动接收端和 HwaSimIR 后检查视频显示、实时表格更新、`output.mp4`、`annotations.txt`、`target_annotations.txt` 三者是否同步生成。
+
+### 2026-06-09 Stage2B 补充修复：TCP 初始化/控制命令转发
+
+测试暴露的问题：
+
+- HwaSimIR 能接收激励程序的 0x36 初始化命令和 0x41 控制命令，但 Stage2B 初版只在 TCP 显示帧包中发送 `DisplayC2cObjTrackingData + annotationJson + JPEG`。
+- 0x36/0x41 没有同步转发给 `HwaSim_IR_VideoDisplay`，因此接收端不会触发初始化界面更新，也不会收到开始/停止命令去创建保存目录、打开/关闭 `output.mp4`、原实时数据文件和 `target_annotations.txt`。
+
+修复内容：
+
+- `TcpCommThread` 增加单结构体 TCP 包发送接口，格式保持 demo 方式：
+
+```text
+totalLen:uint32 big-endian
+structLen:uint32 big-endian
+struct: InitP2cObjectTrackingCmd(flag=0x36) 或 ControlP2cX1ObjTrackingCmd(flag=0x41)
+```
+
+- `HwaSimIR::handleInitCmd(...)` 在完成本端初始化并发送 UDP 初始化应答后，调用 `TcpCommThread::sendInitCmd(cmd)` 转发 0x36 给接收端。
+- `HwaSimIR::handleControlCmd(...)` 在复位、开始、停止分支中调用 `TcpCommThread::sendControlCmd(cmd)` 转发 0x41 给接收端。
+- 复位和开始分支同步调用 `resetInitCompleted()`，保证下一回合初始化命令可以重新转发。
+- TCP socket 发送增加互斥保护，避免控制/初始化单结构体包与视频帧三段式包在同一 TCP 连接上交叉写入。
+
+边界保持：
+
+- 不修改 `CommonData.h` 中任何协议结构体字段、顺序、类型和 `sizeof`。
+- 不修改 UDP 0x41/0x36/0x38 解析流程。
+- 不修改红外辐射、材质、大气、AGC、MTF、Stage3-7 物理链路。
+- 接收端既能解析 0x36/0x41 单结构体包，也继续解析 0x38 显示帧包。
+
+### 2026-06-10 Stage2B 补充修复：接收端延迟开始保存
+
+测试暴露的问题：
+
+- `HwaSim_IR_VideoDisplay` 的录制开关只由 TCP 转发的 0x41 控制命令驱动；如果 HwaSimIR 未转发 0x41，接收端不会进入保存流程。
+- 0x41 开始命令到达后，接收端可能先收到若干帧实时数据为空的 0x38 显示帧，此时 `TargetState targetState[5]` 仍是清零状态。
+- 若开始命令一到就创建目录并写视频/标注/实时数据，会把空实时帧也保存进去，造成保存数据开头无目标、视频帧和有效目标数据不同步。
+
+修复内容：
+
+- 接收端从 0x36 初始化命令读取 `trackerSensor[0].saveMP4En`，作为本回合是否允许保存 MP4/数据/标注的开关。
+- 收到 0x41 开始命令时：
+  - 若 `saveMP4En=false`，只更新运行状态，不创建保存目录，不写文件。
+  - 若 `saveMP4En=true`，只进入 `recordingPending` 待录制状态，暂不创建 `MP4/round_xxx_timestamp` 目录。
+- 每帧 0x38 显示帧到达后，先判断 `targetState[5]` 是否已有有效目标数据；当前以 `targetType != 0` 作为“该目标槽有数据”的判断条件，与目标表格显示逻辑一致。
+- 第一帧有效目标数据到达时，才创建：
+  - `output.mp4`
+  - `annotations.txt`
+  - `target_annotations.txt`
+- 从第一帧有效目标数据开始，视频、实时数据和标注 JSON 同步逐帧写入。
+- 复位、停止、析构时清理 `recordingPending` 和已打开的保存资源。
+
+验收关注：
+
+1. `saveMP4En=false`：收到开始命令后不生成保存目录。
+2. `saveMP4En=true`：收到开始命令但实时 `targetState[5]` 为空时，不生成保存目录、不写文件。
+3. 第一帧 `targetState[5]` 有目标数据后，才生成保存目录并从该帧开始写 `output.mp4`、`annotations.txt`、`target_annotations.txt`。
+4. `target_annotations.txt` 行数应等于实际写入视频的帧数。
+5. 停止命令后保存文件 flush 并 close。

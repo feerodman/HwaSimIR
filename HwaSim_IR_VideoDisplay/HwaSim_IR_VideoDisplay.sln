@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36623.8 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HwaSim_IR_VideoDisplay", "HwaSim_IR_VideoDisplay\HwaSim_IR_VideoDisplay.vcxproj", "{CBEB8681-3110-4CDF-9477-49F4285BD5FF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CBEB8681-3110-4CDF-9477-49F4285BD5FF}.Debug|x64.ActiveCfg = Debug|x64
+		{CBEB8681-3110-4CDF-9477-49F4285BD5FF}.Debug|x64.Build.0 = Debug|x64
+		{CBEB8681-3110-4CDF-9477-49F4285BD5FF}.Release|x64.ActiveCfg = Release|x64
+		{CBEB8681-3110-4CDF-9477-49F4285BD5FF}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {99BD3801-DEF7-4CA1-AE22-76888347F937}
+	EndGlobalSection
+EndGlobal

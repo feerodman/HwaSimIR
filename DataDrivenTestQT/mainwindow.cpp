@@ -316,6 +316,7 @@ void MainWindow::sendInitCommand()
     //2.18166
 
     cmd.trackingInit.trackerSensor[0].realtimeAnnotation = true;
+    cmd.trackingInit.trackerSensor[0].saveMP4En = true;
 
     cmd.trackingInit.trackerSensor[0].coarseTrackEn = true;
     cmd.trackingInit.trackerSensor[0].preciseTrackEn = true;

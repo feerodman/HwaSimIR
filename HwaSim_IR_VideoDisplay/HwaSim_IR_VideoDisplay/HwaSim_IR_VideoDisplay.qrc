@@ -1,0 +1,18 @@
+<RCC>
+    <qresource prefix="/HwaSim_IR_VideoDisplay">
+        <file>resource/back_other.png</file>
+        <file>resource/background.png</file>
+        <file>resource/background_left.png</file>
+        <file>resource/background_right.png</file>
+        <file>resource/btn_min.png</file>
+        <file>resource/btn_normal.png</file>
+        <file>resource/btn_reset.png</file>
+        <file>resource/btn_select.png</file>
+        <file>resource/close.png</file>
+        <file>resource/combobox.png</file>
+        <file>resource/Icon.ico</file>
+        <file>resource/title.png</file>
+        <file>resource/title222.png</file>
+        <file>resource/titleIcon.png</file>
+    </qresource>
+</RCC>

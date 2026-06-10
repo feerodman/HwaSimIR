@@ -3680,12 +3680,24 @@ void HwaSimIR::handleControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd) 
 
 		// 重置仿真状态
 		m_isSimRunning.store(false);
+		// Stage2B：同步转发复位控制命令，驱动显示端关闭/重置本回合保存状态。
+		if (m_pTcpThread) {
+			m_pTcpThread->sendControlCmd(cmd);
+			m_pTcpThread->resetInitCompleted();
+			std::cout << "TCP线程初始化标志已重置，下一回合可重新发送初始化命令" << std::endl;
+		}
 		std::cout << "复位完成：所有平台已删除，数据已清空" << std::endl;
 		break;
 	case 2: // 开始
 		std::cout << "执行开始仿真逻辑..." << std::endl;
 		// TODO: 实现开始仿真逻辑（启动渲染、数据采集等）
 		m_isSimRunning.store(true);
+		// Stage2B：同步转发开始控制命令，触发显示端开始录制和创建保存目录。
+		if (m_pTcpThread) {
+			m_pTcpThread->sendControlCmd(cmd);
+			m_pTcpThread->resetInitCompleted();
+			std::cout << "TCP线程初始化标志已重置，回合重新开始" << std::endl;
+		}
 		
 		std::cout << "仿真开始：当前回合=" << m_currentRound << std::endl;
 		break;
@@ -3693,6 +3705,10 @@ void HwaSimIR::handleControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd) 
 		std::cout << "执行停止仿真逻辑..." << std::endl;
 		// TODO: 实现停止仿真逻辑（停止渲染、保存数据等）
 		m_isSimRunning.store(false);
+		// Stage2B：同步转发停止控制命令，触发显示端 flush 并关闭视频/数据/标注文件。
+		if (m_pTcpThread) {
+			m_pTcpThread->sendControlCmd(cmd);
+		}
 	
 		std::cout << "仿真停止：当前回合=" << m_currentRound << std::endl;
 		{
@@ -3764,6 +3780,11 @@ void HwaSimIR::handleInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& cmd) {
 		m_pUdpThread->sendInitAck(ack);
 	}
 	std::cout << "发送初始化应答：准备状态=" << (ack.trackingReady ? "就绪" : "未就绪") << std::endl;
+
+	// Stage2B：同步转发初始化命令，驱动显示端初始化界面和传感器/平台状态。
+	if (m_pTcpThread) {
+		m_pTcpThread->sendInitCmd(cmd);
+	}
 }
 
 // 处理实时成像数据包
@@ -5832,8 +5853,41 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 				frameData = sensorSizedFrame.data();
 			}
 
-			// 将同源 final sensor 像素推送给 TCP 子线程（避免主线程做过多的耗时运算）
-			self->m_pTcpThread->updateFrame(frameData, frameWidth, frameHeight);
+			BYHWICD::DisplayC2cObjTrackingData trackingSnapshot;
+			unsigned long long displayFrameIndex = 0;
+			{
+				std::lock_guard<std::mutex> lock(self->m_mtx);
+				trackingSnapshot = self->m_realTimeSceneData;
+				displayFrameIndex = self->m_stage0DisplayFrameCount;
+			}
+			if (trackingSnapshot.flag != 0x38)
+			{
+				trackingSnapshot.flag = 0x38;
+			}
+
+			const bool annotationEnabled = self->m_sensorParam.realtimeAnnotation && self->m_annotationManager.isEnabled();
+			AnnotationFrameRecord annotationSnapshot = self->m_annotationManager.latestRecord();
+			if (!annotationEnabled)
+			{
+				annotationSnapshot.targets.clear();
+			}
+			if (annotationSnapshot.frameIndex == 0)
+			{
+				annotationSnapshot.frameIndex = displayFrameIndex;
+			}
+			annotationSnapshot.simTimeMs = trackingSnapshot.time;
+			annotationSnapshot.sensorID = trackingSnapshot.sensorID;
+			if (annotationSnapshot.width <= 0)
+			{
+				annotationSnapshot.width = frameWidth;
+			}
+			if (annotationSnapshot.height <= 0)
+			{
+				annotationSnapshot.height = frameHeight;
+			}
+
+			// 将同源 final sensor 像素、实时数据和标注快照推送给 TCP 子线程；JSON 在后台线程由快照生成。
+			self->m_pTcpThread->updateFrame(frameData, frameWidth, frameHeight, trackingSnapshot, annotationSnapshot, annotationEnabled);
 			++self->m_stage6CaptureLogCounter;
 			if (self->m_stage6CaptureLogCounter <= 3 || (self->m_stage6CaptureLogCounter % 120) == 0) {
 				std::ostringstream captureLog;
