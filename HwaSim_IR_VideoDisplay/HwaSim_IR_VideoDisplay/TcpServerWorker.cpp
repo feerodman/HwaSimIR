@@ -7,6 +7,9 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
+#include <QDateTime>
+#include <QElapsedTimer>
+#include <chrono>
 #include <cstring>
 #include "CommonData.h"
 
@@ -18,6 +21,12 @@ static int regMetaType3 = qRegisterMetaType<BYHWICD::ControlP2cX1ObjTrackingCmd>
 
 namespace
 {
+qint64 wallTimeNs()
+{
+	return static_cast<qint64>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+		std::chrono::system_clock::now().time_since_epoch()).count());
+}
+
 bool looksLikeJpeg(const QByteArray& data)
 {
 	return data.size() >= 2 &&
@@ -29,7 +38,8 @@ bool parseDisplayFrameBody(
 	const QByteArray& body,
 	BYHWICD::DisplayC2cObjTrackingData& trackingData,
 	QImage& image,
-	QString& annotationJson)
+	QString& annotationJson,
+	double& jpegDecodeMs)
 {
 	if (body.size() < 4)
 	{
@@ -94,7 +104,11 @@ bool parseDisplayFrameBody(
 		jpegData = QByteArray(body.constData() + offset, structLen3);
 	}
 
-	if (!image.loadFromData(jpegData, "JPEG"))
+	QElapsedTimer decodeTimer;
+	decodeTimer.start();
+	const bool decodeOk = image.loadFromData(jpegData, "JPEG");
+	jpegDecodeMs = static_cast<double>(decodeTimer.nsecsElapsed()) / 1.0e6;
+	if (!decodeOk)
 	{
 		qWarning() << "JPEG解码失败";
 		return false;
@@ -130,18 +144,14 @@ void TcpServerWorker::loadConfig(QString& ip, quint16& port)
 QByteArray TcpServerWorker::readExactBytes(QTcpSocket* socket, qint64 count)
 {
 	QByteArray data;
-	int consecutiveTimeouts = 0;
 	while (!m_stop && data.size() < count) {
-		if (!socket->waitForReadyRead(3000)) {
-			if (socket->state() != QAbstractSocket::ConnectedState)
-				return QByteArray();
-			if (++consecutiveTimeouts >= 3) {
-				qWarning() << "读取超时3次，认为连接失效";
-				return QByteArray();
+		if (socket->bytesAvailable() <= 0) {
+			if (!socket->waitForReadyRead(3000)) {
+				if (socket->state() != QAbstractSocket::ConnectedState)
+					return QByteArray();
+				continue;
 			}
-			continue;
 		}
-		consecutiveTimeouts = 0;
 		QByteArray chunk = socket->read(count - data.size());
 		if (chunk.isEmpty())
 			return QByteArray();
@@ -206,15 +216,19 @@ void TcpServerWorker::doWork()
 			}
 			if (looksLikeJpeg(client->peek(2))) {
 				QByteArray jpegData = readExactBytes(client, totalLen);
+				const qint64 receiveTimeNs = wallTimeNs();
 				QImage img;
+				QElapsedTimer decodeTimer;
+				decodeTimer.start();
 				if (!img.loadFromData(jpegData, "JPEG")) {
 					qWarning() << "旧 JPEG 包解码失败";
 					continue;
 				}
+				const double jpegDecodeMs = static_cast<double>(decodeTimer.nsecsElapsed()) / 1.0e6;
 				BYHWICD::DisplayC2cObjTrackingData trackingData;
 				memset(&trackingData, 0, sizeof(trackingData));
 				trackingData.flag = 0x38;
-				emit dataReceived(img, trackingData, QString());
+				emit dataReceived(img, trackingData, QString(), receiveTimeNs, jpegDecodeMs);
 				continue;
 			}
 
@@ -224,6 +238,7 @@ void TcpServerWorker::doWork()
 				qWarning() << "读取包体失败";
 				break;
 			}
+			const qint64 receiveTimeNs = wallTimeNs();
 
 			// ----- 解析第一个结构体长度 -----
 			if (body.size() < 4) {
@@ -283,60 +298,11 @@ void TcpServerWorker::doWork()
 				BYHWICD::DisplayC2cObjTrackingData trackingData;
 				QImage img;
 				QString annotationJson;
-				if (!parseDisplayFrameBody(body, trackingData, img, annotationJson)) {
+				double jpegDecodeMs = 0.0;
+				if (!parseDisplayFrameBody(body, trackingData, img, annotationJson, jpegDecodeMs)) {
 					continue;
 				}
-
-				// 丢弃缓冲区中积压的旧显示帧，只保留最新帧
-				// 【关键修复】在消费数据前先 peek flag 判定类型，防止误吞初始化(0x36)/控制(0x41)命令
-				while (client->bytesAvailable() >= 12) {
-					// Peek 12字节头（totalLen + structLen1 + flag），不消费，用于类型判断
-					QByteArray headerPeek = client->peek(12);
-					quint32 nextTotalLen = qFromBigEndian<quint32>(headerPeek.constData());
-					if (nextTotalLen < 8 || nextTotalLen > 50 * 1024 * 1024)
-						break;
-					if (client->bytesAvailable() < (qint64)nextTotalLen)
-						break;
-
-					quint32 nextStructLen1 = qFromBigEndian<quint32>(headerPeek.constData() + 4);
-					if (nextStructLen1 < 4 || nextStructLen1 > 1024 * 1024)
-						break;
-
-					int nextFlag = 0;
-					memcpy(&nextFlag, headerPeek.constData() + 8, sizeof(int));
-					// 只丢弃显示数据帧(0x38)，遇到初始化/控制命令立即停止，留给外层循环
-					if (nextFlag != 0x38) {
-						break;
-					}
-
-					// 确认是旧的显示帧，安全消费
-					client->read(4);  // 消费 totalLen
-					QByteArray nextBody = client->read(nextTotalLen - 4);  // 消费包体
-					if (nextBody.size() != (int)(nextTotalLen - 4))
-						break;
-					if (nextBody.size() < 4 + 4)
-						break;
-
-					// 二次验证（防御性编程）
-					quint32 verifyStructLen = qFromBigEndian<quint32>(nextBody.constData());
-					int verifyFlag = 0;
-					memcpy(&verifyFlag, nextBody.constData() + 4, sizeof(int));
-					if (verifyFlag != 0x38 || verifyStructLen != sizeof(BYHWICD::DisplayC2cObjTrackingData))
-						break;
-
-                                if (nextBody.size() >= 4 + static_cast<int>(verifyStructLen) + 4) {
-						BYHWICD::DisplayC2cObjTrackingData nextTracking;
-						QImage nextImg;
-						QString nextAnnotationJson;
-						if (parseDisplayFrameBody(nextBody, nextTracking, nextImg, nextAnnotationJson)) {
-							img = nextImg;
-							trackingData = nextTracking;
-							annotationJson = nextAnnotationJson;
-						}
-					}
-				}
-
-				emit dataReceived(img, trackingData, annotationJson);
+				emit dataReceived(img, trackingData, annotationJson, receiveTimeNs, jpegDecodeMs);
 			}
 			else {
 				qWarning() << "未知的 flag:" << flag << "，忽略当前包";

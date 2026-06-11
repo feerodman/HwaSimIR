@@ -1,4 +1,5 @@
 #include "TcpCommThread_Linux.h"
+#include "HwaSimIR.h"
 
 #include <algorithm>
 #include <cerrno>
@@ -77,9 +78,7 @@ TcpCommThread::TcpCommThread(HwaSimIR* hwaSimIR, const std::string& serverIp, ui
 	m_serverIp(serverIp),
 	m_serverPort(serverPort),
 	m_bIsRunning(false),
-	m_bIsConnected(false),
-	m_frameWidth(0),
-	m_frameHeight(0)
+	m_bIsConnected(false)
 {
 	memset(&m_serverAddr, 0, sizeof(m_serverAddr));
 	m_serverAddr.sin_family = AF_INET;
@@ -108,6 +107,7 @@ void TcpCommThread::stop()
 	if (!m_bIsRunning) return;
 	m_bIsRunning = false;
 	m_frameCv.notify_all();
+	m_queueSpaceCv.notify_all();
 
 	if (m_sendThread.joinable())
 	{
@@ -258,7 +258,9 @@ std::string TcpCommThread::buildAnnotationJson(
 	const AnnotationFrameRecord& record,
 	bool annotationEnabled,
 	int tcpWidth,
-	int tcpHeight) const
+	int tcpHeight,
+	const IRFrameTelemetry& telemetry,
+	std::int64_t tcpSendTimeNs) const
 {
 	const int srcWidth = record.width > 0 ? record.width : tcpWidth;
 	const int srcHeight = record.height > 0 ? record.height : tcpHeight;
@@ -268,6 +270,9 @@ std::string TcpCommThread::buildAnnotationJson(
 	json << "{\"version\":1"
 		<< ",\"enabled\":" << (annotationEnabled ? "true" : "false")
 		<< ",\"frameIndex\":" << frameIndex
+		<< ",\"frameSeq\":" << telemetry.frameSeq
+		<< ",\"udpReceiveTimeNs\":\"" << telemetry.udpReceiveTimeNs << "\""
+		<< ",\"tcpSendTimeNs\":\"" << tcpSendTimeNs << "\""
 		<< ",\"simTimeMs\":" << record.simTimeMs
 		<< ",\"sensorID\":" << record.sensorID
 		<< ",\"width\":" << tcpWidth
@@ -358,25 +363,19 @@ void TcpCommThread::sendFrameThreadFunc()
 			}
 		}
 
-		std::vector<uchar> localBuffer;
-		BYHWICD::DisplayC2cObjTrackingData localTrackingData;
-		AnnotationFrameRecord localAnnotationRecord;
-		bool localAnnotationEnabled = false;
-		int width = 0, height = 0;
+		PendingFrame frame;
+		int queueDepth = 0;
 		{
 			std::unique_lock<std::mutex> lock(m_frameMtx);
 			if (m_frameCv.wait_for(lock, std::chrono::milliseconds(100),
-				[this] { return m_bNewFrame || !m_bIsRunning; }))
+				[this] { return !m_frameQueue.empty() || !m_bIsRunning; }))
 			{
 				if (!m_bIsRunning) break;
 
-				localBuffer = m_frameBuffer;
-				width = m_frameWidth;
-				height = m_frameHeight;
-				localTrackingData = m_trackingData;
-				localAnnotationRecord = m_annotationRecord;
-				localAnnotationEnabled = m_annotationEnabled;
-				m_bNewFrame = false;
+				frame = std::move(m_frameQueue.front());
+				m_frameQueue.pop_front();
+				queueDepth = static_cast<int>(m_frameQueue.size());
+				m_queueSpaceCv.notify_one();
 			}
 			else
 			{
@@ -402,22 +401,34 @@ void TcpCommThread::sendFrameThreadFunc()
 			}
 		}
 
-		if (localBuffer.empty()) continue;
+		if (frame.pixels.empty()) continue;
 
-		cv::Mat rawFrame(height, width, CV_8UC3, localBuffer.data());
+		const auto flipBegin = std::chrono::steady_clock::now();
+		cv::Mat rawFrame(frame.height, frame.width, CV_8UC3, frame.pixels.data());
 		cv::Mat flippedFrame;
 		cv::flip(rawFrame, flippedFrame, 0);
-		// Stage2B: TCP JPEG uses the flipped image; annotation JSON is already in final JPEG coordinates.
+		const double flipMs = std::chrono::duration<double, std::milli>(
+			std::chrono::steady_clock::now() - flipBegin).count();
 
+		const auto jpegBegin = std::chrono::steady_clock::now();
 		std::vector<uchar> jpegData;
 		std::vector<int> params = { cv::IMWRITE_JPEG_QUALITY, 80 };
 		if (!cv::imencode(".jpg", flippedFrame, jpegData, params))
 		{
 			continue;
 		}
+		const double jpegMs = std::chrono::duration<double, std::milli>(
+			std::chrono::steady_clock::now() - jpegBegin).count();
 
 		++m_tcpPacketCounter;
-		const std::string annotationJson = buildAnnotationJson(localAnnotationRecord, localAnnotationEnabled, width, height);
+		const std::int64_t tcpSendTimeNs = IRPerfStats::wallTimeNs();
+		const std::string annotationJson = buildAnnotationJson(
+			frame.annotationRecord,
+			frame.annotationEnabled,
+			frame.width,
+			frame.height,
+			frame.telemetry,
+			tcpSendTimeNs);
 		if (annotationJson.size() > 1024 * 1024)
 		{
 			std::cout << "[TcpFramePacket][WARN] annotationJsonTooLarge"
@@ -426,12 +437,15 @@ void TcpCommThread::sendFrameThreadFunc()
 				<< std::endl;
 		}
 
-		if (!sendFramePacket(localTrackingData, annotationJson, jpegData))
+		const auto sendBegin = std::chrono::steady_clock::now();
+		if (!sendFramePacket(frame.trackingData, annotationJson, jpegData))
 		{
 			std::cerr << "TCP连接丢失(发送帧包失败)，准备重连..." << std::endl;
 			disconnectFromServer();
 			continue;
 		}
+		const double tcpSendMs = std::chrono::duration<double, std::milli>(
+			std::chrono::steady_clock::now() - sendBegin).count();
 
 		if (m_tcpPacketCounter <= 3 || (m_tcpPacketCounter % 120) == 0)
 		{
@@ -439,10 +453,42 @@ void TcpCommThread::sendFrameThreadFunc()
 				<< " frame=" << m_tcpPacketCounter
 				<< " imgBytes=" << jpegData.size()
 				<< " annotationBytes=" << annotationJson.size()
-				<< " targets=" << localAnnotationRecord.targets.size()
-				<< " width=" << width
-				<< " height=" << height
+				<< " targets=" << frame.annotationRecord.targets.size()
+				<< " width=" << frame.width
+				<< " height=" << frame.height
 				<< std::endl;
+		}
+
+		const std::int64_t perfNowNs = IRPerfStats::steadyTimeNs();
+		if (m_tcpPacketCounter <= 3 || (m_tcpPacketCounter % 120) == 0 ||
+			perfNowNs - m_lastTcpPerfLogNs >= 2000000000LL)
+		{
+			std::ostringstream perfLine;
+			perfLine << std::fixed << std::setprecision(3)
+				<< "[TcpPerf]"
+				<< " frameSeq=" << frame.telemetry.frameSeq
+				<< " outputSeq=" << m_tcpPacketCounter
+				<< " flipMs=" << flipMs
+				<< " resizeMs=0.000"
+				<< " jpegMs=" << jpegMs
+				<< " tcpSendMs=" << tcpSendMs
+				<< " queueDepth=" << queueDepth
+				<< " queueWaitMs=" << frame.queueWaitMs
+				<< " overwritten=" << (frame.overwritten ? "1" : "0");
+			std::cout << perfLine.str() << std::endl;
+			m_lastTcpPerfLogNs = perfNowNs;
+		}
+		if (m_pHwaSimIR)
+		{
+			m_pHwaSimIR->OnTcpFrameSent(
+				frame.telemetry,
+				flipMs,
+				0.0,
+				jpegMs,
+				tcpSendMs,
+				queueDepth,
+				frame.queueWaitMs,
+				frame.overwritten);
 		}
 	}
 	std::cout << "TCP发送后台线程安全退出" << std::endl;
@@ -454,38 +500,65 @@ void TcpCommThread::updateFrame(const uchar* data, int width, int height)
 	memset(&trackingData, 0, sizeof(trackingData));
 	trackingData.flag = 0x38;
 	AnnotationFrameRecord annotationRecord;
-	updateFrame(data, width, height, trackingData, annotationRecord, false);
+	IRFrameTelemetry telemetry;
+	updateFrame(data, width, height, trackingData, annotationRecord, false, telemetry);
 }
 
-void TcpCommThread::updateFrame(
+IRFrameEnqueueResult TcpCommThread::updateFrame(
 	const uchar* data,
 	int width,
 	int height,
 	const BYHWICD::DisplayC2cObjTrackingData& trackingData,
 	const AnnotationFrameRecord& annotationRecord,
-	bool annotationEnabled)
+	bool annotationEnabled,
+	const IRFrameTelemetry& telemetry)
 {
+	IRFrameEnqueueResult result;
 	if (data == nullptr || width <= 0 || height <= 0)
 	{
-		return;
+		return result;
 	}
 
-	std::lock_guard<std::mutex> lock(m_frameMtx);
-	const size_t size = static_cast<size_t>(width) * static_cast<size_t>(height) * 3u;
-
-	if (m_frameBuffer.size() != size)
+	const auto waitBegin = std::chrono::steady_clock::now();
+	std::unique_lock<std::mutex> lock(m_frameMtx);
+	if (m_syncMode.load())
 	{
-		m_frameBuffer.resize(size);
+		result.queueWasFull = m_frameQueue.size() >= kMaxFrameQueue;
+		m_queueSpaceCv.wait(lock, [this] {
+			return m_frameQueue.size() < kMaxFrameQueue || !m_bIsRunning.load();
+		});
+		if (!m_bIsRunning)
+		{
+			return result;
+		}
 	}
+	else if (!m_frameQueue.empty())
+	{
+		m_frameQueue.clear();
+		result.overwritten = true;
+	}
+	result.queueWaitMs = std::chrono::duration<double, std::milli>(
+		std::chrono::steady_clock::now() - waitBegin).count();
 
-	memcpy(m_frameBuffer.data(), data, size);
-	m_frameWidth = width;
-	m_frameHeight = height;
-	m_trackingData = trackingData;
-	m_hasTrackingData = true;
-	m_annotationRecord = annotationRecord;
-	m_annotationEnabled = annotationEnabled;
-	m_bNewFrame = true;
-
+	const auto copyBegin = std::chrono::steady_clock::now();
+	const size_t size = static_cast<size_t>(width) * static_cast<size_t>(height) * 3u;
+	PendingFrame frame;
+	frame.pixels.resize(size);
+	memcpy(frame.pixels.data(), data, size);
+	frame.width = width;
+	frame.height = height;
+	frame.trackingData = trackingData;
+	frame.annotationRecord = annotationRecord;
+	frame.annotationEnabled = annotationEnabled;
+	frame.telemetry = telemetry;
+	frame.queueWaitMs = result.queueWaitMs;
+	frame.overwritten = result.overwritten;
+	result.copyMs = std::chrono::duration<double, std::milli>(
+		std::chrono::steady_clock::now() - copyBegin).count();
+	m_frameQueue.push_back(std::move(frame));
+	result.queueDepth = static_cast<int>(m_frameQueue.size());
+	result.accepted = true;
+	lock.unlock();
 	m_frameCv.notify_one();
+	return result;
 }

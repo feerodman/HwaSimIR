@@ -1,0 +1,219 @@
+#include "IRPerfStats.h"
+
+#include <algorithm>
+#include <chrono>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+
+namespace
+{
+double Average(double total, std::uint64_t samples)
+{
+	return samples > 0 ? total / static_cast<double>(samples) : 0.0;
+}
+}
+
+IRPerfStats::IRPerfStats()
+{
+	reset();
+}
+
+std::int64_t IRPerfStats::wallTimeNs()
+{
+	return std::chrono::duration_cast<std::chrono::nanoseconds>(
+		std::chrono::system_clock::now().time_since_epoch()).count();
+}
+
+std::int64_t IRPerfStats::steadyTimeNs()
+{
+	return std::chrono::duration_cast<std::chrono::nanoseconds>(
+		std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+
+void IRPerfStats::configure(bool syncMode, double videoFpsTarget)
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	m_syncMode = syncMode;
+	m_videoFpsTarget = std::max(0.0, videoFpsTarget);
+}
+
+void IRPerfStats::setEnabled(bool enabled)
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	m_enabled = enabled;
+}
+
+void IRPerfStats::reset()
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	m_totalUdpFrames = 0;
+	m_totalRenderFrames = 0;
+	m_totalOutputFrames = 0;
+	m_syncOverrunCount = 0;
+	m_inputQueueOverflowCount = 0;
+	m_lastLoggedOutputFrames = 0;
+	resetIntervalLocked(steadyTimeNs());
+}
+
+void IRPerfStats::recordUdpFrame()
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	++m_totalUdpFrames;
+	++m_intervalUdpFrames;
+}
+
+void IRPerfStats::recordSceneUpdate(double elapsedMs)
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	m_sceneUpdateMsTotal += elapsedMs;
+	++m_sceneSamples;
+}
+
+void IRPerfStats::recordIrUpdate(double elapsedMs)
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	m_irUpdateMsTotal += elapsedMs;
+	++m_irSamples;
+}
+
+void IRPerfStats::recordRender(double elapsedMs)
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	m_renderMsTotal += elapsedMs;
+	++m_renderSamples;
+	++m_totalRenderFrames;
+	++m_intervalRenderFrames;
+}
+
+void IRPerfStats::recordCapture(double readbackMs, double resizeMs, double copyMs, int tcpQueueDepth)
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	m_readbackMsTotal += readbackMs;
+	m_resizeMsTotal += resizeMs;
+	m_copyMsTotal += copyMs;
+	++m_captureSamples;
+	m_tcpQueueDepth = std::max(0, tcpQueueDepth);
+	m_tcpQueueDepthMax = std::max(m_tcpQueueDepthMax, m_tcpQueueDepth);
+}
+
+std::uint64_t IRPerfStats::recordTcpOutput(double jpegMs, double tcpSendMs, double latencyMs, int tcpQueueDepth)
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	m_jpegMsTotal += jpegMs;
+	m_tcpSendMsTotal += tcpSendMs;
+	++m_tcpSamples;
+	if (latencyMs >= 0.0)
+	{
+		m_latencyMsTotal += latencyMs;
+		m_latencyMsMax = std::max(m_latencyMsMax, latencyMs);
+		++m_latencySamples;
+	}
+	m_tcpQueueDepth = std::max(0, tcpQueueDepth);
+	m_tcpQueueDepthMax = std::max(m_tcpQueueDepthMax, m_tcpQueueDepth);
+	++m_totalOutputFrames;
+	++m_intervalOutputFrames;
+	return m_totalOutputFrames;
+}
+
+void IRPerfStats::recordSyncOverrun()
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	++m_syncOverrunCount;
+}
+
+void IRPerfStats::recordInputQueueOverflow()
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	++m_inputQueueOverflowCount;
+	++m_syncOverrunCount;
+}
+
+void IRPerfStats::maybeLog()
+{
+	std::string message;
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		if (!m_enabled)
+		{
+			return;
+		}
+		const std::int64_t nowNs = steadyTimeNs();
+		const double elapsedSec = std::max(0.001, static_cast<double>(nowNs - m_intervalStartNs) / 1.0e9);
+		const bool firstOutput = m_totalOutputFrames > 0 && m_lastLoggedOutputFrames == 0;
+		const bool frameInterval = m_intervalRenderFrames >= 120 || m_intervalOutputFrames >= 120;
+		const bool timeInterval = elapsedSec >= 2.0;
+		if (!firstOutput && !frameInterval && !timeInterval)
+		{
+			return;
+		}
+
+		std::ostringstream out;
+		out << std::fixed << std::setprecision(3)
+			<< "[Perf]"
+			<< " mode=" << (m_syncMode ? "sync" : "async")
+			<< " videoFpsTarget=" << m_videoFpsTarget
+			<< " udpFps=" << (static_cast<double>(m_intervalUdpFrames) / elapsedSec)
+			<< " renderFps=" << (static_cast<double>(m_intervalRenderFrames) / elapsedSec)
+			<< " outputFps=" << (static_cast<double>(m_intervalOutputFrames) / elapsedSec)
+			<< " sceneUpdateMs=" << Average(m_sceneUpdateMsTotal, m_sceneSamples)
+			<< " irUpdateMs=" << Average(m_irUpdateMsTotal, m_irSamples)
+			<< " renderMs=" << Average(m_renderMsTotal, m_renderSamples)
+			<< " readbackMs=" << Average(m_readbackMsTotal, m_captureSamples)
+			<< " resizeMs=" << Average(m_resizeMsTotal, m_captureSamples)
+			<< " frameCopyMs=" << Average(m_copyMsTotal, m_captureSamples)
+			<< " jpegMs=" << Average(m_jpegMsTotal, m_tcpSamples)
+			<< " tcpSendMs=" << Average(m_tcpSendMsTotal, m_tcpSamples)
+			<< " tcpQueueDepth=" << m_tcpQueueDepth
+			<< " tcpQueueDepthMax=" << m_tcpQueueDepthMax
+			<< " latencyAvgMs=" << Average(m_latencyMsTotal, m_latencySamples)
+			<< " latencyMaxMs=" << m_latencyMsMax
+			<< " syncOverrunCount=" << m_syncOverrunCount
+			<< " inputQueueOverflowCount=" << m_inputQueueOverflowCount
+			<< " udpFrames=" << m_totalUdpFrames
+			<< " renderFrames=" << m_totalRenderFrames
+			<< " outputFrames=" << m_totalOutputFrames;
+		message = out.str();
+		m_lastLoggedOutputFrames = m_totalOutputFrames;
+		resetIntervalLocked(nowNs);
+	}
+	std::cout << message << std::endl;
+}
+
+double IRPerfStats::videoFpsTarget() const
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	return m_videoFpsTarget;
+}
+
+std::uint64_t IRPerfStats::outputFrames() const
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	return m_totalOutputFrames;
+}
+
+void IRPerfStats::resetIntervalLocked(std::int64_t nowNs)
+{
+	m_intervalStartNs = nowNs;
+	m_intervalUdpFrames = 0;
+	m_intervalRenderFrames = 0;
+	m_intervalOutputFrames = 0;
+	m_sceneSamples = 0;
+	m_irSamples = 0;
+	m_renderSamples = 0;
+	m_captureSamples = 0;
+	m_tcpSamples = 0;
+	m_latencySamples = 0;
+	m_sceneUpdateMsTotal = 0.0;
+	m_irUpdateMsTotal = 0.0;
+	m_renderMsTotal = 0.0;
+	m_readbackMsTotal = 0.0;
+	m_resizeMsTotal = 0.0;
+	m_copyMsTotal = 0.0;
+	m_jpegMsTotal = 0.0;
+	m_tcpSendMsTotal = 0.0;
+	m_latencyMsTotal = 0.0;
+	m_latencyMsMax = 0.0;
+	m_tcpQueueDepth = 0;
+	m_tcpQueueDepthMax = 0;
+}

@@ -11,9 +11,8 @@
 #include <cstdint>
 #include <string>
 #include <map>
-#if defined(__linux__)
 #include <deque>
-#endif
+#include <mutex>
 #include <unordered_set>
 #include <vector>
 #include <atomic>
@@ -47,6 +46,7 @@
 #include "IRSimulation.h"
 #include "IR/IRConfig.h"
 #include "IR/IREnginePlumeModel.h"
+#include "IR/IRPerfStats.h"
 #include "IR/IRSceneMaterialMapper.h"
 #include "IR/IRRadianceModelV2.h"
 #include "IR/IRRuntimeConfig.h"
@@ -119,8 +119,16 @@ public:
 	// isSync: true为同步渲染(1数据1帧)，false为异步渲染(锁帧)
 	// targetFPS: 异步模式下的锁定帧率（设置为0表示不限帧跑满上限）
 	void SetRenderMode(bool isSync, double targetFPS);
+	void OnTcpFrameSent(
+		const IRFrameTelemetry& telemetry,
+		double flipMs,
+		double resizeMs,
+		double jpegMs,
+		double tcpSendMs,
+		int queueDepth,
+		double queueWaitMs,
+		bool overwritten);
 private:
-#if defined(__linux__)
 	enum class PendingNetworkCommandType
 	{
 		Control,
@@ -135,9 +143,15 @@ private:
 	};
 
 	void ProcessPendingNetworkCommands();
-#endif
 	void ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd);
 	void ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCmd& cmd);
+	void LogGraphicsBackend() const;
+
+	struct PendingDisplayFrame
+	{
+		BYHWICD::DisplayC2cObjTrackingData data{};
+		IRFrameTelemetry telemetry;
+	};
 
 	//targetType转PLATFORM_TYPE
 	PLATFORM_TYPE TargetTypeToPlatformType(int targetType) const;
@@ -166,6 +180,8 @@ private:
 	IRTemperatureModel m_irTemperatureModel;                 // 阶段4：发动机热源与特殊亮斑状态模型
 	IREnginePlumeModel m_irEnginePlumeModel;                // Stage5E：发动机尾焰/羽流独立热辐射体
 	IRRuntimeConfig m_runtimeConfig;                         // 运行配置：env > HwaSimIRRuntime.ini > default
+	bool m_enablePerfLog = true;
+	bool m_enableIRVerboseLog = false;
 	bool m_irMaterialReady = false;
 	bool m_irAtmosphereReady = false;
 	bool m_irSensorProfilesReady = false;
@@ -307,7 +323,7 @@ private:
 	void ApplyWeaponCameraControl(BYHWICD::DisplayC2cObjTrackingData& currentData, TargetPlatformData* lookAtTarget);
 	std::string Stage4PlatformName(PLATFORM_TYPE type) const;
 	bool Stage4WeaponAppliesToTarget(const BYHWICD::WeaponState& weaponState, const TargetPlatformData& targetPlat) const;
-	void ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHWICD::WeaponState& weaponState, float dtSec, float ambientTempK, const IRObjectRadianceOutput& radiance);
+	void ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHWICD::WeaponState& weaponState, float dtSec, float ambientTempK, const IRObjectRadianceOutput& radiance, bool applyNodeInputs);
 	void ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IRObjectRadianceOutput& radiance, const IRHotspotState& rearHotspot, const IRBrightSpotState& brightSpot, bool rearEnabledForShader, float rearIntensityForShader, const std::string& targetKey);
 	void ApplySensorOutputConfig(const IRSensorDisplayConfig& config, const char* reason);
 	void LogStage6SensorGeometry(const IRSensorDisplayConfig& config, const char* reason) const;
@@ -331,12 +347,6 @@ private:
 	// 新增：主线程场景更新任务
 	static AsyncTask::DoneStatus scene_update_task(GenericAsyncTask* task, void* data);
 
-	// 新增：标记是否有最新的网络数据需要更新场景
-	bool m_bHasNewData = false;
-
-
-
-
 	// 初始化UDP通讯线程
 	bool InitUdpThread();
 	// 初始化UDP通讯线程
@@ -344,16 +354,16 @@ private:
 	void LoadNetworkConfig();
 
 	// 核心成员变量
-	GraphicsOutput* m_pGraphicsOutput;
-	GraphicsWindow* m_pGraphicsWindow;
+	GraphicsOutput* m_pGraphicsOutput = nullptr;
+	GraphicsWindow* m_pGraphicsWindow = nullptr;
 	PandaFramework* m_pFramework;       // HwaSimIR框架
 	WindowFramework* m_pMainWindow;    // 主窗口实例
-	UdpCommThread* m_pUdpThread;        // UDP通讯线程
-	TcpCommThread* m_pTcpThread;		// TCP通信线程
+	UdpCommThread* m_pUdpThread = nullptr;        // UDP通讯线程
+	TcpCommThread* m_pTcpThread = nullptr;		// TCP通信线程
 	std::mutex m_mtx;                  // 业务逻辑互斥锁
-#if defined(__linux__)
 	std::deque<PendingNetworkCommand> m_pendingNetworkCommands;
-#endif
+	std::deque<PendingDisplayFrame> m_pendingDisplayFrames;
+	static const std::size_t kMaxPendingDisplayFrames = 4;
 	std::string m_udpLocalIp = "0.0.0.0";
 	uint16_t m_udpLocalPort = 8888;
 	std::string m_udpRemoteIp = "192.168.1.188";
@@ -378,6 +388,15 @@ private:
 	BYHWICD::DisplayC2cObjTrackingData m_realTimeSceneData;  // 实时数据缓存
 	BYHWICD::trackerSensorParam m_sensorParam;               // 传感器参数缓存
 	unsigned long long m_stage0DisplayFrameCount;            // 阶段0基线诊断：实时数据包计数
+	std::uint64_t m_udpSequence = 0;
+	IRFrameTelemetry m_currentFrameTelemetry;
+	std::uint64_t m_lastCapturedFrameSeq = 0;
+	std::atomic<bool> m_lastSyncSequenceMatch{ true };
+	std::string m_lastStage4InputState;
+	std::map<std::string, std::string> m_lastStage4TargetLogState;
+	int m_lastWeaponDamageFlag = -1;
+	IRPerfStats m_perfStats;
+	std::atomic<int> m_targetVideoFps{ 0 };
 
 															 // 控制标记
 	bool m_isAddPlatform;    // 增删标记：true-增加 false-删除
@@ -406,6 +425,8 @@ private:
 
 
 	// 渲染控制变量
-	bool m_bSyncRenderMode = false;   // 同步模式标志位
+	std::atomic<bool> m_bSyncRenderMode{ false };   // 同步模式标志位
+	std::atomic<bool> m_syncFrameActive{ false };
 	std::condition_variable m_cvNewData; // 用于同步模式的条件变量阻塞
+	std::condition_variable m_cvDisplayQueueSpace;
 };

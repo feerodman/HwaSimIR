@@ -59,4 +59,6 @@ private:
 
 	static const int RECV_BUF_SIZE = 4096;
 	char _recvBuf[RECV_BUF_SIZE];
+	std::uint64_t m_receivePacketCount = 0;
+	std::uint64_t m_parsePacketCount = 0;
 };

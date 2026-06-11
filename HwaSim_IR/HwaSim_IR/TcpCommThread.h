@@ -4,6 +4,7 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
+#include <deque>
 #include <string>
 #include <vector>
 #include <condition_variable> // 【新增】用于线程同步的条件变量
@@ -17,6 +18,7 @@
 #include <opencv2/opencv.hpp>
 #include <pta_uchar.h>
 #include "Annotation/AnnotationTypes.h"
+#include "IR/IRPerfStats.h"
 
 class HwaSimIR;
 // TCP通信线程类
@@ -36,13 +38,15 @@ public:
 
 	// 供主线程推送最新像素数据的接口
 	void updateFrame(const uchar* data, int width, int height);
-	void updateFrame(
+	IRFrameEnqueueResult updateFrame(
 		const uchar* data,
 		int width,
 		int height,
 		const BYHWICD::DisplayC2cObjTrackingData& trackingData,
 		const AnnotationFrameRecord& annotationRecord,
-		bool annotationEnabled);
+		bool annotationEnabled,
+		const IRFrameTelemetry& telemetry);
+	void setSyncMode(bool syncMode) { m_syncMode.store(syncMode); }
 	// 转发 UDP 收到的控制命令，触发接收端开始/停止/复位逻辑。
 	bool sendControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd);
 	// 转发 UDP 收到的初始化命令，触发接收端初始化界面和回合状态。
@@ -69,7 +73,9 @@ private:
 		const AnnotationFrameRecord& record,
 		bool annotationEnabled,
 		int tcpWidth,
-		int tcpHeight) const;
+		int tcpHeight,
+		const IRFrameTelemetry& telemetry,
+		std::int64_t tcpSendTimeNs) const;
 
 	// 负责连接与断开的函数
 	bool connectToServer();
@@ -95,16 +101,25 @@ private:
 	std::mutex m_mtx; // 互斥锁保护共享数据
 	std::mutex m_socketMtx; // 保护控制/初始化包与视频帧包不交叉发送
 
-	// 线程安全的图像缓冲区结构
+	struct PendingFrame
+	{
+		std::vector<uchar> pixels;
+		int width = 0;
+		int height = 0;
+		BYHWICD::DisplayC2cObjTrackingData trackingData{};
+		AnnotationFrameRecord annotationRecord;
+		bool annotationEnabled = false;
+		IRFrameTelemetry telemetry;
+		double queueWaitMs = 0.0;
+		bool overwritten = false;
+	};
+
 	std::mutex m_frameMtx;                 // 帧缓冲互斥锁
 	std::condition_variable m_frameCv;     // 条件变量通知新帧
-	std::vector<uchar> m_frameBuffer;      // 缓存的 RGB 像素
-	int m_frameWidth;
-	int m_frameHeight;
-	bool m_bNewFrame = false;              // 有新帧的标志
-	BYHWICD::DisplayC2cObjTrackingData m_trackingData;
-	AnnotationFrameRecord m_annotationRecord;
-	bool m_hasTrackingData = false;
-	bool m_annotationEnabled = false;
+	std::condition_variable m_queueSpaceCv;
+	std::deque<PendingFrame> m_frameQueue;
+	static const std::size_t kMaxFrameQueue = 4;
+	std::atomic<bool> m_syncMode{ true };
 	unsigned long long m_tcpPacketCounter = 0;
+	std::int64_t m_lastTcpPerfLogNs = 0;
 };

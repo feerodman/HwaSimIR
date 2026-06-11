@@ -55,6 +55,7 @@ add_executable(HwaSim_IR
         IR/IRConfig.cpp
         IR/IREnginePlumeModel.cpp
         IR/IRModtranTauLut.cpp
+        IR/IRPerfStats.cpp
         IR/IRRadianceModelV2.cpp
         IR/IRRuntimeConfig.cpp
         IR/IRSceneMaterialMapper.cpp

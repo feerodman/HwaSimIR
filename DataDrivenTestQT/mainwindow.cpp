@@ -52,10 +52,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     missile_init_attitude.roll = realTimeData.at(0).tarEul.roll;
     plane_speed_y = realTimeData.at(0).platSpeed;
 //	collision_time = m_collisionTime->text().toDouble();
-	time_step = m_timeStep->text().toInt();
+	m_targetVideoFps = targetVideoFps();
+	time_step = qMax(1, qRound(1000.0 / static_cast<double>(m_targetVideoFps)));
 
 
 	m_realTimeTimer = new QTimer(this);
+	m_realTimeTimer->setSingleShot(true);
+	m_realTimeTimer->setTimerType(Qt::PreciseTimer);
 	connect(m_realTimeTimer, &QTimer::timeout, this, &MainWindow::onSendRealTimeData);
 
 	// 状态初始化
@@ -74,9 +77,34 @@ MainWindow::~MainWindow()
 // ==================== 核心修正：补充缺失的槽函数 ====================
 void MainWindow::onSendRealTimeData()
 {
-	sendRealTimeData(); // 直接调用发送逻辑
+	if (!m_isRealtimeSending)
+	{
+		return;
+	}
+	sendRealTimeData();
+	if (m_isRealtimeSending)
+	{
+		scheduleNextRealTimeFrame();
+	}
 }
 // ===============================================================
+
+int MainWindow::targetVideoFps() const
+{
+	const int requested = m_videoFpsEdit ? m_videoFpsEdit->text().toInt() : 60;
+	return qBound(1, requested, 240);
+}
+
+void MainWindow::scheduleNextRealTimeFrame()
+{
+	++m_sendDeadlineIndex;
+	const qint64 targetNs = static_cast<qint64>(
+		(static_cast<long double>(m_sendDeadlineIndex) * 1000000000.0L) /
+		static_cast<long double>(m_targetVideoFps));
+	const qint64 remainingNs = qMax<qint64>(0, targetNs - m_sendClock.nsecsElapsed());
+	const int delayMs = static_cast<int>((remainingNs + 999999LL) / 1000000LL);
+	m_realTimeTimer->start(delayMs);
+}
 
 void MainWindow::setupUI()
 {
@@ -121,6 +149,7 @@ void MainWindow::setupUI()
 	m_realTimeDataGroup = new QGroupBox(QStringLiteral("实时成像数据配置 (平台姿态每次+0.01)"));
 	QFormLayout *realTimeLayout = new QFormLayout;
 	realTimeLayout->addRow(QStringLiteral("目标类型:"), m_targetTypeEdit = new QLineEdit("0x11"));
+	realTimeLayout->addRow(QStringLiteral("目标帧率(FPS):"), m_videoFpsEdit = new QLineEdit("60"));
     realTimeLayout->addRow(QStringLiteral("横向视场角:"), m_fovHEdit = new QLineEdit("0.1"));
     realTimeLayout->addRow(QStringLiteral("纵向视场角:"), m_fovVEdit = new QLineEdit("0.1"));
 	//realTimeLayout->addRow(QStringLiteral("平台ID:"), m_platIDEdit = new QLineEdit("1"));
@@ -358,7 +387,7 @@ void MainWindow::sendInitCommand()
     cmd.trackingInit.envTerrain = 0; // 戈壁
     cmd.trackingInit.envSky = 0;    // 晴
     cmd.trackingInit.envTemp = 25.0;
-    cmd.trackingInit.videoFps = 30;
+    cmd.trackingInit.videoFps = targetVideoFps();
 
     cmd.trackingInit.envVisibility = 6000;
     cmd.trackingInit.envHumidity = 85;
@@ -547,7 +576,26 @@ void MainWindow::sendRealTimeData()
 			.arg(m_currentLat, 0, 'f', 4).arg(sent));
 
 		if (sent > 0) {
-			m_statusLabel->setText(QString(QStringLiteral("● 状态: 仿真中 | 已发送 %1 帧")).arg(m_realTimeTimer->interval() ? 1 : 0));
+			++m_sentFrameCount;
+			const qint64 nowNs = m_sendClock.isValid() ? m_sendClock.nsecsElapsed() : 0;
+			const bool shouldLog =
+				m_sentFrameCount <= 3 ||
+				(m_sentFrameCount % 120) == 0 ||
+				nowNs - m_lastSendPerfLogNs >= 2000000000LL;
+			if (shouldLog)
+			{
+				qInfo().noquote()
+					<< QStringLiteral("[StimPerf] sentFps=%1 packetSeq=%2 sendTimeMs=%3 videoFpsTarget=%4 timerDelayMs=%5")
+						.arg(static_cast<double>(m_sentFrameCount) / qMax(0.001, static_cast<double>(nowNs) / 1.0e9), 0, 'f', 3)
+						.arg(m_sentFrameCount)
+						.arg(data.time)
+						.arg(m_targetVideoFps)
+						.arg(m_realTimeTimer->interval());
+				m_lastSendPerfLogNs = nowNs;
+			}
+			m_statusLabel->setText(QString(QStringLiteral("● 状态: 仿真中 | 已发送 %1 帧 | 目标 %2 FPS"))
+				.arg(m_sentFrameCount)
+				.arg(m_targetVideoFps));
 			m_statusLabel->setStyleSheet("color: #388E3C; font-weight: bold;");
 		}
 		else {
@@ -647,19 +695,27 @@ void MainWindow::onStartButtonClicked()
 
 	sendControlCommand(2); // 发送开始命令
 
-						   // 启动实时数据发送（100ms/帧）
-	if (!m_realTimeTimer->isActive()) {
-		m_realTimeTimer->start(time_step);
+	if (!m_isRealtimeSending) {
+		m_targetVideoFps = targetVideoFps();
+		time_step = qMax(1, qRound(1000.0 / static_cast<double>(m_targetVideoFps)));
+		m_timeStep->setText(QString::number(time_step));
+		m_isRealtimeSending = true;
+		m_sentFrameCount = 0;
+		m_sendDeadlineIndex = 0;
+		m_sendClock.restart();
+		m_lastSendPerfLogNs = 0;
 		m_startButton->setEnabled(false);
 		m_stopButton->setEnabled(true);
-		m_statusLabel->setText(QStringLiteral("● 状态: 仿真运行中 (10帧/秒)"));
+		m_statusLabel->setText(QString(QStringLiteral("● 状态: 仿真运行中 (%1 FPS)")).arg(m_targetVideoFps));
 		m_statusLabel->setStyleSheet("color: #388E3C; font-weight: bold;");
+		onSendRealTimeData();
 	}
 }
 
 void MainWindow::onStopButtonClicked()
 {
-	if (m_realTimeTimer->isActive()) {
+	if (m_isRealtimeSending || m_realTimeTimer->isActive()) {
+		m_isRealtimeSending = false;
 		m_realTimeTimer->stop();
 		sendControlCommand(3); // 发送停止命令
 		m_startButton->setEnabled(true);
@@ -742,7 +798,7 @@ bool MainWindow::step(BYHWICD::CartesianCoordinate& plane_pos, BYHWICD::Euler& p
 		<< " roll=" << missile_att.roll << " 度" << std::endl;
 
 	// 更新时间步
-	current_time += double(time_step)/1000;
+	current_time += 1.0 / static_cast<double>(qMax(1, m_targetVideoFps));
     dataNum++;
 
 	return is_collided;
@@ -770,7 +826,9 @@ void MainWindow::initStepSimData()
     plane_speed_y = m_speed->text().toDouble();
 
 //	collision_time = m_collisionTime->text().toDouble();
-	time_step = m_timeStep->text().toInt();
+	m_targetVideoFps = targetVideoFps();
+	time_step = qMax(1, qRound(1000.0 / static_cast<double>(m_targetVideoFps)));
+	m_timeStep->setText(QString::number(time_step));
 
 	// 抛物线参数：确保t=collision_time时导弹x坐标等于飞机x坐标
 //    parabola_k = (missile_init_pos.x - plane_init_pos.x) / (collision_time * collision_time);

@@ -16,6 +16,7 @@ UdpCommThread::UdpCommThread(HwaSimIR* hwaSimIR, const std::string& localIp, uin
 	inet_pton(AF_INET, localIp.c_str(), &m_localAddr.sin_addr);
 
 	// 初始化远端地址
+	memset(&m_remoteAddr, 0, sizeof(m_remoteAddr));
 	setRemoteAddr(remoteIp.c_str(), remotePort);
 }
 
@@ -114,9 +115,14 @@ void UdpCommThread::setRemoteAddr(const char* ip, uint16_t port)
 		int d = 0;
 	}
 
+	const bool changed = m_remoteAddr.sin_addr.s_addr != tempAddr.sin_addr.s_addr ||
+		ntohs(m_remoteAddr.sin_port) != port;
 	m_remoteAddr = tempAddr;
 	m_remoteAddr.sin_port = htons(port); // 转为网络字节序
-	std::cout << "[INFO] Remote address set to " << ip << ":" << port << "\n";
+	if (changed)
+	{
+		std::cout << "[INFO] Remote address set to " << ip << ":" << port << "\n";
+	}
 }
 
 // 初始化Socket
@@ -203,8 +209,13 @@ void UdpCommThread::recvThreadFunc()
 			if (InetNtopA(AF_INET, &fromAddr.sin_addr, fromIpStr, INET_ADDRSTRLEN) == nullptr) {
 				strcpy_s(fromIpStr, INET_ADDRSTRLEN, "invalid_ip");
 			}
-			std::cout << "接收UDP数据，长度：" << recvLen << "字节，来自："
-				<< fromIpStr << ":" << ntohs(fromAddr.sin_port) << std::endl;
+			++m_receivePacketCount;
+			if (m_receivePacketCount <= 3 || (m_receivePacketCount % 120) == 0)
+			{
+				std::cout << "接收UDP数据，长度：" << recvLen << "字节，来自："
+					<< fromIpStr << ":" << ntohs(fromAddr.sin_port)
+					<< " packet=" << m_receivePacketCount << std::endl;
+			}
 
 			// 更新远端地址（如果来自新的地址）
 			setRemoteAddr(fromIpStr, ntohs(fromAddr.sin_port)); // 无需再次转换！
@@ -246,7 +257,12 @@ void UdpCommThread::parseUdpData(const char* data, int dataLen)
 
 	// 提取flag字段（所有指令的第一个字段）
 	int flag = *(const int*)data;
-	std::cout << "解析UDP数据，flag：0x" << std::hex << flag << std::dec << std::endl;
+	++m_parsePacketCount;
+	if (flag != 0x38 || m_parsePacketCount <= 3 || (m_parsePacketCount % 120) == 0)
+	{
+		std::cout << "解析UDP数据，flag：0x" << std::hex << flag << std::dec
+			<< " packet=" << m_parsePacketCount << std::endl;
+	}
 
 	// 根据flag解析不同指令
 	switch (flag)

@@ -165,6 +165,7 @@
     <ClInclude Include="IR\IRConfig.h" />
     <ClInclude Include="IR\IREnginePlumeModel.h" />
     <ClInclude Include="IR\IRModtranTauLut.h" />
+    <ClInclude Include="IR\IRPerfStats.h" />
     <ClInclude Include="IR\IRRadianceModelV2.h" />
     <ClInclude Include="IR\IRRuntimeConfig.h" />
     <ClInclude Include="IR\IRSceneMaterialMapper.h" />
@@ -191,6 +192,7 @@
     <ClCompile Include="IR\IRConfig.cpp" />
     <ClCompile Include="IR\IREnginePlumeModel.cpp" />
     <ClCompile Include="IR\IRModtranTauLut.cpp" />
+    <ClCompile Include="IR\IRPerfStats.cpp" />
     <ClCompile Include="IR\IRRadianceModelV2.cpp" />
     <ClCompile Include="IR\IRRuntimeConfig.cpp" />
     <ClCompile Include="IR\IRSceneMaterialMapper.cpp" />

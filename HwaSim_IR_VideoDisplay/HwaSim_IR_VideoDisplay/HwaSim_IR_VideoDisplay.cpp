@@ -8,7 +8,21 @@
 #include <QApplication>
 #include <QDir>
 #include <QDateTime>
+#include <QElapsedTimer>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonParseError>
 #include <QtGlobal>
+#include <chrono>
+
+namespace
+{
+qint64 wallTimeNs()
+{
+    return static_cast<qint64>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count());
+}
+}
 
 HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(QWidget *parent)
     : QWidget(parent)
@@ -448,9 +462,18 @@ void HwaSim_IR_VideoDisplay::CloseStorage()
 }
 
 // ==================== 图像帧接收槽 ====================
-void HwaSim_IR_VideoDisplay::imageReceivedSlot(const QImage& img, const BYHWICD::DisplayC2cObjTrackingData& data, const QString& annotationJson)
+void HwaSim_IR_VideoDisplay::imageReceivedSlot(
+    const QImage& img,
+    const BYHWICD::DisplayC2cObjTrackingData& data,
+    const QString& annotationJson,
+    qint64 receiveTimeNs,
+    double jpegDecodeMs)
 {
+    QElapsedTimer displayTimer;
+    displayTimer.start();
     ui.m_Label_Video->setPixmap(QPixmap::fromImage(img));
+    const double displayMs = static_cast<double>(displayTimer.nsecsElapsed()) / 1.0e6;
+    const qint64 shownTimeNs = wallTimeNs();
 
     // 更新平台空间状态（按 platID 匹配）
     updatePlatDataTable(data.platID, data.platLoc);
@@ -460,6 +483,89 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(const QImage& img, const BYHWICD:
 
     // 如正在录制，保存帧
     saveFrameToStorage(img, data, annotationJson);
+
+    quint64 frameSeq = 0;
+    qint64 udpReceiveTimeNs = 0;
+    qint64 tcpSendTimeNs = 0;
+    if (!annotationJson.isEmpty())
+    {
+        QJsonParseError parseError;
+        const QJsonDocument document = QJsonDocument::fromJson(annotationJson.toUtf8(), &parseError);
+        if (parseError.error == QJsonParseError::NoError && document.isObject())
+        {
+            const QJsonObject object = document.object();
+            frameSeq = object.value(QStringLiteral("frameSeq")).toVariant().toULongLong();
+            udpReceiveTimeNs = object.value(QStringLiteral("udpReceiveTimeNs")).toString().toLongLong();
+            tcpSendTimeNs = object.value(QStringLiteral("tcpSendTimeNs")).toString().toLongLong();
+        }
+    }
+
+    ++m_videoPerfFrames;
+    ++m_videoPerfIntervalFrames;
+    m_decodeMsTotal += jpegDecodeMs;
+    m_displayMsTotal += displayMs;
+    if (m_videoPerfReceiveStartNs == 0)
+    {
+        m_videoPerfReceiveStartNs = receiveTimeNs;
+        m_videoPerfDisplayStartNs = shownTimeNs;
+    }
+    if (frameSeq > 0)
+    {
+        if (m_lastFrameSeq > 0 && frameSeq != m_lastFrameSeq + 1)
+        {
+            ++m_frameSeqDiscontinuities;
+        }
+        m_lastFrameSeq = frameSeq;
+    }
+
+    double endToEndMs = -1.0;
+    if (udpReceiveTimeNs > 0 && shownTimeNs >= udpReceiveTimeNs)
+    {
+        endToEndMs = static_cast<double>(shownTimeNs - udpReceiveTimeNs) / 1.0e6;
+        if (endToEndMs < 60000.0)
+        {
+            m_latencyMsTotal += endToEndMs;
+            m_latencyMsMax = qMax(m_latencyMsMax, endToEndMs);
+            ++m_latencySamples;
+        }
+    }
+    const double tcpToReceiveMs = tcpSendTimeNs > 0 && receiveTimeNs >= tcpSendTimeNs
+        ? static_cast<double>(receiveTimeNs - tcpSendTimeNs) / 1.0e6
+        : -1.0;
+    const bool shouldLog =
+        m_videoPerfFrames <= 3 ||
+        (m_videoPerfFrames % 120) == 0 ||
+        shownTimeNs - m_lastVideoPerfLogNs >= 2000000000LL;
+    if (shouldLog)
+    {
+        const double receiveElapsedSec = qMax(
+            0.001,
+            static_cast<double>(receiveTimeNs - m_videoPerfReceiveStartNs) / 1.0e9);
+        const double displayElapsedSec = qMax(
+            0.001,
+            static_cast<double>(shownTimeNs - m_videoPerfDisplayStartNs) / 1.0e9);
+        const double sampleCount = static_cast<double>(qMax<quint64>(1, m_videoPerfIntervalFrames));
+        qInfo().noquote()
+            << QStringLiteral("[VideoPerf] receiveFps=%1 displayFps=%2 jpegDecodeMs=%3 displayMs=%4 latencyAvgMs=%5 latencyMaxMs=%6 tcpToReceiveMs=%7 frameSeq=%8 discontinuities=%9")
+                .arg(static_cast<double>(m_videoPerfIntervalFrames) / receiveElapsedSec, 0, 'f', 3)
+                .arg(static_cast<double>(m_videoPerfIntervalFrames) / displayElapsedSec, 0, 'f', 3)
+                .arg(m_decodeMsTotal / sampleCount, 0, 'f', 3)
+                .arg(m_displayMsTotal / sampleCount, 0, 'f', 3)
+                .arg(m_latencySamples > 0 ? m_latencyMsTotal / static_cast<double>(m_latencySamples) : -1.0, 0, 'f', 3)
+                .arg(m_latencySamples > 0 ? m_latencyMsMax : -1.0, 0, 'f', 3)
+                .arg(tcpToReceiveMs, 0, 'f', 3)
+                .arg(frameSeq)
+                .arg(m_frameSeqDiscontinuities);
+        m_videoPerfIntervalFrames = 0;
+        m_videoPerfReceiveStartNs = receiveTimeNs;
+        m_videoPerfDisplayStartNs = shownTimeNs;
+        m_lastVideoPerfLogNs = shownTimeNs;
+        m_decodeMsTotal = 0.0;
+        m_displayMsTotal = 0.0;
+        m_latencyMsTotal = 0.0;
+        m_latencyMsMax = 0.0;
+        m_latencySamples = 0;
+    }
 }
 
 // ==================== 初始化命令接收槽 ====================

@@ -9,6 +9,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>
+#include <deque>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -22,6 +23,7 @@
 #include <pta_uchar.h>
 #include <texture.h>
 #include "Annotation/AnnotationTypes.h"
+#include "IR/IRPerfStats.h"
 
 class HwaSimIR;
 
@@ -34,13 +36,15 @@ public:
 	void stop();
 
 	void updateFrame(const uchar* data, int width, int height);
-	void updateFrame(
+	IRFrameEnqueueResult updateFrame(
 		const uchar* data,
 		int width,
 		int height,
 		const BYHWICD::DisplayC2cObjTrackingData& trackingData,
 		const AnnotationFrameRecord& annotationRecord,
-		bool annotationEnabled);
+		bool annotationEnabled,
+		const IRFrameTelemetry& telemetry);
+	void setSyncMode(bool syncMode) { m_syncMode.store(syncMode); }
 
 	bool sendControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd);
 	bool sendInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& initData);
@@ -61,7 +65,9 @@ private:
 		const AnnotationFrameRecord& record,
 		bool annotationEnabled,
 		int tcpWidth,
-		int tcpHeight) const;
+		int tcpHeight,
+		const IRFrameTelemetry& telemetry,
+		std::int64_t tcpSendTimeNs) const;
 
 	bool connectToServer();
 	void disconnectFromServer();
@@ -81,15 +87,25 @@ private:
 	std::mutex m_mtx;
 	std::mutex m_socketMtx;
 
+	struct PendingFrame
+	{
+		std::vector<uchar> pixels;
+		int width = 0;
+		int height = 0;
+		BYHWICD::DisplayC2cObjTrackingData trackingData{};
+		AnnotationFrameRecord annotationRecord;
+		bool annotationEnabled = false;
+		IRFrameTelemetry telemetry;
+		double queueWaitMs = 0.0;
+		bool overwritten = false;
+	};
+
 	std::mutex m_frameMtx;
 	std::condition_variable m_frameCv;
-	std::vector<uchar> m_frameBuffer;
-	int m_frameWidth;
-	int m_frameHeight;
-	bool m_bNewFrame = false;
-	BYHWICD::DisplayC2cObjTrackingData m_trackingData;
-	AnnotationFrameRecord m_annotationRecord;
-	bool m_hasTrackingData = false;
-	bool m_annotationEnabled = false;
+	std::condition_variable m_queueSpaceCv;
+	std::deque<PendingFrame> m_frameQueue;
+	static const std::size_t kMaxFrameQueue = 4;
+	std::atomic<bool> m_syncMode{ true };
 	unsigned long long m_tcpPacketCounter = 0;
+	std::int64_t m_lastTcpPerfLogNs = 0;
 };

@@ -19,7 +19,12 @@ public slots:
 
 signals:
 	// 图像+跟踪数据+标注 JSON；旧格式包会传入空 JSON，界面层负责生成占位记录。
-	void dataReceived(const QImage& img, const BYHWICD::DisplayC2cObjTrackingData& trackingData, const QString& annotationJson);
+	void dataReceived(
+		const QImage& img,
+		const BYHWICD::DisplayC2cObjTrackingData& trackingData,
+		const QString& annotationJson,
+		qint64 receiveTimeNs,
+		double jpegDecodeMs);
 	// 可选：收到初始化命令时通知主线程（参数可根据需要扩展）
 	void initCommandReceived(const BYHWICD::InitP2cObjectTrackingCmd& cmd);
 

@@ -7,6 +7,8 @@
 #include "pta_LVecBase4.h"
 #include "pta_float.h"
 #include "graphicsEngine.h"
+#include "graphicsPipe.h"
+#include "graphicsStateGuardian.h"
 #include "geom.h"
 #include "geomNode.h"
 #include "geomTriangles.h"
@@ -20,6 +22,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
+#include <iomanip>
 #include <sstream>
 
 namespace
@@ -773,6 +776,7 @@ HwaSimIR::HwaSimIR(int argc, char** argv)
 			<< " compile_time=" << __TIME__
 			<< std::endl;
 		InitHwaSimIRWindow();
+		LogGraphicsBackend();
 		//register_custom_functions();
 	// 初始化通讯线程
 		LoadNetworkConfig();
@@ -792,9 +796,6 @@ HwaSimIR::HwaSimIR(int argc, char** argv)
 		PT(GenericAsyncTask) ir_task = new GenericAsyncTask("IR_UpdateTask", &HwaSimIR::shader_update_task, this);
 		AsyncTaskManager::get_global_ptr()->add(ir_task);
 
-		// ================= 新增：向全局任务管理器添加场景更新任务 =================
-		PT(GenericAsyncTask) scene_task = new GenericAsyncTask("Scene_UpdateTask", &HwaSimIR::scene_update_task, this);
-		AsyncTaskManager::get_global_ptr()->add(scene_task);
 	}
 	else {
 		std::cerr << "Failed to create main window!" << std::endl;
@@ -853,48 +854,66 @@ void HwaSimIR::run() {
 			break;
 		}
 
-#if defined(__linux__)
 		ProcessPendingNetworkCommands();
-#endif
 
-		bool shouldProcessSceneData = false;
-		// 如果是同步模式，且仿真正在运行，则死等UDP数据
-		if (m_bSyncRenderMode && m_isSimRunning.load()) {
+		PendingDisplayFrame pendingFrame;
+		bool hasDisplayFrame = false;
+		if (m_bSyncRenderMode.load() && m_isSimRunning.load()) {
 			std::unique_lock<std::mutex> lock(m_mtx);
-
-			// wait_for 会阻塞主线程（暂停渲染），直到 UDP 线程调用 m_cvNewData.notify_one()
-			// 加一个 100ms 的超时是为了防止：如果 UDP 断线了，主窗口仍然能稍微响应一下系统拖拽、关闭等事件
 			m_cvNewData.wait_for(lock, std::chrono::milliseconds(100), [this] {
-				return m_bHasNewData
-#if defined(__linux__)
+				return !m_pendingDisplayFrames.empty()
 					|| !m_pendingNetworkCommands.empty()
-#endif
 					|| m_requestExit.load();
 			});
 			// 解锁：如果不解锁，接下来的 do_frame 内部任务将无法获取锁，导致死锁
 			lock.unlock();
 		}
 
-#if defined(__linux__)
 		ProcessPendingNetworkCommands();
-#endif
 
 		{
 			std::lock_guard<std::mutex> lock(m_mtx);
-			if (m_bHasNewData) {
-				shouldProcessSceneData = true;
-				m_bHasNewData = false;
+			if (!m_pendingDisplayFrames.empty()) {
+				if (m_bSyncRenderMode.load())
+				{
+					pendingFrame = m_pendingDisplayFrames.front();
+				}
+				else
+				{
+					pendingFrame = m_pendingDisplayFrames.back();
+				}
+				m_pendingDisplayFrames.pop_front();
+				if (!m_bSyncRenderMode.load())
+				{
+					m_pendingDisplayFrames.clear();
+				}
+				pendingFrame.telemetry.processStartTimeNs = IRPerfStats::steadyTimeNs();
+				m_currentFrameTelemetry = pendingFrame.telemetry;
+				m_realTimeSceneData = pendingFrame.data;
+				hasDisplayFrame = true;
 			}
 		}
-		if (shouldProcessSceneData) {
+		if (hasDisplayFrame) {
+			m_cvDisplayQueueSpace.notify_one();
+			const auto sceneBegin = std::chrono::steady_clock::now();
 			ProcessRealSimSceneDrivenData();
+			m_perfStats.recordSceneUpdate(std::chrono::duration<double, std::milli>(
+				std::chrono::steady_clock::now() - sceneBegin).count());
 		}
 
-		// 渲染一帧（包含处理网络接收的场景更新任务、UI事件等）
-		// 如果返回 false，说明用户点了右上角的 X 或按了 ESC 请求退出
+		m_syncFrameActive.store(!m_bSyncRenderMode.load() || hasDisplayFrame);
+		const auto renderBegin = std::chrono::steady_clock::now();
 		if (!m_pFramework->do_frame(current_thread)) {
 			break;
 		}
+		const double renderMs = std::chrono::duration<double, std::milli>(
+			std::chrono::steady_clock::now() - renderBegin).count();
+		if (!m_bSyncRenderMode.load() || hasDisplayFrame)
+		{
+			m_perfStats.recordRender(renderMs);
+		}
+		m_syncFrameActive.store(false);
+		m_perfStats.maybeLog();
 		if (m_requestExit.load()) {
 			break;
 		}
@@ -903,6 +922,40 @@ void HwaSimIR::run() {
 
 WindowFramework* HwaSimIR::get_main_window() const {
 	return m_pMainWindow;
+}
+
+void HwaSimIR::LogGraphicsBackend() const
+{
+	if (m_pGraphicsWindow == nullptr)
+	{
+		std::cout << "[GPU][WARN] graphics window unavailable" << std::endl;
+		return;
+	}
+
+	GraphicsPipe* pipe = m_pGraphicsWindow->get_pipe();
+	GraphicsStateGuardian* gsg = m_pGraphicsWindow->get_gsg();
+	const std::string pipeName = pipe != nullptr ? pipe->get_interface_name() : "unknown";
+	const std::string vendor = gsg != nullptr ? gsg->get_driver_vendor() : "unknown";
+	const std::string renderer = gsg != nullptr ? gsg->get_driver_renderer() : "unknown";
+	const std::string driverVersion = gsg != nullptr ? gsg->get_driver_version() : "unknown";
+	std::cout << "[GPU]"
+		<< " graphicsPipe=" << pipeName
+		<< " vendor=" << vendor
+		<< " renderer=" << renderer
+		<< " driverVersion=" << driverVersion
+		<< " apiVersion=" << driverVersion
+		<< std::endl;
+
+	std::string rendererLower = renderer;
+	std::transform(rendererLower.begin(), rendererLower.end(), rendererLower.begin(),
+		[](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+	if (rendererLower.find("llvmpipe") != std::string::npos ||
+		rendererLower.find("softpipe") != std::string::npos ||
+		rendererLower.find("software") != std::string::npos)
+	{
+		std::cout << "[GPU][WARN] software renderer detected"
+			<< " renderer=" << renderer << std::endl;
+	}
 }
 
 // 修改窗口分辨率
@@ -1956,12 +2009,12 @@ void HwaSimIR::CreateEnginePlumeForTarget(TargetPlatformData& targetPlat)
 
 void HwaSimIR::HideEnginePlume(TargetPlatformData& targetPlat)
 {
-	if (!targetPlat.enginePlumeCoreNodePath.is_empty())
+	if (!targetPlat.enginePlumeCoreNodePath.is_empty() && !targetPlat.enginePlumeCoreNodePath.is_hidden())
 	{
 		targetPlat.enginePlumeCoreNodePath.set_shader_input("u_plume_enabled", LVecBase2i(0, 0));
 		targetPlat.enginePlumeCoreNodePath.hide();
 	}
-	if (!targetPlat.enginePlumeHaloNodePath.is_empty())
+	if (!targetPlat.enginePlumeHaloNodePath.is_empty() && !targetPlat.enginePlumeHaloNodePath.is_hidden())
 	{
 		targetPlat.enginePlumeHaloNodePath.set_shader_input("u_plume_enabled", LVecBase2i(0, 0));
 		targetPlat.enginePlumeHaloNodePath.hide();
@@ -2006,36 +2059,43 @@ IREnginePlumeOutput HwaSimIR::UpdateEnginePlumeForTarget(TargetPlatformData& tar
 		}
 		if (!visible)
 		{
-			node.set_shader_input("u_plume_enabled", LVecBase2i(0, 0));
-			node.hide();
+			if (!node.is_hidden())
+			{
+				node.set_shader_input("u_plume_enabled", LVecBase2i(0, 0));
+				node.hide();
+			}
 			return;
 		}
-		node.set_pos(output.localPos.x, output.localPos.y, output.localPos.z);
-		node.set_hpr(0.0f, 0.0f, 0.0f);
-		node.set_scale(
-			std::max(0.01f, radiusRootM),
-			std::max(0.05f, lengthM),
-			std::max(0.01f, radiusRootM));
-		node.set_shader_input("u_wave_band", LVecBase2i(static_cast<int>(band), 0));
-		node.set_shader_input("u_ir_band_index", LVecBase2i(static_cast<int>(band), 0));
-		node.set_shader_input("u_ir_band_class", LVecBase2i(IRBandClassForShader(band), 0));
-		ApplyStage7WeatherInputs(node, m_stage7WeatherState);
-		node.set_shader_input("u_object_kind", LVecBase2i(4, 0));
-		node.set_shader_input("u_plume_layer", LVecBase2i(layer, 0));
-		node.set_shader_input("u_plume_enabled", LVecBase2i(1, 0));
+		const bool becomingVisible = node.is_hidden();
+		if (becomingVisible)
+		{
+			node.set_pos(output.localPos.x, output.localPos.y, output.localPos.z);
+			node.set_hpr(0.0f, 0.0f, 0.0f);
+			node.set_scale(
+				std::max(0.01f, radiusRootM),
+				std::max(0.05f, lengthM),
+				std::max(0.01f, radiusRootM));
+			node.set_shader_input("u_wave_band", LVecBase2i(static_cast<int>(band), 0));
+			node.set_shader_input("u_ir_band_index", LVecBase2i(static_cast<int>(band), 0));
+			node.set_shader_input("u_ir_band_class", LVecBase2i(IRBandClassForShader(band), 0));
+			ApplyStage7WeatherInputs(node, m_stage7WeatherState);
+			node.set_shader_input("u_object_kind", LVecBase2i(4, 0));
+			node.set_shader_input("u_plume_layer", LVecBase2i(layer, 0));
+			node.set_shader_input("u_plume_enabled", LVecBase2i(1, 0));
+			node.set_shader_input("u_plume_length", LVecBase2f(lengthM, 0.0f));
+			node.set_shader_input("u_plume_radius_root", LVecBase2f(radiusRootM, 0.0f));
+			node.set_shader_input("u_plume_radius_tail", LVecBase2f(radiusTailM, 0.0f));
+			node.set_shader_input("u_plume_axial_decay", LVecBase2f(axialDecay, 0.0f));
+			node.set_shader_input("u_plume_radial_decay", LVecBase2f(radialDecay, 0.0f));
+			node.set_shader_input("u_plume_noise_scale", LVecBase2f(noiseScale, 0.0f));
+			node.set_shader_input("u_plume_noise_strength", LVecBase2f(noiseStrength, 0.0f));
+			node.set_shader_input("u_plume_band_gain", LVecBase2f(bandGain, 0.0f));
+			node.show();
+		}
 		node.set_shader_input("u_plume_temperature_K", LVecBase2f(tempK, 0.0f));
 		node.set_shader_input("u_plume_gray", LVecBase2f(gray, 0.0f));
 		node.set_shader_input("u_plume_opacity", LVecBase2f(opacity, 0.0f));
-		node.set_shader_input("u_plume_length", LVecBase2f(lengthM, 0.0f));
-		node.set_shader_input("u_plume_radius_root", LVecBase2f(radiusRootM, 0.0f));
-		node.set_shader_input("u_plume_radius_tail", LVecBase2f(radiusTailM, 0.0f));
-		node.set_shader_input("u_plume_axial_decay", LVecBase2f(axialDecay, 0.0f));
-		node.set_shader_input("u_plume_radial_decay", LVecBase2f(radialDecay, 0.0f));
-		node.set_shader_input("u_plume_noise_scale", LVecBase2f(noiseScale, 0.0f));
-		node.set_shader_input("u_plume_noise_strength", LVecBase2f(noiseStrength, 0.0f));
-		node.set_shader_input("u_plume_band_gain", LVecBase2f(bandGain, 0.0f));
 		node.set_shader_input("u_time", LVecBase2f(static_cast<float>(currentTime), 0.0f));
-		node.show();
 	};
 	applyPlumeLayer(targetPlat.enginePlumeHaloNodePath, 2, haloVisible, output.haloTempK, output.haloGray, output.haloOpacity,
 		output.haloLengthM, output.haloRadiusRootM, output.haloRadiusTailM, output.haloAxialDecay, output.haloRadialDecay,
@@ -2044,11 +2104,24 @@ IREnginePlumeOutput HwaSimIR::UpdateEnginePlumeForTarget(TargetPlatformData& tar
 		output.coreLengthM, output.coreRadiusRootM, output.coreRadiusTailM, output.coreAxialDecay, output.coreRadialDecay,
 		output.coreNoiseScale, output.coreNoiseStrength, output.coreBandGain);
 
-	const bool shouldLog = m_stage5PlumeOptions.enablePlumeDebug ||
+	const std::uint64_t frameSeq = m_currentFrameTelemetry.frameSeq > 0
+		? m_currentFrameTelemetry.frameSeq : m_stage0DisplayFrameCount;
+	const std::string plumeLogKey = runtimeKey + "#plume";
+	const std::string plumeLogState =
+		std::to_string(targetPlat.targetState.engineState ? 1 : 0) + ":" +
+		std::to_string(output.coreEnabled ? 1 : 0) + ":" +
+		std::to_string(output.haloEnabled ? 1 : 0) + ":" +
+		std::to_string(coreVisible ? 1 : 0) + ":" +
+		std::to_string(haloVisible ? 1 : 0) + ":" +
+		std::to_string(static_cast<int>(band));
+	const bool plumeStateChanged = m_lastStage4TargetLogState[plumeLogKey] != plumeLogState;
+	m_lastStage4TargetLogState[plumeLogKey] = plumeLogState;
+	const bool shouldLog = m_enableIRVerboseLog ||
+		m_stage5PlumeOptions.enablePlumeDebug ||
 		m_stage5PlumeOptions.forcePlumeVisible ||
-		output.enabled ||
-		m_stage0DisplayFrameCount <= 3 ||
-		(m_stage0DisplayFrameCount % 60) == 0;
+		frameSeq <= 3 ||
+		(frameSeq % 120) == 0 ||
+		plumeStateChanged;
 	if (shouldLog)
 	{
 		std::cout << "[Stage5 Plume]"
@@ -2593,7 +2666,7 @@ void HwaSimIR::RefreshAnnotationOverlay(const BYHWICD::DisplayC2cObjTrackingData
 
 	// 标注像素坐标以最终显示/输出图像左上角为原点；TCP 内部 flip 不在 Stage1 修改。
 	m_annotationManager.updateFrame(
-		m_stage0DisplayFrameCount,
+		m_currentFrameTelemetry.frameSeq > 0 ? m_currentFrameTelemetry.frameSeq : m_stage0DisplayFrameCount,
 		currentData.time,
 		currentData.sensorID,
 		outputWidth,
@@ -2864,6 +2937,8 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 		std::lock_guard<std::mutex> lock(m_mtx);
 		currentData = m_realTimeSceneData;
 	}
+	const std::uint64_t frameSeq = m_currentFrameTelemetry.frameSeq > 0
+		? m_currentFrameTelemetry.frameSeq : m_stage0DisplayFrameCount;
 
 	// 更新PlatParamPak平台（核心：platLoc映射到飞机平台）
 	for (auto& pakPlat : m_pakPlatformList)
@@ -2904,8 +2979,13 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 
 		// 更新武器状态
 		weaponPlat.weaponState = currentData.weaponState;
-		std::cout << "更新WeaponState平台：目标ID=" << weaponPlat.platID
-			<< " 毁伤状态=" << weaponPlat.weaponState.damageFlag << std::endl;
+		const bool weaponStateChanged = m_lastWeaponDamageFlag != weaponPlat.weaponState.damageFlag;
+		if (frameSeq <= 3 || (frameSeq % 120) == 0 || weaponStateChanged)
+		{
+			std::cout << "更新WeaponState平台：目标ID=" << weaponPlat.platID
+				<< " 毁伤状态=" << weaponPlat.weaponState.damageFlag << std::endl;
+		}
+		m_lastWeaponDamageFlag = weaponPlat.weaponState.damageFlag;
 	}
 
 	// TargetState[5] 最多携带5组目标数据；targetNumValid只控制前N个是否参与显示，不再限制状态更新。
@@ -3019,7 +3099,7 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 			HideEnginePlume(*targetPlat);
 			if ((!targetPlat->enginePlumeCoreNodePath.is_empty() || !targetPlat->enginePlumeHaloNodePath.is_empty()) &&
 				(m_stage5PlumeOptions.enablePlumeDebug || m_stage5PlumeOptions.forcePlumeVisible ||
-					m_stage0DisplayFrameCount <= 3 || (m_stage0DisplayFrameCount % 60) == 0))
+					frameSeq <= 3 || (frameSeq % 120) == 0))
 			{
 				const IRBand plumeBand = BuildRuntimeEnvironment().band;
 				std::cout << "[Stage5 Plume]"
@@ -3049,10 +3129,10 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 			lookAtTarget = targetPlat;
 		}
 
-		if (m_stage0DisplayFrameCount <= 3 || (m_stage0DisplayFrameCount % 60) == 0)
+		if (frameSeq <= 3 || (frameSeq % 120) == 0)
 		{
 			std::cout << "[TargetMapping]"
-				<< " packet=" << m_stage0DisplayFrameCount
+				<< " packet=" << frameSeq
 				<< " index=" << i
 				<< " targetType=0x" << std::hex << targetState.targetType << std::dec
 				<< " targetPlatID=" << targetState.targetPlatID
@@ -3665,6 +3745,7 @@ bool HwaSimIR::InitTcpThread()
 		<< " format=length-prefixed JPEG" << std::endl;
 
 	m_pTcpThread = new TcpCommThread(this, m_tcpServerIp, m_tcpServerPort);
+	m_pTcpThread->setSyncMode(m_bSyncRenderMode.load());
 	if (!m_pTcpThread->start()) {
 		std::cerr << "TCP线程启动失败！" << std::endl;
 		delete m_pTcpThread;
@@ -3675,7 +3756,6 @@ bool HwaSimIR::InitTcpThread()
 	return true;
 }
 
-#if defined(__linux__)
 void HwaSimIR::ProcessPendingNetworkCommands()
 {
 	std::deque<PendingNetworkCommand> pendingCommands;
@@ -3705,12 +3785,10 @@ void HwaSimIR::ProcessPendingNetworkCommands()
 		}
 	}
 }
-#endif
 
 // 处理控制指令（复位/开始/停止）
 void HwaSimIR::handleControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd)
 {
-#if defined(__linux__)
 	PendingNetworkCommand pending;
 	pending.type = PendingNetworkCommandType::Control;
 	pending.controlCmd = cmd;
@@ -3721,9 +3799,6 @@ void HwaSimIR::handleControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd)
 	std::cout << "[Stage0] Control command queued for main thread: command=" << cmd.simCommand
 		<< ", round=" << cmd.currentRound << "/" << cmd.roundCut << std::endl;
 	m_cvNewData.notify_one();
-#else
-	ProcessControlCmdOnMainThread(cmd);
-#endif
 }
 
 void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd) {
@@ -3745,6 +3820,13 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 	case 1: // 复位
 		std::cout << "执行复位逻辑..." << std::endl;
 		m_stage0DisplayFrameCount = 0;
+		m_udpSequence = 0;
+		m_pendingDisplayFrames.clear();
+		m_currentFrameTelemetry = IRFrameTelemetry();
+		m_lastCapturedFrameSeq = 0;
+		m_lastSyncSequenceMatch = true;
+		m_perfStats.reset();
+		m_perfStats.configure(m_bSyncRenderMode.load(), static_cast<double>(m_targetVideoFps.load()));
 		m_annotationManager.clear();
 		m_annotationManager.setEnabled(false);
 		// TODO: 实现复位逻辑（清空状态、重置传感器等）
@@ -3785,6 +3867,8 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		m_irEnginePlumeModel.resetRuntime();
 		m_stage5PlumeLastPerfState.clear();
 		m_stage5PlumePerfLogCounter = 0;
+		m_lastStage4TargetLogState.clear();
+		m_lastStage4InputState.clear();
 		RefreshStage6DisplayShaderInputs();
 
 		// 重置仿真状态
@@ -3826,7 +3910,6 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 			if (exitOnStop) {
 				std::cout << "[Stage0] ExitOnStop requested by " << exitOnStopSource << "; closing main loop." << std::endl;
 				m_requestExit.store(true);
-				m_bHasNewData = true;
 				m_cvNewData.notify_one();
 			}
 		}
@@ -3840,7 +3923,6 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 // 处理初始化指令并发送应答
 void HwaSimIR::handleInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& cmd)
 {
-#if defined(__linux__)
 	PendingNetworkCommand pending;
 	pending.type = PendingNetworkCommandType::Init;
 	pending.initCmd = cmd;
@@ -3851,9 +3933,6 @@ void HwaSimIR::handleInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& cmd)
 	std::cout << "[Stage0] Init command queued for main thread: sensorID=" << cmd.sensorID
 		<< ", platNumValid=" << cmd.platNumValid << std::endl;
 	m_cvNewData.notify_one();
-#else
-	ProcessInitCmdOnMainThread(cmd);
-#endif
 }
 
 void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCmd& cmd) {
@@ -3873,6 +3952,25 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 		<< ", videoFps=" << cmd.trackingInit.videoFps
 		<< ", missileMax(AIM120/AIM9/MMD)=" << cmd.MissileMaxCount120 << "/"
 		<< cmd.MissileMaxCount9 << "/" << cmd.MissileMaxCountMMD << std::endl;
+	const int targetVideoFps = cmd.trackingInit.videoFps > 0 ? cmd.trackingInit.videoFps : 25;
+	m_targetVideoFps.store(targetVideoFps);
+	m_perfStats.reset();
+	m_perfStats.configure(m_bSyncRenderMode.load(), static_cast<double>(targetVideoFps));
+	m_pendingDisplayFrames.clear();
+	m_udpSequence = 0;
+	m_currentFrameTelemetry = IRFrameTelemetry();
+	m_lastCapturedFrameSeq = 0;
+	m_lastSyncSequenceMatch = true;
+	m_lastStage4TargetLogState.clear();
+	m_lastStage4InputState.clear();
+	if (m_pTcpThread)
+	{
+		m_pTcpThread->setSyncMode(m_bSyncRenderMode.load());
+	}
+	if (!m_bSyncRenderMode.load())
+	{
+		SetRenderMode(false, static_cast<double>(targetVideoFps));
+	}
 	LogActiveIRSensorProfile(sensor.trackerSensorBand, "init-command", true);
 
 	// ========== 初始化业务逻辑（后续填充） ==========
@@ -3916,9 +4014,12 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 
 // 处理实时成像数据包
 void HwaSimIR::handleDisplayData(const BYHWICD::DisplayC2cObjTrackingData& data) {
+	const std::int64_t receiveTimeNs = IRPerfStats::wallTimeNs();
 	std::lock_guard<std::mutex> lock(m_mtx);
 	++m_stage0DisplayFrameCount;
-	if (m_stage0DisplayFrameCount == 1 || (m_stage0DisplayFrameCount % 100) == 0)
+	const std::uint64_t udpSeq = ++m_udpSequence;
+	m_perfStats.recordUdpFrame();
+	if (m_stage0DisplayFrameCount <= 3 || (m_stage0DisplayFrameCount % 120) == 0)
 	{
 		std::cout << "[Stage0] Display packet #" << m_stage0DisplayFrameCount
 			<< ": platID=" << data.platID
@@ -3929,6 +4030,23 @@ void HwaSimIR::handleDisplayData(const BYHWICD::DisplayC2cObjTrackingData& data)
 	const int visibleTargetNumForLog = std::max(0, std::min(data.targetNumValid, 5));
 	int stage4LogTargetCount = 0;
 	bool anyStage4InputSignal = data.weaponState.strikeFlag || data.weaponState.strikePart != 0;
+	std::ostringstream stage4State;
+	stage4State << data.weaponState.strikeFlag << ":" << data.weaponState.strikePart
+		<< ":" << data.weaponState.targetType << ":" << data.weaponState.targetPlatID
+		<< ":" << data.weaponState.targetID << ":" << data.weaponState.viewValid;
+	for (int i = 0; i < 5; ++i)
+	{
+		const BYHWICD::TargetState& target = data.targetState[i];
+		stage4State << "|" << target.targetType << ":" << target.targetPlatID << ":" << target.targetID
+			<< ":" << target.engineState << ":" << target.viewValid;
+	}
+	const std::string stage4StateKey = stage4State.str();
+	const bool logStage4Input =
+		m_enableIRVerboseLog ||
+		m_stage0DisplayFrameCount <= 3 ||
+		(m_stage0DisplayFrameCount % 120) == 0 ||
+		stage4StateKey != m_lastStage4InputState;
+	m_lastStage4InputState = stage4StateKey;
 	for (int i = 0; i < 5; ++i)
 	{
 		const auto& target = data.targetState[i];
@@ -3938,25 +4056,29 @@ void HwaSimIR::handleDisplayData(const BYHWICD::DisplayC2cObjTrackingData& data)
 		}
 		++stage4LogTargetCount;
 		anyStage4InputSignal = anyStage4InputSignal || target.engineState;
-		std::cout << "[Stage4 Input]"
-			<< " packet=" << m_stage0DisplayFrameCount
-			<< " targetIndex=" << i
-			<< " targetID=" << target.targetID
-			<< " targetPlatID=" << target.targetPlatID
-			<< " platform=" << Stage4PlatformName(TargetTypeToPlatformType(target.targetType))
-			<< " engineState=" << (target.engineState ? "1" : "0")
-			<< " targetViewValid=" << (target.viewValid ? "1" : "0")
-			<< " visibleByTargetNum=" << (i < visibleTargetNumForLog ? "1" : "0")
-			<< " strikeFlag=" << (data.weaponState.strikeFlag ? "1" : "0")
-			<< " strikePart=" << data.weaponState.strikePart
-			<< " weaponTargetType=0x" << std::hex << data.weaponState.targetType << std::dec
-			<< " weaponTargetID=" << data.weaponState.targetID
-			<< " weaponTargetPlatID=" << data.weaponState.targetPlatID
-			<< " weaponViewValid=" << (data.weaponState.viewValid ? "1" : "0")
-			<< " sourcePacketTimeMs=" << data.time
-			<< std::endl;
+		if (logStage4Input)
+		{
+			std::cout << "[Stage4 Input]"
+				<< " packet=" << m_stage0DisplayFrameCount
+				<< " targetIndex=" << i
+				<< " targetID=" << target.targetID
+				<< " targetPlatID=" << target.targetPlatID
+				<< " platform=" << Stage4PlatformName(TargetTypeToPlatformType(target.targetType))
+				<< " engineState=" << (target.engineState ? "1" : "0")
+				<< " targetViewValid=" << (target.viewValid ? "1" : "0")
+				<< " visibleByTargetNum=" << (i < visibleTargetNumForLog ? "1" : "0")
+				<< " strikeFlag=" << (data.weaponState.strikeFlag ? "1" : "0")
+				<< " strikePart=" << data.weaponState.strikePart
+				<< " weaponTargetType=0x" << std::hex << data.weaponState.targetType << std::dec
+				<< " weaponTargetID=" << data.weaponState.targetID
+				<< " weaponTargetPlatID=" << data.weaponState.targetPlatID
+				<< " weaponViewValid=" << (data.weaponState.viewValid ? "1" : "0")
+				<< " sourcePacketTimeMs=" << data.time
+				<< std::endl;
+		}
 	}
-	if (stage4LogTargetCount == 0 || (!anyStage4InputSignal && (m_stage0DisplayFrameCount % 100) == 0))
+	if (logStage4Input &&
+		(stage4LogTargetCount == 0 || (!anyStage4InputSignal && (m_stage0DisplayFrameCount % 120) == 0)))
 	{
 		std::cout << "[Stage4 Input][WARN] STAGE4_INPUT_NOT_UPDATED"
 			<< " packet=" << m_stage0DisplayFrameCount
@@ -4027,16 +4149,36 @@ void HwaSimIR::handleDisplayData(const BYHWICD::DisplayC2cObjTrackingData& data)
 	std::cout << "============================================================" << std::endl;
 #endif // 0
 	// ========== 实时数据处理逻辑（后续填充） ==========
-	std::cout << "处理实时成像数据..." << std::endl;
+	if (m_stage0DisplayFrameCount <= 3 || (m_stage0DisplayFrameCount % 120) == 0)
+	{
+		std::cout << "处理实时成像数据..." << std::endl;
+	}
 	// TODO: 更新传感器姿态、目标位置、渲染红外图像等
 
-	// 缓存实时数据
-	m_realTimeSceneData = data;
-
-	// 标记有新数据需要主线程去处理
-	m_bHasNewData = true;
-	//// 更新平台位置和姿态
-	//ProcessRealSimSceneDrivenData();
+	PendingDisplayFrame pending;
+	pending.data = data;
+	pending.telemetry.frameSeq = udpSeq;
+	pending.telemetry.udpReceiveTimeNs = receiveTimeNs;
+	if (m_bSyncRenderMode.load())
+	{
+		if (m_pendingDisplayFrames.size() >= kMaxPendingDisplayFrames)
+		{
+			m_perfStats.recordInputQueueOverflow();
+			std::cout << "[SyncFrame][WARN] inputQueueOverflow"
+				<< " udpSeq=" << udpSeq
+				<< " queueDepth=" << m_pendingDisplayFrames.size()
+				<< " queueCapacity=" << kMaxPendingDisplayFrames
+				<< " action=drop_newest_with_diagnostic"
+				<< std::endl;
+			m_cvNewData.notify_one();
+			return;
+		}
+	}
+	else
+	{
+		m_pendingDisplayFrames.clear();
+	}
+	m_pendingDisplayFrames.push_back(pending);
 
 	// 通知主线程，有新数据到达
 	m_cvNewData.notify_one();
@@ -4100,6 +4242,8 @@ void HwaSimIR::InitInfraredSimulation()
 	std::string stage4VisualSource;
 	std::string stage4BrightSource;
 	std::string stage4RearSource;
+	std::string perfLogSource;
+	std::string verboseLogSource;
 	std::string annotationProfileSource;
 	std::string annotationDebugSource;
 	std::string annotationBBoxModeSource;
@@ -4118,6 +4262,14 @@ void HwaSimIR::InitInfraredSimulation()
 	std::string annotationSurfaceSnapModeSource;
 	bool enableModtranTauDebug = m_runtimeConfig.getBool("Stage3", "EnableModtranTauDebug", "EnableModtranTauDebug", false, &stage3TauDebugSource);
 	bool useModtranTauForAtmosphere = m_runtimeConfig.getBool("Stage3", "UseModtranTauForAtmosphere", "UseModtranTauForAtmosphere", false, &stage3UseTauSource);
+	m_enablePerfLog = m_runtimeConfig.getBool("Performance", "EnablePerfLog", "EnablePerfLog", true, &perfLogSource);
+	m_enableIRVerboseLog = m_runtimeConfig.getBool("Performance", "EnableIRVerboseLog", "EnableIRVerboseLog", false, &verboseLogSource);
+	m_perfStats.setEnabled(m_enablePerfLog);
+	std::cout << "[PerfConfig]"
+		<< " EnablePerfLog=" << (m_enablePerfLog ? "1" : "0")
+		<< " EnableIRVerboseLog=" << (m_enableIRVerboseLog ? "1" : "0")
+		<< " source=" << perfLogSource << "/" << verboseLogSource
+		<< std::endl;
 	m_enableStage4HotspotVisualDebug = m_runtimeConfig.getBool("Stage4", "EnableHotspotVisualDebug", "EnableStage4HotspotVisualDebug", false, &stage4VisualSource);
 	m_forceStage4BrightSpotVisible = m_runtimeConfig.getBool("Stage4", "ForceBrightSpotVisible", "ForceStage4BrightSpotVisible", false, &stage4BrightSource);
 	m_forceStage4RearHotspotVisible = m_runtimeConfig.getBool("Stage4", "ForceRearHotspotVisible", "ForceStage4RearHotspotVisible", false, &stage4RearSource);
@@ -5219,7 +5371,9 @@ TargetPlatformData* HwaSimIR::FindOrMapTargetPlatform(const BYHWICD::TargetState
 		}
 	}
 
-	if (m_stage0DisplayFrameCount <= 3 || (m_stage0DisplayFrameCount % 60) == 0)
+	const std::uint64_t frameSeq = m_currentFrameTelemetry.frameSeq > 0
+		? m_currentFrameTelemetry.frameSeq : m_stage0DisplayFrameCount;
+	if (frameSeq <= 3 || (frameSeq % 120) == 0)
 	{
 		std::cout << "[TargetMapping][WARN] no_free_target_platform"
 			<< " index=" << targetStateIndex
@@ -5239,6 +5393,8 @@ void HwaSimIR::ApplyWeaponCameraControl(BYHWICD::DisplayC2cObjTrackingData& curr
 	}
 
 	BYHWICD::WeaponState& weaponState = currentData.weaponState;
+	const std::uint64_t frameSeq = m_currentFrameTelemetry.frameSeq > 0
+		? m_currentFrameTelemetry.frameSeq : m_stage0DisplayFrameCount;
 	if (weaponState.lookatEn)
 	{
 		if (lookAtTarget == nullptr)
@@ -5265,7 +5421,7 @@ void HwaSimIR::ApplyWeaponCameraControl(BYHWICD::DisplayC2cObjTrackingData& curr
 		m_cameraNode.set_hpr(-relYaw, relPitch, 0.0);
 		weaponState.offsetAng[0] = relPitch;
 		weaponState.offsetAng[1] = relYaw;
-		if (m_stage0DisplayFrameCount <= 3 || (m_stage0DisplayFrameCount % 60) == 0)
+		if (frameSeq <= 3 || (frameSeq % 120) == 0)
 		{
 			std::cout << "[CameraControl]"
 				<< " mode=lookat"
@@ -5285,7 +5441,7 @@ void HwaSimIR::ApplyWeaponCameraControl(BYHWICD::DisplayC2cObjTrackingData& curr
 	weaponState.offsetAng[0] = pitch;
 	weaponState.offsetAng[1] = yaw;
 	m_cameraNode.set_hpr(-yaw, pitch, 0.0);
-	if (m_stage0DisplayFrameCount <= 3 || (m_stage0DisplayFrameCount % 60) == 0)
+	if (frameSeq <= 3 || (frameSeq % 120) == 0)
 	{
 		std::cout << "[CameraControl]"
 			<< " mode=angle"
@@ -5324,7 +5480,7 @@ bool HwaSimIR::Stage4WeaponAppliesToTarget(const BYHWICD::WeaponState& weaponSta
 	return WeaponTargetKeyMatches(weaponState, targetPlat);
 }
 
-void HwaSimIR::ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHWICD::WeaponState& weaponState, float dtSec, float ambientTempK, const IRObjectRadianceOutput& radiance)
+void HwaSimIR::ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHWICD::WeaponState& weaponState, float dtSec, float ambientTempK, const IRObjectRadianceOutput& radiance, bool applyNodeInputs)
 {
 	if (targetPlat.nodePath.is_empty())
 	{
@@ -5334,8 +5490,14 @@ void HwaSimIR::ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHW
 	const std::string platformName = Stage4PlatformName(targetPlat.type);
 	const std::string runtimeKey = platformName + "#plat" + std::to_string(targetPlat.targetState.targetPlatID)
 		+ "#target" + std::to_string(targetPlat.targetState.targetID);
+	const std::uint64_t frameSeq = m_currentFrameTelemetry.frameSeq > 0
+		? m_currentFrameTelemetry.frameSeq : m_stage0DisplayFrameCount;
 	const bool engineState = targetPlat.targetState.engineState;
 	IRHotspotState rearHotspot = m_irTemperatureModel.updateEngineRear(platformName, runtimeKey, engineState, dtSec, ambientTempK);
+	if (!applyNodeInputs)
+	{
+		return;
+	}
 	float tempSpan = std::max(1.0f, rearHotspot.targetTempK - rearHotspot.ambientTempK);
 	float normalizedTemp = std::max(0.0f, std::min(1.0f, (rearHotspot.currentTempK - rearHotspot.ambientTempK) / tempSpan));
 	float rearIntensity = normalizedTemp * rearHotspot.intensity;
@@ -5355,20 +5517,36 @@ void HwaSimIR::ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHW
 	}
 
 	// 阶段4 ThermalHotspot：只由 engineState 控制发动机/尾喷热源，不读取 strikeFlag。
-	targetPlat.nodePath.set_shader_input("u_stage4_visual_debug", LVecBase2i(m_enableStage4HotspotVisualDebug ? 1 : 0, 0));
-	targetPlat.nodePath.set_shader_input("u_hotspot_rear_en", LVecBase2i(rearEnabledForShader ? 1 : 0, 0));
-	targetPlat.nodePath.set_shader_input("u_hotspot_rear_pos", LVecBase3f(rearPosForShader.x, rearPosForShader.y, rearPosForShader.z));
-	targetPlat.nodePath.set_shader_input("u_hotspot_rear_radius", LVecBase2f(rearRadiusForShader, 0.0f));
-	targetPlat.nodePath.set_shader_input("u_hotspot_rear_temp", LVecBase2f(rearIntensityForShader, 0.0f));
-	std::cout << "[Stage4 ThermalHotspot]"
-		<< " targetPlatID=" << targetPlat.targetState.targetPlatID
-		<< " targetID=" << targetPlat.targetState.targetID
-		<< " platform=" << platformName
-		<< " engineState=" << (engineState ? "1" : "0")
-		<< " currentTempK=" << rearHotspot.currentTempK
-		<< " targetTempK=" << rearHotspot.targetTempK
-		<< " enabled=" << (rearEnabledForShader ? "1" : "0")
-		<< std::endl;
+	if (applyNodeInputs)
+	{
+		targetPlat.nodePath.set_shader_input("u_stage4_visual_debug", LVecBase2i(m_enableStage4HotspotVisualDebug ? 1 : 0, 0));
+		targetPlat.nodePath.set_shader_input("u_hotspot_rear_en", LVecBase2i(rearEnabledForShader ? 1 : 0, 0));
+		targetPlat.nodePath.set_shader_input("u_hotspot_rear_pos", LVecBase3f(rearPosForShader.x, rearPosForShader.y, rearPosForShader.z));
+		targetPlat.nodePath.set_shader_input("u_hotspot_rear_radius", LVecBase2f(rearRadiusForShader, 0.0f));
+		targetPlat.nodePath.set_shader_input("u_hotspot_rear_temp", LVecBase2f(rearIntensityForShader, 0.0f));
+	}
+	const std::string thermalLogKey = runtimeKey + "#thermal";
+	const std::string thermalLogState =
+		std::to_string(engineState ? 1 : 0) + ":" + std::to_string(rearEnabledForShader ? 1 : 0);
+	const bool logThermal =
+		m_enableIRVerboseLog ||
+		frameSeq <= 3 ||
+		(frameSeq % 120) == 0 ||
+		m_enableStage4HotspotVisualDebug ||
+		m_lastStage4TargetLogState[thermalLogKey] != thermalLogState;
+	m_lastStage4TargetLogState[thermalLogKey] = thermalLogState;
+	if (logThermal)
+	{
+		std::cout << "[Stage4 ThermalHotspot]"
+			<< " targetPlatID=" << targetPlat.targetState.targetPlatID
+			<< " targetID=" << targetPlat.targetState.targetID
+			<< " platform=" << platformName
+			<< " engineState=" << (engineState ? "1" : "0")
+			<< " currentTempK=" << rearHotspot.currentTempK
+			<< " targetTempK=" << rearHotspot.targetTempK
+			<< " enabled=" << (rearEnabledForShader ? "1" : "0")
+			<< std::endl;
+	}
 
 	const bool brightSpotApplies = Stage4WeaponAppliesToTarget(weaponState, targetPlat);
 	bool invalidStrikePart = false;
@@ -5388,23 +5566,44 @@ void HwaSimIR::ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHW
 	}
 
 	// 阶段4 BrightSpot：只由 WeaponState.strikeFlag/strikePart 控制；u_brightspot_temp 传 intensity，不是温度。
-	targetPlat.nodePath.set_shader_input("u_brightspot_en", LVecBase2i(brightSpot.enabled ? 1 : 0, 0));
-	targetPlat.nodePath.set_shader_input("u_brightspot_pos", LVecBase3f(brightSpot.localPos.x, brightSpot.localPos.y, brightSpot.localPos.z));
-	targetPlat.nodePath.set_shader_input("u_brightspot_radius", LVecBase2f(brightSpot.radius, 0.0f));
-	targetPlat.nodePath.set_shader_input("u_brightspot_temp", LVecBase2f(brightSpot.intensity, 0.0f));
-	std::cout << "[Stage4 BrightSpot]"
-		<< " targetPlatID=" << targetPlat.targetState.targetPlatID
-		<< " targetID=" << targetPlat.targetState.targetID
-		<< " strikeFlag=" << (weaponState.strikeFlag ? "1" : "0")
-		<< " strikePart=" << weaponState.strikePart
-		<< " part=" << IRBrightSpotPartName(brightSpot.part)
-		<< " localPos=(" << brightSpot.localPos.x << "," << brightSpot.localPos.y << "," << brightSpot.localPos.z << ")"
-		<< " radius=" << brightSpot.radius
-		<< " intensity=" << brightSpot.intensity
-		<< " enabled=" << (brightSpot.enabled ? "1" : "0")
-		<< std::endl;
+	if (applyNodeInputs)
+	{
+		targetPlat.nodePath.set_shader_input("u_brightspot_en", LVecBase2i(brightSpot.enabled ? 1 : 0, 0));
+		targetPlat.nodePath.set_shader_input("u_brightspot_pos", LVecBase3f(brightSpot.localPos.x, brightSpot.localPos.y, brightSpot.localPos.z));
+		targetPlat.nodePath.set_shader_input("u_brightspot_radius", LVecBase2f(brightSpot.radius, 0.0f));
+		targetPlat.nodePath.set_shader_input("u_brightspot_temp", LVecBase2f(brightSpot.intensity, 0.0f));
+	}
+	const std::string brightLogKey = runtimeKey + "#bright";
+	const std::string brightLogState =
+		std::to_string(weaponState.strikeFlag ? 1 : 0) + ":" +
+		std::to_string(weaponState.strikePart) + ":" +
+		std::to_string(brightSpot.enabled ? 1 : 0);
+	const bool logBright =
+		m_enableIRVerboseLog ||
+		frameSeq <= 3 ||
+		(frameSeq % 120) == 0 ||
+		m_enableStage4HotspotVisualDebug ||
+		m_lastStage4TargetLogState[brightLogKey] != brightLogState;
+	m_lastStage4TargetLogState[brightLogKey] = brightLogState;
+	if (logBright)
+	{
+		std::cout << "[Stage4 BrightSpot]"
+			<< " targetPlatID=" << targetPlat.targetState.targetPlatID
+			<< " targetID=" << targetPlat.targetState.targetID
+			<< " strikeFlag=" << (weaponState.strikeFlag ? "1" : "0")
+			<< " strikePart=" << weaponState.strikePart
+			<< " part=" << IRBrightSpotPartName(brightSpot.part)
+			<< " localPos=(" << brightSpot.localPos.x << "," << brightSpot.localPos.y << "," << brightSpot.localPos.z << ")"
+			<< " radius=" << brightSpot.radius
+			<< " intensity=" << brightSpot.intensity
+			<< " enabled=" << (brightSpot.enabled ? "1" : "0")
+			<< std::endl;
+	}
 
-	ApplyStage5RadianceDebug(targetPlat, radiance, rearHotspot, brightSpot, rearEnabledForShader, rearIntensityForShader, runtimeKey);
+	if (applyNodeInputs)
+	{
+		ApplyStage5RadianceDebug(targetPlat, radiance, rearHotspot, brightSpot, rearEnabledForShader, rearIntensityForShader, runtimeKey);
+	}
 
 	const bool hasShader = (targetPlat.nodePath.get_shader() != nullptr);
 	const std::map<PLATFORM_TYPE, PlatformResPath>::const_iterator resIter = m_platformResMap.find(targetPlat.type);
@@ -5415,8 +5614,7 @@ void HwaSimIR::ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHW
 		baseTextureAvailable = !resIter->second.texturePath.empty() && FileExists(resIter->second.texturePath);
 		materialIdTexBound = !resIter->second.materialIdTexturePath.empty() && FileExists(resIter->second.materialIdTexturePath);
 	}
-	const bool logUniform = rearEnabledForShader || brightSpot.enabled || m_enableStage4HotspotVisualDebug
-		|| m_stage0DisplayFrameCount <= 3 || (m_stage0DisplayFrameCount % 60) == 0;
+	const bool logUniform = applyNodeInputs && (logThermal || logBright);
 	if (logUniform)
 	{
 		std::cout << "[Stage4 Uniform]"
@@ -5558,48 +5756,56 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 		baseTextureAvailable = !resIter->second.texturePath.empty() && FileExists(resIter->second.texturePath);
 	}
 
-	std::cout << "[Stage5 Radiance]"
-		<< " targetKey=" << targetKey
-		<< " band=" << IRBandName(stage5Input.band)
-		<< " debugViewMode=" << m_stage5DebugViewModeName
-		<< " toneMap=" << Stage5ToneMapName(stage5Input.debugConfig.toneMap)
-		<< " useBaseTextureModulation=" << (stage5UseBaseTextureModulation ? "1" : "0")
-		<< " materialTempK=" << stage5Input.materialTemperatureK
-		<< " emissivity=" << stage5Input.materialEmissivity
-		<< " tauUp=" << stage5Input.tauUp
-		<< " sunElevation=" << environment.sunElevationDeg
-		<< " sunAzimuth=" << environment.sunAzimuthDeg
-		<< " ndotl=" << stage5Input.ndotl
-		<< " textureLuma=" << stage5Input.textureLuma
-		<< " reflectanceBand=" << stage5Input.materialReflectance
-		<< " solarWeight=" << stage5Input.solarReflectanceWeight
-		<< " bodyRadiance=" << stage5.bodyRadiance
-		<< " reflectedRadiance=" << stage5.reflectedRadiance
-		<< " hotspotRadiance=" << stage5.hotspotRadiance
-		<< " brightspotRadiance=" << stage5.brightspotRadiance
-		<< " bodyGrayBeforeFloor=" << stage5.bodyGrayBeforeFloor
-		<< " bodyGrayAfterFloor=" << stage5.bodyGrayAfterFloor
-		<< " reflectedGray=" << stage5.reflectedGray
-		<< " hotspotGray=" << stage5.hotspotGray
-		<< " brightspotGray=" << stage5.brightspotGray
-		<< " finalGrayDebug=" << stage5.finalGrayDebug
-		<< " debugFloorApplied=" << (stage5.debugFloorApplied ? "1" : "0")
-		<< " stage5DisplayFallbackApplied=" << (stage5DisplayFallbackApplied ? "1" : "0")
-		<< std::endl;
+	const std::uint64_t frameSeq = m_currentFrameTelemetry.frameSeq > 0
+		? m_currentFrameTelemetry.frameSeq : m_stage0DisplayFrameCount;
+	const bool logStage5 = m_enableIRVerboseLog ||
+		frameSeq <= 3 ||
+		(frameSeq % 120) == 0;
+	if (logStage5)
+	{
+		std::cout << "[Stage5 Radiance]"
+			<< " targetKey=" << targetKey
+			<< " band=" << IRBandName(stage5Input.band)
+			<< " debugViewMode=" << m_stage5DebugViewModeName
+			<< " toneMap=" << Stage5ToneMapName(stage5Input.debugConfig.toneMap)
+			<< " useBaseTextureModulation=" << (stage5UseBaseTextureModulation ? "1" : "0")
+			<< " materialTempK=" << stage5Input.materialTemperatureK
+			<< " emissivity=" << stage5Input.materialEmissivity
+			<< " tauUp=" << stage5Input.tauUp
+			<< " sunElevation=" << environment.sunElevationDeg
+			<< " sunAzimuth=" << environment.sunAzimuthDeg
+			<< " ndotl=" << stage5Input.ndotl
+			<< " textureLuma=" << stage5Input.textureLuma
+			<< " reflectanceBand=" << stage5Input.materialReflectance
+			<< " solarWeight=" << stage5Input.solarReflectanceWeight
+			<< " bodyRadiance=" << stage5.bodyRadiance
+			<< " reflectedRadiance=" << stage5.reflectedRadiance
+			<< " hotspotRadiance=" << stage5.hotspotRadiance
+			<< " brightspotRadiance=" << stage5.brightspotRadiance
+			<< " bodyGrayBeforeFloor=" << stage5.bodyGrayBeforeFloor
+			<< " bodyGrayAfterFloor=" << stage5.bodyGrayAfterFloor
+			<< " reflectedGray=" << stage5.reflectedGray
+			<< " hotspotGray=" << stage5.hotspotGray
+			<< " brightspotGray=" << stage5.brightspotGray
+			<< " finalGrayDebug=" << stage5.finalGrayDebug
+			<< " debugFloorApplied=" << (stage5.debugFloorApplied ? "1" : "0")
+			<< " stage5DisplayFallbackApplied=" << (stage5DisplayFallbackApplied ? "1" : "0")
+			<< std::endl;
 
-	std::cout << "[Stage5C VisualCalib]"
-		<< " band=" << IRBandName(stage5Input.band)
-		<< " bodyGray=" << bodyGrayDisplay
-		<< " reflectedGray=" << reflectedGrayDisplay
-		<< " hotspotGrayRaw=" << stage5.hotspotGray
-		<< " hotspotGrayDisplay=" << hotspotGrayDisplay
-		<< " brightspotGrayRaw=" << stage5.brightspotGray
-		<< " brightspotGrayDisplay=" << brightspotGrayDisplay
-		<< " finalGrayDebug=" << finalGrayDebugDisplay
-		<< " fallbackApplied=" << (stage5DisplayFallbackApplied ? "1" : "0")
-		<< " legacyRearHotspotIntensity=" << legacyRearHotspotDisplay
-		<< " legacyBrightspotIntensity=" << legacyBrightspotDisplay
-		<< std::endl;
+		std::cout << "[Stage5C VisualCalib]"
+			<< " band=" << IRBandName(stage5Input.band)
+			<< " bodyGray=" << bodyGrayDisplay
+			<< " reflectedGray=" << reflectedGrayDisplay
+			<< " hotspotGrayRaw=" << stage5.hotspotGray
+			<< " hotspotGrayDisplay=" << hotspotGrayDisplay
+			<< " brightspotGrayRaw=" << stage5.brightspotGray
+			<< " brightspotGrayDisplay=" << brightspotGrayDisplay
+			<< " finalGrayDebug=" << finalGrayDebugDisplay
+			<< " fallbackApplied=" << (stage5DisplayFallbackApplied ? "1" : "0")
+			<< " legacyRearHotspotIntensity=" << legacyRearHotspotDisplay
+			<< " legacyBrightspotIntensity=" << legacyBrightspotDisplay
+			<< std::endl;
+	}
 
 	if (stage5.bodyRadiance > 0.0 && stage5.bodyGrayAfterFloor <= 0.0)
 	{
@@ -5643,7 +5849,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 		&& stage5.reflectedGray <= 0.0)
 	{
 		++m_stage5ConsecutiveReflectedZeroFrames;
-		if (m_stage5ConsecutiveReflectedZeroFrames >= 3)
+		if (m_stage5ConsecutiveReflectedZeroFrames >= 3 && logStage5)
 		{
 			std::cout << "[Stage5 Radiance][WARN] STAGE5_REFLECTED_GRAY_ZERO"
 				<< " targetKey=" << targetKey
@@ -5662,7 +5868,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	if (stage5.finalGrayDebug <= 0.0)
 	{
 		++m_stage5ConsecutiveZeroFrames;
-		if (m_stage5ConsecutiveZeroFrames >= 3)
+		if (m_stage5ConsecutiveZeroFrames >= 3 && logStage5)
 		{
 			std::cout << "[Stage5 Radiance][WARN] STAGE5_TARGET_BODY_RADIANCE_ZERO"
 				<< " targetKey=" << targetKey
@@ -5860,20 +6066,31 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 				HideEnginePlume(targetPlat);
 				continue;
 			}
-			targetPlat.nodePath.set_shader_input("u_time", LVecBase2f((float)current_time, 0.0f));
-			bool damaged = (targetPlat.targetState.targetState == 0x02 || targetPlat.targetState.targetState == 0x03);
-			IRObjectRadianceOutput radiance = EvaluateNodeRadiance(MaterialNameForPlatform(targetPlat.type), targetPlat.nodePath, targetPlat.targetState.engineState, damaged, false, false, 0.0, targetPlat.targetState.targetLoc.alt);
-			ApplyRadianceInputs(targetPlat.nodePath, radiance, 0);
-
-			IRObjectRadianceOutput stage5BaseRadiance = radiance;
-			if (m_enableStage5RadianceDebug)
-			{
-				// Stage5A body radiance uses the material/environment baseline; engineState stays local to rear ThermalHotspot.
-				stage5BaseRadiance = EvaluateNodeRadiance(MaterialNameForPlatform(targetPlat.type), targetPlat.nodePath, false, false, false, false, 0.0, targetPlat.targetState.targetLoc.alt);
-			}
-			ApplyStage4TargetState(targetPlat, m_realTimeSceneData.weaponState, stage4DtSec, ambientTempK, stage5BaseRadiance);
 			const bool targetRenderable = targetPlat.targetState.viewValid && !targetPlat.nodePath.is_hidden();
-			IREnginePlumeOutput plumeOutput = UpdateEnginePlumeForTarget(targetPlat, stage4DtSec, ambientTempK, environment.band, targetRenderable, current_time);
+			IRObjectRadianceOutput stage5BaseRadiance;
+			if (targetRenderable)
+			{
+				targetPlat.nodePath.set_shader_input("u_time", LVecBase2f((float)current_time, 0.0f));
+				bool damaged = (targetPlat.targetState.targetState == 0x02 || targetPlat.targetState.targetState == 0x03);
+				stage5BaseRadiance = EvaluateNodeRadiance(MaterialNameForPlatform(targetPlat.type), targetPlat.nodePath, targetPlat.targetState.engineState, damaged, false, false, 0.0, targetPlat.targetState.targetLoc.alt);
+				ApplyRadianceInputs(targetPlat.nodePath, stage5BaseRadiance, 0);
+
+				if (m_enableStage5RadianceDebug)
+				{
+					// Stage5A body radiance uses the material/environment baseline; engineState stays local to rear ThermalHotspot.
+					stage5BaseRadiance = EvaluateNodeRadiance(MaterialNameForPlatform(targetPlat.type), targetPlat.nodePath, false, false, false, false, 0.0, targetPlat.targetState.targetLoc.alt);
+				}
+			}
+			ApplyStage4TargetState(targetPlat, m_realTimeSceneData.weaponState, stage4DtSec, ambientTempK, stage5BaseRadiance, targetRenderable);
+			IREnginePlumeOutput plumeOutput;
+			if (targetRenderable)
+			{
+				plumeOutput = UpdateEnginePlumeForTarget(targetPlat, stage4DtSec, ambientTempK, environment.band, true, current_time);
+			}
+			else
+			{
+				HideEnginePlume(targetPlat);
+			}
 			if (plumeOutput.coreNodeVisible && targetRenderable)
 			{
 				++stage5VisiblePlumeCount;
@@ -5893,7 +6110,15 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 
 
 void HwaSimIR::SetRenderMode(bool isSync, double targetFPS) {
-	m_bSyncRenderMode = isSync;
+	m_bSyncRenderMode.store(isSync);
+	const double configuredTarget = targetFPS > 0.0
+		? targetFPS
+		: static_cast<double>(m_targetVideoFps.load());
+	m_perfStats.configure(isSync, configuredTarget);
+	if (m_pTcpThread)
+	{
+		m_pTcpThread->setSyncMode(isSync);
+	}
 
 	ClockObject* globalClock = ClockObject::get_global_clock();
 	if (isSync) {
@@ -5915,6 +6140,61 @@ void HwaSimIR::SetRenderMode(bool isSync, double targetFPS) {
 	}
 }
 
+void HwaSimIR::OnTcpFrameSent(
+	const IRFrameTelemetry& telemetry,
+	double flipMs,
+	double resizeMs,
+	double jpegMs,
+	double tcpSendMs,
+	int queueDepth,
+	double queueWaitMs,
+	bool overwritten)
+{
+	const std::int64_t nowWallNs = IRPerfStats::wallTimeNs();
+	const std::int64_t nowSteadyNs = IRPerfStats::steadyTimeNs();
+	const double latencyMs = telemetry.udpReceiveTimeNs > 0
+		? static_cast<double>(nowWallNs - telemetry.udpReceiveTimeNs) / 1.0e6
+		: -1.0;
+	const double frameMs = telemetry.processStartTimeNs > 0
+		? static_cast<double>(nowSteadyNs - telemetry.processStartTimeNs) / 1.0e6
+		: -1.0;
+	const std::uint64_t outputSeq = m_perfStats.recordTcpOutput(jpegMs, tcpSendMs, latencyMs, queueDepth);
+	const double targetFps = m_perfStats.videoFpsTarget();
+	const double frameBudgetMs = targetFps > 0.0 ? 1000.0 / targetFps : 0.0;
+	const bool overrun = m_bSyncRenderMode.load() && frameBudgetMs > 0.0 &&
+		(frameMs > frameBudgetMs || queueWaitMs > frameBudgetMs);
+	if (overrun)
+	{
+		m_perfStats.recordSyncOverrun();
+	}
+
+	const bool sequenceMatch = telemetry.frameSeq == outputSeq;
+	const bool sequenceStateChanged = sequenceMatch != m_lastSyncSequenceMatch.load();
+	m_lastSyncSequenceMatch.store(sequenceMatch);
+	if (m_bSyncRenderMode.load() &&
+		(outputSeq <= 3 || (outputSeq % 120) == 0 || overrun || overwritten || sequenceStateChanged))
+	{
+		std::ostringstream syncLine;
+		syncLine << std::fixed << std::setprecision(3)
+			<< "[SyncFrame]"
+			<< " udpSeq=" << telemetry.frameSeq
+			<< " outputSeq=" << outputSeq
+			<< " videoFpsTarget=" << targetFps
+			<< " frameMs=" << frameMs
+			<< " latencyMs=" << latencyMs
+			<< " flipMs=" << flipMs
+			<< " resizeMs=" << resizeMs
+			<< " jpegMs=" << jpegMs
+			<< " tcpSendMs=" << tcpSendMs
+			<< " queueDepth=" << queueDepth
+			<< " overrun=" << (overrun ? "1" : "0")
+			<< " sequenceMatch=" << (sequenceMatch ? "1" : "0")
+			<< " overwritten=" << (overwritten ? "1" : "0");
+		std::cout << syncLine.str() << std::endl;
+	}
+	m_perfStats.maybeLog();
+}
+
 
 
 
@@ -5924,42 +6204,40 @@ void HwaSimIR::SetRenderMode(bool isSync, double targetFPS) {
 // HwaSimIR 的每帧更新任务回调
 AsyncTask::DoneStatus HwaSimIR::shader_update_task(GenericAsyncTask* task, void* data) {
 	HwaSimIR* self = static_cast<HwaSimIR*>(data);
-	if (self->m_isSimRunning.load()) {
+	if (self->m_isSimRunning.load() &&
+		(!self->m_bSyncRenderMode.load() || self->m_syncFrameActive.load())) {
+		const auto begin = std::chrono::steady_clock::now();
 		self->UpdatePlatformIRStatus();
+		self->m_perfStats.recordIrUpdate(std::chrono::duration<double, std::milli>(
+			std::chrono::steady_clock::now() - begin).count());
 	}
 	return AsyncTask::DS_cont;
 }
 
 // ================= 新增：主线程执行的场景更新任务 =================
 AsyncTask::DoneStatus HwaSimIR::scene_update_task(GenericAsyncTask* task, void* data) {
-	HwaSimIR* self = static_cast<HwaSimIR*>(data);
-
-	bool shouldUpdateScene = false;
-
-	// 尽量缩短锁的占用时间，只用来读取标志位
-	{
-		std::lock_guard<std::mutex> lock(self->m_mtx);
-		if (self->m_bHasNewData) {
-			shouldUpdateScene = true;
-			self->m_bHasNewData = false; // 重置标志位
-		}
-	}
-
-	// 在安全的主线程环境中去更新所有的模型节点位置
-	if (shouldUpdateScene) {
-		self->ProcessRealSimSceneDrivenData();
-	}
-
+	(void)task;
+	(void)data;
 	return AsyncTask::DS_cont;
 }
 
 AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data) {
 	HwaSimIR* self = static_cast<HwaSimIR*>(data);
+	if (!self->m_pTcpThread)
+	{
+		return AsyncTask::DS_cont;
+	}
+	if (self->m_bSyncRenderMode.load() &&
+		(!self->m_isSimRunning.load() || !self->m_syncFrameActive.load()))
+	{
+		return AsyncTask::DS_cont;
+	}
 
-	// 确保 TCP 线程已启动且纹理数据准备完毕
-	if (self->m_pTcpThread && self->m_renderTex->has_ram_image()) {
-		// 安全获取内存中的 RGB 像素点
+	const auto readbackBegin = std::chrono::steady_clock::now();
+	if (self->m_renderTex->has_ram_image()) {
 		CPTA_uchar ram_image = self->m_renderTex->get_ram_image_as("RGB");
+		const double readbackMs = std::chrono::duration<double, std::milli>(
+			std::chrono::steady_clock::now() - readbackBegin).count();
 		if (ram_image) {
 			int width = self->m_renderTex->get_x_size();
 			int height = self->m_renderTex->get_y_size();
@@ -5967,9 +6245,11 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 			int frameHeight = height;
 			const uchar* frameData = ram_image.p();
 			std::vector<uchar> sensorSizedFrame;
+			double resizeMs = 0.0;
 
 			if (self->m_sensorDisplayConfigReady &&
 				(width != self->m_sensorDisplayConfig.width || height != self->m_sensorDisplayConfig.height)) {
+				const auto resizeBegin = std::chrono::steady_clock::now();
 				cv::Mat rawFrame(height, width, CV_8UC3, const_cast<uchar*>(ram_image.p()));
 				cv::Mat resizedFrame;
 				cv::resize(rawFrame, resizedFrame, cv::Size(self->m_sensorDisplayConfig.width, self->m_sensorDisplayConfig.height));
@@ -5978,14 +6258,23 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 				sensorSizedFrame.resize(static_cast<size_t>(frameWidth) * static_cast<size_t>(frameHeight) * 3u);
 				memcpy(sensorSizedFrame.data(), resizedFrame.data, sensorSizedFrame.size());
 				frameData = sensorSizedFrame.data();
+				resizeMs = std::chrono::duration<double, std::milli>(
+					std::chrono::steady_clock::now() - resizeBegin).count();
 			}
 
 			BYHWICD::DisplayC2cObjTrackingData trackingSnapshot;
 			unsigned long long displayFrameIndex = 0;
+			IRFrameTelemetry telemetry;
 			{
 				std::lock_guard<std::mutex> lock(self->m_mtx);
 				trackingSnapshot = self->m_realTimeSceneData;
-				displayFrameIndex = self->m_stage0DisplayFrameCount;
+				telemetry = self->m_currentFrameTelemetry;
+				displayFrameIndex = telemetry.frameSeq > 0 ? telemetry.frameSeq : self->m_stage0DisplayFrameCount;
+			}
+			if (self->m_bSyncRenderMode.load() &&
+				(telemetry.frameSeq == 0 || telemetry.frameSeq == self->m_lastCapturedFrameSeq))
+			{
+				return AsyncTask::DS_cont;
 			}
 			if (trackingSnapshot.flag != 0x38)
 			{
@@ -6013,8 +6302,32 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 				annotationSnapshot.height = frameHeight;
 			}
 
-			// 将同源 final sensor 像素、实时数据和标注快照推送给 TCP 子线程；JSON 在后台线程由快照生成。
-			self->m_pTcpThread->updateFrame(frameData, frameWidth, frameHeight, trackingSnapshot, annotationSnapshot, annotationEnabled);
+			// 将同源 final sensor 像素、实时数据、标注快照和帧遥测推送给 TCP 子线程。
+			const IRFrameEnqueueResult enqueueResult = self->m_pTcpThread->updateFrame(
+				frameData,
+				frameWidth,
+				frameHeight,
+				trackingSnapshot,
+				annotationSnapshot,
+				annotationEnabled,
+				telemetry);
+			if (!enqueueResult.accepted)
+			{
+				return AsyncTask::DS_cont;
+			}
+			if (self->m_bSyncRenderMode.load())
+			{
+				self->m_lastCapturedFrameSeq = telemetry.frameSeq;
+				if (enqueueResult.queueWasFull)
+				{
+					self->m_perfStats.recordSyncOverrun();
+				}
+			}
+			self->m_perfStats.recordCapture(
+				readbackMs,
+				resizeMs,
+				enqueueResult.copyMs,
+				enqueueResult.queueDepth);
 			++self->m_stage6CaptureLogCounter;
 			if (self->m_stage6CaptureLogCounter <= 3 || (self->m_stage6CaptureLogCounter % 120) == 0) {
 				std::ostringstream captureLog;
@@ -6026,7 +6339,12 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 					<< " renderTextureWidth=" << width
 					<< " renderTextureHeight=" << height
 					<< " source=final_sensor"
-					<< " channels=RGB8";
+					<< " channels=RGB8"
+					<< " frameSeq=" << telemetry.frameSeq
+					<< " readbackMs=" << readbackMs
+					<< " resizeMs=" << resizeMs
+					<< " frameCopyMs=" << enqueueResult.copyMs
+					<< " tcpQueueDepth=" << enqueueResult.queueDepth;
 				std::cout << captureLog.str() << std::endl;
 			}
 

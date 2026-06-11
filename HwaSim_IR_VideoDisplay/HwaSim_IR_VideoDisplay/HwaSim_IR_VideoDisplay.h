@@ -24,7 +24,12 @@ public:
     void CloseStorage();
 
 public slots:
-    void imageReceivedSlot(const QImage& img, const BYHWICD::DisplayC2cObjTrackingData& data, const QString& annotationJson);
+    void imageReceivedSlot(
+        const QImage& img,
+        const BYHWICD::DisplayC2cObjTrackingData& data,
+        const QString& annotationJson,
+        qint64 receiveTimeNs,
+        double jpegDecodeMs);
     void initCommandReceivedSlot(const BYHWICD::InitP2cObjectTrackingCmd& cmd);
     void controlCmdReceivedSlot(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd);
 
@@ -57,6 +62,18 @@ private:
     int m_frameCount = 0;
     int m_videoFps = 25;
     int m_pendingRound = 0;
+    quint64 m_videoPerfFrames = 0;
+    quint64 m_videoPerfIntervalFrames = 0;
+    quint64 m_lastFrameSeq = 0;
+    quint64 m_frameSeqDiscontinuities = 0;
+    qint64 m_videoPerfReceiveStartNs = 0;
+    qint64 m_videoPerfDisplayStartNs = 0;
+    qint64 m_lastVideoPerfLogNs = 0;
+    double m_decodeMsTotal = 0.0;
+    double m_displayMsTotal = 0.0;
+    double m_latencyMsTotal = 0.0;
+    double m_latencyMsMax = 0.0;
+    quint64 m_latencySamples = 0;
 
 private:
     Ui::HwaSim_IR_VideoDisplayClass ui;

@@ -22,6 +22,7 @@
 #include <QMainWindow>
 #include <QUdpSocket>
 #include <QTimer>
+#include <QElapsedTimer>
 #include <QLineEdit>
 #include <QLabel>
 #include <QPushButton>
@@ -63,6 +64,8 @@ private:
 	void sendControlCommand(int command);
 	void sendInitCommand();
 	void sendRealTimeData();
+	void scheduleNextRealTimeFrame();
+	int targetVideoFps() const;
 
 	bool step(BYHWICD::CartesianCoordinate& plane_pos, BYHWICD::Euler& plane_att,
 		BYHWICD::CartesianCoordinate& missile_pos, BYHWICD::Euler& missile_att);
@@ -107,6 +110,7 @@ private:
 	QLineEdit *m_fovHEdit;
 	QLineEdit *m_fovVEdit;
 	QLineEdit *m_targetTypeEdit;
+	QLineEdit *m_videoFpsEdit;
 
 
 	
@@ -124,6 +128,12 @@ private:
 	// UDP Socket
 	QUdpSocket *m_udpSocket;
 	QTimer *m_realTimeTimer;
+	QElapsedTimer m_sendClock;
+	bool m_isRealtimeSending = false;
+	quint64 m_sentFrameCount = 0;
+	quint64 m_sendDeadlineIndex = 0;
+	qint64 m_lastSendPerfLogNs = 0;
+	int m_targetVideoFps = 60;
 
 	// Current Position
 	double m_currentLat;
