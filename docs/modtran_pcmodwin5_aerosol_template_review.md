@@ -15,8 +15,8 @@ Use this as the main Rural visibility sweep template:
 
 Current hand templates:
 
-- `ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/raw/test/NIR_transmittance_Rural_SurfaceVIS23_modin.txt`
-- `ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/raw/test/MWIR_transmittance_Rural_SurfaceVIS23_modin.txt`
+- `HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/raw/test/NIR_transmittance_Rural_SurfaceVIS23_modin.txt`
+- `HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/raw/test/MWIR_transmittance_Rural_SurfaceVIS23_modin.txt`
 
 The automation may rewrite the explicit Surface Meteorological Range for smoke tests. This is intended to test whether the explicit VIS field overrides the dropdown's default Rural VIS value.
 
@@ -29,8 +29,8 @@ Use this only as a low-visibility control template:
 
 Current hand templates:
 
-- `ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/raw/test/NIR_transmittance_RuralFixedVIS5_modin.txt`
-- `ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/raw/test/MWIR_transmittance_RuralFixedVIS5_modin.txt`
+- `HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/raw/test/NIR_transmittance_RuralFixedVIS5_modin.txt`
+- `HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/raw/test/MWIR_transmittance_RuralFixedVIS5_modin.txt`
 
 Do not use this fixed template as the production sweep template unless the explicit VIS override experiment fails and the production strategy is redesigned.
 

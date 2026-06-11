@@ -45,12 +45,12 @@ function Match-Value {
 $checks = New-Object System.Collections.Generic.List[object]
 
 $requiredPaths = @(
-    "ConsoleApplication1_LLA\ConsoleApplication1.sln",
-    "ConsoleApplication1_LLA\ConsoleApplication1\ConsoleApplication1.vcxproj",
-    "ConsoleApplication1_LLA\ConsoleApplication1\HwaSimIR.cpp",
-    "ConsoleApplication1_LLA\ConsoleApplication1\UdpCommThread.cpp",
-    "ConsoleApplication1_LLA\ConsoleApplication1\TcpCommThread.cpp",
-    "ConsoleApplication1_LLA\Bin\Config\SensorWave\default_MWIR.json",
+    "HwaSim_IR\HwaSim_IR.sln",
+    "HwaSim_IR\HwaSim_IR\HwaSim_IR.vcxproj",
+    "HwaSim_IR\HwaSim_IR\HwaSimIR.cpp",
+    "HwaSim_IR\HwaSim_IR\UdpCommThread.cpp",
+    "HwaSim_IR\HwaSim_IR\TcpCommThread.cpp",
+    "HwaSim_IR\Bin\Config\SensorWave\default_MWIR.json",
     "DataDrivenTestQT\DataDrivenTestQT.pro",
     "DataDrivenTestQT\mainwindow.cpp",
     "DataDrivenTestQT\1.txt",
@@ -64,9 +64,9 @@ foreach ($relativePath in $requiredPaths) {
     $checks.Add((Add-Check "required path" (Test-Path -LiteralPath $fullPath) $relativePath))
 }
 
-$hwa = Read-Text "ConsoleApplication1_LLA\ConsoleApplication1\HwaSimIR.cpp"
+$hwa = Read-Text "HwaSim_IR\HwaSim_IR\HwaSimIR.cpp"
 $qt = Read-Text "DataDrivenTestQT\mainwindow.cpp"
-$vcxproj = Read-Text "ConsoleApplication1_LLA\ConsoleApplication1\ConsoleApplication1.vcxproj"
+$vcxproj = Read-Text "HwaSim_IR\HwaSim_IR\HwaSim_IR.vcxproj"
 $qtpro = Read-Text "DataDrivenTestQT\DataDrivenTestQT.pro"
 $qtActive = (($qt -split "`r?`n") | Where-Object { $_ -notmatch '^\s*//' }) -join "`n"
 

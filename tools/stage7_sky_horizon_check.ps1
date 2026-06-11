@@ -7,9 +7,9 @@ $ErrorActionPreference = "Stop"
 $root = Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")
 $rootPath = $root.Path
 
-$appHeader = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\HwaSimIR.h"
-$appSource = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\HwaSimIR.cpp"
-$stage3AtmosphereSource = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\IRSimulation.cpp"
+$appHeader = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSimIR.h"
+$appSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSimIR.cpp"
+$stage3AtmosphereSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\IRSimulation.cpp"
 $stage4Check = Join-Path $rootPath "tools\stage4_hotspot_check.ps1"
 $stage7Smoke = Join-Path $rootPath "tools\stage7_sky_horizon_smoke.ps1"
 

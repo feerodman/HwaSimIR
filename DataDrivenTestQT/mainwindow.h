@@ -30,6 +30,7 @@
 #include <QFormLayout>
 #include <QTableWidget>
 #include <QTableWidgetItem>
+#include <QString>
 #include "CommonData.h"
 #include <iostream>
 #include <cmath>
@@ -57,6 +58,7 @@ public:
 
 private:
 	void setupUI();
+	void loadNetworkConfig();
 	void setupUDP();
 	void sendControlCommand(int command);
 	void sendInitCommand();
@@ -65,7 +67,12 @@ private:
 	bool step(BYHWICD::CartesianCoordinate& plane_pos, BYHWICD::Euler& plane_att,
 		BYHWICD::CartesianCoordinate& missile_pos, BYHWICD::Euler& missile_att);
 	void initStepSimData();
-    void readData(QString tmp);
+	void readData(QString tmp);
+
+	QString m_udpLocalIp;
+	quint16 m_udpLocalPort = 9999;
+	QString m_udpRemoteIp;
+	quint16 m_udpRemotePort = 8888;
 
 	// UI Components
 	QGroupBox *m_configGroup;

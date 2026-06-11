@@ -1,6 +1,6 @@
 # SensorWave 配置使用边界
 
-本文说明 `ConsoleApplication1_LLA/Bin/Config/SensorWave/default_*.json` 在 HwaSimIR 中的使用范围。SensorWave 文件来源接近 Presagis Ondulus IR profile，字段很多，HwaSimIR 只读取白名单字段，不一次性接入所有系统。
+本文说明 `HwaSim_IR/Bin/Config/SensorWave/default_*.json` 在 HwaSimIR 中的使用范围。SensorWave 文件来源接近 Presagis Ondulus IR profile，字段很多，HwaSimIR 只读取白名单字段，不一次性接入所有系统。
 
 ## 优先级
 

@@ -53,15 +53,15 @@
 
 仓库当前已忽略以下不应提交的阶段 3 数据：
 
-- `ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/generated/`
-- `ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/raw/samples/`
-- `ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/raw/failed/`
-- `ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/raw/archive/`
-- `ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/processed_snapshots/`
-- `ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/processed/*_lut_spectral.csv`
-- `ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/processed/*_path_lut_spectral.csv`
-- `ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/processed/modout_units_audit.csv`
-- `ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/processed/modout_units_candidate_lines.csv`
+- `HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/generated/`
+- `HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/raw/samples/`
+- `HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/raw/failed/`
+- `HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/raw/archive/`
+- `HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed_snapshots/`
+- `HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed/*_lut_spectral.csv`
+- `HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed/*_path_lut_spectral.csv`
+- `HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed/modout_units_audit.csv`
+- `HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed/modout_units_candidate_lines.csv`
 - `logs/`
 
 compact LUT、manifest、QC 报告、少量手工模板、脚本和文档仍保持可见，除非它们被其他规则忽略。本轮只做清单和 ignore 状态确认，没有删除任何数据。

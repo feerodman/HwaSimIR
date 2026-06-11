@@ -6,20 +6,20 @@ $ErrorActionPreference = "Stop"
 
 $root = Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")
 $rootPath = $root.Path
-$radianceHeader = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\IR\IRRadianceModelV2.h"
-$radianceSource = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\IR\IRRadianceModelV2.cpp"
-$appHeader = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\HwaSimIR.h"
-$appSource = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\HwaSimIR.cpp"
-$irTypesSource = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\IR\IRTypes.cpp"
-$stage3AtmosphereSource = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\IRSimulation.cpp"
-$cmakePath = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\CMakeLists.txt"
-$vcxprojPath = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\ConsoleApplication1.vcxproj"
-$filtersPath = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\ConsoleApplication1.vcxproj.filters"
+$radianceHeader = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\IR\IRRadianceModelV2.h"
+$radianceSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\IR\IRRadianceModelV2.cpp"
+$appHeader = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSimIR.h"
+$appSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSimIR.cpp"
+$irTypesSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\IR\IRTypes.cpp"
+$stage3AtmosphereSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\IRSimulation.cpp"
+$cmakePath = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\CMakeLists.txt"
+$vcxprojPath = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSim_IR.vcxproj"
+$filtersPath = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSim_IR.vcxproj.filters"
 $stage4Check = Join-Path $rootPath "tools\stage4_hotspot_check.ps1"
 $stage5Smoke = Join-Path $rootPath "tools\stage5_min_radiance_smoke.ps1"
 $stage5BodySmoke = Join-Path $rootPath "tools\stage5_body_visibility_smoke.ps1"
 $stage5OutputSmoke = Join-Path $rootPath "tools\stage5_output_visibility_smoke.ps1"
-$stage5DebugDisplayConfig = Join-Path $rootPath "ConsoleApplication1_LLA\Bin\Config\IRRadiance\stage5_debug_display.json"
+$stage5DebugDisplayConfig = Join-Path $rootPath "HwaSim_IR\Bin\Config\IRRadiance\stage5_debug_display.json"
 
 function Add-Check {
     param(

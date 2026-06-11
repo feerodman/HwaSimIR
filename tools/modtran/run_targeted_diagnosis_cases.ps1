@@ -14,7 +14,7 @@ $ErrorActionPreference = "Stop"
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $rootPath = (Resolve-Path -LiteralPath (Join-Path $scriptDir "..\..")).Path
-$modtranRoot = Join-Path $rootPath "ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN"
+$modtranRoot = Join-Path $rootPath "HwaSim_IR\Bin\Config\Atmosphere\MODTRAN"
 $processedDir = Join-Path $modtranRoot "processed"
 $generatedDir = Join-Path $modtranRoot "generated"
 $samplesRoot = Join-Path $modtranRoot "raw\samples"

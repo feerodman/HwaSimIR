@@ -36,7 +36,7 @@ Codex Cloud 直接运行 PcModWin5 GUI 或 MODTRAN5 大批量任务
 目标输出目录建议：
 
 ```text
-ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/
+HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/
   README.md
   case_grid/
     modtran_case_grid_pilot.yaml
@@ -110,7 +110,7 @@ FULL  0.30–15.00 µm，只用于校验，不建议实时直接用
 X_band = ∫ S(λ) X(λ) dλ / ∫ S(λ) dλ
 ```
 
-第一版没有真实传感器谱响应时，`S(λ)` 使用矩形响应。后续可从 `ConsoleApplication1_LLA/Bin/Config/SensorWave/default_*.json` 读取真实或默认响应范围。
+第一版没有真实传感器谱响应时，`S(λ)` 使用矩形响应。后续可从 `HwaSim_IR/Bin/Config/SensorWave/default_*.json` 读取真实或默认响应范围。
 
 ---
 
@@ -575,11 +575,11 @@ struct IRAtmosphereLookupResult {
 请按以下步骤执行：
 
 1. 先创建目录：
-   ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/
+   HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/
    tools/modtran/
 
 2. 编写文档：
-   ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/README.md
+   HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/README.md
    说明数据表字段、单位、生成流程、PcModWin5 路径、不要实时调用 MODTRAN 的原则。
 
 3. 创建 case grid YAML：

@@ -7,17 +7,17 @@ $ErrorActionPreference = "Stop"
 $root = Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")
 $rootPath = $root.Path
 
-$weatherHeader = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\IR\IRWeatherEffects.h"
-$weatherSource = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\IR\IRWeatherEffects.cpp"
-$appHeader = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\HwaSimIR.h"
-$appSource = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\HwaSimIR.cpp"
-$runtimeIni = Join-Path $rootPath "ConsoleApplication1_LLA\Bin\Config\HwaSimIRRuntime.ini"
-$weatherProfiles = Join-Path $rootPath "ConsoleApplication1_LLA\Bin\Config\Weather\weather_profiles.json"
-$weatherTextures = Join-Path $rootPath "ConsoleApplication1_LLA\Bin\Config\Weather\weather_textures.json"
-$texturesDir = Join-Path $rootPath "ConsoleApplication1_LLA\Bin\Config\Weather\Textures"
-$cmakePath = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\CMakeLists.txt"
-$vcxprojPath = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\ConsoleApplication1.vcxproj"
-$filtersPath = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\ConsoleApplication1.vcxproj.filters"
+$weatherHeader = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\IR\IRWeatherEffects.h"
+$weatherSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\IR\IRWeatherEffects.cpp"
+$appHeader = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSimIR.h"
+$appSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSimIR.cpp"
+$runtimeIni = Join-Path $rootPath "HwaSim_IR\Bin\Config\HwaSimIRRuntime.ini"
+$weatherProfiles = Join-Path $rootPath "HwaSim_IR\Bin\Config\Weather\weather_profiles.json"
+$weatherTextures = Join-Path $rootPath "HwaSim_IR\Bin\Config\Weather\weather_textures.json"
+$texturesDir = Join-Path $rootPath "HwaSim_IR\Bin\Config\Weather\Textures"
+$cmakePath = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\CMakeLists.txt"
+$vcxprojPath = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSim_IR.vcxproj"
+$filtersPath = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSim_IR.vcxproj.filters"
 $displayCheck = Join-Path $rootPath "tools\stage6_sensor_display_check.ps1"
 
 function Read-Text {

@@ -49,25 +49,25 @@ Command-line build:
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\build_current.ps1 -Target MaterialTest -Configuration Release -Platform x64
 ```
 
-### ConsoleApplication1_LLA
+### HwaSim_IR
 
-- Solution file: `ConsoleApplication1_LLA/ConsoleApplication1.sln`
-- CMake file: `ConsoleApplication1_LLA/ConsoleApplication1/CMakeLists.txt`
+- Solution file: `HwaSim_IR/HwaSim_IR.sln`
+- CMake file: `HwaSim_IR/HwaSim_IR/CMakeLists.txt`
 - Type: Visual Studio and CMake C++ simulation application
-- Main source: `ConsoleApplication1_LLA/ConsoleApplication1/HwaSimIR.cpp`
+- Main source: `HwaSim_IR/HwaSim_IR/HwaSimIR.cpp`
 - Dependencies: Panda3D, OpenCV, Eigen
 
 Recommended Visual Studio startup:
 
 1. Configure Panda3D and OpenCV include/library paths through environment variables or local Visual Studio project settings.
-2. Open `ConsoleApplication1_LLA/ConsoleApplication1.sln`.
+2. Open `HwaSim_IR/HwaSim_IR.sln`.
 3. Select the desired Win32/x64 and Debug/Release configuration.
 4. Build and run from Visual Studio.
 
 Command-line build:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File tools\build_current.ps1 -Target ConsoleApplication1 -Configuration Release -Platform x64
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\build_current.ps1 -Target HwaSim_IR -Configuration Release -Platform x64
 ```
 
 Recommended CMake startup:
@@ -85,8 +85,8 @@ Prepare the following environment before building all projects:
 - Visual Studio with v140 platform toolset
 - Windows SDK matching the Visual Studio installation
 - Panda3D C++ SDK or locally built Panda3D libraries
-- OpenCV development package for `ConsoleApplication1_LLA`
-- Eigen headers for `ConsoleApplication1_LLA`
+- OpenCV development package for `HwaSim_IR`
+- Eigen headers for `HwaSim_IR`
 
 Do not rely on another developer's absolute local paths. Configure dependencies with environment variables, Visual Studio property pages, CMake cache entries, or machine-local toolchain settings.
 

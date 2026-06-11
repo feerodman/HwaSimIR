@@ -10,7 +10,7 @@
 
 协议初始化参数位于：
 
-- `ConsoleApplication1_LLA/ConsoleApplication1/Common/CommonData.h`
+- `HwaSim_IR/HwaSim_IR/Common/CommonData.h`
 
 其中 `BYHWICD::trackerSensorParam` 已包含开关：
 
@@ -96,7 +96,7 @@ case 0x44: return MMD;
 建议新建独立目录：
 
 ```text
-ConsoleApplication1_LLA/ConsoleApplication1/Annotation/
+HwaSim_IR/HwaSim_IR/Annotation/
 ```
 
 推荐文件拆分：
@@ -753,7 +753,7 @@ enum class ModelForwardAxis {
 
 已完成：
 
-- 新增 `ConsoleApplication1_LLA/ConsoleApplication1/Annotation/` 标注模块，包含 `AnnotationTypes`、`AnnotationConfig`、`AnnotationProjector`、`AnnotationOverlay`、`AnnotationManager`。
+- 新增 `HwaSim_IR/HwaSim_IR/Annotation/` 标注模块，包含 `AnnotationTypes`、`AnnotationConfig`、`AnnotationProjector`、`AnnotationOverlay`、`AnnotationManager`。
 - `AnnotationManager` 按 `m_sensorParam.realtimeAnnotation` 启停；关闭时清空 overlay 和 `latestRecord`，开启时只生成窗口 overlay 和内存快照。
 - 标注模块只读 `m_targetPlatformList`，过滤 `isExist`、`nodePath`、`targetID`、`targetState.viewValid`、`nodePath.is_hidden()` 和包围盒投影结果，不修改目标 show/hide 主逻辑。
 - 新增型号标签映射：`0x11 -> F35`、`0x22 -> AIM120D`、`0x33 -> AIM9X`、`0x44 -> MMD`，未修改 `PLATFORM_TYPE` 枚举。
@@ -768,8 +768,8 @@ enum class ModelForwardAxis {
 
 验证结果：
 
-- 已运行 `MSBuild.exe ConsoleApplication1_LLA/ConsoleApplication1.sln /p:Configuration=Release /p:Platform=x64 /m`。
-- 构建成功，输出 `ConsoleApplication1_LLA/Bin/ConsoleApplication1.exe`。
+- 已运行 `MSBuild.exe HwaSim_IR/HwaSim_IR.sln /p:Configuration=Release /p:Platform=x64 /m`。
+- 构建成功，输出 `HwaSim_IR/Bin/HwaSim_IR.exe`。
 - 构建仍有 18 个既有/依赖相关 warning，主要来自 Panda3D STL DLL 接口、`math_algorithm.h` 未引用局部变量、`size_t` 到 `int` 转换；无新增编译错误。
 
 降级项和遗留问题：
@@ -783,8 +783,8 @@ enum class ModelForwardAxis {
 
 已完成：
 
-- 新增 `ConsoleApplication1_LLA/Bin/Config/Annotation/annotation_profiles.json`，采用独立 Annotation profile，不直接依赖 `Config/IRHotspots/target_hotspots.json`，避免把红外亮斑语义和标注关键点语义耦合。
-- 在 `ConsoleApplication1_LLA/Bin/Config/HwaSimIRRuntime.ini` 增加 `[Annotation]` 段，支持 `ProfilePath`、`DebugOverlay`、`BBoxMode`、`BBoxMarginPx`、`MinBBoxSizePx`、`DrawKeyPoints`、`DrawModelLabel`、`DrawBBox`。
+- 新增 `HwaSim_IR/Bin/Config/Annotation/annotation_profiles.json`，采用独立 Annotation profile，不直接依赖 `Config/IRHotspots/target_hotspots.json`，避免把红外亮斑语义和标注关键点语义耦合。
+- 在 `HwaSim_IR/Bin/Config/HwaSimIRRuntime.ini` 增加 `[Annotation]` 段，支持 `ProfilePath`、`DebugOverlay`、`BBoxMode`、`BBoxMarginPx`、`MinBBoxSizePx`、`DrawKeyPoints`、`DrawModelLabel`、`DrawBBox`。
 - `AnnotationConfig` 新增轻量 JSON 读取逻辑，解析 defaults、platforms、bbox、keypoints、localPos、excludeNodeNameContains；配置文件缺失时使用代码 fallback。
 - `AnnotationManager` 增加 profile 加载和 runtime option 应用接口，保持 `latestRecord` 仍为内存快照，不输出网络包、不落盘。
 - `AnnotationOverlay` 改为 `DebugOverlay=true` 时才显示 `ANNO_TEST`；默认 `DebugOverlay=false` 时不显示自检文字。
@@ -796,10 +796,10 @@ enum class ModelForwardAxis {
 
 验证结果：
 
-- 运行 `MSBuild.exe ConsoleApplication1_LLA/ConsoleApplication1.sln /p:Configuration=Release /p:Platform=x64 /m`。
+- 运行 `MSBuild.exe HwaSim_IR/HwaSim_IR.sln /p:Configuration=Release /p:Platform=x64 /m`。
 - 第一次编译时新增文件缺少 UTF-8 BOM，VS936 代码页把中文注释后的代码吞入注释，已通过 UTF-8 BOM 转换修复。
-- 第二次编译 C++ 通过但链接失败，原因是正在运行的 `ConsoleApplication1.exe` 占用输出文件。
-- 进程退出后重新构建成功，Release x64 输出 `ConsoleApplication1_LLA/Bin/ConsoleApplication1.exe`，最终结果 `7 warning / 0 error`；warning 来自 Panda3D STL DLL 接口和 `size_t` 到 `int` 转换。
+- 第二次编译 C++ 通过但链接失败，原因是正在运行的 `HwaSim_IR.exe` 占用输出文件。
+- 进程退出后重新构建成功，Release x64 输出 `HwaSim_IR/Bin/HwaSim_IR.exe`，最终结果 `7 warning / 0 error`；warning 来自 Panda3D STL DLL 接口和 `size_t` 到 `int` 转换。
 
 未变更和边界：
 
@@ -844,9 +844,9 @@ Stage1.3 验收清单：
 
 工程和配置检查：
 
-- `ConsoleApplication1_LLA/ConsoleApplication1/Annotation/` 已纳入 VS 工程和 `CMakeLists.txt` 编译。
-- `ConsoleApplication1_LLA/Bin/Config/Annotation/annotation_profiles.json` 已存在，并由 `[Annotation].ProfilePath=Config/Annotation/annotation_profiles.json` 加载。
-- `ConsoleApplication1_LLA/Bin/Config/HwaSimIRRuntime.ini` 已包含 `[Annotation]` 段和 `DebugOverlay/BBoxMode/BBoxMarginPx/MinBBoxSizePx/DrawKeyPoints/DrawModelLabel/DrawBBox` 配置。
+- `HwaSim_IR/HwaSim_IR/Annotation/` 已纳入 VS 工程和 `CMakeLists.txt` 编译。
+- `HwaSim_IR/Bin/Config/Annotation/annotation_profiles.json` 已存在，并由 `[Annotation].ProfilePath=Config/Annotation/annotation_profiles.json` 加载。
+- `HwaSim_IR/Bin/Config/HwaSimIRRuntime.ini` 已包含 `[Annotation]` 段和 `DebugOverlay/BBoxMode/BBoxMarginPx/MinBBoxSizePx/DrawKeyPoints/DrawModelLabel/DrawBBox` 配置。
 
 Stage1.3 边界：
 

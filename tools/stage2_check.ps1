@@ -66,39 +66,39 @@ function Get-MaterialRows {
 $checks = New-Object System.Collections.Generic.List[object]
 
 $requiredPaths = @(
-    "ConsoleApplication1_LLA\ConsoleApplication1\IR\IRSceneMaterialMapper.h",
-    "ConsoleApplication1_LLA\ConsoleApplication1\IR\IRSceneMaterialMapper.cpp",
-    "ConsoleApplication1_LLA\Bin\Config\TargetLib\models\f35\F35C.obj",
-    "ConsoleApplication1_LLA\Bin\Config\TargetLib\models\f35\f35c.jpg",
-    "ConsoleApplication1_LLA\Bin\Config\TargetLib\models\f35\f35c_mat.tif",
-    "ConsoleApplication1_LLA\Bin\Config\TargetLib\models\f35\f35c_mat.tif.xml",
-    "ConsoleApplication1_LLA\Bin\Config\TargetLib\models\aim120\AIM120.obj",
-    "ConsoleApplication1_LLA\Bin\Config\TargetLib\models\aim120\aim120.jpg",
-    "ConsoleApplication1_LLA\Bin\Config\TargetLib\models\aim120\aim120_mat.tif",
-    "ConsoleApplication1_LLA\Bin\Config\TargetLib\models\aim120\aim120_mat.tif.xml",
-    "ConsoleApplication1_LLA\Bin\Config\TargetLib\models\aim9x\aim9x.obj",
-    "ConsoleApplication1_LLA\Bin\Config\TargetLib\models\aim9x\TX_AIM9X_Diffuse.png",
-    "ConsoleApplication1_LLA\Bin\Config\TargetLib\models\aim9x\TX_AIM9X_Diffuse_mat.tif",
-    "ConsoleApplication1_LLA\Bin\Config\TargetLib\models\aim9x\TX_AIM9X_Diffuse_mat.tif.xml",
-    "ConsoleApplication1_LLA\Bin\Config\TargetLib\models\f22\f22.obj",
-    "ConsoleApplication1_LLA\Bin\Config\TargetLib\models\f22\f22_mat.tif",
-    "ConsoleApplication1_LLA\Bin\Config\TargetLib\models\f22\f22_mat.tif.xml"
+    "HwaSim_IR\HwaSim_IR\IR\IRSceneMaterialMapper.h",
+    "HwaSim_IR\HwaSim_IR\IR\IRSceneMaterialMapper.cpp",
+    "HwaSim_IR\Bin\Config\TargetLib\models\f35\F35C.obj",
+    "HwaSim_IR\Bin\Config\TargetLib\models\f35\f35c.jpg",
+    "HwaSim_IR\Bin\Config\TargetLib\models\f35\f35c_mat.tif",
+    "HwaSim_IR\Bin\Config\TargetLib\models\f35\f35c_mat.tif.xml",
+    "HwaSim_IR\Bin\Config\TargetLib\models\aim120\AIM120.obj",
+    "HwaSim_IR\Bin\Config\TargetLib\models\aim120\aim120.jpg",
+    "HwaSim_IR\Bin\Config\TargetLib\models\aim120\aim120_mat.tif",
+    "HwaSim_IR\Bin\Config\TargetLib\models\aim120\aim120_mat.tif.xml",
+    "HwaSim_IR\Bin\Config\TargetLib\models\aim9x\aim9x.obj",
+    "HwaSim_IR\Bin\Config\TargetLib\models\aim9x\TX_AIM9X_Diffuse.png",
+    "HwaSim_IR\Bin\Config\TargetLib\models\aim9x\TX_AIM9X_Diffuse_mat.tif",
+    "HwaSim_IR\Bin\Config\TargetLib\models\aim9x\TX_AIM9X_Diffuse_mat.tif.xml",
+    "HwaSim_IR\Bin\Config\TargetLib\models\f22\f22.obj",
+    "HwaSim_IR\Bin\Config\TargetLib\models\f22\f22_mat.tif",
+    "HwaSim_IR\Bin\Config\TargetLib\models\f22\f22_mat.tif.xml"
 )
 
 foreach ($relativePath in $requiredPaths) {
     $checks.Add((Add-Check "Stage2 file/resource" (Test-WorkspacePath $relativePath) $relativePath))
 }
 
-$hwa = Read-Text "ConsoleApplication1_LLA\ConsoleApplication1\HwaSimIR.cpp"
-$common = Read-Text "ConsoleApplication1_LLA\ConsoleApplication1\Common\CommonDefine.h"
-$mapper = Read-Text "ConsoleApplication1_LLA\ConsoleApplication1\IR\IRSceneMaterialMapper.cpp"
-$f35Mtl = Read-Text "ConsoleApplication1_LLA\Bin\Config\TargetLib\models\f35\F35C.mtl"
-$aim120Mtl = Read-Text "ConsoleApplication1_LLA\Bin\Config\TargetLib\models\aim120\AIM120.mtl"
-$aim9xMtl = Read-Text "ConsoleApplication1_LLA\Bin\Config\TargetLib\models\aim9x\aim9x.mtl"
-$f22Mtl = Read-Text "ConsoleApplication1_LLA\Bin\Config\TargetLib\models\f22\f22.mtl"
-$vcxproj = Read-Text "ConsoleApplication1_LLA\ConsoleApplication1\ConsoleApplication1.vcxproj"
-$filters = Read-Text "ConsoleApplication1_LLA\ConsoleApplication1\ConsoleApplication1.vcxproj.filters"
-$cmake = Read-Text "ConsoleApplication1_LLA\ConsoleApplication1\CMakeLists.txt"
+$hwa = Read-Text "HwaSim_IR\HwaSim_IR\HwaSimIR.cpp"
+$common = Read-Text "HwaSim_IR\HwaSim_IR\Common\CommonDefine.h"
+$mapper = Read-Text "HwaSim_IR\HwaSim_IR\IR\IRSceneMaterialMapper.cpp"
+$f35Mtl = Read-Text "HwaSim_IR\Bin\Config\TargetLib\models\f35\F35C.mtl"
+$aim120Mtl = Read-Text "HwaSim_IR\Bin\Config\TargetLib\models\aim120\AIM120.mtl"
+$aim9xMtl = Read-Text "HwaSim_IR\Bin\Config\TargetLib\models\aim9x\aim9x.mtl"
+$f22Mtl = Read-Text "HwaSim_IR\Bin\Config\TargetLib\models\f22\f22.mtl"
+$vcxproj = Read-Text "HwaSim_IR\HwaSim_IR\HwaSim_IR.vcxproj"
+$filters = Read-Text "HwaSim_IR\HwaSim_IR\HwaSim_IR.vcxproj.filters"
+$cmake = Read-Text "HwaSim_IR\HwaSim_IR\CMakeLists.txt"
 
 $checks.Add((Add-Check "Protocol keeps F35 default" ($hwa -match 'case 0x11:\s*return F35;') "TargetTypeToPlatformType"))
 $checks.Add((Add-Check "Protocol keeps MMD mapping" ($hwa -match 'case 0x44:\s*return MMD;') "TargetTypeToPlatformType"))
@@ -111,15 +111,15 @@ $checks.Add((Add-Check "Shader receives material ID texture" ($hwa -match 'p3d_T
 $checks.Add((Add-Check "Runtime binds material mapper" ($hwa -match 'LoadPlatformAssetNode' -and $hwa -match 'm_irSceneMaterialMapper\.bindPlatformNode') "HwaSimIR.cpp"))
 $checks.Add((Add-Check "Mapper parses XML surface material" ($mapper -match 'Surface_Substrate' -and $mapper -match 'parseCompositeMaterialXml' -and $mapper -match '<Composite_Material ') "IRSceneMaterialMapper.cpp"))
 $checks.Add((Add-Check "MTL paths are relative" (($f35Mtl -notmatch 'D:\\') -and ($aim120Mtl -notmatch 'D:\\') -and ($aim9xMtl -notmatch 'D:\\') -and ($f22Mtl -notmatch 'D:\\')) "MTL relative texture paths"))
-$checks.Add((Add-Check "VS project includes mapper cpp" ($vcxproj -match 'IR\\IRSceneMaterialMapper\.cpp') "ConsoleApplication1.vcxproj"))
-$checks.Add((Add-Check "VS filters include mapper" ($filters -match 'IR\\IRSceneMaterialMapper\.h' -and $filters -match 'IR\\IRSceneMaterialMapper\.cpp') "ConsoleApplication1.vcxproj.filters"))
+$checks.Add((Add-Check "VS project includes mapper cpp" ($vcxproj -match 'IR\\IRSceneMaterialMapper\.cpp') "HwaSim_IR.vcxproj"))
+$checks.Add((Add-Check "VS filters include mapper" ($filters -match 'IR\\IRSceneMaterialMapper\.h' -and $filters -match 'IR\\IRSceneMaterialMapper\.cpp') "HwaSim_IR.vcxproj.filters"))
 $checks.Add((Add-Check "CMake includes mapper cpp" ($cmake -match 'IR/IRSceneMaterialMapper\.cpp') "CMakeLists.txt"))
 
 $materialRows = New-Object System.Collections.Generic.List[object]
-foreach ($row in (Get-MaterialRows "F35" "ConsoleApplication1_LLA\Bin\Config\TargetLib\models\f35\f35c_mat.tif.xml")) { $materialRows.Add($row) }
-foreach ($row in (Get-MaterialRows "AIM120D" "ConsoleApplication1_LLA\Bin\Config\TargetLib\models\aim120\aim120_mat.tif.xml")) { $materialRows.Add($row) }
-foreach ($row in (Get-MaterialRows "AIM9X" "ConsoleApplication1_LLA\Bin\Config\TargetLib\models\aim9x\TX_AIM9X_Diffuse_mat.tif.xml")) { $materialRows.Add($row) }
-foreach ($row in (Get-MaterialRows "F22-unused" "ConsoleApplication1_LLA\Bin\Config\TargetLib\models\f22\f22_mat.tif.xml")) { $materialRows.Add($row) }
+foreach ($row in (Get-MaterialRows "F35" "HwaSim_IR\Bin\Config\TargetLib\models\f35\f35c_mat.tif.xml")) { $materialRows.Add($row) }
+foreach ($row in (Get-MaterialRows "AIM120D" "HwaSim_IR\Bin\Config\TargetLib\models\aim120\aim120_mat.tif.xml")) { $materialRows.Add($row) }
+foreach ($row in (Get-MaterialRows "AIM9X" "HwaSim_IR\Bin\Config\TargetLib\models\aim9x\TX_AIM9X_Diffuse_mat.tif.xml")) { $materialRows.Add($row) }
+foreach ($row in (Get-MaterialRows "F22-unused" "HwaSim_IR\Bin\Config\TargetLib\models\f22\f22_mat.tif.xml")) { $materialRows.Add($row) }
 
 $checks.Add((Add-Check "Material XML rows parsed" ($materialRows.Count -ge 10) "F35/AIM120D/AIM9X/F22 XML"))
 

@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 
 $root = Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..\..")
 $rootPath = $root.Path
-$processedDir = Join-Path $rootPath "ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN\processed"
+$processedDir = Join-Path $rootPath "HwaSim_IR\Bin\Config\Atmosphere\MODTRAN\processed"
 if ([string]::IsNullOrWhiteSpace($Output)) {
     $Output = Join-Path $processedDir "modout_units_doc_hits.txt"
 }

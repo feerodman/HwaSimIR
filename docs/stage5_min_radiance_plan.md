@@ -57,7 +57,7 @@ Stage 5A.1 separates debug display mapping for each component:
 Stage 5A.2 freezes the debug display parameters into:
 
 ```text
-ConsoleApplication1_LLA/Bin/Config/IRRadiance/stage5_debug_display.json
+HwaSim_IR/Bin/Config/IRRadiance/stage5_debug_display.json
 ```
 
 The file supports per-band settings for:

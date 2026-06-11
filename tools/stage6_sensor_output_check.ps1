@@ -7,16 +7,16 @@ $ErrorActionPreference = "Stop"
 $root = Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")
 $rootPath = $root.Path
 
-$sensorHeader = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\IR\IRSensorModel.h"
-$sensorSource = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\IR\IRSensorModel.cpp"
-$appHeader = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\HwaSimIR.h"
-$appSource = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\HwaSimIR.cpp"
-$tcpSource = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\TcpCommThread.cpp"
-$tcpLinuxSource = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\TcpCommThread_Linux.cpp"
-$cmakePath = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\CMakeLists.txt"
-$vcxprojPath = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\ConsoleApplication1.vcxproj"
-$filtersPath = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\ConsoleApplication1.vcxproj.filters"
-$stage3AtmosphereSource = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\IRSimulation.cpp"
+$sensorHeader = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\IR\IRSensorModel.h"
+$sensorSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\IR\IRSensorModel.cpp"
+$appHeader = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSimIR.h"
+$appSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSimIR.cpp"
+$tcpSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\TcpCommThread.cpp"
+$tcpLinuxSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\TcpCommThread_Linux.cpp"
+$cmakePath = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\CMakeLists.txt"
+$vcxprojPath = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSim_IR.vcxproj"
+$filtersPath = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSim_IR.vcxproj.filters"
+$stage3AtmosphereSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\IRSimulation.cpp"
 $stage6Smoke = Join-Path $rootPath "tools\stage6_sensor_geometry_smoke.ps1"
 
 function Read-Text {

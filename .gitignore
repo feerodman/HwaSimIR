@@ -50,21 +50,21 @@ __pycache__/
 *.py[cod]
 
 # MODTRAN generated and failed run artifacts
-ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/generated/
-ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/processed_snapshots/
-ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/raw/failed/
-ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/raw/archive/
-ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/raw/samples/
-ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/raw/samples/*_parse_smoke.csv
+HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/generated/
+HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed_snapshots/
+HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/raw/failed/
+HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/raw/archive/
+HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/raw/samples/
+HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/raw/samples/*_parse_smoke.csv
 
 # MODTRAN large spectral/diagnostic CSV outputs; keep compact band LUTs visible
-ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/processed/*_lut_spectral.csv
-ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/processed/*_path_lut_spectral.csv
-ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/processed/modout_units_audit.csv
-ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/processed/modout_units_candidate_lines.csv
+HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed/*_lut_spectral.csv
+HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed/*_path_lut_spectral.csv
+HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed/modout_units_audit.csv
+HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed/modout_units_candidate_lines.csv
 
 # Panda3D local model cache
-ConsoleApplication1_LLA/Bin/Panda3D-1.10/
+HwaSim_IR/Bin/Panda3D-1.10/
 
 # Local smoke-test logs
 logs/

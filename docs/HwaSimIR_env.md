@@ -63,7 +63,7 @@ $names | ForEach-Object {
 在仓库根目录执行：
 
 ```powershell
-$src = Get-Content .\ConsoleApplication1_LLA\ConsoleApplication1\HwaSimIR.cpp -Raw
+$src = Get-Content .\HwaSim_IR\HwaSim_IR\HwaSimIR.cpp -Raw
 
 [regex]::Matches($src, 'ReadProcessEnv(?:Flag|String|Double|Int)\("([^"]+)"') |
   ForEach-Object { $_.Groups[1].Value } |
@@ -239,8 +239,8 @@ $env:Stage7GroundZOffset="11000"
 启动：
 
 ```powershell
-cd D:\HwaSimIR\ConsoleApplication1_LLA\Bin
-.\ConsoleApplication1.exe
+cd D:\HwaSimIR\HwaSim_IR\Bin
+.\HwaSim_IR.exe
 ```
 
 ------

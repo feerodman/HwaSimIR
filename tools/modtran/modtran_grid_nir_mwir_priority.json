@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "description": "PcModWin5/MODTRAN5 offline LUT grid for HwaSimIR. NIR and MWIR are priority bands; VIS/SWIR/LWIR are sparse support bands.",
-  "modtran_root": "ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN",
+  "modtran_root": "HwaSim_IR/Bin/Config/Atmosphere/MODTRAN",
   "atmosphere_model": "Mid-Latitude Summer",
   "altitude_pairs": [
     [3, 3],

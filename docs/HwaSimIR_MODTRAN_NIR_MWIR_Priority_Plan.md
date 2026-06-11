@@ -103,7 +103,7 @@ F:\Programs\PcModWin5\usr\MODOUT2
 保存到项目目录：
 
 ```text
-ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/raw/templates/
+HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/raw/templates/
   NIR_transmittance_modin.txt
   NIR_transmittance_MODOUT2.txt
   NIR_solar_modin.txt
@@ -568,11 +568,11 @@ Codex 必须生成 `qc_report.md`，至少检查：
 
 阶段 A：目录和配置
 - 创建目录：
-  ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/raw/templates
-  ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/raw/samples
-  ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/raw/failed
-  ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/generated/modin
-  ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/processed
+  HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/raw/templates
+  HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/raw/samples
+  HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/raw/failed
+  HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/generated/modin
+  HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed
 - 创建配置文件：
   tools/modtran/modtran_grid_nir_mwir_priority.json
 - 配置中包含：

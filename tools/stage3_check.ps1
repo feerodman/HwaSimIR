@@ -40,10 +40,10 @@ $checks = New-Object System.Collections.Generic.List[object]
 $requiredPaths = @(
     "temperatures\Temperatures_Yemen_Summer.csv",
     "transmittance\transmittance_0.3_15.txt",
-    "ConsoleApplication1_LLA\ConsoleApplication1\IRSimulation.h",
-    "ConsoleApplication1_LLA\ConsoleApplication1\IRSimulation.cpp",
-    "ConsoleApplication1_LLA\ConsoleApplication1\HwaSimIR.h",
-    "ConsoleApplication1_LLA\ConsoleApplication1\HwaSimIR.cpp"
+    "HwaSim_IR\HwaSim_IR\IRSimulation.h",
+    "HwaSim_IR\HwaSim_IR\IRSimulation.cpp",
+    "HwaSim_IR\HwaSim_IR\HwaSimIR.h",
+    "HwaSim_IR\HwaSim_IR\HwaSimIR.cpp"
 )
 
 foreach ($relativePath in $requiredPaths) {
@@ -53,10 +53,10 @@ foreach ($relativePath in $requiredPaths) {
 $xlsxCount = @(Get-ChildItem -LiteralPath (Join-Path $rootPath "temperatures") -Filter "*.xlsx" -File -ErrorAction SilentlyContinue).Count
 $checks.Add((Add-Check "Solar position workbook exists" ($xlsxCount -gt 0) "temperatures/*.xlsx"))
 
-$irHeader = Read-Text "ConsoleApplication1_LLA\ConsoleApplication1\IRSimulation.h"
-$irSource = Read-Text "ConsoleApplication1_LLA\ConsoleApplication1\IRSimulation.cpp"
-$hwaHeader = Read-Text "ConsoleApplication1_LLA\ConsoleApplication1\HwaSimIR.h"
-$hwaSource = Read-Text "ConsoleApplication1_LLA\ConsoleApplication1\HwaSimIR.cpp"
+$irHeader = Read-Text "HwaSim_IR\HwaSim_IR\IRSimulation.h"
+$irSource = Read-Text "HwaSim_IR\HwaSim_IR\IRSimulation.cpp"
+$hwaHeader = Read-Text "HwaSim_IR\HwaSim_IR\HwaSimIR.h"
+$hwaSource = Read-Text "HwaSim_IR\HwaSim_IR\HwaSimIR.cpp"
 $weatherCsv = Read-Text "temperatures\Temperatures_Yemen_Summer.csv"
 
 $checks.Add((Add-Check "Weather profile class exists" ($irHeader -match 'class IRWeatherProfile' -and $irHeader -match 'IRWeatherSample') "IRSimulation.h"))

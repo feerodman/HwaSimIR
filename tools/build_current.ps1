@@ -1,5 +1,5 @@
 param(
-    [ValidateSet("Auto", "DataDrivenTestQT", "ConsoleApplication1", "MaterialTest", "All")]
+    [ValidateSet("Auto", "DataDrivenTestQT", "HwaSim_IR", "MaterialTest", "All")]
     [string]$Target = "Auto",
 
     [ValidateSet("Debug", "Release")]
@@ -73,14 +73,14 @@ function Deploy-QtProject {
 function Resolve-AutoTarget {
     $cwd = (Get-Location).Path
     $dataDrivenRoot = Join-Path $repoRoot "DataDrivenTestQT"
-    $consoleRoot = Join-Path $repoRoot "ConsoleApplication1_LLA"
+    $consoleRoot = Join-Path $repoRoot "HwaSim_IR"
     $materialRoot = Join-Path $repoRoot "MaterialTest"
 
     if ($cwd.StartsWith($dataDrivenRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
         return "DataDrivenTestQT"
     }
     if ($cwd.StartsWith($consoleRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
-        return "ConsoleApplication1"
+        return "HwaSim_IR"
     }
     if ($cwd.StartsWith($materialRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
         return "MaterialTest"
@@ -158,15 +158,15 @@ switch ($resolvedTarget) {
     "DataDrivenTestQT" {
         Build-QtProject
     }
-    "ConsoleApplication1" {
-        Build-Solution -Name "ConsoleApplication1" -RelativePath "ConsoleApplication1_LLA\ConsoleApplication1.sln"
+    "HwaSim_IR" {
+        Build-Solution -Name "HwaSim_IR" -RelativePath "HwaSim_IR\HwaSim_IR.sln"
     }
     "MaterialTest" {
         Build-Solution -Name "MaterialTest" -RelativePath "MaterialTest\MaterialTest.sln"
     }
     "All" {
         Build-QtProject
-        Build-Solution -Name "ConsoleApplication1" -RelativePath "ConsoleApplication1_LLA\ConsoleApplication1.sln"
+        Build-Solution -Name "HwaSim_IR" -RelativePath "HwaSim_IR\HwaSim_IR.sln"
         Build-Solution -Name "MaterialTest" -RelativePath "MaterialTest\MaterialTest.sln"
     }
 }

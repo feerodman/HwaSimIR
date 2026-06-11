@@ -6,7 +6,7 @@
 
 - 基线日期：2026-05-25
 - 基线提交：`1aa6bdd3f179626d83f368f38e12ccbb3108f1a4`
-- 当前主程序：`ConsoleApplication1_LLA/ConsoleApplication1/HwaSimIR.cpp`
+- 当前主程序：`HwaSim_IR/HwaSim_IR/HwaSimIR.cpp`
 - 激励端：`DataDrivenTestQT/mainwindow.cpp`
 - 输出形式：TCP 长度头 + JPEG，当前发送线程会把画面缩放为 `800x800`
 
@@ -26,12 +26,12 @@
 HwaSimIR 推荐工作目录：
 
 ```powershell
-cd D:\HwaSimIR\ConsoleApplication1_LLA\Bin
+cd D:\HwaSimIR\HwaSim_IR\Bin
 ```
 
 原因：
 
-- 模型、SensorWave JSON、配置文件位于 `ConsoleApplication1_LLA/Bin/Config`
+- 模型、SensorWave JSON、配置文件位于 `HwaSim_IR/Bin/Config`
 - 当前红外材质和大气表读取逻辑会尝试 `../../materials` 和 `../../transmittance`
 
 DataDrivenTestQT 推荐工作目录：
@@ -80,9 +80,9 @@ TCP 视频接收端不是阶段 0 必需项；如果没有服务端监听 `127.0
 ## 6. 手动冒烟流程
 
 1. 启动可选 TCP/JPEG 接收端，监听 `127.0.0.1:5555`。
-2. 从 Visual Studio 打开 `ConsoleApplication1_LLA/ConsoleApplication1.sln`。
+2. 从 Visual Studio 打开 `HwaSim_IR/HwaSim_IR.sln`。
 3. 选择当前可用配置，建议先用 `Release|x64`。
-4. 设置 HwaSimIR 工作目录为 `D:\HwaSimIR\ConsoleApplication1_LLA\Bin`，启动 HwaSimIR。
+4. 设置 HwaSimIR 工作目录为 `D:\HwaSimIR\HwaSim_IR\Bin`，启动 HwaSimIR。
 5. 从 Qt Creator 打开 `DataDrivenTestQT/DataDrivenTestQT.pro`。
 6. 确认 DataDrivenTestQT 工作目录为 `D:\HwaSimIR\DataDrivenTestQT`，启动激励端。
 7. 点击 `复位`，HwaSimIR 控制台应打印控制指令。
@@ -150,7 +150,7 @@ powershell -ExecutionPolicy Bypass -File tools\stage0_build.ps1
 
 - 构建 HwaSimIR：`Release|x64`
 - 构建 DataDrivenTestQT：Qt 5.12.12 `release`
-- 输出 HwaSimIR：`D:\HwaSimIR\ConsoleApplication1_LLA\Bin\ConsoleApplication1.exe`
+- 输出 HwaSimIR：`D:\HwaSimIR\HwaSim_IR\Bin\HwaSim_IR.exe`
 - 输出 DataDrivenTestQT：`D:\HwaSimIR\build-DataDrivenTestQT-codex-mingw73_64-Release\release\DataDrivenTestQT.exe`
 
 短时启动冒烟命令：
@@ -165,7 +165,7 @@ powershell -ExecutionPolicy Bypass -File tools\stage0_smoke_run.ps1
 
 - `tools\stage0_check.ps1 -Strict`：通过。
 - `tools\stage0_build.ps1`：HwaSimIR `Release|x64` 构建成功；DataDrivenTestQT Qt 5.12.12 MinGW release 构建成功。
-- `tools\stage0_smoke_run.ps1 -Seconds 8`：`ConsoleApplication1.exe` 与 `DataDrivenTestQT.exe` 均成功启动并保持运行，脚本随后停止进程。
+- `tools\stage0_smoke_run.ps1 -Seconds 8`：`HwaSim_IR.exe` 与 `DataDrivenTestQT.exe` 均成功启动并保持运行，脚本随后停止进程。
 - 本次未自动点击 DataDrivenTestQT 的复位、初始化、开始、停止按钮，完整按钮流程仍需人工或后续 UI 自动化验证。
 
 ## 11. 阶段 1 配置检查

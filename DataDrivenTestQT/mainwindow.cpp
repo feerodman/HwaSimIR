@@ -13,6 +13,8 @@
 #include <QDebug>
 #include <QDateTime>
 #include <QDir>
+#include <QFileInfo>
+#include <QSettings>
 
 #include "ICD/math_algorithm.h"
 
@@ -20,6 +22,7 @@
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
+	loadNetworkConfig();
 	setupUI();
 	setupUDP();
 
@@ -89,12 +92,10 @@ void MainWindow::setupUI()
 	//127.0.0.1
 	m_configGroup = new QGroupBox(QStringLiteral("UDP通信配置"));
 	QFormLayout *configLayout = new QFormLayout;
-   // configLayout->addRow(QStringLiteral("本地IP:"), m_localIpEdit = new QLineEdit("192.168.1.188"));
-    configLayout->addRow(QStringLiteral("本地IP:"), m_localIpEdit = new QLineEdit("127.0.0.1"));
-	configLayout->addRow(QStringLiteral("本地端口:"), m_localPortEdit = new QLineEdit("9999"));
-   // configLayout->addRow(QStringLiteral("目标IP:"), m_remoteIpEdit = new QLineEdit("192.168.1.121"));
-    configLayout->addRow(QStringLiteral("目标IP:"), m_remoteIpEdit = new QLineEdit("127.0.0.1"));
-	configLayout->addRow(QStringLiteral("目标端口:"), m_remotePortEdit = new QLineEdit("8888"));
+	configLayout->addRow(QStringLiteral("本地IP:"), m_localIpEdit = new QLineEdit(m_udpLocalIp));
+	configLayout->addRow(QStringLiteral("本地端口:"), m_localPortEdit = new QLineEdit(QString::number(m_udpLocalPort)));
+	configLayout->addRow(QStringLiteral("目标IP:"), m_remoteIpEdit = new QLineEdit(m_udpRemoteIp));
+	configLayout->addRow(QStringLiteral("目标端口:"), m_remotePortEdit = new QLineEdit(QString::number(m_udpRemotePort)));
 	m_configGroup->setLayout(configLayout);
 
 	// 控制组
@@ -174,6 +175,67 @@ void MainWindow::setupUI()
 	connect(m_initButton, &QPushButton::clicked, this, &MainWindow::onInitButtonClicked);
 	connect(m_startButton, &QPushButton::clicked, this, &MainWindow::onStartButtonClicked);
 	connect(m_stopButton, &QPushButton::clicked, this, &MainWindow::onStopButtonClicked);
+}
+
+void MainWindow::loadNetworkConfig()
+{
+	const QString configPath = QDir(QCoreApplication::applicationDirPath()).filePath("NetworkConfig.ini");
+	const bool configExists = QFileInfo::exists(configPath);
+	QSettings settings(configPath, QSettings::IniFormat);
+	settings.setIniCodec("UTF-8");
+
+	const QString defaultLocalIp = QStringLiteral("192.168.1.188");
+	const quint16 defaultLocalPort = 9999;
+	const QString defaultRemoteIp = QStringLiteral("192.168.1.10");
+	const quint16 defaultRemotePort = 8888;
+
+	if (!configExists)
+	{
+		settings.setValue(QStringLiteral("UDP/localIp"), defaultLocalIp);
+		settings.setValue(QStringLiteral("UDP/localPort"), defaultLocalPort);
+		settings.setValue(QStringLiteral("UDP/remoteIp"), defaultRemoteIp);
+		settings.setValue(QStringLiteral("UDP/remotePort"), defaultRemotePort);
+		settings.sync();
+	}
+
+	QString localIp = settings.value(QStringLiteral("UDP/localIp"), defaultLocalIp).toString().trimmed();
+	QString remoteIp = settings.value(QStringLiteral("UDP/remoteIp"), defaultRemoteIp).toString().trimmed();
+	int localPort = settings.value(QStringLiteral("UDP/localPort"), defaultLocalPort).toInt();
+	int remotePort = settings.value(QStringLiteral("UDP/remotePort"), defaultRemotePort).toInt();
+
+	if (QHostAddress(localIp).isNull())
+	{
+		qWarning() << "Invalid UDP localIp in" << configPath << ":" << localIp
+			<< "- using" << defaultLocalIp;
+		localIp = defaultLocalIp;
+	}
+	if (QHostAddress(remoteIp).isNull())
+	{
+		qWarning() << "Invalid UDP remoteIp in" << configPath << ":" << remoteIp
+			<< "- using" << defaultRemoteIp;
+		remoteIp = defaultRemoteIp;
+	}
+	if (localPort <= 0 || localPort > 65535)
+	{
+		qWarning() << "Invalid UDP localPort in" << configPath << ":" << localPort
+			<< "- using" << defaultLocalPort;
+		localPort = defaultLocalPort;
+	}
+	if (remotePort <= 0 || remotePort > 65535)
+	{
+		qWarning() << "Invalid UDP remotePort in" << configPath << ":" << remotePort
+			<< "- using" << defaultRemotePort;
+		remotePort = defaultRemotePort;
+	}
+
+	m_udpLocalIp = localIp;
+	m_udpLocalPort = static_cast<quint16>(localPort);
+	m_udpRemoteIp = remoteIp;
+	m_udpRemotePort = static_cast<quint16>(remotePort);
+
+	qInfo() << "Loaded network config:" << configPath
+		<< "UDP local" << localIp << localPort
+		<< "remote" << remoteIp << remotePort;
 }
 
 void MainWindow::setupUDP()

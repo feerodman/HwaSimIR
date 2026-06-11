@@ -5,7 +5,7 @@ This document defines the offline PcModWin5/MODTRAN5 lookup tables consumed by f
 ## Directory Layout
 
 ```text
-ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/
+HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/
   raw/templates/      Hand-created PcModWin5 modin and MODOUT2 examples.
   raw/samples/        Optional small retained samples from successful runs.
   raw/failed/         Failed case artifacts: modin, MODOUT1, MODOUT2, reason.
@@ -123,10 +123,10 @@ Pilot execution is capped at 100 cases and requires a real command-line MODTRAN 
 powershell -ExecutionPolicy Bypass -File tools/modtran/find_modtran_entry.ps1 -PcModWinRoot "F:\Programs\PcModWin5"
 powershell -ExecutionPolicy Bypass -File tools/run_modtran_cases.ps1 -SingleCase -CaseLimit 1 -PcModWinRoot "F:\Programs\PcModWin5" -ModtranExe "<confirmed path>"
 powershell -ExecutionPolicy Bypass -File tools/run_modtran_cases.ps1 -ValidationSix -CaseLimit 6 -PcModWinRoot "F:\Programs\PcModWin5" -ModtranExe "<confirmed path>" -NoDeleteRaw
-python tools/modtran/check_validation_outputs.py --processed-dir ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN\processed
+python tools/modtran/check_validation_outputs.py --processed-dir HwaSim_IR\Bin\Config\Atmosphere\MODTRAN\processed
 powershell -ExecutionPolicy Bypass -File tools/run_modtran_cases.ps1 -Pilot72 -CaseLimit 72 -PcModWinRoot "F:\Programs\PcModWin5" -ModtranExe "<confirmed path>" -NoDeleteRaw
-python tools/modtran/build_band_lut.py --processed-dir ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN\processed
-python tools/modtran/check_visibility_effect.py --processed-dir ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN\processed --raw-dir ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN\raw\samples
+python tools/modtran/build_band_lut.py --processed-dir HwaSim_IR\Bin\Config\Atmosphere\MODTRAN\processed
+python tools/modtran/check_visibility_effect.py --processed-dir HwaSim_IR\Bin\Config\Atmosphere\MODTRAN\processed --raw-dir HwaSim_IR\Bin\Config\Atmosphere\MODTRAN\raw\samples
 powershell -ExecutionPolicy Bypass -File tools/run_modtran_cases.ps1 -VisibilitySmoke18 -CaseLimit 18 -PcModWinRoot "F:\Programs\PcModWin5" -ModtranExe "<confirmed path>" -NoDeleteRaw
 ```
 
@@ -139,7 +139,7 @@ Production NIR/MWIR is generated only with the explicit `--production-nir-mwir` 
 The requested sparse grid contains 2520 theoretical NIR/MWIR cases before geometry validation. PcModWin5/MODTRAN rejects slant range cases where `range_km < abs(observer_alt_km - target_alt_km)`, so the generator writes those 510 impossible cases to:
 
 ```text
-ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/generated/production_invalid_geometry_manifest.csv
+HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/generated/production_invalid_geometry_manifest.csv
 ```
 
 The runnable production manifest therefore contains 2010 cases:
@@ -156,7 +156,7 @@ MWIR DirectSolarIrradiance     335
 Before production, snapshot the current pilot/smoke processed outputs:
 
 ```powershell
-python tools/modtran/snapshot_processed.py --processed-dir ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN\processed
+python tools/modtran/snapshot_processed.py --processed-dir HwaSim_IR\Bin\Config\Atmosphere\MODTRAN\processed
 ```
 
 Production is intentionally split into single-threaded batches because PcModWin5/MODTRAN uses fixed output filenames:
@@ -172,7 +172,7 @@ powershell -ExecutionPolicy Bypass -File tools\run_modtran_cases.ps1 -Production
 After all batches, rebuild the rectangular-response band table:
 
 ```powershell
-python tools/modtran/build_band_lut.py --processed-dir ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN\processed
+python tools/modtran/build_band_lut.py --processed-dir HwaSim_IR\Bin\Config\Atmosphere\MODTRAN\processed
 powershell -ExecutionPolicy Bypass -File tools\stage3_modtran_lut_check.ps1 -Strict
 ```
 

@@ -6,16 +6,16 @@ $ErrorActionPreference = "Stop"
 
 $root = Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")
 $rootPath = $root.Path
-$modelHeader = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\IR\IRTemperatureModel.h"
-$modelSource = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\IR\IRTemperatureModel.cpp"
-$hotspotConfig = Join-Path $rootPath "ConsoleApplication1_LLA\Bin\Config\IRHotspots\target_hotspots.json"
-$appHeader = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\HwaSimIR.h"
-$appSource = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\HwaSimIR.cpp"
-$commonData = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\Common\CommonData.h"
-$cmakePath = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\CMakeLists.txt"
-$vcxprojPath = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\ConsoleApplication1.vcxproj"
-$filtersPath = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\ConsoleApplication1.vcxproj.filters"
-$stage3AtmosphereSource = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\IRSimulation.cpp"
+$modelHeader = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\IR\IRTemperatureModel.h"
+$modelSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\IR\IRTemperatureModel.cpp"
+$hotspotConfig = Join-Path $rootPath "HwaSim_IR\Bin\Config\IRHotspots\target_hotspots.json"
+$appHeader = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSimIR.h"
+$appSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSimIR.cpp"
+$commonData = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\Common\CommonData.h"
+$cmakePath = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\CMakeLists.txt"
+$vcxprojPath = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSim_IR.vcxproj"
+$filtersPath = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSim_IR.vcxproj.filters"
+$stage3AtmosphereSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\IRSimulation.cpp"
 $visualSmokeScript = Join-Path $rootPath "tools\stage4_hotspot_visual_smoke.ps1"
 
 function Add-Check {

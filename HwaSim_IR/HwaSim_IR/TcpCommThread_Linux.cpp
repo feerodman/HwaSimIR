@@ -1,0 +1,491 @@
+#include "TcpCommThread_Linux.h"
+
+#include <algorithm>
+#include <cerrno>
+#include <chrono>
+#include <cmath>
+#include <cstring>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+
+namespace
+{
+void AppendUint32BE(std::vector<char>& buffer, uint32_t value)
+{
+	const uint32_t netValue = htonl(value);
+	const char* bytes = reinterpret_cast<const char*>(&netValue);
+	buffer.insert(buffer.end(), bytes, bytes + 4);
+}
+
+std::string JsonEscape(const std::string& value)
+{
+	std::ostringstream out;
+	for (size_t i = 0; i < value.size(); ++i)
+	{
+		const unsigned char c = static_cast<unsigned char>(value[i]);
+		switch (c)
+		{
+		case '\\': out << "\\\\"; break;
+		case '"': out << "\\\""; break;
+		case '\b': out << "\\b"; break;
+		case '\f': out << "\\f"; break;
+		case '\n': out << "\\n"; break;
+		case '\r': out << "\\r"; break;
+		case '\t': out << "\\t"; break;
+		default:
+			if (c < 0x20)
+			{
+				out << "\\u" << std::hex << std::setw(4) << std::setfill('0') << static_cast<int>(c) << std::dec;
+			}
+			else
+			{
+				out << static_cast<char>(c);
+			}
+			break;
+		}
+	}
+	return out.str();
+}
+
+std::string TargetTypeHex(int targetType)
+{
+	std::ostringstream out;
+	out << "0x" << std::uppercase << std::hex << targetType << std::dec;
+	return out.str();
+}
+
+int ClampInt(int value, int minValue, int maxValue)
+{
+	return std::max(minValue, std::min(value, maxValue));
+}
+
+int ScaleCoord(int value, int srcSize, int dstSize)
+{
+	if (srcSize <= 0 || dstSize <= 0 || srcSize == dstSize)
+	{
+		return value;
+	}
+	const double scaled = static_cast<double>(value) * static_cast<double>(dstSize) / static_cast<double>(srcSize);
+	return static_cast<int>(std::floor(scaled + 0.5));
+}
+}
+
+TcpCommThread::TcpCommThread(HwaSimIR* hwaSimIR, const std::string& serverIp, uint16_t serverPort)
+	: m_pHwaSimIR(hwaSimIR),
+	m_tcpSocket(-1),
+	m_serverIp(serverIp),
+	m_serverPort(serverPort),
+	m_bIsRunning(false),
+	m_bIsConnected(false),
+	m_frameWidth(0),
+	m_frameHeight(0)
+{
+	memset(&m_serverAddr, 0, sizeof(m_serverAddr));
+	m_serverAddr.sin_family = AF_INET;
+	m_serverAddr.sin_port = htons(serverPort);
+	inet_pton(AF_INET, serverIp.c_str(), &m_serverAddr.sin_addr);
+}
+
+TcpCommThread::~TcpCommThread()
+{
+	stop();
+}
+
+bool TcpCommThread::start()
+{
+	if (m_bIsRunning) return true;
+
+	m_bIsRunning = true;
+	m_bIsConnected = false;
+	m_sendThread = std::thread(&TcpCommThread::sendFrameThreadFunc, this);
+
+	return true;
+}
+
+void TcpCommThread::stop()
+{
+	if (!m_bIsRunning) return;
+	m_bIsRunning = false;
+	m_frameCv.notify_all();
+
+	if (m_sendThread.joinable())
+	{
+		m_sendThread.join();
+	}
+	disconnectFromServer();
+	std::cout << "TCP通讯线程已停止" << std::endl;
+}
+
+bool TcpCommThread::connectToServer()
+{
+	disconnectFromServer();
+
+	const int tcpSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (tcpSocket == -1)
+	{
+		return false;
+	}
+
+	if (connect(tcpSocket, reinterpret_cast<sockaddr*>(&m_serverAddr), sizeof(m_serverAddr)) == -1)
+	{
+		close(tcpSocket);
+		return false;
+	}
+
+	m_tcpSocket = tcpSocket;
+	return true;
+}
+
+void TcpCommThread::disconnectFromServer()
+{
+	std::lock_guard<std::mutex> socketLock(m_socketMtx);
+	if (m_tcpSocket != -1)
+	{
+		close(m_tcpSocket);
+		m_tcpSocket = -1;
+	}
+	m_bIsConnected = false;
+}
+
+bool TcpCommThread::sendAll(const char* data, int size)
+{
+	std::lock_guard<std::mutex> socketLock(m_socketMtx);
+	if (!m_bIsConnected || m_tcpSocket == -1)
+	{
+		return false;
+	}
+
+	int totalSent = 0;
+	while (totalSent < size)
+	{
+		const ssize_t sent = send(m_tcpSocket, data + totalSent, size - totalSent, MSG_NOSIGNAL);
+		if (sent == -1 && errno == EINTR)
+		{
+			continue;
+		}
+		if (sent <= 0)
+		{
+			return false;
+		}
+		totalSent += static_cast<int>(sent);
+	}
+	return true;
+}
+
+bool TcpCommThread::sendStruct(const void* structPtr, uint32_t structSize)
+{
+	if (structPtr == nullptr || structSize == 0)
+	{
+		return false;
+	}
+
+	const uint32_t totalLen = 4 + 4 + structSize;
+	std::vector<char> packet;
+	packet.reserve(totalLen);
+	AppendUint32BE(packet, totalLen);
+	AppendUint32BE(packet, structSize);
+	packet.insert(packet.end(), reinterpret_cast<const char*>(structPtr), reinterpret_cast<const char*>(structPtr) + structSize);
+
+	return sendAll(packet.data(), static_cast<int>(packet.size()));
+}
+
+bool TcpCommThread::sendControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd)
+{
+	if (!m_bIsConnected)
+	{
+		std::cerr << "sendControlCmd: TCP未连接，无法转发控制命令" << std::endl;
+		return false;
+	}
+
+	if (!sendStruct(&cmd, static_cast<uint32_t>(sizeof(cmd))))
+	{
+		std::cerr << "sendControlCmd: 转发控制命令失败，准备重连" << std::endl;
+		disconnectFromServer();
+		return false;
+	}
+
+	std::cout << "[TcpControlForward] simCommand=" << cmd.simCommand
+		<< " round=" << cmd.currentRound << "/" << cmd.roundCut << std::endl;
+	return true;
+}
+
+bool TcpCommThread::sendInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& initData)
+{
+	if (!m_bIsConnected)
+	{
+		std::cerr << "sendInitCmd: TCP未连接，无法转发初始化命令" << std::endl;
+		return false;
+	}
+
+	if (!sendStruct(&initData, static_cast<uint32_t>(sizeof(initData))))
+	{
+		std::cerr << "sendInitCmd: 转发初始化命令失败，准备重连" << std::endl;
+		disconnectFromServer();
+		return false;
+	}
+
+	m_initCompleted = true;
+	std::cout << "[TcpInitForward] sensorID=" << initData.sensorID
+		<< " platNumValid=" << initData.platNumValid << std::endl;
+	return true;
+}
+
+bool TcpCommThread::sendFramePacket(
+	const BYHWICD::DisplayC2cObjTrackingData& trackingData,
+	const std::string& annotationJson,
+	const std::vector<uchar>& jpegData)
+{
+	const uint32_t trackingLen = static_cast<uint32_t>(sizeof(BYHWICD::DisplayC2cObjTrackingData));
+	const uint32_t annotationLen = static_cast<uint32_t>(annotationJson.size());
+	const uint32_t jpegLen = static_cast<uint32_t>(jpegData.size());
+	const uint32_t totalLen = 4 + 4 + trackingLen + 4 + annotationLen + 4 + jpegLen;
+
+	std::vector<char> packet;
+	packet.reserve(totalLen);
+	AppendUint32BE(packet, totalLen);
+	AppendUint32BE(packet, trackingLen);
+	packet.insert(packet.end(), reinterpret_cast<const char*>(&trackingData), reinterpret_cast<const char*>(&trackingData) + trackingLen);
+	AppendUint32BE(packet, annotationLen);
+	packet.insert(packet.end(), annotationJson.begin(), annotationJson.end());
+	AppendUint32BE(packet, jpegLen);
+	packet.insert(packet.end(), reinterpret_cast<const char*>(jpegData.data()), reinterpret_cast<const char*>(jpegData.data()) + jpegLen);
+
+	return sendAll(packet.data(), static_cast<int>(packet.size()));
+}
+
+std::string TcpCommThread::buildAnnotationJson(
+	const AnnotationFrameRecord& record,
+	bool annotationEnabled,
+	int tcpWidth,
+	int tcpHeight) const
+{
+	const int srcWidth = record.width > 0 ? record.width : tcpWidth;
+	const int srcHeight = record.height > 0 ? record.height : tcpHeight;
+	const unsigned long long frameIndex = record.frameIndex > 0 ? record.frameIndex : m_tcpPacketCounter;
+
+	std::ostringstream json;
+	json << "{\"version\":1"
+		<< ",\"enabled\":" << (annotationEnabled ? "true" : "false")
+		<< ",\"frameIndex\":" << frameIndex
+		<< ",\"simTimeMs\":" << record.simTimeMs
+		<< ",\"sensorID\":" << record.sensorID
+		<< ",\"width\":" << tcpWidth
+		<< ",\"height\":" << tcpHeight
+		<< ",\"targets\":[";
+
+	if (annotationEnabled)
+	{
+		bool firstTarget = true;
+		for (size_t i = 0; i < record.targets.size(); ++i)
+		{
+			const TargetAnnotation& target = record.targets[i];
+			if (!target.bbox.visible)
+			{
+				continue;
+			}
+
+			const int left = ClampInt(ScaleCoord(target.bbox.x, srcWidth, tcpWidth), 0, std::max(0, tcpWidth - 1));
+			const int top = ClampInt(ScaleCoord(target.bbox.y, srcHeight, tcpHeight), 0, std::max(0, tcpHeight - 1));
+			const int rawRight = target.bbox.x + std::max(0, target.bbox.width - 1);
+			const int rawBottom = target.bbox.y + std::max(0, target.bbox.height - 1);
+			const int right = ClampInt(ScaleCoord(rawRight, srcWidth, tcpWidth), 0, std::max(0, tcpWidth - 1));
+			const int bottom = ClampInt(ScaleCoord(rawBottom, srcHeight, tcpHeight), 0, std::max(0, tcpHeight - 1));
+
+			if (!firstTarget)
+			{
+				json << ",";
+			}
+			firstTarget = false;
+
+			json << "{\"targetType\":" << target.targetType
+				<< ",\"targetTypeHex\":\"" << TargetTypeHex(target.targetType) << "\""
+				<< ",\"modelLabel\":\"" << JsonEscape(target.modelLabel) << "\""
+				<< ",\"targetPlatID\":" << target.targetPlatID
+				<< ",\"targetID\":" << target.targetID
+				<< ",\"bboxCorners\":["
+				<< "{\"x\":" << left << ",\"y\":" << top << "},"
+				<< "{\"x\":" << right << ",\"y\":" << top << "},"
+				<< "{\"x\":" << right << ",\"y\":" << bottom << "},"
+				<< "{\"x\":" << left << ",\"y\":" << bottom << "}]"
+				<< ",\"keyPoints\":[";
+
+			bool firstPoint = true;
+			for (size_t p = 0; p < target.keyPoints.size(); ++p)
+			{
+				const AnnotationPoint2D& point = target.keyPoints[p];
+				if (!point.visible)
+				{
+					continue;
+				}
+				const int px = ClampInt(ScaleCoord(point.x, srcWidth, tcpWidth), 0, std::max(0, tcpWidth - 1));
+				const int py = ClampInt(ScaleCoord(point.y, srcHeight, tcpHeight), 0, std::max(0, tcpHeight - 1));
+				if (!firstPoint)
+				{
+					json << ",";
+				}
+				firstPoint = false;
+				json << "{\"name\":\"" << JsonEscape(point.name) << "\""
+					<< ",\"x\":" << px
+					<< ",\"y\":" << py
+					<< ",\"visible\":true}";
+			}
+			json << "]}";
+		}
+	}
+
+	json << "]}";
+	return json.str();
+}
+
+void TcpCommThread::sendFrameThreadFunc()
+{
+	std::cout << "TCP发送后台线程已启动..." << std::endl;
+
+	while (m_bIsRunning)
+	{
+		if (!m_bIsConnected)
+		{
+			if (connectToServer())
+			{
+				m_bIsConnected = true;
+				std::cout << "TCP成功连接到服务器：" << m_serverIp << ":" << m_serverPort << std::endl;
+			}
+			else
+			{
+				std::this_thread::sleep_for(std::chrono::seconds(1));
+				continue;
+			}
+		}
+
+		std::vector<uchar> localBuffer;
+		BYHWICD::DisplayC2cObjTrackingData localTrackingData;
+		AnnotationFrameRecord localAnnotationRecord;
+		bool localAnnotationEnabled = false;
+		int width = 0, height = 0;
+		{
+			std::unique_lock<std::mutex> lock(m_frameMtx);
+			if (m_frameCv.wait_for(lock, std::chrono::milliseconds(100),
+				[this] { return m_bNewFrame || !m_bIsRunning; }))
+			{
+				if (!m_bIsRunning) break;
+
+				localBuffer = m_frameBuffer;
+				width = m_frameWidth;
+				height = m_frameHeight;
+				localTrackingData = m_trackingData;
+				localAnnotationRecord = m_annotationRecord;
+				localAnnotationEnabled = m_annotationEnabled;
+				m_bNewFrame = false;
+			}
+			else
+			{
+				if (m_bIsConnected && m_tcpSocket != -1)
+				{
+					fd_set readSet;
+					FD_ZERO(&readSet);
+					FD_SET(m_tcpSocket, &readSet);
+					timeval tv = { 0, 0 };
+
+					if (select(m_tcpSocket + 1, &readSet, NULL, NULL, &tv) > 0)
+					{
+						char dummy;
+						const int peekRet = recv(m_tcpSocket, &dummy, 1, MSG_PEEK | MSG_DONTWAIT);
+						if (peekRet == 0 || (peekRet == -1 && errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR))
+						{
+							std::cerr << "TCP连接丢失(后台心跳检测)，准备重连..." << std::endl;
+							disconnectFromServer();
+						}
+					}
+				}
+				continue;
+			}
+		}
+
+		if (localBuffer.empty()) continue;
+
+		cv::Mat rawFrame(height, width, CV_8UC3, localBuffer.data());
+		cv::Mat flippedFrame;
+		cv::flip(rawFrame, flippedFrame, 0);
+		// Stage2B: TCP JPEG uses the flipped image; annotation JSON is already in final JPEG coordinates.
+
+		std::vector<uchar> jpegData;
+		std::vector<int> params = { cv::IMWRITE_JPEG_QUALITY, 80 };
+		if (!cv::imencode(".jpg", flippedFrame, jpegData, params))
+		{
+			continue;
+		}
+
+		++m_tcpPacketCounter;
+		const std::string annotationJson = buildAnnotationJson(localAnnotationRecord, localAnnotationEnabled, width, height);
+		if (annotationJson.size() > 1024 * 1024)
+		{
+			std::cout << "[TcpFramePacket][WARN] annotationJsonTooLarge"
+				<< " frame=" << m_tcpPacketCounter
+				<< " annotationBytes=" << annotationJson.size()
+				<< std::endl;
+		}
+
+		if (!sendFramePacket(localTrackingData, annotationJson, jpegData))
+		{
+			std::cerr << "TCP连接丢失(发送帧包失败)，准备重连..." << std::endl;
+			disconnectFromServer();
+			continue;
+		}
+
+		if (m_tcpPacketCounter <= 3 || (m_tcpPacketCounter % 120) == 0)
+		{
+			std::cout << "[TcpFramePacket]"
+				<< " frame=" << m_tcpPacketCounter
+				<< " imgBytes=" << jpegData.size()
+				<< " annotationBytes=" << annotationJson.size()
+				<< " targets=" << localAnnotationRecord.targets.size()
+				<< " width=" << width
+				<< " height=" << height
+				<< std::endl;
+		}
+	}
+	std::cout << "TCP发送后台线程安全退出" << std::endl;
+}
+
+void TcpCommThread::updateFrame(const uchar* data, int width, int height)
+{
+	BYHWICD::DisplayC2cObjTrackingData trackingData;
+	memset(&trackingData, 0, sizeof(trackingData));
+	trackingData.flag = 0x38;
+	AnnotationFrameRecord annotationRecord;
+	updateFrame(data, width, height, trackingData, annotationRecord, false);
+}
+
+void TcpCommThread::updateFrame(
+	const uchar* data,
+	int width,
+	int height,
+	const BYHWICD::DisplayC2cObjTrackingData& trackingData,
+	const AnnotationFrameRecord& annotationRecord,
+	bool annotationEnabled)
+{
+	if (data == nullptr || width <= 0 || height <= 0)
+	{
+		return;
+	}
+
+	std::lock_guard<std::mutex> lock(m_frameMtx);
+	const size_t size = static_cast<size_t>(width) * static_cast<size_t>(height) * 3u;
+
+	if (m_frameBuffer.size() != size)
+	{
+		m_frameBuffer.resize(size);
+	}
+
+	memcpy(m_frameBuffer.data(), data, size);
+	m_frameWidth = width;
+	m_frameHeight = height;
+	m_trackingData = trackingData;
+	m_hasTrackingData = true;
+	m_annotationRecord = annotationRecord;
+	m_annotationEnabled = annotationEnabled;
+	m_bNewFrame = true;
+
+	m_frameCv.notify_one();
+}

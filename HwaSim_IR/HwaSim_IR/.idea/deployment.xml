@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" remoteFilesAllowedToDisappearOnAutoupload="false">
+    <serverData>
+      <paths name="Debian11-aarch64-rk3588 (a400455a-420f-415c-b994-4579f0dfdea7)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/tmp/tmp.RemLEdniMz/HwaSim_IR" local="$PROJECT_DIR$" />
+          </mappings>
+          <excludedPaths>
+            <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-debug-aarch64-rk3588" />
+            <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-release-aarch64-rk3588" />
+            <excludedPath local="true" path="$PROJECT_DIR$/x64" />
+            <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-debug-aarch64-rk3588-ssh" />
+            <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-release-aarch64-rk3588-ssh" />
+            <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-debug-aarch64-rk3588-ssh" />
+            <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-release-aarch64-rk3588-ssh" />
+          </excludedPaths>
+        </serverdata>
+      </paths>
+    </serverData>
+  </component>
+</project>

@@ -34,6 +34,17 @@ HEADERS += \
 FORMS += \
         mainwindow.ui
 
+DISTFILES += \
+        NetworkConfig.ini
+
+CONFIG(debug, debug|release) {
+    NETWORK_CONFIG_DEST = $$OUT_PWD/debug/NetworkConfig.ini
+} else {
+    NETWORK_CONFIG_DEST = $$OUT_PWD/release/NetworkConfig.ini
+}
+
+win32:QMAKE_POST_LINK += cmd /c copy /Y $$system_path($$PWD/NetworkConfig.ini) $$system_path($$NETWORK_CONFIG_DEST)
+
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin

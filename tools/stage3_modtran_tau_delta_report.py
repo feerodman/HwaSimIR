@@ -185,7 +185,7 @@ def write_markdown(path, rows, band_stats, summary):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--log-dir", default="logs/stage3")
-    parser.add_argument("--band-lut", default="ConsoleApplication1_LLA/Bin/Config/Atmosphere/MODTRAN/processed/band_lut.csv")
+    parser.add_argument("--band-lut", default="HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed/band_lut.csv")
     parser.add_argument("--out-csv", default="logs/stage3_modtran_tau_delta_report.csv")
     parser.add_argument("--out-md", default="logs/stage3_modtran_tau_delta_report.md")
     args = parser.parse_args()

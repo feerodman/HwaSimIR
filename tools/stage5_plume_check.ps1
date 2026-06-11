@@ -6,16 +6,16 @@ $ErrorActionPreference = "Stop"
 
 $root = Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")
 $rootPath = $root.Path
-$modelHeader = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\IR\IREnginePlumeModel.h"
-$modelSource = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\IR\IREnginePlumeModel.cpp"
-$appHeader = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\HwaSimIR.h"
-$appSource = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\HwaSimIR.cpp"
-$commonDefine = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\Common\CommonDefine.h"
-$runtimeIni = Join-Path $rootPath "ConsoleApplication1_LLA\Bin\Config\HwaSimIRRuntime.ini"
-$profileJson = Join-Path $rootPath "ConsoleApplication1_LLA\Bin\Config\IRPlume\engine_plume_profiles.json"
-$cmakePath = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\CMakeLists.txt"
-$vcxprojPath = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\ConsoleApplication1.vcxproj"
-$filtersPath = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\ConsoleApplication1.vcxproj.filters"
+$modelHeader = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\IR\IREnginePlumeModel.h"
+$modelSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\IR\IREnginePlumeModel.cpp"
+$appHeader = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSimIR.h"
+$appSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSimIR.cpp"
+$commonDefine = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\Common\CommonDefine.h"
+$runtimeIni = Join-Path $rootPath "HwaSim_IR\Bin\Config\HwaSimIRRuntime.ini"
+$profileJson = Join-Path $rootPath "HwaSim_IR\Bin\Config\IRPlume\engine_plume_profiles.json"
+$cmakePath = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\CMakeLists.txt"
+$vcxprojPath = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSim_IR.vcxproj"
+$filtersPath = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSim_IR.vcxproj.filters"
 $stage6DisplayCheck = Join-Path $rootPath "tools\stage6_sensor_display_check.ps1"
 
 function Read-Text {

@@ -45,10 +45,10 @@ function Get-JsonNumber {
 $checks = New-Object System.Collections.Generic.List[object]
 
 $requiredPaths = @(
-    "ConsoleApplication1_LLA\ConsoleApplication1\IR\IRTypes.h",
-    "ConsoleApplication1_LLA\ConsoleApplication1\IR\IRTypes.cpp",
-    "ConsoleApplication1_LLA\ConsoleApplication1\IR\IRConfig.h",
-    "ConsoleApplication1_LLA\ConsoleApplication1\IR\IRConfig.cpp"
+    "HwaSim_IR\HwaSim_IR\IR\IRTypes.h",
+    "HwaSim_IR\HwaSim_IR\IR\IRTypes.cpp",
+    "HwaSim_IR\HwaSim_IR\IR\IRConfig.h",
+    "HwaSim_IR\HwaSim_IR\IR\IRConfig.cpp"
 )
 
 foreach ($relativePath in $requiredPaths) {
@@ -56,14 +56,14 @@ foreach ($relativePath in $requiredPaths) {
     $checks.Add((Add-Check "IR module file" (Test-Path -LiteralPath $fullPath) $relativePath))
 }
 
-$vcxproj = Read-Text "ConsoleApplication1_LLA\ConsoleApplication1\ConsoleApplication1.vcxproj"
-$filters = Read-Text "ConsoleApplication1_LLA\ConsoleApplication1\ConsoleApplication1.vcxproj.filters"
-$hwa = Read-Text "ConsoleApplication1_LLA\ConsoleApplication1\HwaSimIR.cpp"
-$types = Read-Text "ConsoleApplication1_LLA\ConsoleApplication1\IR\IRTypes.cpp"
+$vcxproj = Read-Text "HwaSim_IR\HwaSim_IR\HwaSim_IR.vcxproj"
+$filters = Read-Text "HwaSim_IR\HwaSim_IR\HwaSim_IR.vcxproj.filters"
+$hwa = Read-Text "HwaSim_IR\HwaSim_IR\HwaSimIR.cpp"
+$types = Read-Text "HwaSim_IR\HwaSim_IR\IR\IRTypes.cpp"
 
-$checks.Add((Add-Check "VS project includes IRConfig.cpp" ($vcxproj -match 'IR\\IRConfig\.cpp') "ConsoleApplication1.vcxproj"))
-$checks.Add((Add-Check "VS project includes IRTypes.cpp" ($vcxproj -match 'IR\\IRTypes\.cpp') "ConsoleApplication1.vcxproj"))
-$checks.Add((Add-Check "VS filters include IR folder" (($filters -match 'IR\\IRConfig\.h') -and ($filters -match 'IR\\IRTypes\.cpp')) "ConsoleApplication1.vcxproj.filters"))
+$checks.Add((Add-Check "VS project includes IRConfig.cpp" ($vcxproj -match 'IR\\IRConfig\.cpp') "HwaSim_IR.vcxproj"))
+$checks.Add((Add-Check "VS project includes IRTypes.cpp" ($vcxproj -match 'IR\\IRTypes\.cpp') "HwaSim_IR.vcxproj"))
+$checks.Add((Add-Check "VS filters include IR folder" (($filters -match 'IR\\IRConfig\.h') -and ($filters -match 'IR\\IRTypes\.cpp')) "HwaSim_IR.vcxproj.filters"))
 $checks.Add((Add-Check "HwaSimIR logs Stage1 profile" ($hwa -match '\[Stage1\] Sensor profile') "startup/init/runtime profile logging"))
 $checks.Add((Add-Check "Protocol 0 maps SWIR" ($types -match 'case 0:\s*return IRBand::ShortWaveInfrared') "trackerSensorBand=0"))
 $checks.Add((Add-Check "Protocol 2 maps MWIR" ($types -match 'case 2:\s*return IRBand::MidWaveInfrared') "trackerSensorBand=2"))
@@ -81,7 +81,7 @@ $sensorFiles = @{
 $sensorRows = New-Object System.Collections.Generic.List[object]
 foreach ($band in @("VIS", "NIR", "SWIR", "MWIR", "LWIR")) {
     $file = $sensorFiles[$band]
-    $relativePath = "ConsoleApplication1_LLA\Bin\Config\SensorWave\$file"
+    $relativePath = "HwaSim_IR\Bin\Config\SensorWave\$file"
     $text = Read-Text $relativePath
     $ok = $null -ne $text
     if ($ok) {

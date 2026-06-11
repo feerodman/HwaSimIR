@@ -1,7 +1,0 @@
-Deviation 1: The deck is generated from artifact-tool slide modules with source-template rendered backgrounds instead of duplicating and editing every inherited placeholder.
-Reason: the supplied PPTX is a lightweight planning template with many empty placeholders; the requested deliverable requires new dense strategy, market, architecture, roadmap, and financial slides.
-Affected slides: all final slides.
-
-Deviation 2: Section dividers are recreated with editable shapes on the blank template background rather than using the fixed-number source section slides.
-Reason: the source section slide images contain fixed numbers such as "02"; recreating them keeps section numbering accurate.
-Affected slides: 3, 8, 12.

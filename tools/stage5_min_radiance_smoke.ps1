@@ -7,8 +7,8 @@ $ErrorActionPreference = "Stop"
 
 $root = Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")
 $rootPath = $root.Path
-$hwaExe = Join-Path $rootPath "ConsoleApplication1_LLA\Bin\ConsoleApplication1.exe"
-$hwaWorkDir = Join-Path $rootPath "ConsoleApplication1_LLA\Bin"
+$hwaExe = Join-Path $rootPath "HwaSim_IR\Bin\HwaSim_IR.exe"
+$hwaWorkDir = Join-Path $rootPath "HwaSim_IR\Bin"
 $logDir = Join-Path $rootPath "logs\stage5"
 $summaryPath = Join-Path $logDir "stage5_min_radiance_smoke_summary.md"
 $csvPath = Join-Path $logDir "stage5_min_radiance_smoke_summary.csv"

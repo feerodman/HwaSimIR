@@ -24,7 +24,7 @@ $ErrorActionPreference = "Stop"
 
 $root = Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..\..")
 $rootPath = $root.Path
-$modtranRoot = Join-Path $rootPath "ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN"
+$modtranRoot = Join-Path $rootPath "HwaSim_IR\Bin\Config\Atmosphere\MODTRAN"
 $processedDir = Join-Path $modtranRoot "processed"
 $samplesRoot = Join-Path $modtranRoot "raw\samples"
 $failedRoot = Join-Path $modtranRoot "raw\failed"

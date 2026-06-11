@@ -6,7 +6,7 @@ $ErrorActionPreference = "Stop"
 
 $root = Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")
 $rootPath = $root.Path
-$modtranRoot = Join-Path $rootPath "ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN"
+$modtranRoot = Join-Path $rootPath "HwaSim_IR\Bin\Config\Atmosphere\MODTRAN"
 $processedDir = Join-Path $modtranRoot "processed"
 $configPath = Join-Path $rootPath "tools\modtran\modtran_grid_nir_mwir_priority.json"
 
@@ -165,12 +165,12 @@ $requiredPaths = @(
     "docs\modtran_lut_format.md",
     "docs\modtran_pcmodwin5_aerosol_template_review.md",
     "docs\modtran_cpp_tau_only_loader_plan.md",
-    "ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN\raw\templates",
-    "ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN\raw\test",
-    "ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN\raw\samples",
-    "ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN\raw\failed",
-    "ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN\generated\modin",
-    "ConsoleApplication1_LLA\Bin\Config\Atmosphere\MODTRAN\processed"
+    "HwaSim_IR\Bin\Config\Atmosphere\MODTRAN\raw\templates",
+    "HwaSim_IR\Bin\Config\Atmosphere\MODTRAN\raw\test",
+    "HwaSim_IR\Bin\Config\Atmosphere\MODTRAN\raw\samples",
+    "HwaSim_IR\Bin\Config\Atmosphere\MODTRAN\raw\failed",
+    "HwaSim_IR\Bin\Config\Atmosphere\MODTRAN\generated\modin",
+    "HwaSim_IR\Bin\Config\Atmosphere\MODTRAN\processed"
 )
 foreach ($relativePath in $requiredPaths) {
     $checks.Add((Add-Check "MODTRAN LUT path" (Test-WorkspacePath $relativePath) $relativePath)) | Out-Null

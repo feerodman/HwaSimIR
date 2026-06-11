@@ -7,16 +7,16 @@ $ErrorActionPreference = "Stop"
 $root = Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")
 $rootPath = $root.Path
 
-$postHeader = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\IR\IRSensorPostProcess.h"
-$postSource = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\IR\IRSensorPostProcess.cpp"
-$appHeader = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\HwaSimIR.h"
-$appSource = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\HwaSimIR.cpp"
-$tcpSource = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\TcpCommThread.cpp"
-$tcpLinuxSource = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\TcpCommThread_Linux.cpp"
-$stage3AtmosphereSource = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\IRSimulation.cpp"
-$cmakePath = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\CMakeLists.txt"
-$vcxprojPath = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\ConsoleApplication1.vcxproj"
-$filtersPath = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\ConsoleApplication1.vcxproj.filters"
+$postHeader = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\IR\IRSensorPostProcess.h"
+$postSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\IR\IRSensorPostProcess.cpp"
+$appHeader = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSimIR.h"
+$appSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSimIR.cpp"
+$tcpSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\TcpCommThread.cpp"
+$tcpLinuxSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\TcpCommThread_Linux.cpp"
+$stage3AtmosphereSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\IRSimulation.cpp"
+$cmakePath = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\CMakeLists.txt"
+$vcxprojPath = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSim_IR.vcxproj"
+$filtersPath = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSim_IR.vcxproj.filters"
 $displaySmoke = Join-Path $rootPath "tools\stage6_sensor_display_smoke.ps1"
 
 function Read-Text {

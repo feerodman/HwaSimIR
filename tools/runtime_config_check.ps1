@@ -7,16 +7,16 @@ $ErrorActionPreference = "Stop"
 $root = Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")
 $rootPath = $root.Path
 
-$runtimeHeader = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\IR\IRRuntimeConfig.h"
-$runtimeSource = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\IR\IRRuntimeConfig.cpp"
-$runtimeIni = Join-Path $rootPath "ConsoleApplication1_LLA\Bin\Config\HwaSimIRRuntime.ini"
-$appHeader = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\HwaSimIR.h"
-$appSource = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\HwaSimIR.cpp"
-$irConfigSource = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\IR\IRConfig.cpp"
-$irTypesHeader = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\IR\IRTypes.h"
-$cmakePath = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\CMakeLists.txt"
-$vcxprojPath = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\ConsoleApplication1.vcxproj"
-$filtersPath = Join-Path $rootPath "ConsoleApplication1_LLA\ConsoleApplication1\ConsoleApplication1.vcxproj.filters"
+$runtimeHeader = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\IR\IRRuntimeConfig.h"
+$runtimeSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\IR\IRRuntimeConfig.cpp"
+$runtimeIni = Join-Path $rootPath "HwaSim_IR\Bin\Config\HwaSimIRRuntime.ini"
+$appHeader = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSimIR.h"
+$appSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSimIR.cpp"
+$irConfigSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\IR\IRConfig.cpp"
+$irTypesHeader = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\IR\IRTypes.h"
+$cmakePath = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\CMakeLists.txt"
+$vcxprojPath = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSim_IR.vcxproj"
+$filtersPath = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSim_IR.vcxproj.filters"
 $sensorWaveDoc = Join-Path $rootPath "docs\sensorwave_config_usage.md"
 
 function Read-Text {
