@@ -872,7 +872,7 @@ void HwaSimIR::run() {
 		ProcessPendingNetworkCommands();
 
 		{
-			std::lock_guard<std::mutex> lock(m_mtx);
+			std::unique_lock<std::mutex> lock(m_mtx);
 			if (!m_pendingDisplayFrames.empty()) {
 				if (m_bSyncRenderMode.load())
 				{
@@ -891,6 +891,7 @@ void HwaSimIR::run() {
 				m_currentFrameTelemetry = pendingFrame.telemetry;
 				m_realTimeSceneData = pendingFrame.data;
 				hasDisplayFrame = true;
+				m_perfStats.recordInputQueueDepth(static_cast<int>(m_pendingDisplayFrames.size()));
 			}
 		}
 		if (hasDisplayFrame) {
@@ -2021,11 +2022,20 @@ void HwaSimIR::HideEnginePlume(TargetPlatformData& targetPlat)
 	}
 }
 
-IREnginePlumeOutput HwaSimIR::UpdateEnginePlumeForTarget(TargetPlatformData& targetPlat, float dtSec, float ambientTempK, IRBand band, bool targetRenderable, double currentTime)
+IREnginePlumeOutput HwaSimIR::UpdateEnginePlumeForTarget(TargetPlatformData& targetPlat, float dtSec, float ambientTempK, IRBand band, bool targetRenderable, double currentTime, bool* modelUpdated)
 {
 	IREnginePlumeOutput output;
+	if (modelUpdated)
+	{
+		*modelUpdated = false;
+	}
 	if (targetPlat.nodePath.is_empty())
 	{
+		return output;
+	}
+	if (!targetRenderable)
+	{
+		HideEnginePlume(targetPlat);
 		return output;
 	}
 	if (targetPlat.enginePlumeCoreNodePath.is_empty() && targetPlat.enginePlumeHaloNodePath.is_empty())
@@ -2037,21 +2047,56 @@ IREnginePlumeOutput HwaSimIR::UpdateEnginePlumeForTarget(TargetPlatformData& tar
 	const std::string platformName = Stage4PlatformName(targetPlat.type);
 	const std::string runtimeKey = platformName + "#plat" + std::to_string(targetPlat.targetState.targetPlatID)
 		+ "#target" + std::to_string(targetPlat.targetState.targetID);
+	Stage5PlumeRuntimeCache& cache = m_stage5PlumeRuntimeCache[runtimeKey];
+	const bool bypassEngineState = m_stage5PlumeOptions.forcePlumeVisible || m_stage5PlumeOptions.enablePlumeDebug;
+	if (m_stage5PlumeOptions.useEngineState && !targetPlat.targetState.engineState && !bypassEngineState)
+	{
+		HideEnginePlume(targetPlat);
+		cache.hasOutput = false;
+		cache.hasAppliedOutput = false;
+		cache.lastEngineState = false;
+		cache.lastBand = band;
+		return output;
+	}
+	const double updateIntervalSec = 1.0 / std::max(1.0, m_stage5PlumeUpdateHz);
+	const bool stateChanged = !cache.hasOutput ||
+		cache.lastEngineState != targetPlat.targetState.engineState ||
+		cache.lastBand != band;
+	const bool updateDue = cache.lastUpdateTime < 0.0 ||
+		(currentTime - cache.lastUpdateTime) >= updateIntervalSec;
+	const bool refreshModel = stateChanged || updateDue;
+	if (!refreshModel)
+	{
+		return cache.output;
+	}
+
 	IREnginePlumeInput input;
 	input.platformName = platformName;
 	input.runtimeKey = runtimeKey;
 	input.engineState = targetPlat.targetState.engineState;
-	input.dtSec = dtSec;
+	input.dtSec = cache.lastUpdateTime >= 0.0
+		? static_cast<float>(std::max(0.0, currentTime - cache.lastUpdateTime))
+		: dtSec;
 	input.ambientTempK = ambientTempK;
 	input.band = band;
 	input.options = m_stage5PlumeOptions;
 	output = m_irEnginePlumeModel.update(input);
+	cache.output = output;
+	cache.hasOutput = true;
+	cache.lastUpdateTime = currentTime;
+	cache.lastEngineState = targetPlat.targetState.engineState;
+	cache.lastBand = band;
+	if (modelUpdated)
+	{
+		*modelUpdated = true;
+	}
 
 	const bool validTarget = targetPlat.targetState.targetID >= 0 && targetPlat.targetState.viewValid;
 	const bool coreVisible = targetRenderable && validTarget && output.coreNodeVisible;
 	const bool haloVisible = targetRenderable && validTarget && output.haloNodeVisible;
 	auto applyPlumeLayer = [&](NodePath& node, int layer, bool visible, float tempK, float gray, float opacity, float lengthM,
-		float radiusRootM, float radiusTailM, float axialDecay, float radialDecay, float noiseScale, float noiseStrength, float bandGain)
+		float radiusRootM, float radiusTailM, float axialDecay, float radialDecay, float noiseScale, float noiseStrength, float bandGain,
+		float previousTempK, float previousGray, float previousOpacity)
 	{
 		if (node.is_empty())
 		{
@@ -2092,20 +2137,31 @@ IREnginePlumeOutput HwaSimIR::UpdateEnginePlumeForTarget(TargetPlatformData& tar
 			node.set_shader_input("u_plume_band_gain", LVecBase2f(bandGain, 0.0f));
 			node.show();
 		}
-		node.set_shader_input("u_plume_temperature_K", LVecBase2f(tempK, 0.0f));
-		node.set_shader_input("u_plume_gray", LVecBase2f(gray, 0.0f));
-		node.set_shader_input("u_plume_opacity", LVecBase2f(opacity, 0.0f));
+		const bool dynamicChanged = !cache.hasAppliedOutput ||
+			std::fabs(tempK - previousTempK) > 0.25f ||
+			std::fabs(gray - previousGray) > 0.001f ||
+			std::fabs(opacity - previousOpacity) > 0.001f;
+		if (becomingVisible || dynamicChanged)
+		{
+			node.set_shader_input("u_plume_temperature_K", LVecBase2f(tempK, 0.0f));
+			node.set_shader_input("u_plume_gray", LVecBase2f(gray, 0.0f));
+			node.set_shader_input("u_plume_opacity", LVecBase2f(opacity, 0.0f));
+		}
 		node.set_shader_input("u_time", LVecBase2f(static_cast<float>(currentTime), 0.0f));
 	};
 	applyPlumeLayer(targetPlat.enginePlumeHaloNodePath, 2, haloVisible, output.haloTempK, output.haloGray, output.haloOpacity,
 		output.haloLengthM, output.haloRadiusRootM, output.haloRadiusTailM, output.haloAxialDecay, output.haloRadialDecay,
-		output.haloNoiseScale, output.haloNoiseStrength, output.haloBandGain);
+		output.haloNoiseScale, output.haloNoiseStrength, output.haloBandGain,
+		cache.lastAppliedOutput.haloTempK, cache.lastAppliedOutput.haloGray, cache.lastAppliedOutput.haloOpacity);
 	applyPlumeLayer(targetPlat.enginePlumeCoreNodePath, 1, coreVisible, output.coreTempK, output.coreGray, output.coreOpacity,
 		output.coreLengthM, output.coreRadiusRootM, output.coreRadiusTailM, output.coreAxialDecay, output.coreRadialDecay,
-		output.coreNoiseScale, output.coreNoiseStrength, output.coreBandGain);
+		output.coreNoiseScale, output.coreNoiseStrength, output.coreBandGain,
+		cache.lastAppliedOutput.coreTempK, cache.lastAppliedOutput.coreGray, cache.lastAppliedOutput.coreOpacity);
+	cache.lastAppliedOutput = output;
+	cache.hasAppliedOutput = true;
 
-	const std::uint64_t frameSeq = m_currentFrameTelemetry.frameSeq > 0
-		? m_currentFrameTelemetry.frameSeq : m_stage0DisplayFrameCount;
+	const std::uint64_t frameSeq = m_currentFrameTelemetry.sourceSeq > 0
+		? m_currentFrameTelemetry.sourceSeq : m_stage0DisplayFrameCount;
 	const std::string plumeLogKey = runtimeKey + "#plume";
 	const std::string plumeLogState =
 		std::to_string(targetPlat.targetState.engineState ? 1 : 0) + ":" +
@@ -2148,23 +2204,43 @@ IREnginePlumeOutput HwaSimIR::UpdateEnginePlumeForTarget(TargetPlatformData& tar
 
 void HwaSimIR::LogStage5PlumePerf(int plumeNodeCount, int visiblePlumeCount, double updatePlumeMs)
 {
+	m_stage5PlumePerfMsTotal += updatePlumeMs;
+	m_stage5PlumePerfMsMax = std::max(m_stage5PlumePerfMsMax, updatePlumeMs);
+	++m_stage5PlumePerfSamples;
 	std::ostringstream state;
 	state << plumeNodeCount << ":" << visiblePlumeCount;
 	const std::string stateKey = state.str();
 	++m_stage5PlumePerfLogCounter;
-	const bool shouldLog = m_stage5PlumePerfLogCounter <= 3 ||
+	const bool shouldLog = m_enableIRVerboseLog ||
+		m_stage5PlumePerfLogCounter <= 3 ||
 		m_stage5PlumeLastPerfState != stateKey ||
 		(m_stage5PlumePerfLogCounter % 120) == 0;
 	if (!shouldLog)
 	{
 		return;
 	}
+	const double updatePlumeMsAvg = m_stage5PlumePerfSamples > 0
+		? m_stage5PlumePerfMsTotal / static_cast<double>(m_stage5PlumePerfSamples)
+		: 0.0;
 	std::cout << "[Stage5 PlumePerf]"
 		<< " plumeNodeCount=" << plumeNodeCount
 		<< " visiblePlumeCount=" << visiblePlumeCount
 		<< " textureLoadCountThisFrame=0"
-		<< " updatePlumeMs=" << updatePlumeMs
+		<< " updateHz=" << m_stage5PlumeUpdateHz
+		<< " updatePlumeMs=" << updatePlumeMsAvg
+		<< " updatePlumeMsMax=" << m_stage5PlumePerfMsMax
+		<< " perfBudgetMs=" << m_stage5PlumePerfBudgetMs
 		<< std::endl;
+	if (updatePlumeMsAvg > m_stage5PlumePerfBudgetMs)
+	{
+		std::cout << "[Stage5 PlumePerf][WARN]"
+			<< " updatePlumeMs=" << updatePlumeMsAvg
+			<< " perfBudgetMs=" << m_stage5PlumePerfBudgetMs
+			<< std::endl;
+	}
+	m_stage5PlumePerfMsTotal = 0.0;
+	m_stage5PlumePerfMsMax = 0.0;
+	m_stage5PlumePerfSamples = 0;
 	m_stage5PlumeLastPerfState = stateKey;
 }
 
@@ -2542,13 +2618,11 @@ void HwaSimIR::LogStage6FrameDiag(const BYHWICD::DisplayC2cObjTrackingData& curr
 		<< ":" << static_cast<int>(displayConfig.displayGain * 100.0)
 		<< ":" << static_cast<int>(displayConfig.displayOffset)
 		<< ":" << (displayConfig.noiseEnable ? 1 : 0)
-		<< ":" << static_cast<int>(displayConfig.noiseSigmaGray * 100.0)
-		<< ":" << static_cast<int>(cameraHpr[0] * 10.0)
-		<< ":" << static_cast<int>(cameraHpr[1] * 10.0)
-		<< ":" << static_cast<int>(cameraHpr[2] * 10.0);
+		<< ":" << static_cast<int>(displayConfig.noiseSigmaGray * 100.0);
 	const std::string stateKey = state.str();
-	const bool shouldLog = (m_stage6FrameDiagLogCounter <= 3) ||
-		((m_stage6FrameDiagLogCounter % 60) == 0) ||
+	const bool shouldLog = m_enableIRVerboseLog ||
+		(m_stage6FrameDiagLogCounter <= 3) ||
+		((m_stage6FrameDiagLogCounter % 120) == 0) ||
 		(m_stage6LastFrameDiagState != stateKey);
 	if (shouldLog)
 	{
@@ -2665,16 +2739,38 @@ void HwaSimIR::RefreshAnnotationOverlay(const BYHWICD::DisplayC2cObjTrackingData
 	}
 
 	// 标注像素坐标以最终显示/输出图像左上角为原点；TCP 内部 flip 不在 Stage1 修改。
-	m_annotationManager.updateFrame(
-		m_currentFrameTelemetry.frameSeq > 0 ? m_currentFrameTelemetry.frameSeq : m_stage0DisplayFrameCount,
-		currentData.time,
-		currentData.sensorID,
-		outputWidth,
-		outputHeight,
-		m_targetPlatformList,
-		m_renderRoot,
-		m_cameraNode,
-		m_cameraLens);
+	const std::uint64_t sourceSeq = m_currentFrameTelemetry.sourceSeq > 0
+		? m_currentFrameTelemetry.sourceSeq
+		: m_stage0DisplayFrameCount;
+	const double targetFps = std::max(1.0, static_cast<double>(m_targetVideoFps.load()));
+	const std::uint64_t updateStride = static_cast<std::uint64_t>(
+		std::max(1.0, std::floor(targetFps / std::max(1.0, m_annotationUpdateHz) + 0.5)));
+	const bool updateProjection = sourceSeq <= 3 ||
+		m_annotationLastProjectionSourceSeq == 0 ||
+		sourceSeq >= m_annotationLastProjectionSourceSeq + updateStride;
+	if (updateProjection)
+	{
+		m_annotationManager.updateFrame(
+			sourceSeq,
+			currentData.time,
+			currentData.sensorID,
+			outputWidth,
+			outputHeight,
+			m_targetPlatformList,
+			m_renderRoot,
+			m_cameraNode,
+			m_cameraLens);
+		m_annotationLastProjectionSourceSeq = sourceSeq;
+	}
+	else
+	{
+		m_annotationManager.reuseFrameMetadata(
+			sourceSeq,
+			currentData.time,
+			currentData.sensorID,
+			outputWidth,
+			outputHeight);
+	}
 }
 
 // 窗口初始化（通用配置）
@@ -2897,6 +2993,10 @@ void HwaSimIR::ProcessRealSimSceneInitData()
 	m_isAddPlatform = true;
 	m_irTemperatureModel.resetRuntime();
 	m_irEnginePlumeModel.resetRuntime();
+	m_stage5PlumeRuntimeCache.clear();
+	m_stage5PlumePerfMsTotal = 0.0;
+	m_stage5PlumePerfMsMax = 0.0;
+	m_stage5PlumePerfSamples = 0;
 	m_lastStage4UpdateTime = -1.0;
 
 	// 调用增删逻辑生成平台
@@ -2937,8 +3037,8 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 		std::lock_guard<std::mutex> lock(m_mtx);
 		currentData = m_realTimeSceneData;
 	}
-	const std::uint64_t frameSeq = m_currentFrameTelemetry.frameSeq > 0
-		? m_currentFrameTelemetry.frameSeq : m_stage0DisplayFrameCount;
+	const std::uint64_t frameSeq = m_currentFrameTelemetry.sourceSeq > 0
+		? m_currentFrameTelemetry.sourceSeq : m_stage0DisplayFrameCount;
 
 	// 更新PlatParamPak平台（核心：platLoc映射到飞机平台）
 	for (auto& pakPlat : m_pakPlatformList)
@@ -3149,7 +3249,10 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 
 	ApplyWeaponCameraControl(currentData, lookAtTarget);
 	LogStage6FrameDiag(currentData, targetMappedCount, targetVisibleCount, hiddenByTargetNum, hiddenByTargetViewValid, hiddenByWeaponViewValid, beyondFarClipCount);
+	const auto annotationBegin = std::chrono::steady_clock::now();
 	RefreshAnnotationOverlay(currentData);
+	m_perfStats.recordAnnotation(std::chrono::duration<double, std::milli>(
+		std::chrono::steady_clock::now() - annotationBegin).count());
 
 	//for (int i = 0; i < validTargetNum; ++i)
 	//{
@@ -3187,7 +3290,12 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 	//	}
 	//}
 
-	std::cout << "实时数据更新完成，时间戳=" << currentData.time << "ms" << std::endl;
+	if (m_enableIRVerboseLog ||
+		m_stage0DisplayFrameCount <= 3 ||
+		(m_stage0DisplayFrameCount % 120) == 0)
+	{
+		std::cout << "实时数据更新完成，时间戳=" << currentData.time << "ms" << std::endl;
+	}
 }
 
 
@@ -3821,10 +3929,16 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		std::cout << "执行复位逻辑..." << std::endl;
 		m_stage0DisplayFrameCount = 0;
 		m_udpSequence = 0;
+		m_inputQueueBackpressureLogCount = 0;
+		m_annotationLastProjectionSourceSeq = 0;
+		m_lastIrUpdateSourceSeq = 0;
+		m_lastIrUpdateState.clear();
 		m_pendingDisplayFrames.clear();
 		m_currentFrameTelemetry = IRFrameTelemetry();
-		m_lastCapturedFrameSeq = 0;
-		m_lastSyncSequenceMatch = true;
+		m_latestUdpSourceSeq.store(0);
+		m_lastCapturedSourceSeq = 0;
+		m_lastOutputSourceSeq.store(0);
+		m_lastSourceSeqContinuous.store(true);
 		m_perfStats.reset();
 		m_perfStats.configure(m_bSyncRenderMode.load(), static_cast<double>(m_targetVideoFps.load()));
 		m_annotationManager.clear();
@@ -3865,6 +3979,10 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		m_stage6CaptureLogCounter = 0;
 		m_stage6DisplayLogCounter = 0;
 		m_irEnginePlumeModel.resetRuntime();
+		m_stage5PlumeRuntimeCache.clear();
+		m_stage5PlumePerfMsTotal = 0.0;
+		m_stage5PlumePerfMsMax = 0.0;
+		m_stage5PlumePerfSamples = 0;
 		m_stage5PlumeLastPerfState.clear();
 		m_stage5PlumePerfLogCounter = 0;
 		m_lastStage4TargetLogState.clear();
@@ -3875,6 +3993,7 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		m_isSimRunning.store(false);
 		// Stage2B：同步转发复位控制命令，驱动显示端关闭/重置本回合保存状态。
 		if (m_pTcpThread) {
+			m_pTcpThread->resetFrameCounters();
 			m_pTcpThread->sendControlCmd(cmd);
 			m_pTcpThread->resetInitCompleted();
 			std::cout << "TCP线程初始化标志已重置，下一回合可重新发送初始化命令" << std::endl;
@@ -3883,10 +4002,25 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		break;
 	case 2: // 开始
 		std::cout << "执行开始仿真逻辑..." << std::endl;
+		m_stage0DisplayFrameCount = 0;
+		m_udpSequence = 0;
+		m_inputQueueBackpressureLogCount = 0;
+		m_annotationLastProjectionSourceSeq = 0;
+		m_lastIrUpdateSourceSeq = 0;
+		m_lastIrUpdateState.clear();
+		m_latestUdpSourceSeq.store(0);
+		m_pendingDisplayFrames.clear();
+		m_currentFrameTelemetry = IRFrameTelemetry();
+		m_lastCapturedSourceSeq = 0;
+		m_lastOutputSourceSeq.store(0);
+		m_lastSourceSeqContinuous.store(true);
+		m_perfStats.reset();
+		m_perfStats.configure(m_bSyncRenderMode.load(), static_cast<double>(m_targetVideoFps.load()));
 		// TODO: 实现开始仿真逻辑（启动渲染、数据采集等）
 		m_isSimRunning.store(true);
 		// Stage2B：同步转发开始控制命令，触发显示端开始录制和创建保存目录。
 		if (m_pTcpThread) {
+			m_pTcpThread->resetFrameCounters();
 			m_pTcpThread->sendControlCmd(cmd);
 			m_pTcpThread->resetInitCompleted();
 			std::cout << "TCP线程初始化标志已重置，回合重新开始" << std::endl;
@@ -3958,14 +4092,21 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 	m_perfStats.configure(m_bSyncRenderMode.load(), static_cast<double>(targetVideoFps));
 	m_pendingDisplayFrames.clear();
 	m_udpSequence = 0;
+	m_inputQueueBackpressureLogCount = 0;
+	m_annotationLastProjectionSourceSeq = 0;
+	m_lastIrUpdateSourceSeq = 0;
+	m_lastIrUpdateState.clear();
 	m_currentFrameTelemetry = IRFrameTelemetry();
-	m_lastCapturedFrameSeq = 0;
-	m_lastSyncSequenceMatch = true;
+	m_latestUdpSourceSeq.store(0);
+	m_lastCapturedSourceSeq = 0;
+	m_lastOutputSourceSeq.store(0);
+	m_lastSourceSeqContinuous.store(true);
 	m_lastStage4TargetLogState.clear();
 	m_lastStage4InputState.clear();
 	if (m_pTcpThread)
 	{
 		m_pTcpThread->setSyncMode(m_bSyncRenderMode.load());
+		m_pTcpThread->resetFrameCounters();
 	}
 	if (!m_bSyncRenderMode.load())
 	{
@@ -4015,7 +4156,7 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 // 处理实时成像数据包
 void HwaSimIR::handleDisplayData(const BYHWICD::DisplayC2cObjTrackingData& data) {
 	const std::int64_t receiveTimeNs = IRPerfStats::wallTimeNs();
-	std::lock_guard<std::mutex> lock(m_mtx);
+	std::unique_lock<std::mutex> lock(m_mtx);
 	++m_stage0DisplayFrameCount;
 	const std::uint64_t udpSeq = ++m_udpSequence;
 	m_perfStats.recordUdpFrame();
@@ -4157,28 +4298,45 @@ void HwaSimIR::handleDisplayData(const BYHWICD::DisplayC2cObjTrackingData& data)
 
 	PendingDisplayFrame pending;
 	pending.data = data;
-	pending.telemetry.frameSeq = udpSeq;
+	m_latestUdpSourceSeq.store(udpSeq);
+	pending.telemetry.sourceSeq = udpSeq;
 	pending.telemetry.udpReceiveTimeNs = receiveTimeNs;
 	if (m_bSyncRenderMode.load())
 	{
 		if (m_pendingDisplayFrames.size() >= kMaxPendingDisplayFrames)
 		{
-			m_perfStats.recordInputQueueOverflow();
-			std::cout << "[SyncFrame][WARN] inputQueueOverflow"
-				<< " udpSeq=" << udpSeq
-				<< " queueDepth=" << m_pendingDisplayFrames.size()
-				<< " queueCapacity=" << kMaxPendingDisplayFrames
-				<< " action=drop_newest_with_diagnostic"
-				<< std::endl;
+			m_perfStats.recordSyncOverrun();
+			++m_inputQueueBackpressureLogCount;
+			if (m_enableIRVerboseLog ||
+				m_inputQueueBackpressureLogCount <= 3 ||
+				(m_inputQueueBackpressureLogCount % 120) == 0)
+			{
+				std::cout << "[SyncFrame][WARN] inputQueueBackpressure"
+					<< " sourceSeq=" << udpSeq
+					<< " backpressureCount=" << m_inputQueueBackpressureLogCount
+					<< " queueDepth=" << m_pendingDisplayFrames.size()
+					<< " queueCapacity=" << kMaxPendingDisplayFrames
+					<< " action=wait_for_space"
+					<< std::endl;
+			}
 			m_cvNewData.notify_one();
-			return;
+			m_cvDisplayQueueSpace.wait(lock, [this] {
+				return m_pendingDisplayFrames.size() < kMaxPendingDisplayFrames ||
+					m_requestExit.load();
+			});
+			if (m_requestExit.load())
+			{
+				return;
+			}
 		}
 	}
 	else
 	{
 		m_pendingDisplayFrames.clear();
 	}
+	pending.telemetry.inputQueueDepth = static_cast<int>(m_pendingDisplayFrames.size() + 1);
 	m_pendingDisplayFrames.push_back(pending);
+	m_perfStats.recordInputQueueDepth(static_cast<int>(m_pendingDisplayFrames.size()));
 
 	// 通知主线程，有新数据到达
 	m_cvNewData.notify_one();
@@ -4244,6 +4402,7 @@ void HwaSimIR::InitInfraredSimulation()
 	std::string stage4RearSource;
 	std::string perfLogSource;
 	std::string verboseLogSource;
+	std::string irUpdateHzSource;
 	std::string annotationProfileSource;
 	std::string annotationDebugSource;
 	std::string annotationBBoxModeSource;
@@ -4260,15 +4419,23 @@ void HwaSimIR::InitInfraredSimulation()
 	std::string annotationSurfaceKeyPointSource;
 	std::string annotationSurfaceSnapSource;
 	std::string annotationSurfaceSnapModeSource;
+	std::string annotationUpdateHzSource;
 	bool enableModtranTauDebug = m_runtimeConfig.getBool("Stage3", "EnableModtranTauDebug", "EnableModtranTauDebug", false, &stage3TauDebugSource);
 	bool useModtranTauForAtmosphere = m_runtimeConfig.getBool("Stage3", "UseModtranTauForAtmosphere", "UseModtranTauForAtmosphere", false, &stage3UseTauSource);
 	m_enablePerfLog = m_runtimeConfig.getBool("Performance", "EnablePerfLog", "EnablePerfLog", true, &perfLogSource);
 	m_enableIRVerboseLog = m_runtimeConfig.getBool("Performance", "EnableIRVerboseLog", "EnableIRVerboseLog", false, &verboseLogSource);
+	m_irUpdateHz = m_runtimeConfig.getDouble("Performance", "IRUpdateHz", "IRUpdateHz", 30.0, &irUpdateHzSource);
+	if (!std::isfinite(m_irUpdateHz) || m_irUpdateHz <= 0.0)
+	{
+		m_irUpdateHz = 30.0;
+	}
+	m_irUpdateHz = std::max(1.0, std::min(240.0, m_irUpdateHz));
 	m_perfStats.setEnabled(m_enablePerfLog);
 	std::cout << "[PerfConfig]"
 		<< " EnablePerfLog=" << (m_enablePerfLog ? "1" : "0")
 		<< " EnableIRVerboseLog=" << (m_enableIRVerboseLog ? "1" : "0")
-		<< " source=" << perfLogSource << "/" << verboseLogSource
+		<< " IRUpdateHz=" << m_irUpdateHz
+		<< " source=" << perfLogSource << "/" << verboseLogSource << "/" << irUpdateHzSource
 		<< std::endl;
 	m_enableStage4HotspotVisualDebug = m_runtimeConfig.getBool("Stage4", "EnableHotspotVisualDebug", "EnableStage4HotspotVisualDebug", false, &stage4VisualSource);
 	m_forceStage4BrightSpotVisible = m_runtimeConfig.getBool("Stage4", "ForceBrightSpotVisible", "ForceStage4BrightSpotVisible", false, &stage4BrightSource);
@@ -4291,6 +4458,16 @@ void HwaSimIR::InitInfraredSimulation()
 	annotationOptions.surfaceKeyPointEnabled = m_runtimeConfig.getBool("Annotation", "SurfaceKeyPointEnable", "AnnotationSurfaceKeyPointEnable", true, &annotationSurfaceKeyPointSource);
 	annotationOptions.surfaceSnapEnabled = m_runtimeConfig.getBool("Annotation", "SurfaceSnapEnable", "AnnotationSurfaceSnapEnable", false, &annotationSurfaceSnapSource);
 	annotationOptions.surfaceSnapMode = m_runtimeConfig.getString("Annotation", "SurfaceSnapMode", "AnnotationSurfaceSnapMode", "profile_surface", &annotationSurfaceSnapModeSource);
+	m_annotationUpdateHz = m_runtimeConfig.getDouble("Annotation", "UpdateHz", "AnnotationUpdateHz", 15.0, &annotationUpdateHzSource);
+	if (!std::isfinite(m_annotationUpdateHz) || m_annotationUpdateHz <= 0.0)
+	{
+		m_annotationUpdateHz = 15.0;
+	}
+	m_annotationUpdateHz = std::max(1.0, std::min(240.0, m_annotationUpdateHz));
+	std::cout << "[AnnotationConfig]"
+		<< " UpdateHz=" << m_annotationUpdateHz
+		<< " source=" << annotationUpdateHzSource
+		<< std::endl;
 	m_annotationManager.loadProfileFromCandidates(BuildRuntimeConfigPathCandidates(annotationOptions.profilePath), annotationOptions.profilePath, annotationProfileSource);
 	m_annotationManager.applyRuntimeOptions(annotationOptions);
 	m_stage5DebugDisplayConfigPath = FirstExistingPath(stage5DebugConfigPaths);
@@ -4340,6 +4517,8 @@ void HwaSimIR::InitInfraredSimulation()
 	std::string plumeOpacitySource;
 	std::string plumeCoreOpacitySource;
 	std::string plumeHaloOpacitySource;
+	std::string plumeUpdateHzSource;
+	std::string plumePerfBudgetSource;
 	m_enableStage7SkyHorizon = m_runtimeConfig.getBool("Stage7Background", "EnableSkyHorizon", "EnableStage7SkyHorizon", true, &stage7EnableSource);
 	m_stage7DebugMode = ParseStage7DebugMode(m_runtimeConfig.getString("Stage7Background", "DebugMode", "Stage7DebugMode", "Off", &stage7DebugSource));
 	m_stage7DebugModeName = Stage7DebugModeName(m_stage7DebugMode);
@@ -4369,6 +4548,17 @@ void HwaSimIR::InitInfraredSimulation()
 	m_stage5PlumeOptions.opacityScale = static_cast<float>(m_runtimeConfig.getDouble("Stage5Plume", "PlumeOpacityScale", "PlumeOpacityScale", 1.0, &plumeOpacitySource));
 	m_stage5PlumeOptions.coreOpacityScale = static_cast<float>(m_runtimeConfig.getDouble("Stage5Plume", "PlumeCoreOpacityScale", "PlumeCoreOpacityScale", 1.0, &plumeCoreOpacitySource));
 	m_stage5PlumeOptions.haloOpacityScale = static_cast<float>(m_runtimeConfig.getDouble("Stage5Plume", "PlumeHaloOpacityScale", "PlumeHaloOpacityScale", 1.0, &plumeHaloOpacitySource));
+	m_stage5PlumeUpdateHz = m_runtimeConfig.getDouble("Stage5Plume", "UpdateHz", "Stage5PlumeUpdateHz", 30.0, &plumeUpdateHzSource);
+	m_stage5PlumePerfBudgetMs = m_runtimeConfig.getDouble("Stage5Plume", "PerfBudgetMs", "Stage5PlumePerfBudgetMs", 1.0, &plumePerfBudgetSource);
+	if (!std::isfinite(m_stage5PlumeUpdateHz) || m_stage5PlumeUpdateHz <= 0.0)
+	{
+		m_stage5PlumeUpdateHz = 30.0;
+	}
+	m_stage5PlumeUpdateHz = std::max(1.0, std::min(240.0, m_stage5PlumeUpdateHz));
+	if (!std::isfinite(m_stage5PlumePerfBudgetMs) || m_stage5PlumePerfBudgetMs <= 0.0)
+	{
+		m_stage5PlumePerfBudgetMs = 1.0;
+	}
 	if (!std::isfinite(m_stage5PlumeOptions.displayGain) || m_stage5PlumeOptions.displayGain < 0.0f)
 	{
 		m_stage5PlumeOptions.displayGain = 1.0f;
@@ -4525,10 +4715,13 @@ void HwaSimIR::InitInfraredSimulation()
 		<< " PlumeOpacityScale=" << m_stage5PlumeOptions.opacityScale
 		<< " PlumeCoreOpacityScale=" << m_stage5PlumeOptions.coreOpacityScale
 		<< " PlumeHaloOpacityScale=" << m_stage5PlumeOptions.haloOpacityScale
+		<< " UpdateHz=" << m_stage5PlumeUpdateHz
+		<< " PerfBudgetMs=" << m_stage5PlumePerfBudgetMs
 		<< " source=" << plumeEnableSource << "/" << plumePathSource << "/" << plumeMaxSource
 		<< "/" << plumeUseEngineSource << "/" << plumeNoiseSource << "/" << plumeDebugSource
 		<< "/" << plumeForceSource << "/" << plumeGainSource << "/" << plumeCoreGainSource << "/" << plumeHaloGainSource
 		<< "/" << plumeOpacitySource << "/" << plumeCoreOpacitySource << "/" << plumeHaloOpacitySource
+		<< "/" << plumeUpdateHzSource << "/" << plumePerfBudgetSource
 		<< "（EnginePlume 独立于 rear ThermalHotspot 与 BrightSpot；path/sky/solar disabled）"
 		<< std::endl;
 	std::cout << "[Stage7 Config]"
@@ -5371,8 +5564,8 @@ TargetPlatformData* HwaSimIR::FindOrMapTargetPlatform(const BYHWICD::TargetState
 		}
 	}
 
-	const std::uint64_t frameSeq = m_currentFrameTelemetry.frameSeq > 0
-		? m_currentFrameTelemetry.frameSeq : m_stage0DisplayFrameCount;
+	const std::uint64_t frameSeq = m_currentFrameTelemetry.sourceSeq > 0
+		? m_currentFrameTelemetry.sourceSeq : m_stage0DisplayFrameCount;
 	if (frameSeq <= 3 || (frameSeq % 120) == 0)
 	{
 		std::cout << "[TargetMapping][WARN] no_free_target_platform"
@@ -5393,8 +5586,8 @@ void HwaSimIR::ApplyWeaponCameraControl(BYHWICD::DisplayC2cObjTrackingData& curr
 	}
 
 	BYHWICD::WeaponState& weaponState = currentData.weaponState;
-	const std::uint64_t frameSeq = m_currentFrameTelemetry.frameSeq > 0
-		? m_currentFrameTelemetry.frameSeq : m_stage0DisplayFrameCount;
+	const std::uint64_t frameSeq = m_currentFrameTelemetry.sourceSeq > 0
+		? m_currentFrameTelemetry.sourceSeq : m_stage0DisplayFrameCount;
 	if (weaponState.lookatEn)
 	{
 		if (lookAtTarget == nullptr)
@@ -5490,8 +5683,8 @@ void HwaSimIR::ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHW
 	const std::string platformName = Stage4PlatformName(targetPlat.type);
 	const std::string runtimeKey = platformName + "#plat" + std::to_string(targetPlat.targetState.targetPlatID)
 		+ "#target" + std::to_string(targetPlat.targetState.targetID);
-	const std::uint64_t frameSeq = m_currentFrameTelemetry.frameSeq > 0
-		? m_currentFrameTelemetry.frameSeq : m_stage0DisplayFrameCount;
+	const std::uint64_t frameSeq = m_currentFrameTelemetry.sourceSeq > 0
+		? m_currentFrameTelemetry.sourceSeq : m_stage0DisplayFrameCount;
 	const bool engineState = targetPlat.targetState.engineState;
 	IRHotspotState rearHotspot = m_irTemperatureModel.updateEngineRear(platformName, runtimeKey, engineState, dtSec, ambientTempK);
 	if (!applyNodeInputs)
@@ -5756,8 +5949,8 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 		baseTextureAvailable = !resIter->second.texturePath.empty() && FileExists(resIter->second.texturePath);
 	}
 
-	const std::uint64_t frameSeq = m_currentFrameTelemetry.frameSeq > 0
-		? m_currentFrameTelemetry.frameSeq : m_stage0DisplayFrameCount;
+	const std::uint64_t frameSeq = m_currentFrameTelemetry.sourceSeq > 0
+		? m_currentFrameTelemetry.sourceSeq : m_stage0DisplayFrameCount;
 	const bool logStage5 = m_enableIRVerboseLog ||
 		frameSeq <= 3 ||
 		(frameSeq % 120) == 0;
@@ -6049,7 +6242,7 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 	// 更新目标导弹平台 (TargetState)
 	int stage5PlumeNodeCount = 0;
 	int stage5VisiblePlumeCount = 0;
-	const auto plumeUpdateStart = std::chrono::high_resolution_clock::now();
+	double updatePlumeMs = 0.0;
 	for (auto& targetPlat : m_targetPlatformList) {
 		if (targetPlat.isExist) {
 			if (!targetPlat.enginePlumeCoreNodePath.is_empty())
@@ -6085,7 +6278,17 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 			IREnginePlumeOutput plumeOutput;
 			if (targetRenderable)
 			{
-				plumeOutput = UpdateEnginePlumeForTarget(targetPlat, stage4DtSec, ambientTempK, environment.band, true, current_time);
+				const auto plumeUpdateStart = std::chrono::high_resolution_clock::now();
+				plumeOutput = UpdateEnginePlumeForTarget(
+					targetPlat,
+					stage4DtSec,
+					ambientTempK,
+					environment.band,
+					true,
+					current_time,
+					nullptr);
+				updatePlumeMs += std::chrono::duration<double, std::milli>(
+					std::chrono::high_resolution_clock::now() - plumeUpdateStart).count();
 			}
 			else
 			{
@@ -6101,8 +6304,7 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 			}
 		}
 	}
-	const auto plumeUpdateEnd = std::chrono::high_resolution_clock::now();
-	const double updatePlumeMs = std::chrono::duration<double, std::milli>(plumeUpdateEnd - plumeUpdateStart).count();
+	m_perfStats.recordPlumeUpdate(updatePlumeMs);
 	LogStage5PlumePerf(stage5PlumeNodeCount, stage5VisiblePlumeCount, updatePlumeMs);
 }
 
@@ -6142,6 +6344,7 @@ void HwaSimIR::SetRenderMode(bool isSync, double targetFPS) {
 
 void HwaSimIR::OnTcpFrameSent(
 	const IRFrameTelemetry& telemetry,
+	std::uint64_t outputOrdinal,
 	double flipMs,
 	double resizeMs,
 	double jpegMs,
@@ -6158,7 +6361,13 @@ void HwaSimIR::OnTcpFrameSent(
 	const double frameMs = telemetry.processStartTimeNs > 0
 		? static_cast<double>(nowSteadyNs - telemetry.processStartTimeNs) / 1.0e6
 		: -1.0;
-	const std::uint64_t outputSeq = m_perfStats.recordTcpOutput(jpegMs, tcpSendMs, latencyMs, queueDepth);
+	m_perfStats.recordTcpOutput(
+		jpegMs,
+		tcpSendMs,
+		latencyMs,
+		queueDepth,
+		telemetry.sourceSeq,
+		m_latestUdpSourceSeq.load());
 	const double targetFps = m_perfStats.videoFpsTarget();
 	const double frameBudgetMs = targetFps > 0.0 ? 1000.0 / targetFps : 0.0;
 	const bool overrun = m_bSyncRenderMode.load() && frameBudgetMs > 0.0 &&
@@ -6168,27 +6377,32 @@ void HwaSimIR::OnTcpFrameSent(
 		m_perfStats.recordSyncOverrun();
 	}
 
-	const bool sequenceMatch = telemetry.frameSeq == outputSeq;
-	const bool sequenceStateChanged = sequenceMatch != m_lastSyncSequenceMatch.load();
-	m_lastSyncSequenceMatch.store(sequenceMatch);
+	const std::uint64_t previousSourceSeq = m_lastOutputSourceSeq.exchange(telemetry.sourceSeq);
+	const bool sourceSeqContinuous = previousSourceSeq == 0 || telemetry.sourceSeq == previousSourceSeq + 1;
+	m_lastSourceSeqContinuous.store(sourceSeqContinuous);
 	if (m_bSyncRenderMode.load() &&
-		(outputSeq <= 3 || (outputSeq % 120) == 0 || overrun || overwritten || sequenceStateChanged))
+		(outputOrdinal <= 3 ||
+			(outputOrdinal % 120) == 0 ||
+			(overrun && (outputOrdinal % 30) == 0) ||
+			overwritten))
 	{
 		std::ostringstream syncLine;
 		syncLine << std::fixed << std::setprecision(3)
 			<< "[SyncFrame]"
-			<< " udpSeq=" << telemetry.frameSeq
-			<< " outputSeq=" << outputSeq
+			<< " sourceSeq=" << telemetry.sourceSeq
+			<< " outputOrdinal=" << outputOrdinal
+			<< " inputQueueDepth=" << telemetry.inputQueueDepth
+			<< " tcpQueueDepth=" << queueDepth
+			<< " sourceSeqContinuous=" << (sourceSeqContinuous ? "1" : "0")
 			<< " videoFpsTarget=" << targetFps
 			<< " frameMs=" << frameMs
 			<< " latencyMs=" << latencyMs
+			<< " readbackMs=" << telemetry.readbackMs
 			<< " flipMs=" << flipMs
 			<< " resizeMs=" << resizeMs
 			<< " jpegMs=" << jpegMs
 			<< " tcpSendMs=" << tcpSendMs
-			<< " queueDepth=" << queueDepth
 			<< " overrun=" << (overrun ? "1" : "0")
-			<< " sequenceMatch=" << (sequenceMatch ? "1" : "0")
 			<< " overwritten=" << (overwritten ? "1" : "0");
 		std::cout << syncLine.str() << std::endl;
 	}
@@ -6206,10 +6420,47 @@ AsyncTask::DoneStatus HwaSimIR::shader_update_task(GenericAsyncTask* task, void*
 	HwaSimIR* self = static_cast<HwaSimIR*>(data);
 	if (self->m_isSimRunning.load() &&
 		(!self->m_bSyncRenderMode.load() || self->m_syncFrameActive.load())) {
-		const auto begin = std::chrono::steady_clock::now();
-		self->UpdatePlatformIRStatus();
-		self->m_perfStats.recordIrUpdate(std::chrono::duration<double, std::milli>(
-			std::chrono::steady_clock::now() - begin).count());
+		const std::uint64_t sourceSeq = self->m_currentFrameTelemetry.sourceSeq;
+		const double targetFps = std::max(1.0, static_cast<double>(self->m_targetVideoFps.load()));
+		const std::uint64_t updateStride = static_cast<std::uint64_t>(
+			std::max(1.0, std::floor(targetFps / std::max(1.0, self->m_irUpdateHz) + 0.5)));
+		std::ostringstream state;
+		state << self->m_sensorParam.trackerSensorBand
+			<< ":" << self->m_realTimeSceneData.targetNumValid
+			<< ":" << self->m_realTimeSceneData.weaponState.strikeFlag
+			<< ":" << self->m_realTimeSceneData.weaponState.strikePart
+			<< ":" << self->m_realTimeSceneData.weaponState.targetType
+			<< ":" << self->m_realTimeSceneData.weaponState.targetPlatID
+			<< ":" << self->m_realTimeSceneData.weaponState.targetID;
+		for (int i = 0; i < 5; ++i)
+		{
+			const BYHWICD::TargetState& target = self->m_realTimeSceneData.targetState[i];
+			state << "|" << target.targetType
+				<< ":" << target.targetPlatID
+				<< ":" << target.targetID
+				<< ":" << target.engineState
+				<< ":" << target.viewValid
+				<< ":" << target.targetState;
+		}
+		const std::string stateKey = state.str();
+		const bool stateChanged = stateKey != self->m_lastIrUpdateState;
+		const bool updateDue = !self->m_bSyncRenderMode.load() ||
+			sourceSeq <= 3 ||
+			self->m_lastIrUpdateSourceSeq == 0 ||
+			sourceSeq >= self->m_lastIrUpdateSourceSeq + updateStride;
+		if (stateChanged || updateDue)
+		{
+			const auto begin = std::chrono::steady_clock::now();
+			self->UpdatePlatformIRStatus();
+			self->m_perfStats.recordIrUpdate(std::chrono::duration<double, std::milli>(
+				std::chrono::steady_clock::now() - begin).count());
+			self->m_lastIrUpdateSourceSeq = sourceSeq;
+			self->m_lastIrUpdateState = stateKey;
+		}
+		else
+		{
+			self->m_perfStats.recordIrUpdate(0.0);
+		}
 	}
 	return AsyncTask::DS_cont;
 }
@@ -6269,10 +6520,11 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 				std::lock_guard<std::mutex> lock(self->m_mtx);
 				trackingSnapshot = self->m_realTimeSceneData;
 				telemetry = self->m_currentFrameTelemetry;
-				displayFrameIndex = telemetry.frameSeq > 0 ? telemetry.frameSeq : self->m_stage0DisplayFrameCount;
+				displayFrameIndex = telemetry.sourceSeq > 0 ? telemetry.sourceSeq : self->m_stage0DisplayFrameCount;
 			}
+			telemetry.readbackMs = readbackMs;
 			if (self->m_bSyncRenderMode.load() &&
-				(telemetry.frameSeq == 0 || telemetry.frameSeq == self->m_lastCapturedFrameSeq))
+				(telemetry.sourceSeq == 0 || telemetry.sourceSeq == self->m_lastCapturedSourceSeq))
 			{
 				return AsyncTask::DS_cont;
 			}
@@ -6317,7 +6569,7 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 			}
 			if (self->m_bSyncRenderMode.load())
 			{
-				self->m_lastCapturedFrameSeq = telemetry.frameSeq;
+				self->m_lastCapturedSourceSeq = telemetry.sourceSeq;
 				if (enqueueResult.queueWasFull)
 				{
 					self->m_perfStats.recordSyncOverrun();
@@ -6340,7 +6592,7 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 					<< " renderTextureHeight=" << height
 					<< " source=final_sensor"
 					<< " channels=RGB8"
-					<< " frameSeq=" << telemetry.frameSeq
+					<< " sourceSeq=" << telemetry.sourceSeq
 					<< " readbackMs=" << readbackMs
 					<< " resizeMs=" << resizeMs
 					<< " frameCopyMs=" << enqueueResult.copyMs

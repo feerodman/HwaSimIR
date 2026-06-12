@@ -121,6 +121,7 @@ public:
 	void SetRenderMode(bool isSync, double targetFPS);
 	void OnTcpFrameSent(
 		const IRFrameTelemetry& telemetry,
+		std::uint64_t outputOrdinal,
 		double flipMs,
 		double resizeMs,
 		double jpegMs,
@@ -182,6 +183,9 @@ private:
 	IRRuntimeConfig m_runtimeConfig;                         // 运行配置：env > HwaSimIRRuntime.ini > default
 	bool m_enablePerfLog = true;
 	bool m_enableIRVerboseLog = false;
+	double m_irUpdateHz = 30.0;
+	std::uint64_t m_lastIrUpdateSourceSeq = 0;
+	std::string m_lastIrUpdateState;
 	bool m_irMaterialReady = false;
 	bool m_irAtmosphereReady = false;
 	bool m_irSensorProfilesReady = false;
@@ -211,6 +215,22 @@ private:
 	int m_stage5ConsecutiveReflectedZeroFrames = 0;
 	IREnginePlumeRuntimeOptions m_stage5PlumeOptions;
 	std::string m_stage5PlumeProfilePath = "Config/IRPlume/engine_plume_profiles.json";
+	struct Stage5PlumeRuntimeCache
+	{
+		IREnginePlumeOutput output;
+		IREnginePlumeOutput lastAppliedOutput;
+		double lastUpdateTime = -1.0;
+		bool hasOutput = false;
+		bool hasAppliedOutput = false;
+		bool lastEngineState = false;
+		IRBand lastBand = IRBand::MidWaveInfrared;
+	};
+	std::map<std::string, Stage5PlumeRuntimeCache> m_stage5PlumeRuntimeCache;
+	double m_stage5PlumeUpdateHz = 30.0;
+	double m_stage5PlumePerfBudgetMs = 1.0;
+	double m_stage5PlumePerfMsTotal = 0.0;
+	double m_stage5PlumePerfMsMax = 0.0;
+	std::uint64_t m_stage5PlumePerfSamples = 0;
 	std::string m_stage5PlumeLastPerfState;
 	int m_stage5PlumePerfLogCounter = 0;
 	bool m_stage5BodyGrayPathHintLogged = false;
@@ -305,7 +325,7 @@ private:
 	void LogStage7Weather(const IRStage7WeatherState& weatherState, const char* reason, bool forceLog);
 	void LogStage7Perf(const IRStage7WeatherState& weatherState, int weatherNodeCount, int cloudNodeCount, int precipitationNodeCount, int textureLoadCountThisFrame, double updateWeatherNodesMs, double totalWeatherMs);
 	void CreateEnginePlumeForTarget(TargetPlatformData& targetPlat);
-	IREnginePlumeOutput UpdateEnginePlumeForTarget(TargetPlatformData& targetPlat, float dtSec, float ambientTempK, IRBand band, bool targetRenderable, double currentTime);
+	IREnginePlumeOutput UpdateEnginePlumeForTarget(TargetPlatformData& targetPlat, float dtSec, float ambientTempK, IRBand band, bool targetRenderable, double currentTime, bool* modelUpdated);
 	void HideEnginePlume(TargetPlatformData& targetPlat);
 	void LogStage5PlumePerf(int plumeNodeCount, int visiblePlumeCount, double updatePlumeMs);
 	NodePath LoadPlatformAssetNode(PLATFORM_TYPE type, const PlatformResPath& res); // 加载模型、基础纹理和阶段2材质绑定
@@ -363,7 +383,7 @@ private:
 	std::mutex m_mtx;                  // 业务逻辑互斥锁
 	std::deque<PendingNetworkCommand> m_pendingNetworkCommands;
 	std::deque<PendingDisplayFrame> m_pendingDisplayFrames;
-	static const std::size_t kMaxPendingDisplayFrames = 4;
+	static const std::size_t kMaxPendingDisplayFrames = 16;
 	std::string m_udpLocalIp = "0.0.0.0";
 	uint16_t m_udpLocalPort = 8888;
 	std::string m_udpRemoteIp = "192.168.1.188";
@@ -380,6 +400,9 @@ private:
 	std::vector<WeaponPlatformData> m_weaponPlatformList;// WeaponState平台
 	std::vector<TargetPlatformData> m_targetPlatformList;// TargetState平台
 	AnnotationManager m_annotationManager;              // Stage1：实时窗口标注与内存快照
+	double m_annotationUpdateHz = 15.0;
+	std::uint64_t m_annotationLastProjectionSourceSeq = 0;
+	std::uint64_t m_inputQueueBackpressureLogCount = 0;
 
 	bool m_isInitTargetPlatID;	//TargetState平台初始化ID映射标记
 
@@ -389,9 +412,11 @@ private:
 	BYHWICD::trackerSensorParam m_sensorParam;               // 传感器参数缓存
 	unsigned long long m_stage0DisplayFrameCount;            // 阶段0基线诊断：实时数据包计数
 	std::uint64_t m_udpSequence = 0;
+	std::atomic<std::uint64_t> m_latestUdpSourceSeq{ 0 };
 	IRFrameTelemetry m_currentFrameTelemetry;
-	std::uint64_t m_lastCapturedFrameSeq = 0;
-	std::atomic<bool> m_lastSyncSequenceMatch{ true };
+	std::uint64_t m_lastCapturedSourceSeq = 0;
+	std::atomic<std::uint64_t> m_lastOutputSourceSeq{ 0 };
+	std::atomic<bool> m_lastSourceSeqContinuous{ true };
 	std::string m_lastStage4InputState;
 	std::map<std::string, std::string> m_lastStage4TargetLogState;
 	int m_lastWeaponDamageFlag = -1;

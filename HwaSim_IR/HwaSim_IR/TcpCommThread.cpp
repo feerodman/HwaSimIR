@@ -117,6 +117,17 @@ void TcpCommThread::stop() {
 	std::cout << "TCP通讯线程已停止" << std::endl;
 }
 
+void TcpCommThread::resetFrameCounters()
+{
+	{
+		std::lock_guard<std::mutex> lock(m_frameMtx);
+		m_frameQueue.clear();
+		m_tcpPacketCounter.store(0);
+		m_lastTcpPerfLogNs = 0;
+	}
+	m_queueSpaceCv.notify_all();
+}
+
 // 建立连接
 bool TcpCommThread::connectToServer() {
 	disconnectFromServer(); // 确保旧的 socket 被彻底清理
@@ -251,17 +262,20 @@ std::string TcpCommThread::buildAnnotationJson(
 	int tcpWidth,
 	int tcpHeight,
 	const IRFrameTelemetry& telemetry,
+	std::uint64_t outputOrdinal,
 	std::int64_t tcpSendTimeNs) const
 {
 	const int srcWidth = record.width > 0 ? record.width : tcpWidth;
 	const int srcHeight = record.height > 0 ? record.height : tcpHeight;
-	const unsigned long long frameIndex = record.frameIndex > 0 ? record.frameIndex : m_tcpPacketCounter;
+	const unsigned long long frameIndex = record.frameIndex > 0 ? record.frameIndex : outputOrdinal;
 
 	std::ostringstream json;
 	json << "{\"version\":1"
 		<< ",\"enabled\":" << (annotationEnabled ? "true" : "false")
 		<< ",\"frameIndex\":" << frameIndex
-		<< ",\"frameSeq\":" << telemetry.frameSeq
+		<< ",\"frameSeq\":" << telemetry.sourceSeq
+		<< ",\"sourceSeq\":" << telemetry.sourceSeq
+		<< ",\"outputOrdinal\":" << outputOrdinal
 		<< ",\"udpReceiveTimeNs\":\"" << telemetry.udpReceiveTimeNs << "\""
 		<< ",\"tcpSendTimeNs\":\"" << tcpSendTimeNs << "\""
 		<< ",\"simTimeMs\":" << record.simTimeMs
@@ -386,6 +400,7 @@ void TcpCommThread::sendFrameThreadFunc() {
 		const auto flipBegin = std::chrono::steady_clock::now();
 		cv::Mat rawFrame(frame.height, frame.width, CV_8UC3, frame.pixels.data());
 		cv::Mat flippedFrame;
+		// Phase 1B TODO: evaluate FlipInShader/FlipInVideoDisplay without changing the current JPEG orientation.
 		cv::flip(rawFrame, flippedFrame, 0);
 		const double flipMs = std::chrono::duration<double, std::milli>(
 			std::chrono::steady_clock::now() - flipBegin).count();
@@ -399,7 +414,7 @@ void TcpCommThread::sendFrameThreadFunc() {
 		const double jpegMs = std::chrono::duration<double, std::milli>(
 			std::chrono::steady_clock::now() - jpegBegin).count();
 
-		++m_tcpPacketCounter;
+		const std::uint64_t outputOrdinal = ++m_tcpPacketCounter;
 		const std::int64_t tcpSendTimeNs = IRPerfStats::wallTimeNs();
 		const std::string annotationJson = buildAnnotationJson(
 			frame.annotationRecord,
@@ -407,11 +422,12 @@ void TcpCommThread::sendFrameThreadFunc() {
 			frame.width,
 			frame.height,
 			frame.telemetry,
+			outputOrdinal,
 			tcpSendTimeNs);
 		if (annotationJson.size() > 1024 * 1024)
 		{
 			std::cout << "[TcpFramePacket][WARN] annotationJsonTooLarge"
-				<< " frame=" << m_tcpPacketCounter
+				<< " frame=" << outputOrdinal
 				<< " annotationBytes=" << annotationJson.size()
 				<< std::endl;
 		}
@@ -425,10 +441,10 @@ void TcpCommThread::sendFrameThreadFunc() {
 		const double tcpSendMs = std::chrono::duration<double, std::milli>(
 			std::chrono::steady_clock::now() - sendBegin).count();
 
-		if (m_tcpPacketCounter <= 3 || (m_tcpPacketCounter % 120) == 0)
+		if (outputOrdinal <= 3 || (outputOrdinal % 120) == 0)
 		{
 			std::cout << "[TcpFramePacket]"
-				<< " frame=" << m_tcpPacketCounter
+				<< " frame=" << outputOrdinal
 				<< " imgBytes=" << jpegData.size()
 				<< " annotationBytes=" << annotationJson.size()
 				<< " targets=" << frame.annotationRecord.targets.size()
@@ -438,14 +454,14 @@ void TcpCommThread::sendFrameThreadFunc() {
 		}
 
 		const std::int64_t perfNowNs = IRPerfStats::steadyTimeNs();
-		if (m_tcpPacketCounter <= 3 || (m_tcpPacketCounter % 120) == 0 ||
+		if (outputOrdinal <= 3 || (outputOrdinal % 120) == 0 ||
 			perfNowNs - m_lastTcpPerfLogNs >= 2000000000LL)
 		{
 			std::ostringstream perfLine;
 			perfLine << std::fixed << std::setprecision(3)
 				<< "[TcpPerf]"
-				<< " frameSeq=" << frame.telemetry.frameSeq
-				<< " outputSeq=" << m_tcpPacketCounter
+				<< " sourceSeq=" << frame.telemetry.sourceSeq
+				<< " outputOrdinal=" << outputOrdinal
 				<< " flipMs=" << flipMs
 				<< " resizeMs=0.000"
 				<< " jpegMs=" << jpegMs
@@ -460,6 +476,7 @@ void TcpCommThread::sendFrameThreadFunc() {
 		{
 			m_pHwaSimIR->OnTcpFrameSent(
 				frame.telemetry,
+				outputOrdinal,
 				flipMs,
 				0.0,
 				jpegMs,

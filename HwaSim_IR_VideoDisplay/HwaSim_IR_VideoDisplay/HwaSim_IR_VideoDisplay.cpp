@@ -13,7 +13,9 @@
 #include <QJsonObject>
 #include <QJsonParseError>
 #include <QtGlobal>
+#include <algorithm>
 #include <chrono>
+#include <cmath>
 
 namespace
 {
@@ -28,14 +30,14 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(QWidget *parent)
     : QWidget(parent)
 {
     ui.setupUi(this);
-    setWindowTitle(QStringLiteral("红外仿真图像接收器"));
+    setWindowTitle("红外仿真图像接收器");
     showMaximized();
 
     // m_Label_Video 居中 + 自适应缩放
     ui.m_Label_Video->setScaledContents(true);
 
     // 设置 dockWidget
-    ui.dockWidget_dataShow->setWindowTitle(QStringLiteral("数据显示"));
+    ui.dockWidget_dataShow->setWindowTitle("数据显示");
 
     // 动态创建表格
     InitTables();
@@ -91,10 +93,10 @@ void HwaSim_IR_VideoDisplay::InitTables()
     // ============ 平台数据表格（ui 已创建，直接配置）============
     ui.tableWidget_platData->setColumnCount(9);
     ui.tableWidget_platData->setHorizontalHeaderLabels({
-        QStringLiteral("平台ID"), QStringLiteral("阵营"),
-        QStringLiteral("纬度(°)"), QStringLiteral("经度(°)"), QStringLiteral("海拔(m)"),
-        QStringLiteral("航向(°)"), QStringLiteral("俯仰(°)"), QStringLiteral("滚转(°)"),
-        QStringLiteral("速度(km/h)")
+        "平台ID", "阵营",
+        "纬度(°)", "经度(°)", "海拔(m)",
+        "航向(°)", "俯仰(°)", "滚转(°)",
+        "速度(km/h)"
     });
     // Stretch 模式：列按比例平分占满整行，无空白
     ui.tableWidget_platData->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
@@ -109,10 +111,10 @@ void HwaSim_IR_VideoDisplay::InitTables()
     // ============ 目标数据表格（ui 已创建，直接配置）============
     ui.tableWidget_targetData->setColumnCount(11);
     ui.tableWidget_targetData->setHorizontalHeaderLabels({
-        QStringLiteral("目标类型"), QStringLiteral("目标ID"), QStringLiteral("挂载平台ID"),
-        QStringLiteral("纬度(°)"), QStringLiteral("经度(°)"), QStringLiteral("海拔(m)"),
-        QStringLiteral("航向(°)"), QStringLiteral("俯仰(°)"), QStringLiteral("滚转(°)"),
-        QStringLiteral("在视场"), QStringLiteral("状态")
+       "目标类型", "目标ID", "挂载平台ID",
+        "纬度(°)", "经度(°)", "海拔(m)",
+        "航向(°)", "俯仰(°)", "滚转(°)",
+        "在视场", "状态"
     });
     // Stretch 模式：列按比例平分占满整行，无空白
     ui.tableWidget_targetData->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
@@ -163,11 +165,11 @@ void HwaSim_IR_VideoDisplay::resizeEvent(QResizeEvent* event)
 QString HwaSim_IR_VideoDisplay::targetTypeName(int type)
 {
     switch (type) {
-    case 0x11: return QStringLiteral("飞机");
-    case 0x22: return QStringLiteral("雷达导弹");
-    case 0x33: return QStringLiteral("红外弹");
-    case 0x44: return QStringLiteral("MMD");
-    default:   return QStringLiteral("未知");
+    case 0x11: return "飞机";
+    case 0x22: return "雷达导弹";
+    case 0x33: return "红外弹";
+    case 0x44: return "MMD";
+    default:   return "未知";
     }
 }
 
@@ -175,10 +177,10 @@ QString HwaSim_IR_VideoDisplay::targetTypeName(int type)
 QString HwaSim_IR_VideoDisplay::targetStateName(int state)
 {
     switch (state) {
-    case 0x01: return QStringLiteral("打击态");
-    case 0x02: return QStringLiteral("爆炸态");
-    case 0x03: return QStringLiteral("击毁态");
-    default:   return QStringLiteral("正常");
+    case 0x01: return "打击态";
+    case 0x02: return "爆炸态";
+    case 0x03: return "击毁态";
+    default:   return "正常";
     }
 }
 
@@ -308,7 +310,7 @@ void HwaSim_IR_VideoDisplay::updateTargetDataTable(const BYHWICD::DisplayC2cObjT
         ui.tableWidget_targetData->setItem(row, 6, new QTableWidgetItem(QString::number(ts.targetLoc.yaw, 'f', 2)));
         ui.tableWidget_targetData->setItem(row, 7, new QTableWidgetItem(QString::number(ts.targetLoc.pitch, 'f', 2)));
         ui.tableWidget_targetData->setItem(row, 8, new QTableWidgetItem(QString::number(ts.targetLoc.roll, 'f', 2)));
-        ui.tableWidget_targetData->setItem(row, 9, new QTableWidgetItem(ts.viewValid ? QStringLiteral("是") : QStringLiteral("否")));
+        ui.tableWidget_targetData->setItem(row, 9, new QTableWidgetItem(ts.viewValid ? "是" : "否"));
         ui.tableWidget_targetData->setItem(row, 10, new QTableWidgetItem(targetStateName(ts.targetState)));
     }
 }
@@ -316,7 +318,7 @@ void HwaSim_IR_VideoDisplay::updateTargetDataTable(const BYHWICD::DisplayC2cObjT
 // ==================== 帧存储：MP4 + 标注文件 ====================
 QString HwaSim_IR_VideoDisplay::fallbackAnnotationJson(int frameIndex, const QImage& img, const BYHWICD::DisplayC2cObjTrackingData& data) const
 {
-	return QStringLiteral("{\"version\":1,\"enabled\":false,\"frameIndex\":%1,\"simTimeMs\":%2,\"sensorID\":%3,\"width\":%4,\"height\":%5,\"targets\":[]}")
+	return  QString("{\"version\":1,\"enabled\":false,\"frameIndex\":%1,\"simTimeMs\":%2,\"sensorID\":%3,\"width\":%4,\"height\":%5,\"targets\":[]}")
 		.arg(frameIndex)
 		.arg(data.time, 0, 'f', 3)
 		.arg(data.sensorID)
@@ -405,7 +407,7 @@ void HwaSim_IR_VideoDisplay::saveFrameToStorage(const QImage& img, const BYHWICD
                            << ts.targetLoc.yaw << ","
                            << ts.targetLoc.pitch << ","
                            << ts.targetLoc.roll << ","
-                           << (ts.viewValid ? QStringLiteral("是") : QStringLiteral("否")) << ","
+                           << (ts.viewValid ? "是" : "否") << ","
                            << targetStateName(ts.targetState) << "\n";
         }
     }
@@ -461,6 +463,26 @@ void HwaSim_IR_VideoDisplay::CloseStorage()
     m_currentRoundDir.clear();
 }
 
+void HwaSim_IR_VideoDisplay::resetVideoPerfStats()
+{
+    m_videoPerfFrames = 0;
+    m_videoPerfIntervalFrames = 0;
+    m_lastFrameSeq = 0;
+    m_frameSeqDiscontinuities = 0;
+    m_receivedFrameBaseline = m_worker ? m_worker->receivedFrameCount() : 0;
+    m_lastReceivedFrameCount = m_receivedFrameBaseline;
+    m_intervalSourceSeqContinuous = true;
+    m_videoPerfReceiveStartNs = 0;
+    m_videoPerfDisplayStartNs = 0;
+    m_lastVideoPerfLogNs = wallTimeNs();
+    m_decodeMsTotal = 0.0;
+    m_displayMsTotal = 0.0;
+    m_latencyMsTotal = 0.0;
+    m_latencyMsMax = 0.0;
+    m_latencySamples = 0;
+    m_latencyIntervalSamples.clear();
+}
+
 // ==================== 图像帧接收槽 ====================
 void HwaSim_IR_VideoDisplay::imageReceivedSlot(
     const QImage& img,
@@ -475,14 +497,19 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
     const double displayMs = static_cast<double>(displayTimer.nsecsElapsed()) / 1.0e6;
     const qint64 shownTimeNs = wallTimeNs();
 
-    // 更新平台空间状态（按 platID 匹配）
-    updatePlatDataTable(data.platID, data.platLoc);
-
-    // 更新目标数据
-    updateTargetDataTable(data);
+    const bool updateUiData = m_videoPerfFrames < 3 ||
+        (m_videoPerfFrames % static_cast<quint64>(qMax(1, m_uiUpdateEveryFrames))) == 0;
+    if (updateUiData)
+    {
+        updatePlatDataTable(data.platID, data.platLoc);
+        updateTargetDataTable(data);
+    }
 
     // 如正在录制，保存帧
-    saveFrameToStorage(img, data, annotationJson);
+    if (!m_storageSuppressedForRealtime)
+    {
+        saveFrameToStorage(img, data, annotationJson);
+    }
 
     quint64 frameSeq = 0;
     qint64 udpReceiveTimeNs = 0;
@@ -494,9 +521,13 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
         if (parseError.error == QJsonParseError::NoError && document.isObject())
         {
             const QJsonObject object = document.object();
-            frameSeq = object.value(QStringLiteral("frameSeq")).toVariant().toULongLong();
-            udpReceiveTimeNs = object.value(QStringLiteral("udpReceiveTimeNs")).toString().toLongLong();
-            tcpSendTimeNs = object.value(QStringLiteral("tcpSendTimeNs")).toString().toLongLong();
+            frameSeq = object.value("sourceSeq").toVariant().toULongLong();
+            if (frameSeq == 0)
+            {
+                frameSeq = object.value("frameSeq").toVariant().toULongLong();
+            }
+            udpReceiveTimeNs = object.value("udpReceiveTimeNs").toString().toLongLong();
+            tcpSendTimeNs = object.value("tcpSendTimeNs").toString().toLongLong();
         }
     }
 
@@ -514,6 +545,7 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
         if (m_lastFrameSeq > 0 && frameSeq != m_lastFrameSeq + 1)
         {
             ++m_frameSeqDiscontinuities;
+            m_intervalSourceSeqContinuous = false;
         }
         m_lastFrameSeq = frameSeq;
     }
@@ -527,44 +559,65 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
             m_latencyMsTotal += endToEndMs;
             m_latencyMsMax = qMax(m_latencyMsMax, endToEndMs);
             ++m_latencySamples;
+            m_latencyIntervalSamples.push_back(endToEndMs);
         }
     }
     const double tcpToReceiveMs = tcpSendTimeNs > 0 && receiveTimeNs >= tcpSendTimeNs
         ? static_cast<double>(receiveTimeNs - tcpSendTimeNs) / 1.0e6
         : -1.0;
-    const bool shouldLog =
-        m_videoPerfFrames <= 3 ||
-        (m_videoPerfFrames % 120) == 0 ||
-        shownTimeNs - m_lastVideoPerfLogNs >= 2000000000LL;
+    const bool shouldLog = shownTimeNs - m_lastVideoPerfLogNs >= 2000000000LL;
     if (shouldLog)
     {
-        const double receiveElapsedSec = qMax(
-            0.001,
-            static_cast<double>(receiveTimeNs - m_videoPerfReceiveStartNs) / 1.0e9);
         const double displayElapsedSec = qMax(
             0.001,
             static_cast<double>(shownTimeNs - m_videoPerfDisplayStartNs) / 1.0e9);
+        const quint64 receivedFrameCount = m_worker ? m_worker->receivedFrameCount() : m_videoPerfFrames;
+        const quint64 receivedIntervalFrames = receivedFrameCount >= m_lastReceivedFrameCount
+            ? receivedFrameCount - m_lastReceivedFrameCount
+            : 0;
+        const quint64 receivedSinceReset = receivedFrameCount >= m_receivedFrameBaseline
+            ? receivedFrameCount - m_receivedFrameBaseline
+            : 0;
+        const quint64 queueDepth = receivedSinceReset > m_videoPerfFrames
+            ? receivedSinceReset - m_videoPerfFrames
+            : 0;
         const double sampleCount = static_cast<double>(qMax<quint64>(1, m_videoPerfIntervalFrames));
+        QVector<double> sortedLatencies = m_latencyIntervalSamples;
+        std::sort(sortedLatencies.begin(), sortedLatencies.end());
+        double latencyP95Ms = -1.0;
+        if (!sortedLatencies.isEmpty())
+        {
+            const int p95Index = qMin(
+                sortedLatencies.size() - 1,
+                static_cast<int>(std::ceil(static_cast<double>(sortedLatencies.size()) * 0.95)) - 1);
+            latencyP95Ms = sortedLatencies[qMax(0, p95Index)];
+        }
         qInfo().noquote()
-            << QStringLiteral("[VideoPerf] receiveFps=%1 displayFps=%2 jpegDecodeMs=%3 displayMs=%4 latencyAvgMs=%5 latencyMaxMs=%6 tcpToReceiveMs=%7 frameSeq=%8 discontinuities=%9")
-                .arg(static_cast<double>(m_videoPerfIntervalFrames) / receiveElapsedSec, 0, 'f', 3)
+            << QString("[VideoPerf] receiveFps=%1 displayFps=%2 decodeMsAvg=%3 queueDepth=%4 sourceSeqContinuous=%5 latencyAvgMs=%6 latencyP95Ms=%7 displayMsAvg=%8 tcpToReceiveMs=%9 sourceSeq=%10 discontinuities=%11 storageSuppressed=%12")
+                .arg(static_cast<double>(receivedIntervalFrames) / displayElapsedSec, 0, 'f', 3)
                 .arg(static_cast<double>(m_videoPerfIntervalFrames) / displayElapsedSec, 0, 'f', 3)
                 .arg(m_decodeMsTotal / sampleCount, 0, 'f', 3)
-                .arg(m_displayMsTotal / sampleCount, 0, 'f', 3)
+                .arg(queueDepth)
+                .arg(m_intervalSourceSeqContinuous ? 1 : 0)
                 .arg(m_latencySamples > 0 ? m_latencyMsTotal / static_cast<double>(m_latencySamples) : -1.0, 0, 'f', 3)
-                .arg(m_latencySamples > 0 ? m_latencyMsMax : -1.0, 0, 'f', 3)
+                .arg(latencyP95Ms, 0, 'f', 3)
+                .arg(m_displayMsTotal / sampleCount, 0, 'f', 3)
                 .arg(tcpToReceiveMs, 0, 'f', 3)
                 .arg(frameSeq)
-                .arg(m_frameSeqDiscontinuities);
+                .arg(m_frameSeqDiscontinuities)
+                .arg(m_storageSuppressedForRealtime ? 1 : 0);
         m_videoPerfIntervalFrames = 0;
+        m_lastReceivedFrameCount = receivedFrameCount;
         m_videoPerfReceiveStartNs = receiveTimeNs;
         m_videoPerfDisplayStartNs = shownTimeNs;
         m_lastVideoPerfLogNs = shownTimeNs;
+        m_intervalSourceSeqContinuous = true;
         m_decodeMsTotal = 0.0;
         m_displayMsTotal = 0.0;
         m_latencyMsTotal = 0.0;
         m_latencyMsMax = 0.0;
         m_latencySamples = 0;
+        m_latencyIntervalSamples.clear();
     }
 }
 
@@ -587,19 +640,27 @@ void HwaSim_IR_VideoDisplay::initCommandReceivedSlot(const BYHWICD::InitP2cObjec
     ui.lineEdit_videoFps->setText(QString::number(cmd.trackingInit.videoFps));
 
     m_videoFps = cmd.trackingInit.videoFps > 0 ? cmd.trackingInit.videoFps : 25;
+    m_uiUpdateEveryFrames = qMax(1, m_videoFps / 5);
     // 保存开关来自 TCP 转发的初始化命令；开始命令只负责进入待录制状态。
     m_saveMP4Requested = cmd.trackingInit.trackerSensor[0].saveMP4En;
+    m_storageSuppressedForRealtime = m_saveMP4Requested && m_videoFps >= 60;
+    resetVideoPerfStats();
+    if (m_storageSuppressedForRealtime)
+    {
+        qWarning().noquote()
+            << "[VideoPerf][WARN] storageSuppressed=1 reason=videoFps_60_realtime";
+    }
 
     switch (cmd.trackingInit.envTerrain)
     {
     case 0:
-        ui.lineEdit_sceneType->setText(QStringLiteral("戈壁"));
+        ui.lineEdit_sceneType->setText("戈壁");
         break;
     case 1:
-        ui.lineEdit_sceneType->setText(QStringLiteral("山区"));
+        ui.lineEdit_sceneType->setText("山区");
         break;
     case 2:
-        ui.lineEdit_sceneType->setText(QStringLiteral("海面"));
+        ui.lineEdit_sceneType->setText("海面");
         break;
     default:
         break;
@@ -608,22 +669,22 @@ void HwaSim_IR_VideoDisplay::initCommandReceivedSlot(const BYHWICD::InitP2cObjec
     switch (cmd.trackingInit.envSky)
     {
     case 0:
-        ui.lineEdit_envSky->setText(QStringLiteral("晴"));
+        ui.lineEdit_envSky->setText("晴");
         break;
     case 1:
-        ui.lineEdit_envSky->setText(QStringLiteral("云"));
+        ui.lineEdit_envSky->setText("云");
         break;
     case 2:
-        ui.lineEdit_envSky->setText(QStringLiteral("雨"));
+        ui.lineEdit_envSky->setText("雨");
         break;
     case 3:
-        ui.lineEdit_envSky->setText(QStringLiteral("雪"));
+        ui.lineEdit_envSky->setText("雪");
         break;
     case 4:
-        ui.lineEdit_envSky->setText(QStringLiteral("雾"));
+        ui.lineEdit_envSky->setText("雾");
         break;
     case 5:
-        ui.lineEdit_envSky->setText(QStringLiteral("阴"));
+        ui.lineEdit_envSky->setText("阴");
         break;
     default:
         break;
@@ -631,47 +692,49 @@ void HwaSim_IR_VideoDisplay::initCommandReceivedSlot(const BYHWICD::InitP2cObjec
 
     ui.lineEdit_sensorIndex->setText(QString::number(cmd.trackingInit.trackerSensor[0].index));
     if (cmd.trackingInit.trackerSensor[0].coarseTrackEn)
-        ui.lineEdit_coarseTrackEn->setText(QStringLiteral("是"));
+        ui.lineEdit_coarseTrackEn->setText("是");
     else
-        ui.lineEdit_coarseTrackEn->setText(QStringLiteral("否"));
+        ui.lineEdit_coarseTrackEn->setText("否");
 
     if (cmd.trackingInit.trackerSensor[0].preciseTrackEn)
-        ui.lineEdit_preciseTrackEn->setText(QStringLiteral("是"));
+        ui.lineEdit_preciseTrackEn->setText("是");
     else
-        ui.lineEdit_preciseTrackEn->setText(QStringLiteral("否"));
+        ui.lineEdit_preciseTrackEn->setText("否");
 
     if (cmd.trackingInit.trackerSensor[0].h264En)
-        ui.lineEdit_h264En->setText(QStringLiteral("是"));
+        ui.lineEdit_h264En->setText("是");
     else
-        ui.lineEdit_h264En->setText(QStringLiteral("否"));
+        ui.lineEdit_h264En->setText("否");
 
     ui.lineEdit_coarseTrackResolution->setText(QString::number(cmd.trackingInit.trackerSensor[0].coarseTrackResolution));
     ui.lineEdit_preciseTrackResolution->setText(QString::number(cmd.trackingInit.trackerSensor[0].preciseTrackResolution));
 
     if (cmd.trackingInit.trackerSensor[0].noiseEn)
-        ui.lineEdit_noiseEn->setText(QStringLiteral("是"));
+        ui.lineEdit_noiseEn->setText("是");
     else
-        ui.lineEdit_noiseEn->setText(QStringLiteral("否"));
+        ui.lineEdit_noiseEn->setText("否");
 
     ui.lineEdit_trackerSensorNoise->setText(QString::number(cmd.trackingInit.trackerSensor[0].trackerSensorNoise));
 
     if (cmd.trackingInit.trackerSensor[0].realtimeAnnotation)
-        ui.lineEdit_realtimeAnnotation->setText(QStringLiteral("是"));
+        ui.lineEdit_realtimeAnnotation->setText("是");
     else
-        ui.lineEdit_realtimeAnnotation->setText(QStringLiteral("否"));
+        ui.lineEdit_realtimeAnnotation->setText("否");
 
-    if (m_saveMP4Requested)
-        ui.lineEdit_saveMP4En->setText(QStringLiteral("是"));
+    if (m_storageSuppressedForRealtime)
+        ui.lineEdit_saveMP4En->setText("是（60 FPS性能模式暂停）");
+    else if (m_saveMP4Requested)
+        ui.lineEdit_saveMP4En->setText("是");
     else
-        ui.lineEdit_saveMP4En->setText(QStringLiteral("否"));
+        ui.lineEdit_saveMP4En->setText("否");
 
     switch (cmd.trackingInit.trackerSensor[0].trackerSensorBand)
     {
     case 0:
-        ui.lineEdit_trackerSensorBand->setText(QStringLiteral("短波红外"));
+        ui.lineEdit_trackerSensorBand->setText("短波红外");
         break;
     case 2:
-        ui.lineEdit_trackerSensorBand->setText(QStringLiteral("中波红外"));
+        ui.lineEdit_trackerSensorBand->setText("中波红外");
         break;
     default:
         break;
@@ -702,7 +765,7 @@ void HwaSim_IR_VideoDisplay::initCommandReceivedSlot(const BYHWICD::InitP2cObjec
         ui.tableWidget_platData->insertRow(row);
 
         ui.tableWidget_platData->setItem(row, 0, new QTableWidgetItem(QString::number(pp.id)));
-        ui.tableWidget_platData->setItem(row, 1, new QTableWidgetItem(pp.type == 1 ? QStringLiteral("红方") : QStringLiteral("蓝方")));
+        ui.tableWidget_platData->setItem(row, 1, new QTableWidgetItem(pp.type == 1 ? "红方" : "蓝方"));
         ui.tableWidget_platData->setItem(row, 2, new QTableWidgetItem(QString::number(pp.spatial.lat, 'f', 6)));
         ui.tableWidget_platData->setItem(row, 3, new QTableWidgetItem(QString::number(pp.spatial.lon, 'f', 6)));
         ui.tableWidget_platData->setItem(row, 4, new QTableWidgetItem(QString::number(pp.spatial.alt, 'f', 2)));
@@ -721,6 +784,7 @@ void HwaSim_IR_VideoDisplay::controlCmdReceivedSlot(const BYHWICD::ControlP2cX1O
     case 1: // 复位
     {
         CloseStorage();
+        resetVideoPerfStats();
         ui.tableWidget_platData->setRowCount(0);
         ui.tableWidget_targetData->setRowCount(0);
         ui.lineEdit_controlType->clear();
@@ -730,12 +794,15 @@ void HwaSim_IR_VideoDisplay::controlCmdReceivedSlot(const BYHWICD::ControlP2cX1O
     case 2: // 开始
     {
         CloseStorage();
+        resetVideoPerfStats();
 
-        ui.lineEdit_controlType->setText(QStringLiteral("运行中-第%1/共%2回合")
+        ui.lineEdit_controlType->setText(QString("运行中-第%1/共%2回合")
                                 .arg(cmd.currentRound).arg(cmd.roundCut));
 
-        if (!m_saveMP4Requested) {
-            qDebug() << "收到开始命令，但 saveMP4En=false，本回合不保存视频和标注";
+        if (!m_saveMP4Requested || m_storageSuppressedForRealtime) {
+            qDebug() << "收到开始命令，本回合不执行同步录制"
+                     << "saveMP4En=" << m_saveMP4Requested
+                     << "storageSuppressed=" << m_storageSuppressedForRealtime;
             break;
         }
 
@@ -748,7 +815,7 @@ void HwaSim_IR_VideoDisplay::controlCmdReceivedSlot(const BYHWICD::ControlP2cX1O
     }
     case 3: // 停止
     {
-        ui.lineEdit_controlType->setText(QStringLiteral("已停止"));
+        ui.lineEdit_controlType->setText("已停止");
         qDebug() << "收到停止命令，共保存" << m_frameCount << "帧";
         CloseStorage();
         break;

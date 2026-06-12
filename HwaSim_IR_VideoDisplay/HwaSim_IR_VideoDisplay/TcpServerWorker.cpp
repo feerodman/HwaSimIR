@@ -123,7 +123,7 @@ TcpServerWorker::~TcpServerWorker() = default;
 void TcpServerWorker::loadConfig(QString& ip, quint16& port)
 {
 	// 默认值
-	ip = QStringLiteral("0.0.0.0");
+	ip = "0.0.0.0";
 	port = 5555;
 
 	QString configPath = QCoreApplication::applicationDirPath() + "/NetworkConfig.ini";
@@ -228,6 +228,7 @@ void TcpServerWorker::doWork()
 				BYHWICD::DisplayC2cObjTrackingData trackingData;
 				memset(&trackingData, 0, sizeof(trackingData));
 				trackingData.flag = 0x38;
+				++m_receivedFrameCount;
 				emit dataReceived(img, trackingData, QString(), receiveTimeNs, jpegDecodeMs);
 				continue;
 			}
@@ -302,6 +303,7 @@ void TcpServerWorker::doWork()
 				if (!parseDisplayFrameBody(body, trackingData, img, annotationJson, jpegDecodeMs)) {
 					continue;
 				}
+				++m_receivedFrameCount;
 				emit dataReceived(img, trackingData, annotationJson, receiveTimeNs, jpegDecodeMs);
 			}
 			else {

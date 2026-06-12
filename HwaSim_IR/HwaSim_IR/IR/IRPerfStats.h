@@ -5,9 +5,11 @@
 
 struct IRFrameTelemetry
 {
-	std::uint64_t frameSeq = 0;
+	std::uint64_t sourceSeq = 0;
 	std::int64_t udpReceiveTimeNs = 0;
 	std::int64_t processStartTimeNs = 0;
+	int inputQueueDepth = 0;
+	double readbackMs = 0.0;
 };
 
 struct IRFrameEnqueueResult
@@ -34,10 +36,19 @@ public:
 
 	void recordUdpFrame();
 	void recordSceneUpdate(double elapsedMs);
+	void recordAnnotation(double elapsedMs);
 	void recordIrUpdate(double elapsedMs);
+	void recordPlumeUpdate(double elapsedMs);
 	void recordRender(double elapsedMs);
+	void recordInputQueueDepth(int queueDepth);
 	void recordCapture(double readbackMs, double resizeMs, double copyMs, int tcpQueueDepth);
-	std::uint64_t recordTcpOutput(double jpegMs, double tcpSendMs, double latencyMs, int tcpQueueDepth);
+	std::uint64_t recordTcpOutput(
+		double jpegMs,
+		double tcpSendMs,
+		double latencyMs,
+		int tcpQueueDepth,
+		std::uint64_t outputSourceSeq,
+		std::uint64_t latestUdpSourceSeq);
 	void recordSyncOverrun();
 	void recordInputQueueOverflow();
 	void maybeLog();
@@ -62,13 +73,17 @@ private:
 	std::uint64_t m_intervalRenderFrames = 0;
 	std::uint64_t m_intervalOutputFrames = 0;
 	std::uint64_t m_sceneSamples = 0;
+	std::uint64_t m_annotationSamples = 0;
 	std::uint64_t m_irSamples = 0;
+	std::uint64_t m_plumeSamples = 0;
 	std::uint64_t m_renderSamples = 0;
 	std::uint64_t m_captureSamples = 0;
 	std::uint64_t m_tcpSamples = 0;
 	std::uint64_t m_latencySamples = 0;
 	double m_sceneUpdateMsTotal = 0.0;
+	double m_annotationMsTotal = 0.0;
 	double m_irUpdateMsTotal = 0.0;
+	double m_plumeUpdateMsTotal = 0.0;
 	double m_renderMsTotal = 0.0;
 	double m_readbackMsTotal = 0.0;
 	double m_resizeMsTotal = 0.0;
@@ -79,5 +94,8 @@ private:
 	double m_latencyMsMax = 0.0;
 	int m_tcpQueueDepth = 0;
 	int m_tcpQueueDepthMax = 0;
+	int m_inputQueueDepth = 0;
+	int m_inputQueueDepthMax = 0;
+	std::uint64_t m_sourceSeqLag = 0;
 	std::uint64_t m_lastLoggedOutputFrames = 0;
 };

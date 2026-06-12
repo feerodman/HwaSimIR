@@ -24,6 +24,12 @@ public:
 		const NodePath& renderRoot,
 		const NodePath& cameraNode,
 		Lens* cameraLens);
+	void reuseFrameMetadata(
+		unsigned long long frameIndex,
+		double simTimeMs,
+		int sensorID,
+		int width,
+		int height);
 
 	const AnnotationFrameRecord& latestRecord() const;
 

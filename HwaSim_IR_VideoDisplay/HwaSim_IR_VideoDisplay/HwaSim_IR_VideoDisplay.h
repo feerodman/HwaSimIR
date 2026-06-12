@@ -7,6 +7,7 @@
 #include <QTextStream>
 #include <QDir>
 #include <QDateTime>
+#include <QVector>
 #include <opencv2/opencv.hpp>
 #include "TcpServerWorker.h"
 #include "ui_HwaSim_IR_VideoDisplay.h"
@@ -44,6 +45,7 @@ private:
     bool beginPendingStorage();
     void saveFrameToStorage(const QImage& img, const BYHWICD::DisplayC2cObjTrackingData& data, const QString& annotationJson);
     QString fallbackAnnotationJson(int frameIndex, const QImage& img, const BYHWICD::DisplayC2cObjTrackingData& data) const;
+    void resetVideoPerfStats();
 
     QThread* m_workerThread;
     TcpServerWorker* m_worker;
@@ -51,6 +53,7 @@ private:
     bool m_isRecording = false;
     bool m_recordingPending = false;
     bool m_saveMP4Requested = false;
+    bool m_storageSuppressedForRealtime = false;
     int m_maxImageWidth = 0;
     int m_maxImageHeight = 0;
     QString m_currentRoundDir;
@@ -61,11 +64,15 @@ private:
     QTextStream* m_targetAnnotStream = nullptr;
     int m_frameCount = 0;
     int m_videoFps = 25;
+    int m_uiUpdateEveryFrames = 5;
     int m_pendingRound = 0;
     quint64 m_videoPerfFrames = 0;
     quint64 m_videoPerfIntervalFrames = 0;
     quint64 m_lastFrameSeq = 0;
     quint64 m_frameSeqDiscontinuities = 0;
+    quint64 m_receivedFrameBaseline = 0;
+    quint64 m_lastReceivedFrameCount = 0;
+    bool m_intervalSourceSeqContinuous = true;
     qint64 m_videoPerfReceiveStartNs = 0;
     qint64 m_videoPerfDisplayStartNs = 0;
     qint64 m_lastVideoPerfLogNs = 0;
@@ -74,6 +81,7 @@ private:
     double m_latencyMsTotal = 0.0;
     double m_latencyMsMax = 0.0;
     quint64 m_latencySamples = 0;
+    QVector<double> m_latencyIntervalSamples;
 
 private:
     Ui::HwaSim_IR_VideoDisplayClass ui;

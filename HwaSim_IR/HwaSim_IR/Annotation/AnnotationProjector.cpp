@@ -746,7 +746,7 @@ bool AnnotationProjector::buildKeyPoint(
 			keyLocalPoint = snapResult.surfaceLocal;
 			m_perfStats.surfaceMs += NowMs() - surfaceBeginMs;
 			++m_surfaceLogCounter;
-			if (m_surfaceLogCounter <= 8 || (m_surfaceLogCounter % 120) == 0)
+			if (m_frameIndex <= 3 || (m_frameIndex % 120) == 0)
 			{
 				std::cout << "[AnnotationSurfacePoint]"
 					<< " targetID=" << targetPlat.targetState.targetID
@@ -773,7 +773,7 @@ bool AnnotationProjector::buildKeyPoint(
 	if (useSurfacePoint && !useNearestSnap)
 	{
 		++m_surfaceLogCounter;
-		if (m_surfaceLogCounter <= 8 || (m_surfaceLogCounter % 120) == 0)
+		if (m_frameIndex <= 3 || (m_frameIndex % 120) == 0)
 		{
 			std::cout << "[AnnotationSurfacePoint]"
 				<< " targetID=" << targetPlat.targetState.targetID
@@ -854,7 +854,7 @@ bool AnnotationProjector::isKeyPointVisibleByRay(
 
 	const bool visible = !hitInfo.hit;
 	++m_occlusionLogCounter;
-	if (!visible || m_occlusionLogCounter <= 8 || (m_occlusionLogCounter % 120) == 0)
+	if (m_frameIndex <= 3 || (m_frameIndex % 120) == 0)
 	{
 		std::cout << "[AnnotationOcclusion]"
 			<< " targetID=" << targetPlat.targetState.targetID

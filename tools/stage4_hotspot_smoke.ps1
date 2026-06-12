@@ -10,6 +10,8 @@ $rootPath = $root.Path
 $hwaExe = Join-Path $rootPath "HwaSim_IR\Bin\HwaSim_IR.exe"
 $hwaWorkDir = Join-Path $rootPath "HwaSim_IR\Bin"
 $logDir = Join-Path $rootPath "logs\stage4"
+$networkConfig = Join-Path $hwaWorkDir "Config\NetworkConfig.ini"
+$runtimeConfig = Join-Path $hwaWorkDir "Config\HwaSimIRRuntime.ini"
 
 if ($Bands.Count -eq 1 -and $Bands[0] -eq 1) {
     $Bands = @(1, 2, 3)
@@ -205,8 +207,20 @@ function Invoke-HwaRun {
     $stderr = Join-Path $logDir "HwaSimIR-stage4-hotspot-smoke-$stamp.err.log"
     $process = $null
     $udp = $null
+    $networkConfigBackup = [System.IO.File]::ReadAllBytes($networkConfig)
+    $runtimeConfigBackup = [System.IO.File]::ReadAllBytes($runtimeConfig)
 
     try {
+        $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+        $networkText = [System.IO.File]::ReadAllText($networkConfig, $utf8NoBom)
+        $networkText = [regex]::Replace($networkText, "(?m)^localIp=.*$", "localIp=127.0.0.1")
+        $networkText = [regex]::Replace($networkText, "(?m)^serverIp=.*$", "serverIp=127.0.0.1")
+        [System.IO.File]::WriteAllText($networkConfig, $networkText, $utf8NoBom)
+
+        $runtimeText = [System.IO.File]::ReadAllText($runtimeConfig, $utf8NoBom)
+        $runtimeText = [regex]::Replace($runtimeText, "(?m)^EnableIRVerboseLog=.*$", "EnableIRVerboseLog=1")
+        [System.IO.File]::WriteAllText($runtimeConfig, $runtimeText, $utf8NoBom)
+
         Normalize-ProcessPathEnvironment
         $process = Start-Process -FilePath $hwaExe -WorkingDirectory $hwaWorkDir -PassThru -WindowStyle Hidden -RedirectStandardOutput $stdout -RedirectStandardError $stderr
         Start-Sleep -Seconds 3
@@ -252,6 +266,8 @@ function Invoke-HwaRun {
                 Write-Host "stopped pid=$($process.Id)"
             }
         }
+        [System.IO.File]::WriteAllBytes($networkConfig, $networkConfigBackup)
+        [System.IO.File]::WriteAllBytes($runtimeConfig, $runtimeConfigBackup)
     }
 
     return [PSCustomObject]@{
@@ -263,6 +279,8 @@ function Invoke-HwaRun {
 
 Assert-Path $hwaExe "HwaSimIR executable"
 Assert-Path $hwaWorkDir "HwaSimIR working directory"
+Assert-Path $networkConfig "NetworkConfig.ini"
+Assert-Path $runtimeConfig "HwaSimIRRuntime.ini"
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 
 Write-Host "Stage 4 hotspot/brightspot smoke"

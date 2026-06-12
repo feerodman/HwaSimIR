@@ -487,7 +487,7 @@ void MainWindow::sendRealTimeData()
 
 
 	// 目标状态（相对平台偏移）
-    data.targetNumValid = 3;
+    data.targetNumValid = 5;
     data.targetState[0].targetType = 0x22;
 	data.targetState[0].targetPlatID = 3;
 	data.targetState[0].targetID = 3;
@@ -539,8 +539,32 @@ void MainWindow::sendRealTimeData()
     data.targetState[2].targetLoc.roll = 0.0;
     data.targetState[2].targetState = 0x01;
 
+    data.targetState[3].targetType = 0x33;
+    data.targetState[3].targetPlatID = 3;
+    data.targetState[3].targetID = 34;
+    data.targetState[3].viewValid = realTimeData.at(dataNum-1).viewValid;
+    data.targetState[3].targetLoc.lat = 0.0;
+    data.targetState[3].targetLoc.lon = 0.0;
+    data.targetState[3].targetLoc.alt = 0.0;
+    data.targetState[3].targetLoc.yaw = 0.0;
+    data.targetState[3].targetLoc.pitch = 0.0;
+    data.targetState[3].targetLoc.roll = 0.0;
+    data.targetState[3].targetState = 0x01;
 
-    if(current_time > 5)
+    data.targetState[4].targetType = 0x22;
+    data.targetState[4].targetPlatID = 3;
+    data.targetState[4].targetID = 4;
+    data.targetState[4].viewValid = realTimeData.at(dataNum-1).viewValid;
+    data.targetState[4].targetLoc.lat = 0.0;
+    data.targetState[4].targetLoc.lon = 0.0;
+    data.targetState[4].targetLoc.alt = 0.0;
+    data.targetState[4].targetLoc.yaw = 0.0;
+    data.targetState[4].targetLoc.pitch = 0.0;
+    data.targetState[4].targetLoc.roll = 0.0;
+    data.targetState[4].targetState = 0x01;
+
+
+    if(current_time > 3)
     {
         data.targetState[1].targetLoc.lat = m_currMissile_pos.x;
         data.targetState[1].targetLoc.lon = m_currMissile_pos.y;
@@ -550,7 +574,7 @@ void MainWindow::sendRealTimeData()
         data.targetState[1].targetLoc.roll = m_currMissile_att.roll;
     }
 
-    if(current_time > 8)
+    if(current_time > 5)
     {
         data.targetState[2].targetLoc.lat = m_currMissile_pos.x;
         data.targetState[2].targetLoc.lon = m_currMissile_pos.y+0.00002;
@@ -559,7 +583,27 @@ void MainWindow::sendRealTimeData()
         data.targetState[2].targetLoc.pitch = m_currMissile_att.pitch;
         data.targetState[2].targetLoc.roll = m_currMissile_att.roll;
     }
-    if(current_time > 12)
+
+    if(current_time > 7)
+    {
+        data.targetState[3].targetLoc.lat = m_currMissile_pos.x;
+        data.targetState[3].targetLoc.lon = m_currMissile_pos.y-0.00002;
+        data.targetState[3].targetLoc.alt = m_currMissile_pos.z - 1.0;
+        data.targetState[3].targetLoc.yaw = m_currMissile_att.yaw;
+        data.targetState[3].targetLoc.pitch = m_currMissile_att.pitch;
+        data.targetState[3].targetLoc.roll = m_currMissile_att.roll;
+    }
+
+    if(current_time > 9)
+    {
+        data.targetState[4].targetLoc.lat = m_currMissile_pos.x;
+        data.targetState[4].targetLoc.lon = m_currMissile_pos.y-0.00002;
+        data.targetState[4].targetLoc.alt = m_currMissile_pos.z;
+        data.targetState[4].targetLoc.yaw = m_currMissile_att.yaw;
+        data.targetState[4].targetLoc.pitch = m_currMissile_att.pitch;
+        data.targetState[4].targetLoc.roll = m_currMissile_att.roll;
+    }
+    if(current_time > 11)
     {
          data.weaponState.targetID = 34;
     }
@@ -571,32 +615,44 @@ void MainWindow::sendRealTimeData()
 		quint16 remotePort = m_remotePortEdit->text().toUShort();
 		qint64 sent = m_udpSocket->writeDatagram(reinterpret_cast<const char*>(&data), sizeof(data), remoteIp, remotePort);
 
-		// 状态更新
-		m_lastSentLabel->setText(QString(QStringLiteral("↑ 发送: 实时数据 (0x38) | Lat:%1° | %2 bytes"))
-			.arg(m_currentLat, 0, 'f', 4).arg(sent));
-
 		if (sent > 0) {
 			++m_sentFrameCount;
 			const qint64 nowNs = m_sendClock.isValid() ? m_sendClock.nsecsElapsed() : 0;
-			const bool shouldLog =
-				m_sentFrameCount <= 3 ||
-				(m_sentFrameCount % 120) == 0 ||
-				nowNs - m_lastSendPerfLogNs >= 2000000000LL;
+			const bool shouldLog = nowNs - m_lastSendPerfLogNs >= 2000000000LL;
 			if (shouldLog)
 			{
+				const qint64 intervalNs = qMax<qint64>(1, nowNs - m_lastSendPerfLogNs);
+				const quint64 intervalFrames = m_sentFrameCount - m_lastSendPerfFrameCount;
+				const double sentFpsInstant =
+					static_cast<double>(intervalFrames) * 1.0e9 / static_cast<double>(intervalNs);
+				const double sentFpsAvg =
+					static_cast<double>(m_sentFrameCount) /
+					qMax(0.001, static_cast<double>(nowNs) / 1.0e9);
+				const qint64 expectedSendNs = static_cast<qint64>(
+					(static_cast<long double>(m_sentFrameCount - 1) * 1000000000.0L) /
+					static_cast<long double>(m_targetVideoFps));
+				const double behindMs =
+					static_cast<double>(nowNs - expectedSendNs) / 1.0e6;
 				qInfo().noquote()
-					<< QStringLiteral("[StimPerf] sentFps=%1 packetSeq=%2 sendTimeMs=%3 videoFpsTarget=%4 timerDelayMs=%5")
-						.arg(static_cast<double>(m_sentFrameCount) / qMax(0.001, static_cast<double>(nowNs) / 1.0e9), 0, 'f', 3)
-						.arg(m_sentFrameCount)
-						.arg(data.time)
+					<< QStringLiteral("[StimPerf] targetFps=%1 sentFpsInstant=%2 sentFpsAvg=%3 packetSeq=%4 timerIntervalMs=%5 behindMs=%6")
 						.arg(m_targetVideoFps)
-						.arg(m_realTimeTimer->interval());
+						.arg(sentFpsInstant, 0, 'f', 3)
+						.arg(sentFpsAvg, 0, 'f', 3)
+						.arg(m_sentFrameCount)
+						.arg(1000.0 / static_cast<double>(m_targetVideoFps), 0, 'f', 3)
+						.arg(behindMs, 0, 'f', 3);
 				m_lastSendPerfLogNs = nowNs;
+				m_lastSendPerfFrameCount = m_sentFrameCount;
 			}
-			m_statusLabel->setText(QString(QStringLiteral("● 状态: 仿真中 | 已发送 %1 帧 | 目标 %2 FPS"))
-				.arg(m_sentFrameCount)
-				.arg(m_targetVideoFps));
-			m_statusLabel->setStyleSheet("color: #388E3C; font-weight: bold;");
+			if (m_sentFrameCount <= 3 || (m_sentFrameCount % m_uiUpdateEveryFrames) == 0)
+			{
+				m_lastSentLabel->setText(QString(QStringLiteral("↑ 发送: 实时数据 (0x38) | Lat:%1° | %2 bytes"))
+					.arg(m_currentLat, 0, 'f', 4).arg(sent));
+				m_statusLabel->setText(QString(QStringLiteral("● 状态: 仿真中 | 已发送 %1 帧 | 目标 %2 FPS"))
+					.arg(m_sentFrameCount)
+					.arg(m_targetVideoFps));
+				m_statusLabel->setStyleSheet("color: #388E3C; font-weight: bold;");
+			}
 		}
 		else {
 			m_statusLabel->setText(QStringLiteral("● 状态: 发送失败！检查网络"));
@@ -622,19 +678,21 @@ void MainWindow::updatePosition()
 		onStopButtonClicked();
 	}
 
-	// 实时更新UI显示（用户可见变化）
-	m_latEdit->setText(QString::number(m_currPlane_pos.x, 'f', 6));
-	m_lonEdit->setText(QString::number(m_currPlane_pos.y, 'f', 6));
-	m_altEdit->setText(QString::number(m_currPlane_pos.z, 'f', 6));
-	m_yawEdit->setText(QString::number(m_currPlane_att.yaw, 'f', 6));
-	m_pitchEdit->setText(QString::number(m_currPlane_att.pitch, 'f', 6));
-	m_rollEdit->setText(QString::number(m_currPlane_att.roll, 'f', 6));
-	m_latEditTarget->setText(QString::number(m_currMissile_pos.x, 'f', 6));
-	m_lonEditTarget->setText(QString::number(m_currMissile_pos.y, 'f', 6));
-	m_altEditTarget->setText(QString::number(m_currMissile_pos.z, 'f', 6));
-	m_yawEditTarget->setText(QString::number(m_currMissile_att.yaw, 'f', 6));
-	m_pitchEditTarget->setText(QString::number(m_currMissile_att.pitch, 'f', 6));
-	m_rollEditTarget->setText(QString::number(m_currMissile_att.roll, 'f', 6));
+	if (m_sentFrameCount <= 3 || (m_sentFrameCount % m_uiUpdateEveryFrames) == 0)
+	{
+		m_latEdit->setText(QString::number(m_currPlane_pos.x, 'f', 6));
+		m_lonEdit->setText(QString::number(m_currPlane_pos.y, 'f', 6));
+		m_altEdit->setText(QString::number(m_currPlane_pos.z, 'f', 6));
+		m_yawEdit->setText(QString::number(m_currPlane_att.yaw, 'f', 6));
+		m_pitchEdit->setText(QString::number(m_currPlane_att.pitch, 'f', 6));
+		m_rollEdit->setText(QString::number(m_currPlane_att.roll, 'f', 6));
+		m_latEditTarget->setText(QString::number(m_currMissile_pos.x, 'f', 6));
+		m_lonEditTarget->setText(QString::number(m_currMissile_pos.y, 'f', 6));
+		m_altEditTarget->setText(QString::number(m_currMissile_pos.z, 'f', 6));
+		m_yawEditTarget->setText(QString::number(m_currMissile_att.yaw, 'f', 6));
+		m_pitchEditTarget->setText(QString::number(m_currMissile_att.pitch, 'f', 6));
+		m_rollEditTarget->setText(QString::number(m_currMissile_att.roll, 'f', 6));
+	}
 }
 
 void MainWindow::onResetButtonClicked()
@@ -704,6 +762,8 @@ void MainWindow::onStartButtonClicked()
 		m_sendDeadlineIndex = 0;
 		m_sendClock.restart();
 		m_lastSendPerfLogNs = 0;
+		m_lastSendPerfFrameCount = 0;
+		m_uiUpdateEveryFrames = qMax(1, m_targetVideoFps / 5);
 		m_startButton->setEnabled(false);
 		m_stopButton->setEnabled(true);
 		m_statusLabel->setText(QString(QStringLiteral("● 状态: 仿真运行中 (%1 FPS)")).arg(m_targetVideoFps));
@@ -782,20 +842,6 @@ bool MainWindow::step(BYHWICD::CartesianCoordinate& plane_pos, BYHWICD::Euler& p
 		is_collided = true;
         std::cout << "===== data is over =====" << std::endl;
 	}
-
-	// 输出当前数据
-	std::cout << "------------------------" << std::endl;
-	std::cout << "模拟时间：" << current_time << " 秒" << std::endl;
-	std::cout << "【飞机】" << std::endl;
-	std::cout << "位置：x=" << std::fixed << std::setprecision(2) << plane_pos.x
-		<< " y=" << plane_pos.y << " z=" << plane_pos.z << " 米" << std::endl;
-	std::cout << "姿态：yaw=" << plane_att.yaw << " pitch=" << plane_att.pitch
-		<< " roll=" << plane_att.roll << " 度" << std::endl;
-	std::cout << "【导弹】" << std::endl;
-	std::cout << "位置：x=" << missile_pos.x << " y=" << missile_pos.y
-		<< " z=" << missile_pos.z << " 米" << std::endl;
-	std::cout << "姿态：yaw=" << missile_att.yaw << " pitch=" << missile_att.pitch
-		<< " roll=" << missile_att.roll << " 度" << std::endl;
 
 	// 更新时间步
 	current_time += 1.0 / static_cast<double>(qMax(1, m_targetVideoFps));

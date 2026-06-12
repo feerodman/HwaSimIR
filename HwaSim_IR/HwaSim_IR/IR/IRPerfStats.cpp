@@ -70,11 +70,25 @@ void IRPerfStats::recordSceneUpdate(double elapsedMs)
 	++m_sceneSamples;
 }
 
+void IRPerfStats::recordAnnotation(double elapsedMs)
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	m_annotationMsTotal += elapsedMs;
+	++m_annotationSamples;
+}
+
 void IRPerfStats::recordIrUpdate(double elapsedMs)
 {
 	std::lock_guard<std::mutex> lock(m_mutex);
 	m_irUpdateMsTotal += elapsedMs;
 	++m_irSamples;
+}
+
+void IRPerfStats::recordPlumeUpdate(double elapsedMs)
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	m_plumeUpdateMsTotal += elapsedMs;
+	++m_plumeSamples;
 }
 
 void IRPerfStats::recordRender(double elapsedMs)
@@ -84,6 +98,13 @@ void IRPerfStats::recordRender(double elapsedMs)
 	++m_renderSamples;
 	++m_totalRenderFrames;
 	++m_intervalRenderFrames;
+}
+
+void IRPerfStats::recordInputQueueDepth(int queueDepth)
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	m_inputQueueDepth = std::max(0, queueDepth);
+	m_inputQueueDepthMax = std::max(m_inputQueueDepthMax, m_inputQueueDepth);
 }
 
 void IRPerfStats::recordCapture(double readbackMs, double resizeMs, double copyMs, int tcpQueueDepth)
@@ -97,7 +118,13 @@ void IRPerfStats::recordCapture(double readbackMs, double resizeMs, double copyM
 	m_tcpQueueDepthMax = std::max(m_tcpQueueDepthMax, m_tcpQueueDepth);
 }
 
-std::uint64_t IRPerfStats::recordTcpOutput(double jpegMs, double tcpSendMs, double latencyMs, int tcpQueueDepth)
+std::uint64_t IRPerfStats::recordTcpOutput(
+	double jpegMs,
+	double tcpSendMs,
+	double latencyMs,
+	int tcpQueueDepth,
+	std::uint64_t outputSourceSeq,
+	std::uint64_t latestUdpSourceSeq)
 {
 	std::lock_guard<std::mutex> lock(m_mutex);
 	m_jpegMsTotal += jpegMs;
@@ -111,6 +138,9 @@ std::uint64_t IRPerfStats::recordTcpOutput(double jpegMs, double tcpSendMs, doub
 	}
 	m_tcpQueueDepth = std::max(0, tcpQueueDepth);
 	m_tcpQueueDepthMax = std::max(m_tcpQueueDepthMax, m_tcpQueueDepth);
+	m_sourceSeqLag = latestUdpSourceSeq >= outputSourceSeq
+		? latestUdpSourceSeq - outputSourceSeq
+		: 0;
 	++m_totalOutputFrames;
 	++m_intervalOutputFrames;
 	return m_totalOutputFrames;
@@ -157,7 +187,9 @@ void IRPerfStats::maybeLog()
 			<< " renderFps=" << (static_cast<double>(m_intervalRenderFrames) / elapsedSec)
 			<< " outputFps=" << (static_cast<double>(m_intervalOutputFrames) / elapsedSec)
 			<< " sceneUpdateMs=" << Average(m_sceneUpdateMsTotal, m_sceneSamples)
+			<< " annotationMs=" << Average(m_annotationMsTotal, m_annotationSamples)
 			<< " irUpdateMs=" << Average(m_irUpdateMsTotal, m_irSamples)
+			<< " plumeUpdateMs=" << Average(m_plumeUpdateMsTotal, m_plumeSamples)
 			<< " renderMs=" << Average(m_renderMsTotal, m_renderSamples)
 			<< " readbackMs=" << Average(m_readbackMsTotal, m_captureSamples)
 			<< " resizeMs=" << Average(m_resizeMsTotal, m_captureSamples)
@@ -166,6 +198,9 @@ void IRPerfStats::maybeLog()
 			<< " tcpSendMs=" << Average(m_tcpSendMsTotal, m_tcpSamples)
 			<< " tcpQueueDepth=" << m_tcpQueueDepth
 			<< " tcpQueueDepthMax=" << m_tcpQueueDepthMax
+			<< " inputQueueDepth=" << m_inputQueueDepth
+			<< " inputQueueDepthMax=" << m_inputQueueDepthMax
+			<< " sourceSeqLag=" << m_sourceSeqLag
 			<< " latencyAvgMs=" << Average(m_latencyMsTotal, m_latencySamples)
 			<< " latencyMaxMs=" << m_latencyMsMax
 			<< " syncOverrunCount=" << m_syncOverrunCount
@@ -199,13 +234,17 @@ void IRPerfStats::resetIntervalLocked(std::int64_t nowNs)
 	m_intervalRenderFrames = 0;
 	m_intervalOutputFrames = 0;
 	m_sceneSamples = 0;
+	m_annotationSamples = 0;
 	m_irSamples = 0;
+	m_plumeSamples = 0;
 	m_renderSamples = 0;
 	m_captureSamples = 0;
 	m_tcpSamples = 0;
 	m_latencySamples = 0;
 	m_sceneUpdateMsTotal = 0.0;
+	m_annotationMsTotal = 0.0;
 	m_irUpdateMsTotal = 0.0;
+	m_plumeUpdateMsTotal = 0.0;
 	m_renderMsTotal = 0.0;
 	m_readbackMsTotal = 0.0;
 	m_resizeMsTotal = 0.0;
@@ -216,4 +255,7 @@ void IRPerfStats::resetIntervalLocked(std::int64_t nowNs)
 	m_latencyMsMax = 0.0;
 	m_tcpQueueDepth = 0;
 	m_tcpQueueDepthMax = 0;
+	m_inputQueueDepth = 0;
+	m_inputQueueDepthMax = 0;
+	m_sourceSeqLag = 0;
 }

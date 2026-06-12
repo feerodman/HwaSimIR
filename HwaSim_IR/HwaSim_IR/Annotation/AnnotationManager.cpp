@@ -136,6 +136,20 @@ AnnotationFrameRecord AnnotationManager::updateFrame(
 	return m_latestRecord;
 }
 
+void AnnotationManager::reuseFrameMetadata(
+	unsigned long long frameIndex,
+	double simTimeMs,
+	int sensorID,
+	int width,
+	int height)
+{
+	m_latestRecord.frameIndex = frameIndex;
+	m_latestRecord.simTimeMs = simTimeMs;
+	m_latestRecord.sensorID = sensorID;
+	m_latestRecord.width = width;
+	m_latestRecord.height = height;
+}
+
 const AnnotationFrameRecord& AnnotationManager::latestRecord() const
 {
 	return m_latestRecord;

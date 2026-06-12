@@ -133,6 +133,8 @@ private:
 	quint64 m_sentFrameCount = 0;
 	quint64 m_sendDeadlineIndex = 0;
 	qint64 m_lastSendPerfLogNs = 0;
+	quint64 m_lastSendPerfFrameCount = 0;
+	int m_uiUpdateEveryFrames = 12;
 	int m_targetVideoFps = 60;
 
 	// Current Position

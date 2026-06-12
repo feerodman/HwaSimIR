@@ -751,6 +751,27 @@ Debian11/aarch64 Release 编译通过。
 下一阶段建议：继续降低 JPEG 约 7.7 ms 和 IR update 峰值，评估直接方向输出、PBO/异步 readback 与硬件编码；保持 Stage3 tau-only 和 Stage4 控制边界不变。
 ```
 
+### 阶段 1B 真实 60 Hz 闭环记录
+
+```text
+阶段：1B
+执行日期：2026-06-11
+执行者：Codex
+目标：修复人工真实运行中 videoFps=60 只有约 30 FPS，并建立 sourceSeq/outputOrdinal 分离的闭环诊断。
+修改范围：仅 DataDrivenTestQT、HwaSim_IR、HwaSim_IR_VideoDisplay 的发送节流、同步遥测、日志限频、低频状态复用和显示节流；未改 MODTRAN、AGC、MTF、材质库及 JPEG 协议。
+编译结果：三个工程 Windows Release x64 全部通过。
+运行场景：800x800，videoFps=60，连续 30 秒，日志目录 logs/phase1b-final3-20260611-182443。
+帧率结果：稳定区间 sent=60.006、udp=59.998、render=60.139、output=60.137、VideoDisplay receive/display=60.195 FPS。
+序号结果：udpFrames=1799、renderFrames=1799、outputFrames=1799；sourceSeqContinuous=1，inputQueueOverflow=0，TCP overwritten=0。
+延时结果：HwaSim_IR 平均 15.280 ms，稳定区间最大采样 150.242 ms（启动排队尖峰）；VideoDisplay 平均约 20.019 ms，均低于 80 ms 验收线。
+分段结果：readback=1.351 ms，JPEG=6.764 ms，TCP send=0.140 ms，annotation=1.183 ms，IR update=4.551 ms，plume=0.041 ms。
+性能修正：发送端 UI 5 Hz、普通诊断限频、annotation 15 Hz、IR 状态 30 Hz、plume 30 Hz并缓存；图像仍保持每个 UDP 包渲染并输出一帧。
+显示端：60 Hz 下保存 MP4 同步写入自动暂停，避免阻塞显示；接收和显示队列无积压。
+回归结果：Stage3 MODTRAN tau-only、Stage4 hotspot/brightspot 静态检查通过；Stage4 三波段烟测在测试期显式开启 verbose，运行后恢复默认配置。
+是否通过验收：通过。真实 30 秒同步链路达到 60 Hz，瓶颈已从 HwaSim_IR 高频 scene/annotation/IR/plume 更新消除；当前主要余量消耗为 JPEG 和 IR update。
+下一阶段建议：保持协议不变时优先评估 FlipInShader/FlipInVideoDisplay、PBO/异步 readback；如需同步录像，单独实现异步 MP4 写入。
+```
+
 ---
 
 ## 12. 给 Codex 的第一阶段实施 Prompt

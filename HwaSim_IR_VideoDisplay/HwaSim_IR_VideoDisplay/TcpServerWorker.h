@@ -12,6 +12,7 @@ class TcpServerWorker : public QObject
 public:
 	explicit TcpServerWorker(QObject* parent = nullptr);
 	~TcpServerWorker();
+	quint64 receivedFrameCount() const { return m_receivedFrameCount.load(); }
 
 public slots:
 	void doWork();
@@ -37,4 +38,5 @@ private:
 	void loadConfig(QString& ip, quint16& port);
 
 	std::atomic<bool> m_stop{ false };
+	std::atomic<quint64> m_receivedFrameCount{ 0 };
 };
