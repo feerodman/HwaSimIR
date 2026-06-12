@@ -772,6 +772,36 @@ Debian11/aarch64 Release 编译通过。
 下一阶段建议：保持协议不变时优先评估 FlipInShader/FlipInVideoDisplay、PBO/异步 readback；如需同步录像，单独实现异步 MP4 写入。
 ```
 
+### 阶段 1C 60 Hz 异步录像记录
+
+```text
+阶段：1C
+执行日期：2026-06-12
+执行者：Codex
+目标：恢复 60 Hz 下 MP4、实时数据和目标标注保存，同时保持阶段 1B 的同步主链路帧率、序号连续性和延时指标。
+修改范围：
+- VideoDisplay 新增 AsyncVideoRecorder 常驻工作线程，主线程只执行非阻塞入队。
+- 默认录像队列上限 180 帧，队列满时仅丢弃录像旁路帧并统计，不反压接收和显示。
+- writer、QImage->BGR 转换、MP4、annotations.txt、target_annotations.txt 均移入录像线程。
+- stop/reset/析构执行有超时 flush；每 2 秒输出 RecorderPerf。
+- Stage6Capture 新增 FlipInShader=false、FlipInTcpThread=true；默认方向保持阶段 1B 不变，shader 翻转未启用。
+- 未修改 MODTRAN、AGC、MTF、材质库、红外物理链路和 TCP/JPEG 协议。
+编译结果：HwaSim_IR、DataDrivenTestQT、HwaSim_IR_VideoDisplay 三工程 Windows Release x64 全部通过。
+运行场景：800x800，5 目标，videoFps=60，saveMP4En=true，连续 30 秒。
+日志目录：logs/phase1c-final-20260612-115254。
+录像目录：HwaSim_IR_VideoDisplay/x64/Release/MP4/round_001_20260612_115308。
+主链路帧率：sent=60.005、udp=60.012、render=60.190、output=60.121、VideoDisplay receive/display=60.219 FPS。
+主链路序号：udpFrames=1801、renderFrames=1801、outputFrames=1801；sourceSeqContinuous=1，inputQueueOverflow=0，TCP overwritten=0。
+延时与分段：平均端到端延时 16.463 ms；readback=1.242 ms，JPEG=4.710 ms，TCP send=0.106 ms，annotation=1.984 ms，IR update=5.553 ms，plume=0.042 ms。
+录像结果：output.mp4 为 H.264、800x800、60 FPS、30.0167 秒，ffprobe 验证 1801 帧。
+录像性能：writtenFps 平均 59.976，writeMsAvg=5.000 ms，writeMsMax=7.267 ms，maxQueueDepth=51，recordingDroppedFrames=0，sourceSeqContinuousWritten=1。
+标注结果：annotations.txt=1801 行，target_annotations.txt=1801 行；两文件 JSON 全部有效，recordingFrameIndex 和 sourceSeq 均为 1..1801 连续。
+显示主线程：recording enqueue 平均 0.009 ms、最大 0.078 ms，无 enqueue>1 ms 警告；保存视频未使 displayFps 降到 30。
+回归结果：Stage3 MODTRAN tau-only strict、Stage4 hotspot/brightspot strict、Stage4 三波段运行烟测全部通过。
+是否通过验收：通过。异步录像恢复后同步主链路与录像旁路均达到约 60 Hz，平均延时小于 80 ms，录像零丢帧。
+下一阶段建议：暂不默认开启 FlipInShader。当前 TCP flip 平均约 0.808 ms，收益有限，而 shader 翻转还需窗口、TCP、VideoDisplay、bbox/keypoint 四路方向一致性专项验证。
+```
+
 ---
 
 ## 12. 给 Codex 的第一阶段实施 Prompt

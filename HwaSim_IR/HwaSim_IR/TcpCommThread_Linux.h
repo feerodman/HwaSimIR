@@ -45,6 +45,7 @@ public:
 		bool annotationEnabled,
 		const IRFrameTelemetry& telemetry);
 	void setSyncMode(bool syncMode) { m_syncMode.store(syncMode); }
+	void setFlipVertical(bool enabled) { m_flipVertical.store(enabled); }
 	void resetFrameCounters();
 
 	bool sendControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd);
@@ -108,6 +109,7 @@ private:
 	std::deque<PendingFrame> m_frameQueue;
 	static const std::size_t kMaxFrameQueue = 4;
 	std::atomic<bool> m_syncMode{ true };
+	std::atomic<bool> m_flipVertical{ true };
 	std::atomic<unsigned long long> m_tcpPacketCounter{ 0 };
 	std::int64_t m_lastTcpPerfLogNs = 0;
 };

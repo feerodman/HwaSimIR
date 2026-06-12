@@ -4403,6 +4403,8 @@ void HwaSimIR::InitInfraredSimulation()
 	std::string perfLogSource;
 	std::string verboseLogSource;
 	std::string irUpdateHzSource;
+	std::string stage6FlipShaderSource;
+	std::string stage6FlipTcpSource;
 	std::string annotationProfileSource;
 	std::string annotationDebugSource;
 	std::string annotationBBoxModeSource;
@@ -4436,6 +4438,46 @@ void HwaSimIR::InitInfraredSimulation()
 		<< " EnableIRVerboseLog=" << (m_enableIRVerboseLog ? "1" : "0")
 		<< " IRUpdateHz=" << m_irUpdateHz
 		<< " source=" << perfLogSource << "/" << verboseLogSource << "/" << irUpdateHzSource
+		<< std::endl;
+	const bool stage6FlipInShaderRequested = m_runtimeConfig.getBool(
+		"Stage6Capture",
+		"FlipInShader",
+		"Stage6FlipInShader",
+		false,
+		&stage6FlipShaderSource);
+	m_stage6FlipInTcpThread = m_runtimeConfig.getBool(
+		"Stage6Capture",
+		"FlipInTcpThread",
+		"Stage6FlipInTcpThread",
+		true,
+		&stage6FlipTcpSource);
+	// Shader-side flipping remains opt-in only after window/TCP/annotation direction validation.
+	m_stage6FlipInShader = false;
+	if (stage6FlipInShaderRequested)
+	{
+		std::cout << "[Stage6 CaptureConfig][WARN]"
+			<< " FlipInShaderRequested=1"
+			<< " FlipInShaderEffective=0"
+			<< " reason=direction_annotation_validation_required"
+			<< std::endl;
+	}
+	if (!m_stage6FlipInTcpThread)
+	{
+		std::cout << "[Stage6 CaptureConfig][WARN]"
+			<< " FlipInTcpThreadRequested=0"
+			<< " FlipInTcpThreadEffective=1"
+			<< " reason=FlipInShader_not_enabled"
+			<< std::endl;
+		m_stage6FlipInTcpThread = true;
+	}
+	if (m_pTcpThread)
+	{
+		m_pTcpThread->setFlipVertical(m_stage6FlipInTcpThread);
+	}
+	std::cout << "[Stage6 CaptureConfig]"
+		<< " FlipInShader=" << (m_stage6FlipInShader ? "1" : "0")
+		<< " FlipInTcpThread=" << (m_stage6FlipInTcpThread ? "1" : "0")
+		<< " source=" << stage6FlipShaderSource << "/" << stage6FlipTcpSource
 		<< std::endl;
 	m_enableStage4HotspotVisualDebug = m_runtimeConfig.getBool("Stage4", "EnableHotspotVisualDebug", "EnableStage4HotspotVisualDebug", false, &stage4VisualSource);
 	m_forceStage4BrightSpotVisible = m_runtimeConfig.getBool("Stage4", "ForceBrightSpotVisible", "ForceStage4BrightSpotVisible", false, &stage4BrightSource);

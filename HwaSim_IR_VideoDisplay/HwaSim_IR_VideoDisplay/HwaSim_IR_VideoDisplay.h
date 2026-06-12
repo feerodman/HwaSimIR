@@ -3,12 +3,8 @@
 #include <QtWidgets/QWidget>
 #include <QThread>
 #include <QTableWidget>
-#include <QFile>
-#include <QTextStream>
-#include <QDir>
-#include <QDateTime>
 #include <QVector>
-#include <opencv2/opencv.hpp>
+#include "AsyncVideoRecorder.h"
 #include "TcpServerWorker.h"
 #include "ui_HwaSim_IR_VideoDisplay.h"
 
@@ -38,34 +34,22 @@ private:
     void updatePlatDataTable(int platID, const BYHWICD::SpatialState& platLoc);
     void updateTargetDataTable(const BYHWICD::DisplayC2cObjTrackingData& data);
     void centerVideoLabel();
-    virtual void resizeEvent(QResizeEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
     QString targetTypeName(int type);
     QString targetStateName(int state);
-    bool hasTargetStateData(const BYHWICD::DisplayC2cObjTrackingData& data) const;
-    bool beginPendingStorage();
-    void saveFrameToStorage(const QImage& img, const BYHWICD::DisplayC2cObjTrackingData& data, const QString& annotationJson);
-    QString fallbackAnnotationJson(int frameIndex, const QImage& img, const BYHWICD::DisplayC2cObjTrackingData& data) const;
     void resetVideoPerfStats();
+    bool flushRecorder(const char* reason);
 
-    QThread* m_workerThread;
-    TcpServerWorker* m_worker;
-    // 存储状态
-    bool m_isRecording = false;
-    bool m_recordingPending = false;
+    QThread* m_workerThread = nullptr;
+    TcpServerWorker* m_worker = nullptr;
+    AsyncVideoRecorder* m_recorder = nullptr;
     bool m_saveMP4Requested = false;
-    bool m_storageSuppressedForRealtime = false;
     int m_maxImageWidth = 0;
     int m_maxImageHeight = 0;
-    QString m_currentRoundDir;
-    cv::VideoWriter* m_videoWriter = nullptr;
-    QFile* m_annotFile = nullptr;
-    QTextStream* m_annotStream = nullptr;
-    QFile* m_targetAnnotFile = nullptr;
-    QTextStream* m_targetAnnotStream = nullptr;
-    int m_frameCount = 0;
     int m_videoFps = 25;
     int m_uiUpdateEveryFrames = 5;
-    int m_pendingRound = 0;
+    int m_maxRecordingQueueFrames = 180;
+    int m_recorderFlushTimeoutMs = 10000;
     quint64 m_videoPerfFrames = 0;
     quint64 m_videoPerfIntervalFrames = 0;
     quint64 m_lastFrameSeq = 0;
@@ -78,6 +62,8 @@ private:
     qint64 m_lastVideoPerfLogNs = 0;
     double m_decodeMsTotal = 0.0;
     double m_displayMsTotal = 0.0;
+    double m_recordingEnqueueMsTotal = 0.0;
+    double m_recordingEnqueueMsMax = 0.0;
     double m_latencyMsTotal = 0.0;
     double m_latencyMsMax = 0.0;
     quint64 m_latencySamples = 0;

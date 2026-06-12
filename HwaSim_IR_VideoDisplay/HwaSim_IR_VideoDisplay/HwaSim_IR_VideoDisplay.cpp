@@ -12,6 +12,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonParseError>
+#include <QSettings>
 #include <QtGlobal>
 #include <algorithm>
 #include <chrono>
@@ -60,6 +61,23 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(QWidget *parent)
     // 线程启动时执行 doWork
     connect(m_workerThread, &QThread::started, m_worker, &TcpServerWorker::doWork);
     m_workerThread->start();
+
+    QSettings recorderSettings(
+        QApplication::applicationDirPath() + QStringLiteral("/NetworkConfig.ini"),
+        QSettings::IniFormat);
+    m_maxRecordingQueueFrames = qBound(
+        1,
+        recorderSettings.value(QStringLiteral("Recorder/MaxRecordingQueueFrames"), 180).toInt(),
+        3600);
+    m_recorderFlushTimeoutMs = qBound(
+        1000,
+        recorderSettings.value(QStringLiteral("Recorder/FlushTimeoutMs"), 10000).toInt(),
+        60000);
+    m_recorder = new AsyncVideoRecorder(m_maxRecordingQueueFrames);
+    qInfo().noquote()
+        << QStringLiteral("[RecorderConfig] MaxRecordingQueueFrames=%1 FlushTimeoutMs=%2")
+            .arg(m_maxRecordingQueueFrames)
+            .arg(m_recorderFlushTimeoutMs);
 }
 
 HwaSim_IR_VideoDisplay::~HwaSim_IR_VideoDisplay()
@@ -68,8 +86,13 @@ HwaSim_IR_VideoDisplay::~HwaSim_IR_VideoDisplay()
     m_worker->stop();
     m_workerThread->quit();
     m_workerThread->wait();
-    // 线程完全停止后再释放录制资源
     CloseStorage();
+    if (m_recorder)
+    {
+        m_recorder->shutdown(m_recorderFlushTimeoutMs);
+        delete m_recorder;
+        m_recorder = nullptr;
+    }
 }
 
 void HwaSim_IR_VideoDisplay::InitQss()
@@ -184,78 +207,6 @@ QString HwaSim_IR_VideoDisplay::targetStateName(int state)
     }
 }
 
-bool HwaSim_IR_VideoDisplay::hasTargetStateData(const BYHWICD::DisplayC2cObjTrackingData& data) const
-{
-    // 空实时帧的 targetState 通常为清零状态；以 targetType 是否非 0 判断是否已有有效目标数据。
-    for (int i = 0; i < 5; ++i) {
-        if (data.targetState[i].targetType != 0)
-            return true;
-    }
-    return false;
-}
-
-bool HwaSim_IR_VideoDisplay::beginPendingStorage()
-{
-    if (m_isRecording)
-        return true;
-
-    if (!m_recordingPending || !m_saveMP4Requested)
-        return false;
-
-    // 收到开始命令后不立刻落盘，等第一帧 targetState 有数据时再创建本回合保存目录。
-    QString baseDir = QApplication::applicationDirPath() + "/MP4";
-    if (!QDir().mkpath(baseDir)) {
-        qWarning() << "创建MP4基础目录失败:" << baseDir;
-        return false;
-    }
-
-    QString timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss");
-    m_currentRoundDir = QString("%1/round_%2_%3")
-                        .arg(baseDir)
-                        .arg(m_pendingRound, 3, 10, QChar('0'))
-                        .arg(timestamp);
-    if (!QDir().mkpath(m_currentRoundDir)) {
-        qWarning() << "创建回合保存目录失败:" << m_currentRoundDir;
-        return false;
-    }
-
-    QString annotPath = m_currentRoundDir + "/annotations.txt";
-    m_annotFile = new QFile(annotPath);
-    if (m_annotFile->open(QIODevice::WriteOnly | QIODevice::Text)) {
-        m_annotStream = new QTextStream(m_annotFile);
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-        // 实时数据文本固定为 UTF-8，避免中文状态字段乱码。
-        m_annotStream->setCodec("UTF-8");
-#endif
-        *m_annotStream << "frame_id,time_ms,platID,sensorID,targetIdx,targetType,targetPlatID,targetID,lat,lon,alt,yaw,pitch,roll,viewValid,targetState\n";
-    }
-    else {
-        qWarning() << "打开实时数据保存文件失败:" << annotPath;
-        delete m_annotFile;
-        m_annotFile = nullptr;
-    }
-
-    QString targetAnnotPath = m_currentRoundDir + "/target_annotations.txt";
-    m_targetAnnotFile = new QFile(targetAnnotPath);
-    if (m_targetAnnotFile->open(QIODevice::WriteOnly | QIODevice::Text)) {
-        m_targetAnnotStream = new QTextStream(m_targetAnnotFile);
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-        m_targetAnnotStream->setCodec("UTF-8");
-#endif
-    }
-    else {
-        qWarning() << "打开目标标注保存文件失败:" << targetAnnotPath;
-        delete m_targetAnnotFile;
-        m_targetAnnotFile = nullptr;
-    }
-
-    m_frameCount = 0;
-    m_recordingPending = false;
-    m_isRecording = true;
-    qDebug() << "检测到有效目标数据，开始保存:" << m_currentRoundDir;
-    return true;
-}
-
 // ==================== 更新平台空间状态列 ====================
 void HwaSim_IR_VideoDisplay::updatePlatDataTable(int platID, const BYHWICD::SpatialState& platLoc)
 {
@@ -315,152 +266,30 @@ void HwaSim_IR_VideoDisplay::updateTargetDataTable(const BYHWICD::DisplayC2cObjT
     }
 }
 
-// ==================== 帧存储：MP4 + 标注文件 ====================
-QString HwaSim_IR_VideoDisplay::fallbackAnnotationJson(int frameIndex, const QImage& img, const BYHWICD::DisplayC2cObjTrackingData& data) const
-{
-	return  QString("{\"version\":1,\"enabled\":false,\"frameIndex\":%1,\"simTimeMs\":%2,\"sensorID\":%3,\"width\":%4,\"height\":%5,\"targets\":[]}")
-		.arg(frameIndex)
-		.arg(data.time, 0, 'f', 3)
-		.arg(data.sensorID)
-		.arg(img.width())
-		.arg(img.height());
-}
-
-void HwaSim_IR_VideoDisplay::saveFrameToStorage(const QImage& img, const BYHWICD::DisplayC2cObjTrackingData& data, const QString& annotationJson)
-{
-    if (!m_isRecording) {
-        if (!m_recordingPending)
-            return;
-
-        if (!hasTargetStateData(data)) {
-            // 已收到开始命令但实时目标数据仍为空，此帧只显示不保存，避免视频/标注与有效数据错位。
-            return;
-        }
-
-        if (!beginPendingStorage())
-            return;
-    }
-
-    // 第一帧时延迟创建 VideoWriter（此时才知晓图像尺寸）
-    if (!m_videoWriter) {
-        QString videoPath = m_currentRoundDir + "/output.mp4";
-        cv::Size frameSize(img.width(), img.height());
-
-        // 尝试多种编码器：H264 → XVID → MJPG（MJPG 在 Windows 上最可靠）
-        struct CodecTry { int fourcc; const char* name; };
-        const CodecTry codecs[] = {
-            { cv::VideoWriter::fourcc('H','2','6','4'), "H264" },
-            { cv::VideoWriter::fourcc('X','V','I','D'), "XVID" },
-            { cv::VideoWriter::fourcc('M','J','P','G'), "MJPG" },
-        };
-        for (const auto& c : codecs) {
-            m_videoWriter = new cv::VideoWriter(videoPath.toStdString(), c.fourcc,
-                                                m_videoFps, frameSize, true);
-            if (m_videoWriter->isOpened()) {
-                qDebug() << "VideoWriter 已创建:" << videoPath
-                         << frameSize.width << "x" << frameSize.height
-                         << "编码:" << c.name;
-                break;
-            }
-            delete m_videoWriter;
-            m_videoWriter = nullptr;
-        }
-        if (!m_videoWriter) {
-            qWarning() << "VideoWriter 打开失败（尝试了 H264/XVID/MJPG）:" << videoPath;
-            return;
-        }
-    }
-
-    // 防御性检查：VideoWriter 可能在上方创建失败或中途被释放
-    if (!m_videoWriter || !m_videoWriter->isOpened())
-        return;
-
-    // 写入视频帧：QImage → cv::Mat (BGR)
-    QImage rgbImg = img.convertToFormat(QImage::Format_RGB888);
-    cv::Mat src(rgbImg.height(), rgbImg.width(), CV_8UC3,
-                const_cast<uchar*>(rgbImg.bits()),
-                static_cast<size_t>(rgbImg.bytesPerLine()));
-    cv::Mat dst;
-    cv::cvtColor(src, dst, cv::COLOR_RGB2BGR);
-    m_videoWriter->write(dst);
-
-    ++m_frameCount;
-
-    // 写入标注行
-    if (m_annotStream) {
-        for (int i = 0; i < 5; ++i) {
-            const BYHWICD::TargetState& ts = data.targetState[i];
-            if (ts.targetType == 0)
-                break;
-
-            *m_annotStream << m_frameCount << ","
-                           << data.time << ","
-                           << data.platID << ","
-                           << data.sensorID << ","
-                           << i << ","
-                           << targetTypeName(ts.targetType) << ","
-                           << ts.targetPlatID << ","
-                           << ts.targetID << ","
-                           << ts.targetLoc.lat << ","
-                           << ts.targetLoc.lon << ","
-                           << ts.targetLoc.alt << ","
-                           << ts.targetLoc.yaw << ","
-                           << ts.targetLoc.pitch << ","
-                           << ts.targetLoc.roll << ","
-                           << (ts.viewValid ? "是" : "否") << ","
-                           << targetStateName(ts.targetState) << "\n";
-        }
-    }
-
-    // Stage2B：标注 JSON 单独保存，一帧图像对应 target_annotations.txt 中一行。
-    if (m_targetAnnotStream) {
-        QString line = annotationJson.trimmed();
-        if (line.isEmpty()) {
-            line = fallbackAnnotationJson(m_frameCount, img, data);
-        }
-        *m_targetAnnotStream << line << "\n";
-    }
-}
-
-// ==================== 关闭存储文件 ====================
 void HwaSim_IR_VideoDisplay::CloseStorage()
 {
-    m_recordingPending = false;
-    m_isRecording = false;
+    flushRecorder("close");
+}
 
-    if (m_videoWriter) {
-        if (m_videoWriter->isOpened())
-            m_videoWriter->release();
-        delete m_videoWriter;
-        m_videoWriter = nullptr;
+bool HwaSim_IR_VideoDisplay::flushRecorder(const char* reason)
+{
+    if (!m_recorder)
+    {
+        return true;
     }
-
-    if (m_annotStream) {
-        m_annotStream->flush();
-        delete m_annotStream;
-        m_annotStream = nullptr;
+    const bool flushed = m_recorder->stopAndFlush(m_recorderFlushTimeoutMs);
+    const RecorderSnapshot snapshot = m_recorder->snapshot();
+    if (!flushed)
+    {
+        qWarning().noquote()
+            << QStringLiteral("[RecorderPerf][WARN] flushTimeoutMs=%1 reason=%2 queueDepth=%3 writtenFrames=%4 droppedFrames=%5")
+                .arg(m_recorderFlushTimeoutMs)
+                .arg(QString::fromLatin1(reason))
+                .arg(snapshot.queueDepth)
+                .arg(snapshot.writtenFrames)
+                .arg(snapshot.droppedFrames);
     }
-    if (m_annotFile) {
-        if (m_annotFile->isOpen())
-            m_annotFile->close();
-        delete m_annotFile;
-        m_annotFile = nullptr;
-    }
-
-    if (m_targetAnnotStream) {
-        m_targetAnnotStream->flush();
-        delete m_targetAnnotStream;
-        m_targetAnnotStream = nullptr;
-    }
-    if (m_targetAnnotFile) {
-        if (m_targetAnnotFile->isOpen())
-            m_targetAnnotFile->close();
-        delete m_targetAnnotFile;
-        m_targetAnnotFile = nullptr;
-    }
-
-    m_frameCount = 0;
-    m_currentRoundDir.clear();
+    return flushed;
 }
 
 void HwaSim_IR_VideoDisplay::resetVideoPerfStats()
@@ -477,6 +306,8 @@ void HwaSim_IR_VideoDisplay::resetVideoPerfStats()
     m_lastVideoPerfLogNs = wallTimeNs();
     m_decodeMsTotal = 0.0;
     m_displayMsTotal = 0.0;
+    m_recordingEnqueueMsTotal = 0.0;
+    m_recordingEnqueueMsMax = 0.0;
     m_latencyMsTotal = 0.0;
     m_latencyMsMax = 0.0;
     m_latencySamples = 0;
@@ -503,12 +334,6 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
     {
         updatePlatDataTable(data.platID, data.platLoc);
         updateTargetDataTable(data);
-    }
-
-    // 如正在录制，保存帧
-    if (!m_storageSuppressedForRealtime)
-    {
-        saveFrameToStorage(img, data, annotationJson);
     }
 
     quint64 frameSeq = 0;
@@ -565,6 +390,31 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
     const double tcpToReceiveMs = tcpSendTimeNs > 0 && receiveTimeNs >= tcpSendTimeNs
         ? static_cast<double>(receiveTimeNs - tcpSendTimeNs) / 1.0e6
         : -1.0;
+
+    if (m_recorder && m_saveMP4Requested)
+    {
+        QElapsedTimer enqueueTimer;
+        enqueueTimer.start();
+        RecordingFrame recordingFrame;
+        recordingFrame.sourceSeq = frameSeq;
+        recordingFrame.image = img;
+        recordingFrame.trackingData = data;
+        recordingFrame.annotationJson = annotationJson;
+        recordingFrame.receiveTimeNs = receiveTimeNs;
+        recordingFrame.displayTimeNs = shownTimeNs;
+        m_recorder->enqueue(recordingFrame);
+        const double enqueueMs = static_cast<double>(enqueueTimer.nsecsElapsed()) / 1.0e6;
+        m_recordingEnqueueMsTotal += enqueueMs;
+        m_recordingEnqueueMsMax = qMax(m_recordingEnqueueMsMax, enqueueMs);
+        if (enqueueMs > 1.0)
+        {
+            qWarning().noquote()
+                << QStringLiteral("[RecorderPerf][WARN] enqueueMs=%1 sourceSeq=%2")
+                    .arg(enqueueMs, 0, 'f', 3)
+                    .arg(frameSeq);
+        }
+    }
+
     const bool shouldLog = shownTimeNs - m_lastVideoPerfLogNs >= 2000000000LL;
     if (shouldLog)
     {
@@ -593,7 +443,7 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
             latencyP95Ms = sortedLatencies[qMax(0, p95Index)];
         }
         qInfo().noquote()
-            << QString("[VideoPerf] receiveFps=%1 displayFps=%2 decodeMsAvg=%3 queueDepth=%4 sourceSeqContinuous=%5 latencyAvgMs=%6 latencyP95Ms=%7 displayMsAvg=%8 tcpToReceiveMs=%9 sourceSeq=%10 discontinuities=%11 storageSuppressed=%12")
+            << QString("[VideoPerf] receiveFps=%1 displayFps=%2 decodeMsAvg=%3 queueDepth=%4 sourceSeqContinuous=%5 latencyAvgMs=%6 latencyP95Ms=%7 displayMsAvg=%8 tcpToReceiveMs=%9 sourceSeq=%10 discontinuities=%11 recordingEnqueueMsAvg=%12 recordingEnqueueMsMax=%13")
                 .arg(static_cast<double>(receivedIntervalFrames) / displayElapsedSec, 0, 'f', 3)
                 .arg(static_cast<double>(m_videoPerfIntervalFrames) / displayElapsedSec, 0, 'f', 3)
                 .arg(m_decodeMsTotal / sampleCount, 0, 'f', 3)
@@ -605,7 +455,8 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
                 .arg(tcpToReceiveMs, 0, 'f', 3)
                 .arg(frameSeq)
                 .arg(m_frameSeqDiscontinuities)
-                .arg(m_storageSuppressedForRealtime ? 1 : 0);
+                .arg(m_recordingEnqueueMsTotal / sampleCount, 0, 'f', 3)
+                .arg(m_recordingEnqueueMsMax, 0, 'f', 3);
         m_videoPerfIntervalFrames = 0;
         m_lastReceivedFrameCount = receivedFrameCount;
         m_videoPerfReceiveStartNs = receiveTimeNs;
@@ -614,6 +465,8 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
         m_intervalSourceSeqContinuous = true;
         m_decodeMsTotal = 0.0;
         m_displayMsTotal = 0.0;
+        m_recordingEnqueueMsTotal = 0.0;
+        m_recordingEnqueueMsMax = 0.0;
         m_latencyMsTotal = 0.0;
         m_latencyMsMax = 0.0;
         m_latencySamples = 0;
@@ -643,13 +496,14 @@ void HwaSim_IR_VideoDisplay::initCommandReceivedSlot(const BYHWICD::InitP2cObjec
     m_uiUpdateEveryFrames = qMax(1, m_videoFps / 5);
     // 保存开关来自 TCP 转发的初始化命令；开始命令只负责进入待录制状态。
     m_saveMP4Requested = cmd.trackingInit.trackerSensor[0].saveMP4En;
-    m_storageSuppressedForRealtime = m_saveMP4Requested && m_videoFps >= 60;
-    resetVideoPerfStats();
-    if (m_storageSuppressedForRealtime)
+    if (m_recorder)
     {
-        qWarning().noquote()
-            << "[VideoPerf][WARN] storageSuppressed=1 reason=videoFps_60_realtime";
+        m_recorder->configure(
+            m_saveMP4Requested,
+            m_videoFps,
+            m_maxRecordingQueueFrames);
     }
+    resetVideoPerfStats();
 
     switch (cmd.trackingInit.envTerrain)
     {
@@ -721,10 +575,8 @@ void HwaSim_IR_VideoDisplay::initCommandReceivedSlot(const BYHWICD::InitP2cObjec
     else
         ui.lineEdit_realtimeAnnotation->setText("否");
 
-    if (m_storageSuppressedForRealtime)
-        ui.lineEdit_saveMP4En->setText("是（60 FPS性能模式暂停）");
-    else if (m_saveMP4Requested)
-        ui.lineEdit_saveMP4En->setText("是");
+    if (m_saveMP4Requested)
+        ui.lineEdit_saveMP4En->setText("是（异步）");
     else
         ui.lineEdit_saveMP4En->setText("否");
 
@@ -799,25 +651,33 @@ void HwaSim_IR_VideoDisplay::controlCmdReceivedSlot(const BYHWICD::ControlP2cX1O
         ui.lineEdit_controlType->setText(QString("运行中-第%1/共%2回合")
                                 .arg(cmd.currentRound).arg(cmd.roundCut));
 
-        if (!m_saveMP4Requested || m_storageSuppressedForRealtime) {
-            qDebug() << "收到开始命令，本回合不执行同步录制"
-                     << "saveMP4En=" << m_saveMP4Requested
-                     << "storageSuppressed=" << m_storageSuppressedForRealtime;
+        if (!m_saveMP4Requested || !m_recorder) {
+            qDebug() << "收到开始命令，本回合不录制"
+                     << "saveMP4En=" << m_saveMP4Requested;
             break;
         }
 
-        // 开始命令只进入待录制状态，等第一帧 targetState 有数据后再创建目录和文件。
-        m_pendingRound = cmd.currentRound;
-        m_frameCount = 0;
-        m_recordingPending = true;
-        qDebug() << "收到开始命令，等待有效目标数据后开始保存，round=" << m_pendingRound;
+        const QString baseDirectory = QApplication::applicationDirPath() + QStringLiteral("/MP4");
+        if (!m_recorder->startPending(cmd.currentRound, baseDirectory))
+        {
+            qWarning().noquote()
+                << QStringLiteral("[RecorderPerf][WARN] startPendingFailed round=%1")
+                    .arg(cmd.currentRound);
+            break;
+        }
+        qDebug() << "收到开始命令，异步录像等待有效目标数据，round=" << cmd.currentRound;
         break;
     }
     case 3: // 停止
     {
         ui.lineEdit_controlType->setText("已停止");
-        qDebug() << "收到停止命令，共保存" << m_frameCount << "帧";
         CloseStorage();
+        const RecorderSnapshot snapshot = m_recorder
+            ? m_recorder->snapshot()
+            : RecorderSnapshot();
+        qDebug() << "收到停止命令，异步录像写入" << snapshot.writtenFrames
+                 << "帧，丢弃" << snapshot.droppedFrames
+                 << "路径" << snapshot.outputPath;
         break;
     }
     default:

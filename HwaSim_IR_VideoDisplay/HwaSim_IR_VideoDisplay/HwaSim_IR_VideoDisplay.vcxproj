@@ -106,6 +106,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AsyncVideoRecorder.cpp" />
     <ClCompile Include="TcpServerWorker.cpp" />
     <QtRcc Include="HwaSim_IR_VideoDisplay.qrc" />
     <QtUic Include="HwaSim_IR_VideoDisplay.ui" />
@@ -117,6 +118,7 @@
     <QtMoc Include="TcpServerWorker.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AsyncVideoRecorder.h" />
     <ClInclude Include="CommonData.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

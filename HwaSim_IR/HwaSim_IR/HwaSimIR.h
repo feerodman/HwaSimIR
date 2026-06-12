@@ -184,6 +184,8 @@ private:
 	bool m_enablePerfLog = true;
 	bool m_enableIRVerboseLog = false;
 	double m_irUpdateHz = 30.0;
+	bool m_stage6FlipInShader = false;
+	bool m_stage6FlipInTcpThread = true;
 	std::uint64_t m_lastIrUpdateSourceSeq = 0;
 	std::string m_lastIrUpdateState;
 	bool m_irMaterialReady = false;

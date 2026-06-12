@@ -400,15 +400,19 @@ void TcpCommThread::sendFrameThreadFunc() {
 		const auto flipBegin = std::chrono::steady_clock::now();
 		cv::Mat rawFrame(frame.height, frame.width, CV_8UC3, frame.pixels.data());
 		cv::Mat flippedFrame;
-		// Phase 1B TODO: evaluate FlipInShader/FlipInVideoDisplay without changing the current JPEG orientation.
-		cv::flip(rawFrame, flippedFrame, 0);
+		const cv::Mat* jpegFrame = &rawFrame;
+		if (m_flipVertical.load())
+		{
+			cv::flip(rawFrame, flippedFrame, 0);
+			jpegFrame = &flippedFrame;
+		}
 		const double flipMs = std::chrono::duration<double, std::milli>(
 			std::chrono::steady_clock::now() - flipBegin).count();
 
 		const auto jpegBegin = std::chrono::steady_clock::now();
 		std::vector<uchar> jpegData;
 		std::vector<int> params = { cv::IMWRITE_JPEG_QUALITY, 80 };
-		if (!cv::imencode(".jpg", flippedFrame, jpegData, params)) {
+		if (!cv::imencode(".jpg", *jpegFrame, jpegData, params)) {
 			continue;
 		}
 		const double jpegMs = std::chrono::duration<double, std::milli>(
