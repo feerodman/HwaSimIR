@@ -26,7 +26,9 @@ public slots:
         const BYHWICD::DisplayC2cObjTrackingData& data,
         const QString& annotationJson,
         qint64 receiveTimeNs,
-        double jpegDecodeMs);
+        double jpegDecodeMs,
+        int decodedChannels,
+        const QString& imageFormat);
     void initCommandReceivedSlot(const BYHWICD::InitP2cObjectTrackingCmd& cmd);
     void controlCmdReceivedSlot(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd);
 
@@ -68,6 +70,12 @@ private:
     double m_latencyMsMax = 0.0;
     quint64 m_latencySamples = 0;
     QVector<double> m_latencyIntervalSamples;
+    int m_decodedChannels = 0;
+    QString m_imageFormat = QStringLiteral("unknown");
+    bool m_h264Requested = false;
+    QString m_requestedCodec = QStringLiteral("jpeg");
+    QString m_activeCodec = QStringLiteral("jpeg");
+    QString m_codecFallbackReason = QStringLiteral("none");
 
 private:
     Ui::HwaSim_IR_VideoDisplayClass ui;

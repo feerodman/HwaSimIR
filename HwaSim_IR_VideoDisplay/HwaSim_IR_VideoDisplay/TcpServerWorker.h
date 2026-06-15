@@ -25,7 +25,9 @@ signals:
 		const BYHWICD::DisplayC2cObjTrackingData& trackingData,
 		const QString& annotationJson,
 		qint64 receiveTimeNs,
-		double jpegDecodeMs);
+		double jpegDecodeMs,
+		int decodedChannels,
+		const QString& imageFormat);
 	// 可选：收到初始化命令时通知主线程（参数可根据需要扩展）
 	void initCommandReceived(const BYHWICD::InitP2cObjectTrackingCmd& cmd);
 

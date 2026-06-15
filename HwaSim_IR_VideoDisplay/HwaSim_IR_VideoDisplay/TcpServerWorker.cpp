@@ -39,7 +39,9 @@ bool parseDisplayFrameBody(
 	BYHWICD::DisplayC2cObjTrackingData& trackingData,
 	QImage& image,
 	QString& annotationJson,
-	double& jpegDecodeMs)
+	double& jpegDecodeMs,
+	int& decodedChannels,
+	QString& imageFormat)
 {
 	if (body.size() < 4)
 	{
@@ -113,6 +115,10 @@ bool parseDisplayFrameBody(
 		qWarning() << "JPEG解码失败";
 		return false;
 	}
+	decodedChannels = image.isGrayscale() ? 1 : 3;
+	imageFormat = image.isGrayscale()
+		? QStringLiteral("grayscale")
+		: QStringLiteral("rgb");
 	return true;
 }
 }
@@ -225,11 +231,15 @@ void TcpServerWorker::doWork()
 					continue;
 				}
 				const double jpegDecodeMs = static_cast<double>(decodeTimer.nsecsElapsed()) / 1.0e6;
+				const int decodedChannels = img.isGrayscale() ? 1 : 3;
+				const QString imageFormat = img.isGrayscale()
+					? QStringLiteral("grayscale")
+					: QStringLiteral("rgb");
 				BYHWICD::DisplayC2cObjTrackingData trackingData;
 				memset(&trackingData, 0, sizeof(trackingData));
 				trackingData.flag = 0x38;
 				++m_receivedFrameCount;
-				emit dataReceived(img, trackingData, QString(), receiveTimeNs, jpegDecodeMs);
+				emit dataReceived(img, trackingData, QString(), receiveTimeNs, jpegDecodeMs, decodedChannels, imageFormat);
 				continue;
 			}
 
@@ -300,11 +310,27 @@ void TcpServerWorker::doWork()
 				QImage img;
 				QString annotationJson;
 				double jpegDecodeMs = 0.0;
-				if (!parseDisplayFrameBody(body, trackingData, img, annotationJson, jpegDecodeMs)) {
+				int decodedChannels = 0;
+				QString imageFormat;
+				if (!parseDisplayFrameBody(
+					body,
+					trackingData,
+					img,
+					annotationJson,
+					jpegDecodeMs,
+					decodedChannels,
+					imageFormat)) {
 					continue;
 				}
 				++m_receivedFrameCount;
-				emit dataReceived(img, trackingData, annotationJson, receiveTimeNs, jpegDecodeMs);
+				emit dataReceived(
+					img,
+					trackingData,
+					annotationJson,
+					receiveTimeNs,
+					jpegDecodeMs,
+					decodedChannels,
+					imageFormat);
 			}
 			else {
 				qWarning() << "未知的 flag:" << flag << "，忽略当前包";

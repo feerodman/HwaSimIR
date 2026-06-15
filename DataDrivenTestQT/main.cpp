@@ -10,6 +10,7 @@ int main(int argc, char *argv[])
     w.show();
 
     int autoSeconds = 0;
+    bool h264Enabled = false;
     const QStringList arguments = a.arguments();
     for (const QString& argument : arguments)
     {
@@ -18,7 +19,13 @@ int main(int argc, char *argv[])
         {
             autoSeconds = qBound(1, argument.mid(prefix.size()).toInt(), 3600);
         }
+        const QString h264Prefix = QStringLiteral("--phase1d-h264=");
+        if (argument.startsWith(h264Prefix))
+        {
+            h264Enabled = argument.mid(h264Prefix.size()).toInt() != 0;
+        }
     }
+    w.setH264EnabledForTest(h264Enabled);
     if (autoSeconds > 0)
     {
         QTimer::singleShot(500, &w, [&w]() {

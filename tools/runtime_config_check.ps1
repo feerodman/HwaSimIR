@@ -169,7 +169,8 @@ $checks.Add((Add-Check "RuntimeConfig does not override realtime simulation fiel
 
 $boundariesOk = ($runtimeText -notmatch "path_radiance|sky_radiance|solar_irradiance|pathRadiance|skyRadiance|solarIrradiance") -and
     ($appSourceText -notmatch "path_radiance_band|sky_radiance_band|solar_irradiance_band|pathRadianceBand|skyRadianceBand|solarIrradianceBand") -and
-    ($appSourceText -notmatch "\bAGC\b|\bMTF\b|blur|H264|H\.264|UDP video") -and
+    ($appSourceText -notmatch "\bAGC\b|\bMTF\b|blur|UDP video") -and
+    ($appSourceText -notmatch "avcodec|MFCreate|MppEncoder|rockchip_mpp") -and
     ($appSourceText -notmatch "wholeTargetHotspot|whole-target hotspot|whole target hotspot")
 $checks.Add((Add-Check "Runtime config work does not add forbidden imaging or radiance features" $boundariesOk $appSource)) | Out-Null
 

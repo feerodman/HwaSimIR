@@ -400,15 +400,29 @@ bool AsyncVideoRecorder::writeFrame(const RecordingFrame& frame)
 
     QElapsedTimer writeTimer;
     writeTimer.start();
-    const QImage rgbImage = frame.image.convertToFormat(QImage::Format_RGB888);
-    cv::Mat rgb(
-        rgbImage.height(),
-        rgbImage.width(),
-        CV_8UC3,
-        const_cast<uchar*>(rgbImage.constBits()),
-        static_cast<size_t>(rgbImage.bytesPerLine()));
     cv::Mat bgr;
-    cv::cvtColor(rgb, bgr, cv::COLOR_RGB2BGR);
+    if (frame.image.isGrayscale())
+    {
+        const QImage grayImage = frame.image.convertToFormat(QImage::Format_Grayscale8);
+        cv::Mat gray(
+            grayImage.height(),
+            grayImage.width(),
+            CV_8UC1,
+            const_cast<uchar*>(grayImage.constBits()),
+            static_cast<size_t>(grayImage.bytesPerLine()));
+        cv::cvtColor(gray, bgr, cv::COLOR_GRAY2BGR);
+    }
+    else
+    {
+        const QImage rgbImage = frame.image.convertToFormat(QImage::Format_RGB888);
+        cv::Mat rgb(
+            rgbImage.height(),
+            rgbImage.width(),
+            CV_8UC3,
+            const_cast<uchar*>(rgbImage.constBits()),
+            static_cast<size_t>(rgbImage.bytesPerLine()));
+        cv::cvtColor(rgb, bgr, cv::COLOR_RGB2BGR);
+    }
     m_videoWriter->write(bgr);
     const double writeMs = static_cast<double>(writeTimer.nsecsElapsed()) / 1.0e6;
 

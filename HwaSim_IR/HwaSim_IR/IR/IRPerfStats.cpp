@@ -84,6 +84,19 @@ void IRPerfStats::recordIrUpdate(double elapsedMs)
 	++m_irSamples;
 }
 
+void IRPerfStats::recordIrUpdateBreakdown(const IRUpdateBreakdown& breakdown)
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	m_irEnvBuildMsTotal += breakdown.irEnvBuildMs;
+	m_stage7SkyGroundMsTotal += breakdown.stage7SkyGroundMs;
+	m_platformRadianceMsTotal += breakdown.platformRadianceMs;
+	m_targetRadianceMsTotal += breakdown.targetRadianceMs;
+	m_stage4HotspotMsTotal += breakdown.stage4HotspotMs;
+	m_stage5PlumeBreakdownMsTotal += breakdown.stage5PlumeMs;
+	m_shaderInputApplyMsTotal += breakdown.shaderInputApplyMs;
+	++m_irBreakdownSamples;
+}
+
 void IRPerfStats::recordPlumeUpdate(double elapsedMs)
 {
 	std::lock_guard<std::mutex> lock(m_mutex);
@@ -189,6 +202,13 @@ void IRPerfStats::maybeLog()
 			<< " sceneUpdateMs=" << Average(m_sceneUpdateMsTotal, m_sceneSamples)
 			<< " annotationMs=" << Average(m_annotationMsTotal, m_annotationSamples)
 			<< " irUpdateMs=" << Average(m_irUpdateMsTotal, m_irSamples)
+			<< " irEnvBuildMs=" << Average(m_irEnvBuildMsTotal, m_irBreakdownSamples)
+			<< " stage7SkyGroundMs=" << Average(m_stage7SkyGroundMsTotal, m_irBreakdownSamples)
+			<< " platformRadianceMs=" << Average(m_platformRadianceMsTotal, m_irBreakdownSamples)
+			<< " targetRadianceMs=" << Average(m_targetRadianceMsTotal, m_irBreakdownSamples)
+			<< " stage4HotspotMs=" << Average(m_stage4HotspotMsTotal, m_irBreakdownSamples)
+			<< " stage5PlumeMs=" << Average(m_stage5PlumeBreakdownMsTotal, m_irBreakdownSamples)
+			<< " shaderInputApplyMs=" << Average(m_shaderInputApplyMsTotal, m_irBreakdownSamples)
 			<< " plumeUpdateMs=" << Average(m_plumeUpdateMsTotal, m_plumeSamples)
 			<< " renderMs=" << Average(m_renderMsTotal, m_renderSamples)
 			<< " readbackMs=" << Average(m_readbackMsTotal, m_captureSamples)
@@ -236,6 +256,7 @@ void IRPerfStats::resetIntervalLocked(std::int64_t nowNs)
 	m_sceneSamples = 0;
 	m_annotationSamples = 0;
 	m_irSamples = 0;
+	m_irBreakdownSamples = 0;
 	m_plumeSamples = 0;
 	m_renderSamples = 0;
 	m_captureSamples = 0;
@@ -244,6 +265,13 @@ void IRPerfStats::resetIntervalLocked(std::int64_t nowNs)
 	m_sceneUpdateMsTotal = 0.0;
 	m_annotationMsTotal = 0.0;
 	m_irUpdateMsTotal = 0.0;
+	m_irEnvBuildMsTotal = 0.0;
+	m_stage7SkyGroundMsTotal = 0.0;
+	m_platformRadianceMsTotal = 0.0;
+	m_targetRadianceMsTotal = 0.0;
+	m_stage4HotspotMsTotal = 0.0;
+	m_stage5PlumeBreakdownMsTotal = 0.0;
+	m_shaderInputApplyMsTotal = 0.0;
 	m_plumeUpdateMsTotal = 0.0;
 	m_renderMsTotal = 0.0;
 	m_readbackMsTotal = 0.0;

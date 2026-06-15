@@ -802,6 +802,78 @@ Debian11/aarch64 Release 编译通过。
 下一阶段建议：暂不默认开启 FlipInShader。当前 TCP flip 平均约 0.808 ms，收益有限，而 shader 翻转还需窗口、TCP、VideoDisplay、bbox/keypoint 四路方向一致性专项验证。
 ```
 
+### 阶段 1D JPEG A/B、h264En 诊断链路与 IR update 拆分
+
+```text
+阶段：1D
+执行日期：2026-06-12
+执行者：Codex
+实施范围：
+- TcpOutput 增加 Codec、JpegQuality、JpegEncodeMode、EnableH264Experimental、H264FallbackToJpeg 等运行配置。
+- JPEG 支持 rgb/gray 输入，质量范围 40..100，默认以 rgb quality=100 作为基准。
+- h264En 接入 requestedCodec -> activeCodec -> codecFallbackReason 诊断链路；本阶段未实现不可靠的实时 H.264 传输。
+- VideoDisplay 支持单通道 JPEG 显示，异步录像写入前将灰度图转换为 BGR。
+- [Perf] 增加 IR update 内部低频采样拆分；未修改 MODTRAN、AGC、MTF、材质库、PBO 和红外物理结果。
+- 新增 tools/phase1d_codec_ab_smoke.ps1。
+
+构建与回归：
+- HwaSim_IR、DataDrivenTestQT、HwaSim_IR_VideoDisplay Windows Release x64 构建通过。
+- Stage3 MODTRAN tau-only strict、Stage4 hotspot/brightspot strict、Stage4 三波段 smoke 通过。
+
+10 秒 JPEG A/B 日志：logs/phase1d-codec-ab-20260612-175152
+mode  quality  encodeMs  bytes/frame  decodeMs  latencyMs  displayFps
+rgb   100      8.186     23824        5.135     313.475    52.932
+rgb   90       14.488    16274        5.099     372.843    46.597
+rgb   80       8.069     14610        5.104     306.928    52.474
+rgb   70       9.469     13751        4.698     388.652    44.905
+gray  100      3.677     15909        1.398     303.750    54.511
+gray  90       3.746     12246        1.326     291.419    55.371
+gray  80       3.745     10693        1.342     292.306    54.864
+gray  70       3.434     10197        1.289     222.774    57.052
+
+对比结果：
+- 相对 gray quality=100，gray quality=90 编码耗时 +0.069 ms，单帧 -3663 bytes，延时 -12.331 ms。
+- gray 模式的显示、录像、标注和 source sequence 检查正常，但尚未做主观画质验收。
+- 整组测试期间多个非编码分段同时波动，rgb quality=90 为明显异常点；本表仅用于相对比较，不作为 60 Hz 通过依据。
+
+h264En 验证：
+- h264En=false：requestedCodec=jpeg，activeCodec=jpeg。
+- h264En=true 且 EnableH264Experimental=false：打印一次 [Codec][WARN]，
+  requestedCodec=h264，activeCodec=jpeg，codecFallbackReason=experimental_disabled。
+- annotation JSON、[TcpPerf]、[VideoPerf] 均记录 codec 状态。
+
+30 秒候选配置：Codec=auto，JpegEncodeMode=gray，JpegQuality=90。
+日志目录：logs/phase1d-codec-ab-20260612-180547。
+帧率：sent=60.024，udp=56.646，render=56.783，output=56.247，
+VideoDisplay receive/display=57.538 FPS。
+延时：平均 233.476 ms。
+编码/显示：JPEG=2.726 ms，14459 bytes/frame；decode=1.403 ms。
+录像：write=1.073 ms，dropped=0，maxQueueDepth=72，
+sourceSeqContinuousWritten=1。
+序号/队列：sourceSeqContinuous=1，input overflow=0，TCP overwrite=0。
+帧数：UDP/render=1801/1801，TCP/录像=1785/1785；停止时仍有 16 帧输入积压。
+录像文件：HwaSim_IR_VideoDisplay/x64/Release/MP4/round_001_20260612_180602/output.mp4。
+录像校验：800x800，60 FPS，1785 帧；annotations.txt 和
+target_annotations.txt 均为 1785 行。
+
+IR update 实际更新帧低频采样均值：
+irEnvBuildMs=0.002，stage7SkyGroundMs=3.931，
+platformRadianceMs=0.016，targetRadianceMs=0.078，
+stage4HotspotMs=2.112，stage5PlumeMs=0.055，
+shaderInputApplyMs=10.603。
+shaderInputApply 与 Stage7/Stage4 子项存在包含关系，不能直接相加。
+
+是否通过验收：未通过。功能链路、录像一致性和诊断完成，但本次 30 秒运行
+只有约 56..58 FPS，平均延时超过 80 ms，且停止时存在尾部积压，不能宣称
+保持了阶段 1C 的同步 60 Hz。
+
+建议：
+1. 保持生产默认 rgb quality=100；gray quality=90 作为恢复 60 Hz 后的优先复测候选。
+2. H.264 单独立项，设计会话级封包、解码器生命周期和跨平台编码器接口。
+3. 下一阶段先恢复 HwaSim_IR 主循环稳定 60 Hz 并消除尾部积压，不立即进入新的
+   engineState 物理改动。engineState 继续只控制喷口、尾焰和后部热点，不引入整机整体加温。
+```
+
 ---
 
 ## 12. 给 Codex 的第一阶段实施 Prompt

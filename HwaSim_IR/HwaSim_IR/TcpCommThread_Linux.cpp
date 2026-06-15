@@ -117,6 +117,83 @@ void TcpCommThread::stop()
 	std::cout << "TCP通讯线程已停止" << std::endl;
 }
 
+void TcpCommThread::configureOutput(
+	int jpegQuality,
+	bool jpegGray,
+	bool enableH264Experimental,
+	bool h264FallbackToJpeg,
+	const std::string& codecConfig)
+{
+	m_jpegQuality.store(jpegQuality);
+	m_jpegGray.store(jpegGray);
+	m_enableH264Experimental.store(enableH264Experimental);
+	m_h264FallbackToJpeg.store(h264FallbackToJpeg);
+	std::lock_guard<std::mutex> lock(m_codecMtx);
+	m_codecConfig = codecConfig;
+}
+
+void TcpCommThread::setH264Requested(bool enabled)
+{
+	m_h264Requested.store(enabled);
+	std::string requestedCodec;
+	std::string activeCodec;
+	std::string fallbackReason;
+	resolveCodecState(requestedCodec, activeCodec, fallbackReason);
+	if (!fallbackReason.empty())
+	{
+		std::cout << "[Codec][WARN] h264 requested but "
+			<< (fallbackReason == "experimental_disabled" ? "experimental disabled" : "unavailable")
+			<< ", fallback=jpeg"
+			<< " activeCodec=" << activeCodec
+			<< " reason=" << fallbackReason
+			<< std::endl;
+	}
+	std::cout << "[Codec]"
+		<< " h264En=" << (enabled ? "1" : "0")
+		<< " requestedCodec=" << requestedCodec
+		<< " activeCodec=" << activeCodec
+		<< " codecFallbackReason=" << (fallbackReason.empty() ? "none" : fallbackReason)
+		<< std::endl;
+}
+
+void TcpCommThread::resolveCodecState(
+	std::string& requestedCodec,
+	std::string& activeCodec,
+	std::string& fallbackReason) const
+{
+	const bool h264Requested = m_h264Requested.load();
+	const bool experimentalEnabled = m_enableH264Experimental.load();
+	const bool fallbackEnabled = m_h264FallbackToJpeg.load();
+	std::string codecConfig;
+	{
+		std::lock_guard<std::mutex> lock(m_codecMtx);
+		codecConfig = m_codecConfig;
+	}
+	requestedCodec = h264Requested ? "h264" : "jpeg";
+	activeCodec = "jpeg";
+	fallbackReason.clear();
+	if (!h264Requested)
+	{
+		return;
+	}
+	if (codecConfig == "jpeg")
+	{
+		fallbackReason = "codec_config_forces_jpeg";
+	}
+	else if (!experimentalEnabled)
+	{
+		fallbackReason = "experimental_disabled";
+	}
+	else
+	{
+		fallbackReason = "h264_stream_transport_not_implemented";
+	}
+	if (!fallbackEnabled)
+	{
+		fallbackReason += "_forced_safe_fallback";
+	}
+}
+
 void TcpCommThread::resetFrameCounters()
 {
 	{
@@ -277,6 +354,10 @@ std::string TcpCommThread::buildAnnotationJson(
 	const int srcWidth = record.width > 0 ? record.width : tcpWidth;
 	const int srcHeight = record.height > 0 ? record.height : tcpHeight;
 	const unsigned long long frameIndex = record.frameIndex > 0 ? record.frameIndex : outputOrdinal;
+	std::string requestedCodec;
+	std::string activeCodec;
+	std::string fallbackReason;
+	resolveCodecState(requestedCodec, activeCodec, fallbackReason);
 
 	std::ostringstream json;
 	json << "{\"version\":1"
@@ -287,6 +368,10 @@ std::string TcpCommThread::buildAnnotationJson(
 		<< ",\"outputOrdinal\":" << outputOrdinal
 		<< ",\"udpReceiveTimeNs\":\"" << telemetry.udpReceiveTimeNs << "\""
 		<< ",\"tcpSendTimeNs\":\"" << tcpSendTimeNs << "\""
+		<< ",\"requestedCodec\":\"" << JsonEscape(requestedCodec) << "\""
+		<< ",\"activeCodec\":\"" << JsonEscape(activeCodec) << "\""
+		<< ",\"h264En\":" << (m_h264Requested.load() ? "true" : "false")
+		<< ",\"codecFallbackReason\":\"" << JsonEscape(fallbackReason.empty() ? "none" : fallbackReason) << "\""
 		<< ",\"simTimeMs\":" << record.simTimeMs
 		<< ",\"sensorID\":" << record.sensorID
 		<< ",\"width\":" << tcpWidth
@@ -429,10 +514,19 @@ void TcpCommThread::sendFrameThreadFunc()
 		const double flipMs = std::chrono::duration<double, std::milli>(
 			std::chrono::steady_clock::now() - flipBegin).count();
 
+		const int jpegQuality = m_jpegQuality.load();
+		const bool jpegGray = m_jpegGray.load();
 		const auto jpegBegin = std::chrono::steady_clock::now();
+		cv::Mat grayFrame;
+		const cv::Mat* encodeFrame = jpegFrame;
+		if (jpegGray)
+		{
+			cv::cvtColor(*jpegFrame, grayFrame, cv::COLOR_RGB2GRAY);
+			encodeFrame = &grayFrame;
+		}
 		std::vector<uchar> jpegData;
-		std::vector<int> params = { cv::IMWRITE_JPEG_QUALITY, 80 };
-		if (!cv::imencode(".jpg", *jpegFrame, jpegData, params))
+		std::vector<int> params = { cv::IMWRITE_JPEG_QUALITY, jpegQuality };
+		if (!cv::imencode(".jpg", *encodeFrame, jpegData, params))
 		{
 			continue;
 		}
@@ -483,11 +577,23 @@ void TcpCommThread::sendFrameThreadFunc()
 		if (outputOrdinal <= 3 || (outputOrdinal % 120) == 0 ||
 			perfNowNs - m_lastTcpPerfLogNs >= 2000000000LL)
 		{
+			std::string requestedCodec;
+			std::string activeCodec;
+			std::string fallbackReason;
+			resolveCodecState(requestedCodec, activeCodec, fallbackReason);
 			std::ostringstream perfLine;
 			perfLine << std::fixed << std::setprecision(3)
 				<< "[TcpPerf]"
 				<< " sourceSeq=" << frame.telemetry.sourceSeq
 				<< " outputOrdinal=" << outputOrdinal
+				<< " codec=" << activeCodec
+				<< " requestedCodec=" << requestedCodec
+				<< " h264En=" << (m_h264Requested.load() ? "1" : "0")
+				<< " codecFallbackReason=" << (fallbackReason.empty() ? "none" : fallbackReason)
+				<< " jpegQuality=" << jpegQuality
+				<< " jpegMode=" << (jpegGray ? "gray" : "rgb")
+				<< " jpegBytes=" << jpegData.size()
+				<< " encodeInputChannels=" << encodeFrame->channels()
 				<< " flipMs=" << flipMs
 				<< " resizeMs=0.000"
 				<< " jpegMs=" << jpegMs

@@ -22,6 +22,17 @@ struct IRFrameEnqueueResult
 	double queueWaitMs = 0.0;
 };
 
+struct IRUpdateBreakdown
+{
+	double irEnvBuildMs = 0.0;
+	double stage7SkyGroundMs = 0.0;
+	double platformRadianceMs = 0.0;
+	double targetRadianceMs = 0.0;
+	double stage4HotspotMs = 0.0;
+	double stage5PlumeMs = 0.0;
+	double shaderInputApplyMs = 0.0;
+};
+
 class IRPerfStats
 {
 public:
@@ -38,6 +49,7 @@ public:
 	void recordSceneUpdate(double elapsedMs);
 	void recordAnnotation(double elapsedMs);
 	void recordIrUpdate(double elapsedMs);
+	void recordIrUpdateBreakdown(const IRUpdateBreakdown& breakdown);
 	void recordPlumeUpdate(double elapsedMs);
 	void recordRender(double elapsedMs);
 	void recordInputQueueDepth(int queueDepth);
@@ -75,6 +87,7 @@ private:
 	std::uint64_t m_sceneSamples = 0;
 	std::uint64_t m_annotationSamples = 0;
 	std::uint64_t m_irSamples = 0;
+	std::uint64_t m_irBreakdownSamples = 0;
 	std::uint64_t m_plumeSamples = 0;
 	std::uint64_t m_renderSamples = 0;
 	std::uint64_t m_captureSamples = 0;
@@ -83,6 +96,13 @@ private:
 	double m_sceneUpdateMsTotal = 0.0;
 	double m_annotationMsTotal = 0.0;
 	double m_irUpdateMsTotal = 0.0;
+	double m_irEnvBuildMsTotal = 0.0;
+	double m_stage7SkyGroundMsTotal = 0.0;
+	double m_platformRadianceMsTotal = 0.0;
+	double m_targetRadianceMsTotal = 0.0;
+	double m_stage4HotspotMsTotal = 0.0;
+	double m_stage5PlumeBreakdownMsTotal = 0.0;
+	double m_shaderInputApplyMsTotal = 0.0;
 	double m_plumeUpdateMsTotal = 0.0;
 	double m_renderMsTotal = 0.0;
 	double m_readbackMsTotal = 0.0;

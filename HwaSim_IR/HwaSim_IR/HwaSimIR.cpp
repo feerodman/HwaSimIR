@@ -3854,6 +3854,13 @@ bool HwaSimIR::InitTcpThread()
 
 	m_pTcpThread = new TcpCommThread(this, m_tcpServerIp, m_tcpServerPort);
 	m_pTcpThread->setSyncMode(m_bSyncRenderMode.load());
+	m_pTcpThread->setFlipVertical(m_stage6FlipInTcpThread);
+	m_pTcpThread->configureOutput(
+		m_tcpJpegQuality,
+		m_tcpJpegGray,
+		m_enableH264Experimental,
+		m_h264FallbackToJpeg,
+		m_tcpCodecConfig);
 	if (!m_pTcpThread->start()) {
 		std::cerr << "TCP线程启动失败！" << std::endl;
 		delete m_pTcpThread;
@@ -4095,6 +4102,7 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 	m_inputQueueBackpressureLogCount = 0;
 	m_annotationLastProjectionSourceSeq = 0;
 	m_lastIrUpdateSourceSeq = 0;
+	m_irBreakdownUpdateCounter = 0;
 	m_lastIrUpdateState.clear();
 	m_currentFrameTelemetry = IRFrameTelemetry();
 	m_latestUdpSourceSeq.store(0);
@@ -4106,6 +4114,7 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 	if (m_pTcpThread)
 	{
 		m_pTcpThread->setSyncMode(m_bSyncRenderMode.load());
+		m_pTcpThread->setH264Requested(sensor.h264En);
 		m_pTcpThread->resetFrameCounters();
 	}
 	if (!m_bSyncRenderMode.load())
@@ -4405,6 +4414,13 @@ void HwaSimIR::InitInfraredSimulation()
 	std::string irUpdateHzSource;
 	std::string stage6FlipShaderSource;
 	std::string stage6FlipTcpSource;
+	std::string tcpCodecSource;
+	std::string jpegQualitySource;
+	std::string jpegModeSource;
+	std::string jpegGrayMethodSource;
+	std::string h264ExperimentalSource;
+	std::string h264FallbackSource;
+	std::string jpegAbTestSource;
 	std::string annotationProfileSource;
 	std::string annotationDebugSource;
 	std::string annotationBBoxModeSource;
@@ -4478,6 +4494,93 @@ void HwaSimIR::InitInfraredSimulation()
 		<< " FlipInShader=" << (m_stage6FlipInShader ? "1" : "0")
 		<< " FlipInTcpThread=" << (m_stage6FlipInTcpThread ? "1" : "0")
 		<< " source=" << stage6FlipShaderSource << "/" << stage6FlipTcpSource
+		<< std::endl;
+	m_tcpCodecConfig = ToLowerAscii(m_runtimeConfig.getString(
+		"TcpOutput", "Codec", "TcpOutputCodec", "auto", &tcpCodecSource));
+	if (m_tcpCodecConfig != "auto" && m_tcpCodecConfig != "jpeg" && m_tcpCodecConfig != "h264")
+	{
+		std::cout << "[TcpOutputConfig][WARN]"
+			<< " invalid Codec=" << m_tcpCodecConfig
+			<< " fallback=auto"
+			<< std::endl;
+		m_tcpCodecConfig = "auto";
+	}
+	m_tcpJpegQuality = m_runtimeConfig.getInt(
+		"TcpOutput", "JpegQuality", "JpegQuality", 100, &jpegQualitySource);
+	if (m_tcpJpegQuality < 40 || m_tcpJpegQuality > 100)
+	{
+		std::cout << "[TcpOutputConfig][WARN]"
+			<< " invalid JpegQuality=" << m_tcpJpegQuality
+			<< " validRange=40..100 fallback=100"
+			<< std::endl;
+		m_tcpJpegQuality = 100;
+	}
+	const std::string jpegMode = ToLowerAscii(m_runtimeConfig.getString(
+		"TcpOutput", "JpegEncodeMode", "JpegEncodeMode", "rgb", &jpegModeSource));
+	if (jpegMode != "rgb" && jpegMode != "gray")
+	{
+		std::cout << "[TcpOutputConfig][WARN]"
+			<< " invalid JpegEncodeMode=" << jpegMode
+			<< " fallback=rgb"
+			<< std::endl;
+		m_tcpJpegGray = false;
+	}
+	else
+	{
+		m_tcpJpegGray = jpegMode == "gray";
+	}
+	m_tcpJpegGrayConvertMethod = ToLowerAscii(m_runtimeConfig.getString(
+		"TcpOutput",
+		"JpegGrayConvertMethod",
+		"JpegGrayConvertMethod",
+		"luma",
+		&jpegGrayMethodSource));
+	if (m_tcpJpegGrayConvertMethod != "luma")
+	{
+		std::cout << "[TcpOutputConfig][WARN]"
+			<< " invalid JpegGrayConvertMethod=" << m_tcpJpegGrayConvertMethod
+			<< " fallback=luma"
+			<< std::endl;
+		m_tcpJpegGrayConvertMethod = "luma";
+	}
+	m_enableH264Experimental = m_runtimeConfig.getBool(
+		"TcpOutput",
+		"EnableH264Experimental",
+		"EnableH264Experimental",
+		false,
+		&h264ExperimentalSource);
+	m_h264FallbackToJpeg = m_runtimeConfig.getBool(
+		"TcpOutput",
+		"H264FallbackToJpeg",
+		"H264FallbackToJpeg",
+		true,
+		&h264FallbackSource);
+	m_jpegPerfABTest = m_runtimeConfig.getBool(
+		"TcpOutput",
+		"JpegPerfABTest",
+		"JpegPerfABTest",
+		false,
+		&jpegAbTestSource);
+	if (m_pTcpThread)
+	{
+		m_pTcpThread->configureOutput(
+			m_tcpJpegQuality,
+			m_tcpJpegGray,
+			m_enableH264Experimental,
+			m_h264FallbackToJpeg,
+			m_tcpCodecConfig);
+	}
+	std::cout << "[TcpOutputConfig]"
+		<< " Codec=" << m_tcpCodecConfig
+		<< " JpegQuality=" << m_tcpJpegQuality
+		<< " JpegEncodeMode=" << (m_tcpJpegGray ? "gray" : "rgb")
+		<< " JpegGrayConvertMethod=" << m_tcpJpegGrayConvertMethod
+		<< " EnableH264Experimental=" << (m_enableH264Experimental ? "1" : "0")
+		<< " H264FallbackToJpeg=" << (m_h264FallbackToJpeg ? "1" : "0")
+		<< " JpegPerfABTest=" << (m_jpegPerfABTest ? "1" : "0")
+		<< " source=" << tcpCodecSource << "/" << jpegQualitySource << "/" << jpegModeSource
+		<< "/" << jpegGrayMethodSource << "/" << h264ExperimentalSource
+		<< "/" << h264FallbackSource << "/" << jpegAbTestSource
 		<< std::endl;
 	m_enableStage4HotspotVisualDebug = m_runtimeConfig.getBool("Stage4", "EnableHotspotVisualDebug", "EnableStage4HotspotVisualDebug", false, &stage4VisualSource);
 	m_forceStage4BrightSpotVisible = m_runtimeConfig.getBool("Stage4", "ForceBrightSpotVisible", "ForceStage4BrightSpotVisible", false, &stage4BrightSource);
@@ -6232,6 +6335,14 @@ void HwaSimIR::LogActiveIREnvironment(const IRRuntimeEnvironment& environment, c
 
 // 动态更新红外状态
 void HwaSimIR::UpdatePlatformIRStatus() {
+	IRUpdateBreakdown breakdown;
+	const std::uint64_t breakdownIndex = ++m_irBreakdownUpdateCounter;
+	const bool profileBreakdown = breakdownIndex <= 3 || (breakdownIndex % 30) == 0;
+	std::chrono::steady_clock::time_point envBuildStart;
+	if (profileBreakdown)
+	{
+		envBuildStart = std::chrono::steady_clock::now();
+	}
 	double current_time = ClockObject::get_global_clock()->get_frame_time();
 	float stage4DtSec = 0.033f;
 	if (m_lastStage4UpdateTime >= 0.0)
@@ -6247,37 +6358,91 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 	LogActiveIRSensorProfile(protocolBand, "runtime-band", false);
 	LogActiveIREnvironment(environment, "runtime", false);
 	m_irRadianceModel.setEnvironment(environment);
+	if (profileBreakdown)
+	{
+		breakdown.irEnvBuildMs = std::chrono::duration<double, std::milli>(
+			std::chrono::steady_clock::now() - envBuildStart).count();
+	}
 
+	std::chrono::steady_clock::time_point stage7Start;
+	if (profileBreakdown)
+	{
+		stage7Start = std::chrono::steady_clock::now();
+	}
 	if (!m_skyNode.is_empty())
 	{
 		IRObjectRadianceOutput skyRadiance = EvaluateNodeRadiance("BM_AIR", m_skyNode, false, false, true, false, 0.0);
+		std::chrono::steady_clock::time_point shaderApplyStart;
+		if (profileBreakdown)
+		{
+			shaderApplyStart = std::chrono::steady_clock::now();
+		}
 		ApplyRadianceInputs(m_skyNode, skyRadiance, 1);
 		m_skyNode.set_shader_input("u_time", LVecBase2f((float)current_time, 0.0f));
+		if (profileBreakdown)
+		{
+			breakdown.shaderInputApplyMs += std::chrono::duration<double, std::milli>(
+				std::chrono::steady_clock::now() - shaderApplyStart).count();
+		}
 	}
 	if (!m_stage7LowerShellNode.is_empty())
 	{
 		const bool seaTerrain = m_isAddPlatform && m_initSceneData.trackingInit.envTerrain == 2;
 		const char* groundMaterial = seaTerrain ? "BM_WATER-OCEAN" : "BM_SAND";
 		IRObjectRadianceOutput groundRadiance = EvaluateNodeRadiance(groundMaterial, m_stage7LowerShellNode, false, false, false, false, 0.0);
+		std::chrono::steady_clock::time_point shaderApplyStart;
+		if (profileBreakdown)
+		{
+			shaderApplyStart = std::chrono::steady_clock::now();
+		}
 		ApplyRadianceInputs(m_stage7LowerShellNode, groundRadiance, 1);
 		m_stage7LowerShellNode.set_shader_input("u_time", LVecBase2f((float)current_time, 0.0f));
+		if (profileBreakdown)
+		{
+			breakdown.shaderInputApplyMs += std::chrono::duration<double, std::milli>(
+				std::chrono::steady_clock::now() - shaderApplyStart).count();
+		}
 	}
 	if (!m_skyNode.is_empty() || !m_stage7LowerShellNode.is_empty())
 	{
 		UpdateStage7SkyHorizon(environment, "runtime", false);
 		UpdateStage7WeatherNodes(m_stage7WeatherState, current_time);
 	}
+	if (profileBreakdown)
+	{
+		breakdown.stage7SkyGroundMs = std::chrono::duration<double, std::milli>(
+			std::chrono::steady_clock::now() - stage7Start).count();
+	}
 
 	// 更新飞机平台 (PlatParamPak)
 	for (auto& pakPlat : m_pakPlatformList) {
 		if (pakPlat.isExist) {
-			// 将 double 强转为 float 后，装入 LVecBase2f
-			pakPlat.nodePath.set_shader_input("u_time", LVecBase2f((float)current_time, 0.0f));
+			std::chrono::steady_clock::time_point platformRadianceStart;
+			if (profileBreakdown)
+			{
+				platformRadianceStart = std::chrono::steady_clock::now();
+			}
 			IRObjectRadianceOutput radiance = EvaluateNodeRadiance(MaterialNameForPlatform(pakPlat.type), pakPlat.nodePath, true, false, false, false, 0.0, pakPlat.platParam.spatial.alt);
+			if (profileBreakdown)
+			{
+				breakdown.platformRadianceMs += std::chrono::duration<double, std::milli>(
+					std::chrono::steady_clock::now() - platformRadianceStart).count();
+			}
+			std::chrono::steady_clock::time_point shaderApplyStart;
+			if (profileBreakdown)
+			{
+				shaderApplyStart = std::chrono::steady_clock::now();
+			}
+			pakPlat.nodePath.set_shader_input("u_time", LVecBase2f((float)current_time, 0.0f));
 			ApplyRadianceInputs(pakPlat.nodePath, radiance, 0);
 
 			// 阶段4不为挂载平台恢复常开尾喷；飞机平台暂无协议engineState，默认保持关闭。
 			pakPlat.nodePath.set_shader_input("u_hotspot_rear_en", LVecBase2i(0, 0));
+			if (profileBreakdown)
+			{
+				breakdown.shaderInputApplyMs += std::chrono::duration<double, std::milli>(
+					std::chrono::steady_clock::now() - shaderApplyStart).count();
+			}
 		}
 	}
 
@@ -6305,18 +6470,58 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 			IRObjectRadianceOutput stage5BaseRadiance;
 			if (targetRenderable)
 			{
-				targetPlat.nodePath.set_shader_input("u_time", LVecBase2f((float)current_time, 0.0f));
 				bool damaged = (targetPlat.targetState.targetState == 0x02 || targetPlat.targetState.targetState == 0x03);
+				std::chrono::steady_clock::time_point targetRadianceStart;
+				if (profileBreakdown)
+				{
+					targetRadianceStart = std::chrono::steady_clock::now();
+				}
 				stage5BaseRadiance = EvaluateNodeRadiance(MaterialNameForPlatform(targetPlat.type), targetPlat.nodePath, targetPlat.targetState.engineState, damaged, false, false, 0.0, targetPlat.targetState.targetLoc.alt);
+				if (profileBreakdown)
+				{
+					breakdown.targetRadianceMs += std::chrono::duration<double, std::milli>(
+						std::chrono::steady_clock::now() - targetRadianceStart).count();
+				}
+				std::chrono::steady_clock::time_point shaderApplyStart;
+				if (profileBreakdown)
+				{
+					shaderApplyStart = std::chrono::steady_clock::now();
+				}
+				targetPlat.nodePath.set_shader_input("u_time", LVecBase2f((float)current_time, 0.0f));
 				ApplyRadianceInputs(targetPlat.nodePath, stage5BaseRadiance, 0);
+				if (profileBreakdown)
+				{
+					breakdown.shaderInputApplyMs += std::chrono::duration<double, std::milli>(
+						std::chrono::steady_clock::now() - shaderApplyStart).count();
+				}
 
 				if (m_enableStage5RadianceDebug)
 				{
 					// Stage5A body radiance uses the material/environment baseline; engineState stays local to rear ThermalHotspot.
+					std::chrono::steady_clock::time_point targetDebugRadianceStart;
+					if (profileBreakdown)
+					{
+						targetDebugRadianceStart = std::chrono::steady_clock::now();
+					}
 					stage5BaseRadiance = EvaluateNodeRadiance(MaterialNameForPlatform(targetPlat.type), targetPlat.nodePath, false, false, false, false, 0.0, targetPlat.targetState.targetLoc.alt);
+					if (profileBreakdown)
+					{
+						breakdown.targetRadianceMs += std::chrono::duration<double, std::milli>(
+							std::chrono::steady_clock::now() - targetDebugRadianceStart).count();
+					}
 				}
 			}
+			std::chrono::steady_clock::time_point stage4Start;
+			if (profileBreakdown)
+			{
+				stage4Start = std::chrono::steady_clock::now();
+			}
 			ApplyStage4TargetState(targetPlat, m_realTimeSceneData.weaponState, stage4DtSec, ambientTempK, stage5BaseRadiance, targetRenderable);
+			if (profileBreakdown)
+			{
+				breakdown.stage4HotspotMs += std::chrono::duration<double, std::milli>(
+					std::chrono::steady_clock::now() - stage4Start).count();
+			}
 			IREnginePlumeOutput plumeOutput;
 			if (targetRenderable)
 			{
@@ -6345,6 +6550,11 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 				++stage5VisiblePlumeCount;
 			}
 		}
+	}
+	if (profileBreakdown)
+	{
+		breakdown.stage5PlumeMs = updatePlumeMs;
+		m_perfStats.recordIrUpdateBreakdown(breakdown);
 	}
 	m_perfStats.recordPlumeUpdate(updatePlumeMs);
 	LogStage5PlumePerf(stage5PlumeNodeCount, stage5VisiblePlumeCount, updatePlumeMs);

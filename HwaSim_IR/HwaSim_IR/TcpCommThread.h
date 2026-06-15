@@ -48,6 +48,13 @@ public:
 		const IRFrameTelemetry& telemetry);
 	void setSyncMode(bool syncMode) { m_syncMode.store(syncMode); }
 	void setFlipVertical(bool enabled) { m_flipVertical.store(enabled); }
+	void configureOutput(
+		int jpegQuality,
+		bool jpegGray,
+		bool enableH264Experimental,
+		bool h264FallbackToJpeg,
+		const std::string& codecConfig);
+	void setH264Requested(bool enabled);
 	void resetFrameCounters();
 	// 转发 UDP 收到的控制命令，触发接收端开始/停止/复位逻辑。
 	bool sendControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd);
@@ -79,6 +86,10 @@ private:
 		const IRFrameTelemetry& telemetry,
 		std::uint64_t outputOrdinal,
 		std::int64_t tcpSendTimeNs) const;
+	void resolveCodecState(
+		std::string& requestedCodec,
+		std::string& activeCodec,
+		std::string& fallbackReason) const;
 
 	// 负责连接与断开的函数
 	bool connectToServer();
@@ -124,6 +135,13 @@ private:
 	static const std::size_t kMaxFrameQueue = 4;
 	std::atomic<bool> m_syncMode{ true };
 	std::atomic<bool> m_flipVertical{ true };
+	std::atomic<int> m_jpegQuality{ 100 };
+	std::atomic<bool> m_jpegGray{ false };
+	std::atomic<bool> m_enableH264Experimental{ false };
+	std::atomic<bool> m_h264FallbackToJpeg{ true };
+	std::atomic<bool> m_h264Requested{ false };
+	std::string m_codecConfig = "auto";
+	mutable std::mutex m_codecMtx;
 	std::atomic<unsigned long long> m_tcpPacketCounter{ 0 };
 	std::int64_t m_lastTcpPerfLogNs = 0;
 };

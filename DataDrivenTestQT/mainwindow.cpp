@@ -408,6 +408,7 @@ void MainWindow::sendInitCommand()
 
     cmd.trackingInit.trackerSensor[0].realtimeAnnotation = true;
     cmd.trackingInit.trackerSensor[0].saveMP4En = true;
+    cmd.trackingInit.trackerSensor[0].h264En = m_h264Enabled;
 
     cmd.trackingInit.trackerSensor[0].coarseTrackEn = true;
     cmd.trackingInit.trackerSensor[0].preciseTrackEn = true;

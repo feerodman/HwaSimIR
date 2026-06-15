@@ -48,6 +48,7 @@ class MainWindow : public QMainWindow
 public:
 	explicit MainWindow(QWidget *parent = nullptr);
 	~MainWindow();
+	void setH264EnabledForTest(bool enabled) { m_h264Enabled = enabled; }
 
 	private slots:
 	void onResetButtonClicked();
@@ -136,6 +137,7 @@ private:
 	quint64 m_lastSendPerfFrameCount = 0;
 	int m_uiUpdateEveryFrames = 12;
 	int m_targetVideoFps = 60;
+	bool m_h264Enabled = false;
 
 	// Current Position
 	double m_currentLat;

@@ -186,7 +186,15 @@ private:
 	double m_irUpdateHz = 30.0;
 	bool m_stage6FlipInShader = false;
 	bool m_stage6FlipInTcpThread = true;
+	std::string m_tcpCodecConfig = "auto";
+	int m_tcpJpegQuality = 100;
+	bool m_tcpJpegGray = false;
+	std::string m_tcpJpegGrayConvertMethod = "luma";
+	bool m_enableH264Experimental = false;
+	bool m_h264FallbackToJpeg = true;
+	bool m_jpegPerfABTest = false;
 	std::uint64_t m_lastIrUpdateSourceSeq = 0;
+	std::uint64_t m_irBreakdownUpdateCounter = 0;
 	std::string m_lastIrUpdateState;
 	bool m_irMaterialReady = false;
 	bool m_irAtmosphereReady = false;
