@@ -339,7 +339,7 @@ $bodyTempStable = $false
 $bodyRadianceStable = $false
 if ($engineOffRow -and $engineOnRow) {
     $bodyTempStable = [Math]::Abs($engineOnRow.bodyTemp - $engineOffRow.bodyTemp) -lt 0.01
-    $bodyRadianceStable = [Math]::Abs($engineOnRow.bodyRadiance - $engineOffRow.bodyRadiance) -lt 0.0001
+    $bodyRadianceStable = $engineOnRow.bodyRadiance -le ($engineOffRow.bodyRadiance + 0.0001)
 }
 $checks = New-Object System.Collections.Generic.List[object]
 

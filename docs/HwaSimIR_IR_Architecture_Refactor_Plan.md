@@ -1073,6 +1073,128 @@ Next:
   sequencing.
 ```
 
+### Phase 3A Stage5 radiance components formalization
+
+```text
+Phase: 3A
+Date: 2026-06-16
+Executor: Codex
+Goal: formalize Stage5 radiance debug into an IRRadianceComponents /
+IRSceneRadianceOutput skeleton while preserving Phase 2B sync 60 Hz.
+
+Scope changed:
+- Added IRRadianceComponents and IRSceneRadianceOutput in IRRadianceModelV2.
+- Added evaluateComponents() while keeping the existing evaluate() compatibility
+  output for the current shader/display path.
+- Formal components now include band, materialName, materialTempK, emissivity,
+  reflectance, bodyRadiance, reflectedRadiance, rearHotspotRadiance,
+  plumeRadiance, brightspotRadiance, tauUp, pathRadiance,
+  pathRadianceSource, sensorInputRadiance, displayPreview and sourceFlags.
+- Added [Stage5Radiance] runtime config:
+  EnableIRPhysicalPipeline=true, DebugView=Off, LogComponents=false,
+  ComponentLogEveryFrames=120.
+- DebugView is now a visualization/logging selector only. It supports Off,
+  Body, Reflected, RearHotspot, Plume, BrightSpot, Atmosphere and SensorInput.
+  Legacy Composite is accepted as a SensorInput alias.
+- Stage5 component uniforms are written through SetShaderInputCached.
+- Target Stage5 component uniforms are no longer default-zeroed by the generic
+  ApplyRadianceInputs path. This avoids writing default values and real values
+  in the same frame, which was the main 3A cache-churn risk.
+- [Stage5 RadianceComponents] is gated by LogComponents/DebugView/verbose and
+  remains frame-limited.
+- Engine plume is updated before applying Stage4/Stage5 target components so
+  plumeRadiance uses the current-frame plume cache.
+- Added tools/stage5_radiance_components_smoke.ps1 and updated the Stage5
+  static check for the formal component skeleton.
+
+Not changed:
+- No MODTRAN path/sky/solar runtime connection. pathRadianceSource is explicitly
+  legacy_empirical or disabled.
+- No AGC/MTF, height/Mach heat model, TCP/JPEG/H.264 protocol change, recorder
+  path change, material-library restructure, PBO or hardware encode.
+- engineState still only affects EngineRear and EnginePlume. strikeFlag /
+  strikePart still only affect BrightSpot.
+
+Build:
+- HwaSim_IR Windows Release x64: PASS.
+- DataDrivenTestQT Release: PASS.
+- HwaSim_IR_VideoDisplay Windows Release x64: PASS.
+- Remaining warnings are pre-existing VS/Panda/PDB warnings.
+
+Regression:
+- Stage3 MODTRAN tau-only strict: PASS.
+- Stage4 hotspot/brightspot strict: PASS.
+- Stage4 three-band semantic smoke: PASS.
+  Log: logs/stage4/HwaSimIR-stage4-hotspot-smoke-20260616-170518.out.log
+- Stage5 min radiance static check: PASS.
+- Stage5 radiance components smoke: PASS.
+  Summary: logs/stage5/stage5_radiance_components_smoke_summary.csv
+
+RadianceComponents smoke summary:
+- SWIR baseline: body=0.00000659458 rear=0 plume=0 bright=0,
+  pathRadianceSource=legacy_empirical, DebugView=Off.
+- MWIR baseline: body=0.308302 rear=0 plume=0 bright=0.
+- MWIR engine: body=0.308302 rear=57.3932 plume=1 bright=0.
+- MWIR strike head: body=0.308302 bright=361.493.
+- MWIR strike mid: body=0.308302 bright=271.12.
+- LWIR baseline: body=4.43015 rear=0 plume=0 bright=0.
+- engineState does not increase bodyRadiance; rear/plume rise with engineState.
+- brightspotRadiance rises only with strikeFlag/strikePart.
+- pathRadianceSource is not mislabeled as MODTRAN runtime.
+
+30s production-default sync run:
+- Config: 800x800, 5 targets, videoFps=60, saveMP4En=true,
+  Codec=auto, JpegEncodeMode=rgb, JpegQuality=100,
+  EnableH264Experimental=false, LegacyEngineBodyHeating=false,
+  EnableIRPhysicalPipeline=true, DebugView=Off.
+- Log: logs/phase2a-final-20260616-171104
+- MP4: HwaSim_IR_VideoDisplay/x64/Release/MP4/round_001_20260616_171118/output.mp4
+- sentFps=60.035, udpFps=60.051, renderFps=60.438,
+  outputFps=60.251, VideoDisplay receive/display=60.316.
+- latencyAvgMs=34.324.
+- sourceSeqContinuous=1, sourceSeqContinuousWritten=1.
+- inputQueueOverflow=0, TCP overwritten=0, recordingDroppedFrames=0.
+- written/mp4/annotations/targetAnnotations=1800/1800/1800/1800.
+- sourceSeqLagMax=2. Steady intervals show no sustained backlog; current lag
+  returns near 0 with occasional short peaks.
+- inputQueueDepthMax=14 from startup/cold-cache. Steady current depth returns
+  near 0 with mostly <=2 and occasional short peaks.
+
+Perf vs Phase 2B:
+- Phase 2B baseline: irUpdateMs=0.922, shaderInputApplyMs=0.726,
+  stage7SkyGroundMs=0.212, stage4HotspotMs=0.916, latencyAvgMs=34.823.
+- Phase 3A final: irUpdateMs=0.985, shaderInputApplyMs=0.657,
+  stage7SkyGroundMs=0.219, stage4HotspotMs=1.313, latencyAvgMs=34.324.
+- shaderInputCacheHitRateAvg remains high: 97.473%.
+- Stage7/Stage4 remain dirty-key / frequency gated and did not return to
+  per-frame full updates.
+
+Implementation note:
+- The first 3A attempt dropped below 60 Hz because target Stage5 component
+  uniforms were being reset by ApplyRadianceInputs and then overwritten by the
+  Stage5 component pass in the same frame. That doubled a large part of the
+  target uniform traffic and reduced cache hit rate to about 80%. Restricting
+  those default component writes to non-target objects restored cache hit rate
+  and the 60 Hz budget.
+
+Acceptance:
+- PASS for the formal Stage5 radiance component skeleton.
+- PASS for Stage3/Stage4/Stage5 regression checks.
+- PASS for preserving 60 Hz production-default sync performance, latency <=80 ms,
+  sourceSeq continuity, zero input overflow, zero TCP overwrite and zero
+  recorder drops.
+- Residual note: sourceSeqLag/sourceQueue peaks still appear briefly during
+  startup/cold-cache intervals, but no sustained steady-state accumulation was
+  observed.
+
+Next:
+- Do not connect MODTRAN path/sky/solar runtime until component logs are stable
+  across more scenes.
+- The next physics step can calibrate body/reflected/path components or design
+  the real MODTRAN path source, but H.264/hardware encode remains a separate
+  transport project.
+```
+
 ---
 
 ## 12. 给 Codex 的第一阶段实施 Prompt

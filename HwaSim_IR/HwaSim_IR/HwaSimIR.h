@@ -225,9 +225,12 @@ private:
 	bool m_forceStage4BrightSpotVisible = false;   // 阶段4调试：强制特殊亮斑可见
 	bool m_forceStage4RearHotspotVisible = false;  // 阶段4调试：强制尾部热源可见
 	bool m_stage4LegacyEngineBodyHeating = false;  // Legacy/debug only: engineState heats whole body radiance
-	bool m_enableStage5RadianceDebug = false;      // Stage5A debug path, default off to keep legacy rendering unchanged
-	int m_stage5DebugViewMode = 0;                 // 0 Composite, 1 BodyOnly, 2 HotspotOnly, 3 BrightSpotOnly
-	std::string m_stage5DebugViewModeName = "Composite";
+	bool m_enableStage5PhysicalPipeline = true;    // Stage5正式分量链路，默认计算，不决定可视化输出
+	bool m_enableStage5RadianceDebug = false;      // DebugView != Off 时打开可视化旁路，默认关闭
+	int m_stage5DebugViewMode = 0;                 // 0 Off, 1 Body, 2 Reflected, 3 RearHotspot, 4 Plume, 5 BrightSpot, 6 Atmosphere, 7 SensorInput
+	std::string m_stage5DebugViewModeName = "Off";
+	bool m_stage5LogComponents = false;
+	int m_stage5ComponentLogEveryFrames = 120;
 	std::string m_stage5DebugToneMapName = "asinh";
 	IRRadianceModelV2DebugConfig m_stage5DebugConfig;
 	IRRadianceModelV2DebugConfig m_stage5DebugConfigs[5];
@@ -462,6 +465,7 @@ private:
 	std::atomic<bool> m_lastSourceSeqContinuous{ true };
 	std::string m_lastStage4InputState;
 	std::map<std::string, std::string> m_lastStage4TargetLogState;
+	std::map<std::string, std::string> m_lastStage5RadianceComponentLogState;
 	int m_lastWeaponDamageFlag = -1;
 	IRPerfStats m_perfStats;
 	std::atomic<int> m_targetVideoFps{ 0 };

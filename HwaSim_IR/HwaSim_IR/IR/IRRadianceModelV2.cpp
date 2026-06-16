@@ -32,7 +32,32 @@ IRRadianceModelV2Input::IRRadianceModelV2Input()
 	hotspotTemperatureK(300.0),
 	hotspotIntensity(0.0),
 	brightspotIntensity(0.0),
+	plumeRadiance(0.0),
+	pathRadiance(0.0),
+	materialName("unknown"),
+	pathRadianceSource("disabled"),
+	sourceFlags("body"),
 	enableDebugFloor(false)
+{
+}
+
+IRRadianceComponents::IRRadianceComponents()
+	: band(IRBand::MidWaveInfrared),
+	materialName("unknown"),
+	materialTempK(300.0),
+	emissivity(0.85),
+	reflectance(0.15),
+	bodyRadiance(0.0),
+	reflectedRadiance(0.0),
+	rearHotspotRadiance(0.0),
+	plumeRadiance(0.0),
+	brightspotRadiance(0.0),
+	tauUp(0.85),
+	pathRadiance(0.0),
+	pathRadianceSource("disabled"),
+	sensorInputRadiance(0.0),
+	displayPreview(0.0),
+	sourceFlags("body")
 {
 }
 
@@ -53,10 +78,11 @@ IRRadianceModelV2Output::IRRadianceModelV2Output()
 {
 }
 
-IRRadianceModelV2Output IRRadianceModelV2::evaluate(const IRRadianceModelV2Input& input) const
+IRRadianceComponents IRRadianceModelV2::evaluateComponents(const IRRadianceModelV2Input& input) const
 {
-	IRRadianceModelV2Output output;
-	output.wavelengthCenterUm = bandCenterUm(input.band);
+	IRRadianceComponents components;
+	components.band = input.band;
+	components.materialName = input.materialName.empty() ? "unknown" : input.materialName;
 
 	const double materialTemperatureK = clamp(input.materialTemperatureK, 120.0, 2500.0);
 	const double hotspotTemperatureK = clamp(input.hotspotTemperatureK, 120.0, 3500.0);
@@ -69,30 +95,97 @@ IRRadianceModelV2Output IRRadianceModelV2::evaluate(const IRRadianceModelV2Input
 	const double solarReflectanceWeight = clamp(input.solarReflectanceWeight, 0.0, 1.0);
 	const double hotspotIntensity = clamp(input.hotspotIntensity, 0.0, 8.0);
 	const double brightspotIntensity = clamp(input.brightspotIntensity, 0.0, 8.0);
+	const double plumeRadiance = std::max(0.0, input.plumeRadiance);
+	const double pathRadiance = std::max(0.0, input.pathRadiance);
+	const double wavelengthCenterUm = bandCenterUm(input.band);
 
 	const double referenceRadiance = std::max(
 		1.0e-12,
-		planckRadianceWm2SrUm(output.wavelengthCenterUm, referenceTemperatureK(input.band)));
+		planckRadianceWm2SrUm(wavelengthCenterUm, referenceTemperatureK(input.band)));
 
-	output.bodyRadiance = emissivity * planckRadianceWm2SrUm(output.wavelengthCenterUm, materialTemperatureK);
-	output.reflectedRadiance =
+	components.materialTempK = materialTemperatureK;
+	components.emissivity = emissivity;
+	components.reflectance = reflectance;
+	components.tauUp = tauUp;
+	components.bodyRadiance = emissivity * planckRadianceWm2SrUm(wavelengthCenterUm, materialTemperatureK);
+	components.reflectedRadiance =
 		reflectance *
 		solarStrength *
 		ndotl *
 		textureLuma *
 		solarReflectanceWeight;
-	output.hotspotRadiance =
+	components.rearHotspotRadiance =
 		hotspotIntensity *
 		hotspotBandWeight(input.band) *
-		planckRadianceWm2SrUm(output.wavelengthCenterUm, hotspotTemperatureK);
-	output.brightspotRadiance =
+		planckRadianceWm2SrUm(wavelengthCenterUm, hotspotTemperatureK);
+	components.plumeRadiance = plumeRadiance;
+	components.brightspotRadiance =
 		brightspotIntensity *
 		brightspotBandWeight(input.band) *
 		referenceRadiance;
-
-	output.finalRadianceDebug =
+	components.pathRadiance = pathRadiance;
+	components.pathRadianceSource = input.pathRadianceSource.empty() ? "disabled" : input.pathRadianceSource;
+	components.sensorInputRadiance =
 		tauUp *
-		(output.bodyRadiance + output.reflectedRadiance + output.hotspotRadiance + output.brightspotRadiance);
+		(components.bodyRadiance +
+			components.reflectedRadiance +
+			components.rearHotspotRadiance +
+			components.plumeRadiance +
+			components.brightspotRadiance) +
+		components.pathRadiance;
+	double bodyPreview = applyToneMap(
+		tauUp * components.bodyRadiance,
+		input.debugConfig.bodyRadianceScale,
+		input.debugConfig.toneMap);
+	if (input.enableDebugFloor)
+	{
+		const double floorValue = clamp(input.debugConfig.minBodyGray, 0.0, 0.5);
+		if (components.bodyRadiance > 0.0 && bodyPreview < floorValue)
+		{
+			bodyPreview = floorValue;
+		}
+	}
+	const double reflectedPreview = applyToneMap(
+		tauUp * components.reflectedRadiance,
+		input.debugConfig.bodyRadianceScale,
+		input.debugConfig.toneMap);
+	const double rearPreview = applyToneMap(
+		tauUp * components.rearHotspotRadiance,
+		input.debugConfig.hotspotRadianceScale,
+		input.debugConfig.toneMap);
+	const double plumePreview = applyToneMap(
+		tauUp * components.plumeRadiance,
+		input.debugConfig.hotspotRadianceScale,
+		input.debugConfig.toneMap);
+	const double brightPreview = applyToneMap(
+		tauUp * components.brightspotRadiance,
+		input.debugConfig.brightspotRadianceScale,
+		input.debugConfig.toneMap);
+	const double atmospherePreview = applyToneMap(
+		components.pathRadiance,
+		input.debugConfig.bodyRadianceScale,
+		input.debugConfig.toneMap);
+	components.displayPreview = clamp(
+		bodyPreview + reflectedPreview + rearPreview + plumePreview + brightPreview + atmospherePreview,
+		0.0,
+		1.0);
+	components.sourceFlags = input.sourceFlags.empty() ? "body" : input.sourceFlags;
+	return components;
+}
+
+IRRadianceModelV2Output IRRadianceModelV2::evaluate(const IRRadianceModelV2Input& input) const
+{
+	IRRadianceModelV2Output output;
+	output.wavelengthCenterUm = bandCenterUm(input.band);
+
+	const double tauUp = clamp(input.tauUp, 0.0, 1.0);
+	IRRadianceComponents components = evaluateComponents(input);
+	output.bodyRadiance = components.bodyRadiance;
+	output.reflectedRadiance = components.reflectedRadiance;
+	output.hotspotRadiance = components.rearHotspotRadiance;
+	output.brightspotRadiance = components.brightspotRadiance;
+
+	output.finalRadianceDebug = components.sensorInputRadiance;
 
 	output.bodyGrayBeforeFloor = applyToneMap(
 		tauUp * output.bodyRadiance,

@@ -250,17 +250,37 @@ std::string ToLowerAscii(std::string value)
 int ParseStage5DebugViewMode(const std::string& value)
 {
 	std::string lower = ToLowerAscii(value);
+	if (lower == "off" || lower == "none" || lower == "disabled" || lower == "0")
+	{
+		return 0;
+	}
 	if (lower == "bodyonly" || lower == "body")
 	{
 		return 1;
 	}
-	if (lower == "hotspotonly" || lower == "hotspot")
+	if (lower == "reflected" || lower == "reflection" || lower == "reflectedonly")
 	{
 		return 2;
 	}
-	if (lower == "brightspotonly" || lower == "brightspot")
+	if (lower == "rearhotspot" || lower == "rear" || lower == "hotspotonly" || lower == "hotspot")
 	{
 		return 3;
+	}
+	if (lower == "plume" || lower == "engineplume")
+	{
+		return 4;
+	}
+	if (lower == "brightspotonly" || lower == "brightspot")
+	{
+		return 5;
+	}
+	if (lower == "atmosphere" || lower == "path" || lower == "pathradiance")
+	{
+		return 6;
+	}
+	if (lower == "sensorinput" || lower == "sensor" || lower == "composite")
+	{
+		return 7;
 	}
 	return 0;
 }
@@ -269,12 +289,15 @@ const char* Stage5DebugViewModeName(int viewMode)
 {
 	switch (viewMode)
 	{
-	case 1: return "BodyOnly";
-	case 2: return "HotspotOnly";
-	case 3: return "BrightSpotOnly";
-	case 0:
+	case 1: return "Body";
+	case 2: return "Reflected";
+	case 3: return "RearHotspot";
+	case 4: return "Plume";
+	case 5: return "BrightSpot";
+	case 6: return "Atmosphere";
+	case 7: return "SensorInput";
 	default:
-		return "Composite";
+		return "Off";
 	}
 }
 
@@ -4203,6 +4226,7 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		m_stage5PlumeLastPerfState.clear();
 		m_stage5PlumePerfLogCounter = 0;
 		m_lastStage4TargetLogState.clear();
+		m_lastStage5RadianceComponentLogState.clear();
 		m_lastStage4InputState.clear();
 		RefreshStage6DisplayShaderInputs();
 
@@ -4320,6 +4344,7 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 	m_lastOutputSourceSeq.store(0);
 	m_lastSourceSeqContinuous.store(true);
 	m_lastStage4TargetLogState.clear();
+	m_lastStage5RadianceComponentLogState.clear();
 	m_lastStage4InputState.clear();
 	if (m_pTcpThread)
 	{
@@ -4846,12 +4871,49 @@ void HwaSimIR::InitInfraredSimulation()
 	ApplyStage5RuntimeOverrides(m_runtimeConfig, m_stage5DebugConfigs, m_stage5UseBaseTextureModulationByBand);
 	std::string stage5DebugSource;
 	std::string stage5ViewModeSource;
+	std::string stage5PhysicalSource;
+	std::string stage5ComponentLogSource;
+	std::string stage5ComponentLogEverySource;
 	std::string stage5DumpSource;
 	std::string stage5DumpPathSource;
 	std::string stage5DumpEverySource;
-	m_enableStage5RadianceDebug = m_runtimeConfig.getBool("Stage5", "EnableRadianceDebug", "EnableStage5RadianceDebug", false, &stage5DebugSource);
-	m_stage5DebugViewMode = ParseStage5DebugViewMode(m_runtimeConfig.getString("Stage5", "DebugViewMode", "Stage5DebugViewMode", "Composite", &stage5ViewModeSource));
+	m_enableStage5PhysicalPipeline = m_runtimeConfig.getBool(
+		"Stage5Radiance",
+		"EnableIRPhysicalPipeline",
+		"EnableIRPhysicalPipeline",
+		true,
+		&stage5PhysicalSource);
+	const bool legacyStage5Debug = m_runtimeConfig.getBool("Stage5", "EnableRadianceDebug", "EnableStage5RadianceDebug", false, &stage5DebugSource);
+	std::string stage5DebugViewText = m_runtimeConfig.getString(
+		"Stage5Radiance",
+		"DebugView",
+		"Stage5RadianceDebugView",
+		"Off",
+		&stage5ViewModeSource);
+	if (legacyStage5Debug)
+	{
+		stage5DebugViewText = m_runtimeConfig.getString(
+			"Stage5",
+			"DebugViewMode",
+			"Stage5DebugViewMode",
+			"SensorInput",
+			&stage5ViewModeSource);
+	}
+	m_stage5DebugViewMode = ParseStage5DebugViewMode(stage5DebugViewText);
 	m_stage5DebugViewModeName = Stage5DebugViewModeName(m_stage5DebugViewMode);
+	m_enableStage5RadianceDebug = m_stage5DebugViewMode != 0;
+	m_stage5LogComponents = m_runtimeConfig.getBool(
+		"Stage5Radiance",
+		"LogComponents",
+		"Stage5RadianceLogComponents",
+		false,
+		&stage5ComponentLogSource);
+	m_stage5ComponentLogEveryFrames = std::max(1, m_runtimeConfig.getInt(
+		"Stage5Radiance",
+		"ComponentLogEveryFrames",
+		"Stage5RadianceComponentLogEveryFrames",
+		120,
+		&stage5ComponentLogEverySource));
 	m_stage5DebugConfig = m_stage5DebugConfigs[Stage5BandIndex(IRBand::MidWaveInfrared)];
 	m_stage5DebugToneMapName = Stage5ToneMapName(m_stage5DebugConfig.toneMap);
 	m_stage5UseBaseTextureModulation = m_stage5UseBaseTextureModulationByBand[Stage5BandIndex(IRBand::MidWaveInfrared)];
@@ -5051,31 +5113,31 @@ void HwaSimIR::InitInfraredSimulation()
 	std::cout << "[Stage5 Radiance] Stage5DebugDisplayConfig="
 		<< (m_stage5DebugDisplayConfigReady ? "OK" : "fallback")
 		<< " path=" << m_stage5DebugDisplayConfigPath
-		<< "（只配置debug显示映射，不改变EnableStage5RadianceDebug默认关闭状态）" << std::endl;
-	std::cout << "[Stage5 Radiance] EnableStage5RadianceDebug=" << (m_enableStage5RadianceDebug ? "1" : "0");
-	if (!m_enableStage5RadianceDebug)
-	{
-		std::cout << " Stage5 debug disabled, legacy output may remain dark.";
-	}
-	else
-	{
-		std::cout << " 最小目标自身辐射链路启用：bodyRadiance + rear ThermalHotspot + BrightSpot；path/sky/solar radiance disabled."
-			<< " Stage5DebugViewMode=" << m_stage5DebugViewModeName
-			<< " Stage5DebugToneMap=" << m_stage5DebugToneMapName
-			<< " Stage5BodyRadianceScale=" << m_stage5DebugConfig.bodyRadianceScale
-			<< " Stage5HotspotRadianceScale=" << m_stage5DebugConfig.hotspotRadianceScale
-			<< " Stage5BrightspotRadianceScale=" << m_stage5DebugConfig.brightspotRadianceScale
-			<< " Stage5SolarReflectanceWeight=" << m_stage5DebugConfig.solarReflectanceWeight
-			<< " Stage5DebugMinBodyGray=" << m_stage5DebugConfig.minBodyGray
-			<< " Stage5UseBaseTextureModulation=" << (m_stage5UseBaseTextureModulation ? "1" : "0")
-			<< " Stage5BodyDisplayGain=" << m_stage5DebugConfig.bodyDisplayGain
-			<< " Stage5ReflectedDisplayGain=" << m_stage5DebugConfig.reflectedDisplayGain
-			<< " Stage5HotspotDisplayGain=" << m_stage5DebugConfig.hotspotDisplayGain
-			<< " Stage5BrightspotDisplayGain=" << m_stage5DebugConfig.brightspotDisplayGain
-			<< " Stage5CompositeMinGray=" << m_stage5DebugConfig.compositeMinGray
-			<< " Stage5CompositeMaxGray=" << m_stage5DebugConfig.compositeMaxGray;
-	}
-	std::cout << std::endl;
+		<< "（只配置DebugView显示映射，不决定Stage5正式分量链路是否计算）" << std::endl;
+	std::cout << "[Stage5 RadianceConfig]"
+		<< " EnableIRPhysicalPipeline=" << (m_enableStage5PhysicalPipeline ? "1" : "0")
+		<< " DebugView=" << m_stage5DebugViewModeName
+		<< " EnableStage5RadianceDebug=" << (m_enableStage5RadianceDebug ? "1" : "0")
+		<< " LogComponents=" << (m_stage5LogComponents ? "1" : "0")
+		<< " ComponentLogEveryFrames=" << m_stage5ComponentLogEveryFrames
+		<< " pathRadianceSource=legacy_empirical"
+		<< " Stage5DebugToneMap=" << m_stage5DebugToneMapName
+		<< " Stage5BodyRadianceScale=" << m_stage5DebugConfig.bodyRadianceScale
+		<< " Stage5HotspotRadianceScale=" << m_stage5DebugConfig.hotspotRadianceScale
+		<< " Stage5BrightspotRadianceScale=" << m_stage5DebugConfig.brightspotRadianceScale
+		<< " Stage5SolarReflectanceWeight=" << m_stage5DebugConfig.solarReflectanceWeight
+		<< " Stage5DebugMinBodyGray=" << m_stage5DebugConfig.minBodyGray
+		<< " Stage5UseBaseTextureModulation=" << (m_stage5UseBaseTextureModulation ? "1" : "0")
+		<< " Stage5BodyDisplayGain=" << m_stage5DebugConfig.bodyDisplayGain
+		<< " Stage5ReflectedDisplayGain=" << m_stage5DebugConfig.reflectedDisplayGain
+		<< " Stage5HotspotDisplayGain=" << m_stage5DebugConfig.hotspotDisplayGain
+		<< " Stage5BrightspotDisplayGain=" << m_stage5DebugConfig.brightspotDisplayGain
+		<< " Stage5CompositeMinGray=" << m_stage5DebugConfig.compositeMinGray
+		<< " Stage5CompositeMaxGray=" << m_stage5DebugConfig.compositeMaxGray
+		<< " source=" << stage5PhysicalSource << "/" << stage5ViewModeSource << "/"
+		<< stage5DebugSource << "/" << stage5ComponentLogSource << "/" << stage5ComponentLogEverySource
+		<< "（DebugView Off 时主画面保持legacy输出；path/sky/solar MODTRAN runtime disabled）"
+		<< std::endl;
 	std::cout << "[Stage5 OutputCapture] Stage5OutputFrameDump="
 		<< ((m_stage5OutputFrameDumpEnabled && m_enableStage5RadianceDebug) ? "1" : "0")
 		<< " path=" << (m_stage5OutputFrameDumpPath.empty() ? "NA" : m_stage5OutputFrameDumpPath)
@@ -5257,10 +5319,16 @@ void HwaSimIR::InitInfraredShader() {
     uniform vec4 u_material_params[8];
     uniform int u_stage4_visual_debug; // 阶段4可视化诊断：默认0，只在排查Hotspot/BrightSpot接线时打开
     uniform int u_stage5_radiance_debug_en; // Stage5A minimal radiance debug switch, default 0
-    uniform int u_stage5_debug_view_mode;   // 0 Composite, 1 BodyOnly, 2 HotspotOnly, 3 BrightSpotOnly
+    uniform int u_stage5_debug_view_mode;   // 0 Off, 1 Body, 2 Reflected, 3 RearHotspot, 4 Plume, 5 BrightSpot, 6 Atmosphere, 7 SensorInput
     uniform int u_stage5_use_base_texture_modulation;
     uniform float u_material_temp_K;
     uniform float u_material_emissivity;
+    uniform float u_stage5_body_radiance;
+    uniform float u_stage5_rear_hotspot_radiance;
+    uniform float u_stage5_plume_radiance;
+    uniform float u_stage5_brightspot_radiance;
+    uniform float u_stage5_path_radiance;
+    uniform float u_stage5_sensor_input_radiance;
     uniform float u_body_radiance_scale;
     uniform float u_stage5_body_gray;
     uniform float u_stage5_reflected_radiance;
@@ -5275,6 +5343,8 @@ void HwaSimIR::InitInfraredShader() {
     uniform float u_stage5_reflected_display_gray;
     uniform float u_stage5_hotspot_display_gray;
     uniform float u_stage5_brightspot_display_gray;
+    uniform float u_stage5_plume_display_gray;
+    uniform float u_stage5_atmosphere_display_gray;
     uniform float u_stage5_composite_min_gray;
     uniform float u_stage5_composite_max_gray;
     uniform int u_stage5_display_fallback_applied;
@@ -5572,18 +5642,26 @@ void HwaSimIR::InitInfraredShader() {
             float texture_luma_shader = clamp(luminance, 0.0, 1.0);
             float reflected_debug = clamp(u_stage5_reflected_display_gray, 0.0, 1.0) * ndotl_shader * texture_luma_shader;
             float rear_hotspot_debug = stage5_rear_mask * clamp(u_stage5_hotspot_display_gray, 0.0, 1.0);
+            float plume_debug = stage5_rear_mask * clamp(u_stage5_plume_display_gray, 0.0, 1.0);
             float brightspot_debug = stage5_bright_mask * clamp(u_stage5_brightspot_display_gray, 0.0, 1.0);
+            float atmosphere_debug = clamp(u_stage5_atmosphere_display_gray, 0.0, 1.0);
             float stage5_intensity = 0.0;
             if (u_stage5_debug_view_mode == 1) {
                 stage5_intensity = body_debug;
             } else if (u_stage5_debug_view_mode == 2) {
-                stage5_intensity = rear_hotspot_debug;
+                stage5_intensity = reflected_debug;
             } else if (u_stage5_debug_view_mode == 3) {
+                stage5_intensity = rear_hotspot_debug;
+            } else if (u_stage5_debug_view_mode == 4) {
+                stage5_intensity = plume_debug;
+            } else if (u_stage5_debug_view_mode == 5) {
                 stage5_intensity = brightspot_debug;
+            } else if (u_stage5_debug_view_mode == 6) {
+                stage5_intensity = atmosphere_debug;
             } else {
                 float composite_min = clamp(u_stage5_composite_min_gray, 0.0, 1.0);
                 float composite_max = max(composite_min, clamp(u_stage5_composite_max_gray, 0.0, 1.0));
-                stage5_intensity = clamp(body_debug + reflected_debug + rear_hotspot_debug + brightspot_debug, composite_min, composite_max);
+                stage5_intensity = clamp(body_debug + reflected_debug + rear_hotspot_debug + plume_debug + brightspot_debug + atmosphere_debug, composite_min, composite_max);
             }
             if (u_stage4_visual_debug == 1 && stage4_debug_mask > 0.0) {
                 stage5_intensity = max(stage5_intensity, clamp(0.25 + stage4_debug_mask * 0.75, 0.0, 1.0));
@@ -5660,6 +5738,12 @@ void HwaSimIR::ApplyInfraredShader(NodePath& node, bool isBackground) {
 	node.set_shader_input("u_stage5_use_base_texture_modulation", LVecBase2i(0, 0));
 	node.set_shader_input("u_material_temp_K", LVecBase2f(300.0f, 0.0f));
 	node.set_shader_input("u_material_emissivity", LVecBase2f(0.85f, 0.0f));
+	SetShaderInputCached(node, "u_stage5_body_radiance", LVecBase2f(0.0f, 0.0f));
+	SetShaderInputCached(node, "u_stage5_rear_hotspot_radiance", LVecBase2f(0.0f, 0.0f));
+	SetShaderInputCached(node, "u_stage5_plume_radiance", LVecBase2f(0.0f, 0.0f));
+	SetShaderInputCached(node, "u_stage5_brightspot_radiance", LVecBase2f(0.0f, 0.0f));
+	SetShaderInputCached(node, "u_stage5_path_radiance", LVecBase2f(0.0f, 0.0f));
+	SetShaderInputCached(node, "u_stage5_sensor_input_radiance", LVecBase2f(0.0f, 0.0f));
 	node.set_shader_input("u_body_radiance_scale", LVecBase2f(0.0f, 0.0f));
 	node.set_shader_input("u_stage5_body_gray", LVecBase2f(0.0f, 0.0f));
 	node.set_shader_input("u_stage5_reflected_radiance", LVecBase2f(0.0f, 0.0f));
@@ -5674,6 +5758,8 @@ void HwaSimIR::ApplyInfraredShader(NodePath& node, bool isBackground) {
 	node.set_shader_input("u_stage5_reflected_display_gray", LVecBase2f(0.0f, 0.0f));
 	node.set_shader_input("u_stage5_hotspot_display_gray", LVecBase2f(0.0f, 0.0f));
 	node.set_shader_input("u_stage5_brightspot_display_gray", LVecBase2f(0.0f, 0.0f));
+	SetShaderInputCached(node, "u_stage5_plume_display_gray", LVecBase2f(0.0f, 0.0f));
+	SetShaderInputCached(node, "u_stage5_atmosphere_display_gray", LVecBase2f(0.0f, 0.0f));
 	node.set_shader_input("u_stage5_composite_min_gray", LVecBase2f(0.0f, 0.0f));
 	node.set_shader_input("u_stage5_composite_max_gray", LVecBase2f(1.0f, 0.0f));
 	node.set_shader_input("u_stage5_display_fallback_applied", LVecBase2i(0, 0));
@@ -5760,25 +5846,36 @@ void HwaSimIR::ApplyRadianceInputs(NodePath& node, const IRObjectRadianceOutput&
 	SetShaderInputCached(node, "u_stage5_radiance_debug_en", LVecBase2i(m_enableStage5RadianceDebug ? 1 : 0, 0));
 	SetShaderInputCached(node, "u_stage5_debug_view_mode", LVecBase2i(m_stage5DebugViewMode, 0));
 	SetShaderInputCached(node, "u_stage5_use_base_texture_modulation", LVecBase2i(m_stage5UseBaseTextureModulationByBand[stage5BandIndex] ? 1 : 0, 0));
-	SetShaderInputCached(node, "u_material_temp_K", LVecBase2f(radiance.temperatureK, 0.0f));
-	SetShaderInputCached(node, "u_material_emissivity", LVecBase2f(radiance.emissivity, 0.0f));
-	SetShaderInputCached(node, "u_body_radiance_scale", LVecBase2f(0.0f, 0.0f));
-	SetShaderInputCached(node, "u_stage5_body_gray", LVecBase2f(0.0f, 0.0f));
-	SetShaderInputCached(node, "u_stage5_reflected_radiance", LVecBase2f(0.0f, 0.0f));
-	SetShaderInputCached(node, "u_stage5_reflected_gray", LVecBase2f(0.0f, 0.0f));
-	SetShaderInputCached(node, "u_stage5_reflectance_band", LVecBase2f(0.0f, 0.0f));
-	SetShaderInputCached(node, "u_stage5_solar_weight", LVecBase2f(0.0f, 0.0f));
-	SetShaderInputCached(node, "u_stage5_sun_dir_local", LVecBase3f(0.0f, 0.0f, 1.0f));
-	SetShaderInputCached(node, "u_stage5_hotspot_gray", LVecBase2f(0.0f, 0.0f));
-	SetShaderInputCached(node, "u_stage5_brightspot_gray", LVecBase2f(0.0f, 0.0f));
-	SetShaderInputCached(node, "u_stage5_final_gray_debug", LVecBase2f(0.0f, 0.0f));
-	SetShaderInputCached(node, "u_stage5_body_display_gray", LVecBase2f(0.0f, 0.0f));
-	SetShaderInputCached(node, "u_stage5_reflected_display_gray", LVecBase2f(0.0f, 0.0f));
-	SetShaderInputCached(node, "u_stage5_hotspot_display_gray", LVecBase2f(0.0f, 0.0f));
-	SetShaderInputCached(node, "u_stage5_brightspot_display_gray", LVecBase2f(0.0f, 0.0f));
-	SetShaderInputCached(node, "u_stage5_composite_min_gray", LVecBase2f(0.0f, 0.0f));
-	SetShaderInputCached(node, "u_stage5_composite_max_gray", LVecBase2f(1.0f, 0.0f));
-	SetShaderInputCached(node, "u_stage5_display_fallback_applied", LVecBase2i(0, 0));
+	if (objectKind != 0)
+	{
+		SetShaderInputCached(node, "u_material_temp_K", LVecBase2f(radiance.temperatureK, 0.0f));
+		SetShaderInputCached(node, "u_material_emissivity", LVecBase2f(radiance.emissivity, 0.0f));
+		SetShaderInputCached(node, "u_stage5_body_radiance", LVecBase2f(radiance.baseRadiance, 0.0f));
+		SetShaderInputCached(node, "u_stage5_rear_hotspot_radiance", LVecBase2f(0.0f, 0.0f));
+		SetShaderInputCached(node, "u_stage5_plume_radiance", LVecBase2f(0.0f, 0.0f));
+		SetShaderInputCached(node, "u_stage5_brightspot_radiance", LVecBase2f(0.0f, 0.0f));
+		SetShaderInputCached(node, "u_stage5_path_radiance", LVecBase2f(radiance.pathRadiance, 0.0f));
+		SetShaderInputCached(node, "u_stage5_sensor_input_radiance", LVecBase2f(radiance.baseRadiance, 0.0f));
+		SetShaderInputCached(node, "u_body_radiance_scale", LVecBase2f(0.0f, 0.0f));
+		SetShaderInputCached(node, "u_stage5_body_gray", LVecBase2f(0.0f, 0.0f));
+		SetShaderInputCached(node, "u_stage5_reflected_radiance", LVecBase2f(0.0f, 0.0f));
+		SetShaderInputCached(node, "u_stage5_reflected_gray", LVecBase2f(0.0f, 0.0f));
+		SetShaderInputCached(node, "u_stage5_reflectance_band", LVecBase2f(0.0f, 0.0f));
+		SetShaderInputCached(node, "u_stage5_solar_weight", LVecBase2f(0.0f, 0.0f));
+		SetShaderInputCached(node, "u_stage5_sun_dir_local", LVecBase3f(0.0f, 0.0f, 1.0f));
+		SetShaderInputCached(node, "u_stage5_hotspot_gray", LVecBase2f(0.0f, 0.0f));
+		SetShaderInputCached(node, "u_stage5_brightspot_gray", LVecBase2f(0.0f, 0.0f));
+		SetShaderInputCached(node, "u_stage5_final_gray_debug", LVecBase2f(0.0f, 0.0f));
+		SetShaderInputCached(node, "u_stage5_body_display_gray", LVecBase2f(0.0f, 0.0f));
+		SetShaderInputCached(node, "u_stage5_reflected_display_gray", LVecBase2f(0.0f, 0.0f));
+		SetShaderInputCached(node, "u_stage5_hotspot_display_gray", LVecBase2f(0.0f, 0.0f));
+		SetShaderInputCached(node, "u_stage5_brightspot_display_gray", LVecBase2f(0.0f, 0.0f));
+		SetShaderInputCached(node, "u_stage5_plume_display_gray", LVecBase2f(0.0f, 0.0f));
+		SetShaderInputCached(node, "u_stage5_atmosphere_display_gray", LVecBase2f(0.0f, 0.0f));
+		SetShaderInputCached(node, "u_stage5_composite_min_gray", LVecBase2f(0.0f, 0.0f));
+		SetShaderInputCached(node, "u_stage5_composite_max_gray", LVecBase2f(1.0f, 0.0f));
+		SetShaderInputCached(node, "u_stage5_display_fallback_applied", LVecBase2i(0, 0));
+	}
 	ApplyStage6DisplayShaderInputs(node);
 }
 
@@ -6305,13 +6402,14 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_radiance_debug_en", LVecBase2i(m_enableStage5RadianceDebug ? 1 : 0, 0));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_debug_view_mode", LVecBase2i(m_stage5DebugViewMode, 0));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_use_base_texture_modulation", LVecBase2i(stage5UseBaseTextureModulation ? 1 : 0, 0));
-	if (!m_enableStage5RadianceDebug)
+	if (!m_enableStage5PhysicalPipeline)
 	{
 		return;
 	}
 
 	IRRadianceModelV2Input stage5Input;
 	stage5Input.band = stage5Band;
+	stage5Input.materialName = MaterialNameForPlatform(targetPlat.type);
 	stage5Input.materialTemperatureK = radiance.temperatureK;
 	stage5Input.materialEmissivity = radiance.emissivity;
 	stage5Input.materialReflectance = radiance.reflectance;
@@ -6322,11 +6420,41 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	stage5Input.textureLuma = 1.0;
 	stage5Input.solarReflectanceWeight = m_stage5DebugConfigs[stage5BandIndex].solarReflectanceWeight;
 	stage5Input.hotspotTemperatureK = rearEnabledForShader ? rearHotspot.currentTempK : radiance.temperatureK;
-	stage5Input.hotspotIntensity = rearEnabledForShader ? std::max(0.0f, rearHotspot.intensity) : 0.0f;
+	stage5Input.hotspotIntensity = rearEnabledForShader ? std::max(0.0f, rearIntensityForShader) : 0.0f;
 	stage5Input.brightspotIntensity = brightSpot.enabled ? std::max(0.0f, brightSpot.intensity) : 0.0f;
+	double plumeRadiance = 0.0;
+	const std::map<std::string, Stage5PlumeRuntimeCache>::const_iterator plumeIt = m_stage5PlumeRuntimeCache.find(targetKey);
+	if (plumeIt != m_stage5PlumeRuntimeCache.end() && plumeIt->second.hasOutput)
+	{
+		const IREnginePlumeOutput& plume = plumeIt->second.output;
+		plumeRadiance = std::max(
+			static_cast<double>(plume.coreGray) * static_cast<double>(plume.coreOpacity),
+			static_cast<double>(plume.haloGray) * static_cast<double>(plume.haloOpacity));
+	}
+	stage5Input.plumeRadiance = plumeRadiance;
+	stage5Input.pathRadiance = std::max(0.0f, radiance.pathRadiance);
+	stage5Input.pathRadianceSource = stage5Input.pathRadiance > 0.0 ? "legacy_empirical" : "disabled";
+	stage5Input.sourceFlags = "body+reflected";
+	if (stage5Input.hotspotIntensity > 0.0)
+	{
+		stage5Input.sourceFlags += "+rearHotspot";
+	}
+	if (stage5Input.plumeRadiance > 0.0)
+	{
+		stage5Input.sourceFlags += "+plume";
+	}
+	if (stage5Input.brightspotIntensity > 0.0)
+	{
+		stage5Input.sourceFlags += "+brightspot";
+	}
+	if (stage5Input.pathRadiance > 0.0)
+	{
+		stage5Input.sourceFlags += "+legacyPath";
+	}
 	stage5Input.enableDebugFloor = true;
 	stage5Input.debugConfig = m_stage5DebugConfigs[stage5BandIndex];
 
+	IRRadianceComponents components = m_irRadianceModelV2.evaluateComponents(stage5Input);
 	IRRadianceModelV2Output stage5 = m_irRadianceModelV2.evaluate(stage5Input);
 	const IRRadianceModelV2DebugConfig& displayConfig = m_stage5DebugConfigs[stage5BandIndex];
 	const auto clamp01 = [](double value) -> double {
@@ -6342,6 +6470,8 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	const double reflectedGrayDisplay = clamp01(stage5.reflectedGray * std::max(0.0, displayConfig.reflectedDisplayGain));
 	const double hotspotGrayRawDisplay = clamp01(stage5.hotspotGray * std::max(0.0, displayConfig.hotspotDisplayGain));
 	const double brightspotGrayRawDisplay = clamp01(stage5.brightspotGray * std::max(0.0, displayConfig.brightspotDisplayGain));
+	const double plumeGrayDisplay = clamp01(components.plumeRadiance * std::max(0.0, displayConfig.hotspotDisplayGain));
+	const double atmosphereGrayDisplay = clamp01(components.pathRadiance * std::max(0.0, displayConfig.bodyDisplayGain));
 	const double legacyRearHotspotDisplay = rearEnabledForShader
 		? clamp01(std::max(0.0f, rearIntensityForShader) * std::max(0.0, displayConfig.hotspotDisplayGain))
 		: 0.0;
@@ -6355,10 +6485,16 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 		(brightspotGrayDisplay > brightspotGrayRawDisplay + 1.0e-6);
 	const double finalGrayDebugDisplay = clamp01(
 		std::max(compositeMinGray, std::min(compositeMaxGray,
-			bodyGrayDisplay + reflectedGrayDisplay + hotspotGrayDisplay + brightspotGrayDisplay)));
+			bodyGrayDisplay + reflectedGrayDisplay + hotspotGrayDisplay + plumeGrayDisplay + brightspotGrayDisplay + atmosphereGrayDisplay)));
 
 	SetShaderInputCached(targetPlat.nodePath, "u_material_temp_K", LVecBase2f(static_cast<float>(stage5Input.materialTemperatureK), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_material_emissivity", LVecBase2f(static_cast<float>(stage5Input.materialEmissivity), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_body_radiance", LVecBase2f(static_cast<float>(components.bodyRadiance), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_rear_hotspot_radiance", LVecBase2f(static_cast<float>(components.rearHotspotRadiance), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_plume_radiance", LVecBase2f(static_cast<float>(components.plumeRadiance), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_brightspot_radiance", LVecBase2f(static_cast<float>(components.brightspotRadiance), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_path_radiance", LVecBase2f(static_cast<float>(components.pathRadiance), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_sensor_input_radiance", LVecBase2f(static_cast<float>(components.sensorInputRadiance), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_body_radiance_scale", LVecBase2f(static_cast<float>(stage5.bodyGrayBeforeFloor), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_body_gray", LVecBase2f(static_cast<float>(stage5.bodyGrayAfterFloor), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_reflected_radiance", LVecBase2f(static_cast<float>(stage5.reflectedRadiance), 0.0f));
@@ -6373,6 +6509,8 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_reflected_display_gray", LVecBase2f(static_cast<float>(reflectedGrayDisplay), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_hotspot_display_gray", LVecBase2f(static_cast<float>(hotspotGrayDisplay), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_brightspot_display_gray", LVecBase2f(static_cast<float>(brightspotGrayDisplay), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_plume_display_gray", LVecBase2f(static_cast<float>(plumeGrayDisplay), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_atmosphere_display_gray", LVecBase2f(static_cast<float>(atmosphereGrayDisplay), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_composite_min_gray", LVecBase2f(static_cast<float>(compositeMinGray), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_composite_max_gray", LVecBase2f(static_cast<float>(compositeMaxGray), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_display_fallback_applied", LVecBase2i(stage5DisplayFallbackApplied ? 1 : 0, 0));
@@ -6386,11 +6524,50 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 
 	const std::uint64_t frameSeq = m_currentFrameTelemetry.sourceSeq > 0
 		? m_currentFrameTelemetry.sourceSeq : m_stage0DisplayFrameCount;
-	const bool logStage5 = m_enableIRVerboseLog ||
+	const std::string componentLogKey = targetKey + "#radiance-components";
+	const std::string componentLogState =
+		std::to_string(static_cast<int>(stage5Input.band)) + ":" +
+		std::to_string(targetPlat.targetState.engineState ? 1 : 0) + ":" +
+		std::to_string(rearEnabledForShader ? 1 : 0) + ":" +
+		std::to_string(brightSpot.enabled ? 1 : 0) + ":" +
+		std::to_string(static_cast<int>(brightSpot.part)) + ":" +
+		std::to_string(m_stage5DebugViewMode) + ":" +
+		stage5Input.pathRadianceSource;
+	const bool componentStateChanged =
+		m_lastStage5RadianceComponentLogState[componentLogKey] != componentLogState;
+	m_lastStage5RadianceComponentLogState[componentLogKey] = componentLogState;
+	const bool stage5LogDue =
 		frameSeq <= 3 ||
-		(frameSeq % 120) == 0;
+		(m_stage5ComponentLogEveryFrames > 0 && (frameSeq % static_cast<std::uint64_t>(m_stage5ComponentLogEveryFrames)) == 0) ||
+		componentStateChanged;
+	const bool logStage5 =
+		m_enableIRVerboseLog ||
+		((m_stage5LogComponents || m_enableStage5RadianceDebug) && stage5LogDue);
 	if (logStage5)
 	{
+		std::cout << "[Stage5 RadianceComponents]"
+			<< " sourceSeq=" << frameSeq
+			<< " targetPlatID=" << targetPlat.targetState.targetPlatID
+			<< " targetID=" << targetPlat.targetState.targetID
+			<< " band=" << IRBandName(components.band)
+			<< " materialName=" << components.materialName
+			<< " materialTempK=" << components.materialTempK
+			<< " emissivity=" << components.emissivity
+			<< " reflectance=" << components.reflectance
+			<< " bodyRadiance=" << components.bodyRadiance
+			<< " reflectedRadiance=" << components.reflectedRadiance
+			<< " rearHotspotRadiance=" << components.rearHotspotRadiance
+			<< " plumeRadiance=" << components.plumeRadiance
+			<< " brightspotRadiance=" << components.brightspotRadiance
+			<< " tauUp=" << components.tauUp
+			<< " pathRadiance=" << components.pathRadiance
+			<< " pathRadianceSource=" << components.pathRadianceSource
+			<< " sensorInputRadiance=" << components.sensorInputRadiance
+			<< " displayPreview=" << components.displayPreview
+			<< " sourceFlags=" << components.sourceFlags
+			<< " DebugView=" << m_stage5DebugViewModeName
+			<< std::endl;
+
 		std::cout << "[Stage5 Radiance]"
 			<< " targetKey=" << targetKey
 			<< " band=" << IRBandName(stage5Input.band)
@@ -6409,11 +6586,16 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 			<< " bodyRadiance=" << stage5.bodyRadiance
 			<< " reflectedRadiance=" << stage5.reflectedRadiance
 			<< " hotspotRadiance=" << stage5.hotspotRadiance
+			<< " plumeRadiance=" << components.plumeRadiance
 			<< " brightspotRadiance=" << stage5.brightspotRadiance
+			<< " pathRadiance=" << components.pathRadiance
+			<< " pathRadianceSource=" << components.pathRadianceSource
+			<< " sensorInputRadiance=" << components.sensorInputRadiance
 			<< " bodyGrayBeforeFloor=" << stage5.bodyGrayBeforeFloor
 			<< " bodyGrayAfterFloor=" << stage5.bodyGrayAfterFloor
 			<< " reflectedGray=" << stage5.reflectedGray
 			<< " hotspotGray=" << stage5.hotspotGray
+			<< " plumeGray=" << plumeGrayDisplay
 			<< " brightspotGray=" << stage5.brightspotGray
 			<< " finalGrayDebug=" << stage5.finalGrayDebug
 			<< " debugFloorApplied=" << (stage5.debugFloorApplied ? "1" : "0")
@@ -6426,8 +6608,10 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 			<< " reflectedGray=" << reflectedGrayDisplay
 			<< " hotspotGrayRaw=" << stage5.hotspotGray
 			<< " hotspotGrayDisplay=" << hotspotGrayDisplay
+			<< " plumeGrayDisplay=" << plumeGrayDisplay
 			<< " brightspotGrayRaw=" << stage5.brightspotGray
 			<< " brightspotGrayDisplay=" << brightspotGrayDisplay
+			<< " atmosphereGrayDisplay=" << atmosphereGrayDisplay
 			<< " finalGrayDebug=" << finalGrayDebugDisplay
 			<< " fallbackApplied=" << (stage5DisplayFallbackApplied ? "1" : "0")
 			<< " legacyRearHotspotIntensity=" << legacyRearHotspotDisplay
@@ -6435,7 +6619,12 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 			<< std::endl;
 	}
 
-	if (stage5.bodyRadiance > 0.0 && stage5.bodyGrayAfterFloor <= 0.0)
+	const bool stage5DiagnosticsEnabled =
+		logStage5 ||
+		m_stage5LogComponents ||
+		m_enableIRVerboseLog ||
+		m_enableStage5RadianceDebug;
+	if (stage5DiagnosticsEnabled && stage5.bodyRadiance > 0.0 && stage5.bodyGrayAfterFloor <= 0.0)
 	{
 		std::cout << "[Stage5 Radiance][WARN] STAGE5_BODY_GRAY_ZERO_AFTER_MAPPING"
 			<< " targetKey=" << targetKey
@@ -6444,7 +6633,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 			<< " bodyGrayAfterFloor=" << stage5.bodyGrayAfterFloor
 			<< std::endl;
 	}
-	if (!m_stage5BodyGrayPathHintLogged && stage5.bodyGrayAfterFloor > 0.1)
+	if (stage5DiagnosticsEnabled && !m_stage5BodyGrayPathHintLogged && stage5.bodyGrayAfterFloor > 0.1)
 	{
 		std::cout << "[Stage5 Radiance][WARN] CHECK_SHADER_BODY_GRAY_PATH_OR_FRAME_OUTPUT"
 			<< " targetKey=" << targetKey
@@ -6454,7 +6643,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 			<< std::endl;
 		m_stage5BodyGrayPathHintLogged = true;
 	}
-	if (!m_stage5BaseTextureFallbackLogged && stage5Input.solarReflectanceWeight > 0.0 && !baseTextureAvailable)
+	if (stage5DiagnosticsEnabled && !m_stage5BaseTextureFallbackLogged && stage5Input.solarReflectanceWeight > 0.0 && !baseTextureAvailable)
 	{
 		std::cout << "[Stage5 Radiance][WARN] STAGE5_BASE_TEXTURE_FALLBACK"
 			<< " targetKey=" << targetKey
@@ -6463,7 +6652,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 			<< std::endl;
 		m_stage5BaseTextureFallbackLogged = true;
 	}
-	if (!m_stage5NormalFallbackHintLogged)
+	if (stage5DiagnosticsEnabled && !m_stage5NormalFallbackHintLogged)
 	{
 		std::cout << "[Stage5 Radiance][WARN] STAGE5_NORMAL_FALLBACK"
 			<< " mode=shader_constant_plus_z_if_p3d_Normal_missing"
@@ -6493,7 +6682,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 		m_stage5ConsecutiveReflectedZeroFrames = 0;
 	}
 
-	if (stage5.finalGrayDebug <= 0.0)
+	if (stage5DiagnosticsEnabled && stage5.finalGrayDebug <= 0.0)
 	{
 		++m_stage5ConsecutiveZeroFrames;
 		if (m_stage5ConsecutiveZeroFrames >= 3 && logStage5)
@@ -6805,25 +6994,6 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 					}
 				}
 			}
-			std::chrono::steady_clock::time_point stage4Start;
-			if (profileBreakdown)
-			{
-				stage4Start = std::chrono::steady_clock::now();
-			}
-			const bool stage4WroteInputs = ApplyStage4TargetState(targetPlat, m_realTimeSceneData.weaponState, stage4DtSec, ambientTempK, stage5BaseRadiance, targetRenderable);
-			if (stage4WroteInputs)
-			{
-				++breakdown.stage4UpdateCount;
-			}
-			else
-			{
-				++breakdown.stage4SkipCount;
-			}
-			if (profileBreakdown)
-			{
-				breakdown.stage4HotspotMs += std::chrono::duration<double, std::milli>(
-					std::chrono::steady_clock::now() - stage4Start).count();
-			}
 			IREnginePlumeOutput plumeOutput;
 			if (targetRenderable)
 			{
@@ -6842,6 +7012,25 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 			else
 			{
 				HideEnginePlume(targetPlat);
+			}
+			std::chrono::steady_clock::time_point stage4Start;
+			if (profileBreakdown)
+			{
+				stage4Start = std::chrono::steady_clock::now();
+			}
+			const bool stage4WroteInputs = ApplyStage4TargetState(targetPlat, m_realTimeSceneData.weaponState, stage4DtSec, ambientTempK, stage5BaseRadiance, targetRenderable);
+			if (stage4WroteInputs)
+			{
+				++breakdown.stage4UpdateCount;
+			}
+			else
+			{
+				++breakdown.stage4SkipCount;
+			}
+			if (profileBreakdown)
+			{
+				breakdown.stage4HotspotMs += std::chrono::duration<double, std::milli>(
+					std::chrono::steady_clock::now() - stage4Start).count();
 			}
 			if (plumeOutput.coreNodeVisible && targetRenderable)
 			{

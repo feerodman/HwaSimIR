@@ -2,6 +2,8 @@
 
 #include "IRTypes.h"
 
+#include <string>
+
 enum class IRStage5ToneMap
 {
 	Linear,
@@ -41,11 +43,40 @@ struct IRRadianceModelV2Input
 	double hotspotTemperatureK;
 	double hotspotIntensity;
 	double brightspotIntensity;
+	double plumeRadiance;
+	double pathRadiance;
+	std::string materialName;
+	std::string pathRadianceSource;
+	std::string sourceFlags;
 	bool enableDebugFloor;
 	IRRadianceModelV2DebugConfig debugConfig;
 
 	IRRadianceModelV2Input();
 };
+
+struct IRRadianceComponents
+{
+	IRBand band;
+	std::string materialName;
+	double materialTempK;
+	double emissivity;
+	double reflectance;
+	double bodyRadiance;
+	double reflectedRadiance;
+	double rearHotspotRadiance;
+	double plumeRadiance;
+	double brightspotRadiance;
+	double tauUp;
+	double pathRadiance;
+	std::string pathRadianceSource;
+	double sensorInputRadiance;
+	double displayPreview;
+	std::string sourceFlags;
+
+	IRRadianceComponents();
+};
+
+using IRSceneRadianceOutput = IRRadianceComponents;
 
 struct IRRadianceModelV2Output
 {
@@ -69,6 +100,7 @@ struct IRRadianceModelV2Output
 class IRRadianceModelV2
 {
 public:
+	IRRadianceComponents evaluateComponents(const IRRadianceModelV2Input& input) const;
 	IRRadianceModelV2Output evaluate(const IRRadianceModelV2Input& input) const;
 
 	static double bandCenterUm(IRBand band);
