@@ -24,6 +24,7 @@ struct IRFrameEnqueueResult
 
 struct IRUpdateBreakdown
 {
+	bool timingSample = false;
 	double irEnvBuildMs = 0.0;
 	double stage7SkyGroundMs = 0.0;
 	double platformRadianceMs = 0.0;
@@ -31,6 +32,13 @@ struct IRUpdateBreakdown
 	double stage4HotspotMs = 0.0;
 	double stage5PlumeMs = 0.0;
 	double shaderInputApplyMs = 0.0;
+	std::uint64_t shaderInputSetCount = 0;
+	std::uint64_t shaderInputSkipCount = 0;
+	std::uint64_t stage7FullUpdateCount = 0;
+	std::uint64_t stage7PositionOnlyCount = 0;
+	std::uint64_t stage7SkipCount = 0;
+	std::uint64_t stage4UpdateCount = 0;
+	std::uint64_t stage4SkipCount = 0;
 };
 
 class IRPerfStats
@@ -103,6 +111,13 @@ private:
 	double m_stage4HotspotMsTotal = 0.0;
 	double m_stage5PlumeBreakdownMsTotal = 0.0;
 	double m_shaderInputApplyMsTotal = 0.0;
+	std::uint64_t m_shaderInputSetCountTotal = 0;
+	std::uint64_t m_shaderInputSkipCountTotal = 0;
+	std::uint64_t m_stage7FullUpdateCountTotal = 0;
+	std::uint64_t m_stage7PositionOnlyCountTotal = 0;
+	std::uint64_t m_stage7SkipCountTotal = 0;
+	std::uint64_t m_stage4UpdateCountTotal = 0;
+	std::uint64_t m_stage4SkipCountTotal = 0;
 	double m_plumeUpdateMsTotal = 0.0;
 	double m_renderMsTotal = 0.0;
 	double m_readbackMsTotal = 0.0;

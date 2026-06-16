@@ -965,6 +965,114 @@ EnableH264Experimental=false，LegacyEngineBodyHeating=false，saveMP4En=true。
 shaderInputApply/Stage7/Stage4 热点和停止时尾部积压，再继续物理重构。
 ```
 
+### Phase 2B main-loop sync 60 Hz recovery
+
+```text
+Phase: 2B
+Date: 2026-06-16
+Executor: Codex
+Goal: restore stable HwaSim_IR sync 60 Hz after Phase 2A, reduce shaderInputApply,
+Stage7SkyGround and Stage4Hotspot costs, and remove sustained inputQueueDepth/sourceSeqLag backlog.
+
+Scope changed:
+- Added HwaSimIR runtime shader-input diff cache for float/int/bool-like vec2/vec3 uniforms.
+- [Perf] now reports shaderInputSetCount, shaderInputSkipCount,
+  shaderInputCacheHitRate, stage7FullUpdateCount, stage7PositionOnlyCount,
+  stage7SkipCount, stage4UpdateCount and stage4SkipCount.
+- Clarified timing scopes in [Perf]:
+  shaderInputApplyScope=exclusive, stage7SkyGroundScope=inclusive,
+  stage4HotspotScope=inclusive.
+- Added Stage7Background/Stage7UpdateHz=10.
+  Stage7 full update is dirty-key or Hz gated; camera movement only updates
+  sky dome / lower shell position between full updates.
+- Added Stage4/Stage4UpdateHz=30 config and routed Stage4 hotspot/brightspot
+  shader writes through the diff cache. EngineRear / EnginePlume / BrightSpot
+  semantics are unchanged.
+- Updated tools/stage4_hotspot_check.ps1 to accept SetShaderInputCached as the
+  Stage4 uniform write path.
+- Updated tools/phase2a_sync60_save_smoke.ps1 to normalize duplicate Path/PATH
+  process environment entries and summarize Phase 2B perf counters.
+
+Not changed:
+- No TCP/JPEG/H.264 protocol changes.
+- No VideoDisplay recorder-path logic changes.
+- No MODTRAN path/sky/solar, AGC, MTF, material-library restructuring,
+  PBO/hardware encode, height/Mach heat model, or new IR physics.
+
+Build:
+- HwaSim_IR Windows Release x64: PASS.
+- DataDrivenTestQT Release: PASS.
+- HwaSim_IR_VideoDisplay Windows Release x64: PASS.
+- Remaining warnings are pre-existing VS/Panda/PDB warnings.
+
+Regression:
+- Stage3 MODTRAN tau-only strict: PASS.
+- Stage4 hotspot/brightspot strict: PASS.
+- Stage4 three-band smoke: PASS.
+  Log: logs/stage4/HwaSimIR-stage4-hotspot-smoke-20260616-151221.out.log
+
+30s production-default sync run:
+- Config: 800x800, 5 targets, videoFps=60, saveMP4En=true,
+  Codec=auto, JpegEncodeMode=rgb, JpegQuality=100,
+  EnableH264Experimental=false, LegacyEngineBodyHeating=false.
+- Log: logs/phase2a-final-20260616-151436
+- MP4: HwaSim_IR_VideoDisplay/x64/Release/MP4/round_001_20260616_151451/output.mp4
+
+Frame rates:
+- sentFps=60.034
+- udpFps=59.979
+- renderFps=60.376
+- outputFps=60.300
+- VideoDisplay receive/display=60.287
+
+Latency and queue:
+- latencyAvgMs=34.823
+- sourceSeqContinuous=1
+- sourceSeqContinuousWritten=1
+- inputQueueOverflow=0
+- TCP overwritten=0
+- recordingDroppedFrames=0
+- sourceSeqLag is stable 0..1 in the steady 60 Hz interval.
+- inputQueueDepth current value returns to 0 in steady state.
+  A startup/cold-cache interval still reports inputQueueDepthMax=16; later
+  steady intervals are mostly <=2 with occasional 3..4 single-interval peaks.
+
+Before vs after key hotspots:
+- shaderInputApplyMs: 10.504 -> 0.726 avg (steady filtered avg 0.784)
+- stage7SkyGroundMs: 3.856 -> 0.212 avg (steady filtered avg 0.262)
+- stage4HotspotMs: 2.062 -> 0.916 avg (steady filtered avg 0.948)
+- irUpdateMs: 6.982 -> 0.922 avg (steady filtered avg 0.909)
+- latencyAvgMs: 293.448 -> 34.823
+
+Phase 2B counters:
+- shaderInputSetCount avg ~= 744.5 per steady [Perf] interval.
+- shaderInputSkipCount avg ~= 25425.8 per steady [Perf] interval.
+- shaderInputCacheHitRate avg ~= 97.16%.
+- stage7FullUpdateCount avg ~= 16.1 per steady [Perf] interval.
+- stage7PositionOnlyCount avg ~= 43.9 per steady [Perf] interval.
+- stage7SkipCount max=0 while Stage7 is enabled.
+- stage4UpdateCount avg ~= 30.7 per steady [Perf] interval.
+- stage4SkipCount avg ~= 282.1 per steady [Perf] interval.
+
+Recorder/output:
+- output.mp4 frames=1800.
+- annotations.txt=1800 lines.
+- target_annotations.txt=1800 lines.
+- Recorder writeMsAvg=6.905 ms, droppedFrames=0.
+
+Acceptance:
+- PASS for restored 60 Hz main link, sourceSeq continuity, latency <=80 ms,
+  zero input overflow, zero TCP overwrite, and zero recorder drops.
+- Residual note: startup/cold-cache queue peak should be watched, but no sustained
+  inputQueueDepth/sourceSeqLag backlog remains in the steady 60 Hz interval.
+
+Next:
+- Keep production default rgb + JPEG quality=100 for now.
+- Do not enter new IR physics until the remaining startup queue peak is either
+  proven harmless across repeated runs or reduced by cache warm-up / startup
+  sequencing.
+```
+
 ---
 
 ## 12. 给 Codex 的第一阶段实施 Prompt

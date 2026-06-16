@@ -15,6 +15,7 @@
 #include "geomVertexData.h"
 #include "geomVertexFormat.h"
 #include "geomVertexWriter.h"
+#include "internalName.h"
 #include <chrono>
 #include <algorithm>
 #include <cctype>
@@ -1145,7 +1146,150 @@ void HwaSimIR::LogStage6DisplayRoute(const IRSensorPostProcessConfig& config, co
 		<< std::endl;
 }
 
-void HwaSimIR::ApplyStage6DisplayShaderInputs(NodePath& node) const
+std::uintptr_t HwaSimIR::ShaderInputCacheKey(const NodePath& node) const
+{
+	if (node.is_empty())
+	{
+		return 0;
+	}
+	return reinterpret_cast<std::uintptr_t>(node.node());
+}
+
+bool HwaSimIR::SetShaderInputCached(NodePath& node, const char* name, const LVecBase2f& value, bool force)
+{
+	if (node.is_empty() || name == nullptr)
+	{
+		return false;
+	}
+	const auto applyStart = m_measureShaderInputApplyTime ? std::chrono::high_resolution_clock::now() : std::chrono::high_resolution_clock::time_point();
+	const std::uintptr_t key = ShaderInputCacheKey(node);
+	ShaderInputCachedValue& cached = m_shaderInputCache[key][name];
+	const bool same = cached.kind == 1 &&
+		cached.count == 2 &&
+		std::fabs(cached.floats[0] - value[0]) <= m_shaderInputFloatEpsilon &&
+		std::fabs(cached.floats[1] - value[1]) <= m_shaderInputFloatEpsilon;
+	if (!force && same)
+	{
+		++m_shaderInputStats.skipCount;
+		if (m_measureShaderInputApplyTime)
+		{
+			m_shaderInputStats.applyMs += std::chrono::duration<double, std::milli>(
+				std::chrono::high_resolution_clock::now() - applyStart).count();
+		}
+		return false;
+	}
+	cached.kind = 1;
+	cached.count = 2;
+	cached.floats[0] = value[0];
+	cached.floats[1] = value[1];
+	node.set_shader_input(InternalName::make(name), value);
+	++m_shaderInputStats.setCount;
+	if (m_measureShaderInputApplyTime)
+	{
+		m_shaderInputStats.applyMs += std::chrono::duration<double, std::milli>(
+			std::chrono::high_resolution_clock::now() - applyStart).count();
+	}
+	return true;
+}
+
+bool HwaSimIR::SetShaderInputCached(NodePath& node, const char* name, const LVecBase3f& value, bool force)
+{
+	if (node.is_empty() || name == nullptr)
+	{
+		return false;
+	}
+	const auto applyStart = m_measureShaderInputApplyTime ? std::chrono::high_resolution_clock::now() : std::chrono::high_resolution_clock::time_point();
+	const std::uintptr_t key = ShaderInputCacheKey(node);
+	ShaderInputCachedValue& cached = m_shaderInputCache[key][name];
+	const bool same = cached.kind == 1 &&
+		cached.count == 3 &&
+		std::fabs(cached.floats[0] - value[0]) <= m_shaderInputFloatEpsilon &&
+		std::fabs(cached.floats[1] - value[1]) <= m_shaderInputFloatEpsilon &&
+		std::fabs(cached.floats[2] - value[2]) <= m_shaderInputFloatEpsilon;
+	if (!force && same)
+	{
+		++m_shaderInputStats.skipCount;
+		if (m_measureShaderInputApplyTime)
+		{
+			m_shaderInputStats.applyMs += std::chrono::duration<double, std::milli>(
+				std::chrono::high_resolution_clock::now() - applyStart).count();
+		}
+		return false;
+	}
+	cached.kind = 1;
+	cached.count = 3;
+	cached.floats[0] = value[0];
+	cached.floats[1] = value[1];
+	cached.floats[2] = value[2];
+	node.set_shader_input(InternalName::make(name), value);
+	++m_shaderInputStats.setCount;
+	if (m_measureShaderInputApplyTime)
+	{
+		m_shaderInputStats.applyMs += std::chrono::duration<double, std::milli>(
+			std::chrono::high_resolution_clock::now() - applyStart).count();
+	}
+	return true;
+}
+
+bool HwaSimIR::SetShaderInputCached(NodePath& node, const char* name, const LVecBase2i& value, bool force)
+{
+	if (node.is_empty() || name == nullptr)
+	{
+		return false;
+	}
+	const auto applyStart = m_measureShaderInputApplyTime ? std::chrono::high_resolution_clock::now() : std::chrono::high_resolution_clock::time_point();
+	const std::uintptr_t key = ShaderInputCacheKey(node);
+	ShaderInputCachedValue& cached = m_shaderInputCache[key][name];
+	const bool same = cached.kind == 2 &&
+		cached.count == 2 &&
+		cached.ints[0] == value[0] &&
+		cached.ints[1] == value[1];
+	if (!force && same)
+	{
+		++m_shaderInputStats.skipCount;
+		if (m_measureShaderInputApplyTime)
+		{
+			m_shaderInputStats.applyMs += std::chrono::duration<double, std::milli>(
+				std::chrono::high_resolution_clock::now() - applyStart).count();
+		}
+		return false;
+	}
+	cached.kind = 2;
+	cached.count = 2;
+	cached.ints[0] = value[0];
+	cached.ints[1] = value[1];
+	node.set_shader_input(InternalName::make(name), value);
+	++m_shaderInputStats.setCount;
+	if (m_measureShaderInputApplyTime)
+	{
+		m_shaderInputStats.applyMs += std::chrono::duration<double, std::milli>(
+			std::chrono::high_resolution_clock::now() - applyStart).count();
+	}
+	return true;
+}
+
+void HwaSimIR::InvalidateShaderInputCache(const NodePath& node)
+{
+	const std::uintptr_t key = ShaderInputCacheKey(node);
+	if (key != 0)
+	{
+		m_shaderInputCache.erase(key);
+	}
+}
+
+void HwaSimIR::ResetShaderInputCounters()
+{
+	m_shaderInputStats.setCount = 0;
+	m_shaderInputStats.skipCount = 0;
+	m_shaderInputStats.applyMs = 0.0;
+}
+
+HwaSimIR::ShaderInputCacheStats HwaSimIR::SnapshotShaderInputCounters() const
+{
+	return m_shaderInputStats;
+}
+
+void HwaSimIR::ApplyStage6DisplayShaderInputs(NodePath& node)
 {
 	if (node.is_empty())
 	{
@@ -1157,13 +1301,13 @@ void HwaSimIR::ApplyStage6DisplayShaderInputs(NodePath& node) const
 	const double offsetNorm = config.displayOffset / 255.0;
 	const double noiseSigmaNorm = config.noiseSigmaGray / 255.0;
 
-	node.set_shader_input("u_stage6_display_en", LVecBase2i(shaderDisplayEnabled ? 1 : 0, 0));
-	node.set_shader_input("u_stage6_white_hot", LVecBase2i(config.whiteHot ? 1 : 0, 0));
-	node.set_shader_input("u_stage6_display_gain", LVecBase2f(static_cast<float>(config.displayGain), 0.0f));
-	node.set_shader_input("u_stage6_display_offset", LVecBase2f(static_cast<float>(offsetNorm), 0.0f));
-	node.set_shader_input("u_stage6_noise_enable", LVecBase2i(config.noiseEnable ? 1 : 0, 0));
-	node.set_shader_input("u_stage6_noise_sigma_norm", LVecBase2f(static_cast<float>(noiseSigmaNorm), 0.0f));
-	node.set_shader_input("u_stage6_background_display_en", LVecBase2i(config.backgroundDisplayEnable ? 1 : 0, 0));
+	SetShaderInputCached(node, "u_stage6_display_en", LVecBase2i(shaderDisplayEnabled ? 1 : 0, 0));
+	SetShaderInputCached(node, "u_stage6_white_hot", LVecBase2i(config.whiteHot ? 1 : 0, 0));
+	SetShaderInputCached(node, "u_stage6_display_gain", LVecBase2f(static_cast<float>(config.displayGain), 0.0f));
+	SetShaderInputCached(node, "u_stage6_display_offset", LVecBase2f(static_cast<float>(offsetNorm), 0.0f));
+	SetShaderInputCached(node, "u_stage6_noise_enable", LVecBase2i(config.noiseEnable ? 1 : 0, 0));
+	SetShaderInputCached(node, "u_stage6_noise_sigma_norm", LVecBase2f(static_cast<float>(noiseSigmaNorm), 0.0f));
+	SetShaderInputCached(node, "u_stage6_background_display_en", LVecBase2i(config.backgroundDisplayEnable ? 1 : 0, 0));
 }
 
 void HwaSimIR::RefreshStage6DisplayShaderInputs()
@@ -1664,25 +1808,25 @@ IRStage7WeatherState HwaSimIR::EvaluateStage7WeatherState(const IRRuntimeEnviron
 		m_stage7PrecipitationEnabled);
 }
 
-void HwaSimIR::ApplyStage7WeatherInputs(NodePath& node, const IRStage7WeatherState& weatherState) const
+void HwaSimIR::ApplyStage7WeatherInputs(NodePath& node, const IRStage7WeatherState& weatherState)
 {
 	if (node.is_empty())
 	{
 		return;
 	}
-	node.set_shader_input("u_stage7_weather_type", LVecBase2i(weatherState.envSky, 0));
-	node.set_shader_input("u_stage7_cloud_coverage", LVecBase2f(static_cast<float>(weatherState.cloudCoverage), 0.0f));
-	node.set_shader_input("u_stage7_cloud_opacity", LVecBase2f(static_cast<float>(weatherState.cloudOpacity), 0.0f));
-	node.set_shader_input("u_stage7_cloud_temperature_K", LVecBase2f(static_cast<float>(weatherState.cloudTemperatureK), 0.0f));
-	node.set_shader_input("u_stage7_cloud_gray", LVecBase2f(static_cast<float>(weatherState.cloudGray), 0.0f));
-	node.set_shader_input("u_stage7_fog_density", LVecBase2f(static_cast<float>(weatherState.fogDensity), 0.0f));
-	node.set_shader_input("u_stage7_fog_gray", LVecBase2f(static_cast<float>(weatherState.fogGray), 0.0f));
-	node.set_shader_input("u_stage7_precipitation_type", LVecBase2i(IRWeatherEffects::precipitationCode(weatherState.precipitationType), 0));
-	node.set_shader_input("u_stage7_precipitation_density", LVecBase2f(static_cast<float>(weatherState.precipitationDensity), 0.0f));
-	node.set_shader_input("u_stage7_precipitation_speed", LVecBase2f(static_cast<float>(weatherState.precipitationSpeed), 0.0f));
-	node.set_shader_input("u_stage7_sun_direct_scale", LVecBase2f(static_cast<float>(weatherState.sunDirectScale), 0.0f));
-	node.set_shader_input("u_stage7_sky_diffuse_scale", LVecBase2f(static_cast<float>(weatherState.skyDiffuseScale), 0.0f));
-	node.set_shader_input("u_stage7_target_contrast_scale", LVecBase2f(static_cast<float>(weatherState.targetContrastScale), 0.0f));
+	SetShaderInputCached(node, "u_stage7_weather_type", LVecBase2i(weatherState.envSky, 0));
+	SetShaderInputCached(node, "u_stage7_cloud_coverage", LVecBase2f(static_cast<float>(weatherState.cloudCoverage), 0.0f));
+	SetShaderInputCached(node, "u_stage7_cloud_opacity", LVecBase2f(static_cast<float>(weatherState.cloudOpacity), 0.0f));
+	SetShaderInputCached(node, "u_stage7_cloud_temperature_K", LVecBase2f(static_cast<float>(weatherState.cloudTemperatureK), 0.0f));
+	SetShaderInputCached(node, "u_stage7_cloud_gray", LVecBase2f(static_cast<float>(weatherState.cloudGray), 0.0f));
+	SetShaderInputCached(node, "u_stage7_fog_density", LVecBase2f(static_cast<float>(weatherState.fogDensity), 0.0f));
+	SetShaderInputCached(node, "u_stage7_fog_gray", LVecBase2f(static_cast<float>(weatherState.fogGray), 0.0f));
+	SetShaderInputCached(node, "u_stage7_precipitation_type", LVecBase2i(IRWeatherEffects::precipitationCode(weatherState.precipitationType), 0));
+	SetShaderInputCached(node, "u_stage7_precipitation_density", LVecBase2f(static_cast<float>(weatherState.precipitationDensity), 0.0f));
+	SetShaderInputCached(node, "u_stage7_precipitation_speed", LVecBase2f(static_cast<float>(weatherState.precipitationSpeed), 0.0f));
+	SetShaderInputCached(node, "u_stage7_sun_direct_scale", LVecBase2f(static_cast<float>(weatherState.sunDirectScale), 0.0f));
+	SetShaderInputCached(node, "u_stage7_sky_diffuse_scale", LVecBase2f(static_cast<float>(weatherState.skyDiffuseScale), 0.0f));
+	SetShaderInputCached(node, "u_stage7_target_contrast_scale", LVecBase2f(static_cast<float>(weatherState.targetContrastScale), 0.0f));
 }
 
 void HwaSimIR::InitStage7WeatherScene()
@@ -1871,9 +2015,9 @@ void HwaSimIR::UpdateStage7WeatherNodes(const IRStage7WeatherState& weatherState
 			m_cloudNodes[i].hide();
 		}
 		ApplyStage7WeatherInputs(m_cloudNodes[i], weatherState);
-		m_cloudNodes[i].set_shader_input("u_object_kind", LVecBase2i(2, 0));
-		m_cloudNodes[i].set_shader_input("u_cloud_density", LVecBase2f(static_cast<float>(weatherState.cloudCoverage), 0.0f));
-		m_cloudNodes[i].set_shader_input("u_time", LVecBase2f(static_cast<float>(currentTime), 0.0f));
+		SetShaderInputCached(m_cloudNodes[i], "u_object_kind", LVecBase2i(2, 0));
+		SetShaderInputCached(m_cloudNodes[i], "u_cloud_density", LVecBase2f(static_cast<float>(weatherState.cloudCoverage), 0.0f));
+		SetShaderInputCached(m_cloudNodes[i], "u_time", LVecBase2f(static_cast<float>(currentTime), 0.0f));
 	}
 
 	const bool precipitationVisible = weatherState.precipitationType != IRStage7PrecipitationType::None &&
@@ -1903,8 +2047,8 @@ void HwaSimIR::UpdateStage7WeatherNodes(const IRStage7WeatherState& weatherState
 			1.0f,
 			weatherState.precipitationType == IRStage7PrecipitationType::Snow ? 52.0f : 125.0f);
 		ApplyStage7WeatherInputs(m_stage7PrecipitationNodes[i], weatherState);
-		m_stage7PrecipitationNodes[i].set_shader_input("u_object_kind", LVecBase2i(3, 0));
-		m_stage7PrecipitationNodes[i].set_shader_input("u_time", LVecBase2f(static_cast<float>(currentTime), 0.0f));
+		SetShaderInputCached(m_stage7PrecipitationNodes[i], "u_object_kind", LVecBase2i(3, 0));
+		SetShaderInputCached(m_stage7PrecipitationNodes[i], "u_time", LVecBase2f(static_cast<float>(currentTime), 0.0f));
 	}
 	ApplyStage6FinalPostprocessInputs();
 	const auto updateEnd = std::chrono::high_resolution_clock::now();
@@ -2329,6 +2473,72 @@ void HwaSimIR::LogStage7Weather(const IRStage7WeatherState& weatherState, const 
 	m_stage7LastWeatherState = stateKey;
 }
 
+std::string HwaSimIR::BuildStage7UpdateKey(const IRRuntimeEnvironment& environment) const
+{
+	const int envTerrain = m_isAddPlatform ? m_initSceneData.trackingInit.envTerrain : 0;
+	const int envSky = m_isAddPlatform ? m_initSceneData.trackingInit.envSky : environment.weatherCode;
+	double farClipM = m_sensorDisplayConfigReady ? m_sensorDisplayConfig.farClipM : 50000.0;
+	if (!std::isfinite(farClipM) || farClipM <= 1.0)
+	{
+		farClipM = 50000.0;
+	}
+	const auto q100 = [](double value) -> int {
+		return static_cast<int>(std::floor(value * 100.0 + 0.5));
+	};
+	std::ostringstream key;
+	key << "band=" << static_cast<int>(environment.band)
+		<< ":terrain=" << envTerrain
+		<< ":sky=" << envSky
+		<< ":airT=" << q100(environment.airTemperatureC)
+		<< ":humidity=" << q100(environment.humidityPercent)
+		<< ":visibility=" << q100(environment.visibilityMeters)
+		<< ":wind=" << q100(environment.windSpeedMps)
+		<< ":windDir=" << q100(environment.windDirectionDeg)
+		<< ":sunAz=" << q100(environment.sunAzimuthDeg)
+		<< ":sunEl=" << q100(environment.sunElevationDeg)
+		<< ":sunStrength=" << q100(environment.sunStrength)
+		<< ":far=" << q100(farClipM)
+		<< ":enable=" << (m_enableStage7SkyHorizon ? 1 : 0)
+		<< ":debug=" << m_stage7DebugMode
+		<< ":real3d=" << (m_stage7UseReal3DBackground ? 1 : 0)
+		<< ":groundZ=" << q100(m_stage7GroundZOffset)
+		<< ":weather=" << (m_stage7WeatherEnabled ? 1 : 0)
+		<< ":cloud=" << (m_stage7CloudLayerEnabled ? 1 : 0)
+		<< ":fog=" << (m_stage7FogEnabled ? 1 : 0)
+		<< ":precip=" << (m_stage7PrecipitationEnabled ? 1 : 0)
+		<< ":precipMode=" << m_stage7PrecipitationMode
+		<< ":udpWeather=" << (m_stage7UseWeatherUdpInput ? 1 : 0);
+	if (m_isAddPlatform)
+	{
+		key << ":terrainScale=" << q100(m_initSceneData.trackingInit.envRadScaleTerrain)
+			<< ":skyScale=" << q100(m_initSceneData.trackingInit.envRadScaleSky)
+			<< ":envTemp=" << q100(m_initSceneData.trackingInit.envTemp)
+			<< ":envVis=" << q100(m_initSceneData.trackingInit.envVisibility)
+			<< ":envWindV=" << q100(m_initSceneData.trackingInit.envWindV)
+			<< ":envWindDir=" << q100(m_initSceneData.trackingInit.envWindDir);
+	}
+	return key.str();
+}
+
+void HwaSimIR::UpdateStage7SkyHorizonPositionOnly()
+{
+	if (!m_enableStage7SkyHorizon || (m_skyNode.is_empty() && m_stage7LowerShellNode.is_empty()))
+	{
+		return;
+	}
+	const LPoint3f cameraPos = m_cameraNode.is_empty()
+		? LPoint3f(0.0f, 0.0f, 0.0f)
+		: m_cameraNode.get_pos(m_renderRoot);
+	if (!m_skyNode.is_empty())
+	{
+		m_skyNode.set_pos(m_renderRoot, cameraPos);
+	}
+	if (!m_stage7LowerShellNode.is_empty())
+	{
+		m_stage7LowerShellNode.set_pos(m_renderRoot, cameraPos);
+	}
+}
+
 void HwaSimIR::UpdateStage7SkyHorizon(const IRRuntimeEnvironment& environment, const char* reason, bool forceLog)
 {
 	if (!m_enableStage7SkyHorizon || m_skyNode.is_empty())
@@ -2450,10 +2660,10 @@ void HwaSimIR::UpdateStage7SkyHorizon(const IRRuntimeEnvironment& environment, c
 		m_skyNode.set_pos(m_renderRoot, cameraPos);
 		m_skyNode.set_hpr(m_renderRoot, 0.0f, 0.0f, 0.0f);
 		m_skyNode.set_scale(static_cast<float>(m_stage7SkyDomeRadius));
-		m_skyNode.set_shader_input("u_stage7_sky_horizon_en", LVecBase2i(m_enableStage7SkyHorizon ? 1 : 0, 0));
-		m_skyNode.set_shader_input("u_stage7_background_kind", LVecBase2i(1, 0));
-		m_skyNode.set_shader_input("u_stage7_sky_gray", LVecBase2f(static_cast<float>(skyGray), 0.0f));
-		m_skyNode.set_shader_input("u_stage7_ground_gray", LVecBase2f(static_cast<float>(groundGray), 0.0f));
+		SetShaderInputCached(m_skyNode, "u_stage7_sky_horizon_en", LVecBase2i(m_enableStage7SkyHorizon ? 1 : 0, 0));
+		SetShaderInputCached(m_skyNode, "u_stage7_background_kind", LVecBase2i(1, 0));
+		SetShaderInputCached(m_skyNode, "u_stage7_sky_gray", LVecBase2f(static_cast<float>(skyGray), 0.0f));
+		SetShaderInputCached(m_skyNode, "u_stage7_ground_gray", LVecBase2f(static_cast<float>(groundGray), 0.0f));
 		ApplyStage7WeatherInputs(m_skyNode, m_stage7WeatherState);
 	}
 	if (!m_stage7LowerShellNode.is_empty())
@@ -2469,10 +2679,10 @@ void HwaSimIR::UpdateStage7SkyHorizon(const IRRuntimeEnvironment& environment, c
 		m_stage7LowerShellNode.set_pos(m_renderRoot, cameraPos);
 		m_stage7LowerShellNode.set_hpr(m_renderRoot, 0.0f, 0.0f, 0.0f);
 		m_stage7LowerShellNode.set_scale(static_cast<float>(m_stage7LowerShellRadius));
-		m_stage7LowerShellNode.set_shader_input("u_stage7_sky_horizon_en", LVecBase2i(m_enableStage7SkyHorizon ? 1 : 0, 0));
-		m_stage7LowerShellNode.set_shader_input("u_stage7_background_kind", LVecBase2i(2, 0));
-		m_stage7LowerShellNode.set_shader_input("u_stage7_sky_gray", LVecBase2f(static_cast<float>(skyGray), 0.0f));
-		m_stage7LowerShellNode.set_shader_input("u_stage7_ground_gray", LVecBase2f(static_cast<float>(groundGray), 0.0f));
+		SetShaderInputCached(m_stage7LowerShellNode, "u_stage7_sky_horizon_en", LVecBase2i(m_enableStage7SkyHorizon ? 1 : 0, 0));
+		SetShaderInputCached(m_stage7LowerShellNode, "u_stage7_background_kind", LVecBase2i(2, 0));
+		SetShaderInputCached(m_stage7LowerShellNode, "u_stage7_sky_gray", LVecBase2f(static_cast<float>(skyGray), 0.0f));
+		SetShaderInputCached(m_stage7LowerShellNode, "u_stage7_ground_gray", LVecBase2f(static_cast<float>(groundGray), 0.0f));
 		ApplyStage7WeatherInputs(m_stage7LowerShellNode, m_stage7WeatherState);
 	}
 
@@ -4413,6 +4623,7 @@ void HwaSimIR::InitInfraredSimulation()
 	std::string perfLogSource;
 	std::string verboseLogSource;
 	std::string irUpdateHzSource;
+	std::string stage4UpdateHzSource;
 	std::string stage6FlipShaderSource;
 	std::string stage6FlipTcpSource;
 	std::string tcpCodecSource;
@@ -4587,6 +4798,12 @@ void HwaSimIR::InitInfraredSimulation()
 	m_forceStage4BrightSpotVisible = m_runtimeConfig.getBool("Stage4", "ForceBrightSpotVisible", "ForceStage4BrightSpotVisible", false, &stage4BrightSource);
 	m_forceStage4RearHotspotVisible = m_runtimeConfig.getBool("Stage4", "ForceRearHotspotVisible", "ForceStage4RearHotspotVisible", false, &stage4RearSource);
 	m_stage4LegacyEngineBodyHeating = m_runtimeConfig.getBool("Stage4", "LegacyEngineBodyHeating", "Stage4LegacyEngineBodyHeating", false, &stage4LegacyEngineBodyHeatingSource);
+	m_stage4UpdateHz = m_runtimeConfig.getDouble("Stage4", "Stage4UpdateHz", "Stage4UpdateHz", 30.0, &stage4UpdateHzSource);
+	if (!std::isfinite(m_stage4UpdateHz) || m_stage4UpdateHz <= 0.0)
+	{
+		m_stage4UpdateHz = 30.0;
+	}
+	m_stage4UpdateHz = std::max(1.0, std::min(240.0, m_stage4UpdateHz));
 	if (m_stage4LegacyEngineBodyHeating)
 	{
 		std::cout << "[Stage4][WARN]"
@@ -4648,6 +4865,7 @@ void HwaSimIR::InitInfraredSimulation()
 	std::string stage7DebugSource;
 	std::string stage7GroundSource;
 	std::string stage7Real3DSource;
+	std::string stage7UpdateHzSource;
 	std::string stage7WeatherEnableSource;
 	std::string stage7WeatherProfileSource;
 	std::string stage7WeatherTextureSource;
@@ -4678,6 +4896,12 @@ void HwaSimIR::InitInfraredSimulation()
 	m_stage7DebugModeName = Stage7DebugModeName(m_stage7DebugMode);
 	m_stage7GroundZOffset = m_runtimeConfig.getDouble("Stage7Background", "GroundZOffset", "Stage7GroundZOffset", 0.0, &stage7GroundSource);
 	m_stage7UseReal3DBackground = m_runtimeConfig.getBool("Stage7Background", "UseReal3DBackground", "UseReal3DBackground", true, &stage7Real3DSource);
+	m_stage7UpdateHz = m_runtimeConfig.getDouble("Stage7Background", "Stage7UpdateHz", "Stage7UpdateHz", 10.0, &stage7UpdateHzSource);
+	if (!std::isfinite(m_stage7UpdateHz) || m_stage7UpdateHz <= 0.0)
+	{
+		m_stage7UpdateHz = 10.0;
+	}
+	m_stage7UpdateHz = std::max(1.0, std::min(240.0, m_stage7UpdateHz));
 	m_stage7WeatherEnabled = m_runtimeConfig.getBool("Stage7Weather", "EnableWeatherEffects", "EnableStage7WeatherEffects", true, &stage7WeatherEnableSource);
 	m_stage7WeatherProfilePath = m_runtimeConfig.getString("Stage7Weather", "WeatherProfilePath", "Stage7WeatherProfilePath", "Config/Weather/weather_profiles.json", &stage7WeatherProfileSource);
 	m_stage7WeatherTextureConfigPath = m_runtimeConfig.getString("Stage7Weather", "WeatherTextureConfig", "Stage7WeatherTextureConfig", "Config/Weather/weather_textures.json", &stage7WeatherTextureSource);
@@ -4820,8 +5044,9 @@ void HwaSimIR::InitInfraredSimulation()
 		<< " ForceStage4BrightSpotVisible=" << (m_forceStage4BrightSpotVisible ? "1" : "0")
 		<< " ForceStage4RearHotspotVisible=" << (m_forceStage4RearHotspotVisible ? "1" : "0")
 		<< " LegacyEngineBodyHeating=" << (m_stage4LegacyEngineBodyHeating ? "1" : "0")
+		<< " Stage4UpdateHz=" << m_stage4UpdateHz
 		<< " source=" << stage4VisualSource << "/" << stage4BrightSource << "/" << stage4RearSource
-		<< "/" << stage4LegacyEngineBodyHeatingSource
+		<< "/" << stage4LegacyEngineBodyHeatingSource << "/" << stage4UpdateHzSource
 		<< "（默认全为0；仅用于可见性/legacy诊断）" << std::endl;
 	std::cout << "[Stage5 Radiance] Stage5DebugDisplayConfig="
 		<< (m_stage5DebugDisplayConfigReady ? "OK" : "fallback")
@@ -4885,7 +5110,9 @@ void HwaSimIR::InitInfraredSimulation()
 		<< " debugMode=" << m_stage7DebugModeName
 		<< " groundZOffset=" << m_stage7GroundZOffset
 		<< " useReal3DBackground=" << (m_stage7UseReal3DBackground ? "1" : "0")
+		<< " Stage7UpdateHz=" << m_stage7UpdateHz
 		<< " source=" << stage7EnableSource << "/" << stage7DebugSource << "/" << stage7GroundSource << "/" << stage7Real3DSource
+		<< "/" << stage7UpdateHzSource
 		<< std::endl;
 	std::cout << "[Stage7 WeatherConfig]"
 		<< " enableWeatherEffects=" << (m_stage7WeatherEnabled ? "1" : "0")
@@ -5504,6 +5731,7 @@ void HwaSimIR::ApplyInfraredShader(NodePath& node, bool isBackground) {
 	node.set_shader_input("u_brightspot_pos", LVecBase3f(0.0f, 0.0f, 2.0f));
 	node.set_shader_input("u_brightspot_radius", LVecBase2f(1.0f, 0.0f)); // 亮斑大小
 	node.set_shader_input("u_brightspot_temp", LVecBase2f(0.0f, 0.0f));   // legacy命名：传入intensity，不是Kelvin温度
+	InvalidateShaderInputCache(node);
 }
 
 void HwaSimIR::ApplyRadianceInputs(NodePath& node, const IRObjectRadianceOutput& radiance, int objectKind)
@@ -5513,44 +5741,44 @@ void HwaSimIR::ApplyRadianceInputs(NodePath& node, const IRObjectRadianceOutput&
 		return;
 	}
 
-	node.set_shader_input("u_object_kind", LVecBase2i(objectKind, 0));
+	SetShaderInputCached(node, "u_object_kind", LVecBase2i(objectKind, 0));
 	const IRBand shaderBand = static_cast<IRBand>(static_cast<int>(radiance.bandIndex));
-	node.set_shader_input("u_wave_band", LVecBase2i(static_cast<int>(radiance.bandIndex), 0)); // deprecated compatibility
-	node.set_shader_input("u_ir_band_index", LVecBase2i(static_cast<int>(shaderBand), 0));
-	node.set_shader_input("u_ir_band_class", LVecBase2i(IRBandClassForShader(shaderBand), 0));
-	node.set_shader_input("u_ir_radiance", LVecBase2f(radiance.baseRadiance, 0.0f));
-	node.set_shader_input("u_emissivity", LVecBase2f(radiance.emissivity, 0.0f));
-	node.set_shader_input("u_reflectance", LVecBase2f(radiance.reflectance, 0.0f));
-	node.set_shader_input("u_tau_up", LVecBase2f(radiance.tauUp, 0.0f));
-	node.set_shader_input("u_path_radiance", LVecBase2f(radiance.pathRadiance, 0.0f));
-	node.set_shader_input("u_sky_radiance", LVecBase2f(radiance.skyRadiance, 0.0f));
-	node.set_shader_input("u_display_gain", LVecBase2f(radiance.displayGain, 0.0f));
-	node.set_shader_input("u_display_offset", LVecBase2f(radiance.displayOffset, 0.0f));
-	node.set_shader_input("u_base_temperature", LVecBase2f(radiance.baseRadiance, 0.0f));
+	SetShaderInputCached(node, "u_wave_band", LVecBase2i(static_cast<int>(radiance.bandIndex), 0)); // deprecated compatibility
+	SetShaderInputCached(node, "u_ir_band_index", LVecBase2i(static_cast<int>(shaderBand), 0));
+	SetShaderInputCached(node, "u_ir_band_class", LVecBase2i(IRBandClassForShader(shaderBand), 0));
+	SetShaderInputCached(node, "u_ir_radiance", LVecBase2f(radiance.baseRadiance, 0.0f));
+	SetShaderInputCached(node, "u_emissivity", LVecBase2f(radiance.emissivity, 0.0f));
+	SetShaderInputCached(node, "u_reflectance", LVecBase2f(radiance.reflectance, 0.0f));
+	SetShaderInputCached(node, "u_tau_up", LVecBase2f(radiance.tauUp, 0.0f));
+	SetShaderInputCached(node, "u_path_radiance", LVecBase2f(radiance.pathRadiance, 0.0f));
+	SetShaderInputCached(node, "u_sky_radiance", LVecBase2f(radiance.skyRadiance, 0.0f));
+	SetShaderInputCached(node, "u_display_gain", LVecBase2f(radiance.displayGain, 0.0f));
+	SetShaderInputCached(node, "u_display_offset", LVecBase2f(radiance.displayOffset, 0.0f));
+	SetShaderInputCached(node, "u_base_temperature", LVecBase2f(radiance.baseRadiance, 0.0f));
 	ApplyStage7WeatherInputs(node, m_stage7WeatherState);
 	const int stage5BandIndex = Stage5BandIndex(shaderBand);
-	node.set_shader_input("u_stage5_radiance_debug_en", LVecBase2i(m_enableStage5RadianceDebug ? 1 : 0, 0));
-	node.set_shader_input("u_stage5_debug_view_mode", LVecBase2i(m_stage5DebugViewMode, 0));
-	node.set_shader_input("u_stage5_use_base_texture_modulation", LVecBase2i(m_stage5UseBaseTextureModulationByBand[stage5BandIndex] ? 1 : 0, 0));
-	node.set_shader_input("u_material_temp_K", LVecBase2f(radiance.temperatureK, 0.0f));
-	node.set_shader_input("u_material_emissivity", LVecBase2f(radiance.emissivity, 0.0f));
-	node.set_shader_input("u_body_radiance_scale", LVecBase2f(0.0f, 0.0f));
-	node.set_shader_input("u_stage5_body_gray", LVecBase2f(0.0f, 0.0f));
-	node.set_shader_input("u_stage5_reflected_radiance", LVecBase2f(0.0f, 0.0f));
-	node.set_shader_input("u_stage5_reflected_gray", LVecBase2f(0.0f, 0.0f));
-	node.set_shader_input("u_stage5_reflectance_band", LVecBase2f(0.0f, 0.0f));
-	node.set_shader_input("u_stage5_solar_weight", LVecBase2f(0.0f, 0.0f));
-	node.set_shader_input("u_stage5_sun_dir_local", LVecBase3f(0.0f, 0.0f, 1.0f));
-	node.set_shader_input("u_stage5_hotspot_gray", LVecBase2f(0.0f, 0.0f));
-	node.set_shader_input("u_stage5_brightspot_gray", LVecBase2f(0.0f, 0.0f));
-	node.set_shader_input("u_stage5_final_gray_debug", LVecBase2f(0.0f, 0.0f));
-	node.set_shader_input("u_stage5_body_display_gray", LVecBase2f(0.0f, 0.0f));
-	node.set_shader_input("u_stage5_reflected_display_gray", LVecBase2f(0.0f, 0.0f));
-	node.set_shader_input("u_stage5_hotspot_display_gray", LVecBase2f(0.0f, 0.0f));
-	node.set_shader_input("u_stage5_brightspot_display_gray", LVecBase2f(0.0f, 0.0f));
-	node.set_shader_input("u_stage5_composite_min_gray", LVecBase2f(0.0f, 0.0f));
-	node.set_shader_input("u_stage5_composite_max_gray", LVecBase2f(1.0f, 0.0f));
-	node.set_shader_input("u_stage5_display_fallback_applied", LVecBase2i(0, 0));
+	SetShaderInputCached(node, "u_stage5_radiance_debug_en", LVecBase2i(m_enableStage5RadianceDebug ? 1 : 0, 0));
+	SetShaderInputCached(node, "u_stage5_debug_view_mode", LVecBase2i(m_stage5DebugViewMode, 0));
+	SetShaderInputCached(node, "u_stage5_use_base_texture_modulation", LVecBase2i(m_stage5UseBaseTextureModulationByBand[stage5BandIndex] ? 1 : 0, 0));
+	SetShaderInputCached(node, "u_material_temp_K", LVecBase2f(radiance.temperatureK, 0.0f));
+	SetShaderInputCached(node, "u_material_emissivity", LVecBase2f(radiance.emissivity, 0.0f));
+	SetShaderInputCached(node, "u_body_radiance_scale", LVecBase2f(0.0f, 0.0f));
+	SetShaderInputCached(node, "u_stage5_body_gray", LVecBase2f(0.0f, 0.0f));
+	SetShaderInputCached(node, "u_stage5_reflected_radiance", LVecBase2f(0.0f, 0.0f));
+	SetShaderInputCached(node, "u_stage5_reflected_gray", LVecBase2f(0.0f, 0.0f));
+	SetShaderInputCached(node, "u_stage5_reflectance_band", LVecBase2f(0.0f, 0.0f));
+	SetShaderInputCached(node, "u_stage5_solar_weight", LVecBase2f(0.0f, 0.0f));
+	SetShaderInputCached(node, "u_stage5_sun_dir_local", LVecBase3f(0.0f, 0.0f, 1.0f));
+	SetShaderInputCached(node, "u_stage5_hotspot_gray", LVecBase2f(0.0f, 0.0f));
+	SetShaderInputCached(node, "u_stage5_brightspot_gray", LVecBase2f(0.0f, 0.0f));
+	SetShaderInputCached(node, "u_stage5_final_gray_debug", LVecBase2f(0.0f, 0.0f));
+	SetShaderInputCached(node, "u_stage5_body_display_gray", LVecBase2f(0.0f, 0.0f));
+	SetShaderInputCached(node, "u_stage5_reflected_display_gray", LVecBase2f(0.0f, 0.0f));
+	SetShaderInputCached(node, "u_stage5_hotspot_display_gray", LVecBase2f(0.0f, 0.0f));
+	SetShaderInputCached(node, "u_stage5_brightspot_display_gray", LVecBase2f(0.0f, 0.0f));
+	SetShaderInputCached(node, "u_stage5_composite_min_gray", LVecBase2f(0.0f, 0.0f));
+	SetShaderInputCached(node, "u_stage5_composite_max_gray", LVecBase2f(1.0f, 0.0f));
+	SetShaderInputCached(node, "u_stage5_display_fallback_applied", LVecBase2i(0, 0));
 	ApplyStage6DisplayShaderInputs(node);
 }
 
@@ -5832,11 +6060,11 @@ bool HwaSimIR::Stage4WeaponAppliesToTarget(const BYHWICD::WeaponState& weaponSta
 	return WeaponTargetKeyMatches(weaponState, targetPlat);
 }
 
-void HwaSimIR::ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHWICD::WeaponState& weaponState, float dtSec, float ambientTempK, const IRObjectRadianceOutput& radiance, bool applyNodeInputs)
+bool HwaSimIR::ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHWICD::WeaponState& weaponState, float dtSec, float ambientTempK, const IRObjectRadianceOutput& radiance, bool applyNodeInputs)
 {
 	if (targetPlat.nodePath.is_empty())
 	{
-		return;
+		return false;
 	}
 
 	const std::string platformName = Stage4PlatformName(targetPlat.type);
@@ -5848,7 +6076,7 @@ void HwaSimIR::ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHW
 	IRHotspotState rearHotspot = m_irTemperatureModel.updateEngineRear(platformName, runtimeKey, engineState, dtSec, ambientTempK);
 	if (!applyNodeInputs)
 	{
-		return;
+		return false;
 	}
 	float tempSpan = std::max(1.0f, rearHotspot.targetTempK - rearHotspot.ambientTempK);
 	float normalizedTemp = std::max(0.0f, std::min(1.0f, (rearHotspot.currentTempK - rearHotspot.ambientTempK) / tempSpan));
@@ -5869,13 +6097,14 @@ void HwaSimIR::ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHW
 	}
 
 	// 阶段4 ThermalHotspot：只由 engineState 控制发动机/尾喷热源，不读取 strikeFlag。
+	bool wroteStage4Inputs = false;
 	if (applyNodeInputs)
 	{
-		targetPlat.nodePath.set_shader_input("u_stage4_visual_debug", LVecBase2i(m_enableStage4HotspotVisualDebug ? 1 : 0, 0));
-		targetPlat.nodePath.set_shader_input("u_hotspot_rear_en", LVecBase2i(rearEnabledForShader ? 1 : 0, 0));
-		targetPlat.nodePath.set_shader_input("u_hotspot_rear_pos", LVecBase3f(rearPosForShader.x, rearPosForShader.y, rearPosForShader.z));
-		targetPlat.nodePath.set_shader_input("u_hotspot_rear_radius", LVecBase2f(rearRadiusForShader, 0.0f));
-		targetPlat.nodePath.set_shader_input("u_hotspot_rear_temp", LVecBase2f(rearIntensityForShader, 0.0f));
+		wroteStage4Inputs |= SetShaderInputCached(targetPlat.nodePath, "u_stage4_visual_debug", LVecBase2i(m_enableStage4HotspotVisualDebug ? 1 : 0, 0));
+		wroteStage4Inputs |= SetShaderInputCached(targetPlat.nodePath, "u_hotspot_rear_en", LVecBase2i(rearEnabledForShader ? 1 : 0, 0));
+		wroteStage4Inputs |= SetShaderInputCached(targetPlat.nodePath, "u_hotspot_rear_pos", LVecBase3f(rearPosForShader.x, rearPosForShader.y, rearPosForShader.z));
+		wroteStage4Inputs |= SetShaderInputCached(targetPlat.nodePath, "u_hotspot_rear_radius", LVecBase2f(rearRadiusForShader, 0.0f));
+		wroteStage4Inputs |= SetShaderInputCached(targetPlat.nodePath, "u_hotspot_rear_temp", LVecBase2f(rearIntensityForShader, 0.0f));
 	}
 	const std::string thermalLogKey = runtimeKey + "#thermal";
 	const std::string thermalLogState =
@@ -5920,10 +6149,10 @@ void HwaSimIR::ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHW
 	// 阶段4 BrightSpot：只由 WeaponState.strikeFlag/strikePart 控制；u_brightspot_temp 传 intensity，不是温度。
 	if (applyNodeInputs)
 	{
-		targetPlat.nodePath.set_shader_input("u_brightspot_en", LVecBase2i(brightSpot.enabled ? 1 : 0, 0));
-		targetPlat.nodePath.set_shader_input("u_brightspot_pos", LVecBase3f(brightSpot.localPos.x, brightSpot.localPos.y, brightSpot.localPos.z));
-		targetPlat.nodePath.set_shader_input("u_brightspot_radius", LVecBase2f(brightSpot.radius, 0.0f));
-		targetPlat.nodePath.set_shader_input("u_brightspot_temp", LVecBase2f(brightSpot.intensity, 0.0f));
+		wroteStage4Inputs |= SetShaderInputCached(targetPlat.nodePath, "u_brightspot_en", LVecBase2i(brightSpot.enabled ? 1 : 0, 0));
+		wroteStage4Inputs |= SetShaderInputCached(targetPlat.nodePath, "u_brightspot_pos", LVecBase3f(brightSpot.localPos.x, brightSpot.localPos.y, brightSpot.localPos.z));
+		wroteStage4Inputs |= SetShaderInputCached(targetPlat.nodePath, "u_brightspot_radius", LVecBase2f(brightSpot.radius, 0.0f));
+		wroteStage4Inputs |= SetShaderInputCached(targetPlat.nodePath, "u_brightspot_temp", LVecBase2f(brightSpot.intensity, 0.0f));
 	}
 	const std::string brightLogKey = runtimeKey + "#bright";
 	const std::string brightLogState =
@@ -6060,6 +6289,7 @@ void HwaSimIR::ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHW
 			<< " brightIntensity=" << brightSpot.intensity
 			<< std::endl;
 	}
+	return wroteStage4Inputs;
 }
 
 void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IRObjectRadianceOutput& radiance, const IRHotspotState& rearHotspot, const IRBrightSpotState& brightSpot, bool rearEnabledForShader, float rearIntensityForShader, const std::string& targetKey)
@@ -6072,9 +6302,9 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	const IRBand stage5Band = static_cast<IRBand>(static_cast<int>(radiance.bandIndex));
 	const int stage5BandIndex = Stage5BandIndex(stage5Band);
 	const bool stage5UseBaseTextureModulation = m_stage5UseBaseTextureModulationByBand[stage5BandIndex];
-	targetPlat.nodePath.set_shader_input("u_stage5_radiance_debug_en", LVecBase2i(m_enableStage5RadianceDebug ? 1 : 0, 0));
-	targetPlat.nodePath.set_shader_input("u_stage5_debug_view_mode", LVecBase2i(m_stage5DebugViewMode, 0));
-	targetPlat.nodePath.set_shader_input("u_stage5_use_base_texture_modulation", LVecBase2i(stage5UseBaseTextureModulation ? 1 : 0, 0));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_radiance_debug_en", LVecBase2i(m_enableStage5RadianceDebug ? 1 : 0, 0));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_debug_view_mode", LVecBase2i(m_stage5DebugViewMode, 0));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_use_base_texture_modulation", LVecBase2i(stage5UseBaseTextureModulation ? 1 : 0, 0));
 	if (!m_enableStage5RadianceDebug)
 	{
 		return;
@@ -6127,25 +6357,25 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 		std::max(compositeMinGray, std::min(compositeMaxGray,
 			bodyGrayDisplay + reflectedGrayDisplay + hotspotGrayDisplay + brightspotGrayDisplay)));
 
-	targetPlat.nodePath.set_shader_input("u_material_temp_K", LVecBase2f(static_cast<float>(stage5Input.materialTemperatureK), 0.0f));
-	targetPlat.nodePath.set_shader_input("u_material_emissivity", LVecBase2f(static_cast<float>(stage5Input.materialEmissivity), 0.0f));
-	targetPlat.nodePath.set_shader_input("u_body_radiance_scale", LVecBase2f(static_cast<float>(stage5.bodyGrayBeforeFloor), 0.0f));
-	targetPlat.nodePath.set_shader_input("u_stage5_body_gray", LVecBase2f(static_cast<float>(stage5.bodyGrayAfterFloor), 0.0f));
-	targetPlat.nodePath.set_shader_input("u_stage5_reflected_radiance", LVecBase2f(static_cast<float>(stage5.reflectedRadiance), 0.0f));
-	targetPlat.nodePath.set_shader_input("u_stage5_reflected_gray", LVecBase2f(static_cast<float>(stage5.reflectedGray), 0.0f));
-	targetPlat.nodePath.set_shader_input("u_stage5_reflectance_band", LVecBase2f(static_cast<float>(stage5Input.materialReflectance), 0.0f));
-	targetPlat.nodePath.set_shader_input("u_stage5_solar_weight", LVecBase2f(static_cast<float>(stage5Input.solarReflectanceWeight), 0.0f));
-	targetPlat.nodePath.set_shader_input("u_stage5_sun_dir_local", Stage5SunDirectionLocal(environment.sunAzimuthDeg, environment.sunElevationDeg));
-	targetPlat.nodePath.set_shader_input("u_stage5_hotspot_gray", LVecBase2f(static_cast<float>(stage5.hotspotGray), 0.0f));
-	targetPlat.nodePath.set_shader_input("u_stage5_brightspot_gray", LVecBase2f(static_cast<float>(stage5.brightspotGray), 0.0f));
-	targetPlat.nodePath.set_shader_input("u_stage5_final_gray_debug", LVecBase2f(static_cast<float>(stage5.finalGrayDebug), 0.0f));
-	targetPlat.nodePath.set_shader_input("u_stage5_body_display_gray", LVecBase2f(static_cast<float>(bodyGrayDisplay), 0.0f));
-	targetPlat.nodePath.set_shader_input("u_stage5_reflected_display_gray", LVecBase2f(static_cast<float>(reflectedGrayDisplay), 0.0f));
-	targetPlat.nodePath.set_shader_input("u_stage5_hotspot_display_gray", LVecBase2f(static_cast<float>(hotspotGrayDisplay), 0.0f));
-	targetPlat.nodePath.set_shader_input("u_stage5_brightspot_display_gray", LVecBase2f(static_cast<float>(brightspotGrayDisplay), 0.0f));
-	targetPlat.nodePath.set_shader_input("u_stage5_composite_min_gray", LVecBase2f(static_cast<float>(compositeMinGray), 0.0f));
-	targetPlat.nodePath.set_shader_input("u_stage5_composite_max_gray", LVecBase2f(static_cast<float>(compositeMaxGray), 0.0f));
-	targetPlat.nodePath.set_shader_input("u_stage5_display_fallback_applied", LVecBase2i(stage5DisplayFallbackApplied ? 1 : 0, 0));
+	SetShaderInputCached(targetPlat.nodePath, "u_material_temp_K", LVecBase2f(static_cast<float>(stage5Input.materialTemperatureK), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_material_emissivity", LVecBase2f(static_cast<float>(stage5Input.materialEmissivity), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_body_radiance_scale", LVecBase2f(static_cast<float>(stage5.bodyGrayBeforeFloor), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_body_gray", LVecBase2f(static_cast<float>(stage5.bodyGrayAfterFloor), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_reflected_radiance", LVecBase2f(static_cast<float>(stage5.reflectedRadiance), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_reflected_gray", LVecBase2f(static_cast<float>(stage5.reflectedGray), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_reflectance_band", LVecBase2f(static_cast<float>(stage5Input.materialReflectance), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_solar_weight", LVecBase2f(static_cast<float>(stage5Input.solarReflectanceWeight), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_sun_dir_local", Stage5SunDirectionLocal(environment.sunAzimuthDeg, environment.sunElevationDeg));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_hotspot_gray", LVecBase2f(static_cast<float>(stage5.hotspotGray), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_brightspot_gray", LVecBase2f(static_cast<float>(stage5.brightspotGray), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_final_gray_debug", LVecBase2f(static_cast<float>(stage5.finalGrayDebug), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_body_display_gray", LVecBase2f(static_cast<float>(bodyGrayDisplay), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_reflected_display_gray", LVecBase2f(static_cast<float>(reflectedGrayDisplay), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_hotspot_display_gray", LVecBase2f(static_cast<float>(hotspotGrayDisplay), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_brightspot_display_gray", LVecBase2f(static_cast<float>(brightspotGrayDisplay), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_composite_min_gray", LVecBase2f(static_cast<float>(compositeMinGray), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_composite_max_gray", LVecBase2f(static_cast<float>(compositeMaxGray), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_display_fallback_applied", LVecBase2i(stage5DisplayFallbackApplied ? 1 : 0, 0));
 
 	const std::map<PLATFORM_TYPE, PlatformResPath>::const_iterator resIter = m_platformResMap.find(targetPlat.type);
 	bool baseTextureAvailable = false;
@@ -6398,6 +6628,9 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 	IRUpdateBreakdown breakdown;
 	const std::uint64_t breakdownIndex = ++m_irBreakdownUpdateCounter;
 	const bool profileBreakdown = breakdownIndex <= 3 || (breakdownIndex % 30) == 0;
+	breakdown.timingSample = profileBreakdown;
+	ResetShaderInputCounters();
+	m_measureShaderInputApplyTime = profileBreakdown;
 	std::chrono::steady_clock::time_point envBuildStart;
 	if (profileBreakdown)
 	{
@@ -6429,44 +6662,45 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 	{
 		stage7Start = std::chrono::steady_clock::now();
 	}
-	if (!m_skyNode.is_empty())
+	const bool hasStage7Background = m_enableStage7SkyHorizon && (!m_skyNode.is_empty() || !m_stage7LowerShellNode.is_empty());
+	if (hasStage7Background)
 	{
-		IRObjectRadianceOutput skyRadiance = EvaluateNodeRadiance("BM_AIR", m_skyNode, false, false, true, false, 0.0);
-		std::chrono::steady_clock::time_point shaderApplyStart;
-		if (profileBreakdown)
+		const std::string stage7Key = BuildStage7UpdateKey(environment);
+		const double stage7IntervalSec = 1.0 / std::max(1.0, m_stage7UpdateHz);
+		const bool stage7Dirty = stage7Key != m_stage7LastFullUpdateKey;
+		const bool stage7Due = m_stage7LastFullUpdateTime < 0.0 ||
+			(current_time - m_stage7LastFullUpdateTime) >= stage7IntervalSec;
+		if (stage7Dirty || stage7Due)
 		{
-			shaderApplyStart = std::chrono::steady_clock::now();
+			UpdateStage7SkyHorizon(environment, "runtime", false);
+			if (!m_skyNode.is_empty())
+			{
+				IRObjectRadianceOutput skyRadiance = EvaluateNodeRadiance("BM_AIR", m_skyNode, false, false, true, false, 0.0);
+				ApplyRadianceInputs(m_skyNode, skyRadiance, 1);
+				SetShaderInputCached(m_skyNode, "u_time", LVecBase2f(static_cast<float>(current_time), 0.0f));
+			}
+			if (!m_stage7LowerShellNode.is_empty())
+			{
+				const bool seaTerrain = m_isAddPlatform && m_initSceneData.trackingInit.envTerrain == 2;
+				const char* groundMaterial = seaTerrain ? "BM_WATER-OCEAN" : "BM_SAND";
+				IRObjectRadianceOutput groundRadiance = EvaluateNodeRadiance(groundMaterial, m_stage7LowerShellNode, false, false, false, false, 0.0);
+				ApplyRadianceInputs(m_stage7LowerShellNode, groundRadiance, 1);
+				SetShaderInputCached(m_stage7LowerShellNode, "u_time", LVecBase2f(static_cast<float>(current_time), 0.0f));
+			}
+			UpdateStage7WeatherNodes(m_stage7WeatherState, current_time);
+			m_stage7LastFullUpdateTime = current_time;
+			m_stage7LastFullUpdateKey = stage7Key;
+			++breakdown.stage7FullUpdateCount;
 		}
-		ApplyRadianceInputs(m_skyNode, skyRadiance, 1);
-		m_skyNode.set_shader_input("u_time", LVecBase2f((float)current_time, 0.0f));
-		if (profileBreakdown)
+		else
 		{
-			breakdown.shaderInputApplyMs += std::chrono::duration<double, std::milli>(
-				std::chrono::steady_clock::now() - shaderApplyStart).count();
+			UpdateStage7SkyHorizonPositionOnly();
+			++breakdown.stage7PositionOnlyCount;
 		}
 	}
-	if (!m_stage7LowerShellNode.is_empty())
+	else
 	{
-		const bool seaTerrain = m_isAddPlatform && m_initSceneData.trackingInit.envTerrain == 2;
-		const char* groundMaterial = seaTerrain ? "BM_WATER-OCEAN" : "BM_SAND";
-		IRObjectRadianceOutput groundRadiance = EvaluateNodeRadiance(groundMaterial, m_stage7LowerShellNode, false, false, false, false, 0.0);
-		std::chrono::steady_clock::time_point shaderApplyStart;
-		if (profileBreakdown)
-		{
-			shaderApplyStart = std::chrono::steady_clock::now();
-		}
-		ApplyRadianceInputs(m_stage7LowerShellNode, groundRadiance, 1);
-		m_stage7LowerShellNode.set_shader_input("u_time", LVecBase2f((float)current_time, 0.0f));
-		if (profileBreakdown)
-		{
-			breakdown.shaderInputApplyMs += std::chrono::duration<double, std::milli>(
-				std::chrono::steady_clock::now() - shaderApplyStart).count();
-		}
-	}
-	if (!m_skyNode.is_empty() || !m_stage7LowerShellNode.is_empty())
-	{
-		UpdateStage7SkyHorizon(environment, "runtime", false);
-		UpdateStage7WeatherNodes(m_stage7WeatherState, current_time);
+		++breakdown.stage7SkipCount;
 	}
 	if (profileBreakdown)
 	{
@@ -6493,11 +6727,11 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 			{
 				shaderApplyStart = std::chrono::steady_clock::now();
 			}
-			pakPlat.nodePath.set_shader_input("u_time", LVecBase2f((float)current_time, 0.0f));
+			SetShaderInputCached(pakPlat.nodePath, "u_time", LVecBase2f(static_cast<float>(current_time), 0.0f));
 			ApplyRadianceInputs(pakPlat.nodePath, radiance, 0);
 
 			// 阶段4不为挂载平台恢复常开尾喷；飞机平台暂无协议engineState，默认保持关闭。
-			pakPlat.nodePath.set_shader_input("u_hotspot_rear_en", LVecBase2i(0, 0));
+			SetShaderInputCached(pakPlat.nodePath, "u_hotspot_rear_en", LVecBase2i(0, 0));
 			if (profileBreakdown)
 			{
 				breakdown.shaderInputApplyMs += std::chrono::duration<double, std::milli>(
@@ -6547,7 +6781,7 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 				{
 					shaderApplyStart = std::chrono::steady_clock::now();
 				}
-				targetPlat.nodePath.set_shader_input("u_time", LVecBase2f((float)current_time, 0.0f));
+				SetShaderInputCached(targetPlat.nodePath, "u_time", LVecBase2f(static_cast<float>(current_time), 0.0f));
 				ApplyRadianceInputs(targetPlat.nodePath, stage5BaseRadiance, 0);
 				if (profileBreakdown)
 				{
@@ -6576,7 +6810,15 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 			{
 				stage4Start = std::chrono::steady_clock::now();
 			}
-			ApplyStage4TargetState(targetPlat, m_realTimeSceneData.weaponState, stage4DtSec, ambientTempK, stage5BaseRadiance, targetRenderable);
+			const bool stage4WroteInputs = ApplyStage4TargetState(targetPlat, m_realTimeSceneData.weaponState, stage4DtSec, ambientTempK, stage5BaseRadiance, targetRenderable);
+			if (stage4WroteInputs)
+			{
+				++breakdown.stage4UpdateCount;
+			}
+			else
+			{
+				++breakdown.stage4SkipCount;
+			}
 			if (profileBreakdown)
 			{
 				breakdown.stage4HotspotMs += std::chrono::duration<double, std::milli>(
@@ -6611,11 +6853,13 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 			}
 		}
 	}
-	if (profileBreakdown)
-	{
-		breakdown.stage5PlumeMs = updatePlumeMs;
-		m_perfStats.recordIrUpdateBreakdown(breakdown);
-	}
+	breakdown.stage5PlumeMs = updatePlumeMs;
+	const ShaderInputCacheStats shaderStats = SnapshotShaderInputCounters();
+	breakdown.shaderInputSetCount = shaderStats.setCount;
+	breakdown.shaderInputSkipCount = shaderStats.skipCount;
+	breakdown.shaderInputApplyMs = shaderStats.applyMs;
+	m_measureShaderInputApplyTime = false;
+	m_perfStats.recordIrUpdateBreakdown(breakdown);
 	m_perfStats.recordPlumeUpdate(updatePlumeMs);
 	LogStage5PlumePerf(stage5PlumeNodeCount, stage5VisiblePlumeCount, updatePlumeMs);
 }

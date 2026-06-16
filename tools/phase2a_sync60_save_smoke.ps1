@@ -79,12 +79,23 @@ foreach ($path in $backupPaths) {
 
 $utf8 = New-Object Text.UTF8Encoding($false)
 $oldQtForceStderr = $env:QT_FORCE_STDERR_LOGGING
+$oldPathValue = [Environment]::GetEnvironmentVariable("Path", "Process")
+$oldPathUpperValue = [Environment]::GetEnvironmentVariable("PATH", "Process")
 $caseStart = Get-Date
 $video = $null
 $hwa = $null
 $stim = $null
 
 try {
+    $pathValue = $oldPathValue
+    if ([string]::IsNullOrEmpty($pathValue)) {
+        $pathValue = $oldPathUpperValue
+    }
+    if (-not [string]::IsNullOrEmpty($pathValue)) {
+        [Environment]::SetEnvironmentVariable("PATH", $null, "Process")
+        [Environment]::SetEnvironmentVariable("Path", $pathValue, "Process")
+    }
+
     [IO.File]::WriteAllText(
         $hwaNetwork,
         "[UDP]`r`nlocalIp=127.0.0.1`r`nlocalPort=8888`r`nremoteIp=127.0.0.1`r`nremotePort=9999`r`n`r`n[TCP]`r`nserverIp=127.0.0.1`r`nserverPort=5555`r`n",
@@ -142,6 +153,12 @@ finally {
         }
     }
     $env:QT_FORCE_STDERR_LOGGING = $oldQtForceStderr
+    if (-not [string]::IsNullOrEmpty($oldPathUpperValue)) {
+        [Environment]::SetEnvironmentVariable("PATH", $oldPathUpperValue, "Process")
+    }
+    if (-not [string]::IsNullOrEmpty($oldPathValue)) {
+        [Environment]::SetEnvironmentVariable("Path", $oldPathValue, "Process")
+    }
 }
 
 $stimText = Get-Content -LiteralPath (Join-Path $logRoot "stim.err.log") -Raw
@@ -191,6 +208,16 @@ $summary = [pscustomobject]@{
     stage7SkyGroundMs = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage7SkyGroundMs")), 3)
     stage4HotspotMs = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage4HotspotMs")), 3)
     shaderInputApplyMs = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "shaderInputApplyMs")), 3)
+    shaderInputSetCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "shaderInputSetCount")), 3)
+    shaderInputSkipCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "shaderInputSkipCount")), 3)
+    shaderInputCacheHitRateAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "shaderInputCacheHitRate")), 3)
+    stage7FullUpdateCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage7FullUpdateCount")), 3)
+    stage7PositionOnlyCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage7PositionOnlyCount")), 3)
+    stage7SkipCountMax = [math]::Round((Get-Maximum (Get-NumericValues $hwaText "Perf" "stage7SkipCount")), 3)
+    stage4UpdateCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage4UpdateCount")), 3)
+    stage4SkipCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage4SkipCount")), 3)
+    sourceSeqLagMax = [int](Get-Maximum (Get-NumericValues $hwaText "Perf" "sourceSeqLag"))
+    inputQueueDepthMax = [int](Get-Maximum (Get-NumericValues $hwaText "Perf" "inputQueueDepthMax"))
     recorderWriteMs = [math]::Round((Get-Average (Get-NumericValues $videoText "RecorderPerf" "writeMsAvg")), 3)
     recorderDroppedFrames = [int](Get-Maximum (Get-NumericValues $videoText "RecorderPerf" "droppedFrames"))
     sourceSeqContinuous = $(if ($videoText -match "sourceSeqContinuous=0") { 0 } else { 1 })

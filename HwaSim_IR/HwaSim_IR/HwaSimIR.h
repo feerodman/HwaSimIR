@@ -154,6 +154,21 @@ private:
 		IRFrameTelemetry telemetry;
 	};
 
+	struct ShaderInputCachedValue
+	{
+		int kind = 0; // 1=float vector, 2=int vector
+		int count = 0;
+		float floats[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+		int ints[4] = { 0, 0, 0, 0 };
+	};
+
+	struct ShaderInputCacheStats
+	{
+		std::uint64_t setCount = 0;
+		std::uint64_t skipCount = 0;
+		double applyMs = 0.0;
+	};
+
 	//targetType转PLATFORM_TYPE
 	PLATFORM_TYPE TargetTypeToPlatformType(int targetType) const;
 	// 注册自定义按键/功能回调
@@ -184,6 +199,8 @@ private:
 	bool m_enablePerfLog = true;
 	bool m_enableIRVerboseLog = false;
 	double m_irUpdateHz = 30.0;
+	double m_stage7UpdateHz = 10.0;
+	double m_stage4UpdateHz = 30.0;
 	bool m_stage6FlipInShader = false;
 	bool m_stage6FlipInTcpThread = true;
 	std::string m_tcpCodecConfig = "auto";
@@ -195,6 +212,8 @@ private:
 	bool m_jpegPerfABTest = false;
 	std::uint64_t m_lastIrUpdateSourceSeq = 0;
 	std::uint64_t m_irBreakdownUpdateCounter = 0;
+	double m_stage7LastFullUpdateTime = -1.0;
+	std::string m_stage7LastFullUpdateKey;
 	std::string m_lastIrUpdateState;
 	bool m_irMaterialReady = false;
 	bool m_irAtmosphereReady = false;
@@ -323,14 +342,23 @@ private:
 	void InitInfraredSimulation();                          // 初始化低复杂度红外全链路参数
 	void InitSkyAndCloudScene();                            // 初始化天空背景和粒子云近似层
 	void ApplyInfraredShader(NodePath& node, bool isBackground); // 挂载着色器并初始化参数
-	void ApplyStage6DisplayShaderInputs(NodePath& node) const;
+	std::uintptr_t ShaderInputCacheKey(const NodePath& node) const;
+	bool SetShaderInputCached(NodePath& node, const char* name, const LVecBase2f& value, bool force = false);
+	bool SetShaderInputCached(NodePath& node, const char* name, const LVecBase3f& value, bool force = false);
+	bool SetShaderInputCached(NodePath& node, const char* name, const LVecBase2i& value, bool force = false);
+	void InvalidateShaderInputCache(const NodePath& node);
+	void ResetShaderInputCounters();
+	ShaderInputCacheStats SnapshotShaderInputCounters() const;
+	std::string BuildStage7UpdateKey(const IRRuntimeEnvironment& environment) const;
+	void UpdateStage7SkyHorizonPositionOnly();
+	void ApplyStage6DisplayShaderInputs(NodePath& node);
 	void RefreshStage6DisplayShaderInputs();
 	void UpdateStage7SkyHorizon(const IRRuntimeEnvironment& environment, const char* reason, bool forceLog);
 	void LogStage7SkyGround(const IRRuntimeEnvironment& environment, int envTerrain, int envSky, double skyGrayRaw, double groundGrayRaw, double skyGrayFinal, double groundGrayFinal, double farClipM, double groundReferenceZ, bool forceLog, const char* reason);
 	void InitStage7WeatherScene();
 	IRStage7WeatherRuntimeInput BuildStage7WeatherInput() const;
 	IRStage7WeatherState EvaluateStage7WeatherState(const IRRuntimeEnvironment& environment) const;
-	void ApplyStage7WeatherInputs(NodePath& node, const IRStage7WeatherState& weatherState) const;
+	void ApplyStage7WeatherInputs(NodePath& node, const IRStage7WeatherState& weatherState);
 	int RefreshStage7WeatherTextureCache(const IRStage7WeatherState& weatherState);
 	void UpdateStage7WeatherNodes(const IRStage7WeatherState& weatherState, double currentTime);
 	void LogStage7Weather(const IRStage7WeatherState& weatherState, const char* reason, bool forceLog);
@@ -354,7 +382,7 @@ private:
 	void ApplyWeaponCameraControl(BYHWICD::DisplayC2cObjTrackingData& currentData, TargetPlatformData* lookAtTarget);
 	std::string Stage4PlatformName(PLATFORM_TYPE type) const;
 	bool Stage4WeaponAppliesToTarget(const BYHWICD::WeaponState& weaponState, const TargetPlatformData& targetPlat) const;
-	void ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHWICD::WeaponState& weaponState, float dtSec, float ambientTempK, const IRObjectRadianceOutput& radiance, bool applyNodeInputs);
+	bool ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHWICD::WeaponState& weaponState, float dtSec, float ambientTempK, const IRObjectRadianceOutput& radiance, bool applyNodeInputs);
 	void ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IRObjectRadianceOutput& radiance, const IRHotspotState& rearHotspot, const IRBrightSpotState& brightSpot, bool rearEnabledForShader, float rearIntensityForShader, const std::string& targetKey);
 	void ApplySensorOutputConfig(const IRSensorDisplayConfig& config, const char* reason);
 	void LogStage6SensorGeometry(const IRSensorDisplayConfig& config, const char* reason) const;
@@ -414,6 +442,10 @@ private:
 	double m_annotationUpdateHz = 15.0;
 	std::uint64_t m_annotationLastProjectionSourceSeq = 0;
 	std::uint64_t m_inputQueueBackpressureLogCount = 0;
+	std::map<std::uintptr_t, std::map<std::string, ShaderInputCachedValue> > m_shaderInputCache;
+	ShaderInputCacheStats m_shaderInputStats;
+	double m_shaderInputFloatEpsilon = 1.0e-5;
+	bool m_measureShaderInputApplyTime = false;
 
 	bool m_isInitTargetPlatID;	//TargetState平台初始化ID映射标记
 

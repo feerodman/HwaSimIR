@@ -87,14 +87,24 @@ void IRPerfStats::recordIrUpdate(double elapsedMs)
 void IRPerfStats::recordIrUpdateBreakdown(const IRUpdateBreakdown& breakdown)
 {
 	std::lock_guard<std::mutex> lock(m_mutex);
-	m_irEnvBuildMsTotal += breakdown.irEnvBuildMs;
-	m_stage7SkyGroundMsTotal += breakdown.stage7SkyGroundMs;
-	m_platformRadianceMsTotal += breakdown.platformRadianceMs;
-	m_targetRadianceMsTotal += breakdown.targetRadianceMs;
-	m_stage4HotspotMsTotal += breakdown.stage4HotspotMs;
-	m_stage5PlumeBreakdownMsTotal += breakdown.stage5PlumeMs;
-	m_shaderInputApplyMsTotal += breakdown.shaderInputApplyMs;
-	++m_irBreakdownSamples;
+	if (breakdown.timingSample)
+	{
+		m_irEnvBuildMsTotal += breakdown.irEnvBuildMs;
+		m_stage7SkyGroundMsTotal += breakdown.stage7SkyGroundMs;
+		m_platformRadianceMsTotal += breakdown.platformRadianceMs;
+		m_targetRadianceMsTotal += breakdown.targetRadianceMs;
+		m_stage4HotspotMsTotal += breakdown.stage4HotspotMs;
+		m_stage5PlumeBreakdownMsTotal += breakdown.stage5PlumeMs;
+		m_shaderInputApplyMsTotal += breakdown.shaderInputApplyMs;
+		++m_irBreakdownSamples;
+	}
+	m_shaderInputSetCountTotal += breakdown.shaderInputSetCount;
+	m_shaderInputSkipCountTotal += breakdown.shaderInputSkipCount;
+	m_stage7FullUpdateCountTotal += breakdown.stage7FullUpdateCount;
+	m_stage7PositionOnlyCountTotal += breakdown.stage7PositionOnlyCount;
+	m_stage7SkipCountTotal += breakdown.stage7SkipCount;
+	m_stage4UpdateCountTotal += breakdown.stage4UpdateCount;
+	m_stage4SkipCountTotal += breakdown.stage4SkipCount;
 }
 
 void IRPerfStats::recordPlumeUpdate(double elapsedMs)
@@ -192,6 +202,10 @@ void IRPerfStats::maybeLog()
 		}
 
 		std::ostringstream out;
+		const std::uint64_t shaderInputTotal = m_shaderInputSetCountTotal + m_shaderInputSkipCountTotal;
+		const double shaderInputHitRate = shaderInputTotal > 0
+			? (static_cast<double>(m_shaderInputSkipCountTotal) * 100.0 / static_cast<double>(shaderInputTotal))
+			: 0.0;
 		out << std::fixed << std::setprecision(3)
 			<< "[Perf]"
 			<< " mode=" << (m_syncMode ? "sync" : "async")
@@ -209,6 +223,17 @@ void IRPerfStats::maybeLog()
 			<< " stage4HotspotMs=" << Average(m_stage4HotspotMsTotal, m_irBreakdownSamples)
 			<< " stage5PlumeMs=" << Average(m_stage5PlumeBreakdownMsTotal, m_irBreakdownSamples)
 			<< " shaderInputApplyMs=" << Average(m_shaderInputApplyMsTotal, m_irBreakdownSamples)
+			<< " shaderInputApplyScope=exclusive"
+			<< " stage7SkyGroundScope=inclusive"
+			<< " stage4HotspotScope=inclusive"
+			<< " shaderInputSetCount=" << m_shaderInputSetCountTotal
+			<< " shaderInputSkipCount=" << m_shaderInputSkipCountTotal
+			<< " shaderInputCacheHitRate=" << shaderInputHitRate
+			<< " stage7FullUpdateCount=" << m_stage7FullUpdateCountTotal
+			<< " stage7PositionOnlyCount=" << m_stage7PositionOnlyCountTotal
+			<< " stage7SkipCount=" << m_stage7SkipCountTotal
+			<< " stage4UpdateCount=" << m_stage4UpdateCountTotal
+			<< " stage4SkipCount=" << m_stage4SkipCountTotal
 			<< " plumeUpdateMs=" << Average(m_plumeUpdateMsTotal, m_plumeSamples)
 			<< " renderMs=" << Average(m_renderMsTotal, m_renderSamples)
 			<< " readbackMs=" << Average(m_readbackMsTotal, m_captureSamples)
@@ -272,6 +297,13 @@ void IRPerfStats::resetIntervalLocked(std::int64_t nowNs)
 	m_stage4HotspotMsTotal = 0.0;
 	m_stage5PlumeBreakdownMsTotal = 0.0;
 	m_shaderInputApplyMsTotal = 0.0;
+	m_shaderInputSetCountTotal = 0;
+	m_shaderInputSkipCountTotal = 0;
+	m_stage7FullUpdateCountTotal = 0;
+	m_stage7PositionOnlyCountTotal = 0;
+	m_stage7SkipCountTotal = 0;
+	m_stage4UpdateCountTotal = 0;
+	m_stage4SkipCountTotal = 0;
 	m_plumeUpdateMsTotal = 0.0;
 	m_renderMsTotal = 0.0;
 	m_readbackMsTotal = 0.0;
