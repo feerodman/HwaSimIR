@@ -205,6 +205,7 @@ private:
 	bool m_enableStage4HotspotVisualDebug = false; // 阶段4可视化诊断开关，默认关闭，不改变生产渲染
 	bool m_forceStage4BrightSpotVisible = false;   // 阶段4调试：强制特殊亮斑可见
 	bool m_forceStage4RearHotspotVisible = false;  // 阶段4调试：强制尾部热源可见
+	bool m_stage4LegacyEngineBodyHeating = false;  // Legacy/debug only: engineState heats whole body radiance
 	bool m_enableStage5RadianceDebug = false;      // Stage5A debug path, default off to keep legacy rendering unchanged
 	int m_stage5DebugViewMode = 0;                 // 0 Composite, 1 BodyOnly, 2 HotspotOnly, 3 BrightSpotOnly
 	std::string m_stage5DebugViewModeName = "Composite";

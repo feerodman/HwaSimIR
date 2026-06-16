@@ -4409,6 +4409,7 @@ void HwaSimIR::InitInfraredSimulation()
 	std::string stage4VisualSource;
 	std::string stage4BrightSource;
 	std::string stage4RearSource;
+	std::string stage4LegacyEngineBodyHeatingSource;
 	std::string perfLogSource;
 	std::string verboseLogSource;
 	std::string irUpdateHzSource;
@@ -4585,6 +4586,14 @@ void HwaSimIR::InitInfraredSimulation()
 	m_enableStage4HotspotVisualDebug = m_runtimeConfig.getBool("Stage4", "EnableHotspotVisualDebug", "EnableStage4HotspotVisualDebug", false, &stage4VisualSource);
 	m_forceStage4BrightSpotVisible = m_runtimeConfig.getBool("Stage4", "ForceBrightSpotVisible", "ForceStage4BrightSpotVisible", false, &stage4BrightSource);
 	m_forceStage4RearHotspotVisible = m_runtimeConfig.getBool("Stage4", "ForceRearHotspotVisible", "ForceStage4RearHotspotVisible", false, &stage4RearSource);
+	m_stage4LegacyEngineBodyHeating = m_runtimeConfig.getBool("Stage4", "LegacyEngineBodyHeating", "Stage4LegacyEngineBodyHeating", false, &stage4LegacyEngineBodyHeatingSource);
+	if (m_stage4LegacyEngineBodyHeating)
+	{
+		std::cout << "[Stage4][WARN]"
+			<< " LegacyEngineBodyHeating=1"
+			<< " reason=legacy_debug_mode_engineState_heats_whole_body"
+			<< std::endl;
+	}
 	AnnotationRuntimeOptions annotationOptions;
 	annotationOptions.profilePath = m_runtimeConfig.getString("Annotation", "ProfilePath", "AnnotationProfilePath", "Config/Annotation/annotation_profiles.json", &annotationProfileSource);
 	annotationOptions.profilePathSource = annotationProfileSource;
@@ -4810,8 +4819,10 @@ void HwaSimIR::InitInfraredSimulation()
 		<< " EnableStage4HotspotVisualDebug=" << (m_enableStage4HotspotVisualDebug ? "1" : "0")
 		<< " ForceStage4BrightSpotVisible=" << (m_forceStage4BrightSpotVisible ? "1" : "0")
 		<< " ForceStage4RearHotspotVisible=" << (m_forceStage4RearHotspotVisible ? "1" : "0")
+		<< " LegacyEngineBodyHeating=" << (m_stage4LegacyEngineBodyHeating ? "1" : "0")
 		<< " source=" << stage4VisualSource << "/" << stage4BrightSource << "/" << stage4RearSource
-		<< "（默认全为0；仅用于可见性接线诊断）" << std::endl;
+		<< "/" << stage4LegacyEngineBodyHeatingSource
+		<< "（默认全为0；仅用于可见性/legacy诊断）" << std::endl;
 	std::cout << "[Stage5 Radiance] Stage5DebugDisplayConfig="
 		<< (m_stage5DebugDisplayConfigReady ? "OK" : "fallback")
 		<< " path=" << m_stage5DebugDisplayConfigPath
@@ -5548,7 +5559,10 @@ IRObjectRadianceOutput HwaSimIR::EvaluateNodeRadiance(const std::string& materia
 	IRObjectRadianceInput input;
 	input.materialName = materialName;
 	input.rangeMeters = isSky ? 5000.0 : static_cast<double>(EstimateRangeToCamera(node));
-	input.engineOn = engineOn;
+	// Stage2A: engineState is local to EngineRear/EnginePlume.  The CPU body
+	// radiance model still has a legacy whole-body heating branch, but production
+	// input keeps it disabled unless the explicit legacy/debug switch is enabled.
+	input.engineOn = m_stage4LegacyEngineBodyHeating && engineOn;
 	input.damaged = damaged;
 	input.isSky = isSky;
 	input.isCloud = isCloud;
@@ -5935,6 +5949,52 @@ void HwaSimIR::ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHW
 			<< " radius=" << brightSpot.radius
 			<< " intensity=" << brightSpot.intensity
 			<< " enabled=" << (brightSpot.enabled ? "1" : "0")
+			<< std::endl;
+	}
+
+	const bool plumeBypassEngineState =
+		m_stage5PlumeOptions.forcePlumeVisible || m_stage5PlumeOptions.enablePlumeDebug;
+	const bool plumeEnabledForDiag =
+		m_stage5PlumeOptions.enableEnginePlume &&
+		applyNodeInputs &&
+		(!targetPlat.enginePlumeCoreNodePath.is_empty() || !targetPlat.enginePlumeHaloNodePath.is_empty()) &&
+		(!m_stage5PlumeOptions.useEngineState || engineState || plumeBypassEngineState);
+	const std::string heatLogKey = runtimeKey + "#heat-source";
+	const std::string heatLogState =
+		std::to_string(engineState ? 1 : 0) + ":" +
+		std::to_string(rearEnabledForShader ? 1 : 0) + ":" +
+		std::to_string(plumeEnabledForDiag ? 1 : 0) + ":" +
+		std::to_string(weaponState.strikeFlag ? 1 : 0) + ":" +
+		std::to_string(weaponState.strikePart) + ":" +
+		std::to_string(brightSpot.enabled ? 1 : 0) + ":" +
+		std::to_string(static_cast<int>(brightSpot.part)) + ":" +
+		std::to_string(m_stage4LegacyEngineBodyHeating ? 1 : 0);
+	const bool logHeatSource =
+		m_enableIRVerboseLog ||
+		frameSeq <= 3 ||
+		(frameSeq % 120) == 0 ||
+		m_enableStage4HotspotVisualDebug ||
+		m_lastStage4TargetLogState[heatLogKey] != heatLogState;
+	m_lastStage4TargetLogState[heatLogKey] = heatLogState;
+	if (logHeatSource)
+	{
+		std::cout << "[Stage4 HeatSourceDiag]"
+			<< " sourceSeq=" << frameSeq
+			<< " targetPlatID=" << targetPlat.targetState.targetPlatID
+			<< " targetID=" << targetPlat.targetState.targetID
+			<< " engineState=" << (engineState ? "1" : "0")
+			<< " legacyEngineBodyHeating=" << (m_stage4LegacyEngineBodyHeating ? "1" : "0")
+			<< " bodyTempK=" << radiance.temperatureK
+			<< " bodyRadiance=" << radiance.baseRadiance
+			<< " rearHotspotEnabled=" << (rearEnabledForShader ? "1" : "0")
+			<< " rearHotspotTempK=" << rearHotspot.currentTempK
+			<< " rearHotspotIntensity=" << rearIntensityForShader
+			<< " plumeEnabled=" << (plumeEnabledForDiag ? "1" : "0")
+			<< " strikeFlag=" << (weaponState.strikeFlag ? "1" : "0")
+			<< " strikePart=" << weaponState.strikePart
+			<< " brightspotPart=" << IRBrightSpotPartName(brightSpot.part)
+			<< " brightspotEnabled=" << (brightSpot.enabled ? "1" : "0")
+			<< " brightspotIntensity=" << brightSpot.intensity
 			<< std::endl;
 	}
 

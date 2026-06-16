@@ -874,6 +874,97 @@ shaderInputApply 与 Stage7/Stage4 子项存在包含关系，不能直接相加
    engineState 物理改动。engineState 继续只控制喷口、尾焰和后部热点，不引入整机整体加温。
 ```
 
+### 阶段 2A engineState / EngineRear / EnginePlume / BrightSpot 语义修正
+
+```text
+阶段：2A
+执行日期：2026-06-16
+执行者：Codex
+目标：修正 engineState 给整个目标机体加温的问题，并统一
+EngineRear、EnginePlume、BrightSpot/StrikeSpot 语义。
+
+修改范围：
+- HwaSimIRRuntime.ini 的 [Stage4] 增加 LegacyEngineBodyHeating=false。
+- EvaluateNodeRadiance 默认不再把 engineState 传入 body radiance 的
+  legacy whole-body heating 分支；仅 LegacyEngineBodyHeating=true 时恢复旧效果。
+- LegacyEngineBodyHeating=true 会打印 [Stage4][WARN]，标记为 legacy/debug 模式。
+- Stage4 新增限频 [Stage4 HeatSourceDiag]，字段包括 sourceSeq、targetID、
+  engineState、bodyTempK、bodyRadiance、rearHotspotEnabled、
+  rearHotspotTempK/rearHotspotIntensity、plumeEnabled、strikeFlag、
+  strikePart、brightspotPart、brightspotEnabled。
+- u_brightspot_temp 保持 legacy uniform 名，但 C++ 注释和日志明确其传入的是
+  brightspotIntensity，不是 Kelvin 温度。
+- 扩展 tools/stage4_hotspot_check.ps1 和 tools/stage4_hotspot_smoke.ps1。
+- 新增 tools/phase2a_sync60_save_smoke.ps1，用于 30 秒生产默认链路验收。
+
+未修改：
+TCP/JPEG/H.264 协议、gray JPEG 默认值、H.264 实时编码、PBO、MODTRAN
+path/sky/solar、AGC/MTF、材质库结构、高度/Mach 热模型。
+
+构建结果：
+- HwaSim_IR Windows Release x64 通过。
+- DataDrivenTestQT Release 通过。
+- HwaSim_IR_VideoDisplay Windows Release x64 通过。
+- 仅保留既有 C4101/C4251/C4267/PDB 类警告；VideoDisplay 0 warning / 0 error。
+
+回归：
+- Stage3 MODTRAN tau-only strict 通过。
+- RuntimeConfig strict 通过。
+- Stage4 hotspot/brightspot strict 通过。
+- Stage4 三波段语义 smoke 通过，日志：
+  logs/stage4/HwaSimIR-stage4-hotspot-smoke-20260616-113628.out.log。
+
+Stage4 语义 smoke 摘要：
+- engineState=false、strikeFlag=false：
+  rear=0，plume=0，brightspot=0。
+- engineState=true、strikeFlag=false：
+  bodyTempK 仍为 298.15，bodyRadiance 仍为 0.0296085；
+  rear=1，plume=1，brightspot=0。
+- strikeFlag=true、strikePart=1：
+  rear=0，plume=0，brightspotPart=Head，brightspot=1。
+- strikeFlag=true、strikePart=2：
+  rear=0，plume=0，brightspotPart=MidBody，brightspot=1。
+- 结论：engineState 不再给 body 整体加温；strikeFlag/strikePart 不再影响
+  rear hotspot 或 plume。
+
+30 秒生产默认链路验收：
+配置：Codec=auto，JpegEncodeMode=rgb，JpegQuality=100，
+EnableH264Experimental=false，LegacyEngineBodyHeating=false，saveMP4En=true。
+日志目录：logs/phase2a-final-20260616-114332。
+录像目录：HwaSim_IR_VideoDisplay/x64/Release/MP4/round_001_20260616_114347。
+
+帧率：
+- sent=60.020 FPS
+- udp=56.134 FPS
+- render=56.202 FPS
+- output=55.700 FPS
+- VideoDisplay receive/display=56.688 FPS
+
+延时与队列：
+- latencyAvgMs=293.448
+- sourceSeqContinuous=1
+- inputQueueOverflow=0
+- TCP overwritten=0
+- inputQueueDepth 长期达到 16，sourceSeqLag 约 16，存在输入积压。
+
+录像：
+- output.mp4 成功生成，ffprobe 读取 1785 帧。
+- annotations.txt=1785 行，target_annotations.txt=1785 行。
+- recordingDroppedFrames=0，sourceSeqContinuousWritten=1。
+
+性能热点：
+- jpegMs=5.809，readbackMs=1.404，recorderWriteMs=6.707。
+- irUpdateMs=6.982，其中 stage7SkyGroundMs=3.856，
+  stage4HotspotMs=2.062，shaderInputApplyMs=10.504。
+- 与阶段 1D 的波动形态一致，主要瓶颈仍是 HwaSim_IR 主循环积压，
+  不是本次 engineState 语义改动新增的 per-frame 日志或录像丢帧。
+
+是否通过验收：未通过 60 Hz 性能验收。语义修正与录像一致性通过，但当前
+自动 30 秒链路只有约 56 FPS、平均延时超过 80 ms，不能宣称保持阶段 1C
+同步 60 Hz。下一步应先处理 HwaSim_IR 主循环 inputQueueDepth=16、
+shaderInputApply/Stage7/Stage4 热点和停止时尾部积压，再继续物理重构。
+```
+
 ---
 
 ## 12. 给 Codex 的第一阶段实施 Prompt

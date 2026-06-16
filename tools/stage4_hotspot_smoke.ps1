@@ -201,6 +201,45 @@ function Add-Check {
     }
 }
 
+function Get-Stage4HeatSourceRows {
+    param([string]$Text)
+
+    $pattern = "(?m)^\[Stage4 HeatSourceDiag\].*?\btargetID=(?<targetID>-?\d+).*?\bengineState=(?<engine>[01]).*?\blegacyEngineBodyHeating=(?<legacy>[01]).*?\bbodyTempK=(?<bodyTemp>[-+0-9eE.]+).*?\bbodyRadiance=(?<bodyRadiance>[-+0-9eE.]+).*?\brearHotspotEnabled=(?<rear>[01]).*?\brearHotspotTempK=(?<rearTemp>[-+0-9eE.]+).*?\brearHotspotIntensity=(?<rearIntensity>[-+0-9eE.]+).*?\bplumeEnabled=(?<plume>[01]).*?\bstrikeFlag=(?<strike>[01]).*?\bstrikePart=(?<strikePart>-?\d+).*?\bbrightspotPart=(?<brightPart>[A-Za-z]+).*?\bbrightspotEnabled=(?<bright>[01])"
+    return @([regex]::Matches($Text, $pattern) | ForEach-Object {
+        [PSCustomObject]@{
+            targetID     = [int]$_.Groups["targetID"].Value
+            engine       = [int]$_.Groups["engine"].Value
+            legacy       = [int]$_.Groups["legacy"].Value
+            bodyTemp     = [double]$_.Groups["bodyTemp"].Value
+            bodyRadiance = [double]$_.Groups["bodyRadiance"].Value
+            rear         = [int]$_.Groups["rear"].Value
+            rearTemp     = [double]$_.Groups["rearTemp"].Value
+            rearIntensity = [double]$_.Groups["rearIntensity"].Value
+            plume        = [int]$_.Groups["plume"].Value
+            strike       = [int]$_.Groups["strike"].Value
+            strikePart   = [int]$_.Groups["strikePart"].Value
+            brightPart   = $_.Groups["brightPart"].Value
+            bright       = [int]$_.Groups["bright"].Value
+        }
+    })
+}
+
+function First-HeatRow {
+    param(
+        [object[]]$Rows,
+        [int]$Engine,
+        [int]$Strike,
+        [int]$StrikePart
+    )
+
+    return @($Rows | Where-Object {
+        $_.targetID -eq 0 -and
+        $_.engine -eq $Engine -and
+        $_.strike -eq $Strike -and
+        $_.strikePart -eq $StrikePart
+    } | Select-Object -First 1)[0]
+}
+
 function Invoke-HwaRun {
     $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
     $stdout = Join-Path $logDir "HwaSimIR-stage4-hotspot-smoke-$stamp.out.log"
@@ -219,6 +258,7 @@ function Invoke-HwaRun {
 
         $runtimeText = [System.IO.File]::ReadAllText($runtimeConfig, $utf8NoBom)
         $runtimeText = [regex]::Replace($runtimeText, "(?m)^EnableIRVerboseLog=.*$", "EnableIRVerboseLog=1")
+        $runtimeText = [regex]::Replace($runtimeText, "(?m)^LegacyEngineBodyHeating=.*$", "LegacyEngineBodyHeating=false")
         [System.IO.File]::WriteAllText($runtimeConfig, $runtimeText, $utf8NoBom)
 
         Normalize-ProcessPathEnvironment
@@ -290,15 +330,32 @@ Write-Host ""
 
 $run = Invoke-HwaRun
 $text = $run.Text
+$heatRows = Get-Stage4HeatSourceRows -Text $text
+$engineOffRow = First-HeatRow -Rows $heatRows -Engine 0 -Strike 0 -StrikePart 0
+$engineOnRow = First-HeatRow -Rows $heatRows -Engine 1 -Strike 0 -StrikePart 0
+$headStrikeRow = First-HeatRow -Rows $heatRows -Engine 0 -Strike 1 -StrikePart 1
+$midStrikeRow = First-HeatRow -Rows $heatRows -Engine 0 -Strike 1 -StrikePart 2
+$bodyTempStable = $false
+$bodyRadianceStable = $false
+if ($engineOffRow -and $engineOnRow) {
+    $bodyTempStable = [Math]::Abs($engineOnRow.bodyTemp - $engineOffRow.bodyTemp) -lt 0.01
+    $bodyRadianceStable = [Math]::Abs($engineOnRow.bodyRadiance - $engineOffRow.bodyRadiance) -lt 0.0001
+}
 $checks = New-Object System.Collections.Generic.List[object]
 
 $checks.Add((Add-Check "ThermalHotspot logs present" ($text -match "\[Stage4 ThermalHotspot\]") $run.Stdout)) | Out-Null
 $checks.Add((Add-Check "BrightSpot logs present" ($text -match "\[Stage4 BrightSpot\]") $run.Stdout)) | Out-Null
+$checks.Add((Add-Check "HeatSourceDiag logs present" ($heatRows.Count -gt 0) "$($heatRows.Count) rows")) | Out-Null
 $checks.Add((Add-Check "logs remain separated" ($text -notmatch "\[Stage4 ThermalHotspot\].*\[Stage4 BrightSpot\]|\[Stage4 BrightSpot\].*\[Stage4 ThermalHotspot\]") "separate log prefixes")) | Out-Null
 $checks.Add((Add-Check "engineState=false strikeFlag=false keeps both off" (($text -match "\[Stage4 ThermalHotspot\].*engineState=0.*enabled=0") -and ($text -match "\[Stage4 BrightSpot\].*strikeFlag=0.*enabled=0")) "engine0/strike0")) | Out-Null
 $checks.Add((Add-Check "engineState=true enables rear thermal hotspot only" (($text -match "\[Stage4 ThermalHotspot\].*engineState=1.*enabled=1") -and ($text -match "\[Stage4 BrightSpot\].*strikeFlag=0.*enabled=0")) "engine1/strike0")) | Out-Null
 $checks.Add((Add-Check "strikePart=1 enables head brightspot only" (($text -match "\[Stage4 ThermalHotspot\].*engineState=0.*enabled=0") -and ($text -match "\[Stage4 BrightSpot\].*strikeFlag=1.*strikePart=1.*part=Head.*enabled=1")) "strike head")) | Out-Null
 $checks.Add((Add-Check "strikePart=2 enables mid brightspot only" (($text -match "\[Stage4 ThermalHotspot\].*engineState=0.*enabled=0") -and ($text -match "\[Stage4 BrightSpot\].*strikeFlag=1.*strikePart=2.*part=MidBody.*enabled=1")) "strike mid")) | Out-Null
+$checks.Add((Add-Check "engineState does not heat whole body temperature" $bodyTempStable "engine0=$($engineOffRow.bodyTemp) engine1=$($engineOnRow.bodyTemp)")) | Out-Null
+$checks.Add((Add-Check "engineState does not increase body radiance" $bodyRadianceStable "engine0=$($engineOffRow.bodyRadiance) engine1=$($engineOnRow.bodyRadiance)")) | Out-Null
+$checks.Add((Add-Check "HeatSourceDiag engineState controls rear/plume only" (($engineOnRow -and $engineOnRow.rear -eq 1 -and $engineOnRow.plume -eq 1 -and $engineOnRow.bright -eq 0) -and ($engineOffRow -and $engineOffRow.rear -eq 0 -and $engineOffRow.plume -eq 0 -and $engineOffRow.bright -eq 0)) "engine0 rear/plume/bright=$($engineOffRow.rear)/$($engineOffRow.plume)/$($engineOffRow.bright); engine1=$($engineOnRow.rear)/$($engineOnRow.plume)/$($engineOnRow.bright)")) | Out-Null
+$checks.Add((Add-Check "HeatSourceDiag strikePart=1 maps to Head only" ($headStrikeRow -and $headStrikeRow.rear -eq 0 -and $headStrikeRow.plume -eq 0 -and $headStrikeRow.bright -eq 1 -and $headStrikeRow.brightPart -eq "Head") "part=$($headStrikeRow.brightPart) rear=$($headStrikeRow.rear) plume=$($headStrikeRow.plume)")) | Out-Null
+$checks.Add((Add-Check "HeatSourceDiag strikePart=2 maps to MidBody only" ($midStrikeRow -and $midStrikeRow.rear -eq 0 -and $midStrikeRow.plume -eq 0 -and $midStrikeRow.bright -eq 1 -and $midStrikeRow.brightPart -eq "MidBody") "part=$($midStrikeRow.brightPart) rear=$($midStrikeRow.rear) plume=$($midStrikeRow.plume)")) | Out-Null
 $checks.Add((Add-Check "strikeFlag does not enable rear hotspot" ($text -notmatch "\[Stage4 ThermalHotspot\].*engineState=0.*enabled=1") "no engine0 rear enabled")) | Out-Null
 $checks.Add((Add-Check "engineState does not enable brightspot" ($text -notmatch "\[Stage4 BrightSpot\].*strikeFlag=0.*enabled=1") "no strike0 brightspot enabled")) | Out-Null
 

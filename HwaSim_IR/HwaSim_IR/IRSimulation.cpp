@@ -658,6 +658,8 @@ IRObjectRadianceOutput IRRadianceModel::evaluate(const IRObjectRadianceInput& in
 	{
 		objectTempK += 6.0 * sunAngle;
 	}
+	// Legacy/debug only. HwaSimIR::EvaluateNodeRadiance keeps this false by
+	// default so engineState affects EngineRear/EnginePlume, not whole body.
 	if (input.engineOn)
 	{
 		objectTempK += (m_environment.band == IRBand::MidWaveInfrared) ? 320.0 : 180.0;

@@ -9,6 +9,7 @@ $rootPath = $root.Path
 $modelHeader = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\IR\IRTemperatureModel.h"
 $modelSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\IR\IRTemperatureModel.cpp"
 $hotspotConfig = Join-Path $rootPath "HwaSim_IR\Bin\Config\IRHotspots\target_hotspots.json"
+$runtimeConfig = Join-Path $rootPath "HwaSim_IR\Bin\Config\HwaSimIRRuntime.ini"
 $appHeader = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSimIR.h"
 $appSource = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSimIR.cpp"
 $commonData = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\Common\CommonData.h"
@@ -53,6 +54,7 @@ $appSourceText = Read-Text $appSource
 $commonDataText = Read-Text $commonData
 $stage3AtmosphereText = Read-Text $stage3AtmosphereSource
 $configText = Read-Text $hotspotConfig
+$runtimeConfigText = Read-Text $runtimeConfig
 $stage4ModelText = "$modelHeaderText`n$modelSourceText"
 
 $checks = New-Object System.Collections.Generic.List[object]
@@ -82,10 +84,13 @@ $checks.Add((Add-Check "brightspot controlled by WeaponState" (($appSourceText -
 $checks.Add((Add-Check "u_brightspot_temp documented as legacy intensity" (($appSourceText -match "u_brightspot_temp.*intensity") -and ($appSourceText -match "Kelvin")) $appSource)) | Out-Null
 
 $checks.Add((Add-Check "Stage4 visual debug defaults off" (($appSourceText -match 'getBool\("Stage4",\s*"EnableHotspotVisualDebug",\s*"EnableStage4HotspotVisualDebug",\s*false') -and ($appSourceText -match 'getBool\("Stage4",\s*"ForceBrightSpotVisible",\s*"ForceStage4BrightSpotVisible",\s*false') -and ($appSourceText -match 'getBool\("Stage4",\s*"ForceRearHotspotVisible",\s*"ForceStage4RearHotspotVisible",\s*false')) $appSource)) | Out-Null
+$checks.Add((Add-Check "Legacy engine body heating default off" (($runtimeConfigText -match '(?m)^LegacyEngineBodyHeating=false\s*$') -and ($appHeaderText -match 'm_stage4LegacyEngineBodyHeating\s*=\s*false') -and ($appSourceText -match 'LegacyEngineBodyHeating",\s*"Stage4LegacyEngineBodyHeating",\s*false') -and ($appSourceText -match 'input\.engineOn\s*=\s*m_stage4LegacyEngineBodyHeating\s*&&\s*engineOn')) "$runtimeConfig; $appHeader; $appSource")) | Out-Null
+$checks.Add((Add-Check "Legacy engine body heating warns when enabled" (($appSourceText -match '\[Stage4\]\[WARN\]') -and ($appSourceText -match 'legacy_debug_mode_engineState_heats_whole_body')) $appSource)) | Out-Null
 $checks.Add((Add-Check "shader declares Stage4 visual debug uniform" (($appSourceText -match "uniform int u_stage4_visual_debug") -and ($appSourceText -match "stage4_debug_mask") -and ($appSourceText -match "u_stage4_visual_debug == 1")) $appSource)) | Out-Null
 $checks.Add((Add-Check "Stage4 Input log present" ($appSourceText -match "\[Stage4 Input\]") $appSource)) | Out-Null
 $checks.Add((Add-Check "Stage4 Uniform log present" (($appSourceText -match "\[Stage4 Uniform\]") -and ($appSourceText -match "STAGE4_SHADER_NOT_BOUND") -and ($appSourceText -match "STAGE4_TEXTURE_MISSING")) $appSource)) | Out-Null
 $checks.Add((Add-Check "Stage4 VisualDebug log present" ($appSourceText -match "\[Stage4 VisualDebug\]") $appSource)) | Out-Null
+$checks.Add((Add-Check "Stage4 HeatSourceDiag log present" (($appSourceText -match "\[Stage4 HeatSourceDiag\]") -and ($appSourceText -match "bodyTempK=") -and ($appSourceText -match "bodyRadiance=") -and ($appSourceText -match "rearHotspotIntensity=") -and ($appSourceText -match "plumeEnabled=") -and ($appSourceText -match "brightspotPart=")) $appSource)) | Out-Null
 $checks.Add((Add-Check "Target mapping uses targetPlatID key" (($appSourceText -match "TargetKeyMatches") -and ($appSourceText -match "targetState\.targetPlatID") -and ($appSourceText -match "WeaponTargetKeyMatches") -and ($appSourceText -match "weaponState\.targetPlatID")) $appSource)) | Out-Null
 $checks.Add((Add-Check "targetNumValid gates render visibility" (($appSourceText -match "visibleTargetNum") -and ($appSourceText -match "visibleByTargetNum") -and ($appSourceText -match "renderVisible")) $appSource)) | Out-Null
 $checks.Add((Add-Check "visual smoke script exists" (Test-Path -LiteralPath $visualSmokeScript -PathType Leaf) $visualSmokeScript)) | Out-Null
