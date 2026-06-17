@@ -34,8 +34,15 @@ IRRadianceModelV2Input::IRRadianceModelV2Input()
 	brightspotIntensity(0.0),
 	plumeRadiance(0.0),
 	pathRadiance(0.0),
+	legacyPathRadiance(0.0),
+	modtranPathRadiance(0.0),
+	modtranSkyRadiance(0.0),
+	modtranSolarIrradiance(0.0),
+	modtranRadianceValid(false),
 	materialName("unknown"),
 	pathRadianceSource("disabled"),
+	modtranFallbackReason("not_queried"),
+	modtranInterpolationMode("none"),
 	sourceFlags("body"),
 	enableDebugFloor(false)
 {
@@ -54,7 +61,14 @@ IRRadianceComponents::IRRadianceComponents()
 	brightspotRadiance(0.0),
 	tauUp(0.85),
 	pathRadiance(0.0),
+	legacyPathRadiance(0.0),
+	modtranPathRadiance(0.0),
+	modtranSkyRadiance(0.0),
+	modtranSolarIrradiance(0.0),
+	modtranRadianceValid(false),
 	pathRadianceSource("disabled"),
+	modtranFallbackReason("not_queried"),
+	modtranInterpolationMode("none"),
 	sensorInputRadiance(0.0),
 	displayPreview(0.0),
 	sourceFlags("body")
@@ -97,6 +111,12 @@ IRRadianceComponents IRRadianceModelV2::evaluateComponents(const IRRadianceModel
 	const double brightspotIntensity = clamp(input.brightspotIntensity, 0.0, 8.0);
 	const double plumeRadiance = std::max(0.0, input.plumeRadiance);
 	const double pathRadiance = std::max(0.0, input.pathRadiance);
+	const double legacyPathRadiance = input.legacyPathRadiance > 0.0
+		? std::max(0.0, input.legacyPathRadiance)
+		: (input.pathRadianceSource == "legacy_empirical" ? pathRadiance : 0.0);
+	const double modtranPathRadiance = std::max(0.0, input.modtranPathRadiance);
+	const double modtranSkyRadiance = std::max(0.0, input.modtranSkyRadiance);
+	const double modtranSolarIrradiance = std::max(0.0, input.modtranSolarIrradiance);
 	const double wavelengthCenterUm = bandCenterUm(input.band);
 
 	const double referenceRadiance = std::max(
@@ -124,7 +144,14 @@ IRRadianceComponents IRRadianceModelV2::evaluateComponents(const IRRadianceModel
 		brightspotBandWeight(input.band) *
 		referenceRadiance;
 	components.pathRadiance = pathRadiance;
+	components.legacyPathRadiance = legacyPathRadiance;
+	components.modtranPathRadiance = modtranPathRadiance;
+	components.modtranSkyRadiance = modtranSkyRadiance;
+	components.modtranSolarIrradiance = modtranSolarIrradiance;
+	components.modtranRadianceValid = input.modtranRadianceValid;
 	components.pathRadianceSource = input.pathRadianceSource.empty() ? "disabled" : input.pathRadianceSource;
+	components.modtranFallbackReason = input.modtranFallbackReason.empty() ? "not_queried" : input.modtranFallbackReason;
+	components.modtranInterpolationMode = input.modtranInterpolationMode.empty() ? "none" : input.modtranInterpolationMode;
 	components.sensorInputRadiance =
 		tauUp *
 		(components.bodyRadiance +

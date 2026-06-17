@@ -965,234 +965,343 @@ EnableH264Experimental=false，LegacyEngineBodyHeating=false，saveMP4En=true。
 shaderInputApply/Stage7/Stage4 热点和停止时尾部积压，再继续物理重构。
 ```
 
-### Phase 2B main-loop sync 60 Hz recovery
+### 阶段 2B：主循环恢复同步 60 Hz
 
 ```text
-Phase: 2B
-Date: 2026-06-16
-Executor: Codex
-Goal: restore stable HwaSim_IR sync 60 Hz after Phase 2A, reduce shaderInputApply,
-Stage7SkyGround and Stage4Hotspot costs, and remove sustained inputQueueDepth/sourceSeqLag backlog.
+阶段：2B
+日期：2026-06-16
+执行者：Codex
+目标：在阶段 2A 之后恢复 HwaSim_IR 稳定同步 60 Hz，降低
+shaderInputApply、Stage7SkyGround、Stage4Hotspot 开销，并消除持续性的
+inputQueueDepth/sourceSeqLag 积压。
 
-Scope changed:
-- Added HwaSimIR runtime shader-input diff cache for float/int/bool-like vec2/vec3 uniforms.
-- [Perf] now reports shaderInputSetCount, shaderInputSkipCount,
-  shaderInputCacheHitRate, stage7FullUpdateCount, stage7PositionOnlyCount,
-  stage7SkipCount, stage4UpdateCount and stage4SkipCount.
-- Clarified timing scopes in [Perf]:
-  shaderInputApplyScope=exclusive, stage7SkyGroundScope=inclusive,
-  stage4HotspotScope=inclusive.
-- Added Stage7Background/Stage7UpdateHz=10.
-  Stage7 full update is dirty-key or Hz gated; camera movement only updates
-  sky dome / lower shell position between full updates.
-- Added Stage4/Stage4UpdateHz=30 config and routed Stage4 hotspot/brightspot
-  shader writes through the diff cache. EngineRear / EnginePlume / BrightSpot
-  semantics are unchanged.
-- Updated tools/stage4_hotspot_check.ps1 to accept SetShaderInputCached as the
-  Stage4 uniform write path.
-- Updated tools/phase2a_sync60_save_smoke.ps1 to normalize duplicate Path/PATH
-  process environment entries and summarize Phase 2B perf counters.
+本阶段变更：
+- 增加 HwaSimIR 运行时 shader input 差分缓存，覆盖 float/int/bool-like
+  vec2/vec3 uniform。
+- [Perf] 增加 shaderInputSetCount、shaderInputSkipCount、
+  shaderInputCacheHitRate、stage7FullUpdateCount、stage7PositionOnlyCount、
+  stage7SkipCount、stage4UpdateCount、stage4SkipCount。
+- 明确 [Perf] 计时口径：
+  shaderInputApplyScope=exclusive、stage7SkyGroundScope=inclusive、
+  stage4HotspotScope=inclusive。
+- 增加 Stage7Background/Stage7UpdateHz=10。Stage7 full update 由 dirty-key
+  或 Hz 门控触发；相机移动时只更新 sky dome / lower shell 位置。
+- 增加 Stage4/Stage4UpdateHz=30，并将 Stage4 hotspot/brightspot shader
+  写入接入差分缓存。EngineRear / EnginePlume / BrightSpot 语义不变。
+- 更新 tools/stage4_hotspot_check.ps1，使其接受 SetShaderInputCached 作为
+  Stage4 uniform 写入路径。
+- 更新 tools/phase2a_sync60_save_smoke.ps1，规范进程环境中的重复 Path/PATH，
+  并汇总阶段 2B 性能计数器。
 
-Not changed:
-- No TCP/JPEG/H.264 protocol changes.
-- No VideoDisplay recorder-path logic changes.
-- No MODTRAN path/sky/solar, AGC, MTF, material-library restructuring,
-  PBO/hardware encode, height/Mach heat model, or new IR physics.
+未改变：
+- 不改 TCP/JPEG/H.264 协议。
+- 不改 VideoDisplay 录像旁路逻辑。
+- 不做 MODTRAN path/sky/solar、AGC、MTF、材质库结构调整、PBO/硬件编码、
+  高度/Mach 热模型或新的红外物理功能。
 
-Build:
-- HwaSim_IR Windows Release x64: PASS.
-- DataDrivenTestQT Release: PASS.
-- HwaSim_IR_VideoDisplay Windows Release x64: PASS.
-- Remaining warnings are pre-existing VS/Panda/PDB warnings.
+构建：
+- HwaSim_IR Windows Release x64：通过。
+- DataDrivenTestQT Release：通过。
+- HwaSim_IR_VideoDisplay Windows Release x64：通过。
+- 剩余警告为既有 VS/Panda/PDB 警告。
 
-Regression:
-- Stage3 MODTRAN tau-only strict: PASS.
-- Stage4 hotspot/brightspot strict: PASS.
-- Stage4 three-band smoke: PASS.
-  Log: logs/stage4/HwaSimIR-stage4-hotspot-smoke-20260616-151221.out.log
+回归测试：
+- Stage3 MODTRAN tau-only strict：通过。
+- Stage4 hotspot/brightspot strict：通过。
+- Stage4 三波段 smoke：通过。
+  日志：logs/stage4/HwaSimIR-stage4-hotspot-smoke-20260616-151221.out.log
 
-30s production-default sync run:
-- Config: 800x800, 5 targets, videoFps=60, saveMP4En=true,
-  Codec=auto, JpegEncodeMode=rgb, JpegQuality=100,
-  EnableH264Experimental=false, LegacyEngineBodyHeating=false.
-- Log: logs/phase2a-final-20260616-151436
-- MP4: HwaSim_IR_VideoDisplay/x64/Release/MP4/round_001_20260616_151451/output.mp4
+30 秒生产默认同步测试：
+- 配置：800x800、5 目标、videoFps=60、saveMP4En=true、
+  Codec=auto、JpegEncodeMode=rgb、JpegQuality=100、
+  EnableH264Experimental=false、LegacyEngineBodyHeating=false。
+- 日志：logs/phase2a-final-20260616-151436
+- MP4：HwaSim_IR_VideoDisplay/x64/Release/MP4/round_001_20260616_151451/output.mp4
 
-Frame rates:
+帧率：
 - sentFps=60.034
 - udpFps=59.979
 - renderFps=60.376
 - outputFps=60.300
 - VideoDisplay receive/display=60.287
 
-Latency and queue:
+延时与队列：
 - latencyAvgMs=34.823
 - sourceSeqContinuous=1
 - sourceSeqContinuousWritten=1
 - inputQueueOverflow=0
 - TCP overwritten=0
 - recordingDroppedFrames=0
-- sourceSeqLag is stable 0..1 in the steady 60 Hz interval.
-- inputQueueDepth current value returns to 0 in steady state.
-  A startup/cold-cache interval still reports inputQueueDepthMax=16; later
-  steady intervals are mostly <=2 with occasional 3..4 single-interval peaks.
+- 稳态 60 Hz 区间 sourceSeqLag 稳定在 0..1。
+- 稳态 inputQueueDepth 当前值回到 0。启动/冷缓存区间仍出现
+  inputQueueDepthMax=16；后续稳态区间大多 <=2，偶发 3..4 的单周期峰值。
 
-Before vs after key hotspots:
-- shaderInputApplyMs: 10.504 -> 0.726 avg (steady filtered avg 0.784)
-- stage7SkyGroundMs: 3.856 -> 0.212 avg (steady filtered avg 0.262)
-- stage4HotspotMs: 2.062 -> 0.916 avg (steady filtered avg 0.948)
-- irUpdateMs: 6.982 -> 0.922 avg (steady filtered avg 0.909)
-- latencyAvgMs: 293.448 -> 34.823
+优化前后关键热点：
+- shaderInputApplyMs：10.504 -> 0.726 avg（稳态过滤均值 0.784）
+- stage7SkyGroundMs：3.856 -> 0.212 avg（稳态过滤均值 0.262）
+- stage4HotspotMs：2.062 -> 0.916 avg（稳态过滤均值 0.948）
+- irUpdateMs：6.982 -> 0.922 avg（稳态过滤均值 0.909）
+- latencyAvgMs：293.448 -> 34.823
 
-Phase 2B counters:
-- shaderInputSetCount avg ~= 744.5 per steady [Perf] interval.
-- shaderInputSkipCount avg ~= 25425.8 per steady [Perf] interval.
-- shaderInputCacheHitRate avg ~= 97.16%.
-- stage7FullUpdateCount avg ~= 16.1 per steady [Perf] interval.
-- stage7PositionOnlyCount avg ~= 43.9 per steady [Perf] interval.
-- stage7SkipCount max=0 while Stage7 is enabled.
-- stage4UpdateCount avg ~= 30.7 per steady [Perf] interval.
-- stage4SkipCount avg ~= 282.1 per steady [Perf] interval.
+阶段 2B 计数器：
+- shaderInputSetCount 稳态 [Perf] 区间平均约 744.5。
+- shaderInputSkipCount 稳态 [Perf] 区间平均约 25425.8。
+- shaderInputCacheHitRate 平均约 97.16%。
+- stage7FullUpdateCount 稳态 [Perf] 区间平均约 16.1。
+- stage7PositionOnlyCount 稳态 [Perf] 区间平均约 43.9。
+- Stage7 启用时 stage7SkipCount max=0。
+- stage4UpdateCount 稳态 [Perf] 区间平均约 30.7。
+- stage4SkipCount 稳态 [Perf] 区间平均约 282.1。
 
-Recorder/output:
-- output.mp4 frames=1800.
-- annotations.txt=1800 lines.
-- target_annotations.txt=1800 lines.
-- Recorder writeMsAvg=6.905 ms, droppedFrames=0.
+录像与输出：
+- output.mp4 frames=1800。
+- annotations.txt=1800 行。
+- target_annotations.txt=1800 行。
+- Recorder writeMsAvg=6.905 ms，droppedFrames=0。
 
-Acceptance:
-- PASS for restored 60 Hz main link, sourceSeq continuity, latency <=80 ms,
-  zero input overflow, zero TCP overwrite, and zero recorder drops.
-- Residual note: startup/cold-cache queue peak should be watched, but no sustained
-  inputQueueDepth/sourceSeqLag backlog remains in the steady 60 Hz interval.
+验收结论：
+- 通过：恢复 60 Hz 主链路、sourceSeq 连续、latency <=80 ms、
+  input overflow=0、TCP overwrite=0、录像丢帧=0。
+- 剩余说明：启动/冷缓存队列峰值仍需观察，但稳态 60 Hz 区间不再存在持续
+  inputQueueDepth/sourceSeqLag 积压。
 
-Next:
-- Keep production default rgb + JPEG quality=100 for now.
-- Do not enter new IR physics until the remaining startup queue peak is either
-  proven harmless across repeated runs or reduced by cache warm-up / startup
-  sequencing.
+下一步：
+- 暂时保持生产默认 rgb + JPEG quality=100。
+- 在剩余启动队列峰值被多次运行证明无害，或通过 cache warm-up / startup
+  sequencing 降低前，不进入新的红外物理功能。
 ```
 
-### Phase 3A Stage5 radiance components formalization
+### 阶段 3A：Stage5 radiance components 正式化
 
 ```text
-Phase: 3A
-Date: 2026-06-16
-Executor: Codex
-Goal: formalize Stage5 radiance debug into an IRRadianceComponents /
-IRSceneRadianceOutput skeleton while preserving Phase 2B sync 60 Hz.
+阶段：3A
+日期：2026-06-16
+执行者：Codex
+目标：将 Stage5 radiance debug 正式化为 IRRadianceComponents /
+IRSceneRadianceOutput 骨架，同时保持阶段 2B 的同步 60 Hz。
 
-Scope changed:
-- Added IRRadianceComponents and IRSceneRadianceOutput in IRRadianceModelV2.
-- Added evaluateComponents() while keeping the existing evaluate() compatibility
-  output for the current shader/display path.
-- Formal components now include band, materialName, materialTempK, emissivity,
-  reflectance, bodyRadiance, reflectedRadiance, rearHotspotRadiance,
-  plumeRadiance, brightspotRadiance, tauUp, pathRadiance,
-  pathRadianceSource, sensorInputRadiance, displayPreview and sourceFlags.
-- Added [Stage5Radiance] runtime config:
-  EnableIRPhysicalPipeline=true, DebugView=Off, LogComponents=false,
-  ComponentLogEveryFrames=120.
-- DebugView is now a visualization/logging selector only. It supports Off,
-  Body, Reflected, RearHotspot, Plume, BrightSpot, Atmosphere and SensorInput.
-  Legacy Composite is accepted as a SensorInput alias.
-- Stage5 component uniforms are written through SetShaderInputCached.
-- Target Stage5 component uniforms are no longer default-zeroed by the generic
-  ApplyRadianceInputs path. This avoids writing default values and real values
-  in the same frame, which was the main 3A cache-churn risk.
-- [Stage5 RadianceComponents] is gated by LogComponents/DebugView/verbose and
-  remains frame-limited.
-- Engine plume is updated before applying Stage4/Stage5 target components so
-  plumeRadiance uses the current-frame plume cache.
-- Added tools/stage5_radiance_components_smoke.ps1 and updated the Stage5
-  static check for the formal component skeleton.
+本阶段变更：
+- 在 IRRadianceModelV2 中新增 IRRadianceComponents 和 IRSceneRadianceOutput。
+- 新增 evaluateComponents()，同时保留现有 evaluate() 兼容输出，保证当前
+  shader/display 路径不被破坏。
+- 正式分量包含 band、materialName、materialTempK、emissivity、reflectance、
+  bodyRadiance、reflectedRadiance、rearHotspotRadiance、plumeRadiance、
+  brightspotRadiance、tauUp、pathRadiance、pathRadianceSource、
+  sensorInputRadiance、displayPreview、sourceFlags。
+- 新增 [Stage5Radiance] 运行时配置：
+  EnableIRPhysicalPipeline=true、DebugView=Off、LogComponents=false、
+  ComponentLogEveryFrames=120。
+- DebugView 只作为可视化/日志选择器，支持 Off、Body、Reflected、
+  RearHotspot、Plume、BrightSpot、Atmosphere、SensorInput；
+  Legacy Composite 作为 SensorInput 别名兼容。
+- Stage5 component uniforms 全部通过 SetShaderInputCached 写入。
+- 目标 Stage5 component uniforms 不再由通用 ApplyRadianceInputs 路径默认清零。
+  这避免同一帧先写默认值、再写真实值，是 3A 主要的 cache-churn 风险修复。
+- [Stage5 RadianceComponents] 由 LogComponents/DebugView/verbose 控制，并保持限频。
+- Engine plume 在应用 Stage4/Stage5 target components 前更新，使 plumeRadiance
+  使用当前帧 plume cache。
+- 新增 tools/stage5_radiance_components_smoke.ps1，并更新 Stage5 静态检查以覆盖
+  正式分量骨架。
 
-Not changed:
-- No MODTRAN path/sky/solar runtime connection. pathRadianceSource is explicitly
-  legacy_empirical or disabled.
-- No AGC/MTF, height/Mach heat model, TCP/JPEG/H.264 protocol change, recorder
-  path change, material-library restructure, PBO or hardware encode.
-- engineState still only affects EngineRear and EnginePlume. strikeFlag /
-  strikePart still only affect BrightSpot.
+未改变：
+- 不接入 MODTRAN path/sky/solar runtime。pathRadianceSource 明确为
+  legacy_empirical 或 disabled。
+- 不做 AGC/MTF、高度/Mach 热模型、TCP/JPEG/H.264 协议改动、录像旁路改动、
+  材质库结构调整、PBO 或硬件编码。
+- engineState 仍只影响 EngineRear 和 EnginePlume；strikeFlag / strikePart
+  仍只影响 BrightSpot。
 
-Build:
-- HwaSim_IR Windows Release x64: PASS.
-- DataDrivenTestQT Release: PASS.
-- HwaSim_IR_VideoDisplay Windows Release x64: PASS.
-- Remaining warnings are pre-existing VS/Panda/PDB warnings.
+构建：
+- HwaSim_IR Windows Release x64：通过。
+- DataDrivenTestQT Release：通过。
+- HwaSim_IR_VideoDisplay Windows Release x64：通过。
+- 剩余警告为既有 VS/Panda/PDB 警告。
 
-Regression:
-- Stage3 MODTRAN tau-only strict: PASS.
-- Stage4 hotspot/brightspot strict: PASS.
-- Stage4 three-band semantic smoke: PASS.
-  Log: logs/stage4/HwaSimIR-stage4-hotspot-smoke-20260616-170518.out.log
-- Stage5 min radiance static check: PASS.
-- Stage5 radiance components smoke: PASS.
-  Summary: logs/stage5/stage5_radiance_components_smoke_summary.csv
+回归测试：
+- Stage3 MODTRAN tau-only strict：通过。
+- Stage4 hotspot/brightspot strict：通过。
+- Stage4 三波段语义 smoke：通过。
+  日志：logs/stage4/HwaSimIR-stage4-hotspot-smoke-20260616-170518.out.log
+- Stage5 min radiance 静态检查：通过。
+- Stage5 radiance components smoke：通过。
+  摘要：logs/stage5/stage5_radiance_components_smoke_summary.csv
 
-RadianceComponents smoke summary:
-- SWIR baseline: body=0.00000659458 rear=0 plume=0 bright=0,
-  pathRadianceSource=legacy_empirical, DebugView=Off.
-- MWIR baseline: body=0.308302 rear=0 plume=0 bright=0.
-- MWIR engine: body=0.308302 rear=57.3932 plume=1 bright=0.
-- MWIR strike head: body=0.308302 bright=361.493.
-- MWIR strike mid: body=0.308302 bright=271.12.
-- LWIR baseline: body=4.43015 rear=0 plume=0 bright=0.
-- engineState does not increase bodyRadiance; rear/plume rise with engineState.
-- brightspotRadiance rises only with strikeFlag/strikePart.
-- pathRadianceSource is not mislabeled as MODTRAN runtime.
+RadianceComponents smoke 摘要：
+- SWIR baseline：body=0.00000659458、rear=0、plume=0、bright=0，
+  pathRadianceSource=legacy_empirical、DebugView=Off。
+- MWIR baseline：body=0.308302、rear=0、plume=0、bright=0。
+- MWIR engine：body=0.308302、rear=57.3932、plume=1、bright=0。
+- MWIR strike head：body=0.308302、bright=361.493。
+- MWIR strike mid：body=0.308302、bright=271.12。
+- LWIR baseline：body=4.43015、rear=0、plume=0、bright=0。
+- engineState 不增加 bodyRadiance；rear/plume 随 engineState 增强。
+- brightspotRadiance 只随 strikeFlag/strikePart 增强。
+- pathRadianceSource 没有被误标为 MODTRAN runtime。
 
-30s production-default sync run:
-- Config: 800x800, 5 targets, videoFps=60, saveMP4En=true,
-  Codec=auto, JpegEncodeMode=rgb, JpegQuality=100,
-  EnableH264Experimental=false, LegacyEngineBodyHeating=false,
-  EnableIRPhysicalPipeline=true, DebugView=Off.
-- Log: logs/phase2a-final-20260616-171104
-- MP4: HwaSim_IR_VideoDisplay/x64/Release/MP4/round_001_20260616_171118/output.mp4
-- sentFps=60.035, udpFps=60.051, renderFps=60.438,
-  outputFps=60.251, VideoDisplay receive/display=60.316.
-- latencyAvgMs=34.324.
-- sourceSeqContinuous=1, sourceSeqContinuousWritten=1.
-- inputQueueOverflow=0, TCP overwritten=0, recordingDroppedFrames=0.
-- written/mp4/annotations/targetAnnotations=1800/1800/1800/1800.
-- sourceSeqLagMax=2. Steady intervals show no sustained backlog; current lag
-  returns near 0 with occasional short peaks.
-- inputQueueDepthMax=14 from startup/cold-cache. Steady current depth returns
-  near 0 with mostly <=2 and occasional short peaks.
+30 秒生产默认同步测试：
+- 配置：800x800、5 目标、videoFps=60、saveMP4En=true、
+  Codec=auto、JpegEncodeMode=rgb、JpegQuality=100、
+  EnableH264Experimental=false、LegacyEngineBodyHeating=false、
+  EnableIRPhysicalPipeline=true、DebugView=Off。
+- 日志：logs/phase2a-final-20260616-171104
+- MP4：HwaSim_IR_VideoDisplay/x64/Release/MP4/round_001_20260616_171118/output.mp4
+- sentFps=60.035、udpFps=60.051、renderFps=60.438、
+  outputFps=60.251、VideoDisplay receive/display=60.316。
+- latencyAvgMs=34.324。
+- sourceSeqContinuous=1、sourceSeqContinuousWritten=1。
+- inputQueueOverflow=0、TCP overwritten=0、recordingDroppedFrames=0。
+- written/mp4/annotations/targetAnnotations=1800/1800/1800/1800。
+- sourceSeqLagMax=2。稳态区间没有持续积压；当前 lag 回到接近 0，仅偶发短峰值。
+- inputQueueDepthMax=14 来自启动/冷缓存；稳态当前深度回到接近 0，大多 <=2，
+  偶发短峰值。
 
-Perf vs Phase 2B:
-- Phase 2B baseline: irUpdateMs=0.922, shaderInputApplyMs=0.726,
-  stage7SkyGroundMs=0.212, stage4HotspotMs=0.916, latencyAvgMs=34.823.
-- Phase 3A final: irUpdateMs=0.985, shaderInputApplyMs=0.657,
-  stage7SkyGroundMs=0.219, stage4HotspotMs=1.313, latencyAvgMs=34.324.
-- shaderInputCacheHitRateAvg remains high: 97.473%.
-- Stage7/Stage4 remain dirty-key / frequency gated and did not return to
-  per-frame full updates.
+与阶段 2B 的性能对比：
+- 阶段 2B 基线：irUpdateMs=0.922、shaderInputApplyMs=0.726、
+  stage7SkyGroundMs=0.212、stage4HotspotMs=0.916、latencyAvgMs=34.823。
+- 阶段 3A：irUpdateMs=0.985、shaderInputApplyMs=0.657、
+  stage7SkyGroundMs=0.219、stage4HotspotMs=1.313、latencyAvgMs=34.324。
+- shaderInputCacheHitRateAvg 仍保持 97.473%。
+- Stage7/Stage4 仍受 dirty-key / 分频门控控制，没有回退到每帧全量更新。
 
-Implementation note:
-- The first 3A attempt dropped below 60 Hz because target Stage5 component
-  uniforms were being reset by ApplyRadianceInputs and then overwritten by the
-  Stage5 component pass in the same frame. That doubled a large part of the
-  target uniform traffic and reduced cache hit rate to about 80%. Restricting
-  those default component writes to non-target objects restored cache hit rate
-  and the 60 Hz budget.
+实现说明：
+- 3A 第一次尝试低于 60 Hz，是因为 target Stage5 component uniforms 被
+  ApplyRadianceInputs 重置后，又被 Stage5 component pass 在同一帧覆盖。
+  这让很大一部分 target uniform 流量翻倍，并把 cache hit rate 降到约 80%。
+  将默认 component 写入限制到非目标对象后，恢复了 cache hit rate 和 60 Hz 预算。
 
-Acceptance:
-- PASS for the formal Stage5 radiance component skeleton.
-- PASS for Stage3/Stage4/Stage5 regression checks.
-- PASS for preserving 60 Hz production-default sync performance, latency <=80 ms,
-  sourceSeq continuity, zero input overflow, zero TCP overwrite and zero
-  recorder drops.
-- Residual note: sourceSeqLag/sourceQueue peaks still appear briefly during
-  startup/cold-cache intervals, but no sustained steady-state accumulation was
-  observed.
+验收结论：
+- 通过：正式 Stage5 radiance component 骨架。
+- 通过：Stage3/Stage4/Stage5 回归检查。
+- 通过：保持 60 Hz 生产默认同步性能、latency <=80 ms、sourceSeq 连续、
+  input overflow=0、TCP overwrite=0、录像丢帧=0。
+- 剩余说明：启动/冷缓存区间仍偶发 sourceSeqLag/sourceQueue 峰值，但未观察到
+  稳态持续积压。
 
-Next:
-- Do not connect MODTRAN path/sky/solar runtime until component logs are stable
-  across more scenes.
-- The next physics step can calibrate body/reflected/path components or design
-  the real MODTRAN path source, but H.264/hardware encode remains a separate
-  transport project.
+下一步：
+- 在 component 日志跨更多场景稳定前，不接入 MODTRAN path/sky/solar runtime。
+- 下一步物理工作可以标定 body/reflected/path 分量，或设计真正的 MODTRAN path
+  数据源；H.264/硬件编码仍作为单独传输项目处理。
+
+```
+
+### 阶段 3B：MODTRAN path/sky/solar radiance 运行时数据源与只记录对比链路
+
+```text
+阶段：3B
+日期：2026-06-16
+执行者：Codex
+目标：为 MODTRAN path/sky/solar radiance 建立运行时数据源和只记录对比链路，
+默认不改变生产画面。
+
+本阶段变更：
+- 新增 IRModtranRadianceLut，用于从 band_lut.csv 加载运行时 LUT 数据。
+- 初始化或配置变化时一次性加载 path_radiance_band、sky_radiance_band、
+  solar_irradiance_band；禁止每帧读取 CSV。
+- 查询输入覆盖 band、目标距离、观测高度、目标高度、能见度、湿度和太阳天顶角。
+- 当前采用 nearest_neighbor 查询，并显式输出 valid/fallback 状态。
+- 增加按 target/band/bucket 组织的查询缓存，避免 60 Hz 下重复昂贵查询。
+- IRRadianceComponents 增加 legacyPathRadiance、modtranPathRadiance、
+  modtranSkyRadiance、modtranSolarIrradiance、modtranRadianceValid、
+  modtranFallbackReason、modtranInterpolationMode。
+- 新增 [Stage5ModtranRadiance] 配置：
+  EnableModtranRadianceDebug=true、UseModtranPathRuntime=false、
+  UseModtranSkyRuntime=false、UseModtranSolarRuntime=false、
+  PreferredSource=band_lut、LogEveryFrames=120、CompareLegacy=true。
+- 新增限频日志 [Stage5 ModtranRadianceCompare]。
+- [Perf] 增加 stage5ModtranLookupMs、stage5ModtranCacheHitCount、
+  stage5ModtranCacheMissCount。
+- 新增 tools/stage5_modtran_radiance_compare_smoke.ps1，并扩展 Stage5
+  静态检查以覆盖 MODTRAN radiance compare 链路。
+
+未改变：
+- 生产默认 pathRadianceSource 仍为 legacy_empirical。
+- UseModtranPathRuntime 默认 false，MODTRAN path 只用于日志对比，不改变最终像素。
+- UseModtranSkyRuntime / UseModtranSolarRuntime 本阶段仍为 log-only。
+- 不做 AGC/MTF、高度/Mach 热模型、材质库结构改造、TCP/JPEG/H.264 协议改动、
+  录像旁路改动、PBO 或硬件编码。
+- 保留阶段 2B 的 shader input cache、Stage7 dirty-key、Stage4 skip 优化。
+
+构建：
+- HwaSim_IR Windows Release x64：通过。
+- DataDrivenTestQT Release：通过。
+- HwaSim_IR_VideoDisplay Windows Release x64：通过。
+- 剩余警告为既有 VS/Panda/PDB 警告。
+
+回归测试：
+- Stage3 MODTRAN tau-only strict：通过。
+- Stage4 hotspot/brightspot strict：通过。
+- Stage4 三波段语义 smoke：通过。
+  日志：logs/stage4/HwaSimIR-stage4-hotspot-smoke-20260616-231137.out.log
+- Stage5 min radiance 静态检查：通过。
+- Stage5 radiance components smoke：通过。
+  摘要：logs/stage5/stage5_radiance_components_smoke_summary.csv
+- Stage5 MODTRAN radiance compare smoke：通过。
+  CSV：logs/stage5/modtran_radiance_compare_summary.csv
+  Markdown：logs/stage5/modtran_radiance_compare_summary.md
+
+MODTRAN 对比 smoke 摘要：
+- MWIR 在 visibility=5/15/30 km 下代表性样本 valid=1，
+  interpolationMode=nearest_neighbor，pathRadianceSource 保持 legacy_empirical。
+- MWIR 示例：
+  rangeKm=5.00782、obsAltKm=10、tgtAltKm=10、visibilityKm=5，
+  legacyPath=0.0401838、modtranPath=2.27886e-09、modtranSolar=1.50357e-06。
+  rangeKm=21.2088、obsAltKm=10、tgtAltKm=3、visibilityKm=30，
+  legacyPath=0.0401838、modtranPath=1.75622e-08、modtranSolar=1.50357e-06。
+- NIR solar 可查到：
+  rangeKm=20.0313、visibilityKm=15、modtranSolar=7.46197e-06、
+  modtranSky=6.60839e-09、valid=1。
+- 当前 LUT 中 SWIR 明确 fallback：
+  valid=0、fallbackReason=missing_band。
+- MWIR 越界查询明确 fallback：
+  rangeKm=80.1245、valid=0、fallbackReason=out_of_lut_range。
+- UseModtranPathRuntime=false 时，smoke 中没有任何行报告
+  pathRadianceSource=modtran_runtime。
+- 该 smoke 会发送要求的 MWIR range/altitude/visibility 组合，但当前运行时日志
+  每次捕获的是代表性已处理样本，并非完整矩阵的每个包。若后续需要严格数值矩阵覆盖，
+  建议补一个直接 LUT 单元 smoke 或每个 case 单独进程的 smoke。
+
+30 秒生产默认同步测试：
+- 配置：800x800、5 目标、videoFps=60、saveMP4En=true、
+  Codec=auto、JpegEncodeMode=rgb、JpegQuality=100、
+  EnableH264Experimental=false、LegacyEngineBodyHeating=false、
+  EnableIRPhysicalPipeline=true、DebugView=Off、UseModtranPathRuntime=false。
+- 日志：logs/phase2a-final-20260616-232612
+- MP4：HwaSim_IR_VideoDisplay/x64/Release/MP4/round_001_20260616_232626/output.mp4
+- sentFps=60.033、udpFps=60.253、renderFps=60.513、
+  outputFps=60.364、VideoDisplay receive/display=60.429。
+- latencyAvgMs=33.576。
+- sourceSeqContinuous=1、sourceSeqContinuousWritten=1。
+- inputQueueOverflow=0、TCP overwritten=0、recordingDroppedFrames=0。
+- written/mp4/annotations/targetAnnotations=1799/1799/1799/1799。
+- sourceSeqLagMax=11、inputQueueDepthMax=16 来自启动/追帧瞬态；
+  后段稳态 SyncFrame/Perf 样本显示 inputQueueDepth 多数为 1..2，
+  sourceSeqLag 为 0..2，没有持续积压。
+
+与阶段 3A 的性能对比：
+- 阶段 3A：irUpdateMs=0.985、shaderInputApplyMs=0.657、
+  stage7SkyGroundMs=0.219、stage4HotspotMs=1.313、latencyAvgMs=34.324。
+- 阶段 3B：irUpdateMs=1.667、shaderInputApplyMs=0.691、
+  stage7SkyGroundMs=0.171、stage4HotspotMs=2.852、latencyAvgMs=33.576。
+- 后段 [Perf] 中 stage5ModtranLookupMs 约 0.009..0.030 ms，可见且不是瓶颈。
+- stage5ModtranCacheHitCount/MissCount 已输出；后段样本为数百次命中、个位数 miss。
+- shaderInputCacheHitRateAvg 仍保持 97.336%。
+- Stage7/Stage4 未回退到每帧全量更新。
+
+验收结论：
+- 通过：MODTRAN radiance 运行时数据源和只记录对比链路。
+- 通过：生产默认画面不变，pathRadianceSource 仍为 legacy_empirical。
+- 通过：Stage3/Stage4/Stage5 回归测试。
+- 通过：保持 60 Hz、latency <=80 ms、sourceSeq 连续、input overflow=0、
+  TCP overwrite=0、录像丢帧=0。
+- 剩余说明：自动验收脚本仍能看到启动/追帧期的 sourceSeqLag/inputQueueDepth 峰值；
+  稳态会回到接近 0/低个位数，未观察到 3B MODTRAN lookup 导致的持续瓶颈。
+
+下一步：
+- UseModtranPathRuntime 继续保持 false，等单位和数值标定与 legacy empirical path
+  对齐后再考虑接入图像。
+- 如需严格覆盖 5/20/50 km、3/10/20 km、5/15/30 km 全矩阵，建议补直接 LUT
+  单元 smoke 或每 case 独立进程 smoke。
+- H.264 实时传输、AGC/MTF、高度/Mach 气动加热仍应作为独立后续阶段。
 ```
 
 ---

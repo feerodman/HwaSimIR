@@ -95,11 +95,14 @@ void IRPerfStats::recordIrUpdateBreakdown(const IRUpdateBreakdown& breakdown)
 		m_targetRadianceMsTotal += breakdown.targetRadianceMs;
 		m_stage4HotspotMsTotal += breakdown.stage4HotspotMs;
 		m_stage5PlumeBreakdownMsTotal += breakdown.stage5PlumeMs;
+		m_stage5ModtranLookupMsTotal += breakdown.stage5ModtranLookupMs;
 		m_shaderInputApplyMsTotal += breakdown.shaderInputApplyMs;
 		++m_irBreakdownSamples;
 	}
 	m_shaderInputSetCountTotal += breakdown.shaderInputSetCount;
 	m_shaderInputSkipCountTotal += breakdown.shaderInputSkipCount;
+	m_stage5ModtranCacheHitCountTotal += breakdown.stage5ModtranCacheHitCount;
+	m_stage5ModtranCacheMissCountTotal += breakdown.stage5ModtranCacheMissCount;
 	m_stage7FullUpdateCountTotal += breakdown.stage7FullUpdateCount;
 	m_stage7PositionOnlyCountTotal += breakdown.stage7PositionOnlyCount;
 	m_stage7SkipCountTotal += breakdown.stage7SkipCount;
@@ -222,6 +225,7 @@ void IRPerfStats::maybeLog()
 			<< " targetRadianceMs=" << Average(m_targetRadianceMsTotal, m_irBreakdownSamples)
 			<< " stage4HotspotMs=" << Average(m_stage4HotspotMsTotal, m_irBreakdownSamples)
 			<< " stage5PlumeMs=" << Average(m_stage5PlumeBreakdownMsTotal, m_irBreakdownSamples)
+			<< " stage5ModtranLookupMs=" << Average(m_stage5ModtranLookupMsTotal, m_irBreakdownSamples)
 			<< " shaderInputApplyMs=" << Average(m_shaderInputApplyMsTotal, m_irBreakdownSamples)
 			<< " shaderInputApplyScope=exclusive"
 			<< " stage7SkyGroundScope=inclusive"
@@ -229,6 +233,8 @@ void IRPerfStats::maybeLog()
 			<< " shaderInputSetCount=" << m_shaderInputSetCountTotal
 			<< " shaderInputSkipCount=" << m_shaderInputSkipCountTotal
 			<< " shaderInputCacheHitRate=" << shaderInputHitRate
+			<< " stage5ModtranCacheHitCount=" << m_stage5ModtranCacheHitCountTotal
+			<< " stage5ModtranCacheMissCount=" << m_stage5ModtranCacheMissCountTotal
 			<< " stage7FullUpdateCount=" << m_stage7FullUpdateCountTotal
 			<< " stage7PositionOnlyCount=" << m_stage7PositionOnlyCountTotal
 			<< " stage7SkipCount=" << m_stage7SkipCountTotal
@@ -296,9 +302,12 @@ void IRPerfStats::resetIntervalLocked(std::int64_t nowNs)
 	m_targetRadianceMsTotal = 0.0;
 	m_stage4HotspotMsTotal = 0.0;
 	m_stage5PlumeBreakdownMsTotal = 0.0;
+	m_stage5ModtranLookupMsTotal = 0.0;
 	m_shaderInputApplyMsTotal = 0.0;
 	m_shaderInputSetCountTotal = 0;
 	m_shaderInputSkipCountTotal = 0;
+	m_stage5ModtranCacheHitCountTotal = 0;
+	m_stage5ModtranCacheMissCountTotal = 0;
 	m_stage7FullUpdateCountTotal = 0;
 	m_stage7PositionOnlyCountTotal = 0;
 	m_stage7SkipCountTotal = 0;

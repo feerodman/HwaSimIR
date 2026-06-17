@@ -164,6 +164,7 @@
     <ClInclude Include="HwaSimIR.h" />
     <ClInclude Include="IR\IRConfig.h" />
     <ClInclude Include="IR\IREnginePlumeModel.h" />
+    <ClInclude Include="IR\IRModtranRadianceLut.h" />
     <ClInclude Include="IR\IRModtranTauLut.h" />
     <ClInclude Include="IR\IRPerfStats.h" />
     <ClInclude Include="IR\IRRadianceModelV2.h" />
@@ -191,6 +192,7 @@
     <ClCompile Include="HwaSimIR.cpp" />
     <ClCompile Include="IR\IRConfig.cpp" />
     <ClCompile Include="IR\IREnginePlumeModel.cpp" />
+    <ClCompile Include="IR\IRModtranRadianceLut.cpp" />
     <ClCompile Include="IR\IRModtranTauLut.cpp" />
     <ClCompile Include="IR\IRPerfStats.cpp" />
     <ClCompile Include="IR\IRRadianceModelV2.cpp" />

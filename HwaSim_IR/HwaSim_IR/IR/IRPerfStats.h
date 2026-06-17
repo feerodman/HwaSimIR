@@ -31,9 +31,12 @@ struct IRUpdateBreakdown
 	double targetRadianceMs = 0.0;
 	double stage4HotspotMs = 0.0;
 	double stage5PlumeMs = 0.0;
+	double stage5ModtranLookupMs = 0.0;
 	double shaderInputApplyMs = 0.0;
 	std::uint64_t shaderInputSetCount = 0;
 	std::uint64_t shaderInputSkipCount = 0;
+	std::uint64_t stage5ModtranCacheHitCount = 0;
+	std::uint64_t stage5ModtranCacheMissCount = 0;
 	std::uint64_t stage7FullUpdateCount = 0;
 	std::uint64_t stage7PositionOnlyCount = 0;
 	std::uint64_t stage7SkipCount = 0;
@@ -110,9 +113,12 @@ private:
 	double m_targetRadianceMsTotal = 0.0;
 	double m_stage4HotspotMsTotal = 0.0;
 	double m_stage5PlumeBreakdownMsTotal = 0.0;
+	double m_stage5ModtranLookupMsTotal = 0.0;
 	double m_shaderInputApplyMsTotal = 0.0;
 	std::uint64_t m_shaderInputSetCountTotal = 0;
 	std::uint64_t m_shaderInputSkipCountTotal = 0;
+	std::uint64_t m_stage5ModtranCacheHitCountTotal = 0;
+	std::uint64_t m_stage5ModtranCacheMissCountTotal = 0;
 	std::uint64_t m_stage7FullUpdateCountTotal = 0;
 	std::uint64_t m_stage7PositionOnlyCountTotal = 0;
 	std::uint64_t m_stage7SkipCountTotal = 0;

@@ -46,6 +46,7 @@
 #include "IRSimulation.h"
 #include "IR/IRConfig.h"
 #include "IR/IREnginePlumeModel.h"
+#include "IR/IRModtranRadianceLut.h"
 #include "IR/IRPerfStats.h"
 #include "IR/IRSceneMaterialMapper.h"
 #include "IR/IRRadianceModelV2.h"
@@ -187,6 +188,7 @@ private:
 	IRAtmosphereModel m_irAtmosphereModel;                  // MODTRAN透过率近似表
 	IRRadianceModel m_irRadianceModel;                      // CPU低复杂度辐亮度模型
 	IRRadianceModelV2 m_irRadianceModelV2;                  // Stage5A minimal body/hotspot/brightspot radiance debug model
+	IRModtranRadianceLut m_stage5ModtranRadianceLut;        // Stage5 3B: MODTRAN path/sky/solar log-only source
 	IRSensorModel m_irSensorModel;                          // Stage6A sensor geometry and output size model
 	IRSensorPostProcess m_irSensorPostProcess;              // Stage6B minimal display output postprocess
 	IRSensorProfileDatabase m_irSensorProfiles;             // SensorWave传感器配置
@@ -231,6 +233,15 @@ private:
 	std::string m_stage5DebugViewModeName = "Off";
 	bool m_stage5LogComponents = false;
 	int m_stage5ComponentLogEveryFrames = 120;
+	bool m_enableStage5ModtranRadianceDebug = true;
+	bool m_stage5UseModtranPathRuntime = false;
+	bool m_stage5UseModtranSkyRuntime = false;
+	bool m_stage5UseModtranSolarRuntime = false;
+	bool m_stage5ModtranCompareLegacy = true;
+	std::string m_stage5ModtranPreferredSource = "band_lut";
+	int m_stage5ModtranLogEveryFrames = 120;
+	bool m_stage5ModtranRadianceReady = false;
+	std::string m_stage5ModtranRadiancePath;
 	std::string m_stage5DebugToneMapName = "asinh";
 	IRRadianceModelV2DebugConfig m_stage5DebugConfig;
 	IRRadianceModelV2DebugConfig m_stage5DebugConfigs[5];
@@ -269,6 +280,15 @@ private:
 	bool m_stage5BodyGrayPathHintLogged = false;
 	bool m_stage5BaseTextureFallbackLogged = false;
 	bool m_stage5NormalFallbackHintLogged = false;
+	struct Stage5ModtranRadianceCacheEntry
+	{
+		IRModtranRadianceResult result;
+	};
+	std::map<std::string, Stage5ModtranRadianceCacheEntry> m_stage5ModtranRadianceCache;
+	std::map<std::string, std::string> m_lastStage5ModtranRadianceCompareLogState;
+	double m_stage5ModtranLookupMsCurrent = 0.0;
+	std::uint64_t m_stage5ModtranCacheHitCurrent = 0;
+	std::uint64_t m_stage5ModtranCacheMissCurrent = 0;
 	int m_lastLoggedSensorProtocolBand = -999;
 	int m_lastLoggedEnvironmentHour = -999;
 	int m_lastLoggedEnvironmentWeather = -999;
@@ -387,6 +407,8 @@ private:
 	bool Stage4WeaponAppliesToTarget(const BYHWICD::WeaponState& weaponState, const TargetPlatformData& targetPlat) const;
 	bool ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHWICD::WeaponState& weaponState, float dtSec, float ambientTempK, const IRObjectRadianceOutput& radiance, bool applyNodeInputs);
 	void ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IRObjectRadianceOutput& radiance, const IRHotspotState& rearHotspot, const IRBrightSpotState& brightSpot, bool rearEnabledForShader, float rearIntensityForShader, const std::string& targetKey);
+	IRModtranRadianceResult QueryStage5ModtranRadiance(const TargetPlatformData& targetPlat, const IRRuntimeEnvironment& environment, const IRObjectRadianceOutput& radiance, const std::string& targetKey);
+	void LogStage5ModtranRadianceCompare(const TargetPlatformData& targetPlat, const IRRadianceComponents& components, const IRModtranRadianceResult& modtranResult, double rangeKm, double observerAltKm, double targetAltKm);
 	void ApplySensorOutputConfig(const IRSensorDisplayConfig& config, const char* reason);
 	void LogStage6SensorGeometry(const IRSensorDisplayConfig& config, const char* reason) const;
 	void ApplyStage6DisplayConfig(const BYHWICD::trackerSensorParam& sensor, const char* reason);

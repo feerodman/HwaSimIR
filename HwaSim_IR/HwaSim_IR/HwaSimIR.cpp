@@ -69,6 +69,22 @@ bool IsReasonableAltitudeMeters(double altitudeMeters)
 	return altitudeMeters > -500.0 && altitudeMeters < 100000.0;
 }
 
+double QuantizeForCache(double value, double step)
+{
+	if (!std::isfinite(value) || step <= 0.0)
+	{
+		return value;
+	}
+	return std::floor(value / step + 0.5) * step;
+}
+
+std::string Stage5ModtranCacheDouble(double value)
+{
+	std::ostringstream out;
+	out << std::fixed << std::setprecision(2) << value;
+	return out.str();
+}
+
 PT(PandaNode) CreateStage7SkyDomeNode()
 {
 	const int slices = 48;
@@ -4227,6 +4243,8 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		m_stage5PlumePerfLogCounter = 0;
 		m_lastStage4TargetLogState.clear();
 		m_lastStage5RadianceComponentLogState.clear();
+		m_lastStage5ModtranRadianceCompareLogState.clear();
+		m_stage5ModtranRadianceCache.clear();
 		m_lastStage4InputState.clear();
 		RefreshStage6DisplayShaderInputs();
 
@@ -4345,6 +4363,8 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 	m_lastSourceSeqContinuous.store(true);
 	m_lastStage4TargetLogState.clear();
 	m_lastStage5RadianceComponentLogState.clear();
+	m_lastStage5ModtranRadianceCompareLogState.clear();
+	m_stage5ModtranRadianceCache.clear();
 	m_lastStage4InputState.clear();
 	if (m_pTcpThread)
 	{
@@ -4874,6 +4894,13 @@ void HwaSimIR::InitInfraredSimulation()
 	std::string stage5PhysicalSource;
 	std::string stage5ComponentLogSource;
 	std::string stage5ComponentLogEverySource;
+	std::string stage5ModtranDebugSource;
+	std::string stage5ModtranPathRuntimeSource;
+	std::string stage5ModtranSkyRuntimeSource;
+	std::string stage5ModtranSolarRuntimeSource;
+	std::string stage5ModtranPreferredSourceSource;
+	std::string stage5ModtranLogEverySource;
+	std::string stage5ModtranCompareLegacySource;
 	std::string stage5DumpSource;
 	std::string stage5DumpPathSource;
 	std::string stage5DumpEverySource;
@@ -4914,6 +4941,78 @@ void HwaSimIR::InitInfraredSimulation()
 		"Stage5RadianceComponentLogEveryFrames",
 		120,
 		&stage5ComponentLogEverySource));
+	m_enableStage5ModtranRadianceDebug = m_runtimeConfig.getBool(
+		"Stage5ModtranRadiance",
+		"EnableModtranRadianceDebug",
+		"EnableStage5ModtranRadianceDebug",
+		true,
+		&stage5ModtranDebugSource);
+	m_stage5UseModtranPathRuntime = m_runtimeConfig.getBool(
+		"Stage5ModtranRadiance",
+		"UseModtranPathRuntime",
+		"UseModtranPathRuntime",
+		false,
+		&stage5ModtranPathRuntimeSource);
+	m_stage5UseModtranSkyRuntime = m_runtimeConfig.getBool(
+		"Stage5ModtranRadiance",
+		"UseModtranSkyRuntime",
+		"UseModtranSkyRuntime",
+		false,
+		&stage5ModtranSkyRuntimeSource);
+	m_stage5UseModtranSolarRuntime = m_runtimeConfig.getBool(
+		"Stage5ModtranRadiance",
+		"UseModtranSolarRuntime",
+		"UseModtranSolarRuntime",
+		false,
+		&stage5ModtranSolarRuntimeSource);
+	m_stage5ModtranPreferredSource = ToLowerAscii(m_runtimeConfig.getString(
+		"Stage5ModtranRadiance",
+		"PreferredSource",
+		"Stage5ModtranRadiancePreferredSource",
+		"band_lut",
+		&stage5ModtranPreferredSourceSource));
+	if (m_stage5ModtranPreferredSource != "band_lut")
+	{
+		std::cout << "[Stage5 ModtranRadianceConfig][WARN]"
+			<< " PreferredSource=" << m_stage5ModtranPreferredSource
+			<< " fallback=band_lut"
+			<< std::endl;
+		m_stage5ModtranPreferredSource = "band_lut";
+	}
+	m_stage5ModtranLogEveryFrames = std::max(1, m_runtimeConfig.getInt(
+		"Stage5ModtranRadiance",
+		"LogEveryFrames",
+		"Stage5ModtranRadianceLogEveryFrames",
+		120,
+		&stage5ModtranLogEverySource));
+	m_stage5ModtranCompareLegacy = m_runtimeConfig.getBool(
+		"Stage5ModtranRadiance",
+		"CompareLegacy",
+		"Stage5ModtranRadianceCompareLegacy",
+		true,
+		&stage5ModtranCompareLegacySource);
+	m_stage5ModtranRadiancePath = modtranBandLutPath;
+	m_stage5ModtranRadianceReady = !m_stage5ModtranRadiancePath.empty() &&
+		m_stage5ModtranRadianceLut.load(m_stage5ModtranRadiancePath);
+	m_stage5ModtranRadianceCache.clear();
+	if (!m_stage5ModtranRadianceReady)
+	{
+		std::cout << "[Stage5 ModtranRadianceConfig][WARN]"
+			<< " source=missing"
+			<< " preferredSource=" << m_stage5ModtranPreferredSource
+			<< " path=" << (m_stage5ModtranRadiancePath.empty() ? "NA" : m_stage5ModtranRadiancePath)
+			<< " reason=band_lut_missing_or_missing_path_sky_solar_columns"
+			<< std::endl;
+	}
+	if (m_stage5UseModtranSkyRuntime || m_stage5UseModtranSolarRuntime)
+	{
+		std::cout << "[Stage5 ModtranRadianceConfig][WARN]"
+			<< " UseModtranSkyRuntime=" << (m_stage5UseModtranSkyRuntime ? "1" : "0")
+			<< " UseModtranSolarRuntime=" << (m_stage5UseModtranSolarRuntime ? "1" : "0")
+			<< " effective=log_only"
+			<< " reason=Stage3B_does_not_apply_sky_or_solar_to_final_image"
+			<< std::endl;
+	}
 	m_stage5DebugConfig = m_stage5DebugConfigs[Stage5BandIndex(IRBand::MidWaveInfrared)];
 	m_stage5DebugToneMapName = Stage5ToneMapName(m_stage5DebugConfig.toneMap);
 	m_stage5UseBaseTextureModulation = m_stage5UseBaseTextureModulationByBand[Stage5BandIndex(IRBand::MidWaveInfrared)];
@@ -5137,6 +5236,24 @@ void HwaSimIR::InitInfraredSimulation()
 		<< " source=" << stage5PhysicalSource << "/" << stage5ViewModeSource << "/"
 		<< stage5DebugSource << "/" << stage5ComponentLogSource << "/" << stage5ComponentLogEverySource
 		<< "（DebugView Off 时主画面保持legacy输出；path/sky/solar MODTRAN runtime disabled）"
+		<< std::endl;
+	std::cout << "[Stage5 ModtranRadianceConfig]"
+		<< " EnableModtranRadianceDebug=" << (m_enableStage5ModtranRadianceDebug ? "1" : "0")
+		<< " UseModtranPathRuntime=" << (m_stage5UseModtranPathRuntime ? "1" : "0")
+		<< " UseModtranSkyRuntime=" << (m_stage5UseModtranSkyRuntime ? "1" : "0")
+		<< " UseModtranSolarRuntime=" << (m_stage5UseModtranSolarRuntime ? "1" : "0")
+		<< " PreferredSource=" << m_stage5ModtranPreferredSource
+		<< " LogEveryFrames=" << m_stage5ModtranLogEveryFrames
+		<< " CompareLegacy=" << (m_stage5ModtranCompareLegacy ? "1" : "0")
+		<< " loaded=" << (m_stage5ModtranRadianceReady ? "1" : "0")
+		<< " sourceFile=" << (m_stage5ModtranRadianceReady ? m_stage5ModtranRadianceLut.loadedPath() : "missing")
+		<< " defaultPathRadianceSource=legacy_empirical"
+		<< " units=MODOUT2_native"
+		<< " source=" << stage5ModtranDebugSource << "/" << stage5ModtranPathRuntimeSource
+		<< "/" << stage5ModtranSkyRuntimeSource << "/" << stage5ModtranSolarRuntimeSource
+		<< "/" << stage5ModtranPreferredSourceSource << "/" << stage5ModtranLogEverySource
+		<< "/" << stage5ModtranCompareLegacySource
+		<< "（Stage3B log-only compare; UseModtranPathRuntime=false keeps final image unchanged）"
 		<< std::endl;
 	std::cout << "[Stage5 OutputCapture] Stage5OutputFrameDump="
 		<< ((m_stage5OutputFrameDumpEnabled && m_enableStage5RadianceDebug) ? "1" : "0")
@@ -6389,6 +6506,156 @@ bool HwaSimIR::ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHW
 	return wroteStage4Inputs;
 }
 
+IRModtranRadianceResult HwaSimIR::QueryStage5ModtranRadiance(const TargetPlatformData& targetPlat, const IRRuntimeEnvironment& environment, const IRObjectRadianceOutput& radiance, const std::string& targetKey)
+{
+	IRModtranRadianceResult disabledResult;
+	if (!m_enableStage5ModtranRadianceDebug && !m_stage5UseModtranPathRuntime)
+	{
+		disabledResult.fallbackReason = "debug_disabled";
+		return disabledResult;
+	}
+	if (!m_stage5ModtranRadianceReady)
+	{
+		disabledResult.fallbackReason = "modtran_lut_missing";
+		return disabledResult;
+	}
+
+	double observerAltKm = 10.0;
+	if (m_stage0DisplayFrameCount > 0 && IsReasonableAltitudeMeters(m_realTimeSceneData.platLoc.alt))
+	{
+		observerAltKm = m_realTimeSceneData.platLoc.alt / 1000.0;
+	}
+	else if (m_isAddPlatform && IsReasonableAltitudeMeters(m_initSceneData.platParam[0].spatial.alt))
+	{
+		observerAltKm = m_initSceneData.platParam[0].spatial.alt / 1000.0;
+	}
+	double targetAltKm = IsReasonableAltitudeMeters(targetPlat.targetState.targetLoc.alt)
+		? targetPlat.targetState.targetLoc.alt / 1000.0
+		: observerAltKm;
+	const double rangeKmRaw = std::max(0.001, static_cast<double>(EstimateRangeToCamera(targetPlat.nodePath)) / 1000.0);
+	const double visibilityKmRaw = std::max(0.001, environment.visibilityMeters / 1000.0);
+	const double humidity = std::max(0.0, std::min(100.0, environment.humidityPercent));
+	const double solarZenithDeg = std::max(0.0, std::min(180.0, 90.0 - environment.sunElevationDeg));
+
+	IRModtranRadianceQuery query;
+	query.band = static_cast<IRBand>(static_cast<int>(radiance.bandIndex));
+	query.observerAltKm = observerAltKm;
+	query.targetAltKm = targetAltKm;
+	query.rangeKm = rangeKmRaw;
+	query.visibilityKm = visibilityKmRaw;
+	query.humidityPercent = humidity;
+	query.solarZenithDeg = solarZenithDeg;
+
+	const double rangeBucket = QuantizeForCache(rangeKmRaw, 0.5);
+	const double observerBucket = QuantizeForCache(observerAltKm, 1.0);
+	const double targetBucket = QuantizeForCache(targetAltKm, 1.0);
+	const double visibilityBucket = QuantizeForCache(visibilityKmRaw, 5.0);
+	const double humidityBucket = QuantizeForCache(humidity, 10.0);
+	const double solarZenithBucket = QuantizeForCache(solarZenithDeg, 5.0);
+	std::ostringstream key;
+	key << targetKey
+		<< ":band=" << static_cast<int>(query.band)
+		<< ":range=" << Stage5ModtranCacheDouble(rangeBucket)
+		<< ":obs=" << Stage5ModtranCacheDouble(observerBucket)
+		<< ":tgt=" << Stage5ModtranCacheDouble(targetBucket)
+		<< ":vis=" << Stage5ModtranCacheDouble(visibilityBucket)
+		<< ":hum=" << Stage5ModtranCacheDouble(humidityBucket)
+		<< ":sza=" << Stage5ModtranCacheDouble(solarZenithBucket);
+	const std::string cacheKey = key.str();
+	const auto lookupStart = std::chrono::steady_clock::now();
+	std::map<std::string, Stage5ModtranRadianceCacheEntry>::const_iterator cacheIt =
+		m_stage5ModtranRadianceCache.find(cacheKey);
+	if (cacheIt != m_stage5ModtranRadianceCache.end())
+	{
+		++m_stage5ModtranCacheHitCurrent;
+		m_stage5ModtranLookupMsCurrent += std::chrono::duration<double, std::milli>(
+			std::chrono::steady_clock::now() - lookupStart).count();
+		return cacheIt->second.result;
+	}
+
+	IRModtranRadianceQuery bucketedQuery = query;
+	bucketedQuery.rangeKm = rangeBucket;
+	bucketedQuery.observerAltKm = observerBucket;
+	bucketedQuery.targetAltKm = targetBucket;
+	bucketedQuery.visibilityKm = visibilityBucket;
+	bucketedQuery.humidityPercent = humidityBucket;
+	bucketedQuery.solarZenithDeg = solarZenithBucket;
+	IRModtranRadianceResult result = m_stage5ModtranRadianceLut.query(bucketedQuery);
+	result.humidityPercent = humidityBucket;
+	m_stage5ModtranRadianceCache[cacheKey].result = result;
+	++m_stage5ModtranCacheMissCurrent;
+	m_stage5ModtranLookupMsCurrent += std::chrono::duration<double, std::milli>(
+		std::chrono::steady_clock::now() - lookupStart).count();
+	return result;
+}
+
+void HwaSimIR::LogStage5ModtranRadianceCompare(const TargetPlatformData& targetPlat, const IRRadianceComponents& components, const IRModtranRadianceResult& modtranResult, double rangeKm, double observerAltKm, double targetAltKm)
+{
+	if (!m_enableStage5ModtranRadianceDebug && !m_stage5UseModtranPathRuntime)
+	{
+		return;
+	}
+	const std::uint64_t frameSeq = m_currentFrameTelemetry.sourceSeq > 0
+		? m_currentFrameTelemetry.sourceSeq : m_stage0DisplayFrameCount;
+	const double visibilityKm = m_irRadianceModel.environment().visibilityMeters / 1000.0;
+	const double legacyPath = components.legacyPathRadiance;
+	const double modtranPath = components.modtranPathRadiance;
+	const double ratio = std::abs(legacyPath) > 1.0e-12 ? modtranPath / legacyPath : 0.0;
+	const double diff = modtranPath - legacyPath;
+	std::ostringstream state;
+	state << static_cast<int>(components.band)
+		<< ":" << (modtranResult.valid ? 1 : 0)
+		<< ":" << modtranResult.fallbackReason
+		<< ":" << Stage5ModtranCacheDouble(rangeKm)
+		<< ":" << Stage5ModtranCacheDouble(observerAltKm)
+		<< ":" << Stage5ModtranCacheDouble(targetAltKm)
+		<< ":" << Stage5ModtranCacheDouble(visibilityKm);
+	const std::string logKey =
+		std::to_string(targetPlat.targetState.targetType) + ":" +
+		std::to_string(targetPlat.targetState.targetPlatID) + ":" +
+		std::to_string(targetPlat.targetState.targetID) + "#modtran-radiance";
+	const bool stateChanged = m_lastStage5ModtranRadianceCompareLogState[logKey] != state.str();
+	m_lastStage5ModtranRadianceCompareLogState[logKey] = state.str();
+	const bool logDue = frameSeq <= 3 ||
+		(m_stage5ModtranLogEveryFrames > 0 && (frameSeq % static_cast<std::uint64_t>(m_stage5ModtranLogEveryFrames)) == 0) ||
+		stateChanged;
+	if (!logDue && !m_enableIRVerboseLog)
+	{
+		return;
+	}
+	std::cout << "[Stage5 ModtranRadianceCompare]"
+		<< " sourceSeq=" << frameSeq
+		<< " targetID=" << targetPlat.targetState.targetID
+		<< " band=" << IRBandName(components.band)
+		<< " rangeKm=" << rangeKm
+		<< " observerAltKm=" << observerAltKm
+		<< " targetAltKm=" << targetAltKm
+		<< " visibilityKm=" << visibilityKm
+		<< " legacyPath=" << legacyPath
+		<< " modtranPath=" << modtranPath
+		<< " modtranSky=" << components.modtranSkyRadiance
+		<< " modtranSolar=" << components.modtranSolarIrradiance
+		<< " tauUp=" << components.tauUp
+		<< " valid=" << (modtranResult.valid ? "1" : "0")
+		<< " fallbackReason=" << components.modtranFallbackReason
+		<< " interpolationMode=" << components.modtranInterpolationMode
+		<< " pathRadianceSource=" << components.pathRadianceSource
+		<< " ratio=" << ratio
+		<< " diff=" << diff
+		<< " unitRadiance=" << modtranResult.unitRadiance
+		<< " unitIrradiance=" << modtranResult.unitIrradiance
+		<< " sourceFile=" << modtranResult.sourceFile
+		<< std::endl;
+	if (m_stage5UseModtranPathRuntime && components.pathRadianceSource != "modtran_runtime")
+	{
+		std::cout << "[Stage5 ModtranRadianceCompare][WARN]"
+			<< " requestedRuntimePath=1"
+			<< " activePathRadianceSource=" << components.pathRadianceSource
+			<< " fallbackReason=" << components.modtranFallbackReason
+			<< std::endl;
+	}
+}
+
 void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IRObjectRadianceOutput& radiance, const IRHotspotState& rearHotspot, const IRBrightSpotState& brightSpot, bool rearEnabledForShader, float rearIntensityForShader, const std::string& targetKey)
 {
 	if (targetPlat.nodePath.is_empty())
@@ -6432,8 +6699,29 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 			static_cast<double>(plume.haloGray) * static_cast<double>(plume.haloOpacity));
 	}
 	stage5Input.plumeRadiance = plumeRadiance;
-	stage5Input.pathRadiance = std::max(0.0f, radiance.pathRadiance);
-	stage5Input.pathRadianceSource = stage5Input.pathRadiance > 0.0 ? "legacy_empirical" : "disabled";
+	const double legacyPathRadiance = std::max(0.0f, radiance.pathRadiance);
+	IRModtranRadianceResult modtranRadiance = QueryStage5ModtranRadiance(targetPlat, environment, radiance, targetKey);
+	stage5Input.legacyPathRadiance = legacyPathRadiance;
+	stage5Input.modtranPathRadiance = modtranRadiance.valid ? modtranRadiance.pathRadiance : 0.0;
+	stage5Input.modtranSkyRadiance = modtranRadiance.valid ? modtranRadiance.skyRadiance : 0.0;
+	stage5Input.modtranSolarIrradiance = modtranRadiance.valid ? modtranRadiance.solarIrradiance : 0.0;
+	stage5Input.modtranRadianceValid = modtranRadiance.valid;
+	stage5Input.modtranInterpolationMode = modtranRadiance.interpolationMode;
+	stage5Input.modtranFallbackReason = modtranRadiance.fallbackReason;
+	const bool modtranPathRuntimeAllowed =
+		m_stage5UseModtranPathRuntime &&
+		stage5Band == IRBand::MidWaveInfrared &&
+		modtranRadiance.valid;
+	if (m_stage5UseModtranPathRuntime && stage5Band != IRBand::MidWaveInfrared)
+	{
+		stage5Input.modtranFallbackReason = "runtime_band_not_supported";
+	}
+	stage5Input.pathRadiance = modtranPathRuntimeAllowed
+		? std::max(0.0, modtranRadiance.pathRadiance)
+		: legacyPathRadiance;
+	stage5Input.pathRadianceSource = modtranPathRuntimeAllowed
+		? "modtran_runtime"
+		: (legacyPathRadiance > 0.0 ? "legacy_empirical" : "disabled");
 	stage5Input.sourceFlags = "body+reflected";
 	if (stage5Input.hotspotIntensity > 0.0)
 	{
@@ -6449,13 +6737,30 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	}
 	if (stage5Input.pathRadiance > 0.0)
 	{
-		stage5Input.sourceFlags += "+legacyPath";
+		stage5Input.sourceFlags += modtranPathRuntimeAllowed ? "+modtranPathRuntime" : "+legacyPath";
+	}
+	if (modtranRadiance.valid || m_enableStage5ModtranRadianceDebug)
+	{
+		stage5Input.sourceFlags += "+modtranCompare";
 	}
 	stage5Input.enableDebugFloor = true;
 	stage5Input.debugConfig = m_stage5DebugConfigs[stage5BandIndex];
 
 	IRRadianceComponents components = m_irRadianceModelV2.evaluateComponents(stage5Input);
 	IRRadianceModelV2Output stage5 = m_irRadianceModelV2.evaluate(stage5Input);
+	double observerAltKmForLog = 10.0;
+	if (m_stage0DisplayFrameCount > 0 && IsReasonableAltitudeMeters(m_realTimeSceneData.platLoc.alt))
+	{
+		observerAltKmForLog = m_realTimeSceneData.platLoc.alt / 1000.0;
+	}
+	else if (m_isAddPlatform && IsReasonableAltitudeMeters(m_initSceneData.platParam[0].spatial.alt))
+	{
+		observerAltKmForLog = m_initSceneData.platParam[0].spatial.alt / 1000.0;
+	}
+	const double targetAltKmForLog = IsReasonableAltitudeMeters(targetPlat.targetState.targetLoc.alt)
+		? targetPlat.targetState.targetLoc.alt / 1000.0
+		: observerAltKmForLog;
+	const double rangeKmForLog = std::max(0.001, static_cast<double>(EstimateRangeToCamera(targetPlat.nodePath)) / 1000.0);
 	const IRRadianceModelV2DebugConfig& displayConfig = m_stage5DebugConfigs[stage5BandIndex];
 	const auto clamp01 = [](double value) -> double {
 		return std::max(0.0, std::min(1.0, value));
@@ -6561,7 +6866,14 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 			<< " brightspotRadiance=" << components.brightspotRadiance
 			<< " tauUp=" << components.tauUp
 			<< " pathRadiance=" << components.pathRadiance
+			<< " legacyPathRadiance=" << components.legacyPathRadiance
+			<< " modtranPathRadiance=" << components.modtranPathRadiance
+			<< " modtranSkyRadiance=" << components.modtranSkyRadiance
+			<< " modtranSolarIrradiance=" << components.modtranSolarIrradiance
+			<< " modtranRadianceValid=" << (components.modtranRadianceValid ? "1" : "0")
 			<< " pathRadianceSource=" << components.pathRadianceSource
+			<< " modtranFallbackReason=" << components.modtranFallbackReason
+			<< " modtranInterpolationMode=" << components.modtranInterpolationMode
 			<< " sensorInputRadiance=" << components.sensorInputRadiance
 			<< " displayPreview=" << components.displayPreview
 			<< " sourceFlags=" << components.sourceFlags
@@ -6590,6 +6902,13 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 			<< " brightspotRadiance=" << stage5.brightspotRadiance
 			<< " pathRadiance=" << components.pathRadiance
 			<< " pathRadianceSource=" << components.pathRadianceSource
+			<< " legacyPathRadiance=" << components.legacyPathRadiance
+			<< " modtranPathRadiance=" << components.modtranPathRadiance
+			<< " modtranSkyRadiance=" << components.modtranSkyRadiance
+			<< " modtranSolarIrradiance=" << components.modtranSolarIrradiance
+			<< " modtranRadianceValid=" << (components.modtranRadianceValid ? "1" : "0")
+			<< " modtranFallbackReason=" << components.modtranFallbackReason
+			<< " modtranInterpolationMode=" << components.modtranInterpolationMode
 			<< " sensorInputRadiance=" << components.sensorInputRadiance
 			<< " bodyGrayBeforeFloor=" << stage5.bodyGrayBeforeFloor
 			<< " bodyGrayAfterFloor=" << stage5.bodyGrayAfterFloor
@@ -6618,6 +6937,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 			<< " legacyBrightspotIntensity=" << legacyBrightspotDisplay
 			<< std::endl;
 	}
+	LogStage5ModtranRadianceCompare(targetPlat, components, modtranRadiance, rangeKmForLog, observerAltKmForLog, targetAltKmForLog);
 
 	const bool stage5DiagnosticsEnabled =
 		logStage5 ||
@@ -6819,6 +7139,9 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 	const bool profileBreakdown = breakdownIndex <= 3 || (breakdownIndex % 30) == 0;
 	breakdown.timingSample = profileBreakdown;
 	ResetShaderInputCounters();
+	m_stage5ModtranLookupMsCurrent = 0.0;
+	m_stage5ModtranCacheHitCurrent = 0;
+	m_stage5ModtranCacheMissCurrent = 0;
 	m_measureShaderInputApplyTime = profileBreakdown;
 	std::chrono::steady_clock::time_point envBuildStart;
 	if (profileBreakdown)
@@ -7043,6 +7366,9 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 		}
 	}
 	breakdown.stage5PlumeMs = updatePlumeMs;
+	breakdown.stage5ModtranLookupMs = m_stage5ModtranLookupMsCurrent;
+	breakdown.stage5ModtranCacheHitCount = m_stage5ModtranCacheHitCurrent;
+	breakdown.stage5ModtranCacheMissCount = m_stage5ModtranCacheMissCurrent;
 	const ShaderInputCacheStats shaderStats = SnapshotShaderInputCounters();
 	breakdown.shaderInputSetCount = shaderStats.setCount;
 	breakdown.shaderInputSkipCount = shaderStats.skipCount;

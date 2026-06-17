@@ -66,6 +66,9 @@
     <ClInclude Include="IR\IREnginePlumeModel.h">
       <Filter>头文件\IR</Filter>
     </ClInclude>
+    <ClInclude Include="IR\IRModtranRadianceLut.h">
+      <Filter>头文件\IR</Filter>
+    </ClInclude>
     <ClInclude Include="IR\IRModtranTauLut.h">
       <Filter>头文件\IR</Filter>
     </ClInclude>
@@ -141,6 +144,9 @@
       <Filter>源文件\IR</Filter>
     </ClCompile>
     <ClCompile Include="IR\IREnginePlumeModel.cpp">
+      <Filter>源文件\IR</Filter>
+    </ClCompile>
+    <ClCompile Include="IR\IRModtranRadianceLut.cpp">
       <Filter>源文件\IR</Filter>
     </ClCompile>
     <ClCompile Include="IR\IRModtranTauLut.cpp">
