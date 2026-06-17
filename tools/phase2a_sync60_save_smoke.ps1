@@ -1,5 +1,14 @@
 param(
-    [int]$Seconds = 30
+    [int]$Seconds = 30,
+    [string]$UseModtranPathRuntime = "false",
+    [string]$ModtranPathRuntimeMode = "Off",
+    [double]$ModtranPathScale = 1.0,
+    [double]$ModtranPathOffset = 0.0,
+    [double]$ModtranPathClampMin = 0.0,
+    [double]$ModtranPathClampMax = 10.0,
+    [double]$ModtranPathBlend = 1.0,
+    [string]$EnableModtranRadianceDebug = "false",
+    [string]$CompareLegacy = "false"
 )
 
 $ErrorActionPreference = "Stop"
@@ -119,11 +128,20 @@ try {
     $runtimeText = Set-IniValue $runtimeText "EnableIRVerboseLog" "0"
     $runtimeText = Set-IniValue $runtimeText "DebugView" "Off"
     $runtimeText = Set-IniValue $runtimeText "LogComponents" "false"
-    $runtimeText = Set-IniValue $runtimeText "EnableModtranRadianceDebug" "false"
-    $runtimeText = Set-IniValue $runtimeText "UseModtranPathRuntime" "false"
+    $runtimeText = Set-IniValue $runtimeText "EnableModtranRadianceDebug" $EnableModtranRadianceDebug
+    $runtimeText = Set-IniValue $runtimeText "UseModtranPathRuntime" $UseModtranPathRuntime
     $runtimeText = Set-IniValue $runtimeText "UseModtranSkyRuntime" "false"
     $runtimeText = Set-IniValue $runtimeText "UseModtranSolarRuntime" "false"
-    $runtimeText = Set-IniValue $runtimeText "CompareLegacy" "false"
+    $runtimeText = Set-IniValue $runtimeText "ModtranPathRuntimeBand" "MWIR"
+    $runtimeText = Set-IniValue $runtimeText "ModtranPathRuntimeMode" $ModtranPathRuntimeMode
+    $runtimeText = Set-IniValue $runtimeText "ModtranPathUnitMode" "Native"
+    $runtimeText = Set-IniValue $runtimeText "ModtranPathScale" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $ModtranPathScale))
+    $runtimeText = Set-IniValue $runtimeText "ModtranPathOffset" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $ModtranPathOffset))
+    $runtimeText = Set-IniValue $runtimeText "ModtranPathClampMin" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $ModtranPathClampMin))
+    $runtimeText = Set-IniValue $runtimeText "ModtranPathClampMax" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $ModtranPathClampMax))
+    $runtimeText = Set-IniValue $runtimeText "ModtranPathBlend" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $ModtranPathBlend))
+    $runtimeText = Set-IniValue $runtimeText "ModtranPathABLog" "true"
+    $runtimeText = Set-IniValue $runtimeText "CompareLegacy" $CompareLegacy
     [IO.File]::WriteAllText($runtimeIni, $runtimeText, $utf8)
 
     $env:QT_FORCE_STDERR_LOGGING = "1"
@@ -222,6 +240,10 @@ $summary = [pscustomobject]@{
     stage5ModtranLookupMs = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage5ModtranLookupMs")), 6)
     stage5ModtranCacheHitCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage5ModtranCacheHitCount")), 3)
     stage5ModtranCacheMissCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage5ModtranCacheMissCount")), 3)
+    modtranPathRuntimeMode = $ModtranPathRuntimeMode
+    useModtranPathRuntime = $UseModtranPathRuntime
+    modtranPathScale = $ModtranPathScale
+    modtranPathBlend = $ModtranPathBlend
     stage7FullUpdateCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage7FullUpdateCount")), 3)
     stage7PositionOnlyCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage7PositionOnlyCount")), 3)
     stage7SkipCountMax = [math]::Round((Get-Maximum (Get-NumericValues $hwaText "Perf" "stage7SkipCount")), 3)

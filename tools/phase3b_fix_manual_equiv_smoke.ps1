@@ -78,6 +78,9 @@ $effectiveOk = $lastEffective -match "DebugView=Off" -and
     $lastEffective -match "UseModtranPathRuntime=0" -and
     $lastEffective -match "UseModtranSkyRuntime=0" -and
     $lastEffective -match "UseModtranSolarRuntime=0" -and
+    $lastEffective -match "ModtranPathRuntimeMode=Off" -and
+    $lastEffective -match "ModtranPathScale=1" -and
+    $lastEffective -match "ModtranPathBlend=1" -and
     $lastEffective -match "Stage5ModtranCompareEffective=0" -and
     $lastEffective -match "JpegEncodeMode=rgb" -and
     $lastEffective -match "JpegQuality=100"
@@ -88,6 +91,21 @@ if (-not $effectiveOk) {
 if ($modtranLookupMax -gt 0.001) {
     throw "生产默认不应执行 MODTRAN radiance lookup；max stage5ModtranLookupMs=$modtranLookupMax"
 }
+
+$perfFailures = @()
+if ([double]$summary.sentFps -lt 59.5) { $perfFailures += "sentFps=$($summary.sentFps) < 59.5" }
+if ([double]$summary.udpFps -lt 59.5) { $perfFailures += "udpFps=$($summary.udpFps) < 59.5" }
+if ([double]$summary.renderFps -lt 59.5) { $perfFailures += "renderFps=$($summary.renderFps) < 59.5" }
+if ([double]$summary.outputFps -lt 59.5) { $perfFailures += "outputFps=$($summary.outputFps) < 59.5" }
+if ([double]$summary.videoReceiveFps -lt 59.5) { $perfFailures += "videoReceiveFps=$($summary.videoReceiveFps) < 59.5" }
+if ([double]$summary.videoDisplayFps -lt 59.5) { $perfFailures += "videoDisplayFps=$($summary.videoDisplayFps) < 59.5" }
+if ([double]$summary.latencyAvgMs -gt 80.0) { $perfFailures += "latencyAvgMs=$($summary.latencyAvgMs) > 80" }
+if ([int]$summary.sourceSeqContinuous -ne 1) { $perfFailures += "sourceSeqContinuous=$($summary.sourceSeqContinuous)" }
+if ([int]$summary.inputQueueOverflow -ne 0) { $perfFailures += "inputQueueOverflow=$($summary.inputQueueOverflow)" }
+if ([int]$summary.tcpOverwritten -ne 0) { $perfFailures += "tcpOverwritten=$($summary.tcpOverwritten)" }
+if ([int]$summary.recorderDroppedFrames -ne 0) { $perfFailures += "recorderDroppedFrames=$($summary.recorderDroppedFrames)" }
+if ([int]$summary.sourceSeqLagMax -gt 1) { $perfFailures += "sourceSeqLagMax=$($summary.sourceSeqLagMax) > 1" }
+if ([int]$summary.inputQueueDepthMax -gt 2) { $perfFailures += "inputQueueDepthMax=$($summary.inputQueueDepthMax) > 2" }
 
 $manualChecklist = @(
     "确认手动启动的 HwaSim_IR.exe 是 Release: HwaSim_IR\\Bin\\HwaSim_IR.exe",
@@ -122,6 +140,8 @@ $fixSummary = [pscustomobject]@{
     stage5ModtranLookupMsAvg = $modtranLookupAvg
     stage5ModtranLookupMsMax = $modtranLookupMax
     stage5RadianceComponentMsAvg = $componentAvg
+    performancePassed = ($perfFailures.Count -eq 0)
+    performanceFailures = $perfFailures
     effectiveRuntimeConfigOk = $effectiveOk
     effectiveRuntimeConfigLast = $lastEffective
     effectiveRuntimeConfigWarnCount = $warnLines.Count
@@ -135,6 +155,9 @@ $fixSummary | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $fixSummaryPath
 Write-Host "步骤 3/3：手动等价测试摘要"
 $fixSummary | Format-List
 Write-Host "summary=$fixSummaryPath"
+if ($perfFailures.Count -gt 0) {
+    throw ("手动等价 smoke 未达 60 Hz 验收：" + ($perfFailures -join "; "))
+}
 Write-Host "阶段 3B-Fix 手动等价 smoke 通过。" -ForegroundColor Green
 
 

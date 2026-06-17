@@ -1427,6 +1427,151 @@ MODTRAN path/sky/solar runtime，也不默认执行 MODTRAN radiance compare 查
 
 ---
 
+### 阶段 3C：MWIR MODTRAN path_radiance runtime A/B 试验
+
+```text
+阶段：3C
+日期：2026-06-17
+执行者：Codex
+目标：仅针对 MWIR 建立 MODTRAN path_radiance runtime A/B 试验链路，重点解决单位/尺度和接入位置问题；
+生产默认仍不启用 MODTRAN path runtime，不接 sky/solar runtime，不改变 TCP/JPEG/H.264/录像链路。
+
+本阶段变更：
+- 在 [Stage5ModtranRadiance] 下新增 MWIR path runtime A/B 配置：
+  UseModtranPathRuntime=false
+  ModtranPathRuntimeBand=MWIR
+  ModtranPathRuntimeMode=Off
+  ModtranPathUnitMode=Native
+  ModtranPathScale=1.0
+  ModtranPathOffset=0.0
+  ModtranPathClampMin=0.0
+  ModtranPathClampMax=10.0
+  ModtranPathBlend=1.0
+  ModtranPathABLog=true
+- Runtime mode 支持 Off、CompareOnly、ReplaceLegacy、BlendLegacy。
+- ReplaceLegacy / BlendLegacy 仅允许 MWIR；非 MWIR 自动 fallback legacy，并限频 WARN。
+- IRRadianceComponents / IRRadianceModelV2 增加：
+  modtranPathRaw、modtranPathScaled、modtranPathUnitMode、modtranPathScale、
+  modtranPathOffset、modtranPathBlend、modtranPathRuntimeMode、
+  effectivePathRadiance、sensorInputLegacy、sensorInputModtran。
+- sensorInputRadiance 接入方式：
+  legacy: tauUp * surfaceRadiance + legacyPath
+  ReplaceLegacy: tauUp * surfaceRadiance + modtranPathScaled
+  BlendLegacy: tauUp * surfaceRadiance + lerp(legacyPath, modtranPathScaled, blend)
+- pathRadianceSource 明确区分：
+  legacy_empirical、modtran_runtime_scaled、modtran_runtime_blend、fallback_legacy。
+- 新增限频日志 [Stage5 ModtranPathAB]，输出 raw/scaled/effective path、
+  legacy/modtran/effective sensorInput 和 fallback reason。
+- 优化 MODTRAN compare / path A/B 日志函数：非前 3 帧、非采样帧、非 verbose 时直接返回，
+  避免没有实际打印时仍每帧构造字符串状态，降低 A/B 路径 stage5RadianceComponentMs。
+- 新增 tools/stage5_modtran_path_runtime_ab_smoke.ps1：
+  1) 直接 LUT 单元标定；
+  2) 运行 Off / CompareOnly / BlendLegacy / ReplaceLegacy 10 秒 A/B；
+  3) 输出 runtime CSV，并在运行后确认生产 ini 恢复。
+- runtime_config_check.ps1 增加 3C 生产默认检查。
+- phase2a_sync60_save_smoke.ps1 增加 3C runtime override 和 summary 字段。
+- phase3b_fix_manual_equiv_smoke.ps1 增加 3C EffectiveRuntimeConfig 检查和真实性能阈值；
+  不再在 FPS/延时未达标时误报通过。
+
+未改变：
+- 生产默认仍为 UseModtranPathRuntime=false、ModtranPathRuntimeMode=Off。
+- EnableModtranRadianceDebug=false、CompareLegacy=false，生产默认不执行 MODTRAN radiance compare lookup。
+- 不接 sky/solar runtime，不做 AGC/MTF，不做高度/Mach，不改材质库结构。
+- 不改 TCP/JPEG/H.264 协议，不改录像旁路，不做 PBO/硬件编码。
+
+构建：
+- HwaSim_IR Windows Release x64：通过。
+- DataDrivenTestQT Release：通过。
+- HwaSim_IR_VideoDisplay 本阶段未改代码，沿用阶段 3B-Fix 已通过 Release 产物。
+- 剩余 warning 为既有 VS/PDB/未用变量 warning。
+
+回归测试：
+- runtime_config_check.ps1：通过。
+- Stage3 MODTRAN tau-only strict：通过。
+- Stage4 hotspot/brightspot strict：通过。
+- Stage4 三波段语义 smoke：通过。
+- Stage5 radiance components smoke：通过。
+- Stage5 MODTRAN radiance compare smoke：通过，运行后 production ini 恢复。
+- Stage5 MODTRAN path runtime A/B smoke：功能通过，但严格队列峰值 guard 仍有 warning。
+
+MODTRAN path 单元标定：
+- CSV：logs/stage5/modtran_path_runtime_ab_summary.csv
+- MWIR suggestedScaleToLegacy 正值样本数：63
+- suggestedScaleToLegacy 范围：
+  min=4.22660789e5
+  avg=4.452536046e6
+  max=1.1648836548e7
+- 结论：legacyPath 与 MODTRAN path_radiance 原始 LUT 值仍存在 5e5 到 1e7 量级差异。
+  因此本阶段不建议直接把 ReplaceLegacy 作为默认，也不建议用未标定 scale 进入生产。
+
+Runtime A/B 结果（10 秒，scale=1.0，blend=0.25，saveMP4En=true）：
+- Off：
+  sent=60.113, udp=59.970, render=59.359, output=58.514,
+  VideoDisplay=59.028, latencyAvg=106.057 ms,
+  stage5ModtranLookupMs=0, pathRadianceSource=not_logged。
+  该短测未达 60 Hz/latency 阈值，主要是短测窗口和队列启动峰值影响。
+- CompareOnly：
+  sent=60.116, udp=60.778, render=61.176, output=60.959,
+  VideoDisplay=61.230, latencyAvg=70.613 ms,
+  stage5ModtranLookupMs=0.008, stage5RadianceComponentMs=1.332,
+  pathRadianceSource=legacy_empirical。
+- BlendLegacy：
+  sent=60.114, udp=60.570, render=60.840, output=60.350,
+  VideoDisplay=60.859, latencyAvg=58.233 ms,
+  stage5ModtranLookupMs=0.007286, stage5RadianceComponentMs=1.224,
+  pathRadianceSource=modtran_runtime_blend。
+- ReplaceLegacy：
+  sent=60.113, udp=59.842, render=61.291, output=59.737,
+  VideoDisplay=59.773, latencyAvg=59.967 ms,
+  stage5ModtranLookupMs=0.008, stage5RadianceComponentMs=1.284,
+  pathRadianceSource=modtran_runtime_scaled。
+- A/B 结论：
+  CompareOnly、BlendLegacy、ReplaceLegacy 的 FPS 和延时可保持 60 Hz 级别；
+  但三组均出现 sourceSeqLagMax/inputQueueDepthMax 峰值 warning，不作为默认推荐依据。
+  ReplaceLegacy 使用 scale=1.0 时数值影响极小，不能代表已完成物理尺度标定。
+
+30 秒生产默认实测：
+- 配置：800x800，5 目标，videoFps=60，saveMP4En=true，
+  Codec=auto，JpegEncodeMode=rgb，JpegQuality=100，
+  EnableH264Experimental=false，LegacyEngineBodyHeating=false，
+  EnableIRPhysicalPipeline=true，DebugView=Off，
+  UseModtranPathRuntime=false，ModtranPathRuntimeMode=Off。
+- 日志：logs/phase2a-final-20260617-155244
+- MP4：
+  HwaSim_IR_VideoDisplay/x64/Release/MP4/round_001_20260617_155258/output.mp4
+- sentFps=60.032
+- udpFps=60.011
+- renderFps=60.347
+- outputFps=60.177
+- VideoDisplay receive/display=60.350
+- latencyAvgMs=42.627
+- stage5ModtranLookupMs=0
+- stage5RadianceComponentMs=0.761
+- sourceSeqContinuous=1
+- sourceSeqContinuousWritten=1
+- inputQueueOverflow=0
+- TCP overwritten=0
+- recordingDroppedFrames=0
+- written/mp4/annotations/targetAnnotations=1799/1799/1799/1799
+- 严格 guard：
+  sourceSeqLagMax=4、inputQueueDepthMax=16，因此 phase3b_fix_manual_equiv_smoke.ps1
+  当前会按严格队列峰值阈值报失败。
+  但 [Perf] 稳态窗口显示 sourceSeqLag 多数为 1..2，inputQueueDepth 多数为 0..2，
+  仅短窗口 spike 到 sourceSeqLag=4、inputQueueDepth=3；未观察到持续积压。
+
+结论：
+- 已确认生产默认不使用 MODTRAN path runtime：
+  UseModtranPathRuntime=0、ModtranPathRuntimeMode=Off、
+  Stage5ModtranCompareEffective=0、stage5ModtranLookupMs=0。
+- 生产默认 30 秒主链路达到 60 Hz、latency <=80 ms、sourceSeq 连续、录像 0 丢帧。
+- A/B runtime 能跑通，但单位/尺度尚未可信标定，且队列峰值 guard 仍有 warning。
+- 不建议下一阶段把 MWIR path runtime 小比例设为默认候选；
+  建议继续保持 Off，并先做单位归一化、legacy empirical path 对齐和视觉/数值评审。
+- 如果要推进，应单独立项“MWIR MODTRAN path scale calibration”，不要与 sky/solar、AGC/MTF 或高度/Mach 同时混入。
+```
+
+---
+
 ## 12. 给 Codex 的第一阶段实施 Prompt
 
 见单独文件：`Codex_Phase1_Sync60_Perf_Prompt.md`。

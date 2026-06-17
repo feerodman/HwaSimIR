@@ -238,6 +238,16 @@ private:
 	bool m_stage5UseModtranSkyRuntime = false;
 	bool m_stage5UseModtranSolarRuntime = false;
 	bool m_stage5ModtranCompareLegacy = false;
+	IRBand m_stage5ModtranPathRuntimeBand = IRBand::MidWaveInfrared;
+	std::string m_stage5ModtranPathRuntimeBandName = "MWIR";
+	std::string m_stage5ModtranPathRuntimeMode = "Off";
+	std::string m_stage5ModtranPathUnitMode = "Native";
+	double m_stage5ModtranPathScale = 1.0;
+	double m_stage5ModtranPathOffset = 0.0;
+	double m_stage5ModtranPathClampMin = 0.0;
+	double m_stage5ModtranPathClampMax = 10.0;
+	double m_stage5ModtranPathBlend = 1.0;
+	bool m_stage5ModtranPathABLog = true;
 	std::string m_stage5ModtranPreferredSource = "band_lut";
 	int m_stage5ModtranLogEveryFrames = 120;
 	bool m_stage5ModtranRadianceReady = false;
@@ -287,6 +297,8 @@ private:
 	};
 	std::map<std::string, Stage5ModtranRadianceCacheEntry> m_stage5ModtranRadianceCache;
 	std::map<std::string, std::string> m_lastStage5ModtranRadianceCompareLogState;
+	std::map<std::string, std::string> m_lastStage5ModtranPathABLogState;
+	std::map<int, bool> m_stage5ModtranPathRuntimeBandWarned;
 	double m_stage5RadianceComponentMsCurrent = 0.0;
 	double m_stage5ModtranLookupMsCurrent = 0.0;
 	std::uint64_t m_stage5ModtranCacheHitCurrent = 0;
@@ -411,7 +423,9 @@ private:
 	void ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IRObjectRadianceOutput& radiance, const IRHotspotState& rearHotspot, const IRBrightSpotState& brightSpot, bool rearEnabledForShader, float rearIntensityForShader, const std::string& targetKey);
 	IRModtranRadianceResult QueryStage5ModtranRadiance(const TargetPlatformData& targetPlat, const IRRuntimeEnvironment& environment, const IRObjectRadianceOutput& radiance, const std::string& targetKey);
 	void LogStage5ModtranRadianceCompare(const TargetPlatformData& targetPlat, const IRRadianceComponents& components, const IRModtranRadianceResult& modtranResult, double rangeKm, double observerAltKm, double targetAltKm);
+	void LogStage5ModtranPathAB(const TargetPlatformData& targetPlat, const IRRadianceComponents& components, const IRModtranRadianceResult& modtranResult, double rangeKm, double observerAltKm, double targetAltKm);
 	bool Stage5ModtranRadianceCompareEnabled() const;
+	bool Stage5ModtranPathRuntimeAffectsImage() const;
 	void LogEffectiveRuntimeConfig(const char* reason, int videoFps, int targetNumValid, bool saveMP4En, const char* videoFpsSource, const char* targetNumSource, const char* saveMP4Source) const;
 	void ApplySensorOutputConfig(const IRSensorDisplayConfig& config, const char* reason);
 	void LogStage6SensorGeometry(const IRSensorDisplayConfig& config, const char* reason) const;

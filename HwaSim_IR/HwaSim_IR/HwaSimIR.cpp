@@ -301,6 +301,56 @@ int ParseStage5DebugViewMode(const std::string& value)
 	return 0;
 }
 
+std::string NormalizeStage5ModtranPathRuntimeMode(const std::string& value)
+{
+	const std::string lower = ToLowerAscii(value);
+	if (lower == "compareonly" || lower == "compare" || lower == "logonly" || lower == "log")
+	{
+		return "CompareOnly";
+	}
+	if (lower == "replacelegacy" || lower == "replace" || lower == "runtime")
+	{
+		return "ReplaceLegacy";
+	}
+	if (lower == "blendlegacy" || lower == "blend")
+	{
+		return "BlendLegacy";
+	}
+	return "Off";
+}
+
+IRBand ParseStage5ModtranPathRuntimeBand(const std::string& value, std::string& normalizedName)
+{
+	const std::string lower = ToLowerAscii(value);
+	if (lower == "mwir" || lower == "midwave" || lower == "midwaveinfrared" || lower == "2" || lower == "3")
+	{
+		normalizedName = "MWIR";
+		return IRBand::MidWaveInfrared;
+	}
+	if (lower == "vis" || lower == "visible" || lower == "4" || lower == "0")
+	{
+		normalizedName = "VIS";
+		return IRBand::Visible;
+	}
+	if (lower == "nir" || lower == "nearinfrared" || lower == "1")
+	{
+		normalizedName = "NIR";
+		return IRBand::NearInfrared;
+	}
+	if (lower == "swir" || lower == "shortwave" || lower == "shortwaveinfrared")
+	{
+		normalizedName = "SWIR";
+		return IRBand::ShortWaveInfrared;
+	}
+	if (lower == "lwir" || lower == "longwave" || lower == "longwaveinfrared")
+	{
+		normalizedName = "LWIR";
+		return IRBand::LongWaveInfrared;
+	}
+	normalizedName = "MWIR";
+	return IRBand::MidWaveInfrared;
+}
+
 const char* Stage5DebugViewModeName(int viewMode)
 {
 	switch (viewMode)
@@ -4244,7 +4294,9 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		m_lastStage4TargetLogState.clear();
 		m_lastStage5RadianceComponentLogState.clear();
 		m_lastStage5ModtranRadianceCompareLogState.clear();
+		m_lastStage5ModtranPathABLogState.clear();
 		m_stage5ModtranRadianceCache.clear();
+		m_stage5ModtranPathRuntimeBandWarned.clear();
 		m_lastStage4InputState.clear();
 		RefreshStage6DisplayShaderInputs();
 
@@ -4364,7 +4416,9 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 	m_lastStage4TargetLogState.clear();
 	m_lastStage5RadianceComponentLogState.clear();
 	m_lastStage5ModtranRadianceCompareLogState.clear();
+	m_lastStage5ModtranPathABLogState.clear();
 	m_stage5ModtranRadianceCache.clear();
+	m_stage5ModtranPathRuntimeBandWarned.clear();
 	m_lastStage4InputState.clear();
 	if (m_pTcpThread)
 	{
@@ -4920,6 +4974,15 @@ void HwaSimIR::InitInfraredSimulation()
 	std::string stage5ModtranPreferredSourceSource;
 	std::string stage5ModtranLogEverySource;
 	std::string stage5ModtranCompareLegacySource;
+	std::string stage5ModtranPathRuntimeBandSource;
+	std::string stage5ModtranPathRuntimeModeSource;
+	std::string stage5ModtranPathUnitModeSource;
+	std::string stage5ModtranPathScaleSource;
+	std::string stage5ModtranPathOffsetSource;
+	std::string stage5ModtranPathClampMinSource;
+	std::string stage5ModtranPathClampMaxSource;
+	std::string stage5ModtranPathBlendSource;
+	std::string stage5ModtranPathABLogSource;
 	std::string stage5DumpSource;
 	std::string stage5DumpPathSource;
 	std::string stage5DumpEverySource;
@@ -5010,10 +5073,83 @@ void HwaSimIR::InitInfraredSimulation()
 		"Stage5ModtranRadianceCompareLegacy",
 		false,
 		&stage5ModtranCompareLegacySource);
+	{
+		const std::string bandText = m_runtimeConfig.getString(
+			"Stage5ModtranRadiance",
+			"ModtranPathRuntimeBand",
+			"ModtranPathRuntimeBand",
+			"MWIR",
+			&stage5ModtranPathRuntimeBandSource);
+		m_stage5ModtranPathRuntimeBand = ParseStage5ModtranPathRuntimeBand(bandText, m_stage5ModtranPathRuntimeBandName);
+	}
+	m_stage5ModtranPathRuntimeMode = NormalizeStage5ModtranPathRuntimeMode(m_runtimeConfig.getString(
+		"Stage5ModtranRadiance",
+		"ModtranPathRuntimeMode",
+		"ModtranPathRuntimeMode",
+		"Off",
+		&stage5ModtranPathRuntimeModeSource));
+	m_stage5ModtranPathUnitMode = m_runtimeConfig.getString(
+		"Stage5ModtranRadiance",
+		"ModtranPathUnitMode",
+		"ModtranPathUnitMode",
+		"Native",
+		&stage5ModtranPathUnitModeSource);
+	m_stage5ModtranPathScale = m_runtimeConfig.getDouble(
+		"Stage5ModtranRadiance",
+		"ModtranPathScale",
+		"ModtranPathScale",
+		1.0,
+		&stage5ModtranPathScaleSource);
+	m_stage5ModtranPathOffset = m_runtimeConfig.getDouble(
+		"Stage5ModtranRadiance",
+		"ModtranPathOffset",
+		"ModtranPathOffset",
+		0.0,
+		&stage5ModtranPathOffsetSource);
+	m_stage5ModtranPathClampMin = m_runtimeConfig.getDouble(
+		"Stage5ModtranRadiance",
+		"ModtranPathClampMin",
+		"ModtranPathClampMin",
+		0.0,
+		&stage5ModtranPathClampMinSource);
+	m_stage5ModtranPathClampMax = m_runtimeConfig.getDouble(
+		"Stage5ModtranRadiance",
+		"ModtranPathClampMax",
+		"ModtranPathClampMax",
+		10.0,
+		&stage5ModtranPathClampMaxSource);
+	if (m_stage5ModtranPathClampMax < m_stage5ModtranPathClampMin)
+	{
+		std::swap(m_stage5ModtranPathClampMin, m_stage5ModtranPathClampMax);
+	}
+	m_stage5ModtranPathBlend = ClampStage5Double(m_runtimeConfig.getDouble(
+		"Stage5ModtranRadiance",
+		"ModtranPathBlend",
+		"ModtranPathBlend",
+		1.0,
+		&stage5ModtranPathBlendSource), 0.0, 1.0);
+	m_stage5ModtranPathABLog = m_runtimeConfig.getBool(
+		"Stage5ModtranRadiance",
+		"ModtranPathABLog",
+		"ModtranPathABLog",
+		true,
+		&stage5ModtranPathABLogSource);
+	if (m_stage5ModtranPathRuntimeBand != IRBand::MidWaveInfrared &&
+		(m_stage5ModtranPathRuntimeMode == "ReplaceLegacy" || m_stage5ModtranPathRuntimeMode == "BlendLegacy"))
+	{
+		std::cout << "[Stage5 ModtranPathRuntime][WARN]"
+			<< " ModtranPathRuntimeBand=" << m_stage5ModtranPathRuntimeBandName
+			<< " runtimeMode=" << m_stage5ModtranPathRuntimeMode
+			<< " fallback=legacy"
+			<< " reason=only_MWIR_path_runtime_allowed_in_stage3C"
+			<< std::endl;
+	}
 	m_stage5ModtranRadiancePath = modtranBandLutPath;
 	m_stage5ModtranRadianceReady = !m_stage5ModtranRadiancePath.empty() &&
 		m_stage5ModtranRadianceLut.load(m_stage5ModtranRadiancePath);
 	m_stage5ModtranRadianceCache.clear();
+	m_lastStage5ModtranPathABLogState.clear();
+	m_stage5ModtranPathRuntimeBandWarned.clear();
 	if (!m_stage5ModtranRadianceReady)
 	{
 		std::cout << "[Stage5 ModtranRadianceConfig][WARN]"
@@ -5264,6 +5400,15 @@ void HwaSimIR::InitInfraredSimulation()
 		<< " PreferredSource=" << m_stage5ModtranPreferredSource
 		<< " LogEveryFrames=" << m_stage5ModtranLogEveryFrames
 		<< " CompareLegacy=" << (m_stage5ModtranCompareLegacy ? "1" : "0")
+		<< " ModtranPathRuntimeBand=" << m_stage5ModtranPathRuntimeBandName
+		<< " ModtranPathRuntimeMode=" << m_stage5ModtranPathRuntimeMode
+		<< " ModtranPathUnitMode=" << m_stage5ModtranPathUnitMode
+		<< " ModtranPathScale=" << m_stage5ModtranPathScale
+		<< " ModtranPathOffset=" << m_stage5ModtranPathOffset
+		<< " ModtranPathClampMin=" << m_stage5ModtranPathClampMin
+		<< " ModtranPathClampMax=" << m_stage5ModtranPathClampMax
+		<< " ModtranPathBlend=" << m_stage5ModtranPathBlend
+		<< " ModtranPathABLog=" << (m_stage5ModtranPathABLog ? "1" : "0")
 		<< " loaded=" << (m_stage5ModtranRadianceReady ? "1" : "0")
 		<< " sourceFile=" << (m_stage5ModtranRadianceReady ? m_stage5ModtranRadianceLut.loadedPath() : "missing")
 		<< " defaultPathRadianceSource=legacy_empirical"
@@ -5273,7 +5418,9 @@ void HwaSimIR::InitInfraredSimulation()
 		<< "/" << stage5ModtranSkyRuntimeSource << "/" << stage5ModtranSolarRuntimeSource
 		<< "/" << stage5ModtranPreferredSourceSource << "/" << stage5ModtranLogEverySource
 		<< "/" << stage5ModtranCompareLegacySource
-		<< "（Stage3B-Fix: production compare disabled; smoke/debug must opt in; UseModtranPathRuntime=false keeps final image unchanged）"
+		<< "/" << stage5ModtranPathRuntimeBandSource << "/" << stage5ModtranPathRuntimeModeSource
+		<< "/" << stage5ModtranPathScaleSource << "/" << stage5ModtranPathBlendSource
+		<< "（Stage3C: production default Off; MWIR path runtime A/B must opt in）"
 		<< std::endl;
 	std::cout << "[Stage5 OutputCapture] Stage5OutputFrameDump="
 		<< ((m_stage5OutputFrameDumpEnabled && m_enableStage5RadianceDebug) ? "1" : "0")
@@ -5345,6 +5492,15 @@ void HwaSimIR::InitInfraredSimulation()
 			<< ",UseModtranSkyRuntime:" << stage5ModtranSkyRuntimeSource
 			<< ",UseModtranSolarRuntime:" << stage5ModtranSolarRuntimeSource
 			<< ",CompareLegacy:" << stage5ModtranCompareLegacySource
+			<< ",ModtranPathRuntimeBand:" << stage5ModtranPathRuntimeBandSource
+			<< ",ModtranPathRuntimeMode:" << stage5ModtranPathRuntimeModeSource
+			<< ",ModtranPathUnitMode:" << stage5ModtranPathUnitModeSource
+			<< ",ModtranPathScale:" << stage5ModtranPathScaleSource
+			<< ",ModtranPathOffset:" << stage5ModtranPathOffsetSource
+			<< ",ModtranPathClampMin:" << stage5ModtranPathClampMinSource
+			<< ",ModtranPathClampMax:" << stage5ModtranPathClampMaxSource
+			<< ",ModtranPathBlend:" << stage5ModtranPathBlendSource
+			<< ",ModtranPathABLog:" << stage5ModtranPathABLogSource
 			<< ",Stage7UpdateHz:" << stage7UpdateHzSource
 			<< ",Stage4UpdateHz:" << stage4UpdateHzSource
 			<< ",Stage5PlumeUpdateHz:" << plumeUpdateHzSource
@@ -6555,7 +6711,7 @@ bool HwaSimIR::ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHW
 IRModtranRadianceResult HwaSimIR::QueryStage5ModtranRadiance(const TargetPlatformData& targetPlat, const IRRuntimeEnvironment& environment, const IRObjectRadianceOutput& radiance, const std::string& targetKey)
 {
 	IRModtranRadianceResult disabledResult;
-	if (!m_enableStage5ModtranRadianceDebug && !m_stage5UseModtranPathRuntime)
+	if (!Stage5ModtranRadianceCompareEnabled())
 	{
 		disabledResult.fallbackReason = "debug_disabled";
 		return disabledResult;
@@ -6639,9 +6795,17 @@ bool HwaSimIR::Stage5ModtranRadianceCompareEnabled() const
 {
 	return m_enableStage5ModtranRadianceDebug ||
 		m_stage5ModtranCompareLegacy ||
-		m_stage5UseModtranPathRuntime ||
+		m_stage5ModtranPathRuntimeMode != "Off" ||
+		Stage5ModtranPathRuntimeAffectsImage() ||
 		m_stage5UseModtranSkyRuntime ||
 		m_stage5UseModtranSolarRuntime;
+}
+
+bool HwaSimIR::Stage5ModtranPathRuntimeAffectsImage() const
+{
+	return m_stage5UseModtranPathRuntime &&
+		(m_stage5ModtranPathRuntimeMode == "ReplaceLegacy" ||
+			m_stage5ModtranPathRuntimeMode == "BlendLegacy");
 }
 
 void HwaSimIR::LogEffectiveRuntimeConfig(
@@ -6673,6 +6837,11 @@ void HwaSimIR::LogEffectiveRuntimeConfig(
 		<< " UseModtranSkyRuntime=" << (m_stage5UseModtranSkyRuntime ? "1" : "0")
 		<< " UseModtranSolarRuntime=" << (m_stage5UseModtranSolarRuntime ? "1" : "0")
 		<< " CompareLegacy=" << (m_stage5ModtranCompareLegacy ? "1" : "0")
+		<< " ModtranPathRuntimeBand=" << m_stage5ModtranPathRuntimeBandName
+		<< " ModtranPathRuntimeMode=" << m_stage5ModtranPathRuntimeMode
+		<< " ModtranPathUnitMode=" << m_stage5ModtranPathUnitMode
+		<< " ModtranPathScale=" << m_stage5ModtranPathScale
+		<< " ModtranPathBlend=" << m_stage5ModtranPathBlend
 		<< " Stage5ModtranCompareEffective=" << (modtranCompareEffective ? "1" : "0")
 		<< " Stage7UpdateHz=" << m_stage7UpdateHz
 		<< " Stage4UpdateHz=" << m_stage4UpdateHz
@@ -6710,6 +6879,15 @@ void HwaSimIR::LogEffectiveRuntimeConfig(
 			<< " reason=stage3b_fix_production_must_not_apply_modtran_path_sky_solar"
 			<< std::endl;
 	}
+	if (m_stage5ModtranPathRuntimeMode != "Off")
+	{
+		std::cout << "[EffectiveRuntimeConfig][WARN]"
+			<< " ModtranPathRuntimeMode=" << m_stage5ModtranPathRuntimeMode
+			<< " ModtranPathScale=" << m_stage5ModtranPathScale
+			<< " ModtranPathBlend=" << m_stage5ModtranPathBlend
+			<< " reason=stage3C_AB_or_debug_mode_not_production_default"
+			<< std::endl;
+	}
 	if (m_jpegPerfABTest)
 	{
 		std::cout << "[EffectiveRuntimeConfig][WARN] JpegPerfABTest=1 reason=production_default_should_be_false" << std::endl;
@@ -6731,6 +6909,12 @@ void HwaSimIR::LogStage5ModtranRadianceCompare(const TargetPlatformData& targetP
 	}
 	const std::uint64_t frameSeq = m_currentFrameTelemetry.sourceSeq > 0
 		? m_currentFrameTelemetry.sourceSeq : m_stage0DisplayFrameCount;
+	const bool sampleDue = frameSeq <= 3 ||
+		(m_stage5ModtranLogEveryFrames > 0 && (frameSeq % static_cast<std::uint64_t>(m_stage5ModtranLogEveryFrames)) == 0);
+	if (!sampleDue && !m_enableIRVerboseLog)
+	{
+		return;
+	}
 	const double visibilityKm = m_irRadianceModel.environment().visibilityMeters / 1000.0;
 	const double legacyPath = components.legacyPathRadiance;
 	const double modtranPath = components.modtranPathRadiance;
@@ -6750,9 +6934,7 @@ void HwaSimIR::LogStage5ModtranRadianceCompare(const TargetPlatformData& targetP
 		std::to_string(targetPlat.targetState.targetID) + "#modtran-radiance";
 	const bool stateChanged = m_lastStage5ModtranRadianceCompareLogState[logKey] != state.str();
 	m_lastStage5ModtranRadianceCompareLogState[logKey] = state.str();
-	const bool logDue = frameSeq <= 3 ||
-		(m_stage5ModtranLogEveryFrames > 0 && (frameSeq % static_cast<std::uint64_t>(m_stage5ModtranLogEveryFrames)) == 0) ||
-		stateChanged;
+	const bool logDue = sampleDue || stateChanged;
 	if (!logDue && !m_enableIRVerboseLog)
 	{
 		return;
@@ -6767,6 +6949,8 @@ void HwaSimIR::LogStage5ModtranRadianceCompare(const TargetPlatformData& targetP
 		<< " visibilityKm=" << visibilityKm
 		<< " legacyPath=" << legacyPath
 		<< " modtranPath=" << modtranPath
+		<< " modtranPathRaw=" << components.modtranPathRaw
+		<< " modtranPathScaled=" << components.modtranPathScaled
 		<< " modtranSky=" << components.modtranSkyRadiance
 		<< " modtranSolar=" << components.modtranSolarIrradiance
 		<< " tauUp=" << components.tauUp
@@ -6780,7 +6964,9 @@ void HwaSimIR::LogStage5ModtranRadianceCompare(const TargetPlatformData& targetP
 		<< " unitIrradiance=" << modtranResult.unitIrradiance
 		<< " sourceFile=" << modtranResult.sourceFile
 		<< std::endl;
-	if (m_stage5UseModtranPathRuntime && components.pathRadianceSource != "modtran_runtime")
+	if (Stage5ModtranPathRuntimeAffectsImage() &&
+		components.pathRadianceSource != "modtran_runtime_scaled" &&
+		components.pathRadianceSource != "modtran_runtime_blend")
 	{
 		std::cout << "[Stage5 ModtranRadianceCompare][WARN]"
 			<< " requestedRuntimePath=1"
@@ -6788,6 +6974,77 @@ void HwaSimIR::LogStage5ModtranRadianceCompare(const TargetPlatformData& targetP
 			<< " fallbackReason=" << components.modtranFallbackReason
 			<< std::endl;
 	}
+}
+
+void HwaSimIR::LogStage5ModtranPathAB(const TargetPlatformData& targetPlat, const IRRadianceComponents& components, const IRModtranRadianceResult& modtranResult, double rangeKm, double observerAltKm, double targetAltKm)
+{
+	if (!m_stage5ModtranPathABLog || !Stage5ModtranRadianceCompareEnabled())
+	{
+		return;
+	}
+	const std::uint64_t frameSeq = m_currentFrameTelemetry.sourceSeq > 0
+		? m_currentFrameTelemetry.sourceSeq : m_stage0DisplayFrameCount;
+	const bool sampleDue = frameSeq <= 3 ||
+		(m_stage5ModtranLogEveryFrames > 0 && (frameSeq % static_cast<std::uint64_t>(m_stage5ModtranLogEveryFrames)) == 0);
+	if (!sampleDue && !m_enableIRVerboseLog)
+	{
+		return;
+	}
+	const double visibilityKm = m_irRadianceModel.environment().visibilityMeters / 1000.0;
+	const double surfaceRadiance =
+		components.bodyRadiance +
+		components.reflectedRadiance +
+		components.rearHotspotRadiance +
+		components.plumeRadiance +
+		components.brightspotRadiance;
+	std::ostringstream state;
+	state << static_cast<int>(components.band)
+		<< ":" << components.pathRadianceSource
+		<< ":" << components.modtranPathRuntimeMode
+		<< ":" << (modtranResult.valid ? 1 : 0)
+		<< ":" << components.modtranFallbackReason
+		<< ":" << Stage5ModtranCacheDouble(rangeKm)
+		<< ":" << Stage5ModtranCacheDouble(observerAltKm)
+		<< ":" << Stage5ModtranCacheDouble(targetAltKm)
+		<< ":" << Stage5ModtranCacheDouble(visibilityKm)
+		<< ":" << Stage5ModtranCacheDouble(components.modtranPathScale)
+		<< ":" << Stage5ModtranCacheDouble(components.modtranPathBlend);
+	const std::string logKey =
+		std::to_string(targetPlat.targetState.targetType) + ":" +
+		std::to_string(targetPlat.targetState.targetPlatID) + ":" +
+		std::to_string(targetPlat.targetState.targetID) + "#modtran-path-ab";
+	const bool stateChanged = m_lastStage5ModtranPathABLogState[logKey] != state.str();
+	m_lastStage5ModtranPathABLogState[logKey] = state.str();
+	const bool logDue = sampleDue || stateChanged;
+	if (!logDue && !m_enableIRVerboseLog)
+	{
+		return;
+	}
+	std::cout << "[Stage5 ModtranPathAB]"
+		<< " sourceSeq=" << frameSeq
+		<< " targetID=" << targetPlat.targetState.targetID
+		<< " band=" << IRBandName(components.band)
+		<< " rangeKm=" << rangeKm
+		<< " obsAltKm=" << observerAltKm
+		<< " tgtAltKm=" << targetAltKm
+		<< " visibilityKm=" << visibilityKm
+		<< " tauUp=" << components.tauUp
+		<< " surfaceRadiance=" << surfaceRadiance
+		<< " legacyPath=" << components.legacyPathRadiance
+		<< " modtranPathRaw=" << components.modtranPathRaw
+		<< " modtranPathScaled=" << components.modtranPathScaled
+		<< " effectivePathRadiance=" << components.effectivePathRadiance
+		<< " sensorInputLegacy=" << components.sensorInputLegacy
+		<< " sensorInputModtran=" << components.sensorInputModtran
+		<< " sensorInputEffective=" << components.sensorInputRadiance
+		<< " pathRadianceSource=" << components.pathRadianceSource
+		<< " runtimeMode=" << components.modtranPathRuntimeMode
+		<< " unitMode=" << components.modtranPathUnitMode
+		<< " pathScale=" << components.modtranPathScale
+		<< " pathBlend=" << components.modtranPathBlend
+		<< " valid=" << (modtranResult.valid ? "1" : "0")
+		<< " fallbackReason=" << components.modtranFallbackReason
+		<< std::endl;
 }
 
 void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IRObjectRadianceOutput& radiance, const IRHotspotState& rearHotspot, const IRBrightSpotState& brightSpot, bool rearEnabledForShader, float rearIntensityForShader, const std::string& targetKey)
@@ -6851,26 +7108,75 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 		modtranRadiance.sourceFile = "disabled";
 	}
 	stage5Input.legacyPathRadiance = legacyPathRadiance;
-	stage5Input.modtranPathRadiance = modtranRadiance.valid ? modtranRadiance.pathRadiance : 0.0;
+	const double modtranPathRaw = modtranRadiance.valid ? std::max(0.0, modtranRadiance.pathRadiance) : 0.0;
+	const double modtranPathScaled = ClampStage5Double(
+		modtranPathRaw * m_stage5ModtranPathScale + m_stage5ModtranPathOffset,
+		m_stage5ModtranPathClampMin,
+		m_stage5ModtranPathClampMax);
+	stage5Input.modtranPathRadiance = modtranPathRaw;
+	stage5Input.modtranPathRaw = modtranPathRaw;
+	stage5Input.modtranPathScaled = modtranPathScaled;
+	stage5Input.modtranPathUnitMode = m_stage5ModtranPathUnitMode;
+	stage5Input.modtranPathScale = m_stage5ModtranPathScale;
+	stage5Input.modtranPathOffset = m_stage5ModtranPathOffset;
+	stage5Input.modtranPathBlend = m_stage5ModtranPathBlend;
+	stage5Input.modtranPathRuntimeMode = m_stage5ModtranPathRuntimeMode;
 	stage5Input.modtranSkyRadiance = modtranRadiance.valid ? modtranRadiance.skyRadiance : 0.0;
 	stage5Input.modtranSolarIrradiance = modtranRadiance.valid ? modtranRadiance.solarIrradiance : 0.0;
 	stage5Input.modtranRadianceValid = modtranRadiance.valid;
 	stage5Input.modtranInterpolationMode = modtranRadiance.interpolationMode;
 	stage5Input.modtranFallbackReason = modtranRadiance.fallbackReason;
-	const bool modtranPathRuntimeAllowed =
-		m_stage5UseModtranPathRuntime &&
+	const bool modeReplace = m_stage5ModtranPathRuntimeMode == "ReplaceLegacy";
+	const bool modeBlend = m_stage5ModtranPathRuntimeMode == "BlendLegacy";
+	const bool runtimeAffectsImage = Stage5ModtranPathRuntimeAffectsImage();
+	const bool runtimeBandAllowed =
 		stage5Band == IRBand::MidWaveInfrared &&
+		m_stage5ModtranPathRuntimeBand == IRBand::MidWaveInfrared;
+	const bool modtranPathRuntimeAllowed =
+		runtimeAffectsImage &&
+		runtimeBandAllowed &&
 		modtranRadiance.valid;
-	if (m_stage5UseModtranPathRuntime && stage5Band != IRBand::MidWaveInfrared)
+	if (runtimeAffectsImage && !runtimeBandAllowed)
 	{
 		stage5Input.modtranFallbackReason = "runtime_band_not_supported";
+		const int bandWarnKey = static_cast<int>(stage5Band) * 16 + static_cast<int>(m_stage5ModtranPathRuntimeBand);
+		if (!m_stage5ModtranPathRuntimeBandWarned[bandWarnKey])
+		{
+			m_stage5ModtranPathRuntimeBandWarned[bandWarnKey] = true;
+			std::cout << "[Stage5 ModtranPathRuntime][WARN]"
+				<< " requestedBand=" << m_stage5ModtranPathRuntimeBandName
+				<< " activeBand=" << IRBandName(stage5Band)
+				<< " runtimeMode=" << m_stage5ModtranPathRuntimeMode
+				<< " fallback=legacy"
+				<< " reason=only_MWIR_path_runtime_allowed_in_stage3C"
+				<< std::endl;
+		}
 	}
-	stage5Input.pathRadiance = modtranPathRuntimeAllowed
-		? std::max(0.0, modtranRadiance.pathRadiance)
-		: legacyPathRadiance;
-	stage5Input.pathRadianceSource = modtranPathRuntimeAllowed
-		? "modtran_runtime"
-		: (legacyPathRadiance > 0.0 ? "legacy_empirical" : "disabled");
+	else if (runtimeAffectsImage && !modtranRadiance.valid)
+	{
+		stage5Input.modtranFallbackReason = modtranRadiance.fallbackReason.empty()
+			? "modtran_invalid"
+			: modtranRadiance.fallbackReason;
+	}
+	stage5Input.pathRadiance = legacyPathRadiance;
+	stage5Input.pathRadianceSource = legacyPathRadiance > 0.0 ? "legacy_empirical" : "disabled";
+	if (modtranPathRuntimeAllowed && modeReplace)
+	{
+		stage5Input.pathRadiance = modtranPathScaled;
+		stage5Input.pathRadianceSource = "modtran_runtime_scaled";
+	}
+	else if (modtranPathRuntimeAllowed && modeBlend)
+	{
+		stage5Input.pathRadiance =
+			legacyPathRadiance * (1.0 - m_stage5ModtranPathBlend) +
+			modtranPathScaled * m_stage5ModtranPathBlend;
+		stage5Input.pathRadianceSource = "modtran_runtime_blend";
+	}
+	if (runtimeAffectsImage && !modtranPathRuntimeAllowed)
+	{
+		stage5Input.pathRadianceSource = legacyPathRadiance > 0.0 ? "fallback_legacy" : "disabled";
+	}
+	stage5Input.effectivePathRadiance = stage5Input.pathRadiance;
 	stage5Input.sourceFlags = "body+reflected";
 	if (stage5Input.hotspotIntensity > 0.0)
 	{
@@ -6886,7 +7192,18 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	}
 	if (stage5Input.pathRadiance > 0.0)
 	{
-		stage5Input.sourceFlags += modtranPathRuntimeAllowed ? "+modtranPathRuntime" : "+legacyPath";
+		if (stage5Input.pathRadianceSource == "modtran_runtime_scaled")
+		{
+			stage5Input.sourceFlags += "+modtranPathScaled";
+		}
+		else if (stage5Input.pathRadianceSource == "modtran_runtime_blend")
+		{
+			stage5Input.sourceFlags += "+modtranPathBlend";
+		}
+		else
+		{
+			stage5Input.sourceFlags += "+legacyPath";
+		}
 	}
 	if (modtranCompareEnabled)
 	{
@@ -7017,12 +7334,21 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 			<< " pathRadiance=" << components.pathRadiance
 			<< " legacyPathRadiance=" << components.legacyPathRadiance
 			<< " modtranPathRadiance=" << components.modtranPathRadiance
+			<< " modtranPathRaw=" << components.modtranPathRaw
+			<< " modtranPathScaled=" << components.modtranPathScaled
+			<< " effectivePathRadiance=" << components.effectivePathRadiance
+			<< " modtranPathRuntimeMode=" << components.modtranPathRuntimeMode
+			<< " modtranPathUnitMode=" << components.modtranPathUnitMode
+			<< " modtranPathScale=" << components.modtranPathScale
+			<< " modtranPathBlend=" << components.modtranPathBlend
 			<< " modtranSkyRadiance=" << components.modtranSkyRadiance
 			<< " modtranSolarIrradiance=" << components.modtranSolarIrradiance
 			<< " modtranRadianceValid=" << (components.modtranRadianceValid ? "1" : "0")
 			<< " pathRadianceSource=" << components.pathRadianceSource
 			<< " modtranFallbackReason=" << components.modtranFallbackReason
 			<< " modtranInterpolationMode=" << components.modtranInterpolationMode
+			<< " sensorInputLegacy=" << components.sensorInputLegacy
+			<< " sensorInputModtran=" << components.sensorInputModtran
 			<< " sensorInputRadiance=" << components.sensorInputRadiance
 			<< " displayPreview=" << components.displayPreview
 			<< " sourceFlags=" << components.sourceFlags
@@ -7053,11 +7379,17 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 			<< " pathRadianceSource=" << components.pathRadianceSource
 			<< " legacyPathRadiance=" << components.legacyPathRadiance
 			<< " modtranPathRadiance=" << components.modtranPathRadiance
+			<< " modtranPathRaw=" << components.modtranPathRaw
+			<< " modtranPathScaled=" << components.modtranPathScaled
+			<< " effectivePathRadiance=" << components.effectivePathRadiance
+			<< " modtranPathRuntimeMode=" << components.modtranPathRuntimeMode
 			<< " modtranSkyRadiance=" << components.modtranSkyRadiance
 			<< " modtranSolarIrradiance=" << components.modtranSolarIrradiance
 			<< " modtranRadianceValid=" << (components.modtranRadianceValid ? "1" : "0")
 			<< " modtranFallbackReason=" << components.modtranFallbackReason
 			<< " modtranInterpolationMode=" << components.modtranInterpolationMode
+			<< " sensorInputLegacy=" << components.sensorInputLegacy
+			<< " sensorInputModtran=" << components.sensorInputModtran
 			<< " sensorInputRadiance=" << components.sensorInputRadiance
 			<< " bodyGrayBeforeFloor=" << stage5.bodyGrayBeforeFloor
 			<< " bodyGrayAfterFloor=" << stage5.bodyGrayAfterFloor
@@ -7087,6 +7419,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 			<< std::endl;
 	}
 	LogStage5ModtranRadianceCompare(targetPlat, components, modtranRadiance, rangeKmForLog, observerAltKmForLog, targetAltKmForLog);
+	LogStage5ModtranPathAB(targetPlat, components, modtranRadiance, rangeKmForLog, observerAltKmForLog, targetAltKmForLog);
 
 	const bool stage5DiagnosticsEnabled =
 		logStage5 ||

@@ -36,6 +36,14 @@ IRRadianceModelV2Input::IRRadianceModelV2Input()
 	pathRadiance(0.0),
 	legacyPathRadiance(0.0),
 	modtranPathRadiance(0.0),
+	modtranPathRaw(0.0),
+	modtranPathScaled(0.0),
+	modtranPathUnitMode("Native"),
+	modtranPathScale(1.0),
+	modtranPathOffset(0.0),
+	modtranPathBlend(1.0),
+	modtranPathRuntimeMode("Off"),
+	effectivePathRadiance(0.0),
 	modtranSkyRadiance(0.0),
 	modtranSolarIrradiance(0.0),
 	modtranRadianceValid(false),
@@ -63,12 +71,22 @@ IRRadianceComponents::IRRadianceComponents()
 	pathRadiance(0.0),
 	legacyPathRadiance(0.0),
 	modtranPathRadiance(0.0),
+	modtranPathRaw(0.0),
+	modtranPathScaled(0.0),
+	modtranPathUnitMode("Native"),
+	modtranPathScale(1.0),
+	modtranPathOffset(0.0),
+	modtranPathBlend(1.0),
+	modtranPathRuntimeMode("Off"),
+	effectivePathRadiance(0.0),
 	modtranSkyRadiance(0.0),
 	modtranSolarIrradiance(0.0),
 	modtranRadianceValid(false),
 	pathRadianceSource("disabled"),
 	modtranFallbackReason("not_queried"),
 	modtranInterpolationMode("none"),
+	sensorInputLegacy(0.0),
+	sensorInputModtran(0.0),
 	sensorInputRadiance(0.0),
 	displayPreview(0.0),
 	sourceFlags("body")
@@ -114,7 +132,11 @@ IRRadianceComponents IRRadianceModelV2::evaluateComponents(const IRRadianceModel
 	const double legacyPathRadiance = input.legacyPathRadiance > 0.0
 		? std::max(0.0, input.legacyPathRadiance)
 		: (input.pathRadianceSource == "legacy_empirical" ? pathRadiance : 0.0);
-	const double modtranPathRadiance = std::max(0.0, input.modtranPathRadiance);
+	const double modtranPathRaw = input.modtranPathRaw > 0.0
+		? std::max(0.0, input.modtranPathRaw)
+		: std::max(0.0, input.modtranPathRadiance);
+	const double modtranPathScaled = std::max(0.0, input.modtranPathScaled);
+	const double modtranPathRadiance = modtranPathRaw;
 	const double modtranSkyRadiance = std::max(0.0, input.modtranSkyRadiance);
 	const double modtranSolarIrradiance = std::max(0.0, input.modtranSolarIrradiance);
 	const double wavelengthCenterUm = bandCenterUm(input.band);
@@ -146,20 +168,29 @@ IRRadianceComponents IRRadianceModelV2::evaluateComponents(const IRRadianceModel
 	components.pathRadiance = pathRadiance;
 	components.legacyPathRadiance = legacyPathRadiance;
 	components.modtranPathRadiance = modtranPathRadiance;
+	components.modtranPathRaw = modtranPathRaw;
+	components.modtranPathScaled = modtranPathScaled;
+	components.modtranPathUnitMode = input.modtranPathUnitMode.empty() ? "Native" : input.modtranPathUnitMode;
+	components.modtranPathScale = input.modtranPathScale;
+	components.modtranPathOffset = input.modtranPathOffset;
+	components.modtranPathBlend = clamp(input.modtranPathBlend, 0.0, 1.0);
+	components.modtranPathRuntimeMode = input.modtranPathRuntimeMode.empty() ? "Off" : input.modtranPathRuntimeMode;
+	components.effectivePathRadiance = pathRadiance;
 	components.modtranSkyRadiance = modtranSkyRadiance;
 	components.modtranSolarIrradiance = modtranSolarIrradiance;
 	components.modtranRadianceValid = input.modtranRadianceValid;
 	components.pathRadianceSource = input.pathRadianceSource.empty() ? "disabled" : input.pathRadianceSource;
 	components.modtranFallbackReason = input.modtranFallbackReason.empty() ? "not_queried" : input.modtranFallbackReason;
 	components.modtranInterpolationMode = input.modtranInterpolationMode.empty() ? "none" : input.modtranInterpolationMode;
-	components.sensorInputRadiance =
-		tauUp *
-		(components.bodyRadiance +
-			components.reflectedRadiance +
-			components.rearHotspotRadiance +
-			components.plumeRadiance +
-			components.brightspotRadiance) +
-		components.pathRadiance;
+	const double surfaceRadiance =
+		components.bodyRadiance +
+		components.reflectedRadiance +
+		components.rearHotspotRadiance +
+		components.plumeRadiance +
+		components.brightspotRadiance;
+	components.sensorInputLegacy = tauUp * surfaceRadiance + components.legacyPathRadiance;
+	components.sensorInputModtran = tauUp * surfaceRadiance + components.modtranPathScaled;
+	components.sensorInputRadiance = tauUp * surfaceRadiance + components.pathRadiance;
 	double bodyPreview = applyToneMap(
 		tauUp * components.bodyRadiance,
 		input.debugConfig.bodyRadianceScale,

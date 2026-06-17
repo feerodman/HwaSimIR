@@ -75,6 +75,15 @@ function Assert-False {
     [pscustomobject]@{ Check = "[$Section] $Key"; Status = "OK"; Value = $value }
 }
 
+function Assert-True {
+    param($Map, [string]$Section, [string]$Key, [string]$Default = "true")
+    $value = Get-IniValue $Map $Section $Key $Default
+    if (-not (Test-TrueValue $value)) {
+        throw "Production runtime config must keep [$Section] $Key=true/on/1, got '$value'"
+    }
+    [pscustomobject]@{ Check = "[$Section] $Key"; Status = "OK"; Value = $value }
+}
+
 function Assert-Equals {
     param($Map, [string]$Section, [string]$Key, [string]$Expected, [string]$Default = "")
     $value = Get-IniValue $Map $Section $Key $Default
@@ -94,6 +103,15 @@ $checks += Assert-False $ini "Stage5ModtranRadiance" "UseModtranPathRuntime" "fa
 $checks += Assert-False $ini "Stage5ModtranRadiance" "UseModtranSkyRuntime" "false"
 $checks += Assert-False $ini "Stage5ModtranRadiance" "UseModtranSolarRuntime" "false"
 $checks += Assert-False $ini "Stage5ModtranRadiance" "CompareLegacy" "false"
+$checks += Assert-Equals $ini "Stage5ModtranRadiance" "ModtranPathRuntimeBand" "MWIR" "MWIR"
+$checks += Assert-Equals $ini "Stage5ModtranRadiance" "ModtranPathRuntimeMode" "Off" "Off"
+$checks += Assert-Equals $ini "Stage5ModtranRadiance" "ModtranPathUnitMode" "Native" "Native"
+$checks += Assert-Equals $ini "Stage5ModtranRadiance" "ModtranPathScale" "1.0" "1.0"
+$checks += Assert-Equals $ini "Stage5ModtranRadiance" "ModtranPathOffset" "0.0" "0.0"
+$checks += Assert-Equals $ini "Stage5ModtranRadiance" "ModtranPathClampMin" "0.0" "0.0"
+$checks += Assert-Equals $ini "Stage5ModtranRadiance" "ModtranPathClampMax" "10.0" "10.0"
+$checks += Assert-Equals $ini "Stage5ModtranRadiance" "ModtranPathBlend" "1.0" "1.0"
+$checks += Assert-True $ini "Stage5ModtranRadiance" "ModtranPathABLog" "true"
 $checks += Assert-False $ini "TcpOutput" "EnableH264Experimental" "false"
 $checks += Assert-False $ini "TcpOutput" "JpegPerfABTest" "false"
 $checks += Assert-Equals $ini "TcpOutput" "JpegEncodeMode" "rgb" "rgb"
