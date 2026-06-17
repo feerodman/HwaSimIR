@@ -31,6 +31,7 @@ struct IRUpdateBreakdown
 	double targetRadianceMs = 0.0;
 	double stage4HotspotMs = 0.0;
 	double stage5PlumeMs = 0.0;
+	double stage5RadianceComponentMs = 0.0;
 	double stage5ModtranLookupMs = 0.0;
 	double shaderInputApplyMs = 0.0;
 	std::uint64_t shaderInputSetCount = 0;
@@ -113,6 +114,7 @@ private:
 	double m_targetRadianceMsTotal = 0.0;
 	double m_stage4HotspotMsTotal = 0.0;
 	double m_stage5PlumeBreakdownMsTotal = 0.0;
+	double m_stage5RadianceComponentMsTotal = 0.0;
 	double m_stage5ModtranLookupMsTotal = 0.0;
 	double m_shaderInputApplyMsTotal = 0.0;
 	std::uint64_t m_shaderInputSetCountTotal = 0;

@@ -9,6 +9,7 @@ $rootPath = $root.Path
 $hwaExe = Join-Path $rootPath "HwaSim_IR\Bin\HwaSim_IR.exe"
 $hwaWorkDir = Join-Path $rootPath "HwaSim_IR\Bin"
 $networkConfig = Join-Path $hwaWorkDir "Config\NetworkConfig.ini"
+$runtimeConfig = Join-Path $hwaWorkDir "Config\HwaSimIRRuntime.ini"
 $logDir = Join-Path $rootPath "logs\stage5"
 $summaryPath = Join-Path $logDir "modtran_radiance_compare_summary.md"
 $csvPath = Join-Path $logDir "modtran_radiance_compare_summary.csv"
@@ -237,6 +238,7 @@ function Invoke-HwaStage5ModtranRun {
     $process = $null
     $udp = $null
     $networkConfigBackup = [System.IO.File]::ReadAllBytes($networkConfig)
+    $runtimeConfigBackup = [System.IO.File]::ReadAllBytes($runtimeConfig)
 
     try {
         Normalize-ProcessPathEnvironment
@@ -280,6 +282,7 @@ function Invoke-HwaStage5ModtranRun {
             }
         }
         [System.IO.File]::WriteAllBytes($networkConfig, $networkConfigBackup)
+        [System.IO.File]::WriteAllBytes($runtimeConfig, $runtimeConfigBackup)
         Clear-Stage5ModtranEnv
     }
 
@@ -333,6 +336,7 @@ function Get-ModtranCompareRows {
 Assert-Path $hwaExe "HwaSimIR executable"
 Assert-Path $hwaWorkDir "HwaSimIR working directory"
 Assert-Path $networkConfig "HwaSimIR network config"
+Assert-Path $runtimeConfig "HwaSimIR runtime config"
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 
 $mwirCases = @()

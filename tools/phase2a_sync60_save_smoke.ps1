@@ -117,6 +117,13 @@ try {
     $runtimeText = Set-IniValue $runtimeText "JpegPerfABTest" "false"
     $runtimeText = Set-IniValue $runtimeText "LegacyEngineBodyHeating" "false"
     $runtimeText = Set-IniValue $runtimeText "EnableIRVerboseLog" "0"
+    $runtimeText = Set-IniValue $runtimeText "DebugView" "Off"
+    $runtimeText = Set-IniValue $runtimeText "LogComponents" "false"
+    $runtimeText = Set-IniValue $runtimeText "EnableModtranRadianceDebug" "false"
+    $runtimeText = Set-IniValue $runtimeText "UseModtranPathRuntime" "false"
+    $runtimeText = Set-IniValue $runtimeText "UseModtranSkyRuntime" "false"
+    $runtimeText = Set-IniValue $runtimeText "UseModtranSolarRuntime" "false"
+    $runtimeText = Set-IniValue $runtimeText "CompareLegacy" "false"
     [IO.File]::WriteAllText($runtimeIni, $runtimeText, $utf8)
 
     $env:QT_FORCE_STDERR_LOGGING = "1"
@@ -211,6 +218,10 @@ $summary = [pscustomobject]@{
     shaderInputSetCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "shaderInputSetCount")), 3)
     shaderInputSkipCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "shaderInputSkipCount")), 3)
     shaderInputCacheHitRateAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "shaderInputCacheHitRate")), 3)
+    stage5RadianceComponentMs = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage5RadianceComponentMs")), 3)
+    stage5ModtranLookupMs = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage5ModtranLookupMs")), 6)
+    stage5ModtranCacheHitCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage5ModtranCacheHitCount")), 3)
+    stage5ModtranCacheMissCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage5ModtranCacheMissCount")), 3)
     stage7FullUpdateCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage7FullUpdateCount")), 3)
     stage7PositionOnlyCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage7PositionOnlyCount")), 3)
     stage7SkipCountMax = [math]::Round((Get-Maximum (Get-NumericValues $hwaText "Perf" "stage7SkipCount")), 3)

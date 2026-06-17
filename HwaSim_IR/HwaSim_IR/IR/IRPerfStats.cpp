@@ -95,6 +95,7 @@ void IRPerfStats::recordIrUpdateBreakdown(const IRUpdateBreakdown& breakdown)
 		m_targetRadianceMsTotal += breakdown.targetRadianceMs;
 		m_stage4HotspotMsTotal += breakdown.stage4HotspotMs;
 		m_stage5PlumeBreakdownMsTotal += breakdown.stage5PlumeMs;
+		m_stage5RadianceComponentMsTotal += breakdown.stage5RadianceComponentMs;
 		m_stage5ModtranLookupMsTotal += breakdown.stage5ModtranLookupMs;
 		m_shaderInputApplyMsTotal += breakdown.shaderInputApplyMs;
 		++m_irBreakdownSamples;
@@ -209,24 +210,39 @@ void IRPerfStats::maybeLog()
 		const double shaderInputHitRate = shaderInputTotal > 0
 			? (static_cast<double>(m_shaderInputSkipCountTotal) * 100.0 / static_cast<double>(shaderInputTotal))
 			: 0.0;
+		const double udpFps = static_cast<double>(m_intervalUdpFrames) / elapsedSec;
+		const double renderFps = static_cast<double>(m_intervalRenderFrames) / elapsedSec;
+		const double outputFps = static_cast<double>(m_intervalOutputFrames) / elapsedSec;
+		const double annotationMs = Average(m_annotationMsTotal, m_annotationSamples);
+		const double irUpdateMs = Average(m_irUpdateMsTotal, m_irSamples);
+		const double stage7SkyGroundMs = Average(m_stage7SkyGroundMsTotal, m_irBreakdownSamples);
+		const double stage4HotspotMs = Average(m_stage4HotspotMsTotal, m_irBreakdownSamples);
+		const double stage5RadianceComponentMs = Average(m_stage5RadianceComponentMsTotal, m_irBreakdownSamples);
+		const double stage5ModtranLookupMs = Average(m_stage5ModtranLookupMsTotal, m_irBreakdownSamples);
+		const double shaderInputApplyMs = Average(m_shaderInputApplyMsTotal, m_irBreakdownSamples);
+		const double renderMs = Average(m_renderMsTotal, m_renderSamples);
+		const double readbackMs = Average(m_readbackMsTotal, m_captureSamples);
+		const double jpegMs = Average(m_jpegMsTotal, m_tcpSamples);
+		const double tcpSendMs = Average(m_tcpSendMsTotal, m_tcpSamples);
 		out << std::fixed << std::setprecision(3)
 			<< "[Perf]"
 			<< " mode=" << (m_syncMode ? "sync" : "async")
 			<< " videoFpsTarget=" << m_videoFpsTarget
-			<< " udpFps=" << (static_cast<double>(m_intervalUdpFrames) / elapsedSec)
-			<< " renderFps=" << (static_cast<double>(m_intervalRenderFrames) / elapsedSec)
-			<< " outputFps=" << (static_cast<double>(m_intervalOutputFrames) / elapsedSec)
+			<< " udpFps=" << udpFps
+			<< " renderFps=" << renderFps
+			<< " outputFps=" << outputFps
 			<< " sceneUpdateMs=" << Average(m_sceneUpdateMsTotal, m_sceneSamples)
-			<< " annotationMs=" << Average(m_annotationMsTotal, m_annotationSamples)
-			<< " irUpdateMs=" << Average(m_irUpdateMsTotal, m_irSamples)
+			<< " annotationMs=" << annotationMs
+			<< " irUpdateMs=" << irUpdateMs
 			<< " irEnvBuildMs=" << Average(m_irEnvBuildMsTotal, m_irBreakdownSamples)
-			<< " stage7SkyGroundMs=" << Average(m_stage7SkyGroundMsTotal, m_irBreakdownSamples)
+			<< " stage7SkyGroundMs=" << stage7SkyGroundMs
 			<< " platformRadianceMs=" << Average(m_platformRadianceMsTotal, m_irBreakdownSamples)
 			<< " targetRadianceMs=" << Average(m_targetRadianceMsTotal, m_irBreakdownSamples)
-			<< " stage4HotspotMs=" << Average(m_stage4HotspotMsTotal, m_irBreakdownSamples)
+			<< " stage4HotspotMs=" << stage4HotspotMs
 			<< " stage5PlumeMs=" << Average(m_stage5PlumeBreakdownMsTotal, m_irBreakdownSamples)
-			<< " stage5ModtranLookupMs=" << Average(m_stage5ModtranLookupMsTotal, m_irBreakdownSamples)
-			<< " shaderInputApplyMs=" << Average(m_shaderInputApplyMsTotal, m_irBreakdownSamples)
+			<< " stage5RadianceComponentMs=" << stage5RadianceComponentMs
+			<< " stage5ModtranLookupMs=" << stage5ModtranLookupMs
+			<< " shaderInputApplyMs=" << shaderInputApplyMs
 			<< " shaderInputApplyScope=exclusive"
 			<< " stage7SkyGroundScope=inclusive"
 			<< " stage4HotspotScope=inclusive"
@@ -241,12 +257,12 @@ void IRPerfStats::maybeLog()
 			<< " stage4UpdateCount=" << m_stage4UpdateCountTotal
 			<< " stage4SkipCount=" << m_stage4SkipCountTotal
 			<< " plumeUpdateMs=" << Average(m_plumeUpdateMsTotal, m_plumeSamples)
-			<< " renderMs=" << Average(m_renderMsTotal, m_renderSamples)
-			<< " readbackMs=" << Average(m_readbackMsTotal, m_captureSamples)
+			<< " renderMs=" << renderMs
+			<< " readbackMs=" << readbackMs
 			<< " resizeMs=" << Average(m_resizeMsTotal, m_captureSamples)
 			<< " frameCopyMs=" << Average(m_copyMsTotal, m_captureSamples)
-			<< " jpegMs=" << Average(m_jpegMsTotal, m_tcpSamples)
-			<< " tcpSendMs=" << Average(m_tcpSendMsTotal, m_tcpSamples)
+			<< " jpegMs=" << jpegMs
+			<< " tcpSendMs=" << tcpSendMs
 			<< " tcpQueueDepth=" << m_tcpQueueDepth
 			<< " tcpQueueDepthMax=" << m_tcpQueueDepthMax
 			<< " inputQueueDepth=" << m_inputQueueDepth
@@ -259,6 +275,35 @@ void IRPerfStats::maybeLog()
 			<< " udpFrames=" << m_totalUdpFrames
 			<< " renderFrames=" << m_totalRenderFrames
 			<< " outputFrames=" << m_totalOutputFrames;
+		const bool belowTargetFps = m_videoFpsTarget >= 59.5 && outputFps > 0.0 && outputFps < 59.5;
+		const bool significantBacklog = m_inputQueueDepth > 2 || m_sourceSeqLag > 2;
+		const bool sustainedBelowTarget = outputFps < (m_videoFpsTarget - 1.0);
+		const bool inputStillActive =
+			udpFps >= (m_videoFpsTarget * 0.8) ||
+			significantBacklog ||
+			m_intervalOutputFrames >= static_cast<std::uint64_t>(std::max(30.0, m_videoFpsTarget));
+		const bool afterWarmup = m_totalOutputFrames >= 120;
+		if (belowTargetFps && inputStillActive && afterWarmup && (sustainedBelowTarget || significantBacklog))
+		{
+			out << "\n[Perf][WARN]"
+				<< " outputFps=" << outputFps
+				<< " targetFps=" << m_videoFpsTarget
+				<< " bottleneckSummary=below_60hz"
+				<< " irUpdateMs=" << irUpdateMs
+				<< " stage5ModtranLookupMs=" << stage5ModtranLookupMs
+				<< " stage5RadianceComponentMs=" << stage5RadianceComponentMs
+				<< " stage4HotspotMs=" << stage4HotspotMs
+				<< " stage7SkyGroundMs=" << stage7SkyGroundMs
+				<< " shaderInputApplyMs=" << shaderInputApplyMs
+				<< " annotationMs=" << annotationMs
+				<< " renderMs=" << renderMs
+				<< " readbackMs=" << readbackMs
+				<< " jpegMs=" << jpegMs
+				<< " tcpSendMs=" << tcpSendMs
+				<< " inputQueueDepth=" << m_inputQueueDepth
+				<< " sourceSeqLag=" << m_sourceSeqLag
+				<< " note=recorderWriteMs_is_reported_by_VideoDisplay_RecorderPerf";
+		}
 		message = out.str();
 		m_lastLoggedOutputFrames = m_totalOutputFrames;
 		resetIntervalLocked(nowNs);
@@ -302,6 +347,7 @@ void IRPerfStats::resetIntervalLocked(std::int64_t nowNs)
 	m_targetRadianceMsTotal = 0.0;
 	m_stage4HotspotMsTotal = 0.0;
 	m_stage5PlumeBreakdownMsTotal = 0.0;
+	m_stage5RadianceComponentMsTotal = 0.0;
 	m_stage5ModtranLookupMsTotal = 0.0;
 	m_shaderInputApplyMsTotal = 0.0;
 	m_shaderInputSetCountTotal = 0;

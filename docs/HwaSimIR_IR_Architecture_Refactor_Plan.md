@@ -1302,6 +1302,127 @@ MODTRAN 对比 smoke 摘要：
 - 如需严格覆盖 5/20/50 km、3/10/20 km、5/15/30 km 全矩阵，建议补直接 LUT
   单元 smoke 或每 case 独立进程 smoke。
 - H.264 实时传输、AGC/MTF、高度/Mach 气动加热仍应作为独立后续阶段。
+
+### 阶段 3B-Fix：生产配置与 MODTRAN radiance compare 彻底分离
+
+执行日期：2026-06-17
+执行者：Codex
+目标：定位人工 5 目标运行约 40 FPS 的配置/路径差异，确认生产默认渲染不启用
+MODTRAN path/sky/solar runtime，也不默认执行 MODTRAN radiance compare 查询。
+
+根因判断：
+- 阶段 3B 结束时，生产 ini 和代码默认仍保留
+  EnableModtranRadianceDebug=true、CompareLegacy=true。
+- UseModtranPathRuntime=false 确实保证了 MODTRAN path 不改变最终像素，
+  但 compare/debug 打开时，Stage5 radiance components 路径仍会按目标执行
+  MODTRAN radiance lookup 和 compare 日志统计。
+- 该路径在自动验收中平均耗时很小，但手动运行若叠加 debug/log/旧配置或工作目录差异，
+  容易被误判为生产渲染正在使用 MODTRAN runtime，也会增加排查噪声。
+
+本阶段修正：
+- 生产默认改为：
+  EnableModtranRadianceDebug=false、CompareLegacy=false、
+  UseModtranPathRuntime=false、UseModtranSkyRuntime=false、
+  UseModtranSolarRuntime=false。
+- 代码默认同步改为 compare/debug 关闭；只有显式 debug/smoke override 或 runtime
+  开关打开时，Stage5 才查询 MODTRAN radiance LUT。
+- 新增 Stage5ModtranCompareEffective 口径，统一判断 compare/runtime 是否实际生效。
+- 新增 [EffectiveRuntimeConfig]，启动、init 后、第一帧 display 后打印有效运行配置：
+  videoFps、syncMode、targetNumValid、IRUpdateHz、AnnotationUpdateHz、
+  EnablePerfLog、EnableIRVerboseLog、EnableIRPhysicalPipeline、DebugView、
+  LogComponents、EnableModtranRadianceDebug、UseModtranPathRuntime、
+  UseModtranSkyRuntime、UseModtranSolarRuntime、CompareLegacy、
+  Stage5ModtranCompareEffective、Stage7UpdateHz、Stage4UpdateHz、
+  Stage5PlumeUpdateHz、Codec、JpegEncodeMode、JpegQuality、
+  EnableH264Experimental、JpegPerfABTest、saveMP4En 和配置来源。
+- [EffectiveRuntimeConfig][WARN] 会在生产风险开关打开时报警：
+  DebugView != Off、LogComponents=true、EnableIRVerboseLog=true、
+  任意 UseModtran*Runtime=true、JpegPerfABTest=true、
+  Stage5ModtranCompareEffective=true。
+- [Perf] 增加 stage5RadianceComponentMs，并保留 stage5ModtranLookupMs、
+  stage5ModtranCacheHitCount、stage5ModtranCacheMissCount。
+- [Perf][WARN] bottleneck summary 只在 60 Hz 目标下出现实际低帧/明显 backlog 时输出，
+  避免启动第一帧或停机尾窗制造假瓶颈。
+- 新增 tools/runtime_config_check.ps1，检查生产 ini 不允许打开
+  DebugView/LogComponents/Verbose/UseModtran*Runtime/CompareLegacy/
+  EnableModtranRadianceDebug/JpegPerfABTest/EnableH264Experimental/
+  LegacyEngineBodyHeating。
+- 修改 tools/stage5_modtran_radiance_compare_smoke.ps1：
+  smoke 通过进程环境变量临时打开 MODTRAN compare/debug，
+  运行前备份生产 ini，结束或失败都恢复。
+- 修改 tools/phase2a_sync60_save_smoke.ps1：
+  30 秒生产默认验收强制关闭 MODTRAN compare/debug/runtime，并在 summary 中输出
+  stage5RadianceComponentMs、stage5ModtranLookupMs 和 cache hit/miss。
+- 新增 tools/phase3b_fix_manual_equiv_smoke.ps1：
+  自动执行生产配置检查 + 30 秒 60 Hz/saveMP4En=true 验收，
+  并解析 [EffectiveRuntimeConfig]、stage5ModtranLookupMs、人工差异检查清单。
+
+生产 EffectiveRuntimeConfig 摘要：
+- reason=first_display
+- runtimeConfigPath=Config/HwaSimIRRuntime.ini、runtimeConfigLoaded=1
+- videoFps=60、syncMode=1、targetNumValid=5、saveMP4En=1
+- EnableIRVerboseLog=0、EnableIRPhysicalPipeline=1、DebugView=Off、
+  LogComponents=0
+- EnableModtranRadianceDebug=0、UseModtranPathRuntime=0、
+  UseModtranSkyRuntime=0、UseModtranSolarRuntime=0、CompareLegacy=0、
+  Stage5ModtranCompareEffective=0
+- Codec=auto、JpegEncodeMode=rgb、JpegQuality=100、
+  EnableH264Experimental=0、JpegPerfABTest=0
+- effectiveRuntimeConfigWarnCount=0
+
+构建：
+- HwaSim_IR Windows Release x64：通过。
+- DataDrivenTestQT Release：通过。
+- HwaSim_IR_VideoDisplay Windows Release x64：通过。
+- 剩余警告为既有 PDB/qtmain 调试符号警告。
+
+回归测试：
+- runtime_config_check.ps1：通过。
+- Stage3 MODTRAN tau-only strict：通过。
+- Stage4 hotspot/brightspot strict：通过。
+- Stage4 三波段语义 smoke：通过。
+- Stage5 min radiance 静态检查：通过。
+- Stage5 radiance components smoke：通过。
+- Stage5 MODTRAN radiance compare smoke：通过。
+- compare smoke 结束后再次运行 runtime_config_check.ps1：通过，确认生产 ini 已恢复。
+
+30 秒生产默认同步测试：
+- 配置：800x800、5 目标、videoFps=60、saveMP4En=true、
+  Codec=auto、JpegEncodeMode=rgb、JpegQuality=100、
+  EnableH264Experimental=false、LegacyEngineBodyHeating=false、
+  EnableIRPhysicalPipeline=true、DebugView=Off、UseModtranPathRuntime=false。
+- 日志：logs/phase2a-final-20260617-110225
+- MP4：HwaSim_IR_VideoDisplay/x64/Release/MP4/round_001_20260617_110239/output.mp4
+- sentFps=60.033、udpFps=59.935、renderFps=60.311、
+  outputFps=60.142、VideoDisplay receive/display=60.313。
+- latencyAvgMs=35.105。
+- stage5ModtranLookupMsAvg=0、stage5ModtranLookupMsMax=0。
+- stage5RadianceComponentMsAvg=0.379296。
+- sourceSeqContinuous=1、sourceSeqContinuousWritten=1。
+- inputQueueOverflow=0、TCP overwritten=0、recordingDroppedFrames=0。
+- written/mp4/annotations/targetAnnotations=1799/1799/1799/1799。
+- sourceSeqLagMax=7、inputQueueDepthMax=13 为启动/追帧瞬态；
+  后段稳态 [Perf] 显示 sourceSeqLag 多数 0..2、inputQueueDepth 0..1。
+- 最新 [Perf][WARN] 只剩一条真实短窗口：
+  outputFps=58.679、sourceSeqLag=4、stage5ModtranLookupMs=0；
+  后续窗口恢复到 60 Hz，无持续积压。
+
+结论：
+- 已确认生产默认不使用 MODTRAN path/sky/solar runtime。
+- 已确认生产默认不执行 MODTRAN radiance compare lookup：
+  Stage5ModtranCompareEffective=0，stage5ModtranLookupMs=0。
+- 自动 manual-equivalent 30 秒验收保持 60 Hz、latency <=80 ms、
+  sourceSeq 连续、录像 0 丢帧。
+- 若人工仍出现约 40 FPS，应优先按脚本输出的人工差异清单检查：
+  exe 是否为 Release、工作目录是否为 HwaSim_IR/Bin、runtimeConfigPath 是否正确、
+  是否有旧进程残留、DebugView/LogComponents/Verbose/JpegPerfABTest/h264 是否误开、
+  VideoDisplay 是否阻塞或控制台是否有高频日志。
+
+下一步：
+- 不进入 3C；继续保持 UseModtranPathRuntime=false。
+- 人工实测若仍掉到 40 FPS，请直接贴 [EffectiveRuntimeConfig]、[Perf]、
+  [VideoPerf]、[RecorderPerf] 和 phase3b_fix_manual_equiv_summary.json，
+  先比对运行目录/配置路径/旧进程，而不是继续加红外物理功能。
 ```
 
 ---

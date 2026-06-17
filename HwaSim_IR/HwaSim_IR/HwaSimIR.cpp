@@ -4372,6 +4372,14 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 		m_pTcpThread->setH264Requested(sensor.h264En);
 		m_pTcpThread->resetFrameCounters();
 	}
+	LogEffectiveRuntimeConfig(
+		"after_init",
+		targetVideoFps,
+		0,
+		sensor.saveMP4En,
+		"cmd",
+		"pending_realtime_packet",
+		"cmd");
 	if (!m_bSyncRenderMode.load())
 	{
 		SetRenderMode(false, static_cast<double>(targetVideoFps));
@@ -4431,6 +4439,17 @@ void HwaSimIR::handleDisplayData(const BYHWICD::DisplayC2cObjTrackingData& data)
 			<< ", sensorID=" << data.sensorID
 			<< ", targetNumValid=" << data.targetNumValid
 			<< ", timeMs=" << data.time << std::endl;
+	}
+	if (m_stage0DisplayFrameCount == 1)
+	{
+		LogEffectiveRuntimeConfig(
+			"first_display",
+			m_targetVideoFps.load(),
+			data.targetNumValid,
+			m_sensorParam.saveMP4En,
+			"cmd",
+			"udp_display",
+			"cmd");
 	}
 	const int visibleTargetNumForLog = std::max(0, std::min(data.targetNumValid, 5));
 	int stage4LogTargetCount = 0;
@@ -4945,7 +4964,7 @@ void HwaSimIR::InitInfraredSimulation()
 		"Stage5ModtranRadiance",
 		"EnableModtranRadianceDebug",
 		"EnableStage5ModtranRadianceDebug",
-		true,
+		false,
 		&stage5ModtranDebugSource);
 	m_stage5UseModtranPathRuntime = m_runtimeConfig.getBool(
 		"Stage5ModtranRadiance",
@@ -4989,7 +5008,7 @@ void HwaSimIR::InitInfraredSimulation()
 		"Stage5ModtranRadiance",
 		"CompareLegacy",
 		"Stage5ModtranRadianceCompareLegacy",
-		true,
+		false,
 		&stage5ModtranCompareLegacySource);
 	m_stage5ModtranRadiancePath = modtranBandLutPath;
 	m_stage5ModtranRadianceReady = !m_stage5ModtranRadiancePath.empty() &&
@@ -5249,11 +5268,12 @@ void HwaSimIR::InitInfraredSimulation()
 		<< " sourceFile=" << (m_stage5ModtranRadianceReady ? m_stage5ModtranRadianceLut.loadedPath() : "missing")
 		<< " defaultPathRadianceSource=legacy_empirical"
 		<< " units=MODOUT2_native"
+		<< " Stage5ModtranCompareEffective=" << (Stage5ModtranRadianceCompareEnabled() ? "1" : "0")
 		<< " source=" << stage5ModtranDebugSource << "/" << stage5ModtranPathRuntimeSource
 		<< "/" << stage5ModtranSkyRuntimeSource << "/" << stage5ModtranSolarRuntimeSource
 		<< "/" << stage5ModtranPreferredSourceSource << "/" << stage5ModtranLogEverySource
 		<< "/" << stage5ModtranCompareLegacySource
-		<< "（Stage3B log-only compare; UseModtranPathRuntime=false keeps final image unchanged）"
+		<< "（Stage3B-Fix: production compare disabled; smoke/debug must opt in; UseModtranPathRuntime=false keeps final image unchanged）"
 		<< std::endl;
 	std::cout << "[Stage5 OutputCapture] Stage5OutputFrameDump="
 		<< ((m_stage5OutputFrameDumpEnabled && m_enableStage5RadianceDebug) ? "1" : "0")
@@ -5310,6 +5330,32 @@ void HwaSimIR::InitInfraredSimulation()
 		<< "/" << stage7CloudSource << "/" << stage7FogSource << "/" << stage7PrecipSource
 		<< "/" << stage7PrecipModeSource << "/" << stage7CloudCardsSource << "/" << stage7PrecipParticlesSource << "/" << stage7UdpSource
 		<< std::endl;
+	{
+		std::ostringstream sourceSummary;
+		sourceSummary
+			<< "EnablePerfLog:" << perfLogSource
+			<< ",EnableIRVerboseLog:" << verboseLogSource
+			<< ",IRUpdateHz:" << irUpdateHzSource
+			<< ",AnnotationUpdateHz:" << annotationUpdateHzSource
+			<< ",EnableIRPhysicalPipeline:" << stage5PhysicalSource
+			<< ",DebugView:" << stage5ViewModeSource
+			<< ",LogComponents:" << stage5ComponentLogSource
+			<< ",EnableModtranRadianceDebug:" << stage5ModtranDebugSource
+			<< ",UseModtranPathRuntime:" << stage5ModtranPathRuntimeSource
+			<< ",UseModtranSkyRuntime:" << stage5ModtranSkyRuntimeSource
+			<< ",UseModtranSolarRuntime:" << stage5ModtranSolarRuntimeSource
+			<< ",CompareLegacy:" << stage5ModtranCompareLegacySource
+			<< ",Stage7UpdateHz:" << stage7UpdateHzSource
+			<< ",Stage4UpdateHz:" << stage4UpdateHzSource
+			<< ",Stage5PlumeUpdateHz:" << plumeUpdateHzSource
+			<< ",Codec:" << tcpCodecSource
+			<< ",JpegEncodeMode:" << jpegModeSource
+			<< ",JpegQuality:" << jpegQualitySource
+			<< ",EnableH264Experimental:" << h264ExperimentalSource
+			<< ",JpegPerfABTest:" << jpegAbTestSource;
+		m_effectiveRuntimeConfigSources = sourceSummary.str();
+	}
+	LogEffectiveRuntimeConfig("startup", 0, 0, false, "not_initialized", "not_initialized", "not_initialized");
 	LogActiveIRSensorProfile(2, "startup-default", true);
 	LogActiveIREnvironment(environment, "startup-default", true);
 }
@@ -6589,9 +6635,97 @@ IRModtranRadianceResult HwaSimIR::QueryStage5ModtranRadiance(const TargetPlatfor
 	return result;
 }
 
+bool HwaSimIR::Stage5ModtranRadianceCompareEnabled() const
+{
+	return m_enableStage5ModtranRadianceDebug ||
+		m_stage5ModtranCompareLegacy ||
+		m_stage5UseModtranPathRuntime ||
+		m_stage5UseModtranSkyRuntime ||
+		m_stage5UseModtranSolarRuntime;
+}
+
+void HwaSimIR::LogEffectiveRuntimeConfig(
+	const char* reason,
+	int videoFps,
+	int targetNumValid,
+	bool saveMP4En,
+	const char* videoFpsSource,
+	const char* targetNumSource,
+	const char* saveMP4Source) const
+{
+	const bool modtranCompareEffective = Stage5ModtranRadianceCompareEnabled();
+	std::cout << "[EffectiveRuntimeConfig]"
+		<< " reason=" << (reason ? reason : "unknown")
+		<< " runtimeConfigPath=" << (m_runtimeConfig.loaded() ? m_runtimeConfig.loadedPath() : "missing")
+		<< " runtimeConfigLoaded=" << (m_runtimeConfig.loaded() ? "1" : "0")
+		<< " videoFps=" << videoFps
+		<< " syncMode=" << (m_bSyncRenderMode.load() ? "1" : "0")
+		<< " targetNumValid=" << targetNumValid
+		<< " IRUpdateHz=" << m_irUpdateHz
+		<< " AnnotationUpdateHz=" << m_annotationUpdateHz
+		<< " EnablePerfLog=" << (m_enablePerfLog ? "1" : "0")
+		<< " EnableIRVerboseLog=" << (m_enableIRVerboseLog ? "1" : "0")
+		<< " EnableIRPhysicalPipeline=" << (m_enableStage5PhysicalPipeline ? "1" : "0")
+		<< " DebugView=" << m_stage5DebugViewModeName
+		<< " LogComponents=" << (m_stage5LogComponents ? "1" : "0")
+		<< " EnableModtranRadianceDebug=" << (m_enableStage5ModtranRadianceDebug ? "1" : "0")
+		<< " UseModtranPathRuntime=" << (m_stage5UseModtranPathRuntime ? "1" : "0")
+		<< " UseModtranSkyRuntime=" << (m_stage5UseModtranSkyRuntime ? "1" : "0")
+		<< " UseModtranSolarRuntime=" << (m_stage5UseModtranSolarRuntime ? "1" : "0")
+		<< " CompareLegacy=" << (m_stage5ModtranCompareLegacy ? "1" : "0")
+		<< " Stage5ModtranCompareEffective=" << (modtranCompareEffective ? "1" : "0")
+		<< " Stage7UpdateHz=" << m_stage7UpdateHz
+		<< " Stage4UpdateHz=" << m_stage4UpdateHz
+		<< " Stage5PlumeUpdateHz=" << m_stage5PlumeUpdateHz
+		<< " Codec=" << m_tcpCodecConfig
+		<< " JpegEncodeMode=" << (m_tcpJpegGray ? "gray" : "rgb")
+		<< " JpegQuality=" << m_tcpJpegQuality
+		<< " EnableH264Experimental=" << (m_enableH264Experimental ? "1" : "0")
+		<< " JpegPerfABTest=" << (m_jpegPerfABTest ? "1" : "0")
+		<< " saveMP4En=" << (saveMP4En ? "1" : "0")
+		<< " source=videoFps:" << (videoFpsSource ? videoFpsSource : "unknown")
+		<< ",targetNumValid:" << (targetNumSource ? targetNumSource : "unknown")
+		<< ",saveMP4En:" << (saveMP4Source ? saveMP4Source : "unknown")
+		<< "," << m_effectiveRuntimeConfigSources
+		<< std::endl;
+	if (m_stage5DebugViewModeName != "Off")
+	{
+		std::cout << "[EffectiveRuntimeConfig][WARN] DebugView=" << m_stage5DebugViewModeName
+			<< " reason=production_default_should_be_Off" << std::endl;
+	}
+	if (m_stage5LogComponents)
+	{
+		std::cout << "[EffectiveRuntimeConfig][WARN] LogComponents=1 reason=production_default_should_be_false" << std::endl;
+	}
+	if (m_enableIRVerboseLog)
+	{
+		std::cout << "[EffectiveRuntimeConfig][WARN] EnableIRVerboseLog=1 reason=60Hz_console_logging_risk" << std::endl;
+	}
+	if (m_stage5UseModtranPathRuntime || m_stage5UseModtranSkyRuntime || m_stage5UseModtranSolarRuntime)
+	{
+		std::cout << "[EffectiveRuntimeConfig][WARN]"
+			<< " UseModtranPathRuntime=" << (m_stage5UseModtranPathRuntime ? "1" : "0")
+			<< " UseModtranSkyRuntime=" << (m_stage5UseModtranSkyRuntime ? "1" : "0")
+			<< " UseModtranSolarRuntime=" << (m_stage5UseModtranSolarRuntime ? "1" : "0")
+			<< " reason=stage3b_fix_production_must_not_apply_modtran_path_sky_solar"
+			<< std::endl;
+	}
+	if (m_jpegPerfABTest)
+	{
+		std::cout << "[EffectiveRuntimeConfig][WARN] JpegPerfABTest=1 reason=production_default_should_be_false" << std::endl;
+	}
+	if (modtranCompareEffective && !m_stage5UseModtranPathRuntime)
+	{
+		std::cout << "[EffectiveRuntimeConfig][WARN]"
+			<< " Stage5ModtranCompareEffective=1"
+			<< " reason=debug_or_compare_query_enabled; production_default_should_disable_lookup"
+			<< std::endl;
+	}
+}
+
 void HwaSimIR::LogStage5ModtranRadianceCompare(const TargetPlatformData& targetPlat, const IRRadianceComponents& components, const IRModtranRadianceResult& modtranResult, double rangeKm, double observerAltKm, double targetAltKm)
 {
-	if (!m_enableStage5ModtranRadianceDebug && !m_stage5UseModtranPathRuntime)
+	if (!Stage5ModtranRadianceCompareEnabled())
 	{
 		return;
 	}
@@ -6663,6 +6797,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 		return;
 	}
 
+	const auto stage5ComponentStart = std::chrono::steady_clock::now();
 	const IRBand stage5Band = static_cast<IRBand>(static_cast<int>(radiance.bandIndex));
 	const int stage5BandIndex = Stage5BandIndex(stage5Band);
 	const bool stage5UseBaseTextureModulation = m_stage5UseBaseTextureModulationByBand[stage5BandIndex];
@@ -6671,6 +6806,8 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_use_base_texture_modulation", LVecBase2i(stage5UseBaseTextureModulation ? 1 : 0, 0));
 	if (!m_enableStage5PhysicalPipeline)
 	{
+		m_stage5RadianceComponentMsCurrent += std::chrono::duration<double, std::milli>(
+			std::chrono::steady_clock::now() - stage5ComponentStart).count();
 		return;
 	}
 
@@ -6700,7 +6837,19 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	}
 	stage5Input.plumeRadiance = plumeRadiance;
 	const double legacyPathRadiance = std::max(0.0f, radiance.pathRadiance);
-	IRModtranRadianceResult modtranRadiance = QueryStage5ModtranRadiance(targetPlat, environment, radiance, targetKey);
+	const bool modtranCompareEnabled = Stage5ModtranRadianceCompareEnabled();
+	IRModtranRadianceResult modtranRadiance;
+	if (modtranCompareEnabled)
+	{
+		modtranRadiance = QueryStage5ModtranRadiance(targetPlat, environment, radiance, targetKey);
+	}
+	else
+	{
+		modtranRadiance.valid = false;
+		modtranRadiance.fallbackReason = "disabled";
+		modtranRadiance.interpolationMode = "disabled";
+		modtranRadiance.sourceFile = "disabled";
+	}
 	stage5Input.legacyPathRadiance = legacyPathRadiance;
 	stage5Input.modtranPathRadiance = modtranRadiance.valid ? modtranRadiance.pathRadiance : 0.0;
 	stage5Input.modtranSkyRadiance = modtranRadiance.valid ? modtranRadiance.skyRadiance : 0.0;
@@ -6739,7 +6888,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	{
 		stage5Input.sourceFlags += modtranPathRuntimeAllowed ? "+modtranPathRuntime" : "+legacyPath";
 	}
-	if (modtranRadiance.valid || m_enableStage5ModtranRadianceDebug)
+	if (modtranCompareEnabled)
 	{
 		stage5Input.sourceFlags += "+modtranCompare";
 	}
@@ -7017,6 +7166,8 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	{
 		m_stage5ConsecutiveZeroFrames = 0;
 	}
+	m_stage5RadianceComponentMsCurrent += std::chrono::duration<double, std::milli>(
+		std::chrono::steady_clock::now() - stage5ComponentStart).count();
 }
 
 void HwaSimIR::LogActiveIRSensorProfile(int protocolBand, const char* reason, bool forceLog)
@@ -7139,6 +7290,7 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 	const bool profileBreakdown = breakdownIndex <= 3 || (breakdownIndex % 30) == 0;
 	breakdown.timingSample = profileBreakdown;
 	ResetShaderInputCounters();
+	m_stage5RadianceComponentMsCurrent = 0.0;
 	m_stage5ModtranLookupMsCurrent = 0.0;
 	m_stage5ModtranCacheHitCurrent = 0;
 	m_stage5ModtranCacheMissCurrent = 0;
@@ -7366,6 +7518,7 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 		}
 	}
 	breakdown.stage5PlumeMs = updatePlumeMs;
+	breakdown.stage5RadianceComponentMs = m_stage5RadianceComponentMsCurrent;
 	breakdown.stage5ModtranLookupMs = m_stage5ModtranLookupMsCurrent;
 	breakdown.stage5ModtranCacheHitCount = m_stage5ModtranCacheHitCurrent;
 	breakdown.stage5ModtranCacheMissCount = m_stage5ModtranCacheMissCurrent;

@@ -233,15 +233,16 @@ private:
 	std::string m_stage5DebugViewModeName = "Off";
 	bool m_stage5LogComponents = false;
 	int m_stage5ComponentLogEveryFrames = 120;
-	bool m_enableStage5ModtranRadianceDebug = true;
+	bool m_enableStage5ModtranRadianceDebug = false;
 	bool m_stage5UseModtranPathRuntime = false;
 	bool m_stage5UseModtranSkyRuntime = false;
 	bool m_stage5UseModtranSolarRuntime = false;
-	bool m_stage5ModtranCompareLegacy = true;
+	bool m_stage5ModtranCompareLegacy = false;
 	std::string m_stage5ModtranPreferredSource = "band_lut";
 	int m_stage5ModtranLogEveryFrames = 120;
 	bool m_stage5ModtranRadianceReady = false;
 	std::string m_stage5ModtranRadiancePath;
+	std::string m_effectiveRuntimeConfigSources;
 	std::string m_stage5DebugToneMapName = "asinh";
 	IRRadianceModelV2DebugConfig m_stage5DebugConfig;
 	IRRadianceModelV2DebugConfig m_stage5DebugConfigs[5];
@@ -286,6 +287,7 @@ private:
 	};
 	std::map<std::string, Stage5ModtranRadianceCacheEntry> m_stage5ModtranRadianceCache;
 	std::map<std::string, std::string> m_lastStage5ModtranRadianceCompareLogState;
+	double m_stage5RadianceComponentMsCurrent = 0.0;
 	double m_stage5ModtranLookupMsCurrent = 0.0;
 	std::uint64_t m_stage5ModtranCacheHitCurrent = 0;
 	std::uint64_t m_stage5ModtranCacheMissCurrent = 0;
@@ -409,6 +411,8 @@ private:
 	void ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IRObjectRadianceOutput& radiance, const IRHotspotState& rearHotspot, const IRBrightSpotState& brightSpot, bool rearEnabledForShader, float rearIntensityForShader, const std::string& targetKey);
 	IRModtranRadianceResult QueryStage5ModtranRadiance(const TargetPlatformData& targetPlat, const IRRuntimeEnvironment& environment, const IRObjectRadianceOutput& radiance, const std::string& targetKey);
 	void LogStage5ModtranRadianceCompare(const TargetPlatformData& targetPlat, const IRRadianceComponents& components, const IRModtranRadianceResult& modtranResult, double rangeKm, double observerAltKm, double targetAltKm);
+	bool Stage5ModtranRadianceCompareEnabled() const;
+	void LogEffectiveRuntimeConfig(const char* reason, int videoFps, int targetNumValid, bool saveMP4En, const char* videoFpsSource, const char* targetNumSource, const char* saveMP4Source) const;
 	void ApplySensorOutputConfig(const IRSensorDisplayConfig& config, const char* reason);
 	void LogStage6SensorGeometry(const IRSensorDisplayConfig& config, const char* reason) const;
 	void ApplyStage6DisplayConfig(const BYHWICD::trackerSensorParam& sensor, const char* reason);
