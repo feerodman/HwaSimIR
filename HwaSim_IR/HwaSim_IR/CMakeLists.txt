@@ -58,6 +58,7 @@ add_executable(HwaSim_IR
         IR/IRModtranTauLut.cpp
         IR/IRPerfStats.cpp
         IR/IRRadianceModelV2.cpp
+        IR/IRAeroThermalModel.cpp
         IR/IRRuntimeConfig.cpp
         IR/IRSceneMaterialMapper.cpp
         IR/IRSensorModel.cpp

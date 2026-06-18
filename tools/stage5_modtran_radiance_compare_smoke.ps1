@@ -333,6 +333,27 @@ function Get-ModtranCompareRows {
     }
 }
 
+function Invoke-HwaStage5ModtranRunChecked {
+    param(
+        [string]$Label,
+        [int]$Band,
+        [double]$VisibilityKm,
+        [object[]]$DisplayCases
+    )
+
+    $run = Invoke-HwaStage5ModtranRun -Label $Label -Band $Band -VisibilityKm $VisibilityKm -DisplayCases $DisplayCases
+    $rows = @(Get-ModtranCompareRows -Run $run)
+    $needsRetry = $rows.Count -eq 0
+    if ($Label -eq "nir_solar" -and @($rows | Where-Object { $_.modtranSolar -gt 0 }).Count -eq 0) {
+        $needsRetry = $true
+    }
+    if ($needsRetry) {
+        Write-Host "retrying MODTRAN compare case after missing required rows: $Label"
+        $run = Invoke-HwaStage5ModtranRun -Label $Label -Band $Band -VisibilityKm $VisibilityKm -DisplayCases $DisplayCases
+    }
+    return $run
+}
+
 Assert-Path $hwaExe "HwaSimIR executable"
 Assert-Path $hwaWorkDir "HwaSimIR working directory"
 Assert-Path $networkConfig "HwaSimIR network config"
@@ -354,14 +375,14 @@ Write-Host "HwaSimIR: $hwaExe"
 $runs = @()
 foreach ($visibility in @(5.0, 15.0, 30.0)) {
     Write-Host "running MWIR visibility=$visibility km"
-    $runs += Invoke-HwaStage5ModtranRun -Label "mwir_vis$visibility" -Band 2 -VisibilityKm $visibility -DisplayCases $mwirCases
+    $runs += Invoke-HwaStage5ModtranRunChecked -Label "mwir_vis$visibility" -Band 2 -VisibilityKm $visibility -DisplayCases $mwirCases
 }
 Write-Host "running NIR solar query"
-$runs += Invoke-HwaStage5ModtranRun -Label "nir_solar" -Band 1 -VisibilityKm 15.0 -DisplayCases $singleValidCase
+$runs += Invoke-HwaStage5ModtranRunChecked -Label "nir_solar" -Band 1 -VisibilityKm 15.0 -DisplayCases $singleValidCase
 Write-Host "running SWIR missing-band fallback"
-$runs += Invoke-HwaStage5ModtranRun -Label "swir_missing" -Band 0 -VisibilityKm 15.0 -DisplayCases $singleValidCase
+$runs += Invoke-HwaStage5ModtranRunChecked -Label "swir_missing" -Band 0 -VisibilityKm 15.0 -DisplayCases $singleValidCase
 Write-Host "running MWIR out-of-range fallback"
-$runs += Invoke-HwaStage5ModtranRun -Label "mwir_out_of_range" -Band 2 -VisibilityKm 15.0 -DisplayCases $outOfRangeCase
+$runs += Invoke-HwaStage5ModtranRunChecked -Label "mwir_out_of_range" -Band 2 -VisibilityKm 15.0 -DisplayCases $outOfRangeCase
 
 $rows = @()
 foreach ($run in $runs) {

@@ -1572,6 +1572,158 @@ Runtime A/B 结果（10 秒，scale=1.0，blend=0.25，saveMP4En=true）：
 
 ---
 
+### 阶段 4A：高度/Mach 气动加热模型骨架与 Stage5 log-only 接入
+
+```text
+阶段：4A
+日期：2026-06-18
+执行者：Codex
+目标：建立目标高度 3~20 km、速度 0.5~3 Mach 对目标自身红外辐射影响的气动加热模型骨架。
+默认生产画面不突变；先做 log-only / A-B 验证和 Stage5 components 接入。
+不推进 MODTRAN path runtime 默认化，不接 sky/solar runtime，不做 AGC/MTF，不改 TCP/JPEG/H.264/录像链路，不改材质库结构。
+
+本阶段变更：
+- 新增 IRAeroThermalModel，输入 target altitude、target speed、dt、band、target/platform type。
+- speedUnit 明确为 km/h，运行时换算 speedMps = speedRaw / 3.6。
+- 实现 0~20 km 简化 ISA 空气温度与声速：
+  0~11 km 使用 288.15 - 0.0065 * altitudeM，11~20 km 使用 216.65 K。
+- 实现恢复温度模型：
+  recoveryTempK = airTempK * (1 + recoveryFactor * (gamma - 1) / 2 * Mach^2)
+  aeroDeltaK = clamp(max(0, recoveryTempK - airTempK), 0, ClampDeltaKMax)
+- 默认参数：
+  RecoveryFactor=0.85，Gamma=1.4，
+  BodyCoeff=0.20，NoseCoeff=0.60，EdgeCoeff=0.45，RearCoeff=0.10，
+  HeatTauSec=2.0，CoolTauSec=5.0，ClampMachMax=4.0，ClampDeltaKMax=250.0。
+- 增加 per-target 平滑状态，速度/高度变化时按 heat/cool tau 平滑 body/nose/edge/rear delta。
+- 对非法 altitude/speed 做 fallback=no_aero_heating；接入层把非有限或极小 denormal altitude 归一到 0，避免首帧日志出现未初始化味道的 1e-316。
+- IRRadianceComponents 增加：
+  altitudeM、speedMps、mach、airTempK、recoveryTempK、aeroDeltaK、
+  bodyAeroDeltaK、noseAeroDeltaK、edgeAeroDeltaK、rearAeroDeltaK、
+  aeroValid、aeroFallbackReason、aeroAppliedToRadiance。
+- ApplyAeroToRadiance=false 时只写 components 和限频日志，不改变 bodyRadiance/最终图像。
+- ApplyAeroToRadiance=true 时仅允许 bodyAeroDeltaK 进入 body material temperature offset；
+  不影响 EngineRear、EnginePlume、BrightSpot，不做 nose/edge per-pixel mask。
+- [Stage5 AeroThermal] 限频日志输出 altitude/speed/Mach/airTemp/recoveryTemp/aeroDelta/body/nose/edge/rear delta。
+- [Perf] 增加 stage5AeroThermalMs。
+- [EffectiveRuntimeConfig] 增加 EnableAeroThermalModel、ApplyAeroToRadiance、AeroDebugLog、RecoveryFactor、ClampDeltaKMax。
+- runtime_config_check.ps1 增加生产默认保护：
+  ApplyAeroToRadiance=false、AeroDebugLog=false、UseModtranPathRuntime=false、ModtranPathRuntimeMode=Off。
+- 新增 tools/stage5_aero_thermal_smoke.ps1：
+  输出 logs/stage5/aero_thermal_summary.csv，覆盖 3/10/20 km × Mach 0.5/1/2/3。
+- 新增 tools/phase4a_aero_ab_smoke.ps1：
+  运行 ApplyAeroToRadiance=false/true A-B，输出 logs/stage5/aero_runtime_ab_summary.csv。
+  10 秒窗口若遇到编码/系统抖动导致误判，会自动用 RetrySeconds 重跑该 case。
+- phase2a_sync60_save_smoke.ps1 增加 aero override 和 summary 字段，并把 summary 路径改为 Write-Output，方便上层脚本捕获。
+
+生产默认保护：
+- EnableAeroThermalModel=true
+- ApplyAeroToRadiance=false
+- AeroDebugLog=false
+- UseModtranPathRuntime=false
+- ModtranPathRuntimeMode=Off
+- EnableModtranRadianceDebug=false
+- CompareLegacy=false
+- DebugView=Off
+- LogComponents=false
+- EnableIRVerboseLog=0
+- JpegEncodeMode=rgb
+- JpegQuality=100
+
+构建：
+- HwaSim_IR Windows Release x64：通过。
+- DataDrivenTestQT Release：通过。
+- HwaSim_IR_VideoDisplay Windows Release x64：通过。
+- 剩余 warning 为既有 math_algorithm.h 未引用变量、VS/PDB/qtmain 调试符号 warning。
+
+回归测试：
+- runtime_config_check.ps1：通过。
+- Stage3 MODTRAN tau-only strict：通过。
+- Stage4 hotspot/brightspot strict：通过。
+- Stage4 三波段语义 smoke：通过。
+- Stage5 min radiance strict：通过。
+- Stage5 radiance components smoke：通过。
+- Stage5 MODTRAN radiance compare smoke：通过，运行后 production ini 恢复。
+- Stage5 aero thermal smoke：通过。
+- Stage5 MODTRAN path runtime A/B：保持阶段 3C 结论，不默认启用。
+
+Stage5 aero thermal CSV：
+- 路径：logs/stage5/aero_thermal_summary.csv
+- 趋势：同高度下 Mach 越高，aeroDeltaK 越大；同 Mach 下 3 km 空气温度高于 10/20 km；
+  Mach=3 在当前 ClampDeltaKMax=250 K 下触顶，body/nose/edge/rear delta 分别为 50/150/112.5/25 K。
+
+代表性标定结果：
+- 3 km / Mach 0.5：airTempK=268.65，speedOfSoundMps=328.578，aeroDeltaK=11.418，body=2.284，nose=6.851，edge=5.138，rear=1.142。
+- 3 km / Mach 1：aeroDeltaK=45.671，body=9.134，nose=27.402，edge=20.552，rear=4.567。
+- 3 km / Mach 2：aeroDeltaK=182.682，body=36.536，nose=109.609，edge=82.207，rear=18.268。
+- 3 km / Mach 3：aeroDeltaK=250.000 clamp，body=50.000，nose=150.000，edge=112.500，rear=25.000。
+- 10 km / Mach 0.5：airTempK=223.15，speedOfSoundMps=299.463，aeroDeltaK=9.484，body=1.897。
+- 10 km / Mach 1：aeroDeltaK=37.936，body=7.587。
+- 10 km / Mach 2：aeroDeltaK=151.742，body=30.348。
+- 10 km / Mach 3：aeroDeltaK=250.000 clamp，body=50.000。
+- 20 km / Mach 0.5：airTempK=216.65，speedOfSoundMps=295.069，aeroDeltaK=9.208，body=1.842。
+- 20 km / Mach 1：aeroDeltaK=36.831，body=7.366。
+- 20 km / Mach 2：aeroDeltaK=147.322，body=29.464。
+- 20 km / Mach 3：aeroDeltaK=250.000 clamp，body=50.000。
+
+Runtime A/B：
+- CSV：logs/stage5/aero_runtime_ab_summary.csv
+- ApplyAeroToRadiance=false，10 秒：
+  sent=60.086，udp=59.910，render=60.876，output=60.662，VideoDisplay=60.539，
+  latencyAvg=25.290 ms，irUpdateMs=1.391，stage5RadianceComponentMs=1.361，
+  stage5AeroThermalMs=0.0052，stage5ModtranLookupMs=0，recordingDroppedFrames=0。
+- ApplyAeroToRadiance=true，10 秒：
+  sent=60.074，udp=59.826，render=60.640，output=60.189，VideoDisplay=60.594，
+  latencyAvg=22.901 ms，irUpdateMs=1.329，stage5RadianceComponentMs=1.327，
+  stage5AeroThermalMs=0.004833，stage5ModtranLookupMs=0，recordingDroppedFrames=0。
+- 注意：当前 DataDrivenTestQT 自动 5 目标场景 speedRaw=0 km/h，因此 Runtime A/B 只验证开关接入和性能；
+  bodyAeroDeltaKAvg=0、machAvg=0，不代表已完成非零 Mach 画面主观/物理标定。
+- 曾观察到一次 10 秒 ApplyAeroToRadiance=true 的编码/渲染侧抖动：
+  stage5AeroThermalMs 仍为 0.006 ms，但 jpegMs/renderMs 瞬时升到约 22 ms，导致 outputFps 掉到约 47。
+  单独 20 秒复测通过：sent=59.997，udp=60.010，render=60.385，output=60.327，VideoDisplay=60.385，
+  latencyAvg=21.358 ms，recordingDroppedFrames=0。
+
+30 秒生产默认实测：
+- 日志：logs/phase2a-final-20260618-102847
+- MP4：
+  HwaSim_IR_VideoDisplay/x64/Release/MP4/round_001_20260618_102902/output.mp4
+- 配置：800x800，5 目标，videoFps=60，saveMP4En=true，
+  Codec=auto，JpegEncodeMode=rgb，JpegQuality=100，
+  EnableH264Experimental=false，LegacyEngineBodyHeating=false，
+  EnableIRPhysicalPipeline=true，DebugView=Off，
+  UseModtranPathRuntime=false，ModtranPathRuntimeMode=Off，
+  ApplyAeroToRadiance=false。
+- sentFps=60.016
+- udpFps=60.099
+- renderFps=60.185
+- outputFps=60.181
+- VideoDisplay receive/display=60.248
+- latencyAvgMs=19.541
+- irUpdateMs=0.691
+- stage5RadianceComponentMs=0.425
+- stage5AeroThermalMs=0.003875
+- stage5ModtranLookupMs=0
+- shaderInputCacheHitRate=98.201
+- sourceSeqContinuous=1
+- sourceSeqContinuousWritten=1
+- inputQueueOverflow=0
+- TCP overwritten=0
+- recordingDroppedFrames=0
+- written/mp4/annotations/targetAnnotations=1801/1801/1801/1801
+- sourceSeqLagMax=6、inputQueueDepthMax=10 为启动瞬态；后段 [Perf] 稳态 sourceSeqLag=0..1、inputQueueDepth=0..1。
+
+结论：
+- 已确认生产默认画面不改变：ApplyAeroToRadiance=false，AeroDebugLog=false，DebugView=Off，LogComponents=false。
+- 已确认生产默认不使用 MODTRAN path/sky/solar runtime，也不执行 MODTRAN radiance compare lookup：
+  UseModtranPathRuntime=false，UseModtranSkyRuntime=false，UseModtranSolarRuntime=false，
+  Stage5ModtranCompareEffective=0，stage5ModtranLookupMs=0。
+- 气动模型计算成本可忽略，生产默认 stage5AeroThermalMs 约 0.004 ms。
+- 不建议下一阶段直接把 bodyAeroDeltaK 进入默认画面。
+  建议先增加一个非零 speed/Mach 的运行态刺激或人工场景，做 bodyAeroDeltaK 小比例画面对比和物理审查；
+  默认仍保持 ApplyAeroToRadiance=false。
+```
+
+---
+
 ## 12. 给 Codex 的第一阶段实施 Prompt
 
 见单独文件：`Codex_Phase1_Sync60_Perf_Prompt.md`。

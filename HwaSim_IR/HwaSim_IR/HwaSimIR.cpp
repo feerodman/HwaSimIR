@@ -66,7 +66,16 @@ bool ReadWholeFile(const std::string& path, std::string& text)
 
 bool IsReasonableAltitudeMeters(double altitudeMeters)
 {
-	return altitudeMeters > -500.0 && altitudeMeters < 100000.0;
+	return std::isfinite(altitudeMeters) && altitudeMeters > -500.0 && altitudeMeters < 100000.0;
+}
+
+double NormalizeAeroAltitudeMeters(double altitudeMeters)
+{
+	if (!IsReasonableAltitudeMeters(altitudeMeters))
+	{
+		return 0.0;
+	}
+	return std::abs(altitudeMeters) < 1.0e-6 ? 0.0 : altitudeMeters;
 }
 
 double QuantizeForCache(double value, double step)
@@ -4297,6 +4306,8 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		m_lastStage5ModtranPathABLogState.clear();
 		m_stage5ModtranRadianceCache.clear();
 		m_stage5ModtranPathRuntimeBandWarned.clear();
+		m_stage5AeroThermalStateByTarget.clear();
+		m_lastStage5AeroThermalLogState.clear();
 		m_lastStage4InputState.clear();
 		RefreshStage6DisplayShaderInputs();
 
@@ -4419,6 +4430,8 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 	m_lastStage5ModtranPathABLogState.clear();
 	m_stage5ModtranRadianceCache.clear();
 	m_stage5ModtranPathRuntimeBandWarned.clear();
+	m_stage5AeroThermalStateByTarget.clear();
+	m_lastStage5AeroThermalLogState.clear();
 	m_lastStage4InputState.clear();
 	if (m_pTcpThread)
 	{
@@ -4967,6 +4980,21 @@ void HwaSimIR::InitInfraredSimulation()
 	std::string stage5PhysicalSource;
 	std::string stage5ComponentLogSource;
 	std::string stage5ComponentLogEverySource;
+	std::string stage5AeroEnableSource;
+	std::string stage5AeroApplySource;
+	std::string stage5AeroDebugLogSource;
+	std::string stage5AeroLogEverySource;
+	std::string stage5AeroRecoverySource;
+	std::string stage5AeroGammaSource;
+	std::string stage5AeroBodyCoeffSource;
+	std::string stage5AeroNoseCoeffSource;
+	std::string stage5AeroEdgeCoeffSource;
+	std::string stage5AeroRearCoeffSource;
+	std::string stage5AeroHeatTauSource;
+	std::string stage5AeroCoolTauSource;
+	std::string stage5AeroMachMinSource;
+	std::string stage5AeroMachMaxSource;
+	std::string stage5AeroDeltaMaxSource;
 	std::string stage5ModtranDebugSource;
 	std::string stage5ModtranPathRuntimeSource;
 	std::string stage5ModtranSkyRuntimeSource;
@@ -5023,6 +5051,54 @@ void HwaSimIR::InitInfraredSimulation()
 		"Stage5RadianceComponentLogEveryFrames",
 		120,
 		&stage5ComponentLogEverySource));
+	m_stage5AeroThermalEnabled = m_runtimeConfig.getBool(
+		"Stage5AeroThermal",
+		"EnableAeroThermalModel",
+		"EnableAeroThermalModel",
+		true,
+		&stage5AeroEnableSource);
+	m_stage5ApplyAeroToRadiance = m_runtimeConfig.getBool(
+		"Stage5AeroThermal",
+		"ApplyAeroToRadiance",
+		"ApplyAeroToRadiance",
+		false,
+		&stage5AeroApplySource);
+	m_stage5AeroDebugLog = m_runtimeConfig.getBool(
+		"Stage5AeroThermal",
+		"AeroDebugLog",
+		"AeroDebugLog",
+		false,
+		&stage5AeroDebugLogSource);
+	m_stage5AeroLogEveryFrames = std::max(1, m_runtimeConfig.getInt(
+		"Stage5AeroThermal",
+		"AeroLogEveryFrames",
+		"Stage5AeroLogEveryFrames",
+		120,
+		&stage5AeroLogEverySource));
+	m_stage5AeroThermalOptions.enabled = m_stage5AeroThermalEnabled;
+	m_stage5AeroThermalOptions.recoveryFactor = ClampStage5Double(m_runtimeConfig.getDouble(
+		"Stage5AeroThermal", "RecoveryFactor", "Stage5AeroRecoveryFactor", 0.85, &stage5AeroRecoverySource), 0.0, 1.0);
+	m_stage5AeroThermalOptions.gamma = ClampStage5Double(m_runtimeConfig.getDouble(
+		"Stage5AeroThermal", "Gamma", "Stage5AeroGamma", 1.4, &stage5AeroGammaSource), 1.01, 2.0);
+	m_stage5AeroThermalOptions.bodyCoeff = std::max(0.0, m_runtimeConfig.getDouble(
+		"Stage5AeroThermal", "BodyCoeff", "Stage5AeroBodyCoeff", 0.20, &stage5AeroBodyCoeffSource));
+	m_stage5AeroThermalOptions.noseCoeff = std::max(0.0, m_runtimeConfig.getDouble(
+		"Stage5AeroThermal", "NoseCoeff", "Stage5AeroNoseCoeff", 0.60, &stage5AeroNoseCoeffSource));
+	m_stage5AeroThermalOptions.edgeCoeff = std::max(0.0, m_runtimeConfig.getDouble(
+		"Stage5AeroThermal", "EdgeCoeff", "Stage5AeroEdgeCoeff", 0.45, &stage5AeroEdgeCoeffSource));
+	m_stage5AeroThermalOptions.rearCoeff = std::max(0.0, m_runtimeConfig.getDouble(
+		"Stage5AeroThermal", "RearCoeff", "Stage5AeroRearCoeff", 0.10, &stage5AeroRearCoeffSource));
+	m_stage5AeroThermalOptions.heatTauSec = std::max(0.001, m_runtimeConfig.getDouble(
+		"Stage5AeroThermal", "HeatTauSec", "Stage5AeroHeatTauSec", 2.0, &stage5AeroHeatTauSource));
+	m_stage5AeroThermalOptions.coolTauSec = std::max(0.001, m_runtimeConfig.getDouble(
+		"Stage5AeroThermal", "CoolTauSec", "Stage5AeroCoolTauSec", 5.0, &stage5AeroCoolTauSource));
+	m_stage5AeroThermalOptions.clampMachMin = std::max(0.0, m_runtimeConfig.getDouble(
+		"Stage5AeroThermal", "ClampMachMin", "Stage5AeroClampMachMin", 0.0, &stage5AeroMachMinSource));
+	m_stage5AeroThermalOptions.clampMachMax = std::max(
+		m_stage5AeroThermalOptions.clampMachMin,
+		m_runtimeConfig.getDouble("Stage5AeroThermal", "ClampMachMax", "Stage5AeroClampMachMax", 4.0, &stage5AeroMachMaxSource));
+	m_stage5AeroThermalOptions.clampDeltaKMax = std::max(0.0, m_runtimeConfig.getDouble(
+		"Stage5AeroThermal", "ClampDeltaKMax", "Stage5AeroClampDeltaKMax", 250.0, &stage5AeroDeltaMaxSource));
 	m_enableStage5ModtranRadianceDebug = m_runtimeConfig.getBool(
 		"Stage5ModtranRadiance",
 		"EnableModtranRadianceDebug",
@@ -5392,6 +5468,33 @@ void HwaSimIR::InitInfraredSimulation()
 		<< stage5DebugSource << "/" << stage5ComponentLogSource << "/" << stage5ComponentLogEverySource
 		<< "（DebugView Off 时主画面保持legacy输出；path/sky/solar MODTRAN runtime disabled）"
 		<< std::endl;
+	std::cout << "[Stage5 AeroThermalConfig]"
+		<< " EnableAeroThermalModel=" << (m_stage5AeroThermalEnabled ? "1" : "0")
+		<< " ApplyAeroToRadiance=" << (m_stage5ApplyAeroToRadiance ? "1" : "0")
+		<< " AeroDebugLog=" << (m_stage5AeroDebugLog ? "1" : "0")
+		<< " AeroLogEveryFrames=" << m_stage5AeroLogEveryFrames
+		<< " RecoveryFactor=" << m_stage5AeroThermalOptions.recoveryFactor
+		<< " Gamma=" << m_stage5AeroThermalOptions.gamma
+		<< " BodyCoeff=" << m_stage5AeroThermalOptions.bodyCoeff
+		<< " NoseCoeff=" << m_stage5AeroThermalOptions.noseCoeff
+		<< " EdgeCoeff=" << m_stage5AeroThermalOptions.edgeCoeff
+		<< " RearCoeff=" << m_stage5AeroThermalOptions.rearCoeff
+		<< " HeatTauSec=" << m_stage5AeroThermalOptions.heatTauSec
+		<< " CoolTauSec=" << m_stage5AeroThermalOptions.coolTauSec
+		<< " ClampMachMin=" << m_stage5AeroThermalOptions.clampMachMin
+		<< " ClampMachMax=" << m_stage5AeroThermalOptions.clampMachMax
+		<< " ClampDeltaKMax=" << m_stage5AeroThermalOptions.clampDeltaKMax
+		<< " speedUnit=km/h"
+		<< " source=" << stage5AeroEnableSource << "/" << stage5AeroApplySource
+		<< "/" << stage5AeroDebugLogSource << "/" << stage5AeroLogEverySource
+		<< "/" << stage5AeroRecoverySource << "/" << stage5AeroGammaSource
+		<< "/" << stage5AeroBodyCoeffSource << "/" << stage5AeroNoseCoeffSource
+		<< "/" << stage5AeroEdgeCoeffSource << "/" << stage5AeroRearCoeffSource
+		<< "/" << stage5AeroHeatTauSource << "/" << stage5AeroCoolTauSource
+		<< "/" << stage5AeroMachMinSource << "/" << stage5AeroMachMaxSource
+		<< "/" << stage5AeroDeltaMaxSource
+		<< "（Stage4A: default computes components only; ApplyAeroToRadiance=false keeps production image unchanged）"
+		<< std::endl;
 	std::cout << "[Stage5 ModtranRadianceConfig]"
 		<< " EnableModtranRadianceDebug=" << (m_enableStage5ModtranRadianceDebug ? "1" : "0")
 		<< " UseModtranPathRuntime=" << (m_stage5UseModtranPathRuntime ? "1" : "0")
@@ -5487,6 +5590,21 @@ void HwaSimIR::InitInfraredSimulation()
 			<< ",EnableIRPhysicalPipeline:" << stage5PhysicalSource
 			<< ",DebugView:" << stage5ViewModeSource
 			<< ",LogComponents:" << stage5ComponentLogSource
+			<< ",EnableAeroThermalModel:" << stage5AeroEnableSource
+			<< ",ApplyAeroToRadiance:" << stage5AeroApplySource
+			<< ",AeroDebugLog:" << stage5AeroDebugLogSource
+			<< ",AeroLogEveryFrames:" << stage5AeroLogEverySource
+			<< ",RecoveryFactor:" << stage5AeroRecoverySource
+			<< ",Gamma:" << stage5AeroGammaSource
+			<< ",BodyCoeff:" << stage5AeroBodyCoeffSource
+			<< ",NoseCoeff:" << stage5AeroNoseCoeffSource
+			<< ",EdgeCoeff:" << stage5AeroEdgeCoeffSource
+			<< ",RearCoeff:" << stage5AeroRearCoeffSource
+			<< ",HeatTauSec:" << stage5AeroHeatTauSource
+			<< ",CoolTauSec:" << stage5AeroCoolTauSource
+			<< ",ClampMachMin:" << stage5AeroMachMinSource
+			<< ",ClampMachMax:" << stage5AeroMachMaxSource
+			<< ",ClampDeltaKMax:" << stage5AeroDeltaMaxSource
 			<< ",EnableModtranRadianceDebug:" << stage5ModtranDebugSource
 			<< ",UseModtranPathRuntime:" << stage5ModtranPathRuntimeSource
 			<< ",UseModtranSkyRuntime:" << stage5ModtranSkyRuntimeSource
@@ -6645,7 +6763,7 @@ bool HwaSimIR::ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHW
 
 	if (applyNodeInputs)
 	{
-		ApplyStage5RadianceDebug(targetPlat, radiance, rearHotspot, brightSpot, rearEnabledForShader, rearIntensityForShader, runtimeKey);
+		ApplyStage5RadianceDebug(targetPlat, radiance, rearHotspot, brightSpot, rearEnabledForShader, rearIntensityForShader, runtimeKey, dtSec);
 	}
 
 	const bool hasShader = (targetPlat.nodePath.get_shader() != nullptr);
@@ -6832,6 +6950,11 @@ void HwaSimIR::LogEffectiveRuntimeConfig(
 		<< " EnableIRPhysicalPipeline=" << (m_enableStage5PhysicalPipeline ? "1" : "0")
 		<< " DebugView=" << m_stage5DebugViewModeName
 		<< " LogComponents=" << (m_stage5LogComponents ? "1" : "0")
+		<< " EnableAeroThermalModel=" << (m_stage5AeroThermalEnabled ? "1" : "0")
+		<< " ApplyAeroToRadiance=" << (m_stage5ApplyAeroToRadiance ? "1" : "0")
+		<< " AeroDebugLog=" << (m_stage5AeroDebugLog ? "1" : "0")
+		<< " RecoveryFactor=" << m_stage5AeroThermalOptions.recoveryFactor
+		<< " ClampDeltaKMax=" << m_stage5AeroThermalOptions.clampDeltaKMax
 		<< " EnableModtranRadianceDebug=" << (m_enableStage5ModtranRadianceDebug ? "1" : "0")
 		<< " UseModtranPathRuntime=" << (m_stage5UseModtranPathRuntime ? "1" : "0")
 		<< " UseModtranSkyRuntime=" << (m_stage5UseModtranSkyRuntime ? "1" : "0")
@@ -6869,6 +6992,18 @@ void HwaSimIR::LogEffectiveRuntimeConfig(
 	if (m_enableIRVerboseLog)
 	{
 		std::cout << "[EffectiveRuntimeConfig][WARN] EnableIRVerboseLog=1 reason=60Hz_console_logging_risk" << std::endl;
+	}
+	if (m_stage5ApplyAeroToRadiance)
+	{
+		std::cout << "[EffectiveRuntimeConfig][WARN] ApplyAeroToRadiance=1"
+			<< " reason=stage4A_AB_or_debug_mode_not_production_default"
+			<< std::endl;
+	}
+	if (m_stage5AeroDebugLog)
+	{
+		std::cout << "[EffectiveRuntimeConfig][WARN] AeroDebugLog=1"
+			<< " reason=stage4A_debug_log_enabled"
+			<< std::endl;
 	}
 	if (m_stage5UseModtranPathRuntime || m_stage5UseModtranSkyRuntime || m_stage5UseModtranSolarRuntime)
 	{
@@ -7047,7 +7182,81 @@ void HwaSimIR::LogStage5ModtranPathAB(const TargetPlatformData& targetPlat, cons
 		<< std::endl;
 }
 
-void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IRObjectRadianceOutput& radiance, const IRHotspotState& rearHotspot, const IRBrightSpotState& brightSpot, bool rearEnabledForShader, float rearIntensityForShader, const std::string& targetKey)
+IRAeroThermalOutput HwaSimIR::EvaluateStage5AeroThermal(TargetPlatformData& targetPlat, IRBand band, float dtSec, const IRRuntimeEnvironment& environment, const std::string& targetKey)
+{
+	(void)environment;
+	const auto aeroStart = std::chrono::steady_clock::now();
+	IRAeroThermalInput input;
+	input.altitudeM = NormalizeAeroAltitudeMeters(targetPlat.targetState.targetLoc.alt);
+	input.speedRaw = std::isfinite(targetPlat.targetState.targetLoc.speed)
+		? targetPlat.targetState.targetLoc.speed
+		: 0.0;
+	input.dtSec = static_cast<double>(dtSec);
+	input.band = band;
+	input.targetType = targetPlat.targetState.targetType;
+	input.platformType = static_cast<int>(targetPlat.type);
+	// 4A uses an ISA atmosphere from target altitude. Runtime weather temperature remains a future override candidate.
+	input.envTemperatureK = 0.0;
+	IRAeroThermalOutput output = m_stage5AeroThermalModel.evaluate(
+		input,
+		m_stage5AeroThermalOptions,
+		&m_stage5AeroThermalStateByTarget[targetKey]);
+	m_stage5AeroThermalMsCurrent += std::chrono::duration<double, std::milli>(
+		std::chrono::steady_clock::now() - aeroStart).count();
+	return output;
+}
+
+void HwaSimIR::LogStage5AeroThermal(const TargetPlatformData& targetPlat, const IRRadianceComponents& components, const IRAeroThermalOutput& aeroOutput)
+{
+	if (!m_stage5AeroDebugLog && !m_stage5LogComponents && !m_enableIRVerboseLog)
+	{
+		return;
+	}
+	const std::uint64_t frameSeq = m_currentFrameTelemetry.sourceSeq > 0
+		? m_currentFrameTelemetry.sourceSeq : m_stage0DisplayFrameCount;
+	const bool sampleDue = frameSeq <= 3 ||
+		(m_stage5AeroLogEveryFrames > 0 && (frameSeq % static_cast<std::uint64_t>(m_stage5AeroLogEveryFrames)) == 0);
+	const std::string logKey =
+		std::to_string(targetPlat.targetState.targetType) + ":" +
+		std::to_string(targetPlat.targetState.targetPlatID) + ":" +
+		std::to_string(targetPlat.targetState.targetID) + "#aero-thermal";
+	std::ostringstream state;
+	state << Stage5ModtranCacheDouble(aeroOutput.altitudeM)
+		<< ":" << Stage5ModtranCacheDouble(aeroOutput.speedRaw)
+		<< ":" << Stage5ModtranCacheDouble(aeroOutput.mach)
+		<< ":" << Stage5ModtranCacheDouble(aeroOutput.bodyAeroDeltaK)
+		<< ":" << (components.aeroAppliedToRadiance ? 1 : 0)
+		<< ":" << (aeroOutput.valid ? 1 : 0)
+		<< ":" << aeroOutput.fallbackReason;
+	const bool stateChanged = m_lastStage5AeroThermalLogState[logKey] != state.str();
+	m_lastStage5AeroThermalLogState[logKey] = state.str();
+	if (!sampleDue && !stateChanged && !m_enableIRVerboseLog)
+	{
+		return;
+	}
+	std::cout << "[Stage5 AeroThermal]"
+		<< " sourceSeq=" << frameSeq
+		<< " targetID=" << targetPlat.targetState.targetID
+		<< " altitudeM=" << aeroOutput.altitudeM
+		<< " speedRaw=" << aeroOutput.speedRaw
+		<< " speedUnit=" << aeroOutput.speedUnit
+		<< " speedMps=" << aeroOutput.speedMps
+		<< " airTempK=" << aeroOutput.airTempK
+		<< " speedOfSoundMps=" << aeroOutput.speedOfSoundMps
+		<< " mach=" << aeroOutput.mach
+		<< " recoveryTempK=" << aeroOutput.recoveryTempK
+		<< " aeroDeltaK=" << aeroOutput.aeroDeltaK
+		<< " bodyAeroDeltaK=" << aeroOutput.bodyAeroDeltaK
+		<< " noseAeroDeltaK=" << aeroOutput.noseAeroDeltaK
+		<< " edgeAeroDeltaK=" << aeroOutput.edgeAeroDeltaK
+		<< " rearAeroDeltaK=" << aeroOutput.rearAeroDeltaK
+		<< " aeroAppliedToRadiance=" << (components.aeroAppliedToRadiance ? "1" : "0")
+		<< " valid=" << (aeroOutput.valid ? "1" : "0")
+		<< " fallbackReason=" << aeroOutput.fallbackReason
+		<< std::endl;
+}
+
+void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IRObjectRadianceOutput& radiance, const IRHotspotState& rearHotspot, const IRBrightSpotState& brightSpot, bool rearEnabledForShader, float rearIntensityForShader, const std::string& targetKey, float dtSec)
 {
 	if (targetPlat.nodePath.is_empty())
 	{
@@ -7083,6 +7292,20 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	stage5Input.hotspotTemperatureK = rearEnabledForShader ? rearHotspot.currentTempK : radiance.temperatureK;
 	stage5Input.hotspotIntensity = rearEnabledForShader ? std::max(0.0f, rearIntensityForShader) : 0.0f;
 	stage5Input.brightspotIntensity = brightSpot.enabled ? std::max(0.0f, brightSpot.intensity) : 0.0f;
+	const IRAeroThermalOutput aeroOutput = EvaluateStage5AeroThermal(targetPlat, stage5Band, dtSec, environment, targetKey);
+	stage5Input.altitudeM = aeroOutput.altitudeM;
+	stage5Input.speedMps = aeroOutput.speedMps;
+	stage5Input.mach = aeroOutput.mach;
+	stage5Input.airTempK = aeroOutput.airTempK;
+	stage5Input.recoveryTempK = aeroOutput.recoveryTempK;
+	stage5Input.aeroDeltaK = aeroOutput.aeroDeltaK;
+	stage5Input.bodyAeroDeltaK = aeroOutput.bodyAeroDeltaK;
+	stage5Input.noseAeroDeltaK = aeroOutput.noseAeroDeltaK;
+	stage5Input.edgeAeroDeltaK = aeroOutput.edgeAeroDeltaK;
+	stage5Input.rearAeroDeltaK = aeroOutput.rearAeroDeltaK;
+	stage5Input.aeroValid = aeroOutput.valid;
+	stage5Input.aeroFallbackReason = aeroOutput.fallbackReason;
+	stage5Input.aeroAppliedToRadiance = m_stage5ApplyAeroToRadiance && aeroOutput.valid;
 	double plumeRadiance = 0.0;
 	const std::map<std::string, Stage5PlumeRuntimeCache>::const_iterator plumeIt = m_stage5PlumeRuntimeCache.find(targetKey);
 	if (plumeIt != m_stage5PlumeRuntimeCache.end() && plumeIt->second.hasOutput)
@@ -7190,6 +7413,10 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	{
 		stage5Input.sourceFlags += "+brightspot";
 	}
+	if (stage5Input.aeroAppliedToRadiance)
+	{
+		stage5Input.sourceFlags += "+bodyAero";
+	}
 	if (stage5Input.pathRadiance > 0.0)
 	{
 		if (stage5Input.pathRadianceSource == "modtran_runtime_scaled")
@@ -7258,7 +7485,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 		std::max(compositeMinGray, std::min(compositeMaxGray,
 			bodyGrayDisplay + reflectedGrayDisplay + hotspotGrayDisplay + plumeGrayDisplay + brightspotGrayDisplay + atmosphereGrayDisplay)));
 
-	SetShaderInputCached(targetPlat.nodePath, "u_material_temp_K", LVecBase2f(static_cast<float>(stage5Input.materialTemperatureK), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_material_temp_K", LVecBase2f(static_cast<float>(components.materialTempK), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_material_emissivity", LVecBase2f(static_cast<float>(stage5Input.materialEmissivity), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_body_radiance", LVecBase2f(static_cast<float>(components.bodyRadiance), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_rear_hotspot_radiance", LVecBase2f(static_cast<float>(components.rearHotspotRadiance), 0.0f));
@@ -7285,6 +7512,8 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_composite_min_gray", LVecBase2f(static_cast<float>(compositeMinGray), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_composite_max_gray", LVecBase2f(static_cast<float>(compositeMaxGray), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_display_fallback_applied", LVecBase2i(stage5DisplayFallbackApplied ? 1 : 0, 0));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_aero_body_delta_K", LVecBase2f(static_cast<float>(components.bodyAeroDeltaK), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_aero_mach", LVecBase2f(static_cast<float>(components.mach), 0.0f));
 
 	const std::map<PLATFORM_TYPE, PlatformResPath>::const_iterator resIter = m_platformResMap.find(targetPlat.type);
 	bool baseTextureAvailable = false;
@@ -7303,7 +7532,9 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 		std::to_string(brightSpot.enabled ? 1 : 0) + ":" +
 		std::to_string(static_cast<int>(brightSpot.part)) + ":" +
 		std::to_string(m_stage5DebugViewMode) + ":" +
-		stage5Input.pathRadianceSource;
+		stage5Input.pathRadianceSource + ":" +
+		std::to_string(stage5Input.aeroAppliedToRadiance ? 1 : 0) + ":" +
+		Stage5ModtranCacheDouble(stage5Input.bodyAeroDeltaK);
 	const bool componentStateChanged =
 		m_lastStage5RadianceComponentLogState[componentLogKey] != componentLogState;
 	m_lastStage5RadianceComponentLogState[componentLogKey] = componentLogState;
@@ -7347,6 +7578,19 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 			<< " pathRadianceSource=" << components.pathRadianceSource
 			<< " modtranFallbackReason=" << components.modtranFallbackReason
 			<< " modtranInterpolationMode=" << components.modtranInterpolationMode
+			<< " altitudeM=" << components.altitudeM
+			<< " speedMps=" << components.speedMps
+			<< " mach=" << components.mach
+			<< " airTempK=" << components.airTempK
+			<< " recoveryTempK=" << components.recoveryTempK
+			<< " aeroDeltaK=" << components.aeroDeltaK
+			<< " bodyAeroDeltaK=" << components.bodyAeroDeltaK
+			<< " noseAeroDeltaK=" << components.noseAeroDeltaK
+			<< " edgeAeroDeltaK=" << components.edgeAeroDeltaK
+			<< " rearAeroDeltaK=" << components.rearAeroDeltaK
+			<< " aeroValid=" << (components.aeroValid ? "1" : "0")
+			<< " aeroFallbackReason=" << components.aeroFallbackReason
+			<< " aeroAppliedToRadiance=" << (components.aeroAppliedToRadiance ? "1" : "0")
 			<< " sensorInputLegacy=" << components.sensorInputLegacy
 			<< " sensorInputModtran=" << components.sensorInputModtran
 			<< " sensorInputRadiance=" << components.sensorInputRadiance
@@ -7362,6 +7606,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 			<< " toneMap=" << Stage5ToneMapName(stage5Input.debugConfig.toneMap)
 			<< " useBaseTextureModulation=" << (stage5UseBaseTextureModulation ? "1" : "0")
 			<< " materialTempK=" << stage5Input.materialTemperatureK
+			<< " materialTempEffectiveK=" << components.materialTempK
 			<< " emissivity=" << stage5Input.materialEmissivity
 			<< " tauUp=" << stage5Input.tauUp
 			<< " sunElevation=" << environment.sunElevationDeg
@@ -7388,6 +7633,15 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 			<< " modtranRadianceValid=" << (components.modtranRadianceValid ? "1" : "0")
 			<< " modtranFallbackReason=" << components.modtranFallbackReason
 			<< " modtranInterpolationMode=" << components.modtranInterpolationMode
+			<< " altitudeM=" << components.altitudeM
+			<< " speedMps=" << components.speedMps
+			<< " mach=" << components.mach
+			<< " aeroDeltaK=" << components.aeroDeltaK
+			<< " bodyAeroDeltaK=" << components.bodyAeroDeltaK
+			<< " noseAeroDeltaK=" << components.noseAeroDeltaK
+			<< " edgeAeroDeltaK=" << components.edgeAeroDeltaK
+			<< " rearAeroDeltaK=" << components.rearAeroDeltaK
+			<< " aeroAppliedToRadiance=" << (components.aeroAppliedToRadiance ? "1" : "0")
 			<< " sensorInputLegacy=" << components.sensorInputLegacy
 			<< " sensorInputModtran=" << components.sensorInputModtran
 			<< " sensorInputRadiance=" << components.sensorInputRadiance
@@ -7418,6 +7672,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 			<< " legacyBrightspotIntensity=" << legacyBrightspotDisplay
 			<< std::endl;
 	}
+	LogStage5AeroThermal(targetPlat, components, aeroOutput);
 	LogStage5ModtranRadianceCompare(targetPlat, components, modtranRadiance, rangeKmForLog, observerAltKmForLog, targetAltKmForLog);
 	LogStage5ModtranPathAB(targetPlat, components, modtranRadiance, rangeKmForLog, observerAltKmForLog, targetAltKmForLog);
 
@@ -7624,6 +7879,7 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 	breakdown.timingSample = profileBreakdown;
 	ResetShaderInputCounters();
 	m_stage5RadianceComponentMsCurrent = 0.0;
+	m_stage5AeroThermalMsCurrent = 0.0;
 	m_stage5ModtranLookupMsCurrent = 0.0;
 	m_stage5ModtranCacheHitCurrent = 0;
 	m_stage5ModtranCacheMissCurrent = 0;
@@ -7852,6 +8108,7 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 	}
 	breakdown.stage5PlumeMs = updatePlumeMs;
 	breakdown.stage5RadianceComponentMs = m_stage5RadianceComponentMsCurrent;
+	breakdown.stage5AeroThermalMs = m_stage5AeroThermalMsCurrent;
 	breakdown.stage5ModtranLookupMs = m_stage5ModtranLookupMsCurrent;
 	breakdown.stage5ModtranCacheHitCount = m_stage5ModtranCacheHitCurrent;
 	breakdown.stage5ModtranCacheMissCount = m_stage5ModtranCacheMissCurrent;

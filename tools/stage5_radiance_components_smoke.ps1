@@ -343,6 +343,11 @@ foreach ($scenario in $scenarios) {
     Write-Host "running scenario: $($scenario.Label)"
     $run = Invoke-HwaStage5ComponentsRun -Scenario $scenario
     $metrics = Get-Stage5ComponentMetrics -Text $run.Text
+    if ($null -eq $metrics) {
+        Write-Host "retrying scenario after missing Stage5 RadianceComponents: $($scenario.Label)"
+        $run = Invoke-HwaStage5ComponentsRun -Scenario $scenario
+        $metrics = Get-Stage5ComponentMetrics -Text $run.Text
+    }
     $metricsPresent = $null -ne $metrics
     $pathSourceOk = $metricsPresent -and ($metrics.pathRadianceSource -in @("legacy_empirical", "disabled"))
     $debugViewOk = $metricsPresent -and ($metrics.debugView -eq "Off")

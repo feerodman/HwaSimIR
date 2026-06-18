@@ -96,6 +96,7 @@ void IRPerfStats::recordIrUpdateBreakdown(const IRUpdateBreakdown& breakdown)
 		m_stage4HotspotMsTotal += breakdown.stage4HotspotMs;
 		m_stage5PlumeBreakdownMsTotal += breakdown.stage5PlumeMs;
 		m_stage5RadianceComponentMsTotal += breakdown.stage5RadianceComponentMs;
+		m_stage5AeroThermalMsTotal += breakdown.stage5AeroThermalMs;
 		m_stage5ModtranLookupMsTotal += breakdown.stage5ModtranLookupMs;
 		m_shaderInputApplyMsTotal += breakdown.shaderInputApplyMs;
 		++m_irBreakdownSamples;
@@ -218,6 +219,7 @@ void IRPerfStats::maybeLog()
 		const double stage7SkyGroundMs = Average(m_stage7SkyGroundMsTotal, m_irBreakdownSamples);
 		const double stage4HotspotMs = Average(m_stage4HotspotMsTotal, m_irBreakdownSamples);
 		const double stage5RadianceComponentMs = Average(m_stage5RadianceComponentMsTotal, m_irBreakdownSamples);
+		const double stage5AeroThermalMs = Average(m_stage5AeroThermalMsTotal, m_irBreakdownSamples);
 		const double stage5ModtranLookupMs = Average(m_stage5ModtranLookupMsTotal, m_irBreakdownSamples);
 		const double shaderInputApplyMs = Average(m_shaderInputApplyMsTotal, m_irBreakdownSamples);
 		const double renderMs = Average(m_renderMsTotal, m_renderSamples);
@@ -241,6 +243,7 @@ void IRPerfStats::maybeLog()
 			<< " stage4HotspotMs=" << stage4HotspotMs
 			<< " stage5PlumeMs=" << Average(m_stage5PlumeBreakdownMsTotal, m_irBreakdownSamples)
 			<< " stage5RadianceComponentMs=" << stage5RadianceComponentMs
+			<< " stage5AeroThermalMs=" << stage5AeroThermalMs
 			<< " stage5ModtranLookupMs=" << stage5ModtranLookupMs
 			<< " shaderInputApplyMs=" << shaderInputApplyMs
 			<< " shaderInputApplyScope=exclusive"
@@ -292,6 +295,7 @@ void IRPerfStats::maybeLog()
 				<< " irUpdateMs=" << irUpdateMs
 				<< " stage5ModtranLookupMs=" << stage5ModtranLookupMs
 				<< " stage5RadianceComponentMs=" << stage5RadianceComponentMs
+				<< " stage5AeroThermalMs=" << stage5AeroThermalMs
 				<< " stage4HotspotMs=" << stage4HotspotMs
 				<< " stage7SkyGroundMs=" << stage7SkyGroundMs
 				<< " shaderInputApplyMs=" << shaderInputApplyMs
@@ -348,6 +352,7 @@ void IRPerfStats::resetIntervalLocked(std::int64_t nowNs)
 	m_stage4HotspotMsTotal = 0.0;
 	m_stage5PlumeBreakdownMsTotal = 0.0;
 	m_stage5RadianceComponentMsTotal = 0.0;
+	m_stage5AeroThermalMsTotal = 0.0;
 	m_stage5ModtranLookupMsTotal = 0.0;
 	m_shaderInputApplyMsTotal = 0.0;
 	m_shaderInputSetCountTotal = 0;

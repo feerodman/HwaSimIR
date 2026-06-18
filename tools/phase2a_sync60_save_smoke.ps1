@@ -8,7 +8,12 @@ param(
     [double]$ModtranPathClampMax = 10.0,
     [double]$ModtranPathBlend = 1.0,
     [string]$EnableModtranRadianceDebug = "false",
-    [string]$CompareLegacy = "false"
+    [string]$CompareLegacy = "false",
+    [string]$EnableAeroThermalModel = "true",
+    [string]$ApplyAeroToRadiance = "false",
+    [string]$AeroDebugLog = "false",
+    [string]$Stage5LogComponents = "false",
+    [int]$Stage5ComponentLogEveryFrames = 120
 )
 
 $ErrorActionPreference = "Stop"
@@ -127,7 +132,8 @@ try {
     $runtimeText = Set-IniValue $runtimeText "LegacyEngineBodyHeating" "false"
     $runtimeText = Set-IniValue $runtimeText "EnableIRVerboseLog" "0"
     $runtimeText = Set-IniValue $runtimeText "DebugView" "Off"
-    $runtimeText = Set-IniValue $runtimeText "LogComponents" "false"
+    $runtimeText = Set-IniValue $runtimeText "LogComponents" $Stage5LogComponents
+    $runtimeText = Set-IniValue $runtimeText "ComponentLogEveryFrames" ([string]$Stage5ComponentLogEveryFrames)
     $runtimeText = Set-IniValue $runtimeText "EnableModtranRadianceDebug" $EnableModtranRadianceDebug
     $runtimeText = Set-IniValue $runtimeText "UseModtranPathRuntime" $UseModtranPathRuntime
     $runtimeText = Set-IniValue $runtimeText "UseModtranSkyRuntime" "false"
@@ -142,6 +148,9 @@ try {
     $runtimeText = Set-IniValue $runtimeText "ModtranPathBlend" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $ModtranPathBlend))
     $runtimeText = Set-IniValue $runtimeText "ModtranPathABLog" "true"
     $runtimeText = Set-IniValue $runtimeText "CompareLegacy" $CompareLegacy
+    $runtimeText = Set-IniValue $runtimeText "EnableAeroThermalModel" $EnableAeroThermalModel
+    $runtimeText = Set-IniValue $runtimeText "ApplyAeroToRadiance" $ApplyAeroToRadiance
+    $runtimeText = Set-IniValue $runtimeText "AeroDebugLog" $AeroDebugLog
     [IO.File]::WriteAllText($runtimeIni, $runtimeText, $utf8)
 
     $env:QT_FORCE_STDERR_LOGGING = "1"
@@ -237,6 +246,7 @@ $summary = [pscustomobject]@{
     shaderInputSkipCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "shaderInputSkipCount")), 3)
     shaderInputCacheHitRateAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "shaderInputCacheHitRate")), 3)
     stage5RadianceComponentMs = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage5RadianceComponentMs")), 3)
+    stage5AeroThermalMs = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage5AeroThermalMs")), 6)
     stage5ModtranLookupMs = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage5ModtranLookupMs")), 6)
     stage5ModtranCacheHitCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage5ModtranCacheHitCount")), 3)
     stage5ModtranCacheMissCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage5ModtranCacheMissCount")), 3)
@@ -244,6 +254,10 @@ $summary = [pscustomobject]@{
     useModtranPathRuntime = $UseModtranPathRuntime
     modtranPathScale = $ModtranPathScale
     modtranPathBlend = $ModtranPathBlend
+    enableAeroThermalModel = $EnableAeroThermalModel
+    applyAeroToRadiance = $ApplyAeroToRadiance
+    aeroDebugLog = $AeroDebugLog
+    stage5LogComponents = $Stage5LogComponents
     stage7FullUpdateCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage7FullUpdateCount")), 3)
     stage7PositionOnlyCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage7PositionOnlyCount")), 3)
     stage7SkipCountMax = [math]::Round((Get-Maximum (Get-NumericValues $hwaText "Perf" "stage7SkipCount")), 3)
@@ -266,4 +280,4 @@ $summary = [pscustomobject]@{
 $summaryPath = Join-Path $logRoot "phase2a_sync60_save_summary.json"
 $summary | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $summaryPath -Encoding UTF8
 $summary | Format-List
-Write-Host "summary=$summaryPath"
+Write-Output "summary=$summaryPath"

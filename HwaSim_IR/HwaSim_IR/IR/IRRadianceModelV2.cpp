@@ -44,6 +44,19 @@ IRRadianceModelV2Input::IRRadianceModelV2Input()
 	modtranPathBlend(1.0),
 	modtranPathRuntimeMode("Off"),
 	effectivePathRadiance(0.0),
+	altitudeM(0.0),
+	speedMps(0.0),
+	mach(0.0),
+	airTempK(0.0),
+	recoveryTempK(0.0),
+	aeroDeltaK(0.0),
+	bodyAeroDeltaK(0.0),
+	noseAeroDeltaK(0.0),
+	edgeAeroDeltaK(0.0),
+	rearAeroDeltaK(0.0),
+	aeroValid(false),
+	aeroFallbackReason("not_evaluated"),
+	aeroAppliedToRadiance(false),
 	modtranSkyRadiance(0.0),
 	modtranSolarIrradiance(0.0),
 	modtranRadianceValid(false),
@@ -79,6 +92,19 @@ IRRadianceComponents::IRRadianceComponents()
 	modtranPathBlend(1.0),
 	modtranPathRuntimeMode("Off"),
 	effectivePathRadiance(0.0),
+	altitudeM(0.0),
+	speedMps(0.0),
+	mach(0.0),
+	airTempK(0.0),
+	recoveryTempK(0.0),
+	aeroDeltaK(0.0),
+	bodyAeroDeltaK(0.0),
+	noseAeroDeltaK(0.0),
+	edgeAeroDeltaK(0.0),
+	rearAeroDeltaK(0.0),
+	aeroValid(false),
+	aeroFallbackReason("not_evaluated"),
+	aeroAppliedToRadiance(false),
 	modtranSkyRadiance(0.0),
 	modtranSolarIrradiance(0.0),
 	modtranRadianceValid(false),
@@ -116,7 +142,10 @@ IRRadianceComponents IRRadianceModelV2::evaluateComponents(const IRRadianceModel
 	components.band = input.band;
 	components.materialName = input.materialName.empty() ? "unknown" : input.materialName;
 
-	const double materialTemperatureK = clamp(input.materialTemperatureK, 120.0, 2500.0);
+	const double aeroBodyOffsetK = input.aeroAppliedToRadiance && input.aeroValid
+		? std::max(0.0, input.bodyAeroDeltaK)
+		: 0.0;
+	const double materialTemperatureK = clamp(input.materialTemperatureK + aeroBodyOffsetK, 120.0, 2500.0);
 	const double hotspotTemperatureK = clamp(input.hotspotTemperatureK, 120.0, 3500.0);
 	const double emissivity = clamp(input.materialEmissivity, 0.01, 1.0);
 	const double reflectance = clamp(input.materialReflectance, 0.0, 1.0);
@@ -176,6 +205,19 @@ IRRadianceComponents IRRadianceModelV2::evaluateComponents(const IRRadianceModel
 	components.modtranPathBlend = clamp(input.modtranPathBlend, 0.0, 1.0);
 	components.modtranPathRuntimeMode = input.modtranPathRuntimeMode.empty() ? "Off" : input.modtranPathRuntimeMode;
 	components.effectivePathRadiance = pathRadiance;
+	components.altitudeM = input.altitudeM;
+	components.speedMps = std::max(0.0, input.speedMps);
+	components.mach = std::max(0.0, input.mach);
+	components.airTempK = std::max(0.0, input.airTempK);
+	components.recoveryTempK = std::max(0.0, input.recoveryTempK);
+	components.aeroDeltaK = std::max(0.0, input.aeroDeltaK);
+	components.bodyAeroDeltaK = std::max(0.0, input.bodyAeroDeltaK);
+	components.noseAeroDeltaK = std::max(0.0, input.noseAeroDeltaK);
+	components.edgeAeroDeltaK = std::max(0.0, input.edgeAeroDeltaK);
+	components.rearAeroDeltaK = std::max(0.0, input.rearAeroDeltaK);
+	components.aeroValid = input.aeroValid;
+	components.aeroFallbackReason = input.aeroFallbackReason.empty() ? "not_evaluated" : input.aeroFallbackReason;
+	components.aeroAppliedToRadiance = input.aeroAppliedToRadiance && input.aeroValid;
 	components.modtranSkyRadiance = modtranSkyRadiance;
 	components.modtranSolarIrradiance = modtranSolarIrradiance;
 	components.modtranRadianceValid = input.modtranRadianceValid;

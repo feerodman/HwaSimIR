@@ -78,6 +78,9 @@
     <ClInclude Include="IR\IRRadianceModelV2.h">
       <Filter>头文件\IR</Filter>
     </ClInclude>
+    <ClInclude Include="IR\IRAeroThermalModel.h">
+      <Filter>头文件\IR</Filter>
+    </ClInclude>
     <ClInclude Include="IR\IRRuntimeConfig.h">
       <Filter>头文件\IR</Filter>
     </ClInclude>
@@ -156,6 +159,9 @@
       <Filter>源文件\IR</Filter>
     </ClCompile>
     <ClCompile Include="IR\IRRadianceModelV2.cpp">
+      <Filter>源文件\IR</Filter>
+    </ClCompile>
+    <ClCompile Include="IR\IRAeroThermalModel.cpp">
       <Filter>源文件\IR</Filter>
     </ClCompile>
     <ClCompile Include="IR\IRRuntimeConfig.cpp">

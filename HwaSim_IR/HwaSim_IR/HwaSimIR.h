@@ -44,6 +44,7 @@
 #include "GeoTransform.h"
 #include "AttitudeTransform.h"
 #include "IRSimulation.h"
+#include "IR/IRAeroThermalModel.h"
 #include "IR/IRConfig.h"
 #include "IR/IREnginePlumeModel.h"
 #include "IR/IRModtranRadianceLut.h"
@@ -188,6 +189,7 @@ private:
 	IRAtmosphereModel m_irAtmosphereModel;                  // MODTRAN透过率近似表
 	IRRadianceModel m_irRadianceModel;                      // CPU低复杂度辐亮度模型
 	IRRadianceModelV2 m_irRadianceModelV2;                  // Stage5A minimal body/hotspot/brightspot radiance debug model
+	IRAeroThermalModel m_stage5AeroThermalModel;            // Stage4A: log-only / A-B aerodynamic heating components
 	IRModtranRadianceLut m_stage5ModtranRadianceLut;        // Stage5 3B: MODTRAN path/sky/solar log-only source
 	IRSensorModel m_irSensorModel;                          // Stage6A sensor geometry and output size model
 	IRSensorPostProcess m_irSensorPostProcess;              // Stage6B minimal display output postprocess
@@ -233,6 +235,11 @@ private:
 	std::string m_stage5DebugViewModeName = "Off";
 	bool m_stage5LogComponents = false;
 	int m_stage5ComponentLogEveryFrames = 120;
+	bool m_stage5AeroThermalEnabled = true;
+	bool m_stage5ApplyAeroToRadiance = false;
+	bool m_stage5AeroDebugLog = false;
+	int m_stage5AeroLogEveryFrames = 120;
+	IRAeroThermalOptions m_stage5AeroThermalOptions;
 	bool m_enableStage5ModtranRadianceDebug = false;
 	bool m_stage5UseModtranPathRuntime = false;
 	bool m_stage5UseModtranSkyRuntime = false;
@@ -298,8 +305,11 @@ private:
 	std::map<std::string, Stage5ModtranRadianceCacheEntry> m_stage5ModtranRadianceCache;
 	std::map<std::string, std::string> m_lastStage5ModtranRadianceCompareLogState;
 	std::map<std::string, std::string> m_lastStage5ModtranPathABLogState;
+	std::map<std::string, IRAeroThermalState> m_stage5AeroThermalStateByTarget;
+	std::map<std::string, std::string> m_lastStage5AeroThermalLogState;
 	std::map<int, bool> m_stage5ModtranPathRuntimeBandWarned;
 	double m_stage5RadianceComponentMsCurrent = 0.0;
+	double m_stage5AeroThermalMsCurrent = 0.0;
 	double m_stage5ModtranLookupMsCurrent = 0.0;
 	std::uint64_t m_stage5ModtranCacheHitCurrent = 0;
 	std::uint64_t m_stage5ModtranCacheMissCurrent = 0;
@@ -420,7 +430,9 @@ private:
 	std::string Stage4PlatformName(PLATFORM_TYPE type) const;
 	bool Stage4WeaponAppliesToTarget(const BYHWICD::WeaponState& weaponState, const TargetPlatformData& targetPlat) const;
 	bool ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHWICD::WeaponState& weaponState, float dtSec, float ambientTempK, const IRObjectRadianceOutput& radiance, bool applyNodeInputs);
-	void ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IRObjectRadianceOutput& radiance, const IRHotspotState& rearHotspot, const IRBrightSpotState& brightSpot, bool rearEnabledForShader, float rearIntensityForShader, const std::string& targetKey);
+	void ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IRObjectRadianceOutput& radiance, const IRHotspotState& rearHotspot, const IRBrightSpotState& brightSpot, bool rearEnabledForShader, float rearIntensityForShader, const std::string& targetKey, float dtSec);
+	IRAeroThermalOutput EvaluateStage5AeroThermal(TargetPlatformData& targetPlat, IRBand band, float dtSec, const IRRuntimeEnvironment& environment, const std::string& targetKey);
+	void LogStage5AeroThermal(const TargetPlatformData& targetPlat, const IRRadianceComponents& components, const IRAeroThermalOutput& aeroOutput);
 	IRModtranRadianceResult QueryStage5ModtranRadiance(const TargetPlatformData& targetPlat, const IRRuntimeEnvironment& environment, const IRObjectRadianceOutput& radiance, const std::string& targetKey);
 	void LogStage5ModtranRadianceCompare(const TargetPlatformData& targetPlat, const IRRadianceComponents& components, const IRModtranRadianceResult& modtranResult, double rangeKm, double observerAltKm, double targetAltKm);
 	void LogStage5ModtranPathAB(const TargetPlatformData& targetPlat, const IRRadianceComponents& components, const IRModtranRadianceResult& modtranResult, double rangeKm, double observerAltKm, double targetAltKm);

@@ -162,6 +162,7 @@
     <ClInclude Include="common_data.h" />
     <ClInclude Include="GeoTransform.h" />
     <ClInclude Include="HwaSimIR.h" />
+    <ClInclude Include="IR\IRAeroThermalModel.h" />
     <ClInclude Include="IR\IRConfig.h" />
     <ClInclude Include="IR\IREnginePlumeModel.h" />
     <ClInclude Include="IR\IRModtranRadianceLut.h" />
@@ -190,6 +191,7 @@
     <ClCompile Include="AttitudeTransform.cpp" />
     <ClCompile Include="GeoTransform.cpp" />
     <ClCompile Include="HwaSimIR.cpp" />
+    <ClCompile Include="IR\IRAeroThermalModel.cpp" />
     <ClCompile Include="IR\IRConfig.cpp" />
     <ClCompile Include="IR\IREnginePlumeModel.cpp" />
     <ClCompile Include="IR\IRModtranRadianceLut.cpp" />
