@@ -64,7 +64,7 @@ public:
 	void recordIrUpdate(double elapsedMs);
 	void recordIrUpdateBreakdown(const IRUpdateBreakdown& breakdown);
 	void recordPlumeUpdate(double elapsedMs);
-	void recordRender(double elapsedMs);
+	void recordRender(double elapsedMs, double stage6MtfBlurMs = 0.0, bool mtfBlurEnabled = false, double mtfBlurSigmaPixels = 0.0, int mtfBlurRadiusPixels = 0);
 	void recordInputQueueDepth(int queueDepth);
 	void recordCapture(double readbackMs, double resizeMs, double copyMs, int tcpQueueDepth);
 	std::uint64_t recordTcpOutput(
@@ -130,6 +130,10 @@ private:
 	std::uint64_t m_stage4SkipCountTotal = 0;
 	double m_plumeUpdateMsTotal = 0.0;
 	double m_renderMsTotal = 0.0;
+	double m_stage6MtfBlurMsTotal = 0.0;
+	bool m_mtfBlurEnabled = false;
+	double m_mtfBlurSigmaPixels = 0.0;
+	int m_mtfBlurRadiusPixels = 0;
 	double m_readbackMsTotal = 0.0;
 	double m_resizeMsTotal = 0.0;
 	double m_copyMsTotal = 0.0;

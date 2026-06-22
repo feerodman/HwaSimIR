@@ -340,6 +340,16 @@ std::string NormalizeStage5SensorInputDisplayMode(const std::string& value)
 	return "Manual";
 }
 
+std::string NormalizeStage6MtfBlurMode(const std::string& value)
+{
+	const std::string lower = ToLowerAscii(value);
+	if (lower == "gaussianseparable" || lower == "gaussian" || lower == "separable")
+	{
+		return "GaussianSeparable";
+	}
+	return "GaussianSeparable";
+}
+
 std::string NormalizeStage5ModtranPathRuntimeMode(const std::string& value)
 {
 	const std::string lower = ToLowerAscii(value);
@@ -1040,7 +1050,18 @@ void HwaSimIR::run() {
 			std::chrono::steady_clock::now() - renderBegin).count();
 		if (!m_bSyncRenderMode.load() || hasDisplayFrame)
 		{
-			m_perfStats.recordRender(renderMs);
+			const bool mtfEffective = m_stage6MtfBlurEnabled &&
+				m_stage6MtfApplyTo == "final_display" &&
+				m_stage6MtfBlurRadiusPixels > 0 &&
+				m_stage6MtfBlurSigmaPixels > 0.001;
+			const double mtfBlurMs = mtfEffective ? renderMs : 0.0;
+			m_perfStats.recordRender(
+				renderMs,
+				mtfBlurMs,
+				mtfEffective,
+				m_stage6MtfBlurSigmaPixels,
+				m_stage6MtfBlurRadiusPixels);
+			LogStage6MtfBlur(m_currentFrameTelemetry.sourceSeq, renderMs);
 		}
 		m_syncFrameActive.store(false);
 		m_perfStats.maybeLog();
@@ -1492,6 +1513,11 @@ void HwaSimIR::InitStage6FinalPostShader()
     uniform int u_stage6_final_noise_enable;
     uniform float u_stage6_final_noise_sigma_norm;
     uniform vec2 u_stage6_final_uv_scale;
+    uniform int u_stage6_mtf_blur_enable;
+    uniform float u_stage6_mtf_sigma_pixels;
+    uniform int u_stage6_mtf_radius_pixels;
+    uniform vec2 u_stage6_mtf_texel_size;
+    uniform vec2 u_stage6_mtf_uv_max;
     uniform int u_stage7_final_precipitation_mode; // 0 none, 1 screen overlay
     uniform int u_stage7_final_precipitation_type; // 0 none, 1 rain, 2 snow
     uniform float u_stage7_final_precipitation_density;
@@ -1505,6 +1531,48 @@ void HwaSimIR::InitStage6FinalPostShader()
     float Stage6FinalNoise(vec2 pixel)
     {
         return fract(sin(dot(pixel, vec2(12.9898, 78.233))) * 43758.5453);
+    }
+
+    float Stage6FinalSampleDisplayGray(vec2 uv)
+    {
+        vec2 safeUv = clamp(uv, vec2(0.0, 0.0), u_stage6_mtf_uv_max);
+        vec4 rawColor = texture2D(p3d_Texture0, safeUv);
+        float gray = dot(rawColor.rgb, vec3(0.299, 0.587, 0.114));
+        gray = gray * u_stage6_final_display_gain + u_stage6_final_display_offset;
+        return clamp(gray, 0.0, 1.0);
+    }
+
+    float Stage6FinalMtfBlurGray(vec2 sampleUv)
+    {
+        int radius = u_stage6_mtf_radius_pixels;
+        if (radius < 0) {
+            radius = 0;
+        }
+        if (radius > 4) {
+            radius = 4;
+        }
+        float sigma = max(u_stage6_mtf_sigma_pixels, 0.001);
+        if (u_stage6_mtf_blur_enable != 1 || radius <= 0 || sigma <= 0.001) {
+            return Stage6FinalSampleDisplayGray(sampleUv);
+        }
+
+        float sum = 0.0;
+        float weightSum = 0.0;
+        for (int y = -4; y <= 4; ++y) {
+            for (int x = -4; x <= 4; ++x) {
+                if (x >= -radius && x <= radius && y >= -radius && y <= radius) {
+                    vec2 offset = vec2(float(x), float(y)) * u_stage6_mtf_texel_size;
+                    float d2 = float(x * x + y * y);
+                    float weight = exp(-0.5 * d2 / (sigma * sigma));
+                    sum += Stage6FinalSampleDisplayGray(sampleUv + offset) * weight;
+                    weightSum += weight;
+                }
+            }
+        }
+        if (weightSum <= 0.0) {
+            return Stage6FinalSampleDisplayGray(sampleUv);
+        }
+        return clamp(sum / weightSum, 0.0, 1.0);
     }
 
     float Stage7FinalHash(vec2 p)
@@ -1573,8 +1641,7 @@ void HwaSimIR::InitStage6FinalPostShader()
     void main() {
         vec2 sampleUv = texcoord * u_stage6_final_uv_scale;
         vec4 rawColor = texture2D(p3d_Texture0, sampleUv);
-        float gray = dot(rawColor.rgb, vec3(0.299, 0.587, 0.114));
-        gray = gray * u_stage6_final_display_gain + u_stage6_final_display_offset;
+        float gray = Stage6FinalMtfBlurGray(sampleUv);
         if (u_stage6_final_noise_enable == 1 && u_stage6_final_noise_sigma_norm > 0.0) {
             gray += (Stage6FinalNoise(gl_FragCoord.xy) * 2.0 - 1.0) * u_stage6_final_noise_sigma_norm;
         }
@@ -1799,6 +1866,13 @@ void HwaSimIR::ApplyStage6FinalPostprocessInputs()
 	const int rawH = m_stage6RawSceneTex != nullptr ? m_stage6RawSceneTex->get_y_size() : 0;
 	const float uvScaleU = rawW > 0 ? std::min(1.0f, static_cast<float>(m_stage6FinalWidth) / static_cast<float>(rawW)) : 1.0f;
 	const float uvScaleV = rawH > 0 ? std::min(1.0f, static_cast<float>(m_stage6FinalHeight) / static_cast<float>(rawH)) : 1.0f;
+	const float texelU = rawW > 0 ? 1.0f / static_cast<float>(rawW) : 0.0f;
+	const float texelV = rawH > 0 ? 1.0f / static_cast<float>(rawH) : 0.0f;
+	const bool mtfBlurEffective =
+		m_stage6MtfBlurEnabled &&
+		m_stage6MtfApplyTo == "final_display" &&
+		m_stage6MtfBlurRadiusPixels > 0 &&
+		m_stage6MtfBlurSigmaPixels > 0.001;
 	const int precipitationType = IRWeatherEffects::precipitationCode(m_stage7WeatherState.precipitationType);
 	const bool screenOverlayActive = m_stage7WeatherEnabled &&
 		m_stage7PrecipitationEnabled &&
@@ -1814,6 +1888,11 @@ void HwaSimIR::ApplyStage6FinalPostprocessInputs()
 	m_stage6FinalCard.set_shader_input("u_stage6_final_noise_enable", LVecBase2i(config.noiseEnable ? 1 : 0, 0));
 	m_stage6FinalCard.set_shader_input("u_stage6_final_noise_sigma_norm", LVecBase2f(static_cast<float>(noiseSigmaNorm), 0.0f));
 	m_stage6FinalCard.set_shader_input("u_stage6_final_uv_scale", LVecBase2f(uvScaleU, uvScaleV));
+	SetShaderInputCached(m_stage6FinalCard, "u_stage6_mtf_blur_enable", LVecBase2i(mtfBlurEffective ? 1 : 0, 0));
+	SetShaderInputCached(m_stage6FinalCard, "u_stage6_mtf_sigma_pixels", LVecBase2f(static_cast<float>(m_stage6MtfBlurSigmaPixels), 0.0f));
+	SetShaderInputCached(m_stage6FinalCard, "u_stage6_mtf_radius_pixels", LVecBase2i(m_stage6MtfBlurRadiusPixels, 0));
+	SetShaderInputCached(m_stage6FinalCard, "u_stage6_mtf_texel_size", LVecBase2f(texelU, texelV));
+	SetShaderInputCached(m_stage6FinalCard, "u_stage6_mtf_uv_max", LVecBase2f(uvScaleU, uvScaleV));
 	m_stage6FinalCard.set_shader_input("u_stage7_final_precipitation_mode", LVecBase2i(screenOverlayActive ? 1 : 0, 0));
 	m_stage6FinalCard.set_shader_input("u_stage7_final_precipitation_type", LVecBase2i(screenOverlayActive ? precipitationType : 0, 0));
 	m_stage6FinalCard.set_shader_input("u_stage7_final_precipitation_density", LVecBase2f(static_cast<float>(screenOverlayActive ? m_stage7WeatherState.precipitationDensity : 0.0), 0.0f));
@@ -1843,9 +1922,62 @@ void HwaSimIR::LogStage6FinalPipeline(const char* reason)
 		<< " windowSource=final_sensor"
 		<< " tcpSource=final_sensor"
 		<< " windowRegion=fullscreen"
+		<< " mtfBlurEnabled=" << (m_stage6MtfBlurEnabled ? "1" : "0")
+		<< " mtfBlurMode=" << m_stage6MtfBlurMode
+		<< " mtfBlurEffectiveMode=" << m_stage6MtfBlurEffectiveMode
+		<< " mtfBlurSigmaPixels=" << m_stage6MtfBlurSigmaPixels
+		<< " mtfBlurRadiusPixels=" << m_stage6MtfBlurRadiusPixels
 		<< " sameOutput=1"
 		<< std::endl;
 	LogStage6ViewportDiag(reason);
+}
+
+void HwaSimIR::LogStage6MtfBlur(std::uint64_t sourceSeq, double renderMs)
+{
+	std::ostringstream state;
+	state << (m_stage6MtfBlurEnabled ? 1 : 0)
+		<< ":" << m_stage6MtfBlurMode
+		<< ":" << m_stage6MtfBlurEffectiveMode
+		<< ":" << m_stage6MtfBlurSigmaPixels
+		<< ":" << m_stage6MtfBlurRadiusPixels
+		<< ":" << m_stage6MtfBlurPasses
+		<< ":" << m_stage6MtfApplyTo
+		<< ":" << m_stage6FinalWidth
+		<< "x" << m_stage6FinalHeight;
+	const std::string stateKey = state.str();
+	const bool stateChanged = stateKey != m_lastStage6MtfLogState;
+	const bool sampleDue =
+		sourceSeq <= 3 ||
+		(m_stage6MtfLogEveryFrames > 0 && sourceSeq > 0 &&
+			(sourceSeq % static_cast<std::uint64_t>(m_stage6MtfLogEveryFrames)) == 0);
+	if (!m_stage6MtfDebugLog && !m_enableIRVerboseLog && !stateChanged && !sampleDue)
+	{
+		return;
+	}
+	m_lastStage6MtfLogState = stateKey;
+	++m_stage6MtfLogCounter;
+	const bool mtfEffective =
+		m_stage6MtfBlurEnabled &&
+		m_stage6MtfApplyTo == "final_display" &&
+		m_stage6MtfBlurRadiusPixels > 0 &&
+		m_stage6MtfBlurSigmaPixels > 0.001;
+	std::cout << "[Stage6 MTF]"
+		<< " sourceSeq=" << sourceSeq
+		<< " enabled=" << (m_stage6MtfBlurEnabled ? "1" : "0")
+		<< " effective=" << (mtfEffective ? "1" : "0")
+		<< " mode=" << m_stage6MtfBlurMode
+		<< " effectiveMode=" << m_stage6MtfBlurEffectiveMode
+		<< " sigmaPixels=" << m_stage6MtfBlurSigmaPixels
+		<< " radiusPixels=" << m_stage6MtfBlurRadiusPixels
+		<< " passes=" << m_stage6MtfBlurPasses
+		<< " applyTo=" << m_stage6MtfApplyTo
+		<< " inputSize=" << m_stage6FinalWidth << "x" << m_stage6FinalHeight
+		<< " outputSize=" << m_stage6FinalWidth << "x" << m_stage6FinalHeight
+		<< " stage6MtfBlurMs=" << (mtfEffective ? std::max(0.0, renderMs) : 0.0)
+		<< " stage6MtfBlurScope=render_pass_upper_bound"
+		<< " implementation=single_pass_gpu_separable_weights"
+		<< " todo=true_two_pass_separable_if_needed"
+		<< std::endl;
 }
 
 void HwaSimIR::LogStage6ViewportDiag(const char* reason) const
@@ -3344,6 +3476,8 @@ void HwaSimIR::ProcessRealSimSceneInitData()
 	m_stage6FrameDiagLogCounter = 0;
 	m_stage6NoVisibleTargetFrames = 0;
 	m_stage6LastFrameDiagState.clear();
+	m_stage6MtfLogCounter = 0;
+	m_lastStage6MtfLogState.clear();
 	m_stage7NearFarClipWarningLogged = false;
 	m_stage7SkyHorizonLogCounter = 0;
 	m_stage7LastSkyHorizonState.clear();
@@ -4817,6 +4951,14 @@ void HwaSimIR::InitInfraredSimulation()
 	std::string stage4UpdateHzSource;
 	std::string stage6FlipShaderSource;
 	std::string stage6FlipTcpSource;
+	std::string stage6MtfEnableSource;
+	std::string stage6MtfModeSource;
+	std::string stage6MtfSigmaSource;
+	std::string stage6MtfRadiusSource;
+	std::string stage6MtfPassesSource;
+	std::string stage6MtfApplyToSource;
+	std::string stage6MtfDebugSource;
+	std::string stage6MtfLogEverySource;
 	std::string tcpCodecSource;
 	std::string jpegQualitySource;
 	std::string jpegModeSource;
@@ -4897,6 +5039,111 @@ void HwaSimIR::InitInfraredSimulation()
 		<< " FlipInShader=" << (m_stage6FlipInShader ? "1" : "0")
 		<< " FlipInTcpThread=" << (m_stage6FlipInTcpThread ? "1" : "0")
 		<< " source=" << stage6FlipShaderSource << "/" << stage6FlipTcpSource
+		<< std::endl;
+	m_stage6MtfBlurEnabled = m_runtimeConfig.getBool(
+		"Stage6MTF",
+		"EnableMTFBlur",
+		"EnableMTFBlur",
+		false,
+		&stage6MtfEnableSource);
+	m_stage6MtfBlurMode = NormalizeStage6MtfBlurMode(m_runtimeConfig.getString(
+		"Stage6MTF",
+		"MTFBlurMode",
+		"MTFBlurMode",
+		"GaussianSeparable",
+		&stage6MtfModeSource));
+	m_stage6MtfBlurEffectiveMode = "GaussianSinglePassSeparableWeights";
+	m_stage6MtfBlurSigmaPixels = m_runtimeConfig.getDouble(
+		"Stage6MTF",
+		"MTFBlurSigmaPixels",
+		"MTFBlurSigmaPixels",
+		0.65,
+		&stage6MtfSigmaSource);
+	if (!std::isfinite(m_stage6MtfBlurSigmaPixels) || m_stage6MtfBlurSigmaPixels < 0.0)
+	{
+		std::cout << "[Stage6 MTFConfig][WARN]"
+			<< " invalid MTFBlurSigmaPixels=" << m_stage6MtfBlurSigmaPixels
+			<< " fallback=0.65"
+			<< std::endl;
+		m_stage6MtfBlurSigmaPixels = 0.65;
+	}
+	m_stage6MtfBlurSigmaPixels = ClampStage5Double(m_stage6MtfBlurSigmaPixels, 0.0, 4.0);
+	m_stage6MtfBlurRadiusPixels = m_runtimeConfig.getInt(
+		"Stage6MTF",
+		"MTFBlurRadiusPixels",
+		"MTFBlurRadiusPixels",
+		2,
+		&stage6MtfRadiusSource);
+	if (m_stage6MtfBlurRadiusPixels < 0)
+	{
+		m_stage6MtfBlurRadiusPixels = 0;
+	}
+	if (m_stage6MtfBlurRadiusPixels > 4)
+	{
+		std::cout << "[Stage6 MTFConfig][WARN]"
+			<< " MTFBlurRadiusPixels=" << m_stage6MtfBlurRadiusPixels
+			<< " clamp=4"
+			<< " reason=shader_single_pass_max_radius"
+			<< std::endl;
+		m_stage6MtfBlurRadiusPixels = 4;
+	}
+	m_stage6MtfBlurPasses = m_runtimeConfig.getInt(
+		"Stage6MTF",
+		"MTFBlurPasses",
+		"MTFBlurPasses",
+		1,
+		&stage6MtfPassesSource);
+	if (m_stage6MtfBlurPasses != 1)
+	{
+		std::cout << "[Stage6 MTFConfig][WARN]"
+			<< " MTFBlurPasses=" << m_stage6MtfBlurPasses
+			<< " effectivePasses=1"
+			<< " reason=stage6a_single_pass_gpu_approx"
+			<< std::endl;
+		m_stage6MtfBlurPasses = 1;
+	}
+	m_stage6MtfApplyTo = ToLowerAscii(m_runtimeConfig.getString(
+		"Stage6MTF",
+		"MTFApplyTo",
+		"MTFApplyTo",
+		"final_display",
+		&stage6MtfApplyToSource));
+	if (m_stage6MtfApplyTo != "final_display")
+	{
+		std::cout << "[Stage6 MTFConfig][WARN]"
+			<< " MTFApplyTo=" << m_stage6MtfApplyTo
+			<< " fallback=final_display"
+			<< std::endl;
+		m_stage6MtfApplyTo = "final_display";
+	}
+	m_stage6MtfDebugLog = m_runtimeConfig.getBool(
+		"Stage6MTF",
+		"MTFDebugLog",
+		"MTFDebugLog",
+		false,
+		&stage6MtfDebugSource);
+	m_stage6MtfLogEveryFrames = std::max(1, m_runtimeConfig.getInt(
+		"Stage6MTF",
+		"MTFLogEveryFrames",
+		"MTFLogEveryFrames",
+		120,
+		&stage6MtfLogEverySource));
+	std::cout << "[Stage6 MTFConfig]"
+		<< " EnableMTFBlur=" << (m_stage6MtfBlurEnabled ? "1" : "0")
+		<< " MTFBlurMode=" << m_stage6MtfBlurMode
+		<< " effectiveMode=" << m_stage6MtfBlurEffectiveMode
+		<< " MTFBlurSigmaPixels=" << m_stage6MtfBlurSigmaPixels
+		<< " MTFBlurRadiusPixels=" << m_stage6MtfBlurRadiusPixels
+		<< " MTFBlurPasses=" << m_stage6MtfBlurPasses
+		<< " MTFApplyTo=" << m_stage6MtfApplyTo
+		<< " MTFDebugLog=" << (m_stage6MtfDebugLog ? "1" : "0")
+		<< " MTFLogEveryFrames=" << m_stage6MtfLogEveryFrames
+		<< " implementation=single_pass_gpu_separable_weights"
+		<< " todo=true_two_pass_separable_if_needed"
+		<< " source=" << stage6MtfEnableSource << "/" << stage6MtfModeSource
+		<< "/" << stage6MtfSigmaSource << "/" << stage6MtfRadiusSource
+		<< "/" << stage6MtfPassesSource << "/" << stage6MtfApplyToSource
+		<< "/" << stage6MtfDebugSource << "/" << stage6MtfLogEverySource
 		<< std::endl;
 	m_tcpCodecConfig = ToLowerAscii(m_runtimeConfig.getString(
 		"TcpOutput", "Codec", "TcpOutputCodec", "auto", &tcpCodecSource));
@@ -5743,6 +5990,14 @@ void HwaSimIR::InitInfraredSimulation()
 			<< "EnablePerfLog:" << perfLogSource
 			<< ",EnableIRVerboseLog:" << verboseLogSource
 			<< ",IRUpdateHz:" << irUpdateHzSource
+			<< ",EnableMTFBlur:" << stage6MtfEnableSource
+			<< ",MTFBlurMode:" << stage6MtfModeSource
+			<< ",MTFBlurSigmaPixels:" << stage6MtfSigmaSource
+			<< ",MTFBlurRadiusPixels:" << stage6MtfRadiusSource
+			<< ",MTFBlurPasses:" << stage6MtfPassesSource
+			<< ",MTFApplyTo:" << stage6MtfApplyToSource
+			<< ",MTFDebugLog:" << stage6MtfDebugSource
+			<< ",MTFLogEveryFrames:" << stage6MtfLogEverySource
 			<< ",AnnotationUpdateHz:" << annotationUpdateHzSource
 			<< ",EnableIRPhysicalPipeline:" << stage5PhysicalSource
 			<< ",DebugView:" << stage5ViewModeSource
@@ -7140,6 +7395,13 @@ void HwaSimIR::LogEffectiveRuntimeConfig(
 		<< " AnnotationUpdateHz=" << m_annotationUpdateHz
 		<< " EnablePerfLog=" << (m_enablePerfLog ? "1" : "0")
 		<< " EnableIRVerboseLog=" << (m_enableIRVerboseLog ? "1" : "0")
+		<< " EnableMTFBlur=" << (m_stage6MtfBlurEnabled ? "1" : "0")
+		<< " MTFBlurMode=" << m_stage6MtfBlurMode
+		<< " MTFBlurEffectiveMode=" << m_stage6MtfBlurEffectiveMode
+		<< " MTFBlurSigmaPixels=" << m_stage6MtfBlurSigmaPixels
+		<< " MTFBlurRadiusPixels=" << m_stage6MtfBlurRadiusPixels
+		<< " MTFBlurPasses=" << m_stage6MtfBlurPasses
+		<< " MTFApplyTo=" << m_stage6MtfApplyTo
 		<< " EnableIRPhysicalPipeline=" << (m_enableStage5PhysicalPipeline ? "1" : "0")
 		<< " DebugView=" << m_stage5DebugViewModeName
 		<< " LogComponents=" << (m_stage5LogComponents ? "1" : "0")
@@ -7202,6 +7464,14 @@ void HwaSimIR::LogEffectiveRuntimeConfig(
 	if (m_enableIRVerboseLog)
 	{
 		std::cout << "[EffectiveRuntimeConfig][WARN] EnableIRVerboseLog=1 reason=60Hz_console_logging_risk" << std::endl;
+	}
+	if (m_stage6MtfBlurEnabled)
+	{
+		std::cout << "[EffectiveRuntimeConfig][WARN] EnableMTFBlur=1"
+			<< " sigmaPixels=" << m_stage6MtfBlurSigmaPixels
+			<< " radiusPixels=" << m_stage6MtfBlurRadiusPixels
+			<< " reason=stage6a_AB_or_candidate_mode_not_production_default"
+			<< std::endl;
 	}
 	if (m_stage5ApplyAeroToRadiance)
 	{

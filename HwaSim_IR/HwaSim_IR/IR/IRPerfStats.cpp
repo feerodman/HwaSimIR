@@ -119,10 +119,14 @@ void IRPerfStats::recordPlumeUpdate(double elapsedMs)
 	++m_plumeSamples;
 }
 
-void IRPerfStats::recordRender(double elapsedMs)
+void IRPerfStats::recordRender(double elapsedMs, double stage6MtfBlurMs, bool mtfBlurEnabled, double mtfBlurSigmaPixels, int mtfBlurRadiusPixels)
 {
 	std::lock_guard<std::mutex> lock(m_mutex);
 	m_renderMsTotal += elapsedMs;
+	m_stage6MtfBlurMsTotal += std::max(0.0, stage6MtfBlurMs);
+	m_mtfBlurEnabled = mtfBlurEnabled;
+	m_mtfBlurSigmaPixels = std::max(0.0, mtfBlurSigmaPixels);
+	m_mtfBlurRadiusPixels = std::max(0, mtfBlurRadiusPixels);
 	++m_renderSamples;
 	++m_totalRenderFrames;
 	++m_intervalRenderFrames;
@@ -223,6 +227,7 @@ void IRPerfStats::maybeLog()
 		const double stage5ModtranLookupMs = Average(m_stage5ModtranLookupMsTotal, m_irBreakdownSamples);
 		const double shaderInputApplyMs = Average(m_shaderInputApplyMsTotal, m_irBreakdownSamples);
 		const double renderMs = Average(m_renderMsTotal, m_renderSamples);
+		const double stage6MtfBlurMs = Average(m_stage6MtfBlurMsTotal, m_renderSamples);
 		const double readbackMs = Average(m_readbackMsTotal, m_captureSamples);
 		const double jpegMs = Average(m_jpegMsTotal, m_tcpSamples);
 		const double tcpSendMs = Average(m_tcpSendMsTotal, m_tcpSamples);
@@ -261,6 +266,11 @@ void IRPerfStats::maybeLog()
 			<< " stage4SkipCount=" << m_stage4SkipCountTotal
 			<< " plumeUpdateMs=" << Average(m_plumeUpdateMsTotal, m_plumeSamples)
 			<< " renderMs=" << renderMs
+			<< " stage6MtfBlurMs=" << stage6MtfBlurMs
+			<< " stage6MtfBlurScope=render_pass_upper_bound"
+			<< " mtfBlurEnabled=" << (m_mtfBlurEnabled ? "1" : "0")
+			<< " mtfBlurSigmaPixels=" << m_mtfBlurSigmaPixels
+			<< " mtfBlurRadiusPixels=" << m_mtfBlurRadiusPixels
 			<< " readbackMs=" << readbackMs
 			<< " resizeMs=" << Average(m_resizeMsTotal, m_captureSamples)
 			<< " frameCopyMs=" << Average(m_copyMsTotal, m_captureSamples)
@@ -301,6 +311,7 @@ void IRPerfStats::maybeLog()
 				<< " shaderInputApplyMs=" << shaderInputApplyMs
 				<< " annotationMs=" << annotationMs
 				<< " renderMs=" << renderMs
+				<< " stage6MtfBlurMs=" << stage6MtfBlurMs
 				<< " readbackMs=" << readbackMs
 				<< " jpegMs=" << jpegMs
 				<< " tcpSendMs=" << tcpSendMs
@@ -366,6 +377,7 @@ void IRPerfStats::resetIntervalLocked(std::int64_t nowNs)
 	m_stage4SkipCountTotal = 0;
 	m_plumeUpdateMsTotal = 0.0;
 	m_renderMsTotal = 0.0;
+	m_stage6MtfBlurMsTotal = 0.0;
 	m_readbackMsTotal = 0.0;
 	m_resizeMsTotal = 0.0;
 	m_copyMsTotal = 0.0;

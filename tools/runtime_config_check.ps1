@@ -96,6 +96,13 @@ function Assert-Equals {
 $ini = ConvertTo-IniMap $RuntimeIni
 $checks = @()
 $checks += Assert-False $ini "Performance" "EnableIRVerboseLog" "0"
+$checks += Assert-False $ini "Stage6MTF" "EnableMTFBlur" "false"
+$checks += Assert-Equals $ini "Stage6MTF" "MTFBlurMode" "GaussianSeparable" "GaussianSeparable"
+$checks += Assert-Equals $ini "Stage6MTF" "MTFBlurSigmaPixels" "0.65" "0.65"
+$checks += Assert-Equals $ini "Stage6MTF" "MTFBlurRadiusPixels" "2" "2"
+$checks += Assert-Equals $ini "Stage6MTF" "MTFBlurPasses" "1" "1"
+$checks += Assert-Equals $ini "Stage6MTF" "MTFApplyTo" "final_display" "final_display"
+$checks += Assert-False $ini "Stage6MTF" "MTFDebugLog" "false"
 $checks += Assert-Equals $ini "Stage5Radiance" "DebugView" "Off" "Off"
 $checks += Assert-False $ini "Stage5Radiance" "LogComponents" "false"
 $checks += Assert-False $ini "Stage5Radiance" "UseSensorInputForDisplay" "false"

@@ -207,6 +207,17 @@ private:
 	double m_stage4UpdateHz = 30.0;
 	bool m_stage6FlipInShader = false;
 	bool m_stage6FlipInTcpThread = true;
+	bool m_stage6MtfBlurEnabled = false;
+	std::string m_stage6MtfBlurMode = "GaussianSeparable";
+	std::string m_stage6MtfBlurEffectiveMode = "GaussianSinglePassSeparableWeights";
+	double m_stage6MtfBlurSigmaPixels = 0.65;
+	int m_stage6MtfBlurRadiusPixels = 2;
+	int m_stage6MtfBlurPasses = 1;
+	std::string m_stage6MtfApplyTo = "final_display";
+	bool m_stage6MtfDebugLog = false;
+	int m_stage6MtfLogEveryFrames = 120;
+	std::string m_lastStage6MtfLogState;
+	int m_stage6MtfLogCounter = 0;
 	std::string m_tcpCodecConfig = "auto";
 	int m_tcpJpegQuality = 100;
 	bool m_tcpJpegGray = false;
@@ -400,6 +411,7 @@ private:
 	void SetupStage6FinalPipeline(int width, int height, const char* reason);
 	void SetupAnnotationOverlayRegion(const char* reason);
 	void ApplyStage6FinalPostprocessInputs();
+	void LogStage6MtfBlur(std::uint64_t sourceSeq, double renderMs);
 	void InitInfraredSimulation();                          // 初始化低复杂度红外全链路参数
 	void InitSkyAndCloudScene();                            // 初始化天空背景和粒子云近似层
 	void ApplyInfraredShader(NodePath& node, bool isBackground); // 挂载着色器并初始化参数

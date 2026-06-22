@@ -2264,6 +2264,158 @@ UseSensorInputForDisplay=true 候选 A/B 性能：
 
 ---
 
+### 阶段 6A：Stage6 MTF/blur GPU 后处理
+```text
+阶段：6A
+日期：2026-06-22
+执行者：Codex
+目标：增加低风险、可开关、可配置的 Stage6 MTF/blur GPU 后处理，
+用 Gaussian/separable 权重近似传感器 MTF；生产默认保持 EnableMTFBlur=false，
+不做 AGC，不改变 radiance 物理链路，不改 TCP/JPEG/H.264/录像链路。
+
+本阶段变更：
+- [Stage6MTF] 新增生产默认关闭配置：
+  EnableMTFBlur=false
+  MTFBlurMode=GaussianSeparable
+  MTFBlurSigmaPixels=0.65
+  MTFBlurRadiusPixels=2
+  MTFBlurPasses=1
+  MTFApplyTo=final_display
+  MTFDebugLog=false
+  MTFLogEveryFrames=120
+- Stage6 final_sensor postprocess shader 增加 GPU blur 路径，
+  在最终显示灰度/伪彩图进入 TCP capture 前应用。
+- 当前实现为 single_pass_gpu_separable_weights：
+  单 pass 中按 horizontal/vertical separable 权重近似采样，
+  不是完整双 render target 的 horizontal pass + vertical pass。
+  后续如需要更严格 MTF，可单独升级 true_two_pass_separable。
+- 新增 shader uniform：
+  u_stage6_mtf_blur_enable
+  u_stage6_mtf_sigma_pixels
+  u_stage6_mtf_radius_pixels
+  u_stage6_mtf_texel_size
+  u_stage6_mtf_uv_max
+  全部走 SetShaderInputCached。
+- [Stage6 MTF] 限频日志增加 enabled、mode、sigma、radius、input/output size、
+  stage6MtfBlurMs、implementation、TODO。
+- [Perf] 增加：
+  stage6MtfBlurMs
+  stage6MtfBlurScope=render_pass_upper_bound
+  mtfBlurEnabled
+  mtfBlurSigmaPixels
+  mtfBlurRadiusPixels
+  说明：当前 stage6MtfBlurMs 是 render pass 上界估算，不是 GPU timer 的独立耗时。
+- EffectiveRuntimeConfig 增加 Stage6MTF 配置摘要；
+  若生产运行误开 EnableMTFBlur=1 会打印 WARN。
+- runtime_config_check.ps1 增加生产默认保护：
+  EnableMTFBlur=false、MTFBlurMode=GaussianSeparable、sigma=0.65、radius=2、
+  passes=1、applyTo=final_display、debugLog=false。
+- phase2a_sync60_save_smoke.ps1 增加 Stage6MTF override 与 summary 字段。
+- 新增 tools/phase6a_mtf_blur_ab.ps1：
+  baseline / weak / normal / strong 四组 A/B，
+  输出 logs/stage6/mtf_blur_ab_summary.csv，
+  代表帧输出 logs/stage6/phase6a_frames。
+
+构建与配置检查：
+- HwaSim_IR Windows Release x64：通过。
+- DataDrivenTestQT Release：通过。
+- HwaSim_IR_VideoDisplay Windows Release x64：通过。
+- runtime_config_check.ps1：通过。
+- 生产默认确认：
+  EnableMTFBlur=false
+  UseSensorInputForDisplay=false
+  ApplyAeroToRadiance=false
+  UseModtranPathRuntime=false
+  ModtranPathRuntimeMode=Off
+  DebugView=Off
+  LogComponents=false
+  EnableIRVerboseLog=0
+  JpegEncodeMode=rgb
+  JpegQuality=100
+  stage5ModtranLookupMs=0
+
+回归：
+- Stage3 MODTRAN tau-only strict：通过。
+- Stage4 hotspot/brightspot strict：通过。
+- Stage4 三波段 smoke：单独运行通过。
+  注意：同一时间并行启动多个 HwaSim_IR 的 smoke 会抢占 UDP 8888，
+  曾导致一次 Stage4 smoke 因端口 10048 失败；串行重跑后 HeatSourceDiag、
+  ThermalHotspot、BrightSpot 全部通过。
+- Stage5 radiance components smoke：通过。
+- Stage5 aero thermal smoke：通过。
+- phase5b_sensor_display_calib.ps1 快速回归：
+  OutputPath=logs/stage5/sensor_display_calib_phase6a_regression_summary.csv，
+  SensorInputDisplayScale=0.35，Quick 矩阵通过；
+  recommendedScaleMedian=0.348664。
+  其中一个 4 秒短窗口 latencyAvgMs=104.019，保留为短窗口启动峰值观察，
+  不作为生产默认失败依据。
+
+Phase6A MTF/blur A/B：
+- CSV：logs/stage6/mtf_blur_ab_summary.csv
+- 代表帧目录：logs/stage6/phase6a_frames
+- baseline：
+  EnableMTFBlur=false，sigma=0.65，radius=2，
+  sent=60.119，udp=60.379，render=61.601，output=61.377，display=61.780，
+  latencyAvgMs=58.274，stage6MtfBlurMs=0，dropped=0。
+- weak：
+  EnableMTFBlur=true，sigma=0.5，radius=1，
+  sent=60.114，udp=60.318，render=61.028，output=60.814，display=61.079，
+  latencyAvgMs=36.905，stage6MtfBlurMs=9.614167，dropped=0。
+- normal：
+  EnableMTFBlur=true，sigma=0.8，radius=2，
+  sent=60.115，udp=59.983，render=61.526，output=60.462，display=61.494，
+  latencyAvgMs=45.224，stage6MtfBlurMs=9.754，dropped=0。
+- strong：
+  EnableMTFBlur=true，sigma=1.2，radius=3，
+  sent=60.108，udp=59.686，render=61.999，output=62.139，display=61.596，
+  latencyAvgMs=136.037，stage6MtfBlurMs=12.042571，dropped=0。
+  strong 只保留观察，不建议作为候选。
+
+视觉检查：
+- baseline / weak / normal / strong 代表帧均保存。
+- weak / normal 下目标、标注框和关键点仍清晰，目标未消失，
+  rear/plume/brightspot 层次未被完全抹掉。
+- strong 未观察到目标消失，但 latency 明显不稳，不作为默认或推荐候选。
+- 当前测试目标较小，代表帧的肉眼 blur 差异不强；
+  如后续需要更清晰的 MTF 视觉评审，应增加近距/大目标/高对比边缘用例。
+
+生产默认 30 秒实测：
+- 最终采用第二轮干净样本：
+  logs/phase2a-final-20260622-221656
+  MP4：HwaSim_IR_VideoDisplay/x64/Release/MP4/round_001_20260622_221710/output.mp4
+- sentFps=60.031
+- udpFps=60.175
+- renderFps=60.829
+- outputFps=60.622
+- VideoDisplay receive/display=60.795
+- latencyAvgMs=72.183
+- jpegMsAvg=9.343
+- readbackMsAvg=1.955
+- irUpdateMsAvg=1.244
+- stage5RadianceComponentMs=1.099
+- stage5AeroThermalMs=0.011167
+- stage5ModtranLookupMs=0
+- stage6MtfBlurMs=0
+- sourceSeqContinuous=1
+- sourceSeqContinuousWritten=1
+- inputQueueOverflow=0
+- TCP overwritten=0
+- recordingDroppedFrames=0
+- written/mp4/annotations/targetAnnotations=1800/1800/1800/1800
+- 尾段稳态 [Perf] 回到 sourceSeqLag=0..1、inputQueueDepth=0..1；
+  中段出现一次短时 sourceSeqLag/inputQueueDepth 尖峰，日志显示 MTF 仍关闭且 stage6MtfBlurMs=0，
+  瓶颈为 JPEG/render/readback 的短时系统负载峰值，不是 Stage6 MTF 默认路径。
+
+结论：
+- Stage6 MTF/blur GPU 后处理已具备低风险可选能力，但生产默认仍关闭。
+- 建议把 sigma=0.8、radius=2 作为“可选候选配置”继续观察；
+  不建议默认启用，strong 不建议作为候选。
+- 下一阶段可以进入 AGC，但应与 MTF/blur、UseSensorInputForDisplay 默认化解耦：
+  AGC 会改变全局灰度映射，应单独做 A/B 和生产默认保护。
+```
+
+---
+
 ## 12. 给 Codex 的第一阶段实施 Prompt
 
 见单独文件：`Codex_Phase1_Sync60_Perf_Prompt.md`。
