@@ -49,6 +49,7 @@ public:
 	explicit MainWindow(QWidget *parent = nullptr);
 	~MainWindow();
 	void setH264EnabledForTest(bool enabled) { m_h264Enabled = enabled; }
+	void configurePhase4cAeroMachTest(bool enabled, double altitudeKm, double mach);
 
 	private slots:
 	void onResetButtonClicked();
@@ -65,6 +66,7 @@ private:
 	void sendControlCommand(int command);
 	void sendInitCommand();
 	void sendRealTimeData();
+	void applyPhase4cAeroMachOverride(BYHWICD::DisplayC2cObjTrackingData& data) const;
 	void logAeroSpeedSend(const BYHWICD::DisplayC2cObjTrackingData& data) const;
 	void scheduleNextRealTimeFrame();
 	int targetVideoFps() const;
@@ -139,6 +141,11 @@ private:
 	int m_uiUpdateEveryFrames = 12;
 	int m_targetVideoFps = 60;
 	bool m_h264Enabled = false;
+	bool m_phase4cAeroMachMode = false;
+	double m_phase4cAltitudeKm = 10.0;
+	double m_phase4cMach = 1.0;
+	double m_phase4cSpeedMps = 0.0;
+	double m_phase4cSpeedKmh = 0.0;
 
 	// Current Position
 	double m_currentLat;

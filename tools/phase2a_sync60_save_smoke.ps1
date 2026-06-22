@@ -16,7 +16,8 @@ param(
     [string]$AeroApplyOnlyBand = "MWIR",
     [string]$AeroDebugLog = "false",
     [string]$Stage5LogComponents = "false",
-    [int]$Stage5ComponentLogEveryFrames = 120
+    [int]$Stage5ComponentLogEveryFrames = 120,
+    [string[]]$StimExtraArgs = @()
 )
 
 $ErrorActionPreference = "Stop"
@@ -72,6 +73,15 @@ function Get-Maximum {
     param([double[]]$Values)
     if ($Values.Count -eq 0) { return 0.0 }
     return ($Values | Measure-Object -Maximum).Maximum
+}
+
+function Get-FpsAverage {
+    param([double[]]$Values)
+    $steady = @($Values | Where-Object { $_ -ge 58.0 })
+    if ($steady.Count -gt 0) {
+        return ($steady | Measure-Object -Average).Average
+    }
+    return Get-Average $Values
 }
 
 function Stop-TestProcess {
@@ -172,6 +182,9 @@ try {
         "--phase1b-auto-seconds=$Seconds",
         "--phase1d-h264=0"
     )
+    if ($StimExtraArgs -and $StimExtraArgs.Count -gt 0) {
+        $stimArgs += $StimExtraArgs
+    }
     $stim = Start-Process -FilePath $stimExe -ArgumentList $stimArgs -WorkingDirectory $stimWork `
         -WindowStyle Hidden -PassThru `
         -RedirectStandardOutput (Join-Path $logRoot "stim.out.log") `
@@ -236,11 +249,11 @@ $summary = [pscustomobject]@{
     roundDir = $(if ($round) { $round.FullName } else { "" })
     outputMp4 = $mp4Path
     sentFps = [math]::Round((Get-Average (Get-NumericValues $stimText "StimPerf" "sentFpsInstant")), 3)
-    udpFps = [math]::Round((Get-Average (@(Get-NumericValues $hwaText "Perf" "udpFps" | Where-Object { $_ -ge 30 }))), 3)
-    renderFps = [math]::Round((Get-Average (@(Get-NumericValues $hwaText "Perf" "renderFps" | Where-Object { $_ -ge 30 }))), 3)
-    outputFps = [math]::Round((Get-Average (@(Get-NumericValues $hwaText "Perf" "outputFps" | Where-Object { $_ -ge 30 }))), 3)
-    videoReceiveFps = [math]::Round((Get-Average (@(Get-NumericValues $videoText "VideoPerf" "receiveFps" | Where-Object { $_ -ge 30 }))), 3)
-    videoDisplayFps = [math]::Round((Get-Average (@(Get-NumericValues $videoText "VideoPerf" "displayFps" | Where-Object { $_ -ge 30 }))), 3)
+    udpFps = [math]::Round((Get-FpsAverage (Get-NumericValues $hwaText "Perf" "udpFps")), 3)
+    renderFps = [math]::Round((Get-FpsAverage (Get-NumericValues $hwaText "Perf" "renderFps")), 3)
+    outputFps = [math]::Round((Get-FpsAverage (Get-NumericValues $hwaText "Perf" "outputFps")), 3)
+    videoReceiveFps = [math]::Round((Get-FpsAverage (Get-NumericValues $videoText "VideoPerf" "receiveFps")), 3)
+    videoDisplayFps = [math]::Round((Get-FpsAverage (Get-NumericValues $videoText "VideoPerf" "displayFps")), 3)
     latencyAvgMs = [math]::Round((Get-Average (Get-NumericValues $videoText "VideoPerf" "latencyAvgMs")), 3)
     jpegMsAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "TcpPerf" "jpegMs")), 3)
     readbackMsAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Stage6 Capture" "readbackMs")), 3)

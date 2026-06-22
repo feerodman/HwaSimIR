@@ -15,6 +15,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QSettings>
+#include <algorithm>
 
 #include "ICD/math_algorithm.h"
 
@@ -30,6 +31,28 @@ QString targetTypeHex(int targetType)
 bool targetUsesRedSpeed(int targetType)
 {
 	return targetType == 0x11;
+}
+
+double clampDouble(double value, double low, double high)
+{
+	return std::max(low, std::min(high, value));
+}
+
+double isaAirTemperatureK(double altitudeM)
+{
+	const double clampedAltitude = clampDouble(altitudeM, 0.0, 20000.0);
+	if (clampedAltitude <= 11000.0)
+	{
+		return 288.15 - 0.0065 * clampedAltitude;
+	}
+	return 216.65;
+}
+
+double speedOfSoundMps(double airTempK)
+{
+	const double gamma = 1.4;
+	const double gasConstantDryAir = 287.05287;
+	return std::sqrt(gamma * gasConstantDryAir * clampDouble(airTempK, 120.0, 400.0));
 }
 }
 
@@ -84,6 +107,26 @@ MainWindow::~MainWindow()
 	if (m_udpSocket) {
 		m_udpSocket->close();
 		delete m_udpSocket;
+	}
+}
+
+void MainWindow::configurePhase4cAeroMachTest(bool enabled, double altitudeKm, double mach)
+{
+	m_phase4cAeroMachMode = enabled;
+	m_phase4cAltitudeKm = clampDouble(altitudeKm, 0.0, 20.0);
+	m_phase4cMach = clampDouble(mach, 0.0, 4.0);
+	const double altitudeM = m_phase4cAltitudeKm * 1000.0;
+	const double airTempK = isaAirTemperatureK(altitudeM);
+	m_phase4cSpeedMps = m_phase4cMach * speedOfSoundMps(airTempK);
+	m_phase4cSpeedKmh = m_phase4cSpeedMps * 3.6;
+	if (m_phase4cAeroMachMode)
+	{
+		qInfo().noquote()
+			<< QStringLiteral("[Phase4C AeroMachConfig] enabled=1 altitudeKm=%1 machCommand=%2 speedMps=%3 speedKmh=%4 speedUnit=km/h")
+				.arg(m_phase4cAltitudeKm, 0, 'f', 3)
+				.arg(m_phase4cMach, 0, 'f', 3)
+				.arg(m_phase4cSpeedMps, 0, 'f', 3)
+				.arg(m_phase4cSpeedKmh, 0, 'f', 3);
 	}
 }
 
@@ -630,6 +673,8 @@ void MainWindow::sendRealTimeData()
          data.weaponState.targetID = 34;
     }
 
+	applyPhase4cAeroMachOverride(data);
+
 	if (m_udpSocket)
 	{
 		// 发送
@@ -693,6 +738,23 @@ void MainWindow::sendRealTimeData()
 	updatePosition();
 }
 
+void MainWindow::applyPhase4cAeroMachOverride(BYHWICD::DisplayC2cObjTrackingData& data) const
+{
+	if (!m_phase4cAeroMachMode)
+	{
+		return;
+	}
+	const double altitudeM = m_phase4cAltitudeKm * 1000.0;
+	data.platLoc.speed = m_phase4cSpeedKmh;
+	for (int targetIndex = 0; targetIndex < qBound(0, data.targetNumValid, 5); ++targetIndex)
+	{
+		BYHWICD::DisplayC2cObjTrackingData::TargetState& target = data.targetState[targetIndex];
+		const double relativeOffsetM = target.targetLoc.alt - m_currMissile_pos.z;
+		target.targetLoc.alt = altitudeM + clampDouble(relativeOffsetM, -5.0, 5.0);
+		target.targetLoc.speed = m_phase4cSpeedKmh;
+	}
+}
+
 void MainWindow::logAeroSpeedSend(const BYHWICD::DisplayC2cObjTrackingData& data) const
 {
 	const bool shouldLog =
@@ -711,16 +773,21 @@ void MainWindow::logAeroSpeedSend(const BYHWICD::DisplayC2cObjTrackingData& data
 			? QStringLiteral("RedSpeedAir(km/h)")
 			: QStringLiteral("MissileSpeedAir(km/h)");
 		qInfo().noquote()
-			<< QStringLiteral("[AeroSpeedSend] sourceSeq=%1 targetIndex=%2 targetID=%3 targetType=%4 speedSourceColumn=%5 speedRawKmh=%6 altitudeM=%7 lat=%8 lon=%9")
+			<< QStringLiteral("[AeroSpeedSend] sourceSeq=%1 targetIndex=%2 targetID=%3 targetType=%4 speedSourceColumn=%5 speedRawKmh=%6 altitudeM=%7 lat=%8 lon=%9 phase4cAeroMach=%10 altitudeKm=%11 machCommand=%12 speedKmh=%13 speedMps=%14 speedUnit=km/h")
 				.arg(m_sentFrameCount)
 				.arg(targetIndex)
 				.arg(target.targetID)
 				.arg(targetTypeHex(target.targetType))
-				.arg(sourceColumn)
+				.arg(m_phase4cAeroMachMode ? QStringLiteral("Phase4CProtocolMach") : sourceColumn)
 				.arg(target.targetLoc.speed, 0, 'f', 3)
 				.arg(target.targetLoc.alt, 0, 'f', 3)
 				.arg(target.targetLoc.lat, 0, 'f', 9)
-				.arg(target.targetLoc.lon, 0, 'f', 9);
+				.arg(target.targetLoc.lon, 0, 'f', 9)
+				.arg(m_phase4cAeroMachMode ? 1 : 0)
+				.arg(target.targetLoc.alt / 1000.0, 0, 'f', 3)
+				.arg(m_phase4cAeroMachMode ? m_phase4cMach : -1.0, 0, 'f', 3)
+				.arg(target.targetLoc.speed, 0, 'f', 3)
+				.arg(target.targetLoc.speed / 3.6, 0, 'f', 3);
 	}
 }
 

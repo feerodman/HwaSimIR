@@ -1880,6 +1880,161 @@ DataDrivenTestQT UDP 发送、HwaSim_IR TargetState、IRAeroThermalModel 和 Sta
 
 ---
 
+### 阶段 4C：高 Mach 协议级测试与 MWIR 气动加热小比例候选评审
+
+```text
+阶段：4C
+日期：2026-06-22
+执行者：Codex
+目标：通过 DataDrivenTestQT 按 altitude/Mach 真实填充 targetLoc.speed，
+覆盖 3/10/20 km × Mach 0.5/1/2/3，验证 ApplyAeroToRadiance=true 时
+bodyAeroDeltaK 对 bodyRadiance、sensorInputRadiance 和最终画面的影响。
+生产默认仍保持 ApplyAeroToRadiance=false。
+
+本阶段变更：
+- DataDrivenTestQT 增加高 Mach 协议级测试模式：
+  --phase4c-aero-mach
+  --aero-alt-km=3/10/20
+  --aero-mach=0.5/1/2/3
+  --duration-sec=N
+- DataDrivenTestQT 使用 0~20 km 简化 ISA 模型计算声速：
+  speedMps = mach * speedOfSoundAtAltitude
+  speedKmh = speedMps * 3.6
+- 高 Mach 测试只写入已有 UDP 字段 targetLoc.speed 和 targetLoc.alt，
+  不改变 UDP 协议结构，不在 HwaSim_IR 内部 fake speed。
+- [AeroSpeedSend] 增加 phase4cAeroMach、altitudeKm、machCommand、
+  speedKmh、speedMps、speedUnit=km/h。
+- phase2a_sync60_save_smoke.ps1 支持 StimExtraArgs，供上层脚本透传
+  DataDrivenTestQT 高 Mach 参数。
+- phase2a FPS summary 改为只统计 >=58 FPS 的稳定窗口，
+  避免短窗口测试被启动/停止后的 0/30/50 FPS Perf 尾段污染。
+- 新增 tools/phase4c_aero_mach_protocol_ab.ps1：
+  运行 3/10/20 km × Mach 0.5/1/2/3 × ApplyAeroToRadiance=false/true，
+  每 case 8 秒，输出 logs/stage5/aero_mach_protocol_ab_summary.csv，
+  并用 ffmpeg 从每个 case 的 MP4 中抽取代表帧到 logs/stage5/phase4c_frames。
+- 脚本检查：
+  sent/udp/render/output/display >=59.5，
+  latencyAvgMs <=80，
+  sourceSeqContinuous=1，
+  recordingDroppedFrames=0，
+  machMeasured 与 machCommand 偏差 <=5%，
+  Apply=true 时 bodyRadianceWithAero >= bodyRadianceNoAero，
+  bodyAeroDeltaKEffective 随 Mach 单调增加。
+
+生产默认保护：
+- ApplyAeroToRadiance=false
+- AeroDebugLog=false
+- DebugView=Off
+- LogComponents=false
+- EnableIRVerboseLog=0
+- UseModtranPathRuntime=false
+- ModtranPathRuntimeMode=Off
+- UseModtranSkyRuntime=false
+- UseModtranSolarRuntime=false
+- JpegEncodeMode=rgb
+- JpegQuality=100
+- runtime_config_check.ps1：通过。
+
+构建：
+- HwaSim_IR Windows Release x64：通过。
+- DataDrivenTestQT Release：通过。
+- HwaSim_IR_VideoDisplay Windows Release x64：通过。
+- 剩余 warning 为既有 PDB/qtmain 调试符号和历史未引用变量/符号 warning。
+
+回归：
+- runtime_config_check.ps1：通过。
+- Stage3 MODTRAN tau-only strict：通过。
+- Stage4 hotspot/brightspot strict：通过。
+- Stage4 三波段 smoke：单独运行通过。
+  注意：曾并行运行多个会启动 HwaSim_IR 的 smoke，Stage4 smoke 因端口/进程竞争误失败；
+  单独重跑后 HeatSourceDiag/ThermalHotspot/BrightSpot 全部通过。
+- Stage5 min radiance check：通过。
+- Stage5 aero thermal smoke：通过。
+- Phase4B UDP speed chain smoke：通过。
+
+高 Mach 协议级 A/B：
+- 脚本：tools/phase4c_aero_mach_protocol_ab.ps1 -Seconds 8
+- CSV：logs/stage5/aero_mach_protocol_ab_summary.csv
+- 代表帧目录：logs/stage5/phase4c_frames
+- 代表帧数量：24 张。
+- 全矩阵通过：3/10/20 km × Mach 0.5/1/2/3 × Apply false/true。
+- Mach 测量偏差：约 0~0.003%，满足 <=5%。
+- 性能汇总：
+  Apply=false：minOutputFps=60.720，minDisplayFps=60.873，maxLatencyAvgMs=28.132，recordingDroppedFrames=0。
+  Apply=true：minOutputFps=60.656，minDisplayFps=60.635，maxLatencyAvgMs=42.111，recordingDroppedFrames=0。
+- stage5ModtranLookupMs=0，确认测试没有启用 MODTRAN path runtime。
+
+Apply=true 关键结果：
+- 3 km / Mach 0.5：effectiveBodyDelta=0.55 K，aeroRadianceRatio=1.02268。
+- 3 km / Mach 1.0：effectiveBodyDelta=2.30 K，aeroRadianceRatio=1.09774。
+- 3 km / Mach 2.0：effectiveBodyDelta=9.15 K，aeroRadianceRatio=1.43715。
+- 3 km / Mach 3.0：effectiveBodyDelta=12.50 K，aeroRadianceRatio=1.63243。
+- 10 km / Mach 0.5：effectiveBodyDelta=0.45 K，aeroRadianceRatio=1.01853。
+- 10 km / Mach 1.0：effectiveBodyDelta=1.90 K，aeroRadianceRatio=1.08019。
+- 10 km / Mach 2.0：effectiveBodyDelta=7.60 K，aeroRadianceRatio=1.35359。
+- 10 km / Mach 3.0：effectiveBodyDelta=12.50 K，aeroRadianceRatio=1.63243。
+- 20 km / Mach 0.5：effectiveBodyDelta=0.45 K，aeroRadianceRatio=1.01853。
+- 20 km / Mach 1.0：effectiveBodyDelta=1.85 K，aeroRadianceRatio=1.07801。
+- 20 km / Mach 2.0：effectiveBodyDelta=7.35 K，aeroRadianceRatio=1.34050。
+- 20 km / Mach 3.0：effectiveBodyDelta=12.50 K，aeroRadianceRatio=1.63243。
+
+sensorInputRadiance 评审：
+- bodyRadianceWithAero 随 Mach 明显增加，趋势符合预期。
+- 但当前 Stage5 components 中 sensorInputNoAero 与 sensorInputWithAero 基本相同，
+  约 0.040231~0.040232。
+- 原因：当前运行日志中 tauUp=0，sensorInput 框架退化为 legacy path 项，
+  因此 bodyAeroDeltaK 尚未真正进入 sensorInputRadiance。
+- 这说明 4C 已验证 body 分量候选，但还不能宣称 sensorInput 物理链路已经完整吃到气动加热。
+
+视觉审查：
+- 抽取代表帧目录：logs/stage5/phase4c_frames。
+- 人工查看 3 km / Mach 3 / apply=false 与 apply=true 代表帧：
+  画面肉眼几乎一致，没有过曝，没有淹没目标框/标注，也未观察到 rear/plume/brightspot 被吞没。
+- 视觉变化弱与 sensorInput 未变化、当前默认显示链路仍以 legacy/display preview 为主相一致。
+
+30 秒生产默认实测：
+- 日志：logs/phase2a-final-20260622-111119
+- MP4：
+  HwaSim_IR_VideoDisplay/x64/Release/MP4/round_001_20260622_111133/output.mp4
+- 配置：800x800，5 目标，videoFps=60，saveMP4En=true，
+  Codec=auto，JpegEncodeMode=rgb，JpegQuality=100，
+  EnableH264Experimental=false，LegacyEngineBodyHeating=false，
+  EnableIRPhysicalPipeline=true，DebugView=Off，
+  UseModtranPathRuntime=false，ModtranPathRuntimeMode=Off，
+  ApplyAeroToRadiance=false。
+- sentFps=60.026
+- udpFps=60.182
+- renderFps=60.334
+- outputFps=60.098
+- VideoDisplay receive/display=60.270
+- latencyAvgMs=42.355
+- irUpdateMs=0.903
+- stage5RadianceComponentMs=0.649
+- stage5AeroThermalMs=0.006412
+- stage5ModtranLookupMs=0
+- shaderInputCacheHitRate=97.173
+- sourceSeqContinuous=1
+- sourceSeqContinuousWritten=1
+- inputQueueOverflow=0
+- TCP overwritten=0
+- recordingDroppedFrames=0
+- written/mp4/annotations/targetAnnotations=1799/1799/1799/1799
+
+结论：
+- 高 Mach 协议级发送链路已验证：DataDrivenTestQT 按 altitude/Mach 写入真实 targetLoc.speed，
+  HwaSim_IR 通过 UDP/TargetState/Stage5 得到匹配 Mach，不需要内部 fake speed。
+- AeroApplyScale=0.25 在 bodyRadiance 层面表现为合理的“小比例候选配置”，
+  Mach 0.5 较弱，Mach 2/3 明显；性能仍保持 60 Hz。
+- 但由于当前 sensorInputRadiance 未随 bodyAeroDeltaK 改变，且代表帧肉眼差异弱，
+  不建议把 ApplyAeroToRadiance 默认开启。
+- 建议下一阶段把 AeroApplyScale=0.25 作为“可选候选配置”保留，
+  同时优先修正/澄清 Stage5 sensorInput 的 tauUp/legacy display 接入位置；
+  在 sensorInput 能反映 body 分量后，再决定是否进入默认候选。
+- 如果用户更关注成像后端，可并行推进 MTF/blur；但不要把气动加热默认化和 MTF/blur 混在同一次验收里。
+```
+
+---
+
 ## 12. 给 Codex 的第一阶段实施 Prompt
 
 见单独文件：`Codex_Phase1_Sync60_Perf_Prompt.md`。
