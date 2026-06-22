@@ -11,6 +11,9 @@ param(
     [string]$CompareLegacy = "false",
     [string]$EnableAeroThermalModel = "true",
     [string]$ApplyAeroToRadiance = "false",
+    [double]$AeroApplyScale = 0.25,
+    [double]$AeroApplyClampBodyDeltaK = 40.0,
+    [string]$AeroApplyOnlyBand = "MWIR",
     [string]$AeroDebugLog = "false",
     [string]$Stage5LogComponents = "false",
     [int]$Stage5ComponentLogEveryFrames = 120
@@ -150,6 +153,9 @@ try {
     $runtimeText = Set-IniValue $runtimeText "CompareLegacy" $CompareLegacy
     $runtimeText = Set-IniValue $runtimeText "EnableAeroThermalModel" $EnableAeroThermalModel
     $runtimeText = Set-IniValue $runtimeText "ApplyAeroToRadiance" $ApplyAeroToRadiance
+    $runtimeText = Set-IniValue $runtimeText "AeroApplyScale" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AeroApplyScale))
+    $runtimeText = Set-IniValue $runtimeText "AeroApplyClampBodyDeltaK" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AeroApplyClampBodyDeltaK))
+    $runtimeText = Set-IniValue $runtimeText "AeroApplyOnlyBand" $AeroApplyOnlyBand
     $runtimeText = Set-IniValue $runtimeText "AeroDebugLog" $AeroDebugLog
     [IO.File]::WriteAllText($runtimeIni, $runtimeText, $utf8)
 
@@ -256,8 +262,18 @@ $summary = [pscustomobject]@{
     modtranPathBlend = $ModtranPathBlend
     enableAeroThermalModel = $EnableAeroThermalModel
     applyAeroToRadiance = $ApplyAeroToRadiance
+    aeroApplyScale = $AeroApplyScale
+    aeroApplyClampBodyDeltaK = $AeroApplyClampBodyDeltaK
+    aeroApplyOnlyBand = $AeroApplyOnlyBand
     aeroDebugLog = $AeroDebugLog
     stage5LogComponents = $Stage5LogComponents
+    speedKmhAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Stage5 AeroThermal" "speedRawKmh")), 6)
+    machAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Stage5 AeroThermal" "mach")), 6)
+    bodyAeroDeltaKRawAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Stage5 AeroThermal" "bodyAeroDeltaKRaw")), 6)
+    bodyAeroDeltaKEffectiveAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Stage5 AeroThermal" "bodyAeroDeltaKEffective")), 6)
+    bodyRadianceNoAeroAvg = [math]::Round((Get-Average (@(Get-NumericValues $hwaText "Stage5 RadianceComponents" "bodyRadianceNoAero") + @(Get-NumericValues $hwaText "Stage5 AeroThermal" "bodyRadianceNoAero"))), 6)
+    bodyRadianceWithAeroAvg = [math]::Round((Get-Average (@(Get-NumericValues $hwaText "Stage5 RadianceComponents" "bodyRadianceWithAero") + @(Get-NumericValues $hwaText "Stage5 AeroThermal" "bodyRadianceWithAero"))), 6)
+    aeroRadianceRatioAvg = [math]::Round((Get-Average (@(Get-NumericValues $hwaText "Stage5 RadianceComponents" "aeroRadianceRatio") + @(Get-NumericValues $hwaText "Stage5 AeroThermal" "aeroRadianceRatio"))), 6)
     stage7FullUpdateCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage7FullUpdateCount")), 3)
     stage7PositionOnlyCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage7PositionOnlyCount")), 3)
     stage7SkipCountMax = [math]::Round((Get-Maximum (Get-NumericValues $hwaText "Perf" "stage7SkipCount")), 3)

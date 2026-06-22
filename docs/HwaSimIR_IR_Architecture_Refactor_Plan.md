@@ -1724,6 +1724,162 @@ Runtime A/B：
 
 ---
 
+### 阶段 4B：真实 UDP 速度字段链路核查与非零速度气动加热运行态 A/B
+
+```text
+阶段：4B
+日期：2026-06-18
+执行者：Codex
+目标：确认 RedSpeedAir(km/h)、MissileSpeedAir(km/h) 等真实输入速度进入
+DataDrivenTestQT UDP 发送、HwaSim_IR TargetState、IRAeroThermalModel 和 Stage5 components。
+生产默认仍保持 ApplyAeroToRadiance=false；不启用 MODTRAN path 默认化，不接 sky/solar runtime，
+不做 AGC/MTF，不改 TCP/JPEG/H.264/录像链路，不改材质库结构。
+
+本阶段变更：
+- DataDrivenTestQT 在 sendRealTimeData() 中把真实样本速度写入 UDP targetLoc.speed：
+  - 红方/飞机目标使用 RedSpeedAir(km/h)。
+  - 导弹/武器目标使用 MissileSpeedAir(km/h)。
+  - 不改变 UDP 协议结构，只填充已有 speed 字段。
+- 新增 [AeroSpeedSend] 限频日志，输出 sourceSeq、targetIndex、targetID、targetType、
+  speedSourceColumn、speedRawKmh、altitudeM、lat/lon。
+- HwaSim_IR 在 UDP 接收后新增 [AeroSpeedRecv] 限频日志，确认 receivedSpeedRaw、
+  receivedAltitudeM、targetLoc.speed、speedUnit=km/h。
+- HwaSim_IR 在目标状态映射后新增 [AeroSpeedState] 限频日志，输出 renderVisible、
+  targetState.targetLoc.speed、selectedSpeedKmh、selectedSpeedSource。
+- Stage5 AeroThermal 日志和 components 增加：
+  selectedSpeedSource、speedRawKmh、speedMps、mach、bodyAeroDeltaKRaw、
+  bodyAeroDeltaKEffective、bodyTempBaseK、bodyTempAeroAppliedK、
+  bodyRadianceNoAero、bodyRadianceWithAero、sensorInputNoAero、
+  sensorInputWithAero、aeroRadianceRatio。
+- 新增小比例接入配置：
+  AeroApplyScale=0.25，AeroApplyClampBodyDeltaK=40.0，AeroApplyOnlyBand=MWIR。
+  ApplyAeroToRadiance=true 时仅 MWIR 把
+  clamp(bodyAeroDeltaKRaw * AeroApplyScale, 0, AeroApplyClampBodyDeltaK)
+  作为 body 温度偏置；不影响 EngineRear / EnginePlume / BrightSpot。
+- 对 ApplyAeroToRadiance=true 的有效 body aero delta 做 0.05 K 量化，
+  避免真实低速样本中 0.00x K 的逐帧微小变化破坏 shader input cache。
+- 日志限频进一步收紧为前 3 帧 + 每 600 帧，状态变化使用速度/高度 bucket，
+  避免真实 60 Hz 下控制台 IO 影响主链路。
+- 新增 tools/phase4b_udp_speed_chain_smoke.ps1：
+  运行真实 DataDrivenTestQT 发送路径，检查 Send/Recv/State/Stage5 速度链路，
+  输出 logs/stage5/aero_speed_chain_summary.csv。
+- 新增 tools/phase4b_aero_runtime_speed_ab.ps1：
+  使用真实 UDP 速度数据运行 ApplyAeroToRadiance=false/true A/B，
+  输出 logs/stage5/aero_runtime_speed_ab_summary.csv。
+- phase2a_sync60_save_smoke.ps1 增加 AeroApplyScale、AeroApplyClampBodyDeltaK、
+  AeroApplyOnlyBand override 和速度/A-B summary 字段。
+- runtime_config_check.ps1 增加 AeroApplyScale、AeroApplyClampBodyDeltaK、
+  AeroApplyOnlyBand 检查，并继续保护生产默认 ApplyAeroToRadiance=false。
+
+构建：
+- Windows Release x64 三工程构建通过。
+- 剩余 warning 为既有 math_algorithm.h 未引用变量和 VS/PDB 调试符号 warning。
+
+生产配置检查：
+- runtime_config_check.ps1：通过。
+- 关键生产默认：
+  ApplyAeroToRadiance=false
+  AeroDebugLog=false
+  DebugView=Off
+  LogComponents=false
+  EnableIRVerboseLog=0
+  UseModtranPathRuntime=false
+  ModtranPathRuntimeMode=Off
+  UseModtranSkyRuntime=false
+  UseModtranSolarRuntime=false
+  EnableModtranRadianceDebug=false
+  CompareLegacy=false
+  JpegEncodeMode=rgb
+  JpegQuality=100
+
+真实速度链路 smoke：
+- 脚本：tools/phase4b_udp_speed_chain_smoke.ps1 -Seconds 10
+- CSV：logs/stage5/aero_speed_chain_summary.csv
+- 结果：通过。
+- 精确匹配 OK 行：19 条。
+- 未匹配/被并发控制台日志污染的诊断行：23 条，breakpoint=send_zero_or_missing，
+  不参与通过判定。
+- 代表性链路：
+  sourceSeq=1，targetID=34，targetType=0x22，
+  sendSpeedKmh=152.761，recvSpeedKmh=152.761，stateSpeedKmh=152.761，
+  selectedSpeedSource=udp_targetLoc_speed，mach=0.124697，bodyAeroDeltaK=0.152338 K。
+- 代表性链路：
+  sourceSeq=2，targetID=3，targetType=0x22，
+  sendSpeedKmh=152.802，recvSpeedKmh=152.802，stateSpeedKmh=152.802，
+  altitudeM=10000.1，mach=0.141737，bodyAeroDeltaK=0.152347 K。
+- 断点检查：未发现 send 非零后 recv/state/stage5 变 0 的真实链路断点。
+
+非零速度运行态 A/B：
+- 脚本：tools/phase4b_aero_runtime_speed_ab.ps1 -Seconds 20
+- CSV：logs/stage5/aero_runtime_speed_ab_summary.csv
+- ApplyAeroToRadiance=false：
+  sent=60.023，udp=60.513，render=60.371，output=60.314，display=60.395，
+  latencyAvg=20.502 ms，sourceSeqContinuous=1，recordingDroppedFrames=0，
+  stage5AeroThermalMs=0.005273，stage5ModtranLookupMs=0，
+  speedKmhAvg=172.813754，machAvg=0.153461，
+  bodyAeroDeltaKRawAvg=0.187693，bodyAeroDeltaKEffectiveAvg=0，
+  aeroRadianceRatio=1。
+- ApplyAeroToRadiance=true：
+  sent=60.053，udp=59.819，render=60.458，output=60.349，display=60.455，
+  latencyAvg=22.435 ms，sourceSeqContinuous=1，recordingDroppedFrames=0，
+  stage5AeroThermalMs=0.005545，stage5ModtranLookupMs=0，
+  speedKmhAvg=172.468017，machAvg=0.152965，
+  bodyAeroDeltaKRawAvg=0.187081，bodyAeroDeltaKEffectiveAvg=0.05，
+  bodyRadianceNoAero=0.454807，bodyRadianceWithAero=0.455690，
+  aeroRadianceRatio=1.001941。
+- 说明：真实样例速度约 150~180 km/h，Mach 约 0.13~0.15；
+  小比例接入后 body 辐射变化约 0.2%，画面变化弱是物理合理结果，不代表模型无效。
+
+30 秒生产默认实测：
+- 日志：logs/phase2a-final-20260618-165345
+- MP4：
+  HwaSim_IR_VideoDisplay/x64/Release/MP4/round_001_20260618_165400/output.mp4
+- 配置：800x800，5 目标，videoFps=60，saveMP4En=true，
+  Codec=auto，JpegEncodeMode=rgb，JpegQuality=100，
+  EnableH264Experimental=false，LegacyEngineBodyHeating=false，
+  EnableIRPhysicalPipeline=true，DebugView=Off，
+  UseModtranPathRuntime=false，ModtranPathRuntimeMode=Off，
+  ApplyAeroToRadiance=false。
+- sentFps=60.025
+- udpFps=60.079
+- renderFps=60.242
+- outputFps=60.082
+- VideoDisplay receive/display=60.285
+- latencyAvgMs=21.311
+- irUpdateMs=0.827
+- stage5RadianceComponentMs=0.653
+- stage5AeroThermalMs=0.005588
+- stage5ModtranLookupMs=0
+- shaderInputCacheHitRate=96.45
+- sourceSeqContinuous=1
+- sourceSeqContinuousWritten=1
+- inputQueueOverflow=0
+- TCP overwritten=0
+- recordingDroppedFrames=0
+- written/mp4/annotations/targetAnnotations=1799/1799/1799/1799
+- sourceSeqLagMax=7、inputQueueDepthMax=13 为启动/短窗瞬态；
+  未观察到稳态积压。
+
+结论：
+- 已确认真实 UDP 速度链路打通：
+  DataDrivenTestQT 发送非零 speedRawKmh，
+  HwaSim_IR 接收非零 receivedSpeedRaw，
+  TargetState 保留非零 selectedSpeedKmh，
+  Stage5 AeroThermal 得到非零 Mach。
+- 已确认生产默认画面仍不改变：
+  ApplyAeroToRadiance=false，AeroDebugLog=false，DebugView=Off，LogComponents=false。
+- 已确认生产默认不使用 MODTRAN path/sky/solar runtime：
+  UseModtranPathRuntime=false，UseModtranSkyRuntime=false，UseModtranSolarRuntime=false，
+  stage5ModtranLookupMs=0。
+- ApplyAeroToRadiance=true A/B 在真实低速样本下保持 60 Hz，
+  但画面差异很弱；不建议直接默认开启。
+- 下一阶段建议优先做高 Mach 协议级测试，用 DataDrivenTestQT 按 altitude/Mach
+  真实填充 speed 字段覆盖 Mach 0.5/1/2/3，验证气动加热可视范围；
+  若用户更关注成像链路，再进入 MTF/blur。
+```
+
+---
+
 ## 12. 给 Codex 的第一阶段实施 Prompt
 
 见单独文件：`Codex_Phase1_Sync60_Perf_Prompt.md`。

@@ -65,6 +65,7 @@ private:
 	void sendControlCommand(int command);
 	void sendInitCommand();
 	void sendRealTimeData();
+	void logAeroSpeedSend(const BYHWICD::DisplayC2cObjTrackingData& data) const;
 	void scheduleNextRealTimeFrame();
 	int targetVideoFps() const;
 

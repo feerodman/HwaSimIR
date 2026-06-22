@@ -20,6 +20,19 @@
 
 //#define M_PI 3.1415926
 
+namespace
+{
+QString targetTypeHex(int targetType)
+{
+	return QStringLiteral("0x%1").arg(targetType, 0, 16).toUpper();
+}
+
+bool targetUsesRedSpeed(int targetType)
+{
+	return targetType == 0x11;
+}
+}
+
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
 	loadNetworkConfig();
@@ -561,9 +574,17 @@ void MainWindow::sendRealTimeData()
     data.targetState[4].targetLoc.alt = 0.0;
     data.targetState[4].targetLoc.yaw = 0.0;
     data.targetState[4].targetLoc.pitch = 0.0;
-    data.targetState[4].targetLoc.roll = 0.0;
-    data.targetState[4].targetState = 0x01;
+	data.targetState[4].targetLoc.roll = 0.0;
+	data.targetState[4].targetState = 0x01;
 
+	const realtimeInfo& currentSample = realTimeData.at(dataNum - 1);
+	for (int targetIndex = 0; targetIndex < 5; ++targetIndex)
+	{
+		const bool useRedSpeed = targetUsesRedSpeed(data.targetState[targetIndex].targetType);
+		data.targetState[targetIndex].targetLoc.speed = useRedSpeed
+			? currentSample.platSpeed
+			: currentSample.tarSpeed;
+	}
 
     if(current_time > 3)
     {
@@ -618,6 +639,7 @@ void MainWindow::sendRealTimeData()
 
 		if (sent > 0) {
 			++m_sentFrameCount;
+			logAeroSpeedSend(data);
 			const qint64 nowNs = m_sendClock.isValid() ? m_sendClock.nsecsElapsed() : 0;
 			const bool shouldLog = nowNs - m_lastSendPerfLogNs >= 2000000000LL;
 			if (shouldLog)
@@ -669,6 +691,37 @@ void MainWindow::sendRealTimeData()
 
 	// 关键：发送后立即更新位置（为下一次发送准备）
 	updatePosition();
+}
+
+void MainWindow::logAeroSpeedSend(const BYHWICD::DisplayC2cObjTrackingData& data) const
+{
+	const bool shouldLog =
+		m_sentFrameCount <= 3 ||
+		(m_sentFrameCount % 600) == 0;
+	if (!shouldLog)
+	{
+		return;
+	}
+	const int targetCount = qBound(0, data.targetNumValid, 5);
+	for (int targetIndex = 0; targetIndex < targetCount; ++targetIndex)
+	{
+		const BYHWICD::DisplayC2cObjTrackingData::TargetState& target = data.targetState[targetIndex];
+		const bool useRedSpeed = targetUsesRedSpeed(target.targetType);
+		const QString sourceColumn = useRedSpeed
+			? QStringLiteral("RedSpeedAir(km/h)")
+			: QStringLiteral("MissileSpeedAir(km/h)");
+		qInfo().noquote()
+			<< QStringLiteral("[AeroSpeedSend] sourceSeq=%1 targetIndex=%2 targetID=%3 targetType=%4 speedSourceColumn=%5 speedRawKmh=%6 altitudeM=%7 lat=%8 lon=%9")
+				.arg(m_sentFrameCount)
+				.arg(targetIndex)
+				.arg(target.targetID)
+				.arg(targetTypeHex(target.targetType))
+				.arg(sourceColumn)
+				.arg(target.targetLoc.speed, 0, 'f', 3)
+				.arg(target.targetLoc.alt, 0, 'f', 3)
+				.arg(target.targetLoc.lat, 0, 'f', 9)
+				.arg(target.targetLoc.lon, 0, 'f', 9);
+	}
 }
 
 void MainWindow::updatePosition()

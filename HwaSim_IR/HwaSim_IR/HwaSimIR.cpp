@@ -78,6 +78,26 @@ double NormalizeAeroAltitudeMeters(double altitudeMeters)
 	return std::abs(altitudeMeters) < 1.0e-6 ? 0.0 : altitudeMeters;
 }
 
+std::string Stage5AeroSpeedSourceForTarget(const BYHWICD::TargetState& targetState)
+{
+	if (!std::isfinite(targetState.targetLoc.speed))
+	{
+		return "invalid_udp";
+	}
+	if (targetState.targetLoc.speed > 0.0)
+	{
+		return "udp_targetLoc_speed";
+	}
+	return "zero_udp";
+}
+
+std::string TargetTypeHexString(int targetType)
+{
+	std::ostringstream out;
+	out << "0x" << std::hex << std::uppercase << targetType;
+	return out.str();
+}
+
 double QuantizeForCache(double value, double step)
 {
 	if (!std::isfinite(value) || step <= 0.0)
@@ -3481,6 +3501,7 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 		{
 			++targetVisibleCount;
 		}
+		LogAeroSpeedState(*targetPlat, renderVisible && !beyondFarClip);
 		const bool nearFarClip = renderVisible &&
 			!beyondFarClip &&
 			m_sensorDisplayConfigReady &&
@@ -4308,6 +4329,7 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		m_stage5ModtranPathRuntimeBandWarned.clear();
 		m_stage5AeroThermalStateByTarget.clear();
 		m_lastStage5AeroThermalLogState.clear();
+		m_lastAeroSpeedStateLogState.clear();
 		m_lastStage4InputState.clear();
 		RefreshStage6DisplayShaderInputs();
 
@@ -4432,6 +4454,7 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 	m_stage5ModtranPathRuntimeBandWarned.clear();
 	m_stage5AeroThermalStateByTarget.clear();
 	m_lastStage5AeroThermalLogState.clear();
+	m_lastAeroSpeedStateLogState.clear();
 	m_lastStage4InputState.clear();
 	if (m_pTcpThread)
 	{
@@ -4578,6 +4601,33 @@ void HwaSimIR::handleDisplayData(const BYHWICD::DisplayC2cObjTrackingData& data)
 			<< " strikePart=" << data.weaponState.strikePart
 			<< " reason=" << (stage4LogTargetCount == 0 ? "no_valid_targets" : "no_engine_or_strike_signal")
 			<< std::endl;
+	}
+	const bool logAeroSpeedRecv =
+		m_enableIRVerboseLog ||
+		m_stage0DisplayFrameCount <= 3 ||
+		(m_stage0DisplayFrameCount % 600) == 0;
+	if (logAeroSpeedRecv)
+	{
+		const int aeroTargetCount = std::max(0, std::min(data.targetNumValid, 5));
+		for (int i = 0; i < 5; ++i)
+		{
+			const auto& target = data.targetState[i];
+			if (i >= aeroTargetCount && !IsValidTargetStateKey(target))
+			{
+				continue;
+			}
+			std::cout << "[AeroSpeedRecv]"
+				<< " sourceSeq=" << udpSeq
+				<< " targetIndex=" << i
+				<< " targetID=" << target.targetID
+				<< " targetType=" << TargetTypeHexString(target.targetType)
+				<< " platform=" << Stage4PlatformName(TargetTypeToPlatformType(target.targetType))
+				<< " receivedSpeedRaw=" << target.targetLoc.speed
+				<< " receivedAltitudeM=" << target.targetLoc.alt
+				<< " targetLoc.speed=" << target.targetLoc.speed
+				<< " speedUnit=km/h"
+				<< std::endl;
+		}
 	}
 
 	/*std::cout << "收到实时成像数据：" << std::endl;
@@ -4995,6 +5045,9 @@ void HwaSimIR::InitInfraredSimulation()
 	std::string stage5AeroMachMinSource;
 	std::string stage5AeroMachMaxSource;
 	std::string stage5AeroDeltaMaxSource;
+	std::string stage5AeroApplyScaleSource;
+	std::string stage5AeroApplyClampBodyDeltaSource;
+	std::string stage5AeroApplyOnlyBandSource;
 	std::string stage5ModtranDebugSource;
 	std::string stage5ModtranPathRuntimeSource;
 	std::string stage5ModtranSkyRuntimeSource;
@@ -5099,6 +5152,19 @@ void HwaSimIR::InitInfraredSimulation()
 		m_runtimeConfig.getDouble("Stage5AeroThermal", "ClampMachMax", "Stage5AeroClampMachMax", 4.0, &stage5AeroMachMaxSource));
 	m_stage5AeroThermalOptions.clampDeltaKMax = std::max(0.0, m_runtimeConfig.getDouble(
 		"Stage5AeroThermal", "ClampDeltaKMax", "Stage5AeroClampDeltaKMax", 250.0, &stage5AeroDeltaMaxSource));
+	m_stage5AeroApplyScale = ClampStage5Double(m_runtimeConfig.getDouble(
+		"Stage5AeroThermal", "AeroApplyScale", "Stage5AeroApplyScale", 0.25, &stage5AeroApplyScaleSource), 0.0, 1.0);
+	m_stage5AeroApplyClampBodyDeltaK = std::max(0.0, m_runtimeConfig.getDouble(
+		"Stage5AeroThermal", "AeroApplyClampBodyDeltaK", "Stage5AeroApplyClampBodyDeltaK", 40.0, &stage5AeroApplyClampBodyDeltaSource));
+	{
+		const std::string aeroBandText = m_runtimeConfig.getString(
+			"Stage5AeroThermal",
+			"AeroApplyOnlyBand",
+			"Stage5AeroApplyOnlyBand",
+			"MWIR",
+			&stage5AeroApplyOnlyBandSource);
+		m_stage5AeroApplyOnlyBand = ParseStage5ModtranPathRuntimeBand(aeroBandText, m_stage5AeroApplyOnlyBandName);
+	}
 	m_enableStage5ModtranRadianceDebug = m_runtimeConfig.getBool(
 		"Stage5ModtranRadiance",
 		"EnableModtranRadianceDebug",
@@ -5473,6 +5539,9 @@ void HwaSimIR::InitInfraredSimulation()
 		<< " ApplyAeroToRadiance=" << (m_stage5ApplyAeroToRadiance ? "1" : "0")
 		<< " AeroDebugLog=" << (m_stage5AeroDebugLog ? "1" : "0")
 		<< " AeroLogEveryFrames=" << m_stage5AeroLogEveryFrames
+		<< " AeroApplyScale=" << m_stage5AeroApplyScale
+		<< " AeroApplyClampBodyDeltaK=" << m_stage5AeroApplyClampBodyDeltaK
+		<< " AeroApplyOnlyBand=" << m_stage5AeroApplyOnlyBandName
 		<< " RecoveryFactor=" << m_stage5AeroThermalOptions.recoveryFactor
 		<< " Gamma=" << m_stage5AeroThermalOptions.gamma
 		<< " BodyCoeff=" << m_stage5AeroThermalOptions.bodyCoeff
@@ -5493,7 +5562,9 @@ void HwaSimIR::InitInfraredSimulation()
 		<< "/" << stage5AeroHeatTauSource << "/" << stage5AeroCoolTauSource
 		<< "/" << stage5AeroMachMinSource << "/" << stage5AeroMachMaxSource
 		<< "/" << stage5AeroDeltaMaxSource
-		<< "（Stage4A: default computes components only; ApplyAeroToRadiance=false keeps production image unchanged）"
+		<< "/" << stage5AeroApplyScaleSource << "/" << stage5AeroApplyClampBodyDeltaSource
+		<< "/" << stage5AeroApplyOnlyBandSource
+		<< "（Stage4B: default computes components only; ApplyAeroToRadiance=false keeps production image unchanged）"
 		<< std::endl;
 	std::cout << "[Stage5 ModtranRadianceConfig]"
 		<< " EnableModtranRadianceDebug=" << (m_enableStage5ModtranRadianceDebug ? "1" : "0")
@@ -5594,6 +5665,9 @@ void HwaSimIR::InitInfraredSimulation()
 			<< ",ApplyAeroToRadiance:" << stage5AeroApplySource
 			<< ",AeroDebugLog:" << stage5AeroDebugLogSource
 			<< ",AeroLogEveryFrames:" << stage5AeroLogEverySource
+			<< ",AeroApplyScale:" << stage5AeroApplyScaleSource
+			<< ",AeroApplyClampBodyDeltaK:" << stage5AeroApplyClampBodyDeltaSource
+			<< ",AeroApplyOnlyBand:" << stage5AeroApplyOnlyBandSource
 			<< ",RecoveryFactor:" << stage5AeroRecoverySource
 			<< ",Gamma:" << stage5AeroGammaSource
 			<< ",BodyCoeff:" << stage5AeroBodyCoeffSource
@@ -6953,6 +7027,9 @@ void HwaSimIR::LogEffectiveRuntimeConfig(
 		<< " EnableAeroThermalModel=" << (m_stage5AeroThermalEnabled ? "1" : "0")
 		<< " ApplyAeroToRadiance=" << (m_stage5ApplyAeroToRadiance ? "1" : "0")
 		<< " AeroDebugLog=" << (m_stage5AeroDebugLog ? "1" : "0")
+		<< " AeroApplyScale=" << m_stage5AeroApplyScale
+		<< " AeroApplyClampBodyDeltaK=" << m_stage5AeroApplyClampBodyDeltaK
+		<< " AeroApplyOnlyBand=" << m_stage5AeroApplyOnlyBandName
 		<< " RecoveryFactor=" << m_stage5AeroThermalOptions.recoveryFactor
 		<< " ClampDeltaKMax=" << m_stage5AeroThermalOptions.clampDeltaKMax
 		<< " EnableModtranRadianceDebug=" << (m_enableStage5ModtranRadianceDebug ? "1" : "0")
@@ -7191,6 +7268,7 @@ IRAeroThermalOutput HwaSimIR::EvaluateStage5AeroThermal(TargetPlatformData& targ
 	input.speedRaw = std::isfinite(targetPlat.targetState.targetLoc.speed)
 		? targetPlat.targetState.targetLoc.speed
 		: 0.0;
+	input.speedSource = Stage5AeroSpeedSourceForTarget(targetPlat.targetState);
 	input.dtSec = static_cast<double>(dtSec);
 	input.band = band;
 	input.targetType = targetPlat.targetState.targetType;
@@ -7204,6 +7282,44 @@ IRAeroThermalOutput HwaSimIR::EvaluateStage5AeroThermal(TargetPlatformData& targ
 	m_stage5AeroThermalMsCurrent += std::chrono::duration<double, std::milli>(
 		std::chrono::steady_clock::now() - aeroStart).count();
 	return output;
+}
+
+void HwaSimIR::LogAeroSpeedState(const TargetPlatformData& targetPlat, bool renderVisible)
+{
+	const std::uint64_t frameSeq = m_currentFrameTelemetry.sourceSeq > 0
+		? m_currentFrameTelemetry.sourceSeq : m_stage0DisplayFrameCount;
+	const double selectedSpeedKmh = std::isfinite(targetPlat.targetState.targetLoc.speed)
+		? targetPlat.targetState.targetLoc.speed
+		: 0.0;
+	const std::string selectedSpeedSource = Stage5AeroSpeedSourceForTarget(targetPlat.targetState);
+	const std::string logKey =
+		std::to_string(targetPlat.targetState.targetType) + ":" +
+		std::to_string(targetPlat.targetState.targetPlatID) + ":" +
+		std::to_string(targetPlat.targetState.targetID) + "#aero-speed-state";
+	std::ostringstream state;
+	state << Stage5ModtranCacheDouble(QuantizeForCache(selectedSpeedKmh, 25.0))
+		<< ":" << Stage5ModtranCacheDouble(QuantizeForCache(targetPlat.targetState.targetLoc.alt, 500.0))
+		<< ":" << selectedSpeedSource
+		<< ":" << (renderVisible ? 1 : 0);
+	const bool stateChanged = m_lastAeroSpeedStateLogState[logKey] != state.str();
+	m_lastAeroSpeedStateLogState[logKey] = state.str();
+	const bool sampleDue = frameSeq <= 3 || (frameSeq % 600) == 0;
+	if (!sampleDue && !stateChanged && !m_enableIRVerboseLog)
+	{
+		return;
+	}
+	std::cout << "[AeroSpeedState]"
+		<< " sourceSeq=" << frameSeq
+		<< " targetID=" << targetPlat.targetState.targetID
+		<< " targetType=" << TargetTypeHexString(targetPlat.targetState.targetType)
+		<< " platform=" << Stage4PlatformName(targetPlat.type)
+		<< " renderVisible=" << (renderVisible ? "1" : "0")
+		<< " targetState.targetLoc.speed=" << targetPlat.targetState.targetLoc.speed
+		<< " targetState.targetLoc.alt=" << targetPlat.targetState.targetLoc.alt
+		<< " selectedSpeedKmh=" << selectedSpeedKmh
+		<< " selectedSpeedSource=" << selectedSpeedSource
+		<< " speedUnit=km/h"
+		<< std::endl;
 }
 
 void HwaSimIR::LogStage5AeroThermal(const TargetPlatformData& targetPlat, const IRRadianceComponents& components, const IRAeroThermalOutput& aeroOutput)
@@ -7221,12 +7337,14 @@ void HwaSimIR::LogStage5AeroThermal(const TargetPlatformData& targetPlat, const 
 		std::to_string(targetPlat.targetState.targetPlatID) + ":" +
 		std::to_string(targetPlat.targetState.targetID) + "#aero-thermal";
 	std::ostringstream state;
-	state << Stage5ModtranCacheDouble(aeroOutput.altitudeM)
-		<< ":" << Stage5ModtranCacheDouble(aeroOutput.speedRaw)
-		<< ":" << Stage5ModtranCacheDouble(aeroOutput.mach)
-		<< ":" << Stage5ModtranCacheDouble(aeroOutput.bodyAeroDeltaK)
+	state << Stage5ModtranCacheDouble(QuantizeForCache(aeroOutput.altitudeM, 500.0))
+		<< ":" << Stage5ModtranCacheDouble(QuantizeForCache(aeroOutput.speedRawKmh, 25.0))
+		<< ":" << Stage5ModtranCacheDouble(QuantizeForCache(aeroOutput.mach, 0.05))
+		<< ":" << Stage5ModtranCacheDouble(QuantizeForCache(aeroOutput.bodyAeroDeltaK, 0.25))
+		<< ":" << Stage5ModtranCacheDouble(QuantizeForCache(components.bodyAeroDeltaKEffective, 0.25))
 		<< ":" << (components.aeroAppliedToRadiance ? 1 : 0)
 		<< ":" << (aeroOutput.valid ? 1 : 0)
+		<< ":" << aeroOutput.selectedSpeedSource
 		<< ":" << aeroOutput.fallbackReason;
 	const bool stateChanged = m_lastStage5AeroThermalLogState[logKey] != state.str();
 	m_lastStage5AeroThermalLogState[logKey] = state.str();
@@ -7234,11 +7352,34 @@ void HwaSimIR::LogStage5AeroThermal(const TargetPlatformData& targetPlat, const 
 	{
 		return;
 	}
+	if (aeroOutput.speedRawKmh > 0.0 && aeroOutput.mach <= 1.0e-9)
+	{
+		std::cout << "[Stage5 AeroThermal][WARN]"
+			<< " sourceSeq=" << frameSeq
+			<< " targetID=" << targetPlat.targetState.targetID
+			<< " speedRawKmh=" << aeroOutput.speedRawKmh
+			<< " mach=" << aeroOutput.mach
+			<< " reason=positive_speed_but_zero_mach"
+			<< std::endl;
+	}
+	if (m_stage5ApplyAeroToRadiance && aeroOutput.speedRawKmh <= 0.0)
+	{
+		std::cout << "[Stage5 AeroThermal][WARN]"
+			<< " sourceSeq=" << frameSeq
+			<< " targetID=" << targetPlat.targetState.targetID
+			<< " ApplyAeroToRadiance=1"
+			<< " speedRawKmh=" << aeroOutput.speedRawKmh
+			<< " reason=no_effective_speed_runtime_ab_has_no_visual_meaning"
+			<< std::endl;
+	}
 	std::cout << "[Stage5 AeroThermal]"
 		<< " sourceSeq=" << frameSeq
 		<< " targetID=" << targetPlat.targetState.targetID
+		<< " targetType=" << TargetTypeHexString(targetPlat.targetState.targetType)
+		<< " selectedSpeedSource=" << aeroOutput.selectedSpeedSource
 		<< " altitudeM=" << aeroOutput.altitudeM
 		<< " speedRaw=" << aeroOutput.speedRaw
+		<< " speedRawKmh=" << aeroOutput.speedRawKmh
 		<< " speedUnit=" << aeroOutput.speedUnit
 		<< " speedMps=" << aeroOutput.speedMps
 		<< " airTempK=" << aeroOutput.airTempK
@@ -7247,6 +7388,11 @@ void HwaSimIR::LogStage5AeroThermal(const TargetPlatformData& targetPlat, const 
 		<< " recoveryTempK=" << aeroOutput.recoveryTempK
 		<< " aeroDeltaK=" << aeroOutput.aeroDeltaK
 		<< " bodyAeroDeltaK=" << aeroOutput.bodyAeroDeltaK
+		<< " bodyAeroDeltaKRaw=" << components.bodyAeroDeltaKRaw
+		<< " bodyAeroDeltaKEffective=" << components.bodyAeroDeltaKEffective
+		<< " bodyRadianceNoAero=" << components.bodyRadianceNoAero
+		<< " bodyRadianceWithAero=" << components.bodyRadianceWithAero
+		<< " aeroRadianceRatio=" << components.aeroRadianceRatio
 		<< " noseAeroDeltaK=" << aeroOutput.noseAeroDeltaK
 		<< " edgeAeroDeltaK=" << aeroOutput.edgeAeroDeltaK
 		<< " rearAeroDeltaK=" << aeroOutput.rearAeroDeltaK
@@ -7294,18 +7440,29 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	stage5Input.brightspotIntensity = brightSpot.enabled ? std::max(0.0f, brightSpot.intensity) : 0.0f;
 	const IRAeroThermalOutput aeroOutput = EvaluateStage5AeroThermal(targetPlat, stage5Band, dtSec, environment, targetKey);
 	stage5Input.altitudeM = aeroOutput.altitudeM;
+	stage5Input.speedRawKmh = aeroOutput.speedRawKmh;
+	stage5Input.speedSource = aeroOutput.selectedSpeedSource;
 	stage5Input.speedMps = aeroOutput.speedMps;
 	stage5Input.mach = aeroOutput.mach;
 	stage5Input.airTempK = aeroOutput.airTempK;
 	stage5Input.recoveryTempK = aeroOutput.recoveryTempK;
 	stage5Input.aeroDeltaK = aeroOutput.aeroDeltaK;
-	stage5Input.bodyAeroDeltaK = aeroOutput.bodyAeroDeltaK;
+	const bool aeroApplyBandAllowed = stage5Band == m_stage5AeroApplyOnlyBand;
+	const double bodyAeroDeltaKRaw = std::max(0.0, aeroOutput.bodyAeroDeltaK);
+	const double scaledBodyAeroDeltaK = QuantizeForCache(bodyAeroDeltaKRaw * m_stage5AeroApplyScale, 0.05);
+	const double bodyAeroDeltaKEffective =
+		(m_stage5ApplyAeroToRadiance && aeroOutput.valid && aeroApplyBandAllowed)
+		? ClampStage5Double(scaledBodyAeroDeltaK, 0.0, m_stage5AeroApplyClampBodyDeltaK)
+		: 0.0;
+	stage5Input.bodyAeroDeltaK = bodyAeroDeltaKEffective;
+	stage5Input.bodyAeroDeltaKRaw = bodyAeroDeltaKRaw;
+	stage5Input.bodyAeroDeltaKEffective = bodyAeroDeltaKEffective;
 	stage5Input.noseAeroDeltaK = aeroOutput.noseAeroDeltaK;
 	stage5Input.edgeAeroDeltaK = aeroOutput.edgeAeroDeltaK;
 	stage5Input.rearAeroDeltaK = aeroOutput.rearAeroDeltaK;
 	stage5Input.aeroValid = aeroOutput.valid;
 	stage5Input.aeroFallbackReason = aeroOutput.fallbackReason;
-	stage5Input.aeroAppliedToRadiance = m_stage5ApplyAeroToRadiance && aeroOutput.valid;
+	stage5Input.aeroAppliedToRadiance = m_stage5ApplyAeroToRadiance && aeroOutput.valid && aeroApplyBandAllowed;
 	double plumeRadiance = 0.0;
 	const std::map<std::string, Stage5PlumeRuntimeCache>::const_iterator plumeIt = m_stage5PlumeRuntimeCache.find(targetKey);
 	if (plumeIt != m_stage5PlumeRuntimeCache.end() && plumeIt->second.hasOutput)
@@ -7579,12 +7736,23 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 			<< " modtranFallbackReason=" << components.modtranFallbackReason
 			<< " modtranInterpolationMode=" << components.modtranInterpolationMode
 			<< " altitudeM=" << components.altitudeM
+			<< " speedRawKmh=" << components.speedRawKmh
+			<< " speedSource=" << components.speedSource
 			<< " speedMps=" << components.speedMps
 			<< " mach=" << components.mach
 			<< " airTempK=" << components.airTempK
 			<< " recoveryTempK=" << components.recoveryTempK
 			<< " aeroDeltaK=" << components.aeroDeltaK
 			<< " bodyAeroDeltaK=" << components.bodyAeroDeltaK
+			<< " bodyTempBaseK=" << components.bodyTempBaseK
+			<< " bodyAeroDeltaKRaw=" << components.bodyAeroDeltaKRaw
+			<< " bodyAeroDeltaKEffective=" << components.bodyAeroDeltaKEffective
+			<< " bodyTempAeroAppliedK=" << components.bodyTempAeroAppliedK
+			<< " bodyRadianceNoAero=" << components.bodyRadianceNoAero
+			<< " bodyRadianceWithAero=" << components.bodyRadianceWithAero
+			<< " sensorInputNoAero=" << components.sensorInputNoAero
+			<< " sensorInputWithAero=" << components.sensorInputWithAero
+			<< " aeroRadianceRatio=" << components.aeroRadianceRatio
 			<< " noseAeroDeltaK=" << components.noseAeroDeltaK
 			<< " edgeAeroDeltaK=" << components.edgeAeroDeltaK
 			<< " rearAeroDeltaK=" << components.rearAeroDeltaK
@@ -7634,10 +7802,21 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 			<< " modtranFallbackReason=" << components.modtranFallbackReason
 			<< " modtranInterpolationMode=" << components.modtranInterpolationMode
 			<< " altitudeM=" << components.altitudeM
+			<< " speedRawKmh=" << components.speedRawKmh
+			<< " speedSource=" << components.speedSource
 			<< " speedMps=" << components.speedMps
 			<< " mach=" << components.mach
 			<< " aeroDeltaK=" << components.aeroDeltaK
 			<< " bodyAeroDeltaK=" << components.bodyAeroDeltaK
+			<< " bodyTempBaseK=" << components.bodyTempBaseK
+			<< " bodyAeroDeltaKRaw=" << components.bodyAeroDeltaKRaw
+			<< " bodyAeroDeltaKEffective=" << components.bodyAeroDeltaKEffective
+			<< " bodyTempAeroAppliedK=" << components.bodyTempAeroAppliedK
+			<< " bodyRadianceNoAero=" << components.bodyRadianceNoAero
+			<< " bodyRadianceWithAero=" << components.bodyRadianceWithAero
+			<< " sensorInputNoAero=" << components.sensorInputNoAero
+			<< " sensorInputWithAero=" << components.sensorInputWithAero
+			<< " aeroRadianceRatio=" << components.aeroRadianceRatio
 			<< " noseAeroDeltaK=" << components.noseAeroDeltaK
 			<< " edgeAeroDeltaK=" << components.edgeAeroDeltaK
 			<< " rearAeroDeltaK=" << components.rearAeroDeltaK

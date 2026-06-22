@@ -24,6 +24,7 @@ struct IRAeroThermalInput
 {
 	double altitudeM = 0.0;
 	double speedRaw = 0.0;
+	std::string speedSource = "unknown";
 	double dtSec = 0.0;
 	IRBand band = IRBand::MidWaveInfrared;
 	int targetType = 0;
@@ -44,6 +45,8 @@ struct IRAeroThermalOutput
 {
 	double altitudeM = 0.0;
 	double speedRaw = 0.0;
+	double speedRawKmh = 0.0;
+	std::string selectedSpeedSource = "unknown";
 	std::string speedUnit = "km/h";
 	double speedMps = 0.0;
 	double airTempK = 0.0;

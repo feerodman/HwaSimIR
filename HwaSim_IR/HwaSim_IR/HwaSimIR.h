@@ -239,6 +239,10 @@ private:
 	bool m_stage5ApplyAeroToRadiance = false;
 	bool m_stage5AeroDebugLog = false;
 	int m_stage5AeroLogEveryFrames = 120;
+	double m_stage5AeroApplyScale = 0.25;
+	double m_stage5AeroApplyClampBodyDeltaK = 40.0;
+	IRBand m_stage5AeroApplyOnlyBand = IRBand::MidWaveInfrared;
+	std::string m_stage5AeroApplyOnlyBandName = "MWIR";
 	IRAeroThermalOptions m_stage5AeroThermalOptions;
 	bool m_enableStage5ModtranRadianceDebug = false;
 	bool m_stage5UseModtranPathRuntime = false;
@@ -307,6 +311,7 @@ private:
 	std::map<std::string, std::string> m_lastStage5ModtranPathABLogState;
 	std::map<std::string, IRAeroThermalState> m_stage5AeroThermalStateByTarget;
 	std::map<std::string, std::string> m_lastStage5AeroThermalLogState;
+	std::map<std::string, std::string> m_lastAeroSpeedStateLogState;
 	std::map<int, bool> m_stage5ModtranPathRuntimeBandWarned;
 	double m_stage5RadianceComponentMsCurrent = 0.0;
 	double m_stage5AeroThermalMsCurrent = 0.0;
@@ -431,6 +436,7 @@ private:
 	bool Stage4WeaponAppliesToTarget(const BYHWICD::WeaponState& weaponState, const TargetPlatformData& targetPlat) const;
 	bool ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHWICD::WeaponState& weaponState, float dtSec, float ambientTempK, const IRObjectRadianceOutput& radiance, bool applyNodeInputs);
 	void ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IRObjectRadianceOutput& radiance, const IRHotspotState& rearHotspot, const IRBrightSpotState& brightSpot, bool rearEnabledForShader, float rearIntensityForShader, const std::string& targetKey, float dtSec);
+	void LogAeroSpeedState(const TargetPlatformData& targetPlat, bool renderVisible);
 	IRAeroThermalOutput EvaluateStage5AeroThermal(TargetPlatformData& targetPlat, IRBand band, float dtSec, const IRRuntimeEnvironment& environment, const std::string& targetKey);
 	void LogStage5AeroThermal(const TargetPlatformData& targetPlat, const IRRadianceComponents& components, const IRAeroThermalOutput& aeroOutput);
 	IRModtranRadianceResult QueryStage5ModtranRadiance(const TargetPlatformData& targetPlat, const IRRuntimeEnvironment& environment, const IRObjectRadianceOutput& radiance, const std::string& targetKey);

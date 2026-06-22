@@ -52,6 +52,8 @@ IRAeroThermalOutput IRAeroThermalModel::evaluate(
 	IRAeroThermalOutput output;
 	output.altitudeM = input.altitudeM;
 	output.speedRaw = input.speedRaw;
+	output.speedRawKmh = input.speedRaw;
+	output.selectedSpeedSource = input.speedSource.empty() ? "unknown" : input.speedSource;
 	output.speedUnit = "km/h";
 
 	if (!options.enabled)

@@ -131,6 +131,9 @@ $checks += Assert-Equals $ini "Stage5AeroThermal" "CoolTauSec" "5.0" "5.0"
 $checks += Assert-Equals $ini "Stage5AeroThermal" "ClampMachMin" "0.0" "0.0"
 $checks += Assert-Equals $ini "Stage5AeroThermal" "ClampMachMax" "4.0" "4.0"
 $checks += Assert-Equals $ini "Stage5AeroThermal" "ClampDeltaKMax" "250.0" "250.0"
+$checks += Assert-Equals $ini "Stage5AeroThermal" "AeroApplyScale" "0.25" "0.25"
+$checks += Assert-Equals $ini "Stage5AeroThermal" "AeroApplyClampBodyDeltaK" "40.0" "40.0"
+$checks += Assert-Equals $ini "Stage5AeroThermal" "AeroApplyOnlyBand" "MWIR" "MWIR"
 
 $legacyStage5Debug = Get-IniValue $ini "Stage5" "EnableRadianceDebug" "false"
 if (Test-TrueValue $legacyStage5Debug) {
