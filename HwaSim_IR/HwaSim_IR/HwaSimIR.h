@@ -236,10 +236,14 @@ private:
 	bool m_stage5LogComponents = false;
 	int m_stage5ComponentLogEveryFrames = 120;
 	bool m_stage5UseSensorInputForDisplay = false;
+	std::string m_stage5SensorInputDisplayMode = "Manual";
 	double m_stage5SensorInputDisplayScale = 1.0;
 	double m_stage5SensorInputDisplayOffset = 0.0;
 	double m_stage5SensorInputDisplayClampMin = 0.0;
 	double m_stage5SensorInputDisplayClampMax = 1.0;
+	double m_stage5SensorInputDisplayGamma = 1.0;
+	IRBand m_stage5SensorInputDisplayBand = IRBand::MidWaveInfrared;
+	std::string m_stage5SensorInputDisplayBandName = "MWIR";
 	bool m_stage5AeroThermalEnabled = true;
 	bool m_stage5ApplyAeroToRadiance = false;
 	bool m_stage5AeroDebugLog = false;
@@ -441,6 +445,7 @@ private:
 	bool Stage4WeaponAppliesToTarget(const BYHWICD::WeaponState& weaponState, const TargetPlatformData& targetPlat) const;
 	bool ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHWICD::WeaponState& weaponState, float dtSec, float ambientTempK, const IRObjectRadianceOutput& radiance, bool applyNodeInputs);
 	void ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IRObjectRadianceOutput& radiance, const IRHotspotState& rearHotspot, const IRBrightSpotState& brightSpot, bool rearEnabledForShader, float rearIntensityForShader, const std::string& targetKey, float dtSec);
+	double MapSensorInputToDisplayGray(double sensorInputRadiance) const;
 	void LogAeroSpeedState(const TargetPlatformData& targetPlat, bool renderVisible);
 	IRAeroThermalOutput EvaluateStage5AeroThermal(TargetPlatformData& targetPlat, IRBand band, float dtSec, const IRRuntimeEnvironment& environment, const std::string& targetKey);
 	void LogStage5AeroThermal(const TargetPlatformData& targetPlat, const IRRadianceComponents& components, const IRAeroThermalOutput& aeroOutput);

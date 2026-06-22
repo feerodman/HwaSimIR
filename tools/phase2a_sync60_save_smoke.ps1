@@ -18,10 +18,13 @@ param(
     [string]$Stage5LogComponents = "false",
     [int]$Stage5ComponentLogEveryFrames = 120,
     [string]$UseSensorInputForDisplay = "false",
+    [string]$SensorInputDisplayMode = "Manual",
     [double]$SensorInputDisplayScale = 1.0,
     [double]$SensorInputDisplayOffset = 0.0,
     [double]$SensorInputDisplayClampMin = 0.0,
     [double]$SensorInputDisplayClampMax = 1.0,
+    [double]$SensorInputDisplayGamma = 1.0,
+    [string]$SensorInputDisplayBand = "MWIR",
     [string[]]$StimExtraArgs = @()
 )
 
@@ -61,7 +64,7 @@ function Set-IniValue {
 function Get-NumericValues {
     param([string]$Text, [string]$Tag, [string]$Field)
     $pattern = "(?m)^\[" + [regex]::Escape($Tag) + "\].*?\b" +
-        [regex]::Escape($Field) + "=([-+]?[0-9]+(?:\.[0-9]+)?)"
+        [regex]::Escape($Field) + "=([-+]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][-+]?[0-9]+)?)"
     return @([regex]::Matches($Text, $pattern) | ForEach-Object {
         [double]$_.Groups[1].Value
     })
@@ -153,10 +156,13 @@ try {
     $runtimeText = Set-IniValue $runtimeText "LogComponents" $Stage5LogComponents
     $runtimeText = Set-IniValue $runtimeText "ComponentLogEveryFrames" ([string]$Stage5ComponentLogEveryFrames)
     $runtimeText = Set-IniValue $runtimeText "UseSensorInputForDisplay" $UseSensorInputForDisplay
+    $runtimeText = Set-IniValue $runtimeText "SensorInputDisplayMode" $SensorInputDisplayMode
     $runtimeText = Set-IniValue $runtimeText "SensorInputDisplayScale" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $SensorInputDisplayScale))
     $runtimeText = Set-IniValue $runtimeText "SensorInputDisplayOffset" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $SensorInputDisplayOffset))
     $runtimeText = Set-IniValue $runtimeText "SensorInputDisplayClampMin" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $SensorInputDisplayClampMin))
     $runtimeText = Set-IniValue $runtimeText "SensorInputDisplayClampMax" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $SensorInputDisplayClampMax))
+    $runtimeText = Set-IniValue $runtimeText "SensorInputDisplayGamma" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $SensorInputDisplayGamma))
+    $runtimeText = Set-IniValue $runtimeText "SensorInputDisplayBand" $SensorInputDisplayBand
     $runtimeText = Set-IniValue $runtimeText "EnableModtranRadianceDebug" $EnableModtranRadianceDebug
     $runtimeText = Set-IniValue $runtimeText "UseModtranPathRuntime" $UseModtranPathRuntime
     $runtimeText = Set-IniValue $runtimeText "UseModtranSkyRuntime" "false"
@@ -291,10 +297,13 @@ $summary = [pscustomobject]@{
     aeroDebugLog = $AeroDebugLog
     stage5LogComponents = $Stage5LogComponents
     useSensorInputForDisplay = $UseSensorInputForDisplay
+    sensorInputDisplayMode = $SensorInputDisplayMode
     sensorInputDisplayScale = $SensorInputDisplayScale
     sensorInputDisplayOffset = $SensorInputDisplayOffset
     sensorInputDisplayClampMin = $SensorInputDisplayClampMin
     sensorInputDisplayClampMax = $SensorInputDisplayClampMax
+    sensorInputDisplayGamma = $SensorInputDisplayGamma
+    sensorInputDisplayBand = $SensorInputDisplayBand
     speedKmhAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Stage5 AeroThermal" "speedRawKmh")), 6)
     machAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Stage5 AeroThermal" "mach")), 6)
     bodyAeroDeltaKRawAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Stage5 AeroThermal" "bodyAeroDeltaKRaw")), 6)

@@ -199,11 +199,11 @@ IRRadianceComponents IRRadianceModelV2::evaluateComponents(const IRRadianceModel
 		tauUpValid = true;
 		tauFallbackReason = "tau_out_of_range_clamped";
 	}
-	else if (tauUp <= 0.0 && tauFallbackReason == "none")
+	else if (tauUp <= 1.0e-6 && tauFallbackReason == "none")
 	{
 		tauUp = 1.0;
 		tauUpValid = true;
-		tauFallbackReason = "zero_tau_without_reason_fallback_unity";
+		tauFallbackReason = "near_zero_tau_without_reason_fallback_unity";
 	}
 	const double solarStrength = clamp(input.solarStrength, 0.0, 1.0);
 	const double ndotl = clamp(input.ndotl, 0.0, 1.0);

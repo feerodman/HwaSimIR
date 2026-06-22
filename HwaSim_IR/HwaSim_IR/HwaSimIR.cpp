@@ -330,6 +330,16 @@ int ParseStage5DebugViewMode(const std::string& value)
 	return 0;
 }
 
+std::string NormalizeStage5SensorInputDisplayMode(const std::string& value)
+{
+	const std::string lower = ToLowerAscii(value);
+	if (lower == "legacymatch" || lower == "matchlegacy" || lower == "calib" || lower == "calibration")
+	{
+		return "LegacyMatch";
+	}
+	return "Manual";
+}
+
 std::string NormalizeStage5ModtranPathRuntimeMode(const std::string& value)
 {
 	const std::string lower = ToLowerAscii(value);
@@ -5031,10 +5041,13 @@ void HwaSimIR::InitInfraredSimulation()
 	std::string stage5ComponentLogSource;
 	std::string stage5ComponentLogEverySource;
 	std::string stage5SensorInputDisplaySource;
+	std::string stage5SensorInputDisplayModeSource;
 	std::string stage5SensorInputDisplayScaleSource;
 	std::string stage5SensorInputDisplayOffsetSource;
 	std::string stage5SensorInputDisplayClampMinSource;
 	std::string stage5SensorInputDisplayClampMaxSource;
+	std::string stage5SensorInputDisplayGammaSource;
+	std::string stage5SensorInputDisplayBandSource;
 	std::string stage5AeroEnableSource;
 	std::string stage5AeroApplySource;
 	std::string stage5AeroDebugLogSource;
@@ -5115,6 +5128,12 @@ void HwaSimIR::InitInfraredSimulation()
 		"UseSensorInputForDisplay",
 		false,
 		&stage5SensorInputDisplaySource);
+	m_stage5SensorInputDisplayMode = NormalizeStage5SensorInputDisplayMode(m_runtimeConfig.getString(
+		"Stage5Radiance",
+		"SensorInputDisplayMode",
+		"SensorInputDisplayMode",
+		"Manual",
+		&stage5SensorInputDisplayModeSource));
 	m_stage5SensorInputDisplayScale = std::max(0.0, m_runtimeConfig.getDouble(
 		"Stage5Radiance",
 		"SensorInputDisplayScale",
@@ -5142,6 +5161,21 @@ void HwaSimIR::InitInfraredSimulation()
 	if (m_stage5SensorInputDisplayClampMax < m_stage5SensorInputDisplayClampMin)
 	{
 		m_stage5SensorInputDisplayClampMax = m_stage5SensorInputDisplayClampMin;
+	}
+	m_stage5SensorInputDisplayGamma = ClampStage5Double(m_runtimeConfig.getDouble(
+		"Stage5Radiance",
+		"SensorInputDisplayGamma",
+		"SensorInputDisplayGamma",
+		1.0,
+		&stage5SensorInputDisplayGammaSource), 0.1, 5.0);
+	{
+		const std::string displayBandText = m_runtimeConfig.getString(
+			"Stage5Radiance",
+			"SensorInputDisplayBand",
+			"SensorInputDisplayBand",
+			"MWIR",
+			&stage5SensorInputDisplayBandSource);
+		m_stage5SensorInputDisplayBand = ParseStage5ModtranPathRuntimeBand(displayBandText, m_stage5SensorInputDisplayBandName);
 	}
 	m_stage5AeroThermalEnabled = m_runtimeConfig.getBool(
 		"Stage5AeroThermal",
@@ -5556,10 +5590,13 @@ void HwaSimIR::InitInfraredSimulation()
 		<< " LogComponents=" << (m_stage5LogComponents ? "1" : "0")
 		<< " ComponentLogEveryFrames=" << m_stage5ComponentLogEveryFrames
 		<< " UseSensorInputForDisplay=" << (m_stage5UseSensorInputForDisplay ? "1" : "0")
+		<< " SensorInputDisplayMode=" << m_stage5SensorInputDisplayMode
 		<< " SensorInputDisplayScale=" << m_stage5SensorInputDisplayScale
 		<< " SensorInputDisplayOffset=" << m_stage5SensorInputDisplayOffset
 		<< " SensorInputDisplayClampMin=" << m_stage5SensorInputDisplayClampMin
 		<< " SensorInputDisplayClampMax=" << m_stage5SensorInputDisplayClampMax
+		<< " SensorInputDisplayGamma=" << m_stage5SensorInputDisplayGamma
+		<< " SensorInputDisplayBand=" << m_stage5SensorInputDisplayBandName
 		<< " pathRadianceSource=legacy_empirical"
 		<< " Stage5DebugToneMap=" << m_stage5DebugToneMapName
 		<< " Stage5BodyRadianceScale=" << m_stage5DebugConfig.bodyRadianceScale
@@ -5576,9 +5613,11 @@ void HwaSimIR::InitInfraredSimulation()
 		<< " Stage5CompositeMaxGray=" << m_stage5DebugConfig.compositeMaxGray
 		<< " source=" << stage5PhysicalSource << "/" << stage5ViewModeSource << "/"
 		<< stage5DebugSource << "/" << stage5ComponentLogSource << "/" << stage5ComponentLogEverySource
-		<< "/" << stage5SensorInputDisplaySource << "/" << stage5SensorInputDisplayScaleSource
+		<< "/" << stage5SensorInputDisplaySource << "/" << stage5SensorInputDisplayModeSource
+		<< "/" << stage5SensorInputDisplayScaleSource
 		<< "/" << stage5SensorInputDisplayOffsetSource << "/" << stage5SensorInputDisplayClampMinSource
-		<< "/" << stage5SensorInputDisplayClampMaxSource
+		<< "/" << stage5SensorInputDisplayClampMaxSource << "/" << stage5SensorInputDisplayGammaSource
+		<< "/" << stage5SensorInputDisplayBandSource
 		<< "（DebugView Off 时主画面保持legacy输出；path/sky/solar MODTRAN runtime disabled）"
 		<< std::endl;
 	std::cout << "[Stage5 AeroThermalConfig]"
@@ -5709,10 +5748,13 @@ void HwaSimIR::InitInfraredSimulation()
 			<< ",DebugView:" << stage5ViewModeSource
 			<< ",LogComponents:" << stage5ComponentLogSource
 			<< ",UseSensorInputForDisplay:" << stage5SensorInputDisplaySource
+			<< ",SensorInputDisplayMode:" << stage5SensorInputDisplayModeSource
 			<< ",SensorInputDisplayScale:" << stage5SensorInputDisplayScaleSource
 			<< ",SensorInputDisplayOffset:" << stage5SensorInputDisplayOffsetSource
 			<< ",SensorInputDisplayClampMin:" << stage5SensorInputDisplayClampMinSource
 			<< ",SensorInputDisplayClampMax:" << stage5SensorInputDisplayClampMaxSource
+			<< ",SensorInputDisplayGamma:" << stage5SensorInputDisplayGammaSource
+			<< ",SensorInputDisplayBand:" << stage5SensorInputDisplayBandSource
 			<< ",EnableAeroThermalModel:" << stage5AeroEnableSource
 			<< ",ApplyAeroToRadiance:" << stage5AeroApplySource
 			<< ",AeroDebugLog:" << stage5AeroDebugLogSource
@@ -7063,6 +7105,20 @@ bool HwaSimIR::Stage5ModtranPathRuntimeAffectsImage() const
 			m_stage5ModtranPathRuntimeMode == "BlendLegacy");
 }
 
+double HwaSimIR::MapSensorInputToDisplayGray(double sensorInputRadiance) const
+{
+	const double finiteSensorInput = std::isfinite(sensorInputRadiance) ? sensorInputRadiance : 0.0;
+	double mapped = finiteSensorInput * m_stage5SensorInputDisplayScale + m_stage5SensorInputDisplayOffset;
+	mapped = ClampStage5Double(mapped, m_stage5SensorInputDisplayClampMin, m_stage5SensorInputDisplayClampMax);
+	mapped = ClampStage5Double(mapped, 0.0, 1.0);
+	if (mapped <= 0.0)
+	{
+		return 0.0;
+	}
+	const double gamma = ClampStage5Double(m_stage5SensorInputDisplayGamma, 0.1, 5.0);
+	return ClampStage5Double(std::pow(mapped, 1.0 / gamma), 0.0, 1.0);
+}
+
 void HwaSimIR::LogEffectiveRuntimeConfig(
 	const char* reason,
 	int videoFps,
@@ -7088,10 +7144,13 @@ void HwaSimIR::LogEffectiveRuntimeConfig(
 		<< " DebugView=" << m_stage5DebugViewModeName
 		<< " LogComponents=" << (m_stage5LogComponents ? "1" : "0")
 		<< " UseSensorInputForDisplay=" << (m_stage5UseSensorInputForDisplay ? "1" : "0")
+		<< " SensorInputDisplayMode=" << m_stage5SensorInputDisplayMode
 		<< " SensorInputDisplayScale=" << m_stage5SensorInputDisplayScale
 		<< " SensorInputDisplayOffset=" << m_stage5SensorInputDisplayOffset
 		<< " SensorInputDisplayClampMin=" << m_stage5SensorInputDisplayClampMin
 		<< " SensorInputDisplayClampMax=" << m_stage5SensorInputDisplayClampMax
+		<< " SensorInputDisplayGamma=" << m_stage5SensorInputDisplayGamma
+		<< " SensorInputDisplayBand=" << m_stage5SensorInputDisplayBandName
 		<< " EnableAeroThermalModel=" << (m_stage5AeroThermalEnabled ? "1" : "0")
 		<< " ApplyAeroToRadiance=" << (m_stage5ApplyAeroToRadiance ? "1" : "0")
 		<< " AeroDebugLog=" << (m_stage5AeroDebugLog ? "1" : "0")
@@ -7500,10 +7559,13 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	const IRBand stage5Band = static_cast<IRBand>(static_cast<int>(radiance.bandIndex));
 	const int stage5BandIndex = Stage5BandIndex(stage5Band);
 	const bool stage5UseBaseTextureModulation = m_stage5UseBaseTextureModulationByBand[stage5BandIndex];
-	const bool stage5DisplayUsesSensorInput = m_stage5UseSensorInputForDisplay || m_enableStage5RadianceDebug;
+	const bool sensorInputDisplayBandAllowed = stage5Band == m_stage5SensorInputDisplayBand;
+	const bool useSensorInputForDisplayEffective =
+		m_stage5UseSensorInputForDisplay && sensorInputDisplayBandAllowed;
+	const bool stage5DisplayUsesSensorInput = useSensorInputForDisplayEffective || m_enableStage5RadianceDebug;
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_radiance_debug_en", LVecBase2i(stage5DisplayUsesSensorInput ? 1 : 0, 0));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_debug_view_mode", LVecBase2i(m_stage5DebugViewMode, 0));
-	SetShaderInputCached(targetPlat.nodePath, "u_stage5_use_sensor_input_for_display", LVecBase2i(m_stage5UseSensorInputForDisplay ? 1 : 0, 0));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_use_sensor_input_for_display", LVecBase2i(useSensorInputForDisplayEffective ? 1 : 0, 0));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_use_base_texture_modulation", LVecBase2i(stage5UseBaseTextureModulation ? 1 : 0, 0));
 	if (!m_enableStage5PhysicalPipeline)
 	{
@@ -7532,12 +7594,12 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 		selectedTauValid = true;
 		tauFallbackReason = "radiance_tau_nonfinite_fallback_unity";
 	}
-	else if (rawTauUp <= 0.0)
+	else if (rawTauUp <= 1.0e-6)
 	{
 		selectedTauUp = 1.0;
 		selectedTauSource = "fallback_unity";
 		selectedTauValid = true;
-		tauFallbackReason = "radiance_tau_zero_fallback_unity";
+		tauFallbackReason = "radiance_tau_near_zero_fallback_unity";
 	}
 	else if (rawTauUp > 1.0)
 	{
@@ -7717,7 +7779,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	stage5Input.debugConfig = m_stage5DebugConfigs[stage5BandIndex];
 
 	IRRadianceComponents components = m_irRadianceModelV2.evaluateComponents(stage5Input);
-	components.sensorInputToDisplayEnabled = m_stage5UseSensorInputForDisplay;
+	components.sensorInputToDisplayEnabled = useSensorInputForDisplayEffective;
 	IRRadianceModelV2Output stage5 = m_irRadianceModelV2.evaluate(stage5Input);
 	double observerAltKmForLog = 10.0;
 	if (m_stage0DisplayFrameCount > 0 && IsReasonableAltitudeMeters(m_realTimeSceneData.platLoc.alt))
@@ -7748,10 +7810,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	const double brightspotGrayRawDisplay = clamp01(stage5.brightspotGray * std::max(0.0, displayConfig.brightspotDisplayGain));
 	const double plumeGrayDisplay = clamp01(components.plumeRadiance * std::max(0.0, displayConfig.hotspotDisplayGain));
 	const double atmosphereGrayDisplay = clamp01(components.pathRadiance * std::max(0.0, displayConfig.bodyDisplayGain));
-	const double sensorInputDisplayGray = clamp01(ClampStage5Double(
-		components.sensorInputRadiance * m_stage5SensorInputDisplayScale + m_stage5SensorInputDisplayOffset,
-		m_stage5SensorInputDisplayClampMin,
-		m_stage5SensorInputDisplayClampMax));
+	const double sensorInputDisplayGray = MapSensorInputToDisplayGray(components.sensorInputRadiance);
 	const double sensorInputRatio = components.sensorInputNoAero > 1.0e-12
 		? components.sensorInputWithAero / components.sensorInputNoAero
 		: 1.0;
@@ -7769,7 +7828,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	const double compositeGrayDisplay = clamp01(
 		std::max(compositeMinGray, std::min(compositeMaxGray,
 			bodyGrayDisplay + reflectedGrayDisplay + hotspotGrayDisplay + plumeGrayDisplay + brightspotGrayDisplay + atmosphereGrayDisplay)));
-	const double finalGrayDebugDisplay = m_stage5UseSensorInputForDisplay
+	const double finalGrayDebugDisplay = useSensorInputForDisplayEffective
 		? sensorInputDisplayGray
 		: compositeGrayDisplay;
 
@@ -7823,7 +7882,8 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 		std::to_string(m_stage5DebugViewMode) + ":" +
 		stage5Input.pathRadianceSource + ":" +
 		std::to_string(stage5Input.aeroAppliedToRadiance ? 1 : 0) + ":" +
-		std::to_string(m_stage5UseSensorInputForDisplay ? 1 : 0) + ":" +
+		std::to_string(useSensorInputForDisplayEffective ? 1 : 0) + ":" +
+		m_stage5SensorInputDisplayMode + ":" +
 		Stage5ModtranCacheDouble(stage5Input.bodyAeroDeltaK) + ":" +
 		Stage5ModtranCacheDouble(stage5Input.tauUp);
 	const bool componentStateChanged =
@@ -7919,8 +7979,15 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 			<< " displayPreviewWithAero=" << components.displayPreviewWithAero
 			<< " sensorInputDisplayGray=" << sensorInputDisplayGray
 			<< " sensorInputToDisplayEnabled=" << (components.sensorInputToDisplayEnabled ? "1" : "0")
+			<< " sensorInputDisplayRequested=" << (m_stage5UseSensorInputForDisplay ? "1" : "0")
+			<< " sensorInputDisplayBandAllowed=" << (sensorInputDisplayBandAllowed ? "1" : "0")
+			<< " sensorInputDisplayMode=" << m_stage5SensorInputDisplayMode
 			<< " sensorInputDisplayScale=" << m_stage5SensorInputDisplayScale
 			<< " sensorInputDisplayOffset=" << m_stage5SensorInputDisplayOffset
+			<< " sensorInputDisplayClampMin=" << m_stage5SensorInputDisplayClampMin
+			<< " sensorInputDisplayClampMax=" << m_stage5SensorInputDisplayClampMax
+			<< " sensorInputDisplayGamma=" << m_stage5SensorInputDisplayGamma
+			<< " sensorInputDisplayBand=" << m_stage5SensorInputDisplayBandName
 			<< " sourceFlags=" << components.sourceFlags
 			<< " DebugView=" << m_stage5DebugViewModeName
 			<< std::endl;

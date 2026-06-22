@@ -2135,6 +2135,135 @@ phase5a_sensor_input_ab：
 
 ---
 
+### 阶段 5B：SensorInputDisplayScale / Offset 静态标定
+```text
+阶段：5B
+日期：2026-06-22
+执行者：Codex
+目标：在不启用 AGC/MTF、不启用 MODTRAN path runtime、不改 TCP/JPEG/H.264/录像链路的前提下，
+为 UseSensorInputForDisplay=true 建立 SensorInputRadiance 到 8-bit 显示灰度的静态 Manual 映射。
+生产默认继续保持 UseSensorInputForDisplay=false、ApplyAeroToRadiance=false。
+
+本阶段变更：
+- [Stage5Radiance] 增加 SensorInputDisplayMode、SensorInputDisplayGamma、SensorInputDisplayBand。
+- 新增统一映射函数 MapSensorInputToDisplayGray：
+  gray = pow(clamp(sensorInputRadiance * scale + offset, clampMin, clampMax), 1/gamma)，输出 clamp 到 [0,1]。
+- DebugView=SensorInput 或 UseSensorInputForDisplay=true 时统一使用该映射；
+  默认 DebugView=Off 且 UseSensorInputForDisplay=false，生产画面不改变。
+- UseSensorInputForDisplay 只在配置 band 匹配时生效；默认 SensorInputDisplayBand=MWIR。
+- 所有新增 shader uniform 继续走 SetShaderInputCached。
+- EffectiveRuntimeConfig / [Stage5 RadianceConfig] / [Stage5 RadianceComponents]
+  增加 SensorInputDisplayMode/Scale/Offset/Clamp/Gamma/Band 诊断。
+- runtime_config_check.ps1 增加生产默认保护：
+  UseSensorInputForDisplay=false，
+  SensorInputDisplayMode=Manual，
+  SensorInputDisplayScale=1.0，
+  SensorInputDisplayOffset=0.0，
+  SensorInputDisplayClampMin=0.0，
+  SensorInputDisplayClampMax=1.0，
+  SensorInputDisplayGamma=1.0，
+  SensorInputDisplayBand=MWIR。
+- phase2a_sync60_save_smoke.ps1 增加 SensorInputDisplayMode/Gamma/Band override 和 summary 字段。
+- 新增 tools/phase5b_sensor_display_calib.ps1：
+  运行高 Mach 协议级短窗口矩阵，输出 logs/stage5/sensor_display_calib_*.csv，
+  保存代表帧到 logs/stage5/phase5b_frames。
+
+额外前置修正：
+- 5B 标定时发现旧 tau fallback 只处理 tauUp<=0，
+  对 1.4013e-45 这类“极小正数”没有触发 fallback，导致 sensorInput 链路仍近似被 tau 清零。
+- HwaSim_IR Stage5 入口与 IRRadianceModelV2 内部均改为 tauUp<=1e-6 时 fallback 到 1.0，
+  tauFallbackReason=radiance_tau_near_zero_fallback_unity 或 near_zero_tau_without_reason_fallback_unity。
+- phase2a summary 数值解析正则支持科学计数法，避免 1.4013e-45 被误解析为 1.4013。
+
+标定方法修正：
+- 初版 scale=1.0 标定把 rearHotspot/plume/brightspot 高辐射样本纳入推荐值，
+  使推荐 scale 被热点压低到约 0.007，不适合 body 中灰度对齐。
+- 已改为优先使用 body_only_no_hotspot 样本计算 recommendedScale；
+  CSV 仍保留全样本平均，但推荐值以无 rear/plume/brightspot 的主体样本为准。
+
+标定结果：
+- CSV：logs/stage5/sensor_display_calib_bodyonly_summary.csv
+  输入 scale=1.0，body-only 推荐 recommendedScaleMedian=0.348828。
+- 候选 CSV：logs/stage5/sensor_display_calib_scale035_summary.csv
+  输入 scale=0.35，recommendedScaleMedian=0.348810。
+- 候选配置：
+  SensorInputDisplayMode=Manual
+  SensorInputDisplayScale=0.35
+  SensorInputDisplayOffset=0.0
+  SensorInputDisplayGamma=1.0
+  SensorInputDisplayClampMin=0.0
+  SensorInputDisplayClampMax=1.0
+  SensorInputDisplayBand=MWIR
+- scale=0.35 快速矩阵中，legacyDisplayPreview 与 sensorInputDisplayGray 基本一致：
+  displayGrayDiff 约 0.0006~0.0025。
+- 代表帧目录：logs/stage5/phase5b_frames
+  baseline legacy、baseline sensorInput、10km/Mach3 apply=true sensorInput、
+  20km/Mach3 apply=true sensorInput 已保存。
+- 人工查看代表帧：10km 组合与 legacy 亮度接近；20km/Mach3 sensorInput 背景较暗，
+  但目标/标注仍可见，未见全黑或过曝。该结果适合作为可选候选，不建议生产默认开启。
+
+UseSensorInputForDisplay=true 候选 A/B 性能：
+- scale=0.35 快速矩阵全部保持 60 Hz：
+  outputFps 约 60.949~62.290，
+  displayFps 约 61.058~63.058，
+  recordingDroppedFrames=0，
+  stage5ModtranLookupMs=0。
+- 短窗口 latencyAvgMs 约 29.214~68.842 ms，满足候选 A/B 观察。
+
+生产默认 30 秒实测：
+- 日志：logs/phase2a-final-20260622-165745
+- MP4：
+  HwaSim_IR_VideoDisplay/x64/Release/MP4/round_001_20260622_165800/output.mp4
+- sentFps=60.034
+- udpFps=60.256
+- renderFps=60.283
+- outputFps=60.277
+- VideoDisplay receive/display=60.332
+- latencyAvgMs=28.789
+- irUpdateMs=1.068
+- stage5RadianceComponentMs=0.876
+- stage5AeroThermalMs=0.007625
+- stage5ModtranLookupMs=0
+- shaderInputCacheHitRate=96.387
+- sourceSeqContinuous=1
+- sourceSeqContinuousWritten=1
+- inputQueueOverflow=0
+- TCP overwritten=0
+- recordingDroppedFrames=0
+- written/mp4/annotations/targetAnnotations=1799/1799/1799/1799
+- 生产默认配置确认：
+  UseSensorInputForDisplay=false，
+  ApplyAeroToRadiance=false，
+  UseModtranPathRuntime=false，
+  ModtranPathRuntimeMode=Off，
+  DebugView=Off，
+  LogComponents=false。
+
+构建与检查：
+- HwaSim_IR Windows Release x64：通过。
+- DataDrivenTestQT Release：通过。
+- HwaSim_IR_VideoDisplay Windows Release x64：通过。
+- runtime_config_check.ps1：通过。
+- Stage3 MODTRAN tau-only strict：通过。
+- Stage4 hotspot/brightspot strict：通过。
+- Stage5 aero thermal smoke：通过。
+- Stage5 radiance components smoke：通过。
+- phase5a_sensor_input_ab.ps1 -Seconds 4：未作为通过项；
+  短窗口在 3km/Mach2/apply=true/sensorDisplay=true case 出现 latencyAvgMs=86.554 >80。
+  生产默认 30 秒与 5B 候选矩阵均保持 60 Hz，判断该项为短窗口 harness 峰值敏感，
+  后续若需要完整 5A 回归，应单独跑默认 6 秒或更长窗口。
+
+结论：
+- SensorInput 静态显示映射已具备可选候选配置：
+  Scale=0.35、Offset=0.0、Gamma=1.0、Band=MWIR。
+- 不建议默认启用 UseSensorInputForDisplay；
+  需要后续更完整视觉评审，特别是高空/远距背景和热点层次。
+- 下一阶段可以进入 MTF/blur，但应保持与 UseSensorInputForDisplay 默认化解耦；
+  如果继续推进 sensorInput 显示，建议先做更长时长、多姿态、多目标遮挡的视觉验收。
+```
+
+---
+
 ## 12. 给 Codex 的第一阶段实施 Prompt
 
 见单独文件：`Codex_Phase1_Sync60_Perf_Prompt.md`。
