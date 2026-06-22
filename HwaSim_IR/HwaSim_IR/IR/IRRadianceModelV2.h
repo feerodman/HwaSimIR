@@ -36,6 +36,9 @@ struct IRRadianceModelV2Input
 	double materialEmissivity;
 	double materialReflectance;
 	double tauUp;
+	std::string tauUpSource;
+	bool tauUpValid;
+	std::string tauFallbackReason;
 	double solarStrength;
 	double ndotl;
 	double textureLuma;
@@ -105,7 +108,13 @@ struct IRRadianceComponents
 	double rearHotspotRadiance;
 	double plumeRadiance;
 	double brightspotRadiance;
+	double surfaceRadiance;
+	double surfaceRadianceNoAero;
+	double surfaceRadianceWithAero;
 	double tauUp;
+	std::string tauUpSource;
+	bool tauUpValid;
+	std::string tauFallbackReason;
 	double pathRadiance;
 	double legacyPathRadiance;
 	double modtranPathRadiance;
@@ -151,6 +160,9 @@ struct IRRadianceComponents
 	double sensorInputModtran;
 	double sensorInputRadiance;
 	double displayPreview;
+	double displayPreviewNoAero;
+	double displayPreviewWithAero;
+	bool sensorInputToDisplayEnabled;
 	std::string sourceFlags;
 
 	IRRadianceComponents();

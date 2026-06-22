@@ -25,6 +25,9 @@ IRRadianceModelV2Input::IRRadianceModelV2Input()
 	materialEmissivity(0.85),
 	materialReflectance(0.15),
 	tauUp(0.85),
+	tauUpSource("legacy_atmosphere"),
+	tauUpValid(true),
+	tauFallbackReason("none"),
 	solarStrength(1.0),
 	ndotl(1.0),
 	textureLuma(1.0),
@@ -91,7 +94,13 @@ IRRadianceComponents::IRRadianceComponents()
 	rearHotspotRadiance(0.0),
 	plumeRadiance(0.0),
 	brightspotRadiance(0.0),
+	surfaceRadiance(0.0),
+	surfaceRadianceNoAero(0.0),
+	surfaceRadianceWithAero(0.0),
 	tauUp(0.85),
+	tauUpSource("legacy_atmosphere"),
+	tauUpValid(true),
+	tauFallbackReason("none"),
 	pathRadiance(0.0),
 	legacyPathRadiance(0.0),
 	modtranPathRadiance(0.0),
@@ -137,6 +146,9 @@ IRRadianceComponents::IRRadianceComponents()
 	sensorInputModtran(0.0),
 	sensorInputRadiance(0.0),
 	displayPreview(0.0),
+	displayPreviewNoAero(0.0),
+	displayPreviewWithAero(0.0),
+	sensorInputToDisplayEnabled(false),
 	sourceFlags("body")
 {
 }
@@ -172,7 +184,27 @@ IRRadianceComponents IRRadianceModelV2::evaluateComponents(const IRRadianceModel
 	const double hotspotTemperatureK = clamp(input.hotspotTemperatureK, 120.0, 3500.0);
 	const double emissivity = clamp(input.materialEmissivity, 0.01, 1.0);
 	const double reflectance = clamp(input.materialReflectance, 0.0, 1.0);
-	const double tauUp = clamp(input.tauUp, 0.0, 1.0);
+	double tauUp = input.tauUp;
+	bool tauUpValid = input.tauUpValid && std::isfinite(tauUp) && tauUp >= 0.0 && tauUp <= 1.0;
+	std::string tauFallbackReason = input.tauFallbackReason.empty() ? "none" : input.tauFallbackReason;
+	if (!std::isfinite(tauUp))
+	{
+		tauUp = 1.0;
+		tauUpValid = true;
+		tauFallbackReason = "nonfinite_tau_fallback_unity";
+	}
+	else if (tauUp < 0.0 || tauUp > 1.0)
+	{
+		tauUp = clamp(tauUp, 0.0, 1.0);
+		tauUpValid = true;
+		tauFallbackReason = "tau_out_of_range_clamped";
+	}
+	else if (tauUp <= 0.0 && tauFallbackReason == "none")
+	{
+		tauUp = 1.0;
+		tauUpValid = true;
+		tauFallbackReason = "zero_tau_without_reason_fallback_unity";
+	}
 	const double solarStrength = clamp(input.solarStrength, 0.0, 1.0);
 	const double ndotl = clamp(input.ndotl, 0.0, 1.0);
 	const double textureLuma = clamp(input.textureLuma, 0.0, 1.0);
@@ -201,6 +233,9 @@ IRRadianceComponents IRRadianceModelV2::evaluateComponents(const IRRadianceModel
 	components.emissivity = emissivity;
 	components.reflectance = reflectance;
 	components.tauUp = tauUp;
+	components.tauUpSource = input.tauUpSource.empty() ? "legacy_atmosphere" : input.tauUpSource;
+	components.tauUpValid = tauUpValid;
+	components.tauFallbackReason = tauFallbackReason;
 	components.bodyRadiance = emissivity * planckRadianceWm2SrUm(wavelengthCenterUm, materialTemperatureK);
 	components.reflectedRadiance =
 		reflectance *
@@ -261,6 +296,7 @@ IRRadianceComponents IRRadianceModelV2::evaluateComponents(const IRRadianceModel
 		components.rearHotspotRadiance +
 		components.plumeRadiance +
 		components.brightspotRadiance;
+	components.surfaceRadiance = surfaceRadiance;
 	components.bodyRadianceNoAero = emissivity * planckRadianceWm2SrUm(wavelengthCenterUm, baseMaterialTemperatureK);
 	components.bodyRadianceWithAero = components.bodyRadiance;
 	const double nonBodySurfaceRadiance =
@@ -268,8 +304,10 @@ IRRadianceComponents IRRadianceModelV2::evaluateComponents(const IRRadianceModel
 		components.rearHotspotRadiance +
 		components.plumeRadiance +
 		components.brightspotRadiance;
-	components.sensorInputNoAero = tauUp * (components.bodyRadianceNoAero + nonBodySurfaceRadiance) + components.pathRadiance;
-	components.sensorInputWithAero = tauUp * (components.bodyRadianceWithAero + nonBodySurfaceRadiance) + components.pathRadiance;
+	components.surfaceRadianceNoAero = components.bodyRadianceNoAero + nonBodySurfaceRadiance;
+	components.surfaceRadianceWithAero = components.bodyRadianceWithAero + nonBodySurfaceRadiance;
+	components.sensorInputNoAero = tauUp * components.surfaceRadianceNoAero + components.pathRadiance;
+	components.sensorInputWithAero = tauUp * components.surfaceRadianceWithAero + components.pathRadiance;
 	components.aeroRadianceRatio = components.bodyRadianceNoAero > 1.0e-12
 		? components.bodyRadianceWithAero / components.bodyRadianceNoAero
 		: 1.0;
@@ -312,6 +350,20 @@ IRRadianceComponents IRRadianceModelV2::evaluateComponents(const IRRadianceModel
 		bodyPreview + reflectedPreview + rearPreview + plumePreview + brightPreview + atmospherePreview,
 		0.0,
 		1.0);
+	components.displayPreviewNoAero = clamp(
+		applyToneMap(
+			tauUp * components.surfaceRadianceNoAero + components.pathRadiance,
+			input.debugConfig.bodyRadianceScale,
+			input.debugConfig.toneMap),
+		0.0,
+		1.0);
+	components.displayPreviewWithAero = clamp(
+		applyToneMap(
+			tauUp * components.surfaceRadianceWithAero + components.pathRadiance,
+			input.debugConfig.bodyRadianceScale,
+			input.debugConfig.toneMap),
+		0.0,
+		1.0);
 	components.sourceFlags = input.sourceFlags.empty() ? "body" : input.sourceFlags;
 	return components;
 }
@@ -321,8 +373,8 @@ IRRadianceModelV2Output IRRadianceModelV2::evaluate(const IRRadianceModelV2Input
 	IRRadianceModelV2Output output;
 	output.wavelengthCenterUm = bandCenterUm(input.band);
 
-	const double tauUp = clamp(input.tauUp, 0.0, 1.0);
 	IRRadianceComponents components = evaluateComponents(input);
+	const double tauUp = components.tauUp;
 	output.bodyRadiance = components.bodyRadiance;
 	output.reflectedRadiance = components.reflectedRadiance;
 	output.hotspotRadiance = components.rearHotspotRadiance;

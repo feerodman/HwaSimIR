@@ -15,6 +15,8 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QSettings>
+#include <QNetworkInterface>
+#include <QStringList>
 #include <algorithm>
 
 #include "ICD/math_algorithm.h"
@@ -53,6 +55,59 @@ double speedOfSoundMps(double airTempK)
 	const double gamma = 1.4;
 	const double gasConstantDryAir = 287.05287;
 	return std::sqrt(gamma * gasConstantDryAir * clampDouble(airTempK, 120.0, 400.0));
+}
+
+bool isAnyBindAddress(const QHostAddress& address)
+{
+	return address == QHostAddress::Any ||
+		address == QHostAddress::AnyIPv4 ||
+		address == QHostAddress::AnyIPv6;
+}
+
+bool isLoopbackAddress(const QHostAddress& address)
+{
+	bool ok = false;
+	const quint32 ipv4 = address.toIPv4Address(&ok);
+	if (ok)
+	{
+		return (ipv4 & 0xFF000000u) == 0x7F000000u;
+	}
+	return address == QHostAddress::LocalHostIPv6;
+}
+
+bool isAddressAssignedToThisHost(const QHostAddress& address)
+{
+	if (address.isNull())
+	{
+		return false;
+	}
+	if (isAnyBindAddress(address) || isLoopbackAddress(address))
+	{
+		return true;
+	}
+	const QList<QHostAddress> addresses = QNetworkInterface::allAddresses();
+	for (const QHostAddress& hostAddress : addresses)
+	{
+		if (hostAddress == address)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+QString localIpv4Summary()
+{
+	QStringList items;
+	const QList<QHostAddress> addresses = QNetworkInterface::allAddresses();
+	for (const QHostAddress& hostAddress : addresses)
+	{
+		if (hostAddress.protocol() == QAbstractSocket::IPv4Protocol)
+		{
+			items << hostAddress.toString();
+		}
+	}
+	return items.isEmpty() ? QStringLiteral("none") : items.join(QStringLiteral(","));
 }
 }
 
@@ -269,9 +324,9 @@ void MainWindow::loadNetworkConfig()
 	QSettings settings(configPath, QSettings::IniFormat);
 	settings.setIniCodec("UTF-8");
 
-	const QString defaultLocalIp = QStringLiteral("192.168.1.188");
+	const QString defaultLocalIp = QStringLiteral("0.0.0.0");
 	const quint16 defaultLocalPort = 9999;
-	const QString defaultRemoteIp = QStringLiteral("192.168.1.10");
+	const QString defaultRemoteIp = QStringLiteral("127.0.0.1");
 	const quint16 defaultRemotePort = 8888;
 
 	if (!configExists)
@@ -327,11 +382,53 @@ void MainWindow::setupUDP()
 {
 	m_udpSocket = new QUdpSocket(this);
 
-	// 绑定本地端口（可选，用于接收应答）
-	bool bound = m_udpSocket->bind(QHostAddress(m_localIpEdit->text()), m_localPortEdit->text().toUShort());
+	// 绑定本地端口（可选，用于接收应答）。本机测试时 0.0.0.0 更稳，避免配置到不存在网卡 IP 后启动失败。
+	QString requestedLocalIp = m_localIpEdit->text().trimmed();
+	const quint16 requestedLocalPort = m_localPortEdit->text().toUShort();
+	QHostAddress bindAddress(requestedLocalIp);
+	QString effectiveLocalIp = requestedLocalIp;
+	if (!isAddressAssignedToThisHost(bindAddress))
+	{
+		qWarning().noquote()
+			<< QStringLiteral("[UDP][WARN] localIp=%1 不在本机地址列表中，改为绑定 0.0.0.0:%2；本机IPv4=%3")
+				.arg(requestedLocalIp)
+				.arg(requestedLocalPort)
+				.arg(localIpv4Summary());
+		bindAddress = QHostAddress::AnyIPv4;
+		effectiveLocalIp = QStringLiteral("0.0.0.0");
+	}
+	bool bound = m_udpSocket->bind(bindAddress, requestedLocalPort);
+	if (!bound && effectiveLocalIp != QStringLiteral("0.0.0.0"))
+	{
+		const QString firstError = m_udpSocket->errorString();
+		qWarning().noquote()
+			<< QStringLiteral("[UDP][WARN] 绑定 %1:%2 失败：%3；重试 0.0.0.0:%2")
+				.arg(effectiveLocalIp)
+				.arg(requestedLocalPort)
+				.arg(firstError);
+		m_udpSocket->close();
+		bindAddress = QHostAddress::AnyIPv4;
+		effectiveLocalIp = QStringLiteral("0.0.0.0");
+		bound = m_udpSocket->bind(bindAddress, requestedLocalPort);
+	}
 	if (!bound) {
 		QMessageBox::warning(this, QStringLiteral("UDP绑定失败"),
-			QString(QStringLiteral("无法绑定到 %1:%2")).arg(m_localIpEdit->text()).arg(m_localPortEdit->text()));
+			QString(QStringLiteral("无法绑定到 %1:%2\n错误：%3\n本机IPv4：%4"))
+				.arg(effectiveLocalIp)
+				.arg(requestedLocalPort)
+				.arg(m_udpSocket->errorString())
+				.arg(localIpv4Summary()));
+	}
+	else
+	{
+		m_localIpEdit->setText(effectiveLocalIp);
+		qInfo().noquote()
+			<< QStringLiteral("[UDP] bound local=%1:%2 requestedLocal=%3 remote=%4:%5")
+				.arg(effectiveLocalIp)
+				.arg(requestedLocalPort)
+				.arg(requestedLocalIp)
+				.arg(m_remoteIpEdit->text().trimmed())
+				.arg(m_remotePortEdit->text().trimmed());
 	}
 
 	connect(m_udpSocket, &QUdpSocket::readyRead, [=]() {

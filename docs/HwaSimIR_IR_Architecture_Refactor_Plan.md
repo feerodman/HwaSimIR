@@ -2035,6 +2035,106 @@ sensorInputRadiance 评审：
 
 ---
 
+### 阶段 5A：修正 Stage5 sensorInputRadiance / tauUp / legacy display 接入位置
+```text
+阶段：5A
+日期：2026-06-22
+执行者：Codex
+目标：修正 Stage5 sensorInputRadiance = tauUp * surfaceRadiance + effectivePathRadiance 的接入链路，
+让 bodyRadiance、rearHotspotRadiance、plumeRadiance、brightspotRadiance、aero body 增量能够进入 sensorInputRadiance。
+生产默认仍保持画面稳定：ApplyAeroToRadiance=false，UseSensorInputForDisplay=false，UseModtranPathRuntime=false。
+
+本阶段变更：
+- IRRadianceModelV2Input / IRRadianceComponents 增加 tauUpSource、tauUpValid、tauFallbackReason、
+  surfaceRadiance、surfaceRadianceNoAero、surfaceRadianceWithAero、displayPreviewNoAero、
+  displayPreviewWithAero、sensorInputToDisplayEnabled。
+- IRRadianceModelV2 正式计算 surfaceRadiance =
+  bodyRadiance + reflectedRadiance + rearHotspotRadiance + plumeRadiance + brightspotRadiance。
+- sensorInputRadiance = tauUp * surfaceRadiance + pathRadiance；
+  sensorInputNoAero / sensorInputWithAero 改为使用 surfaceRadianceNoAero / surfaceRadianceWithAero。
+- HwaSim_IR 在 Stage5 入口增加 tauUp 选择/fallback：
+  radiance.tauUp 有效时使用 legacy_atmosphere 或 modtran_tau_or_legacy_atmosphere；
+  radiance.tauUp 为 0、非法或非有限值时 fallback 到 1.0，并输出限频 [Stage5 Tau][WARN]。
+- [Stage5 RadianceComponents] / [Stage5 AeroThermal] 增加 surfaceRadiance、tauUpSource、
+  tauFallbackReason、sensorInputNoAero、sensorInputWithAero、sensorInputRatio、sensorInputDisplayGray。
+- 新增生产默认关闭的显示 A/B 配置：
+  UseSensorInputForDisplay=false
+  SensorInputDisplayScale=1.0
+  SensorInputDisplayOffset=0.0
+  SensorInputDisplayClampMin=0.0
+  SensorInputDisplayClampMax=1.0
+- shader 增加 u_stage5_sensor_input_display_gray 与 u_stage5_use_sensor_input_for_display。
+  DebugView=SensorInput 或 UseSensorInputForDisplay=true 时才使用 sensorInput 显示映射；
+  默认 DebugView=Off 且 UseSensorInputForDisplay=false，生产显示仍保持原 legacy/composite 路径。
+- runtime_config_check.ps1 增加 UseSensorInputForDisplay=false 和 SensorInputDisplay* 默认检查。
+- phase2a_sync60_save_smoke.ps1 增加 UseSensorInputForDisplay / SensorInputDisplay* override 与 summary 字段。
+- 新增 tools/phase5a_sensor_input_ab.ps1，输出 logs/stage5/sensor_input_ab_summary.csv 和
+  logs/stage5/phase5a_frames。
+
+tauUp 根因与修正：
+- 4C 中 sensorInputNoAero 与 sensorInputWithAero 不变的直接原因是 Stage5 入口沿用 radiance.tauUp=0，
+  导致 tauUp * surfaceRadiance 被清零，sensorInputRadiance 退化为 legacy path 项。
+- 5A 后高 Mach A/B 中 tauUp 不再为 0，典型 tauUpSource=legacy_atmosphere，tauFallbackReason=none；
+  若旧链路再次给出 0，会显式 fallback_unity 并限频 WARN。
+
+构建与回归：
+- Windows Release x64 构建通过；首次沙箱内构建因 MSBuild 读取用户目录 props 被拒绝，提升权限重跑通过。
+- runtime_config_check.ps1：通过。
+- Stage3 MODTRAN tau-only strict：通过。
+- Stage4 hotspot/brightspot strict：通过。
+- Stage4 三波段 smoke：通过。
+- Stage5 minimum radiance check：通过。
+- Stage5 radiance components smoke：通过。
+- Stage5 aero thermal smoke：通过。
+
+phase5a_sensor_input_ab：
+- CSV：logs/stage5/sensor_input_ab_summary.csv
+- 代表帧目录：logs/stage5/phase5a_frames
+- 全矩阵通过，ApplyAeroToRadiance=true 时 sensorInputRatio 随 Mach 增大：
+  3 km：Mach 0.5=1.018824，Mach 1=1.081113，Mach 2=1.362802，Mach 3=1.514579~1.524875。
+  10 km：Mach 0.5=1.015199，Mach 1=1.065005，Mach 2=1.286641~1.358514，Mach 3=1.512688~1.518827。
+  20 km：Mach 0.5=1.015376，Mach 1=1.063995~1.065397，Mach 2=1.282590~1.285446，Mach 3=1.524705~1.524875。
+- 关键结论：aero body 增量已进入 surfaceRadiance 和 sensorInputRadiance 计算链路；
+  4C 的“bodyRadiance 变但 sensorInput 不变”问题已修正。
+- UseSensorInputForDisplay=true 代表帧无过曝，标注仍可见；
+  20 km/Mach3 画面偏暗，说明 SensorInputDisplayScale=1.0 只是保守 A/B 映射，不建议默认开启。
+
+生产默认 30 秒实测：
+- 日志：logs/phase2a-final-20260622-123907
+- MP4：HwaSim_IR_VideoDisplay/x64/Release/MP4/round_001_20260622_123921/output.mp4
+- sentFps=60.031
+- udpFps=60.281
+- renderFps=60.338
+- outputFps=60.268
+- VideoDisplay receive/display=60.340
+- latencyAvgMs=16.160
+- irUpdateMs=0.657
+- stage5RadianceComponentMs=0.506
+- stage5AeroThermalMs=0.004875
+- stage5ModtranLookupMs=0
+- shaderInputCacheHitRate=97.287
+- sourceSeqContinuous=1
+- sourceSeqContinuousWritten=1
+- inputQueueOverflow=0
+- TCP overwritten=0
+- recordingDroppedFrames=0
+- written/mp4/annotations/targetAnnotations=1799/1799/1799/1799
+- 尾部稳态 [Perf] 显示 sourceSeqLag=0、inputQueueDepth=0，未观察到长期积压。
+
+说明：
+- 单独重跑 phase4c_aero_mach_protocol_ab.ps1 -Seconds 5 时，10km/Mach2/apply=false 出现一次短窗口延迟峰值
+  latencyAvgMs=142.163；日志显示该 case 的 sourceSeqLag 最终回到 0，瓶颈为短时 renderMs 峰值和连续启停测试 harness 波动。
+  phase5a 全矩阵已覆盖同一高 Mach UDP 协议路径并通过 60 Hz；生产默认 30 秒也通过。
+
+结论：
+- 生产默认画面确认不改变：ApplyAeroToRadiance=false，UseSensorInputForDisplay=false。
+- 生产默认不使用 MODTRAN path/sky/solar runtime，stage5ModtranLookupMs=0。
+- UseSensorInputForDisplay 可作为后续可选候选，但不建议默认开启；
+  下一阶段应先做 SensorInputDisplayScale/offset 标定，或进入 MTF/blur 时保持独立验收。
+```
+
+---
+
 ## 12. 给 Codex 的第一阶段实施 Prompt
 
 见单独文件：`Codex_Phase1_Sync60_Perf_Prompt.md`。

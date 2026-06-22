@@ -235,6 +235,11 @@ private:
 	std::string m_stage5DebugViewModeName = "Off";
 	bool m_stage5LogComponents = false;
 	int m_stage5ComponentLogEveryFrames = 120;
+	bool m_stage5UseSensorInputForDisplay = false;
+	double m_stage5SensorInputDisplayScale = 1.0;
+	double m_stage5SensorInputDisplayOffset = 0.0;
+	double m_stage5SensorInputDisplayClampMin = 0.0;
+	double m_stage5SensorInputDisplayClampMax = 1.0;
 	bool m_stage5AeroThermalEnabled = true;
 	bool m_stage5ApplyAeroToRadiance = false;
 	bool m_stage5AeroDebugLog = false;
@@ -486,9 +491,9 @@ private:
 	static const std::size_t kMaxPendingDisplayFrames = 16;
 	std::string m_udpLocalIp = "0.0.0.0";
 	uint16_t m_udpLocalPort = 8888;
-	std::string m_udpRemoteIp = "192.168.1.188";
+	std::string m_udpRemoteIp = "127.0.0.1";
 	uint16_t m_udpRemotePort = 9999;
-	std::string m_tcpServerIp = "192.168.1.188";
+	std::string m_tcpServerIp = "127.0.0.1";
 	uint16_t m_tcpServerPort = 5555;
 
 
