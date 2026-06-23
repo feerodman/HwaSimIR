@@ -64,7 +64,20 @@ public:
 	void recordIrUpdate(double elapsedMs);
 	void recordIrUpdateBreakdown(const IRUpdateBreakdown& breakdown);
 	void recordPlumeUpdate(double elapsedMs);
-	void recordRender(double elapsedMs, double stage6MtfBlurMs = 0.0, bool mtfBlurEnabled = false, double mtfBlurSigmaPixels = 0.0, int mtfBlurRadiusPixels = 0);
+	void recordRender(
+		double elapsedMs,
+		double stage6MtfBlurMs = 0.0,
+		bool mtfBlurEnabled = false,
+		double mtfBlurSigmaPixels = 0.0,
+		int mtfBlurRadiusPixels = 0,
+		double stage6DetectorNoiseMs = 0.0,
+		bool detectorNoiseEnabled = false,
+		double temporalNoiseSigmaGray = 0.0,
+		double fpnSigmaGray = 0.0,
+		double columnNoiseSigmaGray = 0.0,
+		double rowNoiseSigmaGray = 0.0,
+		double badPixelRatio = 0.0,
+		const char* noisePosition = "BeforeAGC");
 	void recordStage6Agc(
 		double statsMs,
 		double applyMs,
@@ -144,6 +157,14 @@ private:
 	bool m_mtfBlurEnabled = false;
 	double m_mtfBlurSigmaPixels = 0.0;
 	int m_mtfBlurRadiusPixels = 0;
+	double m_stage6DetectorNoiseMsTotal = 0.0;
+	bool m_detectorNoiseEnabled = false;
+	double m_temporalNoiseSigmaGray = 0.0;
+	double m_fpnSigmaGray = 0.0;
+	double m_columnNoiseSigmaGray = 0.0;
+	double m_rowNoiseSigmaGray = 0.0;
+	double m_badPixelRatio = 0.0;
+	const char* m_noisePosition = "BeforeAGC";
 	double m_stage6AgcStatsMsTotal = 0.0;
 	double m_stage6AgcApplyMsTotal = 0.0;
 	std::uint64_t m_stage6AgcSamples = 0;

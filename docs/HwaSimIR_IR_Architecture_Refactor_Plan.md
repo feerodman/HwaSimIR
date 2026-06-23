@@ -2557,6 +2557,161 @@ Phase6B AGC A/B：
 
 ---
 
+### 阶段 6C：Stage6 Detector Noise / NETD / FPN 探测器噪声模型
+```text
+阶段：6C
+日期：2026-06-23
+执行者：Codex
+目标：在 Stage6 sensor/display 链路中增加轻量 GPU detector noise / FPN / column / row / bad pixel 噪声模型。
+      噪声默认位于 MTF/blur 之后、AGC 之前；生产默认保持关闭，不改变 Stage5 radiance 物理分量，不改 TCP/JPEG/H.264 或录像旁路。
+
+本阶段变更：
+- 新增 [Stage6DetectorNoise] 生产默认关闭配置：
+  EnableDetectorNoise=false
+  NoiseApplyTo=final_display
+  NoisePosition=BeforeAGC
+  EnableTemporalNoise=true
+  TemporalNoiseSigmaGray=0.005
+  EnableFPN=false
+  FPNSigmaGray=0.003
+  FPNSeed=12345
+  EnableColumnNoise=false
+  ColumnNoiseSigmaGray=0.002
+  EnableRowNoise=false
+  RowNoiseSigmaGray=0.001
+  EnableBadPixels=false
+  BadPixelRatio=0.0001
+  BadPixelHotGray=1.0
+  BadPixelDeadGray=0.0
+  NoiseClampMin=0.0
+  NoiseClampMax=1.0
+  NoiseDebugLog=false
+  NoiseLogEveryFrames=120
+- Stage6 final display shader 新增 GPU hash 噪声分支：
+  temporal noise：按 pixel + sourceSeq 变化；
+  FPN：按 pixel + seed 固定空间图案；
+  column / row noise：按列/行固定偏置；
+  bad pixel：按 seed 固定 hot/dead pixel，默认关闭。
+- 链路位置：
+  radiance/display gray -> MTF blur -> DetectorNoise -> AGC gain/offset -> whiteHot/blackHot -> output。
+  NoisePosition=AfterAGC 保留为观察模式，但默认 BeforeAGC。
+- 所有新增 uniform 走 SetShaderInputCached；EnableDetectorNoise=false 时 shader 输出与 6B baseline 一致。
+- [Perf] 增加：
+  stage6DetectorNoiseMs、detectorNoiseEnabled、temporalNoiseSigmaGray、fpnSigmaGray、
+  columnNoiseSigmaGray、rowNoiseSigmaGray、badPixelRatio、noisePosition。
+  当前 stage6DetectorNoiseMs 使用 render_pass_upper_bound 估算，不是独立 GPU timer。
+- 新增限频日志 [Stage6 Noise]：
+  前 3 帧、每 120 帧、状态变化或 NoiseDebugLog/EnableIRVerboseLog 时输出。
+- EffectiveRuntimeConfig 增加 DetectorNoise 摘要；若生产运行误开 EnableDetectorNoise=1，会输出 WARN。
+- runtime_config_check.ps1 增加 DetectorNoise 生产默认检查。
+- phase2a_sync60_save_smoke.ps1 增加 DetectorNoise override 与 summary 字段。
+- 新增 tools/phase6c_detector_noise_ab.ps1：
+  baseline / temporal_weak / temporal_normal / fpn_normal / combined_candidate / agc_noise_observe 六组 A/B；
+  输出 logs/stage6/detector_noise_ab_summary.csv；
+  代表帧输出 logs/stage6/phase6c_frames/；
+  2~3 秒短片段输出 logs/stage6/phase6c_clips/。
+
+实现修正：
+- 初版 GPU hash 使用 sin(dot(pixel, large)) * 43758，在 GLES mediump 下出现精度退化，temporal_normal 代表帧背景被推成近白。
+- 已改为低动态范围 fract hash，不使用大常数 sin；重跑 A/B 后 temporal/FPN/combined 代表帧恢复正常，目标和标注保持清晰。
+
+构建：
+- HwaSim_IR Windows Release x64：通过。
+- DataDrivenTestQT Release：通过。
+- HwaSim_IR_VideoDisplay Windows Release x64：通过。
+- 构建中仍有既有 warning：math_algorithm.h 未引用局部变量、Panda3D/vector DLL 接口 warning、VS140 PDB 类型记录 warning；本阶段未新增阻断性编译错误。
+
+回归：
+- runtime_config_check.ps1：通过。
+- Stage3 MODTRAN tau-only strict：通过。
+- Stage4 hotspot/brightspot strict：通过。
+- Stage5 radiance components smoke：通过。
+- Stage5 aero thermal smoke：通过。
+- Phase6A MTF A/B 回归：通过。
+  注意：第一次把 Phase6A 与 Phase6B 并行跑导致端口冲突，Phase6A baseline 得到 0 FPS；串行重跑后通过。
+- Phase6B AGC A/B 回归：baseline/agc_percentile/mtf_agc 保持 60 Hz；sensor_agc_observe 属观察组，短窗口 latency 偶发较高，不作为默认候选。
+
+Phase6C DetectorNoise A/B：
+- CSV：logs/stage6/detector_noise_ab_summary.csv
+- 代表帧：logs/stage6/phase6c_frames/
+- 短片段：logs/stage6/phase6c_clips/
+- baseline：
+  sent=60.016, udp=60.092, render=61.074, output=60.853, display=61.198,
+  latencyAvgMs=24.045, stage6DetectorNoiseMs=0, dropped=0。
+- temporal_weak：
+  TemporalNoiseSigmaGray=0.003,
+  sent=60.074, udp=60.012, render=60.863, output=60.650, display=61.018,
+  latencyAvgMs=24.072, stage6DetectorNoiseMs=7.337667, dropped=0。
+- temporal_normal：
+  TemporalNoiseSigmaGray=0.006,
+  sent=60.072, udp=59.619, render=60.881, output=60.663, display=61.130,
+  latencyAvgMs=22.720, stage6DetectorNoiseMs=6.798667, dropped=0。
+- fpn_normal：
+  EnableFPN=true, FPNSigmaGray=0.004, EnableColumnNoise=true, ColumnNoiseSigmaGray=0.0015,
+  sent=60.020, udp=59.963, render=60.932, output=60.717, display=61.230,
+  latencyAvgMs=22.710, stage6DetectorNoiseMs=6.811833, dropped=0。
+- combined_candidate：
+  TemporalNoiseSigmaGray=0.004, FPNSigmaGray=0.0025, ColumnNoiseSigmaGray=0.001,
+  sent=60.012, udp=59.710, render=60.945, output=60.829, display=60.894,
+  latencyAvgMs=22.454, stage6DetectorNoiseMs=7.268500, dropped=0。
+- agc_noise_observe：
+  TemporalNoiseSigmaGray=0.004, FPNSigmaGray=0.0025, EnableAGC=true,
+  sent=60.051, udp=60.027, render=60.658, output=60.446, display=60.758,
+  latencyAvgMs=19.862, stage6DetectorNoiseMs=7.055833, stage6AgcStatsMs=0.031714, dropped=0。
+
+视觉结论：
+- temporal_weak：轻微颗粒预期成立；目标、bbox、关键点和文字标注保持清晰。
+- temporal_normal：可见噪声但不再白屏；目标未丢失。
+- fpn_normal：轻微固定纹理/列纹预期成立；未出现严重条纹化。
+- combined_candidate：最像真实传感器输出的候选组合之一，目标识别和标注仍可用。
+- agc_noise_observe：AGC 会明显拉亮背景并放大噪声，只作为观察组；不建议和当前 AGC 参数一起默认启用。
+- 短片段已保存，仍建议后续人工审查 flicker；本阶段从代表帧无法完全判定闪烁。
+
+生产默认 30 秒实测：
+- 日志：logs/phase2a-final-20260623-162914
+- MP4：HwaSim_IR_VideoDisplay/x64/Release/MP4/round_001_20260623_162928/output.mp4
+- sentFps=60.005
+- udpFps=60.150
+- renderFps=60.259
+- outputFps=60.187
+- VideoDisplay receive/display=60.266
+- latencyAvgMs=16.295
+- jpegMsAvg=4.756
+- readbackMsAvg=1.155
+- irUpdateMsAvg=0.691
+- stage5RadianceComponentMs=0.562
+- stage5AeroThermalMs=0.004688
+- stage5ModtranLookupMs=0
+- stage6MtfBlurMs=0
+- stage6DetectorNoiseMs=0
+- stage6AgcStatsMs=0
+- sourceSeqContinuous=1
+- sourceSeqContinuousWritten=1
+- inputQueueOverflow=0
+- TCP overwritten=0
+- recordingDroppedFrames=0
+- written/mp4/annotations/targetAnnotations=1800/1800/1800/1800
+- 稳态尾段 [Perf]：sourceSeqLag=0，inputQueueDepth=0；summary 中 sourceSeqLagMax/inputQueueDepthMax 是启动/退出附近短暂峰值，不是长期积压。
+
+结论：
+- Stage6 DetectorNoise/FPN 已具备低风险、可配置、可关闭的 GPU A/B 能力；生产默认仍关闭。
+- 建议把 combined_candidate 作为“可选候选配置”继续人工视觉审查：
+  EnableDetectorNoise=true,
+  EnableTemporalNoise=true,
+  TemporalNoiseSigmaGray=0.004,
+  EnableFPN=true,
+  FPNSigmaGray=0.0025,
+  EnableColumnNoise=true,
+  ColumnNoiseSigmaGray=0.001,
+  NoisePosition=BeforeAGC。
+- 不建议默认启用 DetectorNoise；也不建议默认启用 AGC+Noise 组合，当前 AGC 会放大背景亮度和噪声。
+- 下一阶段建议二选一：
+  1) 继续做更细的 AGC 视觉评审/参数收口，尤其是 AGC+noise 的噪声放大问题；
+  2) 单独推进 H.264 实时传输 / RK3588 收口 / PBO 异步 readback，不要和视觉链路默认化混在一起。
+```
+
+---
+
 ## 12. 给 Codex 的第一阶段实施 Prompt
 
 见单独文件：`Codex_Phase1_Sync60_Perf_Prompt.md`。

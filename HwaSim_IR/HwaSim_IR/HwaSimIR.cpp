@@ -386,6 +386,21 @@ int Stage6AgcModeCode(const std::string& value)
 	return 0;
 }
 
+std::string NormalizeStage6NoisePosition(const std::string& value)
+{
+	const std::string lower = ToLowerAscii(value);
+	if (lower == "afteragc" || lower == "after_agc" || lower == "after-agc")
+	{
+		return "AfterAGC";
+	}
+	return "BeforeAGC";
+}
+
+int Stage6NoisePositionCode(const std::string& value)
+{
+	return value == "AfterAGC" ? 2 : 1;
+}
+
 std::string NormalizeStage5ModtranPathRuntimeMode(const std::string& value)
 {
 	const std::string lower = ToLowerAscii(value);
@@ -1091,13 +1106,33 @@ void HwaSimIR::run() {
 				m_stage6MtfBlurRadiusPixels > 0 &&
 				m_stage6MtfBlurSigmaPixels > 0.001;
 			const double mtfBlurMs = mtfEffective ? renderMs : 0.0;
+			const bool detectorNoiseHasSource =
+				(m_stage6TemporalNoiseEnabled && m_stage6TemporalNoiseSigmaGray > 0.0) ||
+				(m_stage6FpnEnabled && m_stage6FpnSigmaGray > 0.0) ||
+				(m_stage6ColumnNoiseEnabled && m_stage6ColumnNoiseSigmaGray > 0.0) ||
+				(m_stage6RowNoiseEnabled && m_stage6RowNoiseSigmaGray > 0.0) ||
+				(m_stage6BadPixelsEnabled && m_stage6BadPixelRatio > 0.0);
+			const bool detectorNoiseEffective =
+				m_stage6DetectorNoiseEnabled &&
+				m_stage6DetectorNoiseApplyTo == "final_display" &&
+				detectorNoiseHasSource;
+			const double detectorNoiseMs = detectorNoiseEffective ? renderMs : 0.0;
 			m_perfStats.recordRender(
 				renderMs,
 				mtfBlurMs,
 				mtfEffective,
 				m_stage6MtfBlurSigmaPixels,
-				m_stage6MtfBlurRadiusPixels);
+				m_stage6MtfBlurRadiusPixels,
+				detectorNoiseMs,
+				detectorNoiseEffective,
+				m_stage6TemporalNoiseSigmaGray,
+				m_stage6FpnSigmaGray,
+				m_stage6ColumnNoiseSigmaGray,
+				m_stage6RowNoiseSigmaGray,
+				m_stage6BadPixelRatio,
+				m_stage6DetectorNoisePosition.c_str());
 			LogStage6MtfBlur(m_currentFrameTelemetry.sourceSeq, renderMs);
+			LogStage6DetectorNoise(m_currentFrameTelemetry.sourceSeq, renderMs);
 			LogStage6Agc(m_currentFrameTelemetry.sourceSeq);
 		}
 		m_syncFrameActive.store(false);
@@ -1559,6 +1594,24 @@ void HwaSimIR::InitStage6FinalPostShader()
     uniform float u_stage6_agc_gain;
     uniform float u_stage6_agc_offset;
     uniform int u_stage6_agc_mode;
+    uniform int u_stage6_detector_noise_enable;
+    uniform int u_stage6_detector_noise_position; // 1 before AGC, 2 after AGC
+    uniform int u_stage6_temporal_noise_enable;
+    uniform float u_stage6_temporal_noise_sigma_gray;
+    uniform int u_stage6_fpn_enable;
+    uniform float u_stage6_fpn_sigma_gray;
+    uniform int u_stage6_column_noise_enable;
+    uniform float u_stage6_column_noise_sigma_gray;
+    uniform int u_stage6_row_noise_enable;
+    uniform float u_stage6_row_noise_sigma_gray;
+    uniform int u_stage6_bad_pixels_enable;
+    uniform float u_stage6_bad_pixel_ratio;
+    uniform float u_stage6_bad_pixel_hot_gray;
+    uniform float u_stage6_bad_pixel_dead_gray;
+    uniform float u_stage6_noise_clamp_min;
+    uniform float u_stage6_noise_clamp_max;
+    uniform float u_stage6_noise_seed;
+    uniform float u_stage6_noise_frame_index;
     uniform int u_stage7_final_precipitation_mode; // 0 none, 1 screen overlay
     uniform int u_stage7_final_precipitation_type; // 0 none, 1 rain, 2 snow
     uniform float u_stage7_final_precipitation_density;
@@ -1571,7 +1624,9 @@ void HwaSimIR::InitStage6FinalPostShader()
 
     float Stage6FinalNoise(vec2 pixel)
     {
-        return fract(sin(dot(pixel, vec2(12.9898, 78.233))) * 43758.5453);
+        vec2 p = fract(pixel * vec2(0.1031, 0.11369));
+        p += dot(p, p.yx + vec2(19.19, 19.19));
+        return fract((p.x + p.y) * p.x);
     }
 
     float Stage6FinalSampleDisplayGray(vec2 uv)
@@ -1622,6 +1677,59 @@ void HwaSimIR::InitStage6FinalPostShader()
             return gray;
         }
         return clamp(gray * u_stage6_agc_gain + u_stage6_agc_offset, 0.0, 1.0);
+    }
+
+    float Stage6Hash2(vec2 p)
+    {
+        vec2 q = fract(p * vec2(0.1031, 0.11369));
+        q += dot(q, q.yx + vec2(19.19, 19.19));
+        return fract((q.x + q.y) * q.x);
+    }
+
+    float Stage6Hash3(vec3 p)
+    {
+        vec3 q = fract(p * vec3(0.1031, 0.11369, 0.13787));
+        q += dot(q, q.yzx + vec3(19.19, 19.19, 19.19));
+        return fract((q.x + q.y) * q.z);
+    }
+
+    float Stage6SignedHash3(vec3 p)
+    {
+        return Stage6Hash3(p) * 2.0 - 1.0;
+    }
+
+    float Stage6FinalApplyDetectorNoise(float gray, vec2 pixel)
+    {
+        if (u_stage6_detector_noise_enable != 1) {
+            return gray;
+        }
+        vec2 ip = floor(pixel);
+        float noisy = gray;
+        float seed = u_stage6_noise_seed;
+        if (u_stage6_temporal_noise_enable == 1 && u_stage6_temporal_noise_sigma_gray > 0.0) {
+            noisy += Stage6SignedHash3(vec3(ip + vec2(seed, seed * 0.37), u_stage6_noise_frame_index)) *
+                u_stage6_temporal_noise_sigma_gray;
+        }
+        if (u_stage6_fpn_enable == 1 && u_stage6_fpn_sigma_gray > 0.0) {
+            noisy += (Stage6Hash2(ip + vec2(seed * 1.31, seed * 0.73)) * 2.0 - 1.0) *
+                u_stage6_fpn_sigma_gray;
+        }
+        if (u_stage6_column_noise_enable == 1 && u_stage6_column_noise_sigma_gray > 0.0) {
+            noisy += (Stage6Hash2(vec2(ip.x + seed * 2.17, seed * 0.19)) * 2.0 - 1.0) *
+                u_stage6_column_noise_sigma_gray;
+        }
+        if (u_stage6_row_noise_enable == 1 && u_stage6_row_noise_sigma_gray > 0.0) {
+            noisy += (Stage6Hash2(vec2(seed * 0.29, ip.y + seed * 1.97)) * 2.0 - 1.0) *
+                u_stage6_row_noise_sigma_gray;
+        }
+        if (u_stage6_bad_pixels_enable == 1 && u_stage6_bad_pixel_ratio > 0.0) {
+            float bad = Stage6Hash2(ip + vec2(seed * 3.11, seed * 5.07));
+            if (bad < u_stage6_bad_pixel_ratio) {
+                float hot = Stage6Hash2(ip + vec2(seed * 7.13, seed * 11.17));
+                noisy = hot > 0.5 ? u_stage6_bad_pixel_hot_gray : u_stage6_bad_pixel_dead_gray;
+            }
+        }
+        return clamp(noisy, u_stage6_noise_clamp_min, u_stage6_noise_clamp_max);
     }
 
     float Stage7FinalHash(vec2 p)
@@ -1695,7 +1803,13 @@ void HwaSimIR::InitStage6FinalPostShader()
             gray += (Stage6FinalNoise(gl_FragCoord.xy) * 2.0 - 1.0) * u_stage6_final_noise_sigma_norm;
         }
         gray = clamp(gray, 0.0, 1.0);
+        if (u_stage6_detector_noise_position == 1) {
+            gray = Stage6FinalApplyDetectorNoise(gray, gl_FragCoord.xy);
+        }
         gray = Stage6FinalApplyAgc(gray);
+        if (u_stage6_detector_noise_position == 2) {
+            gray = Stage6FinalApplyDetectorNoise(gray, gl_FragCoord.xy);
+        }
         if (u_stage6_final_white_hot == 0) {
             gray = 1.0 - gray;
         }
@@ -1927,6 +2041,16 @@ void HwaSimIR::ApplyStage6FinalPostprocessInputs()
 		m_stage6AgcEnabled &&
 		m_stage6AgcApplyTo == "final_display" &&
 		m_stage6AgcMode != "Off";
+	const bool detectorNoiseHasSource =
+		(m_stage6TemporalNoiseEnabled && m_stage6TemporalNoiseSigmaGray > 0.0) ||
+		(m_stage6FpnEnabled && m_stage6FpnSigmaGray > 0.0) ||
+		(m_stage6ColumnNoiseEnabled && m_stage6ColumnNoiseSigmaGray > 0.0) ||
+		(m_stage6RowNoiseEnabled && m_stage6RowNoiseSigmaGray > 0.0) ||
+		(m_stage6BadPixelsEnabled && m_stage6BadPixelRatio > 0.0);
+	const bool detectorNoiseEffective =
+		m_stage6DetectorNoiseEnabled &&
+		m_stage6DetectorNoiseApplyTo == "final_display" &&
+		detectorNoiseHasSource;
 	const int precipitationType = IRWeatherEffects::precipitationCode(m_stage7WeatherState.precipitationType);
 	const bool screenOverlayActive = m_stage7WeatherEnabled &&
 		m_stage7PrecipitationEnabled &&
@@ -1954,6 +2078,25 @@ void HwaSimIR::ApplyStage6FinalPostprocessInputs()
 	SetShaderInputCached(m_stage6FinalCard, "u_stage6_agc_mode", LVecBase2i(agcEffective ? m_stage6AgcModeCode : 0, 0));
 	m_stage6AgcApplyMsCurrent = std::chrono::duration<double, std::milli>(
 		std::chrono::steady_clock::now() - agcApplyBegin).count();
+	SetShaderInputCached(m_stage6FinalCard, "u_stage6_detector_noise_enable", LVecBase2i(detectorNoiseEffective ? 1 : 0, 0));
+	SetShaderInputCached(m_stage6FinalCard, "u_stage6_detector_noise_position", LVecBase2i(detectorNoiseEffective ? m_stage6DetectorNoisePositionCode : 1, 0));
+	SetShaderInputCached(m_stage6FinalCard, "u_stage6_temporal_noise_enable", LVecBase2i((detectorNoiseEffective && m_stage6TemporalNoiseEnabled) ? 1 : 0, 0));
+	SetShaderInputCached(m_stage6FinalCard, "u_stage6_temporal_noise_sigma_gray", LVecBase2f(static_cast<float>(m_stage6TemporalNoiseSigmaGray), 0.0f));
+	SetShaderInputCached(m_stage6FinalCard, "u_stage6_fpn_enable", LVecBase2i((detectorNoiseEffective && m_stage6FpnEnabled) ? 1 : 0, 0));
+	SetShaderInputCached(m_stage6FinalCard, "u_stage6_fpn_sigma_gray", LVecBase2f(static_cast<float>(m_stage6FpnSigmaGray), 0.0f));
+	SetShaderInputCached(m_stage6FinalCard, "u_stage6_column_noise_enable", LVecBase2i((detectorNoiseEffective && m_stage6ColumnNoiseEnabled) ? 1 : 0, 0));
+	SetShaderInputCached(m_stage6FinalCard, "u_stage6_column_noise_sigma_gray", LVecBase2f(static_cast<float>(m_stage6ColumnNoiseSigmaGray), 0.0f));
+	SetShaderInputCached(m_stage6FinalCard, "u_stage6_row_noise_enable", LVecBase2i((detectorNoiseEffective && m_stage6RowNoiseEnabled) ? 1 : 0, 0));
+	SetShaderInputCached(m_stage6FinalCard, "u_stage6_row_noise_sigma_gray", LVecBase2f(static_cast<float>(m_stage6RowNoiseSigmaGray), 0.0f));
+	SetShaderInputCached(m_stage6FinalCard, "u_stage6_bad_pixels_enable", LVecBase2i((detectorNoiseEffective && m_stage6BadPixelsEnabled) ? 1 : 0, 0));
+	SetShaderInputCached(m_stage6FinalCard, "u_stage6_bad_pixel_ratio", LVecBase2f(static_cast<float>(m_stage6BadPixelRatio), 0.0f));
+	SetShaderInputCached(m_stage6FinalCard, "u_stage6_bad_pixel_hot_gray", LVecBase2f(static_cast<float>(m_stage6BadPixelHotGray), 0.0f));
+	SetShaderInputCached(m_stage6FinalCard, "u_stage6_bad_pixel_dead_gray", LVecBase2f(static_cast<float>(m_stage6BadPixelDeadGray), 0.0f));
+	SetShaderInputCached(m_stage6FinalCard, "u_stage6_noise_clamp_min", LVecBase2f(static_cast<float>(m_stage6NoiseClampMin), 0.0f));
+	SetShaderInputCached(m_stage6FinalCard, "u_stage6_noise_clamp_max", LVecBase2f(static_cast<float>(m_stage6NoiseClampMax), 0.0f));
+	SetShaderInputCached(m_stage6FinalCard, "u_stage6_noise_seed", LVecBase2f(static_cast<float>(m_stage6FpnSeed), 0.0f));
+	const float noiseFrameIndex = static_cast<float>(m_currentFrameTelemetry.sourceSeq % 100000ULL);
+	SetShaderInputCached(m_stage6FinalCard, "u_stage6_noise_frame_index", LVecBase2f(noiseFrameIndex, 0.0f));
 	m_stage6FinalCard.set_shader_input("u_stage7_final_precipitation_mode", LVecBase2i(screenOverlayActive ? 1 : 0, 0));
 	m_stage6FinalCard.set_shader_input("u_stage7_final_precipitation_type", LVecBase2i(screenOverlayActive ? precipitationType : 0, 0));
 	m_stage6FinalCard.set_shader_input("u_stage7_final_precipitation_density", LVecBase2f(static_cast<float>(screenOverlayActive ? m_stage7WeatherState.precipitationDensity : 0.0), 0.0f));
@@ -1993,6 +2136,10 @@ void HwaSimIR::LogStage6FinalPipeline(const char* reason)
 		<< " agcStatsSource=" << m_stage6AgcStatsSource
 		<< " agcGain=" << m_stage6AgcGain
 		<< " agcOffset=" << m_stage6AgcOffset
+		<< " detectorNoiseEnabled=" << (m_stage6DetectorNoiseEnabled ? "1" : "0")
+		<< " detectorNoisePosition=" << m_stage6DetectorNoisePosition
+		<< " temporalNoiseSigmaGray=" << m_stage6TemporalNoiseSigmaGray
+		<< " fpnSigmaGray=" << m_stage6FpnSigmaGray
 		<< " sameOutput=1"
 		<< std::endl;
 	LogStage6ViewportDiag(reason);
@@ -2043,6 +2190,68 @@ void HwaSimIR::LogStage6MtfBlur(std::uint64_t sourceSeq, double renderMs)
 		<< " stage6MtfBlurScope=render_pass_upper_bound"
 		<< " implementation=single_pass_gpu_separable_weights"
 		<< " todo=true_two_pass_separable_if_needed"
+		<< std::endl;
+}
+
+void HwaSimIR::LogStage6DetectorNoise(std::uint64_t sourceSeq, double renderMs)
+{
+	std::ostringstream state;
+	state << (m_stage6DetectorNoiseEnabled ? 1 : 0)
+		<< ":" << m_stage6DetectorNoiseApplyTo
+		<< ":" << m_stage6DetectorNoisePosition
+		<< ":" << (m_stage6TemporalNoiseEnabled ? 1 : 0)
+		<< ":" << m_stage6TemporalNoiseSigmaGray
+		<< ":" << (m_stage6FpnEnabled ? 1 : 0)
+		<< ":" << m_stage6FpnSigmaGray
+		<< ":" << (m_stage6ColumnNoiseEnabled ? 1 : 0)
+		<< ":" << m_stage6ColumnNoiseSigmaGray
+		<< ":" << (m_stage6RowNoiseEnabled ? 1 : 0)
+		<< ":" << m_stage6RowNoiseSigmaGray
+		<< ":" << (m_stage6BadPixelsEnabled ? 1 : 0)
+		<< ":" << m_stage6BadPixelRatio
+		<< ":" << m_stage6FpnSeed;
+	const std::string stateKey = state.str();
+	const bool stateChanged = stateKey != m_lastStage6NoiseLogState;
+	const bool sampleDue =
+		sourceSeq <= 3 ||
+		(m_stage6NoiseLogEveryFrames > 0 && sourceSeq > 0 &&
+			(sourceSeq % static_cast<std::uint64_t>(m_stage6NoiseLogEveryFrames)) == 0);
+	if (!m_stage6NoiseDebugLog && !m_enableIRVerboseLog && !stateChanged && !sampleDue)
+	{
+		return;
+	}
+	m_lastStage6NoiseLogState = stateKey;
+	++m_stage6NoiseLogCounter;
+	const bool detectorNoiseHasSource =
+		(m_stage6TemporalNoiseEnabled && m_stage6TemporalNoiseSigmaGray > 0.0) ||
+		(m_stage6FpnEnabled && m_stage6FpnSigmaGray > 0.0) ||
+		(m_stage6ColumnNoiseEnabled && m_stage6ColumnNoiseSigmaGray > 0.0) ||
+		(m_stage6RowNoiseEnabled && m_stage6RowNoiseSigmaGray > 0.0) ||
+		(m_stage6BadPixelsEnabled && m_stage6BadPixelRatio > 0.0);
+	const bool detectorNoiseEffective =
+		m_stage6DetectorNoiseEnabled &&
+		m_stage6DetectorNoiseApplyTo == "final_display" &&
+		detectorNoiseHasSource;
+	std::cout << "[Stage6 Noise]"
+		<< " sourceSeq=" << sourceSeq
+		<< " enabled=" << (m_stage6DetectorNoiseEnabled ? "1" : "0")
+		<< " effective=" << (detectorNoiseEffective ? "1" : "0")
+		<< " applyTo=" << m_stage6DetectorNoiseApplyTo
+		<< " position=" << m_stage6DetectorNoisePosition
+		<< " temporalEnabled=" << (m_stage6TemporalNoiseEnabled ? "1" : "0")
+		<< " temporalSigma=" << m_stage6TemporalNoiseSigmaGray
+		<< " fpnEnabled=" << (m_stage6FpnEnabled ? "1" : "0")
+		<< " fpnSigma=" << m_stage6FpnSigmaGray
+		<< " columnEnabled=" << (m_stage6ColumnNoiseEnabled ? "1" : "0")
+		<< " columnSigma=" << m_stage6ColumnNoiseSigmaGray
+		<< " rowEnabled=" << (m_stage6RowNoiseEnabled ? "1" : "0")
+		<< " rowSigma=" << m_stage6RowNoiseSigmaGray
+		<< " badPixelEnabled=" << (m_stage6BadPixelsEnabled ? "1" : "0")
+		<< " badPixelRatio=" << m_stage6BadPixelRatio
+		<< " seed=" << m_stage6FpnSeed
+		<< " stage6DetectorNoiseMs=" << (detectorNoiseEffective ? std::max(0.0, renderMs) : 0.0)
+		<< " stage6DetectorNoiseScope=render_pass_upper_bound"
+		<< " implementation=single_pass_gpu_hash_noise"
 		<< std::endl;
 }
 
@@ -5311,6 +5520,26 @@ void HwaSimIR::InitInfraredSimulation()
 	std::string stage6MtfApplyToSource;
 	std::string stage6MtfDebugSource;
 	std::string stage6MtfLogEverySource;
+	std::string stage6NoiseEnableSource;
+	std::string stage6NoiseApplyToSource;
+	std::string stage6NoisePositionSource;
+	std::string stage6TemporalEnableSource;
+	std::string stage6TemporalSigmaSource;
+	std::string stage6FpnEnableSource;
+	std::string stage6FpnSigmaSource;
+	std::string stage6FpnSeedSource;
+	std::string stage6ColumnEnableSource;
+	std::string stage6ColumnSigmaSource;
+	std::string stage6RowEnableSource;
+	std::string stage6RowSigmaSource;
+	std::string stage6BadPixelsEnableSource;
+	std::string stage6BadPixelRatioSource;
+	std::string stage6BadPixelHotSource;
+	std::string stage6BadPixelDeadSource;
+	std::string stage6NoiseClampMinSource;
+	std::string stage6NoiseClampMaxSource;
+	std::string stage6NoiseDebugSource;
+	std::string stage6NoiseLogEverySource;
 	std::string stage6AgcEnableSource;
 	std::string stage6AgcModeSource;
 	std::string stage6AgcApplyToSource;
@@ -5515,6 +5744,178 @@ void HwaSimIR::InitInfraredSimulation()
 		<< "/" << stage6MtfSigmaSource << "/" << stage6MtfRadiusSource
 		<< "/" << stage6MtfPassesSource << "/" << stage6MtfApplyToSource
 		<< "/" << stage6MtfDebugSource << "/" << stage6MtfLogEverySource
+		<< std::endl;
+	m_stage6DetectorNoiseEnabled = m_runtimeConfig.getBool(
+		"Stage6DetectorNoise",
+		"EnableDetectorNoise",
+		"EnableDetectorNoise",
+		false,
+		&stage6NoiseEnableSource);
+	m_stage6DetectorNoiseApplyTo = ToLowerAscii(m_runtimeConfig.getString(
+		"Stage6DetectorNoise",
+		"NoiseApplyTo",
+		"NoiseApplyTo",
+		"final_display",
+		&stage6NoiseApplyToSource));
+	if (m_stage6DetectorNoiseApplyTo != "final_display")
+	{
+		std::cout << "[Stage6 NoiseConfig][WARN]"
+			<< " NoiseApplyTo=" << m_stage6DetectorNoiseApplyTo
+			<< " fallback=final_display"
+			<< std::endl;
+		m_stage6DetectorNoiseApplyTo = "final_display";
+	}
+	m_stage6DetectorNoisePosition = NormalizeStage6NoisePosition(m_runtimeConfig.getString(
+		"Stage6DetectorNoise",
+		"NoisePosition",
+		"NoisePosition",
+		"BeforeAGC",
+		&stage6NoisePositionSource));
+	m_stage6DetectorNoisePositionCode = Stage6NoisePositionCode(m_stage6DetectorNoisePosition);
+	m_stage6TemporalNoiseEnabled = m_runtimeConfig.getBool(
+		"Stage6DetectorNoise",
+		"EnableTemporalNoise",
+		"EnableTemporalNoise",
+		true,
+		&stage6TemporalEnableSource);
+	m_stage6TemporalNoiseSigmaGray = ClampStage5Double(m_runtimeConfig.getDouble(
+		"Stage6DetectorNoise",
+		"TemporalNoiseSigmaGray",
+		"TemporalNoiseSigmaGray",
+		0.005,
+		&stage6TemporalSigmaSource), 0.0, 0.25);
+	m_stage6FpnEnabled = m_runtimeConfig.getBool(
+		"Stage6DetectorNoise",
+		"EnableFPN",
+		"EnableFPN",
+		false,
+		&stage6FpnEnableSource);
+	m_stage6FpnSigmaGray = ClampStage5Double(m_runtimeConfig.getDouble(
+		"Stage6DetectorNoise",
+		"FPNSigmaGray",
+		"FPNSigmaGray",
+		0.003,
+		&stage6FpnSigmaSource), 0.0, 0.25);
+	m_stage6FpnSeed = m_runtimeConfig.getInt(
+		"Stage6DetectorNoise",
+		"FPNSeed",
+		"FPNSeed",
+		12345,
+		&stage6FpnSeedSource);
+	m_stage6ColumnNoiseEnabled = m_runtimeConfig.getBool(
+		"Stage6DetectorNoise",
+		"EnableColumnNoise",
+		"EnableColumnNoise",
+		false,
+		&stage6ColumnEnableSource);
+	m_stage6ColumnNoiseSigmaGray = ClampStage5Double(m_runtimeConfig.getDouble(
+		"Stage6DetectorNoise",
+		"ColumnNoiseSigmaGray",
+		"ColumnNoiseSigmaGray",
+		0.002,
+		&stage6ColumnSigmaSource), 0.0, 0.25);
+	m_stage6RowNoiseEnabled = m_runtimeConfig.getBool(
+		"Stage6DetectorNoise",
+		"EnableRowNoise",
+		"EnableRowNoise",
+		false,
+		&stage6RowEnableSource);
+	m_stage6RowNoiseSigmaGray = ClampStage5Double(m_runtimeConfig.getDouble(
+		"Stage6DetectorNoise",
+		"RowNoiseSigmaGray",
+		"RowNoiseSigmaGray",
+		0.001,
+		&stage6RowSigmaSource), 0.0, 0.25);
+	m_stage6BadPixelsEnabled = m_runtimeConfig.getBool(
+		"Stage6DetectorNoise",
+		"EnableBadPixels",
+		"EnableBadPixels",
+		false,
+		&stage6BadPixelsEnableSource);
+	m_stage6BadPixelRatio = ClampStage5Double(m_runtimeConfig.getDouble(
+		"Stage6DetectorNoise",
+		"BadPixelRatio",
+		"BadPixelRatio",
+		0.0001,
+		&stage6BadPixelRatioSource), 0.0, 0.1);
+	m_stage6BadPixelHotGray = ClampStage5Double(m_runtimeConfig.getDouble(
+		"Stage6DetectorNoise",
+		"BadPixelHotGray",
+		"BadPixelHotGray",
+		1.0,
+		&stage6BadPixelHotSource), 0.0, 1.0);
+	m_stage6BadPixelDeadGray = ClampStage5Double(m_runtimeConfig.getDouble(
+		"Stage6DetectorNoise",
+		"BadPixelDeadGray",
+		"BadPixelDeadGray",
+		0.0,
+		&stage6BadPixelDeadSource), 0.0, 1.0);
+	m_stage6NoiseClampMin = ClampStage5Double(m_runtimeConfig.getDouble(
+		"Stage6DetectorNoise",
+		"NoiseClampMin",
+		"NoiseClampMin",
+		0.0,
+		&stage6NoiseClampMinSource), 0.0, 1.0);
+	m_stage6NoiseClampMax = ClampStage5Double(m_runtimeConfig.getDouble(
+		"Stage6DetectorNoise",
+		"NoiseClampMax",
+		"NoiseClampMax",
+		1.0,
+		&stage6NoiseClampMaxSource), 0.0, 1.0);
+	if (m_stage6NoiseClampMax <= m_stage6NoiseClampMin)
+	{
+		std::cout << "[Stage6 NoiseConfig][WARN]"
+			<< " NoiseClampMin=" << m_stage6NoiseClampMin
+			<< " NoiseClampMax=" << m_stage6NoiseClampMax
+			<< " fallback=0/1"
+			<< std::endl;
+		m_stage6NoiseClampMin = 0.0;
+		m_stage6NoiseClampMax = 1.0;
+	}
+	m_stage6NoiseDebugLog = m_runtimeConfig.getBool(
+		"Stage6DetectorNoise",
+		"NoiseDebugLog",
+		"NoiseDebugLog",
+		false,
+		&stage6NoiseDebugSource);
+	m_stage6NoiseLogEveryFrames = std::max(1, m_runtimeConfig.getInt(
+		"Stage6DetectorNoise",
+		"NoiseLogEveryFrames",
+		"NoiseLogEveryFrames",
+		120,
+		&stage6NoiseLogEverySource));
+	m_stage6NoiseLogCounter = 0;
+	m_lastStage6NoiseLogState.clear();
+	std::cout << "[Stage6 NoiseConfig]"
+		<< " EnableDetectorNoise=" << (m_stage6DetectorNoiseEnabled ? "1" : "0")
+		<< " NoiseApplyTo=" << m_stage6DetectorNoiseApplyTo
+		<< " NoisePosition=" << m_stage6DetectorNoisePosition
+		<< " EnableTemporalNoise=" << (m_stage6TemporalNoiseEnabled ? "1" : "0")
+		<< " TemporalNoiseSigmaGray=" << m_stage6TemporalNoiseSigmaGray
+		<< " EnableFPN=" << (m_stage6FpnEnabled ? "1" : "0")
+		<< " FPNSigmaGray=" << m_stage6FpnSigmaGray
+		<< " FPNSeed=" << m_stage6FpnSeed
+		<< " EnableColumnNoise=" << (m_stage6ColumnNoiseEnabled ? "1" : "0")
+		<< " ColumnNoiseSigmaGray=" << m_stage6ColumnNoiseSigmaGray
+		<< " EnableRowNoise=" << (m_stage6RowNoiseEnabled ? "1" : "0")
+		<< " RowNoiseSigmaGray=" << m_stage6RowNoiseSigmaGray
+		<< " EnableBadPixels=" << (m_stage6BadPixelsEnabled ? "1" : "0")
+		<< " BadPixelRatio=" << m_stage6BadPixelRatio
+		<< " NoiseClampMin=" << m_stage6NoiseClampMin
+		<< " NoiseClampMax=" << m_stage6NoiseClampMax
+		<< " NoiseDebugLog=" << (m_stage6NoiseDebugLog ? "1" : "0")
+		<< " NoiseLogEveryFrames=" << m_stage6NoiseLogEveryFrames
+		<< " implementation=single_pass_gpu_hash_noise"
+		<< " source=" << stage6NoiseEnableSource << "/" << stage6NoiseApplyToSource
+		<< "/" << stage6NoisePositionSource << "/" << stage6TemporalEnableSource
+		<< "/" << stage6TemporalSigmaSource << "/" << stage6FpnEnableSource
+		<< "/" << stage6FpnSigmaSource << "/" << stage6FpnSeedSource
+		<< "/" << stage6ColumnEnableSource << "/" << stage6ColumnSigmaSource
+		<< "/" << stage6RowEnableSource << "/" << stage6RowSigmaSource
+		<< "/" << stage6BadPixelsEnableSource << "/" << stage6BadPixelRatioSource
+		<< "/" << stage6BadPixelHotSource << "/" << stage6BadPixelDeadSource
+		<< "/" << stage6NoiseClampMinSource << "/" << stage6NoiseClampMaxSource
+		<< "/" << stage6NoiseDebugSource << "/" << stage6NoiseLogEverySource
 		<< std::endl;
 	m_stage6AgcEnabled = m_runtimeConfig.getBool(
 		"Stage6AGC",
@@ -6593,6 +6994,26 @@ void HwaSimIR::InitInfraredSimulation()
 			<< ",MTFApplyTo:" << stage6MtfApplyToSource
 			<< ",MTFDebugLog:" << stage6MtfDebugSource
 			<< ",MTFLogEveryFrames:" << stage6MtfLogEverySource
+			<< ",EnableDetectorNoise:" << stage6NoiseEnableSource
+			<< ",NoiseApplyTo:" << stage6NoiseApplyToSource
+			<< ",NoisePosition:" << stage6NoisePositionSource
+			<< ",EnableTemporalNoise:" << stage6TemporalEnableSource
+			<< ",TemporalNoiseSigmaGray:" << stage6TemporalSigmaSource
+			<< ",EnableFPN:" << stage6FpnEnableSource
+			<< ",FPNSigmaGray:" << stage6FpnSigmaSource
+			<< ",FPNSeed:" << stage6FpnSeedSource
+			<< ",EnableColumnNoise:" << stage6ColumnEnableSource
+			<< ",ColumnNoiseSigmaGray:" << stage6ColumnSigmaSource
+			<< ",EnableRowNoise:" << stage6RowEnableSource
+			<< ",RowNoiseSigmaGray:" << stage6RowSigmaSource
+			<< ",EnableBadPixels:" << stage6BadPixelsEnableSource
+			<< ",BadPixelRatio:" << stage6BadPixelRatioSource
+			<< ",BadPixelHotGray:" << stage6BadPixelHotSource
+			<< ",BadPixelDeadGray:" << stage6BadPixelDeadSource
+			<< ",NoiseClampMin:" << stage6NoiseClampMinSource
+			<< ",NoiseClampMax:" << stage6NoiseClampMaxSource
+			<< ",NoiseDebugLog:" << stage6NoiseDebugSource
+			<< ",NoiseLogEveryFrames:" << stage6NoiseLogEverySource
 			<< ",EnableAGC:" << stage6AgcEnableSource
 			<< ",AGCMode:" << stage6AgcModeSource
 			<< ",AGCApplyTo:" << stage6AgcApplyToSource
@@ -8016,6 +8437,19 @@ void HwaSimIR::LogEffectiveRuntimeConfig(
 		<< " MTFBlurRadiusPixels=" << m_stage6MtfBlurRadiusPixels
 		<< " MTFBlurPasses=" << m_stage6MtfBlurPasses
 		<< " MTFApplyTo=" << m_stage6MtfApplyTo
+		<< " EnableDetectorNoise=" << (m_stage6DetectorNoiseEnabled ? "1" : "0")
+		<< " NoiseApplyTo=" << m_stage6DetectorNoiseApplyTo
+		<< " NoisePosition=" << m_stage6DetectorNoisePosition
+		<< " EnableTemporalNoise=" << (m_stage6TemporalNoiseEnabled ? "1" : "0")
+		<< " TemporalNoiseSigmaGray=" << m_stage6TemporalNoiseSigmaGray
+		<< " EnableFPN=" << (m_stage6FpnEnabled ? "1" : "0")
+		<< " FPNSigmaGray=" << m_stage6FpnSigmaGray
+		<< " EnableColumnNoise=" << (m_stage6ColumnNoiseEnabled ? "1" : "0")
+		<< " ColumnNoiseSigmaGray=" << m_stage6ColumnNoiseSigmaGray
+		<< " EnableRowNoise=" << (m_stage6RowNoiseEnabled ? "1" : "0")
+		<< " RowNoiseSigmaGray=" << m_stage6RowNoiseSigmaGray
+		<< " EnableBadPixels=" << (m_stage6BadPixelsEnabled ? "1" : "0")
+		<< " BadPixelRatio=" << m_stage6BadPixelRatio
 		<< " EnableAGC=" << (m_stage6AgcEnabled ? "1" : "0")
 		<< " AGCMode=" << m_stage6AgcMode
 		<< " AGCApplyTo=" << m_stage6AgcApplyTo
@@ -8093,6 +8527,15 @@ void HwaSimIR::LogEffectiveRuntimeConfig(
 			<< " sigmaPixels=" << m_stage6MtfBlurSigmaPixels
 			<< " radiusPixels=" << m_stage6MtfBlurRadiusPixels
 			<< " reason=stage6a_AB_or_candidate_mode_not_production_default"
+			<< std::endl;
+	}
+	if (m_stage6DetectorNoiseEnabled)
+	{
+		std::cout << "[EffectiveRuntimeConfig][WARN] EnableDetectorNoise=1"
+			<< " position=" << m_stage6DetectorNoisePosition
+			<< " temporalSigma=" << m_stage6TemporalNoiseSigmaGray
+			<< " fpnSigma=" << m_stage6FpnSigmaGray
+			<< " reason=stage6c_AB_or_candidate_mode_not_production_default"
 			<< std::endl;
 	}
 	if (m_stage6AgcEnabled)

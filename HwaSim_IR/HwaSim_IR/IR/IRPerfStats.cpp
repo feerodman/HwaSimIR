@@ -119,7 +119,20 @@ void IRPerfStats::recordPlumeUpdate(double elapsedMs)
 	++m_plumeSamples;
 }
 
-void IRPerfStats::recordRender(double elapsedMs, double stage6MtfBlurMs, bool mtfBlurEnabled, double mtfBlurSigmaPixels, int mtfBlurRadiusPixels)
+void IRPerfStats::recordRender(
+	double elapsedMs,
+	double stage6MtfBlurMs,
+	bool mtfBlurEnabled,
+	double mtfBlurSigmaPixels,
+	int mtfBlurRadiusPixels,
+	double stage6DetectorNoiseMs,
+	bool detectorNoiseEnabled,
+	double temporalNoiseSigmaGray,
+	double fpnSigmaGray,
+	double columnNoiseSigmaGray,
+	double rowNoiseSigmaGray,
+	double badPixelRatio,
+	const char* noisePosition)
 {
 	std::lock_guard<std::mutex> lock(m_mutex);
 	m_renderMsTotal += elapsedMs;
@@ -127,6 +140,14 @@ void IRPerfStats::recordRender(double elapsedMs, double stage6MtfBlurMs, bool mt
 	m_mtfBlurEnabled = mtfBlurEnabled;
 	m_mtfBlurSigmaPixels = std::max(0.0, mtfBlurSigmaPixels);
 	m_mtfBlurRadiusPixels = std::max(0, mtfBlurRadiusPixels);
+	m_stage6DetectorNoiseMsTotal += std::max(0.0, stage6DetectorNoiseMs);
+	m_detectorNoiseEnabled = detectorNoiseEnabled;
+	m_temporalNoiseSigmaGray = std::max(0.0, temporalNoiseSigmaGray);
+	m_fpnSigmaGray = std::max(0.0, fpnSigmaGray);
+	m_columnNoiseSigmaGray = std::max(0.0, columnNoiseSigmaGray);
+	m_rowNoiseSigmaGray = std::max(0.0, rowNoiseSigmaGray);
+	m_badPixelRatio = std::max(0.0, badPixelRatio);
+	m_noisePosition = noisePosition != nullptr ? noisePosition : "BeforeAGC";
 	++m_renderSamples;
 	++m_totalRenderFrames;
 	++m_intervalRenderFrames;
@@ -252,6 +273,7 @@ void IRPerfStats::maybeLog()
 		const double shaderInputApplyMs = Average(m_shaderInputApplyMsTotal, m_irBreakdownSamples);
 		const double renderMs = Average(m_renderMsTotal, m_renderSamples);
 		const double stage6MtfBlurMs = Average(m_stage6MtfBlurMsTotal, m_renderSamples);
+		const double stage6DetectorNoiseMs = Average(m_stage6DetectorNoiseMsTotal, m_renderSamples);
 		const double stage6AgcStatsMs = Average(m_stage6AgcStatsMsTotal, m_stage6AgcSamples);
 		const double stage6AgcApplyMs = Average(m_stage6AgcApplyMsTotal, m_stage6AgcSamples);
 		const double readbackMs = Average(m_readbackMsTotal, m_captureSamples);
@@ -297,6 +319,15 @@ void IRPerfStats::maybeLog()
 			<< " mtfBlurEnabled=" << (m_mtfBlurEnabled ? "1" : "0")
 			<< " mtfBlurSigmaPixels=" << m_mtfBlurSigmaPixels
 			<< " mtfBlurRadiusPixels=" << m_mtfBlurRadiusPixels
+			<< " stage6DetectorNoiseMs=" << stage6DetectorNoiseMs
+			<< " stage6DetectorNoiseScope=render_pass_upper_bound"
+			<< " detectorNoiseEnabled=" << (m_detectorNoiseEnabled ? "1" : "0")
+			<< " temporalNoiseSigmaGray=" << m_temporalNoiseSigmaGray
+			<< " fpnSigmaGray=" << m_fpnSigmaGray
+			<< " columnNoiseSigmaGray=" << m_columnNoiseSigmaGray
+			<< " rowNoiseSigmaGray=" << m_rowNoiseSigmaGray
+			<< " badPixelRatio=" << m_badPixelRatio
+			<< " noisePosition=" << m_noisePosition
 			<< " stage6AgcStatsMs=" << stage6AgcStatsMs
 			<< " stage6AgcApplyMs=" << stage6AgcApplyMs
 			<< " agcEnabled=" << (m_agcEnabled ? "1" : "0")
@@ -347,6 +378,7 @@ void IRPerfStats::maybeLog()
 				<< " annotationMs=" << annotationMs
 				<< " renderMs=" << renderMs
 				<< " stage6MtfBlurMs=" << stage6MtfBlurMs
+				<< " stage6DetectorNoiseMs=" << stage6DetectorNoiseMs
 				<< " stage6AgcStatsMs=" << stage6AgcStatsMs
 				<< " readbackMs=" << readbackMs
 				<< " jpegMs=" << jpegMs
@@ -414,6 +446,7 @@ void IRPerfStats::resetIntervalLocked(std::int64_t nowNs)
 	m_plumeUpdateMsTotal = 0.0;
 	m_renderMsTotal = 0.0;
 	m_stage6MtfBlurMsTotal = 0.0;
+	m_stage6DetectorNoiseMsTotal = 0.0;
 	m_stage6AgcStatsMsTotal = 0.0;
 	m_stage6AgcApplyMsTotal = 0.0;
 	m_stage6AgcSamples = 0;

@@ -218,6 +218,29 @@ private:
 	int m_stage6MtfLogEveryFrames = 120;
 	std::string m_lastStage6MtfLogState;
 	int m_stage6MtfLogCounter = 0;
+	bool m_stage6DetectorNoiseEnabled = false;
+	std::string m_stage6DetectorNoiseApplyTo = "final_display";
+	std::string m_stage6DetectorNoisePosition = "BeforeAGC";
+	int m_stage6DetectorNoisePositionCode = 1;
+	bool m_stage6TemporalNoiseEnabled = true;
+	double m_stage6TemporalNoiseSigmaGray = 0.005;
+	bool m_stage6FpnEnabled = false;
+	double m_stage6FpnSigmaGray = 0.003;
+	int m_stage6FpnSeed = 12345;
+	bool m_stage6ColumnNoiseEnabled = false;
+	double m_stage6ColumnNoiseSigmaGray = 0.002;
+	bool m_stage6RowNoiseEnabled = false;
+	double m_stage6RowNoiseSigmaGray = 0.001;
+	bool m_stage6BadPixelsEnabled = false;
+	double m_stage6BadPixelRatio = 0.0001;
+	double m_stage6BadPixelHotGray = 1.0;
+	double m_stage6BadPixelDeadGray = 0.0;
+	double m_stage6NoiseClampMin = 0.0;
+	double m_stage6NoiseClampMax = 1.0;
+	bool m_stage6NoiseDebugLog = false;
+	int m_stage6NoiseLogEveryFrames = 120;
+	std::string m_lastStage6NoiseLogState;
+	int m_stage6NoiseLogCounter = 0;
 	std::string m_tcpCodecConfig = "auto";
 	int m_tcpJpegQuality = 100;
 	bool m_tcpJpegGray = false;
@@ -412,6 +435,7 @@ private:
 	void SetupAnnotationOverlayRegion(const char* reason);
 	void ApplyStage6FinalPostprocessInputs();
 	void LogStage6MtfBlur(std::uint64_t sourceSeq, double renderMs);
+	void LogStage6DetectorNoise(std::uint64_t sourceSeq, double renderMs);
 	void UpdateStage6AgcFromFrame(const unsigned char* frameData, int frameWidth, int frameHeight, std::uint64_t sourceSeq);
 	void LogStage6Agc(std::uint64_t sourceSeq, bool forceLog = false);
 	void InitInfraredSimulation();                          // 初始化低复杂度红外全链路参数
