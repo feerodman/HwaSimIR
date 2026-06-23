@@ -65,6 +65,16 @@ public:
 	void recordIrUpdateBreakdown(const IRUpdateBreakdown& breakdown);
 	void recordPlumeUpdate(double elapsedMs);
 	void recordRender(double elapsedMs, double stage6MtfBlurMs = 0.0, bool mtfBlurEnabled = false, double mtfBlurSigmaPixels = 0.0, int mtfBlurRadiusPixels = 0);
+	void recordStage6Agc(
+		double statsMs,
+		double applyMs,
+		bool agcEnabled,
+		const char* agcMode,
+		double agcGain,
+		double agcOffset,
+		double agcLowInput,
+		double agcHighInput,
+		int agcSampleCount);
 	void recordInputQueueDepth(int queueDepth);
 	void recordCapture(double readbackMs, double resizeMs, double copyMs, int tcpQueueDepth);
 	std::uint64_t recordTcpOutput(
@@ -134,6 +144,16 @@ private:
 	bool m_mtfBlurEnabled = false;
 	double m_mtfBlurSigmaPixels = 0.0;
 	int m_mtfBlurRadiusPixels = 0;
+	double m_stage6AgcStatsMsTotal = 0.0;
+	double m_stage6AgcApplyMsTotal = 0.0;
+	std::uint64_t m_stage6AgcSamples = 0;
+	bool m_agcEnabled = false;
+	const char* m_agcMode = "Off";
+	double m_agcGain = 1.0;
+	double m_agcOffset = 0.0;
+	double m_agcLowInput = 0.0;
+	double m_agcHighInput = 1.0;
+	int m_agcSampleCount = 0;
 	double m_readbackMsTotal = 0.0;
 	double m_resizeMsTotal = 0.0;
 	double m_copyMsTotal = 0.0;

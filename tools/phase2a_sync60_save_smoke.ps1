@@ -32,6 +32,25 @@ param(
     [int]$MTFBlurPasses = 1,
     [string]$MTFApplyTo = "final_display",
     [string]$MTFDebugLog = "false",
+    [string]$EnableAGC = "false",
+    [string]$AGCMode = "Percentile",
+    [string]$AGCApplyTo = "final_display",
+    [string]$AGCStatsSource = "previous_readback",
+    [double]$AGCUpdateHz = 30.0,
+    [int]$AGCLogEveryFrames = 120,
+    [double]$AGCLowPercentile = 2.0,
+    [double]$AGCHighPercentile = 98.0,
+    [double]$AGCMeanStdK = 2.5,
+    [double]$AGCMinGain = 0.25,
+    [double]$AGCMaxGain = 8.0,
+    [double]$AGCMinOffset = -1.0,
+    [double]$AGCMaxOffset = 1.0,
+    [double]$AGCSmoothingAlpha = 0.15,
+    [double]$AGCTargetLowGray = 0.05,
+    [double]$AGCTargetHighGray = 0.95,
+    [int]$AGCStride = 8,
+    [string]$AGCExcludeAnnotationOverlay = "true",
+    [string]$AGCDebugLog = "false",
     [string[]]$StimExtraArgs = @()
 )
 
@@ -82,6 +101,12 @@ function Get-Average {
     $usable = @($Values | Where-Object { $_ -gt 0.0 })
     if ($usable.Count -eq 0) { return 0.0 }
     return ($usable | Measure-Object -Average).Average
+}
+
+function Get-AverageAll {
+    param([double[]]$Values)
+    if ($Values.Count -eq 0) { return 0.0 }
+    return ($Values | Measure-Object -Average).Average
 }
 
 function Get-Maximum {
@@ -177,6 +202,25 @@ try {
     $runtimeText = Set-IniValue $runtimeText "MTFBlurPasses" ([string]$MTFBlurPasses)
     $runtimeText = Set-IniValue $runtimeText "MTFApplyTo" $MTFApplyTo
     $runtimeText = Set-IniValue $runtimeText "MTFDebugLog" $MTFDebugLog
+    $runtimeText = Set-IniValue $runtimeText "EnableAGC" $EnableAGC
+    $runtimeText = Set-IniValue $runtimeText "AGCMode" $AGCMode
+    $runtimeText = Set-IniValue $runtimeText "AGCApplyTo" $AGCApplyTo
+    $runtimeText = Set-IniValue $runtimeText "AGCStatsSource" $AGCStatsSource
+    $runtimeText = Set-IniValue $runtimeText "AGCUpdateHz" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCUpdateHz))
+    $runtimeText = Set-IniValue $runtimeText "AGCLogEveryFrames" ([string]$AGCLogEveryFrames)
+    $runtimeText = Set-IniValue $runtimeText "AGCLowPercentile" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCLowPercentile))
+    $runtimeText = Set-IniValue $runtimeText "AGCHighPercentile" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCHighPercentile))
+    $runtimeText = Set-IniValue $runtimeText "AGCMeanStdK" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCMeanStdK))
+    $runtimeText = Set-IniValue $runtimeText "AGCMinGain" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCMinGain))
+    $runtimeText = Set-IniValue $runtimeText "AGCMaxGain" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCMaxGain))
+    $runtimeText = Set-IniValue $runtimeText "AGCMinOffset" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCMinOffset))
+    $runtimeText = Set-IniValue $runtimeText "AGCMaxOffset" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCMaxOffset))
+    $runtimeText = Set-IniValue $runtimeText "AGCSmoothingAlpha" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCSmoothingAlpha))
+    $runtimeText = Set-IniValue $runtimeText "AGCTargetLowGray" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCTargetLowGray))
+    $runtimeText = Set-IniValue $runtimeText "AGCTargetHighGray" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCTargetHighGray))
+    $runtimeText = Set-IniValue $runtimeText "AGCStride" ([string]$AGCStride)
+    $runtimeText = Set-IniValue $runtimeText "AGCExcludeAnnotationOverlay" $AGCExcludeAnnotationOverlay
+    $runtimeText = Set-IniValue $runtimeText "AGCDebugLog" $AGCDebugLog
     $runtimeText = Set-IniValue $runtimeText "EnableModtranRadianceDebug" $EnableModtranRadianceDebug
     $runtimeText = Set-IniValue $runtimeText "UseModtranPathRuntime" $UseModtranPathRuntime
     $runtimeText = Set-IniValue $runtimeText "UseModtranSkyRuntime" "false"
@@ -298,6 +342,8 @@ $summary = [pscustomobject]@{
     stage5AeroThermalMs = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage5AeroThermalMs")), 6)
     stage5ModtranLookupMs = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage5ModtranLookupMs")), 6)
     stage6MtfBlurMs = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage6MtfBlurMs")), 6)
+    stage6AgcStatsMs = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage6AgcStatsMs")), 6)
+    stage6AgcApplyMs = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage6AgcApplyMs")), 6)
     stage5ModtranCacheHitCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage5ModtranCacheHitCount")), 3)
     stage5ModtranCacheMissCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage5ModtranCacheMissCount")), 3)
     modtranPathRuntimeMode = $ModtranPathRuntimeMode
@@ -326,6 +372,17 @@ $summary = [pscustomobject]@{
     mtfBlurPasses = $MTFBlurPasses
     mtfApplyTo = $MTFApplyTo
     mtfDebugLog = $MTFDebugLog
+    agcEnabled = $EnableAGC
+    agcMode = $AGCMode
+    agcApplyTo = $AGCApplyTo
+    agcStatsSource = $AGCStatsSource
+    agcUpdateHz = $AGCUpdateHz
+    agcStride = $AGCStride
+    agcGainAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "agcGain")), 6)
+    agcOffsetAvg = [math]::Round((Get-AverageAll (Get-NumericValues $hwaText "Perf" "agcOffset")), 6)
+    agcLowInputAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "agcLowInput")), 6)
+    agcHighInputAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "agcHighInput")), 6)
+    agcSampleCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "agcSampleCount")), 3)
     speedKmhAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Stage5 AeroThermal" "speedRawKmh")), 6)
     machAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Stage5 AeroThermal" "mach")), 6)
     bodyAeroDeltaKRawAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Stage5 AeroThermal" "bodyAeroDeltaKRaw")), 6)

@@ -412,6 +412,8 @@ private:
 	void SetupAnnotationOverlayRegion(const char* reason);
 	void ApplyStage6FinalPostprocessInputs();
 	void LogStage6MtfBlur(std::uint64_t sourceSeq, double renderMs);
+	void UpdateStage6AgcFromFrame(const unsigned char* frameData, int frameWidth, int frameHeight, std::uint64_t sourceSeq);
+	void LogStage6Agc(std::uint64_t sourceSeq, bool forceLog = false);
 	void InitInfraredSimulation();                          // 初始化低复杂度红外全链路参数
 	void InitSkyAndCloudScene();                            // 初始化天空背景和粒子云近似层
 	void ApplyInfraredShader(NodePath& node, bool isBackground); // 挂载着色器并初始化参数
@@ -529,6 +531,43 @@ private:
 	ShaderInputCacheStats m_shaderInputStats;
 	double m_shaderInputFloatEpsilon = 1.0e-5;
 	bool m_measureShaderInputApplyTime = false;
+
+	bool m_stage6AgcEnabled = false;
+	std::string m_stage6AgcMode = "Percentile";
+	int m_stage6AgcModeCode = 1;
+	std::string m_stage6AgcApplyTo = "final_display";
+	std::string m_stage6AgcStatsSource = "previous_readback";
+	double m_stage6AgcUpdateHz = 30.0;
+	int m_stage6AgcLogEveryFrames = 120;
+	double m_stage6AgcLowPercentile = 2.0;
+	double m_stage6AgcHighPercentile = 98.0;
+	double m_stage6AgcMeanStdK = 2.5;
+	double m_stage6AgcMinGain = 0.25;
+	double m_stage6AgcMaxGain = 8.0;
+	double m_stage6AgcMinOffset = -1.0;
+	double m_stage6AgcMaxOffset = 1.0;
+	double m_stage6AgcSmoothingAlpha = 0.15;
+	double m_stage6AgcTargetLowGray = 0.05;
+	double m_stage6AgcTargetHighGray = 0.95;
+	int m_stage6AgcStride = 8;
+	bool m_stage6AgcExcludeAnnotationOverlay = true;
+	bool m_stage6AgcDebugLog = false;
+	double m_stage6AgcGain = 1.0;
+	double m_stage6AgcOffset = 0.0;
+	double m_stage6AgcLowInput = 0.0;
+	double m_stage6AgcHighInput = 1.0;
+	double m_stage6AgcTargetGain = 1.0;
+	double m_stage6AgcTargetOffset = 0.0;
+	int m_stage6AgcSampleCount = 0;
+	bool m_stage6AgcValid = false;
+	bool m_stage6AgcInitialized = false;
+	std::string m_stage6AgcFallbackReason = "disabled";
+	double m_stage6AgcStatsMsCurrent = 0.0;
+	double m_stage6AgcApplyMsCurrent = 0.0;
+	std::int64_t m_stage6AgcLastUpdateNs = 0;
+	std::uint64_t m_stage6AgcLastUpdateSourceSeq = 0;
+	int m_stage6AgcLogCounter = 0;
+	std::string m_lastStage6AgcLogState;
 
 	bool m_isInitTargetPlatID;	//TargetState平台初始化ID映射标记
 

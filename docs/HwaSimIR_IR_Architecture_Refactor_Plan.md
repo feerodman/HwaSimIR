@@ -2416,6 +2416,147 @@ Phase6A MTF/blur A/B：
 
 ---
 
+### 阶段 6B：Stage6 AGC 自动增益控制
+```text
+阶段：6B
+日期：2026-06-23
+执行者：Codex
+目标：在 Stage6 final display 映射阶段增加全局 AGC，使用上一帧 readback 数据做 percentile / mean-std 统计，
+通过 shader gain/offset 映射到 8-bit 显示范围。生产默认保持 AGC disabled，不默认启用 MTF、
+UseSensorInputForDisplay、ApplyAeroToRadiance 或 MODTRAN path runtime。
+
+本阶段变更：
+- 新增 [Stage6AGC] 生产默认关闭配置：
+  EnableAGC=false
+  AGCMode=Percentile
+  AGCApplyTo=final_display
+  AGCStatsSource=previous_readback
+  AGCUpdateHz=30
+  AGCLogEveryFrames=120
+  AGCLowPercentile=2.0
+  AGCHighPercentile=98.0
+  AGCMeanStdK=2.5
+  AGCMinGain=0.25
+  AGCMaxGain=8.0
+  AGCMinOffset=-1.0
+  AGCMaxOffset=1.0
+  AGCSmoothingAlpha=0.15
+  AGCTargetLowGray=0.05
+  AGCTargetHighGray=0.95
+  AGCStride=8
+  AGCExcludeAnnotationOverlay=true
+  AGCDebugLog=false
+- Stage6 final display shader 新增 AGC uniform：
+  u_stage6_agc_enable / gain / offset / mode。
+  当前链路为 display gray -> MTF blur -> noise -> AGC gain/offset -> whiteHot/blackHot polarity -> output。
+- 新增 UpdateStage6AgcFromFrame：使用已有 capture/readback RGB 帧做统计，不增加额外 GPU->CPU readback。
+  Percentile 使用 256-bin histogram + stride 采样；MeanStd 保留简化实现；Manual 复用 displayGain/displayOffset。
+- AGC gain/offset 做 clamp 与 smoothing；全黑、全白、样本不足或 percentile flat range 时 fallback 到上一帧或 unity。
+- 所有新增 shader uniform 继续走 SetShaderInputCached。
+- [Perf] 增加 stage6AgcStatsMs、stage6AgcApplyMs、agcEnabled、agcMode、agcGain、agcOffset、
+  agcLowInput、agcHighInput、agcSampleCount。
+- [Stage6 AGC] 日志限频：前几帧、每 120 帧、状态变化或调试开关时输出。
+  初版曾在 percentile_flat_range fallback 时每次强制打印，导致控制台 IO 增大并在 10 秒 A/B 中出现队列积压；
+  已修正为状态变化/采样限频，不再高频刷日志。
+- EffectiveRuntimeConfig 增加 Stage6AGC 摘要；若生产运行误开 EnableAGC=1 会输出 WARN。
+- runtime_config_check.ps1 增加 AGC 生产默认检查。
+- phase2a_sync60_save_smoke.ps1 增加 AGC override 和 summary 字段。
+- 新增 tools/phase6b_agc_ab.ps1：
+  baseline / agc_percentile / mtf_agc / sensor_agc_observe 四组 A/B，
+  输出 logs/stage6/agc_ab_summary.csv，
+  代表帧输出 logs/stage6/phase6b_frames。
+
+构建与配置检查：
+- HwaSim_IR Windows Release x64：通过。
+- DataDrivenTestQT Release：通过。
+- HwaSim_IR_VideoDisplay Windows Release x64：通过。
+- runtime_config_check.ps1：通过。
+- 生产默认确认：
+  EnableAGC=false
+  EnableMTFBlur=false
+  UseSensorInputForDisplay=false
+  ApplyAeroToRadiance=false
+  UseModtranPathRuntime=false
+  ModtranPathRuntimeMode=Off
+  DebugView=Off
+  LogComponents=false
+  EnableIRVerboseLog=0
+  JpegEncodeMode=rgb
+  JpegQuality=100
+  stage5ModtranLookupMs=0
+
+回归：
+- Stage3 MODTRAN tau-only strict：通过。
+- Stage4 hotspot/brightspot strict：通过。
+- Stage4 三波段 smoke：通过。
+- Stage5 aero thermal smoke：通过。
+- Stage5 radiance components smoke：通过。
+  注意：一次并行运行 Stage4/Stage5 smoke 时 SWIR case 因两个 HwaSim_IR 抢占 UDP 8888 报 10048；
+  串行重跑后通过。
+- Phase5B quick 回归：通过；两个 6 秒短窗口出现启动延时警告，生产默认 30 秒不受影响。
+- Phase6A MTF A/B 回归：通过；baseline/weak/normal/strong 均保持 60Hz，strong 仍只作为观察组。
+
+Phase6B AGC A/B：
+- CSV：logs/stage6/agc_ab_summary.csv
+- 代表帧：logs/stage6/phase6b_frames
+- baseline：
+  sent=60.092, udp=59.804, render=60.811, output=60.180, display=61.166,
+  latencyAvgMs=55.656, stage6AgcStatsMs=0, gain=1.0, offset=0.0, dropped=0。
+- agc_percentile：
+  sent=60.113, udp=60.597, render=61.063, output=60.848, display=61.189,
+  latencyAvgMs=40.437, stage6AgcStatsMs=0.052857, gainAvg=2.260187,
+  offsetAvg=-0.645562, lowInputAvg=0.349, highInputAvg=0.771062, dropped=0。
+- mtf_agc：
+  sent=60.076, udp=59.990, render=60.955, output=60.739, display=61.008,
+  latencyAvgMs=41.462, stage6AgcStatsMs=0.054857, stage6MtfBlurMs=10.094667,
+  gainAvg=4.057062, offsetAvg=-0.666812, dropped=0。
+- sensor_agc_observe：
+  sent=60.107, udp=60.116, render=61.023, output=60.394, display=60.996,
+  latencyAvgMs=43.737, stage6AgcStatsMs=0.039000, gainAvg=2.222,
+  offsetAvg=-0.626, dropped=0。
+
+视觉结论：
+- baseline：参考画面正常。
+- agc_percentile：目标和标注可见，背景变暗，未见全黑/全白，适合作为可选候选继续观察。
+- mtf_agc：性能保持 60Hz，但代表帧背景被 AGC 拉得过亮，不建议作为候选组合；后续若要组合 MTF+AGC，
+  应单独调 AGCMaxGain / percentile / 统计排除策略。
+- sensor_agc_observe：目标和标注可见，未见全黑/全白；仍为观察组，不建议默认启用。
+- 本轮只检查代表帧，未做完整短视频闪烁人工审查；CSV 中 flickerStatus 标记为 not_observed_from_still_frame。
+
+生产默认 30 秒实测：
+- 日志：logs/phase2a-final-20260623-101719
+- MP4：HwaSim_IR_VideoDisplay/x64/Release/MP4/round_001_20260623_101734/output.mp4
+- sentFps=60.024
+- udpFps=60.242
+- renderFps=60.963
+- outputFps=60.954
+- VideoDisplay receive/display=61.040
+- latencyAvgMs=59.623
+- jpegMsAvg=6.841
+- readbackMsAvg=1.552
+- irUpdateMsAvg=0.900
+- stage5RadianceComponentMs=0.672
+- stage5AeroThermalMs=0.007
+- stage5ModtranLookupMs=0
+- stage6MtfBlurMs=0
+- stage6AgcStatsMs=0
+- sourceSeqContinuous=1
+- sourceSeqContinuousWritten=1
+- inputQueueOverflow=0
+- TCP overwritten=0
+- recordingDroppedFrames=0
+- written/mp4/annotations/targetAnnotations=1800/1800/1800/1800
+
+结论：
+- Stage6 AGC 已具备低风险、可配置、可关闭的 A/B 能力；生产默认仍关闭。
+- AGC Percentile 可作为“可选候选配置”继续观察，但不建议默认启用。
+- MTF+AGC 当前视觉上过亮，不建议作为候选组合。
+- 下一阶段建议优先做 detector noise/FPN 或更细的 AGC 评审；ROI AGC/CLAHE 属于更高风险，应单独立项。
+- H.264 实时传输和 RK3588 收口仍应单独阶段处理，避免和 AGC 视觉映射混在一起。
+```
+
+---
+
 ## 12. 给 Codex 的第一阶段实施 Prompt
 
 见单独文件：`Codex_Phase1_Sync60_Perf_Prompt.md`。

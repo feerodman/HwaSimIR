@@ -132,6 +132,30 @@ void IRPerfStats::recordRender(double elapsedMs, double stage6MtfBlurMs, bool mt
 	++m_intervalRenderFrames;
 }
 
+void IRPerfStats::recordStage6Agc(
+	double statsMs,
+	double applyMs,
+	bool agcEnabled,
+	const char* agcMode,
+	double agcGain,
+	double agcOffset,
+	double agcLowInput,
+	double agcHighInput,
+	int agcSampleCount)
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	m_stage6AgcStatsMsTotal += std::max(0.0, statsMs);
+	m_stage6AgcApplyMsTotal += std::max(0.0, applyMs);
+	++m_stage6AgcSamples;
+	m_agcEnabled = agcEnabled;
+	m_agcMode = agcMode != nullptr ? agcMode : "Off";
+	m_agcGain = agcGain;
+	m_agcOffset = agcOffset;
+	m_agcLowInput = agcLowInput;
+	m_agcHighInput = agcHighInput;
+	m_agcSampleCount = std::max(0, agcSampleCount);
+}
+
 void IRPerfStats::recordInputQueueDepth(int queueDepth)
 {
 	std::lock_guard<std::mutex> lock(m_mutex);
@@ -228,6 +252,8 @@ void IRPerfStats::maybeLog()
 		const double shaderInputApplyMs = Average(m_shaderInputApplyMsTotal, m_irBreakdownSamples);
 		const double renderMs = Average(m_renderMsTotal, m_renderSamples);
 		const double stage6MtfBlurMs = Average(m_stage6MtfBlurMsTotal, m_renderSamples);
+		const double stage6AgcStatsMs = Average(m_stage6AgcStatsMsTotal, m_stage6AgcSamples);
+		const double stage6AgcApplyMs = Average(m_stage6AgcApplyMsTotal, m_stage6AgcSamples);
 		const double readbackMs = Average(m_readbackMsTotal, m_captureSamples);
 		const double jpegMs = Average(m_jpegMsTotal, m_tcpSamples);
 		const double tcpSendMs = Average(m_tcpSendMsTotal, m_tcpSamples);
@@ -271,6 +297,15 @@ void IRPerfStats::maybeLog()
 			<< " mtfBlurEnabled=" << (m_mtfBlurEnabled ? "1" : "0")
 			<< " mtfBlurSigmaPixels=" << m_mtfBlurSigmaPixels
 			<< " mtfBlurRadiusPixels=" << m_mtfBlurRadiusPixels
+			<< " stage6AgcStatsMs=" << stage6AgcStatsMs
+			<< " stage6AgcApplyMs=" << stage6AgcApplyMs
+			<< " agcEnabled=" << (m_agcEnabled ? "1" : "0")
+			<< " agcMode=" << m_agcMode
+			<< " agcGain=" << m_agcGain
+			<< " agcOffset=" << m_agcOffset
+			<< " agcLowInput=" << m_agcLowInput
+			<< " agcHighInput=" << m_agcHighInput
+			<< " agcSampleCount=" << m_agcSampleCount
 			<< " readbackMs=" << readbackMs
 			<< " resizeMs=" << Average(m_resizeMsTotal, m_captureSamples)
 			<< " frameCopyMs=" << Average(m_copyMsTotal, m_captureSamples)
@@ -312,6 +347,7 @@ void IRPerfStats::maybeLog()
 				<< " annotationMs=" << annotationMs
 				<< " renderMs=" << renderMs
 				<< " stage6MtfBlurMs=" << stage6MtfBlurMs
+				<< " stage6AgcStatsMs=" << stage6AgcStatsMs
 				<< " readbackMs=" << readbackMs
 				<< " jpegMs=" << jpegMs
 				<< " tcpSendMs=" << tcpSendMs
@@ -378,6 +414,9 @@ void IRPerfStats::resetIntervalLocked(std::int64_t nowNs)
 	m_plumeUpdateMsTotal = 0.0;
 	m_renderMsTotal = 0.0;
 	m_stage6MtfBlurMsTotal = 0.0;
+	m_stage6AgcStatsMsTotal = 0.0;
+	m_stage6AgcApplyMsTotal = 0.0;
+	m_stage6AgcSamples = 0;
 	m_readbackMsTotal = 0.0;
 	m_resizeMsTotal = 0.0;
 	m_copyMsTotal = 0.0;

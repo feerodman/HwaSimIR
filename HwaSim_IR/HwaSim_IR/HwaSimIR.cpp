@@ -18,6 +18,7 @@
 #include "internalName.h"
 #include <chrono>
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <cmath>
 #include <cstdio>
@@ -348,6 +349,41 @@ std::string NormalizeStage6MtfBlurMode(const std::string& value)
 		return "GaussianSeparable";
 	}
 	return "GaussianSeparable";
+}
+
+std::string NormalizeStage6AgcMode(const std::string& value)
+{
+	const std::string lower = ToLowerAscii(value);
+	if (lower == "off" || lower == "none" || lower == "disabled" || lower == "0")
+	{
+		return "Off";
+	}
+	if (lower == "meanstd" || lower == "mean_std" || lower == "mean-std")
+	{
+		return "MeanStd";
+	}
+	if (lower == "manual")
+	{
+		return "Manual";
+	}
+	return "Percentile";
+}
+
+int Stage6AgcModeCode(const std::string& value)
+{
+	if (value == "Percentile")
+	{
+		return 1;
+	}
+	if (value == "MeanStd")
+	{
+		return 2;
+	}
+	if (value == "Manual")
+	{
+		return 3;
+	}
+	return 0;
 }
 
 std::string NormalizeStage5ModtranPathRuntimeMode(const std::string& value)
@@ -1062,6 +1098,7 @@ void HwaSimIR::run() {
 				m_stage6MtfBlurSigmaPixels,
 				m_stage6MtfBlurRadiusPixels);
 			LogStage6MtfBlur(m_currentFrameTelemetry.sourceSeq, renderMs);
+			LogStage6Agc(m_currentFrameTelemetry.sourceSeq);
 		}
 		m_syncFrameActive.store(false);
 		m_perfStats.maybeLog();
@@ -1518,6 +1555,10 @@ void HwaSimIR::InitStage6FinalPostShader()
     uniform int u_stage6_mtf_radius_pixels;
     uniform vec2 u_stage6_mtf_texel_size;
     uniform vec2 u_stage6_mtf_uv_max;
+    uniform int u_stage6_agc_enable;
+    uniform float u_stage6_agc_gain;
+    uniform float u_stage6_agc_offset;
+    uniform int u_stage6_agc_mode;
     uniform int u_stage7_final_precipitation_mode; // 0 none, 1 screen overlay
     uniform int u_stage7_final_precipitation_type; // 0 none, 1 rain, 2 snow
     uniform float u_stage7_final_precipitation_density;
@@ -1573,6 +1614,14 @@ void HwaSimIR::InitStage6FinalPostShader()
             return Stage6FinalSampleDisplayGray(sampleUv);
         }
         return clamp(sum / weightSum, 0.0, 1.0);
+    }
+
+    float Stage6FinalApplyAgc(float gray)
+    {
+        if (u_stage6_agc_enable != 1 || u_stage6_agc_mode == 0) {
+            return gray;
+        }
+        return clamp(gray * u_stage6_agc_gain + u_stage6_agc_offset, 0.0, 1.0);
     }
 
     float Stage7FinalHash(vec2 p)
@@ -1646,6 +1695,7 @@ void HwaSimIR::InitStage6FinalPostShader()
             gray += (Stage6FinalNoise(gl_FragCoord.xy) * 2.0 - 1.0) * u_stage6_final_noise_sigma_norm;
         }
         gray = clamp(gray, 0.0, 1.0);
+        gray = Stage6FinalApplyAgc(gray);
         if (u_stage6_final_white_hot == 0) {
             gray = 1.0 - gray;
         }
@@ -1873,6 +1923,10 @@ void HwaSimIR::ApplyStage6FinalPostprocessInputs()
 		m_stage6MtfApplyTo == "final_display" &&
 		m_stage6MtfBlurRadiusPixels > 0 &&
 		m_stage6MtfBlurSigmaPixels > 0.001;
+	const bool agcEffective =
+		m_stage6AgcEnabled &&
+		m_stage6AgcApplyTo == "final_display" &&
+		m_stage6AgcMode != "Off";
 	const int precipitationType = IRWeatherEffects::precipitationCode(m_stage7WeatherState.precipitationType);
 	const bool screenOverlayActive = m_stage7WeatherEnabled &&
 		m_stage7PrecipitationEnabled &&
@@ -1893,6 +1947,13 @@ void HwaSimIR::ApplyStage6FinalPostprocessInputs()
 	SetShaderInputCached(m_stage6FinalCard, "u_stage6_mtf_radius_pixels", LVecBase2i(m_stage6MtfBlurRadiusPixels, 0));
 	SetShaderInputCached(m_stage6FinalCard, "u_stage6_mtf_texel_size", LVecBase2f(texelU, texelV));
 	SetShaderInputCached(m_stage6FinalCard, "u_stage6_mtf_uv_max", LVecBase2f(uvScaleU, uvScaleV));
+	const auto agcApplyBegin = std::chrono::steady_clock::now();
+	SetShaderInputCached(m_stage6FinalCard, "u_stage6_agc_enable", LVecBase2i(agcEffective ? 1 : 0, 0));
+	SetShaderInputCached(m_stage6FinalCard, "u_stage6_agc_gain", LVecBase2f(static_cast<float>(agcEffective ? m_stage6AgcGain : 1.0), 0.0f));
+	SetShaderInputCached(m_stage6FinalCard, "u_stage6_agc_offset", LVecBase2f(static_cast<float>(agcEffective ? m_stage6AgcOffset : 0.0), 0.0f));
+	SetShaderInputCached(m_stage6FinalCard, "u_stage6_agc_mode", LVecBase2i(agcEffective ? m_stage6AgcModeCode : 0, 0));
+	m_stage6AgcApplyMsCurrent = std::chrono::duration<double, std::milli>(
+		std::chrono::steady_clock::now() - agcApplyBegin).count();
 	m_stage6FinalCard.set_shader_input("u_stage7_final_precipitation_mode", LVecBase2i(screenOverlayActive ? 1 : 0, 0));
 	m_stage6FinalCard.set_shader_input("u_stage7_final_precipitation_type", LVecBase2i(screenOverlayActive ? precipitationType : 0, 0));
 	m_stage6FinalCard.set_shader_input("u_stage7_final_precipitation_density", LVecBase2f(static_cast<float>(screenOverlayActive ? m_stage7WeatherState.precipitationDensity : 0.0), 0.0f));
@@ -1927,6 +1988,11 @@ void HwaSimIR::LogStage6FinalPipeline(const char* reason)
 		<< " mtfBlurEffectiveMode=" << m_stage6MtfBlurEffectiveMode
 		<< " mtfBlurSigmaPixels=" << m_stage6MtfBlurSigmaPixels
 		<< " mtfBlurRadiusPixels=" << m_stage6MtfBlurRadiusPixels
+		<< " agcEnabled=" << (m_stage6AgcEnabled ? "1" : "0")
+		<< " agcMode=" << m_stage6AgcMode
+		<< " agcStatsSource=" << m_stage6AgcStatsSource
+		<< " agcGain=" << m_stage6AgcGain
+		<< " agcOffset=" << m_stage6AgcOffset
 		<< " sameOutput=1"
 		<< std::endl;
 	LogStage6ViewportDiag(reason);
@@ -1977,6 +2043,275 @@ void HwaSimIR::LogStage6MtfBlur(std::uint64_t sourceSeq, double renderMs)
 		<< " stage6MtfBlurScope=render_pass_upper_bound"
 		<< " implementation=single_pass_gpu_separable_weights"
 		<< " todo=true_two_pass_separable_if_needed"
+		<< std::endl;
+}
+
+void HwaSimIR::UpdateStage6AgcFromFrame(const unsigned char* frameData, int frameWidth, int frameHeight, std::uint64_t sourceSeq)
+{
+	const bool agcEffective =
+		m_stage6AgcEnabled &&
+		m_stage6AgcApplyTo == "final_display" &&
+		m_stage6AgcMode != "Off";
+	if (!agcEffective || frameData == nullptr || frameWidth <= 0 || frameHeight <= 0)
+	{
+		m_stage6AgcStatsMsCurrent = 0.0;
+		if (!agcEffective)
+		{
+			m_stage6AgcGain = 1.0;
+			m_stage6AgcOffset = 0.0;
+			m_stage6AgcTargetGain = 1.0;
+			m_stage6AgcTargetOffset = 0.0;
+			m_stage6AgcLowInput = 0.0;
+			m_stage6AgcHighInput = 1.0;
+			m_stage6AgcSampleCount = 0;
+			m_stage6AgcValid = false;
+			m_stage6AgcFallbackReason = "disabled";
+		}
+		else
+		{
+			m_stage6AgcValid = false;
+			m_stage6AgcFallbackReason = "invalid_frame";
+		}
+		m_perfStats.recordStage6Agc(
+			0.0,
+			m_stage6AgcApplyMsCurrent,
+			agcEffective,
+			m_stage6AgcMode.c_str(),
+			m_stage6AgcGain,
+			m_stage6AgcOffset,
+			m_stage6AgcLowInput,
+			m_stage6AgcHighInput,
+			m_stage6AgcSampleCount);
+		return;
+	}
+
+	const std::int64_t nowNs = IRPerfStats::steadyTimeNs();
+	const double minUpdateIntervalSec = m_stage6AgcUpdateHz > 0.0 ? (1.0 / m_stage6AgcUpdateHz) : 0.0;
+	const bool updateDue =
+		!m_stage6AgcInitialized ||
+		m_stage6AgcLastUpdateNs == 0 ||
+		minUpdateIntervalSec <= 0.0 ||
+		(static_cast<double>(nowNs - m_stage6AgcLastUpdateNs) / 1.0e9) >= minUpdateIntervalSec;
+	if (!updateDue)
+	{
+		m_stage6AgcStatsMsCurrent = 0.0;
+		m_perfStats.recordStage6Agc(
+			0.0,
+			m_stage6AgcApplyMsCurrent,
+			true,
+			m_stage6AgcMode.c_str(),
+			m_stage6AgcGain,
+			m_stage6AgcOffset,
+			m_stage6AgcLowInput,
+			m_stage6AgcHighInput,
+			m_stage6AgcSampleCount);
+		return;
+	}
+
+	const auto statsBegin = std::chrono::steady_clock::now();
+	const IRSensorPostProcessConfig config = m_stage6DisplayConfigReady ? m_stage6DisplayConfig : IRSensorPostProcessConfig();
+	double targetGain = m_stage6AgcGain;
+	double targetOffset = m_stage6AgcOffset;
+	double lowInput = m_stage6AgcLowInput;
+	double highInput = m_stage6AgcHighInput;
+	int sampleCount = 0;
+	bool valid = false;
+	std::string fallbackReason = "none";
+
+	if (m_stage6AgcMode == "Manual")
+	{
+		targetGain = ClampStage5Double(config.displayGain, m_stage6AgcMinGain, m_stage6AgcMaxGain);
+		targetOffset = ClampStage5Double(config.displayOffset / 255.0, m_stage6AgcMinOffset, m_stage6AgcMaxOffset);
+		lowInput = 0.0;
+		highInput = 1.0;
+		valid = true;
+		fallbackReason = "manual_display_gain_offset";
+	}
+	else
+	{
+		std::array<int, 256> histogram;
+		histogram.fill(0);
+		double sum = 0.0;
+		double sumSq = 0.0;
+		const int stride = std::max(1, m_stage6AgcStride);
+		const double inverseGain = std::fabs(m_stage6AgcGain) > 1.0e-6 ? (1.0 / m_stage6AgcGain) : 1.0;
+		for (int y = 0; y < frameHeight; y += stride)
+		{
+			const unsigned char* row = frameData + static_cast<size_t>(y) * static_cast<size_t>(frameWidth) * 3u;
+			for (int x = 0; x < frameWidth; x += stride)
+			{
+				const unsigned char* px = row + static_cast<size_t>(x) * 3u;
+				const int r = px[0];
+				const int g = px[1];
+				const int b = px[2];
+				if (m_stage6AgcExcludeAnnotationOverlay &&
+					g > 150 && r < 120 && b < 120 && g > r + 45 && g > b + 45)
+				{
+					continue;
+				}
+				double gray = (0.299 * static_cast<double>(r) +
+					0.587 * static_cast<double>(g) +
+					0.114 * static_cast<double>(b)) / 255.0;
+				if (!config.whiteHot)
+				{
+					gray = 1.0 - gray;
+				}
+				gray = ClampStage5Double((gray - m_stage6AgcOffset) * inverseGain, 0.0, 1.0);
+				const int bin = std::max(0, std::min(255, static_cast<int>(gray * 255.0 + 0.5)));
+				++histogram[bin];
+				sum += gray;
+				sumSq += gray * gray;
+				++sampleCount;
+			}
+		}
+
+		if (sampleCount < 16)
+		{
+			fallbackReason = "insufficient_samples";
+		}
+		else if (m_stage6AgcMode == "MeanStd")
+		{
+			const double mean = sum / static_cast<double>(sampleCount);
+			const double variance = std::max(0.0, sumSq / static_cast<double>(sampleCount) - mean * mean);
+			const double stddev = std::sqrt(variance);
+			lowInput = ClampStage5Double(mean - m_stage6AgcMeanStdK * stddev, 0.0, 1.0);
+			highInput = ClampStage5Double(mean + m_stage6AgcMeanStdK * stddev, 0.0, 1.0);
+			valid = highInput > lowInput + 1.0e-5;
+			if (!valid)
+			{
+				fallbackReason = "mean_std_flat_range";
+			}
+		}
+		else
+		{
+			auto percentileValue = [&](double percentile) -> double {
+				const double p = ClampStage5Double(percentile, 0.0, 100.0);
+				const int targetIndex = std::max(0, static_cast<int>(
+					std::floor((p / 100.0) * static_cast<double>(sampleCount - 1) + 0.5)));
+				int cumulative = 0;
+				for (int i = 0; i < 256; ++i)
+				{
+					cumulative += histogram[i];
+					if (cumulative > targetIndex)
+					{
+						return static_cast<double>(i) / 255.0;
+					}
+				}
+				return 1.0;
+			};
+			lowInput = percentileValue(m_stage6AgcLowPercentile);
+			highInput = percentileValue(m_stage6AgcHighPercentile);
+			valid = highInput > lowInput + 1.0e-5;
+			if (!valid)
+			{
+				fallbackReason = "percentile_flat_range";
+			}
+		}
+
+		if (valid)
+		{
+			targetGain = (m_stage6AgcTargetHighGray - m_stage6AgcTargetLowGray) / std::max(1.0e-5, highInput - lowInput);
+			targetOffset = m_stage6AgcTargetLowGray - targetGain * lowInput;
+			targetGain = ClampStage5Double(targetGain, m_stage6AgcMinGain, m_stage6AgcMaxGain);
+			targetOffset = ClampStage5Double(targetOffset, m_stage6AgcMinOffset, m_stage6AgcMaxOffset);
+			fallbackReason = "none";
+		}
+		else
+		{
+			targetGain = m_stage6AgcInitialized ? m_stage6AgcGain : 1.0;
+			targetOffset = m_stage6AgcInitialized ? m_stage6AgcOffset : 0.0;
+			lowInput = m_stage6AgcInitialized ? m_stage6AgcLowInput : 0.0;
+			highInput = m_stage6AgcInitialized ? m_stage6AgcHighInput : 1.0;
+		}
+	}
+
+	const double alpha = ClampStage5Double(m_stage6AgcSmoothingAlpha, 0.0, 1.0);
+	if (!m_stage6AgcInitialized)
+	{
+		m_stage6AgcGain = targetGain;
+		m_stage6AgcOffset = targetOffset;
+	}
+	else
+	{
+		m_stage6AgcGain = m_stage6AgcGain + (targetGain - m_stage6AgcGain) * alpha;
+		m_stage6AgcOffset = m_stage6AgcOffset + (targetOffset - m_stage6AgcOffset) * alpha;
+	}
+	m_stage6AgcGain = ClampStage5Double(m_stage6AgcGain, m_stage6AgcMinGain, m_stage6AgcMaxGain);
+	m_stage6AgcOffset = ClampStage5Double(m_stage6AgcOffset, m_stage6AgcMinOffset, m_stage6AgcMaxOffset);
+	m_stage6AgcTargetGain = targetGain;
+	m_stage6AgcTargetOffset = targetOffset;
+	m_stage6AgcLowInput = lowInput;
+	m_stage6AgcHighInput = highInput;
+	m_stage6AgcSampleCount = sampleCount;
+	m_stage6AgcValid = valid;
+	m_stage6AgcFallbackReason = fallbackReason;
+	m_stage6AgcInitialized = true;
+	m_stage6AgcLastUpdateNs = nowNs;
+	m_stage6AgcLastUpdateSourceSeq = sourceSeq;
+	m_stage6AgcStatsMsCurrent = std::chrono::duration<double, std::milli>(
+		std::chrono::steady_clock::now() - statsBegin).count();
+
+	ApplyStage6FinalPostprocessInputs();
+	m_perfStats.recordStage6Agc(
+		m_stage6AgcStatsMsCurrent,
+		m_stage6AgcApplyMsCurrent,
+		true,
+		m_stage6AgcMode.c_str(),
+		m_stage6AgcGain,
+		m_stage6AgcOffset,
+		m_stage6AgcLowInput,
+		m_stage6AgcHighInput,
+		m_stage6AgcSampleCount);
+	LogStage6Agc(sourceSeq, false);
+}
+
+void HwaSimIR::LogStage6Agc(std::uint64_t sourceSeq, bool forceLog)
+{
+	std::ostringstream state;
+	state << (m_stage6AgcEnabled ? 1 : 0)
+		<< ":" << m_stage6AgcMode
+		<< ":" << m_stage6AgcStatsSource
+		<< ":" << m_stage6AgcUpdateHz
+		<< ":" << m_stage6AgcLowPercentile
+		<< ":" << m_stage6AgcHighPercentile
+		<< ":" << m_stage6AgcGain
+		<< ":" << m_stage6AgcOffset
+		<< ":" << m_stage6AgcFallbackReason;
+	const std::string stateKey = state.str();
+	const bool stateChanged = stateKey != m_lastStage6AgcLogState;
+	const bool sampleDue =
+		sourceSeq <= 3 ||
+		(m_stage6AgcLogEveryFrames > 0 && sourceSeq > 0 &&
+			(sourceSeq % static_cast<std::uint64_t>(m_stage6AgcLogEveryFrames)) == 0);
+	if (!forceLog && !m_stage6AgcDebugLog && !m_enableIRVerboseLog && !stateChanged && !sampleDue)
+	{
+		return;
+	}
+	m_lastStage6AgcLogState = stateKey;
+	++m_stage6AgcLogCounter;
+	const bool agcEffective =
+		m_stage6AgcEnabled &&
+		m_stage6AgcApplyTo == "final_display" &&
+		m_stage6AgcMode != "Off";
+	std::cout << "[Stage6 AGC]"
+		<< " sourceSeq=" << sourceSeq
+		<< " enabled=" << (m_stage6AgcEnabled ? "1" : "0")
+		<< " effective=" << (agcEffective ? "1" : "0")
+		<< " mode=" << m_stage6AgcMode
+		<< " statsSource=" << m_stage6AgcStatsSource
+		<< " updateHz=" << m_stage6AgcUpdateHz
+		<< " sampleCount=" << m_stage6AgcSampleCount
+		<< " lowPercentile=" << m_stage6AgcLowPercentile
+		<< " highPercentile=" << m_stage6AgcHighPercentile
+		<< " lowInput=" << m_stage6AgcLowInput
+		<< " highInput=" << m_stage6AgcHighInput
+		<< " gain=" << m_stage6AgcTargetGain
+		<< " offset=" << m_stage6AgcTargetOffset
+		<< " gainSmoothed=" << m_stage6AgcGain
+		<< " offsetSmoothed=" << m_stage6AgcOffset
+		<< " valid=" << (m_stage6AgcValid ? "1" : "0")
+		<< " fallbackReason=" << m_stage6AgcFallbackReason
+		<< " stage6AgcStatsMs=" << m_stage6AgcStatsMsCurrent
 		<< std::endl;
 }
 
@@ -4600,6 +4935,23 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 	m_lastStage5AeroThermalLogState.clear();
 	m_lastAeroSpeedStateLogState.clear();
 	m_lastStage4InputState.clear();
+	m_stage6AgcGain = 1.0;
+	m_stage6AgcOffset = 0.0;
+	m_stage6AgcLowInput = 0.0;
+	m_stage6AgcHighInput = 1.0;
+	m_stage6AgcTargetGain = 1.0;
+	m_stage6AgcTargetOffset = 0.0;
+	m_stage6AgcSampleCount = 0;
+	m_stage6AgcValid = false;
+	m_stage6AgcInitialized = false;
+	m_stage6AgcFallbackReason = m_stage6AgcEnabled ? "reset" : "disabled";
+	m_stage6AgcStatsMsCurrent = 0.0;
+	m_stage6AgcApplyMsCurrent = 0.0;
+	m_stage6AgcLastUpdateNs = 0;
+	m_stage6AgcLastUpdateSourceSeq = 0;
+	m_stage6AgcLogCounter = 0;
+	m_lastStage6AgcLogState.clear();
+	ApplyStage6FinalPostprocessInputs();
 	if (m_pTcpThread)
 	{
 		m_pTcpThread->setSyncMode(m_bSyncRenderMode.load());
@@ -4959,6 +5311,25 @@ void HwaSimIR::InitInfraredSimulation()
 	std::string stage6MtfApplyToSource;
 	std::string stage6MtfDebugSource;
 	std::string stage6MtfLogEverySource;
+	std::string stage6AgcEnableSource;
+	std::string stage6AgcModeSource;
+	std::string stage6AgcApplyToSource;
+	std::string stage6AgcStatsSource;
+	std::string stage6AgcUpdateHzSource;
+	std::string stage6AgcLogEverySource;
+	std::string stage6AgcLowPercentileSource;
+	std::string stage6AgcHighPercentileSource;
+	std::string stage6AgcMeanStdKSource;
+	std::string stage6AgcMinGainSource;
+	std::string stage6AgcMaxGainSource;
+	std::string stage6AgcMinOffsetSource;
+	std::string stage6AgcMaxOffsetSource;
+	std::string stage6AgcSmoothingSource;
+	std::string stage6AgcTargetLowSource;
+	std::string stage6AgcTargetHighSource;
+	std::string stage6AgcStrideSource;
+	std::string stage6AgcExcludeAnnotationSource;
+	std::string stage6AgcDebugSource;
 	std::string tcpCodecSource;
 	std::string jpegQualitySource;
 	std::string jpegModeSource;
@@ -5144,6 +5515,230 @@ void HwaSimIR::InitInfraredSimulation()
 		<< "/" << stage6MtfSigmaSource << "/" << stage6MtfRadiusSource
 		<< "/" << stage6MtfPassesSource << "/" << stage6MtfApplyToSource
 		<< "/" << stage6MtfDebugSource << "/" << stage6MtfLogEverySource
+		<< std::endl;
+	m_stage6AgcEnabled = m_runtimeConfig.getBool(
+		"Stage6AGC",
+		"EnableAGC",
+		"EnableAGC",
+		false,
+		&stage6AgcEnableSource);
+	m_stage6AgcMode = NormalizeStage6AgcMode(m_runtimeConfig.getString(
+		"Stage6AGC",
+		"AGCMode",
+		"AGCMode",
+		"Percentile",
+		&stage6AgcModeSource));
+	m_stage6AgcModeCode = Stage6AgcModeCode(m_stage6AgcMode);
+	m_stage6AgcApplyTo = ToLowerAscii(m_runtimeConfig.getString(
+		"Stage6AGC",
+		"AGCApplyTo",
+		"AGCApplyTo",
+		"final_display",
+		&stage6AgcApplyToSource));
+	if (m_stage6AgcApplyTo != "final_display")
+	{
+		std::cout << "[Stage6 AGCConfig][WARN]"
+			<< " AGCApplyTo=" << m_stage6AgcApplyTo
+			<< " fallback=final_display"
+			<< std::endl;
+		m_stage6AgcApplyTo = "final_display";
+	}
+	m_stage6AgcStatsSource = ToLowerAscii(m_runtimeConfig.getString(
+		"Stage6AGC",
+		"AGCStatsSource",
+		"AGCStatsSource",
+		"previous_readback",
+		&stage6AgcStatsSource));
+	if (m_stage6AgcStatsSource != "previous_readback")
+	{
+		std::cout << "[Stage6 AGCConfig][WARN]"
+			<< " AGCStatsSource=" << m_stage6AgcStatsSource
+			<< " fallback=previous_readback"
+			<< std::endl;
+		m_stage6AgcStatsSource = "previous_readback";
+	}
+	m_stage6AgcUpdateHz = m_runtimeConfig.getDouble(
+		"Stage6AGC",
+		"AGCUpdateHz",
+		"AGCUpdateHz",
+		30.0,
+		&stage6AgcUpdateHzSource);
+	if (!std::isfinite(m_stage6AgcUpdateHz) || m_stage6AgcUpdateHz <= 0.0)
+	{
+		std::cout << "[Stage6 AGCConfig][WARN]"
+			<< " invalid AGCUpdateHz=" << m_stage6AgcUpdateHz
+			<< " fallback=30"
+			<< std::endl;
+		m_stage6AgcUpdateHz = 30.0;
+	}
+	m_stage6AgcUpdateHz = ClampStage5Double(m_stage6AgcUpdateHz, 1.0, 120.0);
+	m_stage6AgcLogEveryFrames = std::max(1, m_runtimeConfig.getInt(
+		"Stage6AGC",
+		"AGCLogEveryFrames",
+		"AGCLogEveryFrames",
+		120,
+		&stage6AgcLogEverySource));
+	m_stage6AgcLowPercentile = m_runtimeConfig.getDouble(
+		"Stage6AGC",
+		"AGCLowPercentile",
+		"AGCLowPercentile",
+		2.0,
+		&stage6AgcLowPercentileSource);
+	m_stage6AgcHighPercentile = m_runtimeConfig.getDouble(
+		"Stage6AGC",
+		"AGCHighPercentile",
+		"AGCHighPercentile",
+		98.0,
+		&stage6AgcHighPercentileSource);
+	if (!std::isfinite(m_stage6AgcLowPercentile) || !std::isfinite(m_stage6AgcHighPercentile))
+	{
+		m_stage6AgcLowPercentile = 2.0;
+		m_stage6AgcHighPercentile = 98.0;
+	}
+	m_stage6AgcLowPercentile = ClampStage5Double(m_stage6AgcLowPercentile, 0.0, 99.0);
+	m_stage6AgcHighPercentile = ClampStage5Double(m_stage6AgcHighPercentile, 1.0, 100.0);
+	if (m_stage6AgcHighPercentile <= m_stage6AgcLowPercentile)
+	{
+		std::cout << "[Stage6 AGCConfig][WARN]"
+			<< " AGCLowPercentile=" << m_stage6AgcLowPercentile
+			<< " AGCHighPercentile=" << m_stage6AgcHighPercentile
+			<< " fallback=2/98"
+			<< std::endl;
+		m_stage6AgcLowPercentile = 2.0;
+		m_stage6AgcHighPercentile = 98.0;
+	}
+	m_stage6AgcMeanStdK = m_runtimeConfig.getDouble(
+		"Stage6AGC",
+		"AGCMeanStdK",
+		"AGCMeanStdK",
+		2.5,
+		&stage6AgcMeanStdKSource);
+	if (!std::isfinite(m_stage6AgcMeanStdK))
+	{
+		m_stage6AgcMeanStdK = 2.5;
+	}
+	m_stage6AgcMeanStdK = ClampStage5Double(m_stage6AgcMeanStdK, 0.1, 8.0);
+	m_stage6AgcMinGain = m_runtimeConfig.getDouble("Stage6AGC", "AGCMinGain", "AGCMinGain", 0.25, &stage6AgcMinGainSource);
+	m_stage6AgcMaxGain = m_runtimeConfig.getDouble("Stage6AGC", "AGCMaxGain", "AGCMaxGain", 8.0, &stage6AgcMaxGainSource);
+	if (!std::isfinite(m_stage6AgcMinGain) || !std::isfinite(m_stage6AgcMaxGain) || m_stage6AgcMaxGain <= m_stage6AgcMinGain)
+	{
+		std::cout << "[Stage6 AGCConfig][WARN]"
+			<< " invalidGainRange min=" << m_stage6AgcMinGain
+			<< " max=" << m_stage6AgcMaxGain
+			<< " fallback=0.25/8"
+			<< std::endl;
+		m_stage6AgcMinGain = 0.25;
+		m_stage6AgcMaxGain = 8.0;
+	}
+	m_stage6AgcMinOffset = m_runtimeConfig.getDouble("Stage6AGC", "AGCMinOffset", "AGCMinOffset", -1.0, &stage6AgcMinOffsetSource);
+	m_stage6AgcMaxOffset = m_runtimeConfig.getDouble("Stage6AGC", "AGCMaxOffset", "AGCMaxOffset", 1.0, &stage6AgcMaxOffsetSource);
+	if (!std::isfinite(m_stage6AgcMinOffset) || !std::isfinite(m_stage6AgcMaxOffset) || m_stage6AgcMaxOffset <= m_stage6AgcMinOffset)
+	{
+		std::cout << "[Stage6 AGCConfig][WARN]"
+			<< " invalidOffsetRange min=" << m_stage6AgcMinOffset
+			<< " max=" << m_stage6AgcMaxOffset
+			<< " fallback=-1/1"
+			<< std::endl;
+		m_stage6AgcMinOffset = -1.0;
+		m_stage6AgcMaxOffset = 1.0;
+	}
+	m_stage6AgcSmoothingAlpha = m_runtimeConfig.getDouble(
+		"Stage6AGC",
+		"AGCSmoothingAlpha",
+		"AGCSmoothingAlpha",
+		0.15,
+		&stage6AgcSmoothingSource);
+	if (!std::isfinite(m_stage6AgcSmoothingAlpha))
+	{
+		m_stage6AgcSmoothingAlpha = 0.15;
+	}
+	m_stage6AgcSmoothingAlpha = ClampStage5Double(m_stage6AgcSmoothingAlpha, 0.0, 1.0);
+	m_stage6AgcTargetLowGray = m_runtimeConfig.getDouble("Stage6AGC", "AGCTargetLowGray", "AGCTargetLowGray", 0.05, &stage6AgcTargetLowSource);
+	m_stage6AgcTargetHighGray = m_runtimeConfig.getDouble("Stage6AGC", "AGCTargetHighGray", "AGCTargetHighGray", 0.95, &stage6AgcTargetHighSource);
+	if (!std::isfinite(m_stage6AgcTargetLowGray) || !std::isfinite(m_stage6AgcTargetHighGray))
+	{
+		m_stage6AgcTargetLowGray = 0.05;
+		m_stage6AgcTargetHighGray = 0.95;
+	}
+	m_stage6AgcTargetLowGray = ClampStage5Double(m_stage6AgcTargetLowGray, 0.0, 1.0);
+	m_stage6AgcTargetHighGray = ClampStage5Double(m_stage6AgcTargetHighGray, 0.0, 1.0);
+	if (m_stage6AgcTargetHighGray <= m_stage6AgcTargetLowGray)
+	{
+		std::cout << "[Stage6 AGCConfig][WARN]"
+			<< " AGCTargetLowGray=" << m_stage6AgcTargetLowGray
+			<< " AGCTargetHighGray=" << m_stage6AgcTargetHighGray
+			<< " fallback=0.05/0.95"
+			<< std::endl;
+		m_stage6AgcTargetLowGray = 0.05;
+		m_stage6AgcTargetHighGray = 0.95;
+	}
+	m_stage6AgcStride = m_runtimeConfig.getInt(
+		"Stage6AGC",
+		"AGCStride",
+		"AGCStride",
+		8,
+		&stage6AgcStrideSource);
+	m_stage6AgcStride = std::max(1, std::min(64, m_stage6AgcStride));
+	m_stage6AgcExcludeAnnotationOverlay = m_runtimeConfig.getBool(
+		"Stage6AGC",
+		"AGCExcludeAnnotationOverlay",
+		"AGCExcludeAnnotationOverlay",
+		true,
+		&stage6AgcExcludeAnnotationSource);
+	m_stage6AgcDebugLog = m_runtimeConfig.getBool(
+		"Stage6AGC",
+		"AGCDebugLog",
+		"AGCDebugLog",
+		false,
+		&stage6AgcDebugSource);
+	m_stage6AgcGain = 1.0;
+	m_stage6AgcOffset = 0.0;
+	m_stage6AgcLowInput = 0.0;
+	m_stage6AgcHighInput = 1.0;
+	m_stage6AgcTargetGain = 1.0;
+	m_stage6AgcTargetOffset = 0.0;
+	m_stage6AgcSampleCount = 0;
+	m_stage6AgcValid = false;
+	m_stage6AgcInitialized = false;
+	m_stage6AgcFallbackReason = m_stage6AgcEnabled ? "startup" : "disabled";
+	m_stage6AgcStatsMsCurrent = 0.0;
+	m_stage6AgcApplyMsCurrent = 0.0;
+	m_stage6AgcLastUpdateNs = 0;
+	m_stage6AgcLastUpdateSourceSeq = 0;
+	m_stage6AgcLogCounter = 0;
+	m_lastStage6AgcLogState.clear();
+	std::cout << "[Stage6 AGCConfig]"
+		<< " EnableAGC=" << (m_stage6AgcEnabled ? "1" : "0")
+		<< " AGCMode=" << m_stage6AgcMode
+		<< " AGCApplyTo=" << m_stage6AgcApplyTo
+		<< " AGCStatsSource=" << m_stage6AgcStatsSource
+		<< " AGCUpdateHz=" << m_stage6AgcUpdateHz
+		<< " AGCLogEveryFrames=" << m_stage6AgcLogEveryFrames
+		<< " AGCLowPercentile=" << m_stage6AgcLowPercentile
+		<< " AGCHighPercentile=" << m_stage6AgcHighPercentile
+		<< " AGCMeanStdK=" << m_stage6AgcMeanStdK
+		<< " AGCMinGain=" << m_stage6AgcMinGain
+		<< " AGCMaxGain=" << m_stage6AgcMaxGain
+		<< " AGCMinOffset=" << m_stage6AgcMinOffset
+		<< " AGCMaxOffset=" << m_stage6AgcMaxOffset
+		<< " AGCSmoothingAlpha=" << m_stage6AgcSmoothingAlpha
+		<< " AGCTargetLowGray=" << m_stage6AgcTargetLowGray
+		<< " AGCTargetHighGray=" << m_stage6AgcTargetHighGray
+		<< " AGCStride=" << m_stage6AgcStride
+		<< " AGCExcludeAnnotationOverlay=" << (m_stage6AgcExcludeAnnotationOverlay ? "1" : "0")
+		<< " AGCDebugLog=" << (m_stage6AgcDebugLog ? "1" : "0")
+		<< " implementation=previous_readback_histogram"
+		<< " source=" << stage6AgcEnableSource << "/" << stage6AgcModeSource
+		<< "/" << stage6AgcApplyToSource << "/" << stage6AgcStatsSource
+		<< "/" << stage6AgcUpdateHzSource << "/" << stage6AgcLogEverySource
+		<< "/" << stage6AgcLowPercentileSource << "/" << stage6AgcHighPercentileSource
+		<< "/" << stage6AgcMeanStdKSource
+		<< "/" << stage6AgcMinGainSource << "/" << stage6AgcMaxGainSource
+		<< "/" << stage6AgcMinOffsetSource << "/" << stage6AgcMaxOffsetSource
+		<< "/" << stage6AgcSmoothingSource
+		<< "/" << stage6AgcTargetLowSource << "/" << stage6AgcTargetHighSource
+		<< "/" << stage6AgcStrideSource << "/" << stage6AgcExcludeAnnotationSource
+		<< "/" << stage6AgcDebugSource
 		<< std::endl;
 	m_tcpCodecConfig = ToLowerAscii(m_runtimeConfig.getString(
 		"TcpOutput", "Codec", "TcpOutputCodec", "auto", &tcpCodecSource));
@@ -5998,6 +6593,25 @@ void HwaSimIR::InitInfraredSimulation()
 			<< ",MTFApplyTo:" << stage6MtfApplyToSource
 			<< ",MTFDebugLog:" << stage6MtfDebugSource
 			<< ",MTFLogEveryFrames:" << stage6MtfLogEverySource
+			<< ",EnableAGC:" << stage6AgcEnableSource
+			<< ",AGCMode:" << stage6AgcModeSource
+			<< ",AGCApplyTo:" << stage6AgcApplyToSource
+			<< ",AGCStatsSource:" << stage6AgcStatsSource
+			<< ",AGCUpdateHz:" << stage6AgcUpdateHzSource
+			<< ",AGCLogEveryFrames:" << stage6AgcLogEverySource
+			<< ",AGCLowPercentile:" << stage6AgcLowPercentileSource
+			<< ",AGCHighPercentile:" << stage6AgcHighPercentileSource
+			<< ",AGCMeanStdK:" << stage6AgcMeanStdKSource
+			<< ",AGCMinGain:" << stage6AgcMinGainSource
+			<< ",AGCMaxGain:" << stage6AgcMaxGainSource
+			<< ",AGCMinOffset:" << stage6AgcMinOffsetSource
+			<< ",AGCMaxOffset:" << stage6AgcMaxOffsetSource
+			<< ",AGCSmoothingAlpha:" << stage6AgcSmoothingSource
+			<< ",AGCTargetLowGray:" << stage6AgcTargetLowSource
+			<< ",AGCTargetHighGray:" << stage6AgcTargetHighSource
+			<< ",AGCStride:" << stage6AgcStrideSource
+			<< ",AGCExcludeAnnotationOverlay:" << stage6AgcExcludeAnnotationSource
+			<< ",AGCDebugLog:" << stage6AgcDebugSource
 			<< ",AnnotationUpdateHz:" << annotationUpdateHzSource
 			<< ",EnableIRPhysicalPipeline:" << stage5PhysicalSource
 			<< ",DebugView:" << stage5ViewModeSource
@@ -7402,6 +8016,14 @@ void HwaSimIR::LogEffectiveRuntimeConfig(
 		<< " MTFBlurRadiusPixels=" << m_stage6MtfBlurRadiusPixels
 		<< " MTFBlurPasses=" << m_stage6MtfBlurPasses
 		<< " MTFApplyTo=" << m_stage6MtfApplyTo
+		<< " EnableAGC=" << (m_stage6AgcEnabled ? "1" : "0")
+		<< " AGCMode=" << m_stage6AgcMode
+		<< " AGCApplyTo=" << m_stage6AgcApplyTo
+		<< " AGCStatsSource=" << m_stage6AgcStatsSource
+		<< " AGCUpdateHz=" << m_stage6AgcUpdateHz
+		<< " AGCStride=" << m_stage6AgcStride
+		<< " AGCGain=" << m_stage6AgcGain
+		<< " AGCOffset=" << m_stage6AgcOffset
 		<< " EnableIRPhysicalPipeline=" << (m_enableStage5PhysicalPipeline ? "1" : "0")
 		<< " DebugView=" << m_stage5DebugViewModeName
 		<< " LogComponents=" << (m_stage5LogComponents ? "1" : "0")
@@ -7471,6 +8093,14 @@ void HwaSimIR::LogEffectiveRuntimeConfig(
 			<< " sigmaPixels=" << m_stage6MtfBlurSigmaPixels
 			<< " radiusPixels=" << m_stage6MtfBlurRadiusPixels
 			<< " reason=stage6a_AB_or_candidate_mode_not_production_default"
+			<< std::endl;
+	}
+	if (m_stage6AgcEnabled)
+	{
+		std::cout << "[EffectiveRuntimeConfig][WARN] EnableAGC=1"
+			<< " mode=" << m_stage6AgcMode
+			<< " statsSource=" << m_stage6AgcStatsSource
+			<< " reason=stage6b_AB_or_candidate_mode_not_production_default"
 			<< std::endl;
 	}
 	if (m_stage5ApplyAeroToRadiance)
@@ -9024,6 +9654,11 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 			{
 				return AsyncTask::DS_cont;
 			}
+			self->UpdateStage6AgcFromFrame(
+				frameData,
+				frameWidth,
+				frameHeight,
+				telemetry.sourceSeq);
 			if (trackingSnapshot.flag != 0x38)
 			{
 				trackingSnapshot.flag = 0x38;
