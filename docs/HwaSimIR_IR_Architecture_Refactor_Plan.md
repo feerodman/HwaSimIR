@@ -2712,6 +2712,168 @@ Phase6C DetectorNoise A/B：
 
 ---
 
+### 阶段 6D：Stage6 候选组合长时长视觉验收与参数收口
+
+```text
+阶段：6D
+日期：2026-06-23
+执行者：Codex
+目标：不新增 Stage6 功能，只对已经实现的 SensorInputDisplay、MTF/blur、DetectorNoise、AGC 做串行组合 A/B，
+      输出可选候选配置，并确认生产默认仍全部关闭。
+
+本阶段变更：
+- 新增 tools/phase6d_visual_combo_acceptance.ps1。
+  - 串行运行 9 个组合，避免多个 HwaSim_IR / DataDrivenTestQT / VideoDisplay 抢 UDP/TCP 端口导致假失败。
+  - 每组默认运行 60 秒。
+  - 输出 logs/stage6/visual_combo_acceptance_summary.csv。
+  - 每组输出 early / middle / late 代表帧到 logs/stage6/phase6d_frames/。
+  - 每组输出 5~10 秒短片到 logs/stage6/phase6d_clips/。
+  - 输出 logs/stage6/stage6_candidate_config.ini，作为候选配置块，不写回生产 ini。
+- phase2a_sync60_save_smoke.ps1 汇总字段增加 latencyP95Ms，供长时长组合验收使用。
+- 生产默认未改动：
+  UseSensorInputForDisplay=false
+  EnableMTFBlur=false
+  EnableDetectorNoise=false
+  EnableAGC=false
+  ApplyAeroToRadiance=false
+  UseModtranPathRuntime=false
+  ModtranPathRuntimeMode=Off
+  DebugView=Off
+  LogComponents=false
+  EnableIRVerboseLog=0
+  JpegEncodeMode=rgb
+  JpegQuality=100
+
+构建：
+- HwaSim_IR Windows Release x64：通过。
+- DataDrivenTestQT Release：通过。
+- HwaSim_IR_VideoDisplay Windows Release x64：通过，0 warning / 0 error。
+
+回归：
+- runtime_config_check.ps1：通过。
+- Stage3 MODTRAN tau-only strict：通过。
+- Stage4 hotspot/brightspot strict：通过。
+- Stage5 radiance components smoke：通过。
+- Stage5 aero thermal smoke：通过。
+- Phase6A MTF A/B：通过。第一次 8 秒短窗 weak 组 udpFps=59.382，属于短窗口启动抖动；按默认 10 秒重跑后通过。
+- Phase6B AGC A/B：通过。
+- Phase6C DetectorNoise A/B：通过。
+
+Phase6D 60 秒组合验收：
+- CSV：logs/stage6/visual_combo_acceptance_summary.csv
+- 代表帧：logs/stage6/phase6d_frames/
+- 短片：logs/stage6/phase6d_clips/
+- 候选配置：logs/stage6/stage6_candidate_config.ini
+
+case 结果：
+- baseline_production：
+  sent=60.010, udp=60.019, render=60.130, output=60.109, display=60.134,
+  latencyAvgMs=16.925, latencyP95Ms=27.499,
+  stage6MtfBlurMs=0, stage6DetectorNoiseMs=0, stage6AgcStatsMs=0, dropped=0。
+- sensor_only_candidate：
+  sent=60.006, udp=60.015, render=60.502, output=60.480, display=60.603,
+  latencyAvgMs=47.357, latencyP95Ms=81.285,
+  stage6MtfBlurMs=0, stage6DetectorNoiseMs=0, stage6AgcStatsMs=0, dropped=0。
+  平均延时满足要求，但 P95 接近/略过 80ms，仍建议观察，不默认启用。
+- mtf_only_candidate：
+  sent=60.009, udp=60.141, render=60.120, output=60.100, display=60.143,
+  latencyAvgMs=17.778, latencyP95Ms=29.579,
+  stage6MtfBlurMs=7.251516, dropped=0。
+- noise_only_candidate：
+  sent=60.003, udp=60.011, render=60.136, output=60.100, display=60.122,
+  latencyAvgMs=17.937, latencyP95Ms=29.064,
+  stage6DetectorNoiseMs=7.104419, dropped=0。
+- mtf_noise_candidate：
+  sent=60.004, udp=60.000, render=60.127, output=60.091, display=60.116,
+  latencyAvgMs=18.466, latencyP95Ms=30.058,
+  stage6MtfBlurMs=7.303839, stage6DetectorNoiseMs=7.303839, dropped=0。
+- agc_only_candidate：
+  sent=60.012, udp=59.976, render=60.125, output=60.051, display=60.126,
+  latencyAvgMs=18.080, latencyP95Ms=29.890,
+  stage6AgcStatsMs=0.025063, dropped=0。
+- agc_conservative_candidate：
+  sent=60.007, udp=60.010, render=60.138, output=60.117, display=60.139,
+  latencyAvgMs=18.045, latencyP95Ms=30.333,
+  stage6AgcStatsMs=0.024875, dropped=0。
+- noise_agc_conservative_observe：
+  sent=60.009, udp=60.013, render=60.138, output=60.102, display=60.129,
+  latencyAvgMs=19.175, latencyP95Ms=30.244,
+  stage6DetectorNoiseMs=7.535903, stage6AgcStatsMs=0.024719, dropped=0。
+- mtf_noise_agc_conservative_observe：
+  sent=60.001, udp=60.137, render=60.149, output=60.112, display=60.150,
+  latencyAvgMs=19.553, latencyP95Ms=32.188,
+  stage6MtfBlurMs=7.560968, stage6DetectorNoiseMs=7.560968, stage6AgcStatsMs=0.024938, dropped=0。
+
+视觉抽帧结论：
+- baseline：参考画面正常，目标主体和标注清晰。
+- sensor_only：视觉接近当前基线，目标/标注清晰；但 P95 延时偏高，保留观察。
+- mtf_noise_candidate：边缘略柔和，轻微噪声/FPN 可见，目标、bbox、关键点、文字仍清晰；是当前最稳的组合候选。
+- agc_only / agc_conservative：性能正常，但代表帧背景被压得很暗，说明 AGC 效果强依赖场景；保守 AGC 可继续观察，但不建议作为首选组合。
+- noise_agc_conservative / mtf_noise_agc_conservative：性能正常，目标和标注仍清晰；存在固定纹理/噪声被 AGC 带出的风险，只作为 observe 组。
+- 短片已输出，仍建议后续人工重点看 flicker；本轮抽帧未见目标消失、标注丢失、明显过曝或目标层次被完全抹平。
+
+候选配置建议：
+- CandidateA_sensor_mtf_noise_no_agc：
+  UseSensorInputForDisplay=true,
+  SensorInputDisplayScale=0.35,
+  EnableMTFBlur=true,
+  MTFBlurSigmaPixels=0.8,
+  MTFBlurRadiusPixels=2,
+  EnableDetectorNoise=true,
+  TemporalNoiseSigmaGray=0.004,
+  EnableFPN=true,
+  FPNSigmaGray=0.0025,
+  EnableColumnNoise=true,
+  ColumnNoiseSigmaGray=0.001,
+  EnableAGC=false。
+  说明：可作为下一轮人工视觉验收首选候选，但仍不默认开启。
+- CandidateB_agc_conservative_no_noise：
+  EnableAGC=true,
+  AGCMode=Percentile,
+  AGCLowPercentile=5,
+  AGCHighPercentile=99,
+  AGCMaxGain=3,
+  AGCSmoothingAlpha=0.10。
+  说明：可单独观察，但 AGC 改变全局灰度映射，不建议直接组合默认化。
+- CandidateC_noise_agc_conservative_observe：
+  DetectorNoise + conservative AGC。
+  说明：只观察，不建议作为近期默认候选，因为 AGC 可能放大噪声或改变背景亮度。
+
+生产默认 30 秒实测：
+- 日志：logs/phase2a-final-20260623-174104
+- MP4：HwaSim_IR_VideoDisplay/x64/Release/MP4/round_001_20260623_174119/output.mp4
+- sentFps=60.009
+- udpFps=60.025
+- renderFps=60.355
+- outputFps=60.314
+- VideoDisplay receive/display=60.357
+- latencyAvgMs=22.351
+- latencyP95Ms=41.994
+- jpegMsAvg=5.793
+- readbackMsAvg=1.436
+- irUpdateMsAvg=0.817
+- stage5ModtranLookupMs=0
+- stage6MtfBlurMs=0
+- stage6DetectorNoiseMs=0
+- stage6AgcStatsMs=0
+- sourceSeqContinuous=1
+- sourceSeqContinuousWritten=1
+- inputQueueOverflow=0
+- TCP overwritten=0
+- recordingDroppedFrames=0
+- written/mp4/annotations/targetAnnotations=1800/1800/1800/1800
+- 稳态尾部 [Perf]：sourceSeqLag=0，inputQueueDepth=0；summary 中 sourceSeqLagMax/inputQueueDepthMax 是启动/退出附近短暂峰值，不是长期积压。
+
+结论：
+- Phase6D 未新增渲染功能，只完成候选组合长时长验收和参数收口脚本。
+- 所有 60 秒组合均保持 output/display >=59.5 FPS、平均延时 <=80ms、sourceSeq 连续、录像 0 丢帧。
+- 生产默认确认未改变，Stage6 增强全部关闭。
+- 当前最推荐继续人工验收的是“不启用 AGC”的 SensorInput + MTF + DetectorNoise 小组合，即 CandidateA。
+- 不建议马上做 ROI AGC / CLAHE；下一阶段更适合做候选短片人工评审、AGC 参数更细收口，或单独推进 H.264 / RK3588 / PBO 异步 readback。
+```
+
+---
+
 ## 12. 给 Codex 的第一阶段实施 Prompt
 
 见单独文件：`Codex_Phase1_Sync60_Perf_Prompt.md`。

@@ -369,6 +369,7 @@ $summary = [pscustomobject]@{
     videoReceiveFps = [math]::Round((Get-FpsAverage (Get-NumericValues $videoText "VideoPerf" "receiveFps")), 3)
     videoDisplayFps = [math]::Round((Get-FpsAverage (Get-NumericValues $videoText "VideoPerf" "displayFps")), 3)
     latencyAvgMs = [math]::Round((Get-Average (Get-NumericValues $videoText "VideoPerf" "latencyAvgMs")), 3)
+    latencyP95Ms = [math]::Round((Get-Average (Get-NumericValues $videoText "VideoPerf" "latencyP95Ms")), 3)
     jpegMsAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "TcpPerf" "jpegMs")), 3)
     readbackMsAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Stage6 Capture" "readbackMs")), 3)
     irUpdateMsAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "irUpdateMs")), 3)
