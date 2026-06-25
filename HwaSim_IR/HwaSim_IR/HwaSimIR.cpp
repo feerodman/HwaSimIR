@@ -35,6 +35,16 @@ bool FileExists(const std::string& path)
 	return file.good();
 }
 
+std::vector<std::string> BuildRuntimeConfigCandidatePaths()
+{
+	std::vector<std::string> runtimeConfigPaths;
+	runtimeConfigPaths.push_back("Config/HwaSimIRRuntime.ini");
+	runtimeConfigPaths.push_back("../Bin/Config/HwaSimIRRuntime.ini");
+	runtimeConfigPaths.push_back("HwaSim_IR/Bin/Config/HwaSimIRRuntime.ini");
+	runtimeConfigPaths.push_back("../HwaSim_IR/Bin/Config/HwaSimIRRuntime.ini");
+	return runtimeConfigPaths;
+}
+
 double ClampStage5Double(double value, double low, double high)
 {
 	return std::max(low, std::min(high, value));
@@ -935,38 +945,80 @@ HwaSimIR::HwaSimIR(int argc, char** argv)
 	load_prc_file_data("", "sync-video false");
 	// 初始化HwaSimIR框架（解析命令行参数）
 	m_pFramework->open_framework(argc, argv);
-	//load_prc_file_data("", "win-size 800 800");
-	// 设置初始窗口属性（800x800、标题、置顶）
-	WindowProperties init_props;
-	init_props.set_size(800, 800);
-	init_props.set_title("HwaSimIR");
-	init_props.set_foreground(true);
+	m_runtimeConfig.loadFromCandidates(BuildRuntimeConfigCandidatePaths());
+	LoadRenderBackendConfig();
 
+	if (IsVisibleWindowMode())
+	{
+		//load_prc_file_data("", "win-size 800 800");
+		// 设置初始窗口属性（800x800、标题、置顶）
+		WindowProperties init_props;
+		init_props.set_size(800, 800);
+		init_props.set_title("HwaSimIR");
+		init_props.set_foreground(true);
 
-	// 打开主窗口（使用默认GraphicsPipe）
-	m_pMainWindow = m_pFramework->open_window(
-		init_props,
-		0,
-		m_pFramework->get_default_pipe()
-	);
-	//m_pGraphicsOutput = m_pMainWindow->get_graphics_window();
-	m_pGraphicsWindow = m_pMainWindow->get_graphics_window();
-	m_pGraphicsWindow->request_properties(init_props);
-	m_renderRoot = m_pMainWindow->get_render();
-	//m_loader = m_pFramework->get_loader();
+		// 打开主窗口（使用默认GraphicsPipe）
+		m_pMainWindow = m_pFramework->open_window(
+			init_props,
+			0,
+			m_pFramework->get_default_pipe()
+		);
+		if (m_pMainWindow == nullptr)
+		{
+			m_renderBackendReady = false;
+			LogRenderBackendConfig("open_window_failed");
+			std::cerr << "[Fatal][RenderBackend]"
+				<< " mode=" << m_renderPresentationModeName
+				<< " failure=open_window_failed"
+				<< " message=VisibleWindow requires a valid Panda3D window"
+				<< std::endl;
+			return;
+		}
 
+		//m_pGraphicsOutput = m_pMainWindow->get_graphics_window();
+		m_pGraphicsWindow = m_pMainWindow->get_graphics_window();
+		if (m_pGraphicsWindow == nullptr)
+		{
+			m_renderBackendReady = false;
+			LogRenderBackendConfig("graphics_window_unavailable");
+			std::cerr << "[Fatal][RenderBackend]"
+				<< " mode=" << m_renderPresentationModeName
+				<< " failure=graphics_window_unavailable"
+				<< " message=VisibleWindow created without GraphicsWindow"
+				<< std::endl;
+			return;
+		}
+		m_pGraphicsWindow->request_properties(init_props);
+		m_renderRoot = m_pMainWindow->get_render();
+		m_renderBackendReady = true;
+		InitVisibleWindowUi();
+		LogGraphicsBackend();
+	}
+	else
+	{
+		m_renderRoot = NodePath("HeadlessOffscreenRenderRoot");
+		m_camera = nullptr;
+		m_cameraLens = nullptr;
+		m_renderBackendReady = true;
+		std::cout << "[RenderBackend][TODO]"
+			<< " mode=" << m_renderPresentationModeName
+			<< " headless_final_pipeline_not_ready=1"
+			<< " stage=H1"
+			<< std::endl;
+	}
 
 	SetRenderMode(true, 0);
 	//SetRenderMode(false, 0);
 
-	// 窗口初始化+注册自定义功能
-	if (m_pMainWindow) {
+	LogRenderBackendConfig("startup");
+
+	// 公共初始化：以渲染后端基础状态为门闩，不再依赖 m_pMainWindow。
+	if (IsRenderBackendReady()) {
 		std::cout << "[BuildStamp] stage6b4_stage7a2_source_active=1"
 			<< " compile_date=" << __DATE__
 			<< " compile_time=" << __TIME__
 			<< std::endl;
-		InitHwaSimIRWindow();
-		LogGraphicsBackend();
+		InitCommonCaptureTask();
 		//register_custom_functions();
 	// 初始化通讯线程
 		LoadNetworkConfig();
@@ -988,7 +1040,7 @@ HwaSimIR::HwaSimIR(int argc, char** argv)
 
 	}
 	else {
-		std::cerr << "Failed to create main window!" << std::endl;
+		std::cerr << "[Fatal][RenderBackend] render backend is not ready; startup aborted safely." << std::endl;
 	}
 }
 
@@ -1032,7 +1084,7 @@ HwaSimIR::~HwaSimIR() {
 //}
 
 void HwaSimIR::run() {
-	if (!m_pMainWindow || !m_pFramework) return;
+	if (!m_pFramework || !IsRenderBackendReady()) return;
 
 	std::cout << "应用程序已启动。按ESC键退出。" << std::endl;
 
@@ -1181,8 +1233,138 @@ void HwaSimIR::LogGraphicsBackend() const
 	}
 }
 
+void HwaSimIR::LoadRenderBackendConfig()
+{
+	std::string modeSource;
+	std::string previewSource;
+	std::string frameRateSource;
+	std::string widthSource;
+	std::string heightSource;
+	const std::string requestedMode = m_runtimeConfig.getString(
+		"RenderBackend",
+		"PresentationMode",
+		"RenderPresentationMode",
+		"VisibleWindow",
+		&modeSource);
+	const std::string modeLower = ToLowerAscii(requestedMode);
+	if (modeLower == "visiblewindow" || modeLower == "visible_window" || modeLower == "window")
+	{
+		m_renderPresentationMode = RenderPresentationMode::VisibleWindow;
+		m_renderPresentationModeName = "VisibleWindow";
+	}
+	else if (modeLower == "headlessoffscreen" || modeLower == "headless_offscreen" || modeLower == "headless")
+	{
+		m_renderPresentationMode = RenderPresentationMode::HeadlessOffscreen;
+		m_renderPresentationModeName = "HeadlessOffscreen";
+	}
+	else
+	{
+		std::cout << "[RenderBackend][WARN]"
+			<< " invalid PresentationMode=" << requestedMode
+			<< " fallback=VisibleWindow"
+			<< std::endl;
+		m_renderPresentationMode = RenderPresentationMode::VisibleWindow;
+		m_renderPresentationModeName = "VisibleWindow";
+	}
+
+	m_renderWindowPreview = m_runtimeConfig.getBool(
+		"RenderBackend",
+		"WindowPreview",
+		"RenderWindowPreview",
+		true,
+		&previewSource);
+	m_renderEnableFrameRateMeter = m_runtimeConfig.getBool(
+		"RenderBackend",
+		"EnableFrameRateMeter",
+		"RenderEnableFrameRateMeter",
+		true,
+		&frameRateSource);
+	m_headlessWidth = m_runtimeConfig.getInt(
+		"RenderBackend",
+		"HeadlessWidth",
+		"RenderHeadlessWidth",
+		800,
+		&widthSource);
+	m_headlessHeight = m_runtimeConfig.getInt(
+		"RenderBackend",
+		"HeadlessHeight",
+		"RenderHeadlessHeight",
+		800,
+		&heightSource);
+	if (m_headlessWidth <= 0)
+	{
+		std::cout << "[RenderBackend][WARN]"
+			<< " invalid HeadlessWidth=" << m_headlessWidth
+			<< " fallback=800"
+			<< std::endl;
+		m_headlessWidth = 800;
+	}
+	if (m_headlessHeight <= 0)
+	{
+		std::cout << "[RenderBackend][WARN]"
+			<< " invalid HeadlessHeight=" << m_headlessHeight
+			<< " fallback=800"
+			<< std::endl;
+		m_headlessHeight = 800;
+	}
+	m_headlessWidth = std::max(1, std::min(8192, m_headlessWidth));
+	m_headlessHeight = std::max(1, std::min(8192, m_headlessHeight));
+
+	std::cout << "[RenderBackendConfig]"
+		<< " PresentationMode=" << m_renderPresentationModeName
+		<< " WindowPreview=" << (m_renderWindowPreview ? "1" : "0")
+		<< " EnableFrameRateMeter=" << (m_renderEnableFrameRateMeter ? "1" : "0")
+		<< " HeadlessSize=" << m_headlessWidth << "x" << m_headlessHeight
+		<< " source=" << modeSource << "/" << previewSource << "/" << frameRateSource
+		<< "/" << widthSource << "/" << heightSource
+		<< std::endl;
+}
+
+bool HwaSimIR::IsVisibleWindowMode() const
+{
+	return m_renderPresentationMode == RenderPresentationMode::VisibleWindow;
+}
+
+bool HwaSimIR::IsHeadlessOffscreenMode() const
+{
+	return m_renderPresentationMode == RenderPresentationMode::HeadlessOffscreen;
+}
+
+bool HwaSimIR::IsRenderBackendReady() const
+{
+	return m_renderBackendReady;
+}
+
+void HwaSimIR::LogRenderBackendConfig(const char* reason) const
+{
+	std::cout << "[RenderBackend]"
+		<< " mode=" << m_renderPresentationModeName
+		<< " windowCreated=" << (m_pMainWindow != nullptr ? "1" : "0")
+		<< " renderBackendReady=" << (m_renderBackendReady ? "1" : "0")
+		<< " reason=" << (reason != nullptr ? reason : "unknown")
+		<< " graphicsWindow=" << (m_pGraphicsWindow != nullptr ? "1" : "0")
+		<< " windowPreview=" << (m_renderWindowPreview ? "1" : "0")
+		<< " enableFrameRateMeter=" << (m_renderEnableFrameRateMeter ? "1" : "0")
+		<< " headlessSize=" << m_headlessWidth << "x" << m_headlessHeight
+		<< std::endl;
+}
+
 // 修改窗口分辨率
 void HwaSimIR::resize_window(int new_width, int new_height) {
+	if (IsHeadlessOffscreenMode()) {
+		const int safeWidth = std::max(1, new_width);
+		const int safeHeight = std::max(1, new_height);
+		if (m_renderTex != nullptr) {
+			m_renderTex->setup_2d_texture(safeWidth, safeHeight, Texture::T_unsigned_byte, Texture::F_rgb);
+		}
+		std::cout << "[Stage6 Resize][TODO]"
+			<< " renderMode=" << m_renderPresentationModeName
+			<< " renderTexture=" << safeWidth << "x" << safeHeight
+			<< " headless_final_pipeline_not_ready=1"
+			<< std::endl;
+		return;
+	}
+
 	if (!m_pMainWindow) return;
 
 	GraphicsWindow* graphics_win = m_pMainWindow->get_graphics_window();
@@ -1827,8 +2009,31 @@ void HwaSimIR::InitStage6FinalPostShader()
 
 void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reason)
 {
+	if (IsHeadlessOffscreenMode())
+	{
+		m_stage6FinalPipelineReady = false;
+		std::cout << "[Stage6 FinalPipeline][TODO]"
+			<< " reason=" << (reason != nullptr ? reason : "unknown")
+			<< " renderMode=" << m_renderPresentationModeName
+			<< " windowPreview=" << (m_renderWindowPreview ? "1" : "0")
+			<< " tcpSource=final_sensor"
+			<< " finalSensorTex=Stage6FinalSensorTex"
+			<< " headless_final_pipeline_not_ready=1"
+			<< " stage=H1"
+			<< std::endl;
+		return;
+	}
+
 	if (!m_pMainWindow || !m_pGraphicsWindow || m_cameraNode.is_empty())
 	{
+		std::cout << "[Stage6 FinalPipeline][WARN]"
+			<< " reason=" << (reason != nullptr ? reason : "unknown")
+			<< " renderMode=" << m_renderPresentationModeName
+			<< " windowPreview=" << (m_renderWindowPreview ? "1" : "0")
+			<< " tcpSource=final_sensor"
+			<< " finalSensorTex=Stage6FinalSensorTex"
+			<< " failure=visible_window_pipeline_unavailable"
+			<< std::endl;
 		return;
 	}
 	if (!m_stage6FinalPostShader)
@@ -2119,6 +2324,8 @@ void HwaSimIR::LogStage6FinalPipeline(const char* reason)
 	}
 	std::cout << "[Stage6 FinalPipeline]"
 		<< " reason=" << (reason != nullptr ? reason : "unknown")
+		<< " renderMode=" << m_renderPresentationModeName
+		<< " windowPreview=" << (m_renderWindowPreview ? "1" : "0")
 		<< " rawSceneTex=Stage6RawSceneTex"
 		<< " finalSensorTex=Stage6FinalSensorTex"
 		<< " rawSceneSize=" << m_stage6FinalWidth << "x" << m_stage6FinalHeight
@@ -3787,8 +3994,12 @@ void HwaSimIR::RefreshAnnotationOverlay(const BYHWICD::DisplayC2cObjTrackingData
 	}
 }
 
-// 窗口初始化（通用配置）
-void HwaSimIR::InitHwaSimIRWindow() {
+// 窗口UI初始化（VisibleWindow专用）
+void HwaSimIR::InitVisibleWindowUi() {
+	if (!m_pMainWindow || !m_pGraphicsWindow)
+	{
+		return;
+	}
 	m_pMainWindow->enable_keyboard();       // 启用键盘输入
 	//m_pMainWindow->setup_trackball();       // 启用鼠标轨迹球（视角操控）
 	m_pMainWindow->set_background_type(WindowFramework::BT_gray); // 灰色背景
@@ -3800,9 +4011,12 @@ void HwaSimIR::InitHwaSimIRWindow() {
 
 
 	//帧率显示器
-	PT(FrameRateMeter) meter;
-	meter = new FrameRateMeter("frame_rate_meter");
-	meter->setup_window(m_pGraphicsWindow);
+	if (m_renderEnableFrameRateMeter)
+	{
+		PT(FrameRateMeter) meter;
+		meter = new FrameRateMeter("frame_rate_meter");
+		meter->setup_window(m_pGraphicsWindow);
+	}
 
 
 	// 获取全局事件处理器（根据 eventHandler.h）
@@ -3820,9 +4034,38 @@ void HwaSimIR::InitHwaSimIRWindow() {
 	m_pFramework->define_key("arrow_right", "Move forward", &HwaSimIR::on_key_event, this);
 
 
-	// Stage6B.3: capture the final sensor image shown in the window.
+}
+
+void HwaSimIR::InitCommonCaptureTask() {
 	m_renderTex = new Texture("Stage6FinalSensorTex");
-	m_pGraphicsWindow->add_render_texture(m_renderTex, GraphicsOutput::RTM_copy_ram);
+	if (IsVisibleWindowMode())
+	{
+		if (m_pGraphicsWindow != nullptr)
+		{
+			m_pGraphicsWindow->add_render_texture(m_renderTex, GraphicsOutput::RTM_copy_ram);
+		}
+		else
+		{
+			std::cout << "[RenderBackend][WARN]"
+				<< " mode=" << m_renderPresentationModeName
+				<< " captureTask=Stage6FinalSensorTex"
+				<< " failure=graphics_window_unavailable"
+				<< std::endl;
+		}
+	}
+	else
+	{
+		m_renderTex->setup_2d_texture(
+			std::max(1, m_headlessWidth),
+			std::max(1, m_headlessHeight),
+			Texture::T_unsigned_byte,
+			Texture::F_rgb);
+		std::cout << "[RenderBackend][TODO]"
+			<< " mode=" << m_renderPresentationModeName
+			<< " captureTask=Stage6FinalSensorTex"
+			<< " headless_final_pipeline_not_ready=1"
+			<< std::endl;
+	}
 
 	// 向引擎全局任务管理器添加一个捕获任务，保证在主线程安全运行
 	PT(GenericAsyncTask) cap_task = new GenericAsyncTask("CaptureTask", &HwaSimIR::capture_task, this);
@@ -3869,6 +4112,28 @@ void HwaSimIR::InitPlatformModels()
 
 	std::cout << "平台模型路径初始化完成，共加载" << m_platformResMap.size() << "种平台资源" << std::endl;
 
+	if (IsHeadlessOffscreenMode())
+	{
+		std::cout << "[RenderBackend][TODO]"
+			<< " mode=" << m_renderPresentationModeName
+			<< " platformModelPaths=" << m_platformResMap.size()
+			<< " modelRenderHost=headless_final_pipeline_not_ready"
+			<< std::endl;
+		m_camera = nullptr;
+		m_cameraLens = nullptr;
+		return;
+	}
+
+	if (!m_pMainWindow || m_renderRoot.is_empty())
+	{
+		std::cout << "[RenderBackend][WARN]"
+			<< " mode=" << m_renderPresentationModeName
+			<< " platformModelPaths=" << m_platformResMap.size()
+			<< " failure=visible_model_host_unavailable"
+			<< std::endl;
+		return;
+	}
+
 
 	// 旧的单模型调试代码保留为参考，路径已迁移到新的 AIM9X 资产目录。
 #if 0
@@ -3908,9 +4173,12 @@ void HwaSimIR::InitPlatformModels()
 	//m_cameraNode.look_at(aim9);
 
 	m_camera = m_pMainWindow->get_camera(0);
-	m_cameraLens = m_camera->get_lens();
-	m_cameraLens->set_fov(0.1, 0.1);
-	m_cameraLens->set_near_far(1.0, 100000.0);
+	m_cameraLens = m_camera != nullptr ? m_camera->get_lens() : nullptr;
+	if (m_cameraLens != nullptr)
+	{
+		m_cameraLens->set_fov(0.1, 0.1);
+		m_cameraLens->set_near_far(1.0, 100000.0);
+	}
 
 
 }
@@ -4331,6 +4599,17 @@ PLATFORM_TYPE HwaSimIR::TargetTypeToPlatformType(int targetType) const
 
 NodePath HwaSimIR::LoadPlatformAssetNode(PLATFORM_TYPE type, const PlatformResPath& res)
 {
+	if (!m_pMainWindow || m_renderRoot.is_empty())
+	{
+		std::cout << "[RenderBackend][TODO]"
+			<< " mode=" << m_renderPresentationModeName
+			<< " platformType=" << type
+			<< " modelPath=" << res.modelPath
+			<< " modelRenderHost=headless_final_pipeline_not_ready"
+			<< std::endl;
+		return NodePath();
+	}
+
 	Filename modelPath = Filename::from_os_specific(res.modelPath);
 	NodePath modelNode = m_pMainWindow->load_model(m_renderRoot, modelPath);
 	if (modelNode.is_empty())
@@ -4443,7 +4722,7 @@ void HwaSimIR::ProcessAddRemovePakPlatform()
 			}
 		}
 		// ========== 新增：解绑相机，恢复默认视角 ==========
-		if (m_isCameraAttached) {
+		if (m_isCameraAttached && !m_cameraNode.is_empty()) {
 			// 将相机重新父节点设为渲染根节点
 			m_cameraNode.reparent_to(m_renderRoot);
 			// 重置相机位置和姿态（恢复初始视角，可选）
@@ -5496,13 +5775,10 @@ void HwaSimIR::InitInfraredSimulation()
 	stage5DebugConfigPaths.push_back("../Bin/Config/IRRadiance/stage5_debug_display.json");
 	stage5DebugConfigPaths.push_back("HwaSim_IR/Bin/Config/IRRadiance/stage5_debug_display.json");
 	stage5DebugConfigPaths.push_back("../HwaSim_IR/Bin/Config/IRRadiance/stage5_debug_display.json");
-	std::vector<std::string> runtimeConfigPaths;
-	runtimeConfigPaths.push_back("Config/HwaSimIRRuntime.ini");
-	runtimeConfigPaths.push_back("../Bin/Config/HwaSimIRRuntime.ini");
-	runtimeConfigPaths.push_back("HwaSim_IR/Bin/Config/HwaSimIRRuntime.ini");
-	runtimeConfigPaths.push_back("../HwaSim_IR/Bin/Config/HwaSimIRRuntime.ini");
-
-	m_runtimeConfig.loadFromCandidates(runtimeConfigPaths);
+	if (!m_runtimeConfig.loaded())
+	{
+		m_runtimeConfig.loadFromCandidates(BuildRuntimeConfigCandidatePaths());
+	}
 	m_irMaterialReady = m_irMaterialDatabase.load(materialPath);
 	m_irAtmosphereReady = m_irAtmosphereModel.loadTransmissionTable(transmittancePath);
 	bool modtranTauLutReady = m_irAtmosphereModel.loadModtranBandLut(modtranBandLutPath);
@@ -7186,6 +7462,13 @@ void HwaSimIR::InitSkyAndCloudScene()
 {
 	if (!m_pMainWindow || m_cameraNode.is_empty())
 	{
+		if (IsHeadlessOffscreenMode())
+		{
+			std::cout << "[RenderBackend][TODO]"
+				<< " mode=" << m_renderPresentationModeName
+				<< " skyAndCloudScene=headless_final_pipeline_not_ready"
+				<< std::endl;
+		}
 		return;
 	}
 

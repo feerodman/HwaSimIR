@@ -78,7 +78,12 @@
 */
 class HwaSimIR {
 public:
-	// 构造函数：初始化HwaSimIR框架+创建主窗口
+	enum class RenderPresentationMode {
+		VisibleWindow,
+		HeadlessOffscreen
+	};
+
+	// 构造函数：初始化HwaSimIR框架和渲染宿主
 	HwaSimIR(int argc, char** argv);
 
 	// 析构函数：清理框架和窗口资源
@@ -102,8 +107,10 @@ public:
 	// 处理实时成像数据包
 	void handleDisplayData(const BYHWICD::DisplayC2cObjTrackingData& data);
 
-	// 窗口初始化（封装通用配置：键盘、轨迹球、背景等）
-	void InitHwaSimIRWindow();
+	// VisibleWindow UI初始化（键盘、背景、帧率显示等）
+	void InitVisibleWindowUi();
+	// 公共捕获任务初始化（Stage6FinalSensorTex + CaptureTask）
+	void InitCommonCaptureTask();
 	// 模型初始化
 	void InitPlatformModels();
 
@@ -526,12 +533,24 @@ private:
 	// 初始化UDP通讯线程
 	bool InitTcpThread();
 	void LoadNetworkConfig();
+	void LoadRenderBackendConfig();
+	bool IsVisibleWindowMode() const;
+	bool IsHeadlessOffscreenMode() const;
+	bool IsRenderBackendReady() const;
+	void LogRenderBackendConfig(const char* reason) const;
 
 	// 核心成员变量
 	GraphicsOutput* m_pGraphicsOutput = nullptr;
 	GraphicsWindow* m_pGraphicsWindow = nullptr;
 	PandaFramework* m_pFramework;       // HwaSimIR框架
 	WindowFramework* m_pMainWindow;    // 主窗口实例
+	RenderPresentationMode m_renderPresentationMode = RenderPresentationMode::VisibleWindow;
+	std::string m_renderPresentationModeName = "VisibleWindow";
+	bool m_renderWindowPreview = true;
+	bool m_renderEnableFrameRateMeter = true;
+	int m_headlessWidth = 800;
+	int m_headlessHeight = 800;
+	bool m_renderBackendReady = false;
 	UdpCommThread* m_pUdpThread = nullptr;        // UDP通讯线程
 	TcpCommThread* m_pTcpThread = nullptr;		// TCP通信线程
 	std::mutex m_mtx;                  // 业务逻辑互斥锁
@@ -630,8 +649,8 @@ private:
 	NodePath m_cameraNode;          // 跟随平台的相机节点
 	NodePath m_skyNode;
 	std::vector<NodePath> m_cloudNodes;
-	Camera *m_camera;
-	Lens *m_cameraLens;
+	Camera *m_camera = nullptr;
+	Lens *m_cameraLens = nullptr;
 	bool m_isCameraAttached;        // 相机是否已绑定到平台
 	//PT(Loader) m_loader;
 
