@@ -2874,6 +2874,123 @@ case 结果：
 
 ---
 
+### 阶段 7A：H.264 实时图像传输实验链路
+
+```text
+阶段：7A
+日期：2026-06-24
+执行者：Codex
+目标：把初始化数据 h264En 从诊断/fallback 标志推进为可测试的实时 codec 链路；
+      生产默认仍保持 JPEG，不默认启用 H.264，也不改 Stage5/Stage6 视觉物理链路。
+
+本阶段变更：
+- HwaSim_IR [TcpOutput] 增加 H.264 实验配置：
+  H264Encoder=auto
+  H264BitrateKbps=4000
+  H264GopFrames=30
+  H264LowLatency=true
+  H264ForceKeyFrameOnStart=true
+  EnableH264Experimental=false 仍为生产默认。
+- TcpCommThread 增加 H.264 encoder 探测封装和 codec 状态解析：
+  requestedCodec=h264 时，如果实验关闭，fallbackReason=experimental_disabled；
+  如果实验开启但没有可靠 AnnexB 内存帧编码器，fallbackReason=encoder_unavailable:annexb_memory_encoder_unavailable；
+  activeCodec 不会伪装成 h264_annexb，仍明确为 jpeg。
+- TCP frame annotationJson 增加协议/codec 元数据：
+  packetVersion=2, codec, payloadCodec, requestedCodec, activeCodec,
+  h264En, codecFallbackReason, h264EncoderName, h264BitrateKbps,
+  h264GopFrames, keyFrame, ptsMs, frameTimeMs。
+- VideoDisplay 增加 decodeCodec / h264KeyFrameSeen / h264DecodeErrors 诊断；
+  如果未来收到 codec=h264_annexb 但本端解码器未集成，会打印 WARN，不会当 JPEG 假解码。
+- phase2a_sync60_save_smoke.ps1 增加 H.264 override 与 codec 汇总字段。
+- 新增 tools/phase7a_h264_realtime_smoke.ps1，输出：
+  logs/phase7/h264_realtime_summary.csv。
+- runtime_config_check.ps1 增加 H.264 生产默认检查。
+
+构建：
+- HwaSim_IR Windows Release x64：通过。
+- DataDrivenTestQT Release：通过。
+- HwaSim_IR_VideoDisplay Windows Release x64：通过。
+  仅存在既有 warning / Qt PDB warning，0 error。
+
+回归：
+- runtime_config_check.ps1：通过。
+- Stage3 MODTRAN tau-only strict：通过。
+- Stage4 hotspot/brightspot strict：通过。
+- Stage5 radiance components smoke：通过。
+- Stage5 aero thermal smoke：通过。
+- Phase6A MTF quick：通过。
+- Phase6B AGC quick：通过。
+- Phase6C DetectorNoise quick：通过。
+- Phase6D visual combo quick：通过。
+
+Phase7A H.264 realtime smoke：
+- CSV：logs/phase7/h264_realtime_summary.csv
+
+case 结果：
+- jpeg_baseline：
+  h264En=0, EnableH264Experimental=false,
+  requestedCodec=jpeg, activeCodec=jpeg, fallbackReason=none,
+  sent=60.004, udp=60.032, render=60.286, output=60.247, display=60.311,
+  latencyAvgMs=23.340, latencyP95Ms=40.691,
+  jpegMsAvg=6.209, encodedBytesAvg=30479.526, decodeMsAvg=5.070,
+  sourceSeqContinuous=1, recordingDroppedFrames=0。
+- h264_requested_experimental_off：
+  h264En=1, EnableH264Experimental=false,
+  requestedCodec=h264, activeCodec=jpeg, fallbackReason=experimental_disabled,
+  sent=60.024, udp=59.985, render=60.336, output=60.294, display=60.346,
+  latencyAvgMs=21.635, latencyP95Ms=41.038,
+  jpegMsAvg=6.005, encodedBytesAvg=30316.389, decodeMsAvg=4.707,
+  sourceSeqContinuous=1, recordingDroppedFrames=0。
+- h264_requested_experimental_on：
+  h264En=1, EnableH264Experimental=true,
+  requestedCodec=h264, activeCodec=jpeg,
+  fallbackReason=encoder_unavailable:annexb_memory_encoder_unavailable,
+  h264EncoderName=none,
+  sent=60.035, udp=59.982, render=60.322, output=60.282, display=60.316,
+  latencyAvgMs=23.269, latencyP95Ms=41.549,
+  jpegMsAvg=5.896, encodedBytesAvg=30150.647, decodeMsAvg=5.008,
+  h264KeyFrameSeen=0, h264DecodeErrors=0,
+  sourceSeqContinuous=1, recordingDroppedFrames=0。
+
+最终生产默认 30 秒实测：
+- 日志：logs/phase2a-final-20260624-113901
+- MP4：HwaSim_IR_VideoDisplay/x64/Release/MP4/round_001_20260624_113915/output.mp4
+- requestedCodec=jpeg, activeCodec=jpeg, decodeCodec=jpeg, codecFallbackReason=none
+- sentFps=60.014
+- udpFps=60.095
+- renderFps=60.392
+- outputFps=60.317
+- VideoDisplay receive/display=60.389
+- latencyAvgMs=26.397
+- latencyP95Ms=49.344
+- jpegMsAvg=6.661
+- readbackMsAvg=1.593
+- irUpdateMsAvg=0.821
+- stage5ModtranLookupMs=0
+- stage6MtfBlurMs=0
+- stage6DetectorNoiseMs=0
+- stage6AgcStatsMs=0
+- sourceSeqContinuous=1
+- sourceSeqContinuousWritten=1
+- inputQueueOverflow=0
+- TCP overwritten=0
+- recordingDroppedFrames=0
+- written/mp4/annotations/targetAnnotations=1800/1800/1800/1800
+
+结论：
+- 生产默认确认仍走 JPEG，EnableH264Experimental=false，Codec=auto，JpegQuality=100，JpegEncodeMode=rgb。
+- 当前 Windows 环境没有可用于“一 TCP 帧一 AnnexB H.264 payload”的可靠内存编码器链路；
+  OpenCV VideoWriter 不能作为实时 TCP H.264 payload 使用，不能用 MP4 文件冒充实时传输。
+- h264En=true 时链路不再静默忽略：
+  实验关闭会明确 fallback=experimental_disabled；
+  实验开启但编码器不可用会明确 fallback=encoder_unavailable:annexb_memory_encoder_unavailable。
+- 不建议默认启用 H.264。
+- 下一阶段如继续 H.264，应单独接入 FFmpeg/libx264 AnnexB 内存编码，或 Media Foundation 低延迟 sample 输出；
+  RK3588 MPP 作为平台专项收口，不应和 Windows JPEG 稳定链路混在一个默认路径里。
+```
+
+---
+
 ## 12. 给 Codex 的第一阶段实施 Prompt
 
 见单独文件：`Codex_Phase1_Sync60_Perf_Prompt.md`。

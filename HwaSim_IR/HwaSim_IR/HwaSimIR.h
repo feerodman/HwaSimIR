@@ -247,6 +247,12 @@ private:
 	std::string m_tcpJpegGrayConvertMethod = "luma";
 	bool m_enableH264Experimental = false;
 	bool m_h264FallbackToJpeg = true;
+	std::string m_h264Encoder = "auto";
+	int m_h264BitrateKbps = 4000;
+	int m_h264GopFrames = 30;
+	bool m_h264LowLatency = true;
+	bool m_h264ForceKeyFrameOnStart = true;
+	bool m_h264EnFromInit = false;
 	bool m_jpegPerfABTest = false;
 	std::uint64_t m_lastIrUpdateSourceSeq = 0;
 	std::uint64_t m_irBreakdownUpdateCounter = 0;

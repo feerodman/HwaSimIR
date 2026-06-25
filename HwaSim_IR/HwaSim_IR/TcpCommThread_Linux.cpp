@@ -122,14 +122,24 @@ void TcpCommThread::configureOutput(
 	bool jpegGray,
 	bool enableH264Experimental,
 	bool h264FallbackToJpeg,
+	const std::string& h264Encoder,
+	int h264BitrateKbps,
+	int h264GopFrames,
+	bool h264LowLatency,
+	bool h264ForceKeyFrameOnStart,
 	const std::string& codecConfig)
 {
 	m_jpegQuality.store(jpegQuality);
 	m_jpegGray.store(jpegGray);
 	m_enableH264Experimental.store(enableH264Experimental);
 	m_h264FallbackToJpeg.store(h264FallbackToJpeg);
+	m_h264BitrateKbps.store(std::max(100, h264BitrateKbps));
+	m_h264GopFrames.store(std::max(1, h264GopFrames));
+	m_h264LowLatency.store(h264LowLatency);
+	m_h264ForceKeyFrameOnStart.store(h264ForceKeyFrameOnStart);
 	std::lock_guard<std::mutex> lock(m_codecMtx);
 	m_codecConfig = codecConfig;
+	m_h264EncoderConfig = h264Encoder.empty() ? "auto" : h264Encoder;
 }
 
 void TcpCommThread::setH264Requested(bool enabled)

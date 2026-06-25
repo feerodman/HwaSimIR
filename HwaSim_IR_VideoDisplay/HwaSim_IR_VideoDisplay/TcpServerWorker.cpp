@@ -9,6 +9,9 @@
 #include <QFile>
 #include <QDateTime>
 #include <QElapsedTimer>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonParseError>
 #include <chrono>
 #include <cstring>
 #include "CommonData.h"
@@ -104,6 +107,24 @@ bool parseDisplayFrameBody(
 			return false;
 		}
 		jpegData = QByteArray(body.constData() + offset, structLen3);
+	}
+
+	if (!annotationJson.isEmpty())
+	{
+		QJsonParseError parseError;
+		const QJsonDocument document = QJsonDocument::fromJson(annotationJson.toUtf8(), &parseError);
+		if (parseError.error == QJsonParseError::NoError && document.isObject())
+		{
+			const QJsonObject object = document.object();
+			const QString payloadCodec = object.value(QStringLiteral("payloadCodec"))
+				.toString(object.value(QStringLiteral("codec")).toString(QStringLiteral("jpeg")));
+			if (payloadCodec == QStringLiteral("h264_annexb"))
+			{
+				qWarning().noquote()
+					<< QStringLiteral("[Codec][WARN] h264_annexb payload received but realtime decoder is not integrated; fallback must happen on HwaSim_IR");
+				return false;
+			}
+		}
 	}
 
 	QElapsedTimer decodeTimer;

@@ -75,7 +75,10 @@ private:
     bool m_h264Requested = false;
     QString m_requestedCodec = QStringLiteral("jpeg");
     QString m_activeCodec = QStringLiteral("jpeg");
+    QString m_decodeCodec = QStringLiteral("jpeg");
     QString m_codecFallbackReason = QStringLiteral("none");
+    bool m_h264KeyFrameSeen = false;
+    quint64 m_h264DecodeErrors = 0;
 
 private:
     Ui::HwaSim_IR_VideoDisplayClass ui;

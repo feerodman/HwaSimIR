@@ -53,6 +53,11 @@ public:
 		bool jpegGray,
 		bool enableH264Experimental,
 		bool h264FallbackToJpeg,
+		const std::string& h264Encoder,
+		int h264BitrateKbps,
+		int h264GopFrames,
+		bool h264LowLatency,
+		bool h264ForceKeyFrameOnStart,
 		const std::string& codecConfig);
 	void setH264Requested(bool enabled);
 	void resetFrameCounters();
@@ -89,7 +94,9 @@ private:
 	void resolveCodecState(
 		std::string& requestedCodec,
 		std::string& activeCodec,
-		std::string& fallbackReason) const;
+		std::string& fallbackReason,
+		std::string* h264EncoderName = nullptr) const;
+	std::string probeH264EncoderName(std::string& unavailableReason) const;
 
 	// 负责连接与断开的函数
 	bool connectToServer();
@@ -140,7 +147,12 @@ private:
 	std::atomic<bool> m_enableH264Experimental{ false };
 	std::atomic<bool> m_h264FallbackToJpeg{ true };
 	std::atomic<bool> m_h264Requested{ false };
+	std::atomic<int> m_h264BitrateKbps{ 4000 };
+	std::atomic<int> m_h264GopFrames{ 30 };
+	std::atomic<bool> m_h264LowLatency{ true };
+	std::atomic<bool> m_h264ForceKeyFrameOnStart{ true };
 	std::string m_codecConfig = "auto";
+	std::string m_h264EncoderConfig = "auto";
 	mutable std::mutex m_codecMtx;
 	std::atomic<unsigned long long> m_tcpPacketCounter{ 0 };
 	std::int64_t m_lastTcpPerfLogNs = 0;

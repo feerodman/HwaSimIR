@@ -341,6 +341,9 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
     quint64 frameSeq = 0;
     qint64 udpReceiveTimeNs = 0;
     qint64 tcpSendTimeNs = 0;
+    m_decodeCodec = imageFormat == QStringLiteral("grayscale")
+        ? QStringLiteral("jpeg_gray")
+        : QStringLiteral("jpeg");
     if (!annotationJson.isEmpty())
     {
         QJsonParseError parseError;
@@ -357,9 +360,25 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
             tcpSendTimeNs = object.value("tcpSendTimeNs").toString().toLongLong();
             m_requestedCodec = object.value("requestedCodec").toString(QStringLiteral("jpeg"));
             m_activeCodec = object.value("activeCodec").toString(QStringLiteral("jpeg"));
+            m_decodeCodec = object.value("payloadCodec").toString(
+                object.value("codec").toString(m_activeCodec));
             m_h264Requested = object.value("h264En").toBool(false);
             m_codecFallbackReason = object.value("codecFallbackReason").toString(QStringLiteral("none"));
+            if (m_decodeCodec == QStringLiteral("h264_annexb") && object.value("keyFrame").toBool(false))
+            {
+                m_h264KeyFrameSeen = true;
+            }
+            if (m_decodeCodec == QStringLiteral("h264_annexb") && img.isNull())
+            {
+                ++m_h264DecodeErrors;
+            }
         }
+    }
+    if (m_decodeCodec.isEmpty())
+    {
+        m_decodeCodec = imageFormat == QStringLiteral("grayscale")
+            ? QStringLiteral("jpeg_gray")
+            : QStringLiteral("jpeg");
     }
     m_decodedChannels = decodedChannels;
     m_imageFormat = imageFormat;
@@ -451,7 +470,7 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
             latencyP95Ms = sortedLatencies[qMax(0, p95Index)];
         }
         qInfo().noquote()
-            << QString("[VideoPerf] receiveFps=%1 displayFps=%2 decodeMsAvg=%3 queueDepth=%4 sourceSeqContinuous=%5 latencyAvgMs=%6 latencyP95Ms=%7 displayMsAvg=%8 tcpToReceiveMs=%9 sourceSeq=%10 discontinuities=%11 recordingEnqueueMsAvg=%12 recordingEnqueueMsMax=%13 decodedChannels=%14 imageFormat=%15 requestedCodec=%16 activeCodec=%17 h264En=%18 codecFallbackReason=%19")
+            << QString("[VideoPerf] receiveFps=%1 displayFps=%2 decodeMsAvg=%3 queueDepth=%4 sourceSeqContinuous=%5 latencyAvgMs=%6 latencyP95Ms=%7 displayMsAvg=%8 tcpToReceiveMs=%9 sourceSeq=%10 discontinuities=%11 recordingEnqueueMsAvg=%12 recordingEnqueueMsMax=%13 decodedChannels=%14 imageFormat=%15 requestedCodec=%16 activeCodec=%17 decodeCodec=%18 h264En=%19 codecFallbackReason=%20 h264KeyFrameSeen=%21 h264DecodeErrors=%22")
                 .arg(static_cast<double>(receivedIntervalFrames) / displayElapsedSec, 0, 'f', 3)
                 .arg(static_cast<double>(m_videoPerfIntervalFrames) / displayElapsedSec, 0, 'f', 3)
                 .arg(m_decodeMsTotal / sampleCount, 0, 'f', 3)
@@ -469,8 +488,11 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
                 .arg(m_imageFormat)
                 .arg(m_requestedCodec)
                 .arg(m_activeCodec)
+                .arg(m_decodeCodec)
                 .arg(m_h264Requested ? 1 : 0)
-                .arg(m_codecFallbackReason);
+                .arg(m_codecFallbackReason)
+                .arg(m_h264KeyFrameSeen ? 1 : 0)
+                .arg(m_h264DecodeErrors);
         m_videoPerfIntervalFrames = 0;
         m_lastReceivedFrameCount = receivedFrameCount;
         m_videoPerfReceiveStartNs = receiveTimeNs;

@@ -5,7 +5,7 @@
       <paths name="Debian11-aarch64-rk3588 (a400455a-420f-415c-b994-4579f0dfdea7)">
         <serverdata>
           <mappings>
-            <mapping deploy="/tmp/tmp.RemLEdniMz/HwaSim_IR" local="$PROJECT_DIR$" />
+            <mapping deploy="/" local="$PROJECT_DIR$" />
           </mappings>
           <excludedPaths>
             <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-debug-aarch64-rk3588" />

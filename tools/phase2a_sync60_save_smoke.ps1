@@ -71,6 +71,14 @@ param(
     [int]$AGCStride = 8,
     [string]$AGCExcludeAnnotationOverlay = "true",
     [string]$AGCDebugLog = "false",
+    [string]$EnableH264Experimental = "false",
+    [string]$H264Encoder = "auto",
+    [int]$H264BitrateKbps = 4000,
+    [int]$H264GopFrames = 30,
+    [string]$H264LowLatency = "true",
+    [string]$H264FallbackToJpeg = "true",
+    [string]$H264ForceKeyFrameOnStart = "true",
+    [string]$StimH264En = "0",
     [string[]]$StimExtraArgs = @()
 )
 
@@ -133,6 +141,15 @@ function Get-Maximum {
     param([double[]]$Values)
     if ($Values.Count -eq 0) { return 0.0 }
     return ($Values | Measure-Object -Maximum).Maximum
+}
+
+function Get-LastTextField {
+    param([string]$Text, [string]$Tag, [string]$Field, [string]$Default = "")
+    $pattern = "(?m)^\[" + [regex]::Escape($Tag) + "\].*?\b" +
+        [regex]::Escape($Field) + "=([^ \r\n]+)"
+    $matches = @([regex]::Matches($Text, $pattern))
+    if ($matches.Count -eq 0) { return $Default }
+    return $matches[$matches.Count - 1].Groups[1].Value
 }
 
 function Get-FpsAverage {
@@ -200,7 +217,13 @@ try {
     $runtimeText = Set-IniValue $runtimeText "Codec" "auto"
     $runtimeText = Set-IniValue $runtimeText "JpegQuality" "100"
     $runtimeText = Set-IniValue $runtimeText "JpegEncodeMode" "rgb"
-    $runtimeText = Set-IniValue $runtimeText "EnableH264Experimental" "false"
+    $runtimeText = Set-IniValue $runtimeText "EnableH264Experimental" $EnableH264Experimental
+    $runtimeText = Set-IniValue $runtimeText "H264Encoder" $H264Encoder
+    $runtimeText = Set-IniValue $runtimeText "H264BitrateKbps" ([string]$H264BitrateKbps)
+    $runtimeText = Set-IniValue $runtimeText "H264GopFrames" ([string]$H264GopFrames)
+    $runtimeText = Set-IniValue $runtimeText "H264LowLatency" $H264LowLatency
+    $runtimeText = Set-IniValue $runtimeText "H264FallbackToJpeg" $H264FallbackToJpeg
+    $runtimeText = Set-IniValue $runtimeText "H264ForceKeyFrameOnStart" $H264ForceKeyFrameOnStart
     $runtimeText = Set-IniValue $runtimeText "JpegPerfABTest" "false"
     $runtimeText = Set-IniValue $runtimeText "LegacyEngineBodyHeating" "false"
     $runtimeText = Set-IniValue $runtimeText "EnableIRVerboseLog" "0"
@@ -294,7 +317,7 @@ try {
     Start-Sleep -Seconds 5
     $stimArgs = @(
         "--phase1b-auto-seconds=$Seconds",
-        "--phase1d-h264=0"
+        "--phase1d-h264=$StimH264En"
     )
     if ($StimExtraArgs -and $StimExtraArgs.Count -gt 0) {
         $stimArgs += $StimExtraArgs
@@ -370,6 +393,20 @@ $summary = [pscustomobject]@{
     videoDisplayFps = [math]::Round((Get-FpsAverage (Get-NumericValues $videoText "VideoPerf" "displayFps")), 3)
     latencyAvgMs = [math]::Round((Get-Average (Get-NumericValues $videoText "VideoPerf" "latencyAvgMs")), 3)
     latencyP95Ms = [math]::Round((Get-Average (Get-NumericValues $videoText "VideoPerf" "latencyP95Ms")), 3)
+    h264En = $StimH264En
+    enableH264Experimental = $EnableH264Experimental
+    requestedCodec = Get-LastTextField $hwaText "TcpPerf" "requestedCodec" (Get-LastTextField $videoText "VideoPerf" "requestedCodec" "unknown")
+    activeCodec = Get-LastTextField $hwaText "TcpPerf" "activeCodec" (Get-LastTextField $videoText "VideoPerf" "activeCodec" "unknown")
+    decodeCodec = Get-LastTextField $videoText "VideoPerf" "decodeCodec" "unknown"
+    codecFallbackReason = Get-LastTextField $hwaText "TcpPerf" "codecFallbackReason" (Get-LastTextField $videoText "VideoPerf" "codecFallbackReason" "none")
+    h264EncoderName = Get-LastTextField $hwaText "TcpPerf" "h264EncoderName" "none"
+    h264BitrateKbps = [math]::Round((Get-Maximum (Get-NumericValues $hwaText "TcpPerf" "h264BitrateKbps")), 3)
+    h264GopFrames = [math]::Round((Get-Maximum (Get-NumericValues $hwaText "TcpPerf" "h264GopFrames")), 3)
+    h264EncodeMsAvg = [math]::Round((Get-AverageAll (Get-NumericValues $hwaText "TcpPerf" "h264EncodeMs")), 3)
+    encodedBytesAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "TcpPerf" "encodedBytes")), 3)
+    decodeMsAvg = [math]::Round((Get-Average (Get-NumericValues $videoText "VideoPerf" "decodeMsAvg")), 3)
+    h264KeyFrameSeen = [int](Get-Maximum (Get-NumericValues $videoText "VideoPerf" "h264KeyFrameSeen"))
+    h264DecodeErrors = [int](Get-Maximum (Get-NumericValues $videoText "VideoPerf" "h264DecodeErrors"))
     jpegMsAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "TcpPerf" "jpegMs")), 3)
     readbackMsAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Stage6 Capture" "readbackMs")), 3)
     irUpdateMsAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "irUpdateMs")), 3)

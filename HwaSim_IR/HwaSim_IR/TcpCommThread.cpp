@@ -122,14 +122,24 @@ void TcpCommThread::configureOutput(
 	bool jpegGray,
 	bool enableH264Experimental,
 	bool h264FallbackToJpeg,
+	const std::string& h264Encoder,
+	int h264BitrateKbps,
+	int h264GopFrames,
+	bool h264LowLatency,
+	bool h264ForceKeyFrameOnStart,
 	const std::string& codecConfig)
 {
 	m_jpegQuality.store(jpegQuality);
 	m_jpegGray.store(jpegGray);
 	m_enableH264Experimental.store(enableH264Experimental);
 	m_h264FallbackToJpeg.store(h264FallbackToJpeg);
+	m_h264BitrateKbps.store(std::max(100, h264BitrateKbps));
+	m_h264GopFrames.store(std::max(1, h264GopFrames));
+	m_h264LowLatency.store(h264LowLatency);
+	m_h264ForceKeyFrameOnStart.store(h264ForceKeyFrameOnStart);
 	std::lock_guard<std::mutex> lock(m_codecMtx);
 	m_codecConfig = codecConfig;
+	m_h264EncoderConfig = h264Encoder.empty() ? "auto" : h264Encoder;
 }
 
 void TcpCommThread::setH264Requested(bool enabled)
@@ -138,7 +148,8 @@ void TcpCommThread::setH264Requested(bool enabled)
 	std::string requestedCodec;
 	std::string activeCodec;
 	std::string fallbackReason;
-	resolveCodecState(requestedCodec, activeCodec, fallbackReason);
+	std::string h264EncoderName;
+	resolveCodecState(requestedCodec, activeCodec, fallbackReason, &h264EncoderName);
 	if (!fallbackReason.empty())
 	{
 		std::cout << "[Codec][WARN] h264 requested but "
@@ -146,6 +157,7 @@ void TcpCommThread::setH264Requested(bool enabled)
 			<< ", fallback=jpeg"
 			<< " activeCodec=" << activeCodec
 			<< " reason=" << fallbackReason
+			<< " h264EncoderName=" << h264EncoderName
 			<< std::endl;
 	}
 	std::cout << "[Codec]"
@@ -153,13 +165,49 @@ void TcpCommThread::setH264Requested(bool enabled)
 		<< " requestedCodec=" << requestedCodec
 		<< " activeCodec=" << activeCodec
 		<< " codecFallbackReason=" << (fallbackReason.empty() ? "none" : fallbackReason)
+		<< " h264EncoderName=" << h264EncoderName
 		<< std::endl;
+}
+
+std::string TcpCommThread::probeH264EncoderName(std::string& unavailableReason) const
+{
+	std::string h264EncoderConfig;
+	{
+		std::lock_guard<std::mutex> lock(m_codecMtx);
+		h264EncoderConfig = m_h264EncoderConfig;
+	}
+	if (h264EncoderConfig.empty() || h264EncoderConfig == "auto")
+	{
+		unavailableReason = "annexb_memory_encoder_unavailable";
+		return "none";
+	}
+	if (h264EncoderConfig == "opencv" || h264EncoderConfig == "opencv_videowriter")
+	{
+		// OpenCV VideoWriter can write files through FFmpeg/MSMF, but this project needs
+		// one encoded AnnexB frame per TCP packet. Do not treat file writer support as
+		// realtime transport support.
+		unavailableReason = "opencv_videowriter_has_no_annexb_memory_api";
+		return "opencv_videowriter";
+	}
+	if (h264EncoderConfig == "mediafoundation" || h264EncoderConfig == "mf")
+	{
+		unavailableReason = "mediafoundation_encoder_not_integrated";
+		return "mediafoundation";
+	}
+	if (h264EncoderConfig == "mpp" || h264EncoderConfig == "rk_mpp")
+	{
+		unavailableReason = "rk3588_mpp_not_available_on_windows";
+		return "rk3588_mpp";
+	}
+	unavailableReason = "encoder_unrecognized";
+	return h264EncoderConfig;
 }
 
 void TcpCommThread::resolveCodecState(
 	std::string& requestedCodec,
 	std::string& activeCodec,
-	std::string& fallbackReason) const
+	std::string& fallbackReason,
+	std::string* h264EncoderName) const
 {
 	const bool h264Requested = m_h264Requested.load();
 	const bool experimentalEnabled = m_enableH264Experimental.load();
@@ -172,6 +220,10 @@ void TcpCommThread::resolveCodecState(
 	requestedCodec = h264Requested ? "h264" : "jpeg";
 	activeCodec = "jpeg";
 	fallbackReason.clear();
+	if (h264EncoderName)
+	{
+		*h264EncoderName = "none";
+	}
 	if (!h264Requested)
 	{
 		return;
@@ -186,8 +238,15 @@ void TcpCommThread::resolveCodecState(
 	}
 	else
 	{
-		// H.264 needs a stream/session packet extension and matching decoder.
-		fallbackReason = "h264_stream_transport_not_implemented";
+		std::string unavailableReason;
+		const std::string encoderName = probeH264EncoderName(unavailableReason);
+		if (h264EncoderName)
+		{
+			*h264EncoderName = encoderName;
+		}
+		fallbackReason = unavailableReason.empty()
+			? "encoder_unavailable"
+			: "encoder_unavailable:" + unavailableReason;
 	}
 	if (!fallbackEnabled)
 	{
@@ -349,10 +408,16 @@ std::string TcpCommThread::buildAnnotationJson(
 	std::string requestedCodec;
 	std::string activeCodec;
 	std::string fallbackReason;
-	resolveCodecState(requestedCodec, activeCodec, fallbackReason);
+	std::string h264EncoderName;
+	resolveCodecState(requestedCodec, activeCodec, fallbackReason, &h264EncoderName);
+	const std::string payloadCodec = activeCodec == "h264_annexb" ? "h264_annexb" : "jpeg";
+	const bool keyFrame = activeCodec == "h264_annexb" && (
+		outputOrdinal == 1 ||
+		(m_h264GopFrames.load() > 0 && (outputOrdinal % static_cast<std::uint64_t>(m_h264GopFrames.load())) == 1));
 
 	std::ostringstream json;
 	json << "{\"version\":1"
+		<< ",\"packetVersion\":2"
 		<< ",\"enabled\":" << (annotationEnabled ? "true" : "false")
 		<< ",\"frameIndex\":" << frameIndex
 		<< ",\"frameSeq\":" << telemetry.sourceSeq
@@ -362,8 +427,17 @@ std::string TcpCommThread::buildAnnotationJson(
 		<< ",\"tcpSendTimeNs\":\"" << tcpSendTimeNs << "\""
 		<< ",\"requestedCodec\":\"" << JsonEscape(requestedCodec) << "\""
 		<< ",\"activeCodec\":\"" << JsonEscape(activeCodec) << "\""
+		<< ",\"codec\":\"" << JsonEscape(payloadCodec) << "\""
+		<< ",\"payloadCodec\":\"" << JsonEscape(payloadCodec) << "\""
 		<< ",\"h264En\":" << (m_h264Requested.load() ? "true" : "false")
 		<< ",\"codecFallbackReason\":\"" << JsonEscape(fallbackReason.empty() ? "none" : fallbackReason) << "\""
+		<< ",\"h264EncoderName\":\"" << JsonEscape(h264EncoderName) << "\""
+		<< ",\"h264BitrateKbps\":" << m_h264BitrateKbps.load()
+		<< ",\"h264GopFrames\":" << m_h264GopFrames.load()
+		<< ",\"h264LowLatency\":" << (m_h264LowLatency.load() ? "true" : "false")
+		<< ",\"keyFrame\":" << (keyFrame ? "true" : "false")
+		<< ",\"ptsMs\":" << (telemetry.udpReceiveTimeNs > 0 ? telemetry.udpReceiveTimeNs / 1000000LL : static_cast<std::int64_t>(outputOrdinal * 16))
+		<< ",\"frameTimeMs\":" << (telemetry.udpReceiveTimeNs > 0 ? telemetry.udpReceiveTimeNs / 1000000LL : static_cast<std::int64_t>(outputOrdinal * 16))
 		<< ",\"simTimeMs\":" << record.simTimeMs
 		<< ",\"sensorID\":" << record.sensorID
 		<< ",\"width\":" << tcpWidth
@@ -542,9 +616,19 @@ void TcpCommThread::sendFrameThreadFunc() {
 
 		if (outputOrdinal <= 3 || (outputOrdinal % 120) == 0)
 		{
+			std::string requestedCodec;
+			std::string activeCodec;
+			std::string fallbackReason;
+			std::string h264EncoderName;
+			resolveCodecState(requestedCodec, activeCodec, fallbackReason, &h264EncoderName);
 			std::cout << "[TcpFramePacket]"
 				<< " frame=" << outputOrdinal
 				<< " imgBytes=" << jpegData.size()
+				<< " payloadBytes=" << jpegData.size()
+				<< " packetVersion=2"
+				<< " codec=" << (activeCodec == "h264_annexb" ? "h264_annexb" : "jpeg")
+				<< " keyFrame=0"
+				<< " h264EncoderName=" << h264EncoderName
 				<< " annotationBytes=" << annotationJson.size()
 				<< " targets=" << frame.annotationRecord.targets.size()
 				<< " width=" << frame.width
@@ -559,7 +643,8 @@ void TcpCommThread::sendFrameThreadFunc() {
 			std::string requestedCodec;
 			std::string activeCodec;
 			std::string fallbackReason;
-			resolveCodecState(requestedCodec, activeCodec, fallbackReason);
+			std::string h264EncoderName;
+			resolveCodecState(requestedCodec, activeCodec, fallbackReason, &h264EncoderName);
 			std::ostringstream perfLine;
 			perfLine << std::fixed << std::setprecision(3)
 				<< "[TcpPerf]"
@@ -569,6 +654,12 @@ void TcpCommThread::sendFrameThreadFunc() {
 				<< " requestedCodec=" << requestedCodec
 				<< " h264En=" << (m_h264Requested.load() ? "1" : "0")
 				<< " codecFallbackReason=" << (fallbackReason.empty() ? "none" : fallbackReason)
+				<< " h264EncoderName=" << h264EncoderName
+				<< " h264BitrateKbps=" << m_h264BitrateKbps.load()
+				<< " h264GopFrames=" << m_h264GopFrames.load()
+				<< " h264EncodeMs=0.000"
+				<< " encodedBytes=" << jpegData.size()
+				<< " keyFrame=0"
 				<< " jpegQuality=" << jpegQuality
 				<< " jpegMode=" << (jpegGray ? "gray" : "rgb")
 				<< " jpegBytes=" << jpegData.size()

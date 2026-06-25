@@ -4877,6 +4877,11 @@ bool HwaSimIR::InitTcpThread()
 		m_tcpJpegGray,
 		m_enableH264Experimental,
 		m_h264FallbackToJpeg,
+		m_h264Encoder,
+		m_h264BitrateKbps,
+		m_h264GopFrames,
+		m_h264LowLatency,
+		m_h264ForceKeyFrameOnStart,
 		m_tcpCodecConfig);
 	if (!m_pTcpThread->start()) {
 		std::cerr << "TCP线程启动失败！" << std::endl;
@@ -5164,6 +5169,7 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 	if (m_pTcpThread)
 	{
 		m_pTcpThread->setSyncMode(m_bSyncRenderMode.load());
+		m_h264EnFromInit = sensor.h264En;
 		m_pTcpThread->setH264Requested(sensor.h264En);
 		m_pTcpThread->resetFrameCounters();
 	}
@@ -5565,6 +5571,11 @@ void HwaSimIR::InitInfraredSimulation()
 	std::string jpegGrayMethodSource;
 	std::string h264ExperimentalSource;
 	std::string h264FallbackSource;
+	std::string h264EncoderSource;
+	std::string h264BitrateSource;
+	std::string h264GopSource;
+	std::string h264LowLatencySource;
+	std::string h264ForceKeySource;
 	std::string jpegAbTestSource;
 	std::string annotationProfileSource;
 	std::string annotationDebugSource;
@@ -6201,6 +6212,66 @@ void HwaSimIR::InitInfraredSimulation()
 		"H264FallbackToJpeg",
 		true,
 		&h264FallbackSource);
+	m_h264Encoder = ToLowerAscii(m_runtimeConfig.getString(
+		"TcpOutput",
+		"H264Encoder",
+		"H264Encoder",
+		"auto",
+		&h264EncoderSource));
+	if (m_h264Encoder != "auto" &&
+		m_h264Encoder != "opencv" &&
+		m_h264Encoder != "opencv_videowriter" &&
+		m_h264Encoder != "mediafoundation" &&
+		m_h264Encoder != "mf" &&
+		m_h264Encoder != "mpp" &&
+		m_h264Encoder != "rk_mpp")
+	{
+		std::cout << "[TcpOutputConfig][WARN]"
+			<< " invalid H264Encoder=" << m_h264Encoder
+			<< " fallback=auto"
+			<< std::endl;
+		m_h264Encoder = "auto";
+	}
+	m_h264BitrateKbps = m_runtimeConfig.getInt(
+		"TcpOutput",
+		"H264BitrateKbps",
+		"H264BitrateKbps",
+		4000,
+		&h264BitrateSource);
+	if (m_h264BitrateKbps < 256 || m_h264BitrateKbps > 50000)
+	{
+		std::cout << "[TcpOutputConfig][WARN]"
+			<< " invalid H264BitrateKbps=" << m_h264BitrateKbps
+			<< " validRange=256..50000 fallback=4000"
+			<< std::endl;
+		m_h264BitrateKbps = 4000;
+	}
+	m_h264GopFrames = m_runtimeConfig.getInt(
+		"TcpOutput",
+		"H264GopFrames",
+		"H264GopFrames",
+		30,
+		&h264GopSource);
+	if (m_h264GopFrames < 1 || m_h264GopFrames > 300)
+	{
+		std::cout << "[TcpOutputConfig][WARN]"
+			<< " invalid H264GopFrames=" << m_h264GopFrames
+			<< " validRange=1..300 fallback=30"
+			<< std::endl;
+		m_h264GopFrames = 30;
+	}
+	m_h264LowLatency = m_runtimeConfig.getBool(
+		"TcpOutput",
+		"H264LowLatency",
+		"H264LowLatency",
+		true,
+		&h264LowLatencySource);
+	m_h264ForceKeyFrameOnStart = m_runtimeConfig.getBool(
+		"TcpOutput",
+		"H264ForceKeyFrameOnStart",
+		"H264ForceKeyFrameOnStart",
+		true,
+		&h264ForceKeySource);
 	m_jpegPerfABTest = m_runtimeConfig.getBool(
 		"TcpOutput",
 		"JpegPerfABTest",
@@ -6214,6 +6285,11 @@ void HwaSimIR::InitInfraredSimulation()
 			m_tcpJpegGray,
 			m_enableH264Experimental,
 			m_h264FallbackToJpeg,
+			m_h264Encoder,
+			m_h264BitrateKbps,
+			m_h264GopFrames,
+			m_h264LowLatency,
+			m_h264ForceKeyFrameOnStart,
 			m_tcpCodecConfig);
 	}
 	std::cout << "[TcpOutputConfig]"
@@ -6223,10 +6299,18 @@ void HwaSimIR::InitInfraredSimulation()
 		<< " JpegGrayConvertMethod=" << m_tcpJpegGrayConvertMethod
 		<< " EnableH264Experimental=" << (m_enableH264Experimental ? "1" : "0")
 		<< " H264FallbackToJpeg=" << (m_h264FallbackToJpeg ? "1" : "0")
+		<< " H264Encoder=" << m_h264Encoder
+		<< " H264BitrateKbps=" << m_h264BitrateKbps
+		<< " H264GopFrames=" << m_h264GopFrames
+		<< " H264LowLatency=" << (m_h264LowLatency ? "1" : "0")
+		<< " H264ForceKeyFrameOnStart=" << (m_h264ForceKeyFrameOnStart ? "1" : "0")
 		<< " JpegPerfABTest=" << (m_jpegPerfABTest ? "1" : "0")
 		<< " source=" << tcpCodecSource << "/" << jpegQualitySource << "/" << jpegModeSource
 		<< "/" << jpegGrayMethodSource << "/" << h264ExperimentalSource
-		<< "/" << h264FallbackSource << "/" << jpegAbTestSource
+		<< "/" << h264FallbackSource << "/" << h264EncoderSource
+		<< "/" << h264BitrateSource << "/" << h264GopSource
+		<< "/" << h264LowLatencySource << "/" << h264ForceKeySource
+		<< "/" << jpegAbTestSource
 		<< std::endl;
 	m_enableStage4HotspotVisualDebug = m_runtimeConfig.getBool("Stage4", "EnableHotspotVisualDebug", "EnableStage4HotspotVisualDebug", false, &stage4VisualSource);
 	m_forceStage4BrightSpotVisible = m_runtimeConfig.getBool("Stage4", "ForceBrightSpotVisible", "ForceStage4BrightSpotVisible", false, &stage4BrightSource);
@@ -7084,6 +7168,12 @@ void HwaSimIR::InitInfraredSimulation()
 			<< ",JpegEncodeMode:" << jpegModeSource
 			<< ",JpegQuality:" << jpegQualitySource
 			<< ",EnableH264Experimental:" << h264ExperimentalSource
+			<< ",H264FallbackToJpeg:" << h264FallbackSource
+			<< ",H264Encoder:" << h264EncoderSource
+			<< ",H264BitrateKbps:" << h264BitrateSource
+			<< ",H264GopFrames:" << h264GopSource
+			<< ",H264LowLatency:" << h264LowLatencySource
+			<< ",H264ForceKeyFrameOnStart:" << h264ForceKeySource
 			<< ",JpegPerfABTest:" << jpegAbTestSource;
 		m_effectiveRuntimeConfigSources = sourceSummary.str();
 	}
@@ -8494,7 +8584,14 @@ void HwaSimIR::LogEffectiveRuntimeConfig(
 		<< " Codec=" << m_tcpCodecConfig
 		<< " JpegEncodeMode=" << (m_tcpJpegGray ? "gray" : "rgb")
 		<< " JpegQuality=" << m_tcpJpegQuality
+		<< " h264EnFromInit=" << (m_h264EnFromInit ? "1" : "0")
 		<< " EnableH264Experimental=" << (m_enableH264Experimental ? "1" : "0")
+		<< " H264FallbackToJpeg=" << (m_h264FallbackToJpeg ? "1" : "0")
+		<< " H264Encoder=" << m_h264Encoder
+		<< " H264BitrateKbps=" << m_h264BitrateKbps
+		<< " H264GopFrames=" << m_h264GopFrames
+		<< " H264LowLatency=" << (m_h264LowLatency ? "1" : "0")
+		<< " H264ForceKeyFrameOnStart=" << (m_h264ForceKeyFrameOnStart ? "1" : "0")
 		<< " JpegPerfABTest=" << (m_jpegPerfABTest ? "1" : "0")
 		<< " saveMP4En=" << (saveMP4En ? "1" : "0")
 		<< " source=videoFps:" << (videoFpsSource ? videoFpsSource : "unknown")
@@ -8579,6 +8676,14 @@ void HwaSimIR::LogEffectiveRuntimeConfig(
 	if (m_jpegPerfABTest)
 	{
 		std::cout << "[EffectiveRuntimeConfig][WARN] JpegPerfABTest=1 reason=production_default_should_be_false" << std::endl;
+	}
+	if (m_enableH264Experimental)
+	{
+		std::cout << "[EffectiveRuntimeConfig][WARN]"
+			<< " EnableH264Experimental=1"
+			<< " H264Encoder=" << m_h264Encoder
+			<< " reason=stage7a_experimental_transport_not_production_default"
+			<< std::endl;
 	}
 	if (modtranCompareEffective && !m_stage5UseModtranPathRuntime)
 	{
