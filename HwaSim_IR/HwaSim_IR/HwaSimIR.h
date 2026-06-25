@@ -391,6 +391,8 @@ private:
 	PT(Shader) m_stage6FinalPostShader;
 	PT(Texture) m_stage6RawSceneTex;
 	PT(GraphicsOutput) m_stage6RawSceneBuffer;
+	PT(GraphicsOutput) m_stage6FinalSensorBuffer;
+	PT(GraphicsOutput) m_stage6PresentationOutput;
 	PT(DisplayRegion) m_stage6RawSceneRegion;
 	PT(DisplayRegion) m_stage6FinalRegion;
 	PT(DisplayRegion) m_annotationRegion;
@@ -444,6 +446,7 @@ private:
 
 	void InitInfraredShader();                              // 初始化着色器代码
 	void InitStage6FinalPostShader();
+	void InitHeadlessSceneCamera(int width, int height);
 	void SetupStage6FinalPipeline(int width, int height, const char* reason);
 	void SetupAnnotationOverlayRegion(const char* reason);
 	void ApplyStage6FinalPostprocessInputs();
@@ -647,6 +650,7 @@ private:
 	NodePath aim9;
 	NodePath m_renderRoot;
 	NodePath m_cameraNode;          // 跟随平台的相机节点
+	NodePath m_headlessCameraNode;
 	NodePath m_skyNode;
 	std::vector<NodePath> m_cloudNodes;
 	Camera *m_camera = nullptr;

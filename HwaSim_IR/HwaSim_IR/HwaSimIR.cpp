@@ -15,7 +15,9 @@
 #include "geomVertexData.h"
 #include "geomVertexFormat.h"
 #include "geomVertexWriter.h"
+#include "frameBufferProperties.h"
 #include "internalName.h"
+#include "perspectiveLens.h"
 #include <chrono>
 #include <algorithm>
 #include <array>
@@ -43,6 +45,54 @@ std::vector<std::string> BuildRuntimeConfigCandidatePaths()
 	runtimeConfigPaths.push_back("HwaSim_IR/Bin/Config/HwaSimIRRuntime.ini");
 	runtimeConfigPaths.push_back("../HwaSim_IR/Bin/Config/HwaSimIRRuntime.ini");
 	return runtimeConfigPaths;
+}
+
+GraphicsOutput* MakeStage6OffscreenOutput(
+	PandaFramework* framework,
+	const std::string& name,
+	int sort,
+	int width,
+	int height,
+	GraphicsStateGuardian* sharedGsg,
+	GraphicsOutput* host)
+{
+	if (framework == nullptr)
+	{
+		return nullptr;
+	}
+	GraphicsPipe* pipe = host != nullptr ? host->get_pipe() : framework->get_default_pipe();
+	GraphicsEngine* engine = framework->get_graphics_engine();
+	if (pipe == nullptr || engine == nullptr)
+	{
+		return nullptr;
+	}
+
+	FrameBufferProperties fbProps = FrameBufferProperties::get_default();
+	fbProps.set_rgb_color(true);
+	fbProps.set_rgba_bits(8, 8, 8, 0);
+	fbProps.set_depth_bits(24);
+	fbProps.set_back_buffers(0);
+	fbProps.set_stereo(false);
+	fbProps.set_multisamples(0);
+	fbProps.set_force_hardware(false);
+	fbProps.set_force_software(false);
+
+	WindowProperties props;
+	props.set_size(std::max(1, width), std::max(1, height));
+	props.set_title(name);
+	props.set_open(true);
+
+	return engine->make_output(
+		pipe,
+		name,
+		sort,
+		fbProps,
+		props,
+		GraphicsPipe::BF_refuse_window |
+		GraphicsPipe::BF_fb_props_optional |
+		GraphicsPipe::BF_can_bind_color,
+		sharedGsg,
+		host);
 }
 
 double ClampStage5Double(double value, double low, double high)
@@ -1000,10 +1050,10 @@ HwaSimIR::HwaSimIR(int argc, char** argv)
 		m_camera = nullptr;
 		m_cameraLens = nullptr;
 		m_renderBackendReady = true;
-		std::cout << "[RenderBackend][TODO]"
+		std::cout << "[RenderBackend]"
 			<< " mode=" << m_renderPresentationModeName
-			<< " headless_final_pipeline_not_ready=1"
-			<< " stage=H1"
+			<< " headlessBootstrap=1"
+			<< " visibleWindowCreated=0"
 			<< std::endl;
 	}
 
@@ -1357,10 +1407,12 @@ void HwaSimIR::resize_window(int new_width, int new_height) {
 		if (m_renderTex != nullptr) {
 			m_renderTex->setup_2d_texture(safeWidth, safeHeight, Texture::T_unsigned_byte, Texture::F_rgb);
 		}
-		std::cout << "[Stage6 Resize][TODO]"
+		SetupStage6FinalPipeline(safeWidth, safeHeight, "resize-headless");
+		std::cout << "[Stage6 Resize]"
 			<< " renderMode=" << m_renderPresentationModeName
-			<< " renderTexture=" << safeWidth << "x" << safeHeight
-			<< " headless_final_pipeline_not_ready=1"
+			<< " finalSensorSize=" << safeWidth << "x" << safeHeight
+			<< " renderTexture=Stage6FinalSensorTex"
+			<< " pipelineReady=" << (m_stage6FinalPipelineReady ? "1" : "0")
 			<< std::endl;
 		return;
 	}
@@ -2009,22 +2061,15 @@ void HwaSimIR::InitStage6FinalPostShader()
 
 void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reason)
 {
-	if (IsHeadlessOffscreenMode())
+	const int safeWidth = std::max(1, width);
+	const int safeHeight = std::max(1, height);
+
+	if (IsHeadlessOffscreenMode() && m_cameraNode.is_empty())
 	{
-		m_stage6FinalPipelineReady = false;
-		std::cout << "[Stage6 FinalPipeline][TODO]"
-			<< " reason=" << (reason != nullptr ? reason : "unknown")
-			<< " renderMode=" << m_renderPresentationModeName
-			<< " windowPreview=" << (m_renderWindowPreview ? "1" : "0")
-			<< " tcpSource=final_sensor"
-			<< " finalSensorTex=Stage6FinalSensorTex"
-			<< " headless_final_pipeline_not_ready=1"
-			<< " stage=H1"
-			<< std::endl;
-		return;
+		InitHeadlessSceneCamera(safeWidth, safeHeight);
 	}
 
-	if (!m_pMainWindow || !m_pGraphicsWindow || m_cameraNode.is_empty())
+	if (IsVisibleWindowMode() && (!m_pMainWindow || !m_pGraphicsWindow || m_cameraNode.is_empty()))
 	{
 		std::cout << "[Stage6 FinalPipeline][WARN]"
 			<< " reason=" << (reason != nullptr ? reason : "unknown")
@@ -2036,6 +2081,22 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 			<< std::endl;
 		return;
 	}
+	if (IsHeadlessOffscreenMode() && (!m_pFramework || m_cameraNode.is_empty()))
+	{
+		m_stage6FinalPipelineReady = false;
+		std::cout << "[Stage6 FinalPipeline][WARN]"
+			<< " reason=" << (reason != nullptr ? reason : "unknown")
+			<< " renderMode=" << m_renderPresentationModeName
+			<< " windowPreview=" << (m_renderWindowPreview ? "1" : "0")
+			<< " tcpSource=final_sensor"
+			<< " finalSensorTex=Stage6FinalSensorTex"
+			<< " rawBufferReady=0"
+			<< " finalBufferReady=0"
+			<< " failure=headless_camera_unavailable"
+			<< std::endl;
+		return;
+	}
+
 	if (!m_stage6FinalPostShader)
 	{
 		InitStage6FinalPostShader();
@@ -2056,12 +2117,19 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 		m_stage6FinalCameraNode.set_hpr(0.0f, 0.0f, 0.0f);
 	}
 
-	const int safeWidth = std::max(1, width);
-	const int safeHeight = std::max(1, height);
+	if (IsVisibleWindowMode())
+	{
+		m_stage6PresentationOutput = m_pGraphicsWindow;
+	}
+
+	const bool finalOutputReady = IsVisibleWindowMode()
+		? (m_pGraphicsWindow != nullptr)
+		: (m_stage6FinalSensorBuffer != nullptr);
 	const bool sameSize = m_stage6FinalPipelineReady &&
 		m_stage6FinalWidth == safeWidth &&
 		m_stage6FinalHeight == safeHeight &&
 		m_stage6RawSceneBuffer != nullptr &&
+		finalOutputReady &&
 		m_stage6FinalRegion != nullptr &&
 		!m_stage6FinalCard.is_empty();
 	if (sameSize)
@@ -2077,10 +2145,13 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 			m_stage6FinalRegion->set_camera(m_stage6FinalCameraNode);
 			m_stage6FinalRegion->set_active(true);
 		}
-		DisplayRegion* sourceRegion = m_pMainWindow->get_display_region_3d();
-		if (sourceRegion != nullptr)
+		if (IsVisibleWindowMode() && m_pMainWindow != nullptr)
 		{
-			sourceRegion->set_active(false);
+			DisplayRegion* sourceRegion = m_pMainWindow->get_display_region_3d();
+			if (sourceRegion != nullptr)
+			{
+				sourceRegion->set_active(false);
+			}
 		}
 		ApplyStage6FinalPostprocessInputs();
 		LogStage6FinalPipeline(reason);
@@ -2094,6 +2165,14 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 		m_stage6RawSceneBuffer = nullptr;
 		m_stage6RawSceneRegion = nullptr;
 	}
+	if (IsHeadlessOffscreenMode() && m_stage6FinalSensorBuffer != nullptr)
+	{
+		GraphicsEngine::get_global_ptr()->remove_window(m_stage6FinalSensorBuffer);
+		m_stage6FinalSensorBuffer = nullptr;
+		m_stage6FinalRegion = nullptr;
+		m_annotationRegion = nullptr;
+		m_stage6PresentationOutput = nullptr;
+	}
 	if (!m_stage6FinalCard.is_empty())
 	{
 		m_stage6FinalCard.remove_node();
@@ -2101,7 +2180,26 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 
 	m_stage6RawSceneTex = new Texture("Stage6RawSceneTex");
 	m_stage6RawSceneTex->setup_2d_texture(safeWidth, safeHeight, Texture::T_unsigned_byte, Texture::F_rgb);
-	m_stage6RawSceneBuffer = m_pGraphicsWindow->make_texture_buffer("Stage6RawSceneBuffer", safeWidth, safeHeight, m_stage6RawSceneTex, false);
+	if (IsVisibleWindowMode())
+	{
+		m_stage6RawSceneBuffer = m_pGraphicsWindow->make_texture_buffer("Stage6RawSceneBuffer", safeWidth, safeHeight, m_stage6RawSceneTex, false);
+		m_stage6PresentationOutput = m_pGraphicsWindow;
+	}
+	else
+	{
+		m_stage6RawSceneBuffer = MakeStage6OffscreenOutput(
+			m_pFramework,
+			"Stage6RawSceneBuffer",
+			-10,
+			safeWidth,
+			safeHeight,
+			nullptr,
+			nullptr);
+		if (m_stage6RawSceneBuffer != nullptr)
+		{
+			m_stage6RawSceneBuffer->add_render_texture(m_stage6RawSceneTex, GraphicsOutput::RTM_bind_or_copy);
+		}
+	}
 	if (m_stage6RawSceneBuffer == nullptr)
 	{
 		m_stage6FinalPipelineReady = false;
@@ -2111,6 +2209,9 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 			<< " finalSensorTex=Stage6FinalSensorTex"
 			<< " windowSource=raw_scene"
 			<< " tcpSource=final_sensor"
+			<< " renderMode=" << m_renderPresentationModeName
+			<< " rawBufferReady=0"
+			<< " finalBufferReady=0"
 			<< " sameOutput=0"
 			<< " failure=raw_buffer_unavailable"
 			<< std::endl;
@@ -2118,13 +2219,20 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 	}
 
 	m_stage6RawSceneBuffer->remove_all_display_regions();
-	m_stage6RawSceneBuffer->set_sort(m_pGraphicsWindow->get_sort() - 10);
+	m_stage6RawSceneBuffer->set_sort(IsVisibleWindowMode() && m_pGraphicsWindow != nullptr ? (m_pGraphicsWindow->get_sort() - 10) : -10);
 	m_stage6RawSceneRegion = m_stage6RawSceneBuffer->make_display_region(0.0f, 1.0f, 0.0f, 1.0f);
-	DisplayRegion* sourceRegion = m_pMainWindow->get_display_region_3d();
-	if (sourceRegion != nullptr)
+	if (IsVisibleWindowMode() && m_pMainWindow != nullptr)
 	{
-		m_stage6RawSceneRegion->set_camera(sourceRegion->get_camera());
-		sourceRegion->set_active(false);
+		DisplayRegion* sourceRegion = m_pMainWindow->get_display_region_3d();
+		if (sourceRegion != nullptr)
+		{
+			m_stage6RawSceneRegion->set_camera(sourceRegion->get_camera());
+			sourceRegion->set_active(false);
+		}
+	}
+	else
+	{
+		m_stage6RawSceneRegion->set_camera(m_cameraNode);
 	}
 	m_stage6RawSceneRegion->set_dimensions(0.0f, 1.0f, 0.0f, 1.0f);
 	m_stage6RawSceneRegion->set_sort(0);
@@ -2133,7 +2241,46 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 	m_stage6RawSceneRegion->set_clear_depth_active(true);
 	m_stage6RawSceneRegion->set_active(true);
 
-	if (m_stage6FinalRegion == nullptr)
+	if (m_renderTex != nullptr)
+	{
+		m_renderTex->setup_2d_texture(safeWidth, safeHeight, Texture::T_unsigned_byte, Texture::F_rgb);
+	}
+
+	if (IsHeadlessOffscreenMode())
+	{
+		m_stage6FinalSensorBuffer = MakeStage6OffscreenOutput(
+			m_pFramework,
+			"Stage6FinalSensorBuffer",
+			100,
+			safeWidth,
+			safeHeight,
+			m_stage6RawSceneBuffer != nullptr ? m_stage6RawSceneBuffer->get_gsg() : nullptr,
+			m_stage6RawSceneBuffer);
+		if (m_stage6FinalSensorBuffer == nullptr)
+		{
+			m_stage6FinalPipelineReady = false;
+			std::cout << "[Stage6 FinalPipeline][WARN]"
+				<< " reason=" << (reason != nullptr ? reason : "unknown")
+				<< " renderMode=" << m_renderPresentationModeName
+				<< " rawSceneTex=Stage6RawSceneTex"
+				<< " finalSensorTex=Stage6FinalSensorTex"
+				<< " rawBufferReady=" << (m_stage6RawSceneBuffer != nullptr ? "1" : "0")
+				<< " finalBufferReady=0"
+				<< " tcpSource=final_sensor"
+				<< " failure=final_sensor_buffer_unavailable"
+				<< std::endl;
+			return;
+		}
+		m_stage6FinalSensorBuffer->clear_render_textures();
+		if (m_renderTex != nullptr)
+		{
+			m_stage6FinalSensorBuffer->add_render_texture(m_renderTex, GraphicsOutput::RTM_copy_ram);
+		}
+		m_stage6FinalSensorBuffer->remove_all_display_regions();
+		m_stage6PresentationOutput = m_stage6FinalSensorBuffer;
+		m_stage6FinalRegion = m_stage6FinalSensorBuffer->make_display_region(0.0f, 1.0f, 0.0f, 1.0f);
+	}
+	else if (m_stage6FinalRegion == nullptr)
 	{
 		m_stage6FinalRegion = m_pGraphicsWindow->make_display_region(0.0f, 1.0f, 0.0f, 1.0f);
 	}
@@ -2157,11 +2304,6 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 	m_stage6FinalCard.set_depth_test(false);
 	m_stage6FinalCard.set_bin("fixed", 0);
 
-	if (m_renderTex != nullptr)
-	{
-		m_renderTex->setup_2d_texture(safeWidth, safeHeight, Texture::T_unsigned_byte, Texture::F_rgb);
-	}
-
 	m_stage6FinalWidth = safeWidth;
 	m_stage6FinalHeight = safeHeight;
 	m_stage6FinalPipelineReady = true;
@@ -2172,10 +2314,17 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 
 void HwaSimIR::SetupAnnotationOverlayRegion(const char* reason)
 {
-	if (!m_pGraphicsWindow)
+	GraphicsOutput* presentationOutput = m_stage6PresentationOutput;
+	if (presentationOutput == nullptr)
 	{
+		std::cout << "[AnnotationOverlay][WARN]"
+			<< " renderMode=" << m_renderPresentationModeName
+			<< " presentationOutput=none"
+			<< " reason=" << (reason != nullptr ? reason : "unknown")
+			<< std::endl;
 		return;
 	}
+	const char* presentationOutputName = IsHeadlessOffscreenMode() ? "final_sensor_buffer" : "window";
 
 	if (m_annotationRoot.is_empty())
 	{
@@ -2195,7 +2344,7 @@ void HwaSimIR::SetupAnnotationOverlayRegion(const char* reason)
 
 	if (m_annotationRegion == nullptr)
 	{
-		m_annotationRegion = m_pGraphicsWindow->make_display_region(0.0f, 1.0f, 0.0f, 1.0f);
+		m_annotationRegion = presentationOutput->make_display_region(0.0f, 1.0f, 0.0f, 1.0f);
 	}
 
 	const int overlaySort = 200;
@@ -2214,6 +2363,8 @@ void HwaSimIR::SetupAnnotationOverlayRegion(const char* reason)
 	{
 		std::cout << "[AnnotationOverlay]"
 			<< " mode=final_region"
+			<< " renderMode=" << m_renderPresentationModeName
+			<< " presentationOutput=" << presentationOutputName
 			<< " regionReady=" << (m_annotationRegion != nullptr ? "1" : "0")
 			<< " rootEmpty=" << (m_annotationRoot.is_empty() ? "1" : "0")
 			<< " sort=" << overlaySort
@@ -2322,17 +2473,31 @@ void HwaSimIR::LogStage6FinalPipeline(const char* reason)
 	{
 		return;
 	}
+	const bool headlessMode = IsHeadlessOffscreenMode();
+	const bool rawBufferReady = m_stage6RawSceneBuffer != nullptr;
+	const bool finalBufferReady = headlessMode ? (m_stage6FinalSensorBuffer != nullptr) : (m_pGraphicsWindow != nullptr);
+	const int renderTexW = m_renderTex != nullptr ? m_renderTex->get_x_size() : 0;
+	const int renderTexH = m_renderTex != nullptr ? m_renderTex->get_y_size() : 0;
+	const int renderTexEffectiveW = headlessMode && m_stage6FinalWidth > 0 ? m_stage6FinalWidth : renderTexW;
+	const int renderTexEffectiveH = headlessMode && m_stage6FinalHeight > 0 ? m_stage6FinalHeight : renderTexH;
+	const char* presentationOutputName = headlessMode ? "final_sensor_buffer" : "window";
 	std::cout << "[Stage6 FinalPipeline]"
-		<< " reason=" << (reason != nullptr ? reason : "unknown")
 		<< " renderMode=" << m_renderPresentationModeName
+		<< " tcpSource=final_sensor"
+		<< " headless_final_pipeline_ready=" << (headlessMode && rawBufferReady && finalBufferReady ? "1" : "0")
+		<< " reason=" << (reason != nullptr ? reason : "unknown")
 		<< " windowPreview=" << (m_renderWindowPreview ? "1" : "0")
+		<< " presentationOutput=" << presentationOutputName
 		<< " rawSceneTex=Stage6RawSceneTex"
 		<< " finalSensorTex=Stage6FinalSensorTex"
 		<< " rawSceneSize=" << m_stage6FinalWidth << "x" << m_stage6FinalHeight
 		<< " finalSensorSize=" << m_stage6FinalWidth << "x" << m_stage6FinalHeight
+		<< " renderTexSize=" << renderTexW << "x" << renderTexH
+		<< " renderTexEffectiveSize=" << renderTexEffectiveW << "x" << renderTexEffectiveH
 		<< " windowSource=final_sensor"
-		<< " tcpSource=final_sensor"
 		<< " windowRegion=fullscreen"
+		<< " rawBufferReady=" << (rawBufferReady ? "1" : "0")
+		<< " finalBufferReady=" << (finalBufferReady ? "1" : "0")
 		<< " mtfBlurEnabled=" << (m_stage6MtfBlurEnabled ? "1" : "0")
 		<< " mtfBlurMode=" << m_stage6MtfBlurMode
 		<< " mtfBlurEffectiveMode=" << m_stage6MtfBlurEffectiveMode
@@ -2733,13 +2898,19 @@ void HwaSimIR::LogStage6Agc(std::uint64_t sourceSeq, bool forceLog)
 
 void HwaSimIR::LogStage6ViewportDiag(const char* reason) const
 {
-	const WindowProperties props = m_pGraphicsWindow ? m_pGraphicsWindow->get_properties() : WindowProperties();
-	const int windowW = props.get_x_size();
-	const int windowH = props.get_y_size();
+	GraphicsOutput* presentationOutput = m_stage6PresentationOutput;
+	const int presentationW = presentationOutput != nullptr ? presentationOutput->get_x_size() : 0;
+	const int presentationH = presentationOutput != nullptr ? presentationOutput->get_y_size() : 0;
 	const int rawW = m_stage6RawSceneTex != nullptr ? m_stage6RawSceneTex->get_x_size() : 0;
 	const int rawH = m_stage6RawSceneTex != nullptr ? m_stage6RawSceneTex->get_y_size() : 0;
 	const int renderW = m_renderTex != nullptr ? m_renderTex->get_x_size() : 0;
 	const int renderH = m_renderTex != nullptr ? m_renderTex->get_y_size() : 0;
+	const bool headlessMode = IsHeadlessOffscreenMode();
+	const bool rawBufferReady = m_stage6RawSceneBuffer != nullptr;
+	const bool finalBufferReady = headlessMode ? (m_stage6FinalSensorBuffer != nullptr) : (m_pGraphicsWindow != nullptr);
+	const char* presentationOutputName = headlessMode ? "final_sensor_buffer" : "window";
+	const int renderEffectiveW = headlessMode && m_stage6FinalWidth > 0 ? std::min(renderW, m_stage6FinalWidth) : renderW;
+	const int renderEffectiveH = headlessMode && m_stage6FinalHeight > 0 ? std::min(renderH, m_stage6FinalHeight) : renderH;
 	const float uvScaleU = rawW > 0 ? std::min(1.0f, static_cast<float>(m_stage6FinalWidth) / static_cast<float>(rawW)) : 0.0f;
 	const float uvScaleV = rawH > 0 ? std::min(1.0f, static_cast<float>(m_stage6FinalHeight) / static_cast<float>(rawH)) : 0.0f;
 	LVecBase4 dims(0.0f, 0.0f, 0.0f, 0.0f);
@@ -2753,8 +2924,8 @@ void HwaSimIR::LogStage6ViewportDiag(const char* reason) const
 		std::fabs(dims[2] - 0.0f) < 0.0001f &&
 		std::fabs(dims[3] - 1.0f) < 0.0001f &&
 		!m_stage6FinalCard.is_empty() &&
-		m_stage6FinalWidth == renderW &&
-		m_stage6FinalHeight == renderH &&
+		m_stage6FinalWidth == renderEffectiveW &&
+		m_stage6FinalHeight == renderEffectiveH &&
 		rawW >= m_stage6FinalWidth &&
 		rawH >= m_stage6FinalHeight &&
 		uvScaleU > 0.0f &&
@@ -2762,24 +2933,33 @@ void HwaSimIR::LogStage6ViewportDiag(const char* reason) const
 
 	std::cout << "[Stage6 ViewportDiag]"
 		<< " reason=" << (reason != nullptr ? reason : "unknown")
-		<< " windowSize=" << windowW << "x" << windowH
+		<< " renderMode=" << m_renderPresentationModeName
+		<< " presentationOutput=" << presentationOutputName
+		<< " presentationSize=" << presentationW << "x" << presentationH
 		<< " rawSceneTexSize=" << rawW << "x" << rawH
 		<< " rawSceneRequested=" << m_stage6FinalWidth << "x" << m_stage6FinalHeight
 		<< " finalUvScale=" << uvScaleU << "," << uvScaleV
 		<< " finalRegionDimensions=" << dims[0] << "," << dims[1] << "," << dims[2] << "," << dims[3]
 		<< " finalCardBounds=-1,1,-1,1"
 		<< " renderTexSize=" << renderW << "x" << renderH
+		<< " renderTexEffectiveSize=" << renderEffectiveW << "x" << renderEffectiveH
+		<< " rawBufferReady=" << (rawBufferReady ? "1" : "0")
+		<< " finalBufferReady=" << (finalBufferReady ? "1" : "0")
+		<< " sameOutput=1"
 		<< " fullscreen=" << (finalFullscreen ? "1" : "0")
 		<< std::endl;
 	if (!finalFullscreen)
 	{
 		std::cout << "STAGE6_FINAL_NOT_FULLSCREEN"
 			<< " reason=" << (reason != nullptr ? reason : "unknown")
+			<< " renderMode=" << m_renderPresentationModeName
+			<< " presentationOutput=" << presentationOutputName
 			<< " finalRegionDimensions=" << dims[0] << "," << dims[1] << "," << dims[2] << "," << dims[3]
 			<< " rawSceneTexSize=" << rawW << "x" << rawH
 			<< " rawSceneRequested=" << m_stage6FinalWidth << "x" << m_stage6FinalHeight
 			<< " finalUvScale=" << uvScaleU << "," << uvScaleV
 			<< " renderTexSize=" << renderW << "x" << renderH
+			<< " renderTexEffectiveSize=" << renderEffectiveW << "x" << renderEffectiveH
 			<< std::endl;
 	}
 }
@@ -4060,10 +4240,10 @@ void HwaSimIR::InitCommonCaptureTask() {
 			std::max(1, m_headlessHeight),
 			Texture::T_unsigned_byte,
 			Texture::F_rgb);
-		std::cout << "[RenderBackend][TODO]"
+		std::cout << "[RenderBackend]"
 			<< " mode=" << m_renderPresentationModeName
 			<< " captureTask=Stage6FinalSensorTex"
-			<< " headless_final_pipeline_not_ready=1"
+			<< " ramCopyBinding=deferred_until_final_sensor_buffer"
 			<< std::endl;
 	}
 
@@ -4071,6 +4251,48 @@ void HwaSimIR::InitCommonCaptureTask() {
 	PT(GenericAsyncTask) cap_task = new GenericAsyncTask("CaptureTask", &HwaSimIR::capture_task, this);
 	AsyncTaskManager::get_global_ptr()->add(cap_task);
 
+}
+
+void HwaSimIR::InitHeadlessSceneCamera(int width, int height)
+{
+	if (!IsHeadlessOffscreenMode())
+	{
+		return;
+	}
+	if (m_renderRoot.is_empty())
+	{
+		m_renderRoot = NodePath("HeadlessOffscreenRenderRoot");
+	}
+	if (!m_headlessCameraNode.is_empty())
+	{
+		m_cameraNode = m_headlessCameraNode;
+		if (m_cameraLens != nullptr)
+		{
+			m_cameraLens->set_fov(0.1, 0.1);
+			m_cameraLens->set_near_far(1.0, 100000.0);
+		}
+		return;
+	}
+
+	PT(Camera) headlessCamera = new Camera("HeadlessSensorCamera");
+	PT(PerspectiveLens) lens = new PerspectiveLens();
+	lens->set_fov(0.1, 0.1);
+	lens->set_near_far(1.0, 100000.0);
+	headlessCamera->set_lens(lens);
+	m_headlessCameraNode = m_renderRoot.attach_new_node(headlessCamera);
+	m_headlessCameraNode.set_pos(0.0f, 0.0f, 0.0f);
+	m_headlessCameraNode.set_hpr(0.0f, 0.0f, 0.0f);
+	m_cameraNode = m_headlessCameraNode;
+	m_camera = headlessCamera;
+	m_cameraLens = lens;
+
+	std::cout << "[RenderBackend]"
+		<< " mode=" << m_renderPresentationModeName
+		<< " headlessCamera=HeadlessSensorCamera"
+		<< " size=" << std::max(1, width) << "x" << std::max(1, height)
+		<< " fov=0.1,0.1"
+		<< " nearFar=1,100000"
+		<< std::endl;
 }
 
 void HwaSimIR::InitPlatformModels()
@@ -4114,13 +4336,12 @@ void HwaSimIR::InitPlatformModels()
 
 	if (IsHeadlessOffscreenMode())
 	{
-		std::cout << "[RenderBackend][TODO]"
+		InitHeadlessSceneCamera(m_headlessWidth, m_headlessHeight);
+		std::cout << "[RenderBackend]"
 			<< " mode=" << m_renderPresentationModeName
 			<< " platformModelPaths=" << m_platformResMap.size()
-			<< " modelRenderHost=headless_final_pipeline_not_ready"
+			<< " modelRenderHost=headless_render_root"
 			<< std::endl;
-		m_camera = nullptr;
-		m_cameraLens = nullptr;
 		return;
 	}
 
@@ -4599,19 +4820,24 @@ PLATFORM_TYPE HwaSimIR::TargetTypeToPlatformType(int targetType) const
 
 NodePath HwaSimIR::LoadPlatformAssetNode(PLATFORM_TYPE type, const PlatformResPath& res)
 {
-	if (!m_pMainWindow || m_renderRoot.is_empty())
+	if (m_renderRoot.is_empty())
 	{
-		std::cout << "[RenderBackend][TODO]"
+		std::cout << "[RenderBackend][WARN]"
 			<< " mode=" << m_renderPresentationModeName
 			<< " platformType=" << type
 			<< " modelPath=" << res.modelPath
-			<< " modelRenderHost=headless_final_pipeline_not_ready"
+			<< " failure=render_root_unavailable"
 			<< std::endl;
 		return NodePath();
 	}
 
 	Filename modelPath = Filename::from_os_specific(res.modelPath);
-	NodePath modelNode = m_pMainWindow->load_model(m_renderRoot, modelPath);
+	PT(PandaNode) loadedNode = Loader::get_global_ptr()->load_sync(modelPath);
+	NodePath modelNode;
+	if (loadedNode != nullptr)
+	{
+		modelNode = m_renderRoot.attach_new_node(loadedNode);
+	}
 	if (modelNode.is_empty())
 	{
 		std::cerr << "模型加载失败：" << res.modelPath << " 类型=" << type << std::endl;
@@ -7460,15 +7686,14 @@ void HwaSimIR::InitInfraredSimulation()
 
 void HwaSimIR::InitSkyAndCloudScene()
 {
-	if (!m_pMainWindow || m_cameraNode.is_empty())
+	if ((IsVisibleWindowMode() && !m_pMainWindow) || m_cameraNode.is_empty())
 	{
-		if (IsHeadlessOffscreenMode())
-		{
-			std::cout << "[RenderBackend][TODO]"
-				<< " mode=" << m_renderPresentationModeName
-				<< " skyAndCloudScene=headless_final_pipeline_not_ready"
-				<< std::endl;
-		}
+		std::cout << "[RenderBackend][WARN]"
+			<< " mode=" << m_renderPresentationModeName
+			<< " skyAndCloudScene=skipped"
+			<< " cameraReady=" << (m_cameraNode.is_empty() ? "0" : "1")
+			<< " visibleWindowReady=" << (m_pMainWindow != nullptr ? "1" : "0")
+			<< std::endl;
 		return;
 	}
 
@@ -10454,11 +10679,36 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 			const uchar* frameData = ram_image.p();
 			std::vector<uchar> sensorSizedFrame;
 			double resizeMs = 0.0;
+			bool textureCropApplied = false;
+
+			if (self->IsHeadlessOffscreenMode() &&
+				self->m_stage6FinalPipelineReady &&
+				self->m_stage6FinalWidth > 0 &&
+				self->m_stage6FinalHeight > 0 &&
+				(width != self->m_stage6FinalWidth || height != self->m_stage6FinalHeight))
+			{
+				const int effectiveWidth = std::min(width, self->m_stage6FinalWidth);
+				const int effectiveHeight = std::min(height, self->m_stage6FinalHeight);
+				if (effectiveWidth > 0 && effectiveHeight > 0)
+				{
+					const auto cropBegin = std::chrono::steady_clock::now();
+					cv::Mat rawFrame(height, width, CV_8UC3, const_cast<uchar*>(frameData));
+					cv::Mat croppedFrame = rawFrame(cv::Rect(0, 0, effectiveWidth, effectiveHeight)).clone();
+					frameWidth = effectiveWidth;
+					frameHeight = effectiveHeight;
+					sensorSizedFrame.resize(static_cast<size_t>(frameWidth) * static_cast<size_t>(frameHeight) * 3u);
+					memcpy(sensorSizedFrame.data(), croppedFrame.data, sensorSizedFrame.size());
+					frameData = sensorSizedFrame.data();
+					textureCropApplied = true;
+					resizeMs += std::chrono::duration<double, std::milli>(
+						std::chrono::steady_clock::now() - cropBegin).count();
+				}
+			}
 
 			if (self->m_sensorDisplayConfigReady &&
-				(width != self->m_sensorDisplayConfig.width || height != self->m_sensorDisplayConfig.height)) {
+				(frameWidth != self->m_sensorDisplayConfig.width || frameHeight != self->m_sensorDisplayConfig.height)) {
 				const auto resizeBegin = std::chrono::steady_clock::now();
-				cv::Mat rawFrame(height, width, CV_8UC3, const_cast<uchar*>(ram_image.p()));
+				cv::Mat rawFrame(frameHeight, frameWidth, CV_8UC3, const_cast<uchar*>(frameData));
 				cv::Mat resizedFrame;
 				cv::resize(rawFrame, resizedFrame, cv::Size(self->m_sensorDisplayConfig.width, self->m_sensorDisplayConfig.height));
 				frameWidth = self->m_sensorDisplayConfig.width;
@@ -10466,7 +10716,7 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 				sensorSizedFrame.resize(static_cast<size_t>(frameWidth) * static_cast<size_t>(frameHeight) * 3u);
 				memcpy(sensorSizedFrame.data(), resizedFrame.data, sensorSizedFrame.size());
 				frameData = sensorSizedFrame.data();
-				resizeMs = std::chrono::duration<double, std::milli>(
+				resizeMs += std::chrono::duration<double, std::milli>(
 					std::chrono::steady_clock::now() - resizeBegin).count();
 			}
 
@@ -10552,6 +10802,7 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 					<< " tcpHeight=" << frameHeight
 					<< " renderTextureWidth=" << width
 					<< " renderTextureHeight=" << height
+					<< " textureCropApplied=" << (textureCropApplied ? "1" : "0")
 					<< " source=final_sensor"
 					<< " channels=RGB8"
 					<< " sourceSeq=" << telemetry.sourceSeq

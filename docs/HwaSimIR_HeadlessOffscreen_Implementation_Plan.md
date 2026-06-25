@@ -1,6 +1,6 @@
 # HwaSimIR HeadlessOffscreen 实施方案
 
-> 版本：v3，H0/H1 实施记录版  
+> 版本：v4，H0/H1/H2 实施记录版
 > 更新时间：2026-06-25  
 > 目标平台：Windows 调试默认 VisibleWindow；Linux/RK3588 可通过配置切换 HeadlessOffscreen  
 > 涉及工程：本阶段只修改 `HwaSim_IR`；不修改 `DataDrivenTestQT`、`HwaSim_IR_VideoDisplay`、TCP 协议或编码逻辑  
@@ -51,9 +51,9 @@ VisibleWindow
 
 HeadlessOffscreen
   RK3588 无显示器部署目标路径。
-  H1 阶段暂不创建真实 offscreen buffer。
-  先解耦启动、配置、网络线程、CaptureTask 和空指针防护。
-  H2 阶段再实现真正 offscreen GraphicsBuffer/finalSensorTex。
+  H1 阶段解耦启动、配置、网络线程、CaptureTask 和空指针防护。
+  H2 阶段不创建可见窗口，创建真实 offscreen GraphicsBuffer/finalSensorTex。
+  TCP 仍从 CPU RGB frame 输入读取，不感知窗口或离屏来源差异。
 ```
 
 ### 2.2 配置策略
@@ -127,7 +127,28 @@ RenderPresentationMode=HeadlessOffscreen 时不得访问空窗口指针；允许
 
 目标：不创建可见窗口，使用 Panda3D offscreen output 作为渲染宿主，建立 raw scene -> final sensor postprocess -> `Stage6FinalSensorTex` 的 RAM copy 链路。
 
-本阶段不实施。
+实现要点：
+
+1. Headless 下创建 `HeadlessSensorCamera`，复用 `m_cameraNode / m_camera / m_cameraLens`，FOV 和 near/far 保持 VisibleWindow 默认值。
+2. 平台资源路径映射仍初始化，模型加载改为 Panda3D `Loader::load_sync()`，不再依赖 `m_pMainWindow->load_model()`。
+3. Headless `SetupStage6FinalPipeline()` 创建 `Stage6RawSceneBuffer` 与 `Stage6FinalSensorBuffer`，并将 `Stage6FinalSensorTex` 以 `RTM_copy_ram` 绑定到 final sensor buffer。
+4. `m_stage6PresentationOutput` 抽象 final presentation 输出：VisibleWindow 指向窗口，HeadlessOffscreen 指向 final sensor buffer。
+5. Annotation overlay display region 挂到 `m_stage6PresentationOutput`，Headless 下进入 `Stage6FinalSensorTex`。
+6. Panda3D offscreen texture 可能存在 power-of-two padding；CaptureTask 在 Headless 下按 `m_stage6FinalWidth/Height` 裁剪有效 CPU RGB frame 后再交给 `TcpCommThread`。
+7. 本阶段仍不修改 TCP 协议、不修改编码逻辑、不实现真实 H.264、不实现双通道。
+
+验收：
+
+```text
+Windows Release x64 编译通过。
+默认 VisibleWindow 日志包含 [RenderBackend] mode=VisibleWindow windowCreated=1 renderBackendReady=1。
+默认 VisibleWindow 日志包含 [Stage6 FinalPipeline] renderMode=VisibleWindow tcpSource=final_sensor。
+RenderPresentationMode=HeadlessOffscreen 时不创建窗口，日志包含 windowCreated=0 renderBackendReady=1。
+HeadlessOffscreen 日志包含 headless_final_pipeline_ready=1、rawBufferReady=1、finalBufferReady=1、finalSensorTex=Stage6FinalSensorTex。
+HeadlessOffscreen 运行日志不再出现 headless_final_pipeline_not_ready。
+带本地 UDP 激励短跑时，Stage6 Capture 输出 tcpWidth=800 tcpHeight=800 source=final_sensor channels=RGB8。
+TcpOutputConfig / Codec 仍保持 Phase7A JPEG/fallback 路径；不新增真实 H.264。
+```
 
 ### H3：RK3588 systemd 开机自启
 
@@ -145,7 +166,19 @@ RenderPresentationMode=HeadlessOffscreen 时不得访问空窗口指针；允许
 
 ---
 
-## 5. H0/H1 修改记录
+## 5. H0/H1/H2 修改记录
+
+### 2026-06-25 / v4
+
+- H2 实现真实 HeadlessOffscreen 离屏渲染宿主：`Stage6RawSceneBuffer` -> final postprocess -> `Stage6FinalSensorBuffer` -> `Stage6FinalSensorTex`。
+- 新增 `m_stage6FinalSensorBuffer`、`m_stage6PresentationOutput`、`m_headlessCameraNode`，并新增 `InitHeadlessSceneCamera()`。
+- `SetupAnnotationOverlayRegion()` 改为使用 `m_stage6PresentationOutput`，Headless 下 overlay 能进入 final sensor buffer。
+- `LoadPlatformAssetNode()` 改为通用 Loader 加载，不再依赖 `WindowFramework`，Headless 下模型可挂到 `HeadlessOffscreenRenderRoot`。
+- CaptureTask 对 Headless offscreen texture padding 做有效尺寸裁剪，继续向 `TcpCommThread` 提供 CPU RGB frame、宽高、telemetry、annotationRecord。
+- 配置默认仍为 `PresentationMode=VisibleWindow`，Linux/RK3588 推荐以环境变量 `RenderPresentationMode=HeadlessOffscreen` 运行，无需 `DISPLAY`。
+- 验收结果：Windows Release x64 编译通过；默认 VisibleWindow 短跑通过；HeadlessOffscreen 短跑通过并打印 `headless_final_pipeline_ready=1 rawBufferReady=1 finalBufferReady=1`。
+- 带本地 UDP 激励短跑结果：`[Codec] h264En=0 requestedCodec=jpeg activeCodec=jpeg`，`[Stage6 Capture] frameWidth=800 frameHeight=800 tcpWidth=800 tcpHeight=800 source=final_sensor channels=RGB8`。
+- 未完成项：Linux/RK3588 aarch64 交叉编译与板端无 DISPLAY 实机验证仍需在对应工具链/板卡环境执行；H.264、TCP 协议、双通道仍保持非目标。
 
 ### 2026-06-25 / v3
 
