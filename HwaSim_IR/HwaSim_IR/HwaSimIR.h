@@ -402,8 +402,14 @@ private:
 	NodePath m_annotationRoot;
 	NodePath m_annotationCameraNode;
 	bool m_stage6FinalPipelineReady = false;
+	std::string m_stage6RenderPath = "dual_pass";
+	std::string m_stage6FinalPostprocessNoopReason = "unknown";
+	bool m_stage6FinalPostprocessNoop = false;
+	bool m_stage6FinalPostprocessBypass = false;
 	int m_stage6FinalPipelineLogCounter = 0;
 	int m_annotationOverlayLogCounter = 0;
+	int m_renderPerfProbeLogCounter = 0;
+	int m_headlessImageProbeLogCounter = 0;
 	int m_stage6FinalWidth = 0;
 	int m_stage6FinalHeight = 0;
 	std::atomic<bool> m_requestExit{ false };
@@ -450,6 +456,11 @@ private:
 	void SetupStage6FinalPipeline(int width, int height, const char* reason);
 	void SetupAnnotationOverlayRegion(const char* reason);
 	void ApplyStage6FinalPostprocessInputs();
+	bool IsStage6MtfEffective() const;
+	bool IsStage6DetectorNoiseEffective() const;
+	bool IsStage6AgcEffective() const;
+	bool IsStage7FinalScreenOverlayActive() const;
+	bool IsStage6FinalPostprocessNoop(std::string* reason) const;
 	void LogStage6MtfBlur(std::uint64_t sourceSeq, double renderMs);
 	void LogStage6DetectorNoise(std::uint64_t sourceSeq, double renderMs);
 	void UpdateStage6AgcFromFrame(const unsigned char* frameData, int frameWidth, int frameHeight, std::uint64_t sourceSeq);
@@ -517,6 +528,8 @@ private:
 	void LogStage6FinalPipeline(const char* reason);
 	void LogStage6ViewportDiag(const char* reason) const;
 	void LogStage6FrameDiag(const BYHWICD::DisplayC2cObjTrackingData& currentData, int targetMappedCount, int targetVisibleCount, int hiddenByTargetNum, int hiddenByTargetViewValid, int hiddenByWeaponViewValid, int beyondFarClipCount);
+	void LogRenderPerfProbe(double pandaDoFrameMs);
+	void LogHeadlessImageProbe(const unsigned char* frameData, int frameWidth, int frameHeight, int textureWidth, int textureHeight, bool textureCropApplied, std::uint64_t sourceSeq);
 	bool ResolveAnnotationOutputSize(int& width, int& height) const;
 	void RefreshAnnotationOverlay(const BYHWICD::DisplayC2cObjTrackingData& currentData);
 	void LogActiveIRSensorProfile(int protocolBand, const char* reason, bool forceLog);
@@ -553,6 +566,9 @@ private:
 	bool m_renderEnableFrameRateMeter = true;
 	int m_headlessWidth = 800;
 	int m_headlessHeight = 800;
+	bool m_headlessFastDirectFinal = true;
+	bool m_headlessImageProbe = false;
+	bool m_renderPerfProbe = false;
 	bool m_renderBackendReady = false;
 	UdpCommThread* m_pUdpThread = nullptr;        // UDP通讯线程
 	TcpCommThread* m_pTcpThread = nullptr;		// TCP通信线程
@@ -577,6 +593,8 @@ private:
 	std::vector<TargetPlatformData> m_targetPlatformList;// TargetState平台
 	AnnotationManager m_annotationManager;              // Stage1：实时窗口标注与内存快照
 	double m_annotationUpdateHz = 15.0;
+	bool m_annotationOverlayInSensorImage = true;
+	bool m_annotationJsonPerFrame = true;
 	std::uint64_t m_annotationLastProjectionSourceSeq = 0;
 	std::uint64_t m_inputQueueBackpressureLogCount = 0;
 	std::map<std::uintptr_t, std::map<std::string, ShaderInputCachedValue> > m_shaderInputCache;
@@ -639,6 +657,11 @@ private:
 	std::map<std::string, std::string> m_lastStage5RadianceComponentLogState;
 	int m_lastWeaponDamageFlag = -1;
 	IRPerfStats m_perfStats;
+	double m_lastPandaDoFrameMs = 0.0;
+	double m_lastReadbackMs = 0.0;
+	double m_lastFrameCopyMs = 0.0;
+	double m_lastJpegMs = 0.0;
+	double m_lastAnnotationMs = 0.0;
 	std::atomic<int> m_targetVideoFps{ 0 };
 
 															 // 控制标记
