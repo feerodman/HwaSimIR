@@ -23,7 +23,9 @@ public:
 		const std::vector<TargetPlatformData>& targets,
 		const NodePath& renderRoot,
 		const NodePath& cameraNode,
-		Lens* cameraLens);
+		Lens* cameraLens,
+		bool drawOverlay = true,
+		bool enableOcclusion = true);
 	void reuseFrameMetadata(
 		unsigned long long frameIndex,
 		double simTimeMs,
@@ -32,6 +34,7 @@ public:
 		int height);
 
 	const AnnotationFrameRecord& latestRecord() const;
+	const AnnotationProjector::PerfStats& lastPerfStats() const;
 
 private:
 	void logTargetRecord(const TargetAnnotation& target) const;

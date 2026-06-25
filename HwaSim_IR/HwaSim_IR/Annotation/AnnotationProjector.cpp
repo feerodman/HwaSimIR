@@ -150,14 +150,16 @@ void AnnotationProjector::beginFrame(
 	unsigned long long frameIndex,
 	const std::vector<TargetPlatformData>& allTargets,
 	const AnnotationConfig& config,
-	const NodePath& renderRoot)
+	const NodePath& renderRoot,
+	bool enableOcclusion)
 {
 	m_frameIndex = frameIndex;
+	m_occlusionEnabledForFrame = enableOcclusion;
 	m_perfStats = PerfStats();
 	m_perfStats.targets = static_cast<int>(allTargets.size());
 	m_collisionCandidates.clear();
 
-	if (!config.occlusion().enabled || config.occlusion().mode != "mesh_collision" || renderRoot.is_empty())
+	if (!m_occlusionEnabledForFrame || !config.occlusion().enabled || config.occlusion().mode != "mesh_collision" || renderRoot.is_empty())
 	{
 		return;
 	}
@@ -195,6 +197,22 @@ void AnnotationProjector::beginFrame(
 					<< std::endl;
 			}
 			continue;
+		}
+		if (!stats.built)
+		{
+			++m_perfStats.collisionReused;
+		}
+		++m_collisionCacheLogCounter;
+		if (stats.built || m_collisionCacheLogCounter <= 8 || (m_collisionCacheLogCounter % 120) == 0)
+		{
+			std::cout << "[AnnotationCollisionCache]"
+				<< " platform=" << config.labelForTargetType(targetPlat.targetState.targetType)
+				<< " targetID=" << targetPlat.targetState.targetID
+				<< " built=" << (stats.built ? "1" : "0")
+				<< " reused=" << (!stats.built ? "1" : "0")
+				<< " triangles=" << stats.triangles
+				<< " solids=" << stats.solids
+				<< std::endl;
 		}
 
 		collisionPath.set_mat(targetPlat.nodePath.get_mat(renderRoot));
@@ -811,7 +829,7 @@ bool AnnotationProjector::isKeyPointVisibleByRay(
 	int keyPixelY)
 {
 	const AnnotationOcclusionConfig& occlusion = config.occlusion();
-	if (!occlusion.enabled || occlusion.mode == "projection_only")
+	if (!m_occlusionEnabledForFrame || !occlusion.enabled || occlusion.mode == "projection_only")
 	{
 		return true;
 	}

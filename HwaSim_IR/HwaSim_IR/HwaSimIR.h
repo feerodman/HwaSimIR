@@ -529,6 +529,7 @@ private:
 	void LogStage6ViewportDiag(const char* reason) const;
 	void LogStage6FrameDiag(const BYHWICD::DisplayC2cObjTrackingData& currentData, int targetMappedCount, int targetVisibleCount, int hiddenByTargetNum, int hiddenByTargetViewValid, int hiddenByWeaponViewValid, int beyondFarClipCount);
 	void LogRenderPerfProbe(double pandaDoFrameMs);
+	void LogScenePerfProbe(std::uint64_t sourceSeq);
 	void LogHeadlessImageProbe(const unsigned char* frameData, int frameWidth, int frameHeight, int textureWidth, int textureHeight, bool textureCropApplied, std::uint64_t sourceSeq);
 	bool ResolveAnnotationOutputSize(int& width, int& height) const;
 	void RefreshAnnotationOverlay(const BYHWICD::DisplayC2cObjTrackingData& currentData);
@@ -595,8 +596,19 @@ private:
 	double m_annotationUpdateHz = 15.0;
 	bool m_annotationOverlayInSensorImage = true;
 	bool m_annotationJsonPerFrame = true;
+	bool m_annotationFastJsonMode = false;
+	double m_annotationBBoxUpdateHz = 10.0;
+	double m_annotationOcclusionUpdateHz = 5.0;
+	bool m_annotationReuseLastWhenSkipped = true;
+	std::uint64_t m_annotationLastBBoxSourceSeq = 0;
+	std::uint64_t m_annotationLastOcclusionSourceSeq = 0;
+	int m_annotationFastPathLogCounter = 0;
 	std::uint64_t m_annotationLastProjectionSourceSeq = 0;
 	std::uint64_t m_inputQueueBackpressureLogCount = 0;
+	bool m_targetUpdateCullInvisible = false;
+	int m_targetUpdateCullLogCounter = 0;
+	std::map<std::string, bool> m_targetUpdateRenderableByKey;
+	std::map<std::string, bool> m_targetUpdateBeyondFarByKey;
 	std::map<std::uintptr_t, std::map<std::string, ShaderInputCachedValue> > m_shaderInputCache;
 	ShaderInputCacheStats m_shaderInputStats;
 	double m_shaderInputFloatEpsilon = 1.0e-5;
@@ -662,6 +674,19 @@ private:
 	double m_lastFrameCopyMs = 0.0;
 	double m_lastJpegMs = 0.0;
 	double m_lastAnnotationMs = 0.0;
+	double m_lastProcessRealSceneMs = 0.0;
+	double m_lastTargetMappingMs = 0.0;
+	double m_lastCameraControlMs = 0.0;
+	double m_lastStage4Stage5UpdateMs = 0.0;
+	double m_lastShaderInputApplyMs = 0.0;
+	double m_lastAnnotationBBoxMs = 0.0;
+	double m_lastAnnotationOcclusionMs = 0.0;
+	double m_lastAnnotationJsonMs = 0.0;
+	int m_lastAnnotationTargets = 0;
+	int m_lastTargetUpdateTotal = 0;
+	int m_lastTargetUpdateVisible = 0;
+	int m_lastTargetUpdateSkippedBeyondFar = 0;
+	int m_lastTargetUpdateSkippedShaderApply = 0;
 	std::atomic<int> m_targetVideoFps{ 0 };
 
 															 // 控制标记

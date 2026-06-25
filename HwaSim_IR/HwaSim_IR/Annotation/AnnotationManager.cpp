@@ -67,7 +67,9 @@ AnnotationFrameRecord AnnotationManager::updateFrame(
 	const std::vector<TargetPlatformData>& targets,
 	const NodePath& renderRoot,
 	const NodePath& cameraNode,
-	Lens* cameraLens)
+	Lens* cameraLens,
+	bool drawOverlay,
+	bool enableOcclusion)
 {
 	if (!m_enabled || !m_initialized)
 	{
@@ -85,12 +87,15 @@ AnnotationFrameRecord AnnotationManager::updateFrame(
 	if (width <= 0 || height <= 0 || renderRoot.is_empty() || cameraNode.is_empty() || cameraLens == nullptr)
 	{
 		m_latestRecord = record;
-		m_overlay.clear();
+		if (drawOverlay)
+		{
+			m_overlay.clear();
+		}
 		return m_latestRecord;
 	}
 
 	const double totalBeginMs = NowMs();
-	m_projector.beginFrame(frameIndex, targets, m_config, renderRoot);
+	m_projector.beginFrame(frameIndex, targets, m_config, renderRoot, enableOcclusion);
 	for (size_t i = 0; i < targets.size(); ++i)
 	{
 		TargetAnnotation targetAnnotation;
@@ -101,9 +106,17 @@ AnnotationFrameRecord AnnotationManager::updateFrame(
 	}
 
 	m_latestRecord = record;
-	const double overlayBeginMs = NowMs();
-	m_overlay.drawFrame(m_latestRecord, m_config.drawOptions());
-	const double overlayMs = NowMs() - overlayBeginMs;
+	double overlayMs = 0.0;
+	if (drawOverlay)
+	{
+		const double overlayBeginMs = NowMs();
+		m_overlay.drawFrame(m_latestRecord, m_config.drawOptions());
+		overlayMs = NowMs() - overlayBeginMs;
+	}
+	else
+	{
+		m_overlay.clear();
+	}
 	const double totalMs = NowMs() - totalBeginMs;
 	++m_updateCounter;
 
@@ -122,6 +135,8 @@ AnnotationFrameRecord AnnotationManager::updateFrame(
 			<< " frame=" << m_latestRecord.frameIndex
 			<< " targets=" << m_latestRecord.targets.size()
 			<< " keypoints=" << perf.keypoints
+			<< " drawOverlay=" << (drawOverlay ? "1" : "0")
+			<< " occlusionEnabled=" << (enableOcclusion ? "1" : "0")
 			<< " bboxMs=" << perf.bboxMs
 			<< " collisionBuildMs=" << perf.collisionBuildMs
 			<< " surfaceMs=" << perf.surfaceMs
@@ -129,6 +144,7 @@ AnnotationFrameRecord AnnotationManager::updateFrame(
 			<< " overlayMs=" << overlayMs
 			<< " totalMs=" << totalMs
 			<< " collisionBuilds=" << perf.collisionBuilds
+			<< " collisionReused=" << perf.collisionReused
 			<< " collisionTriangles=" << perf.collisionTriangles
 			<< std::endl;
 	}
@@ -153,6 +169,11 @@ void AnnotationManager::reuseFrameMetadata(
 const AnnotationFrameRecord& AnnotationManager::latestRecord() const
 {
 	return m_latestRecord;
+}
+
+const AnnotationProjector::PerfStats& AnnotationManager::lastPerfStats() const
+{
+	return m_projector.perfStats();
 }
 
 void AnnotationManager::logTargetRecord(const TargetAnnotation& target) const

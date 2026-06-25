@@ -37,6 +37,15 @@ bool FileExists(const std::string& path)
 	return file.good();
 }
 
+std::string H4TargetRuntimeKey(const TargetPlatformData& targetPlat)
+{
+	std::ostringstream key;
+	key << targetPlat.targetState.targetType << "_"
+		<< targetPlat.targetState.targetPlatID << "_"
+		<< targetPlat.targetState.targetID;
+	return key.str();
+}
+
 std::vector<std::string> BuildRuntimeConfigCandidatePaths()
 {
 	std::vector<std::string> runtimeConfigPaths;
@@ -3247,10 +3256,63 @@ void HwaSimIR::LogRenderPerfProbe(double pandaDoFrameMs)
 		<< " finalPassEnabled=" << (finalPassEnabled ? "1" : "0")
 		<< " annotationOverlayEnabled=" << (annotationOverlayEnabled ? "1" : "0")
 		<< " copyRamMode=RTM_copy_ram"
+		<< " processRealSceneMs=" << m_lastProcessRealSceneMs
+		<< " targetMappingMs=" << m_lastTargetMappingMs
+		<< " cameraControlMs=" << m_lastCameraControlMs
+		<< " stage4Stage5UpdateMs=" << m_lastStage4Stage5UpdateMs
+		<< " shaderInputApplyMs=" << m_lastShaderInputApplyMs
 		<< " readbackMs=" << m_lastReadbackMs
 		<< " frameCopyMs=" << m_lastFrameCopyMs
 		<< " jpegMs=" << m_lastJpegMs
-		<< " annotationMs=" << m_lastAnnotationMs;
+		<< " annotationMs=" << m_lastAnnotationMs
+		<< " annotationBBoxMs=" << m_lastAnnotationBBoxMs
+		<< " annotationOcclusionMs=" << m_lastAnnotationOcclusionMs
+		<< " annotationJsonMs=" << m_lastAnnotationJsonMs
+		<< " annotationTargets=" << m_lastAnnotationTargets
+		<< " targetUpdateCullInvisible=" << (m_targetUpdateCullInvisible ? "1" : "0")
+		<< " targetUpdateTotal=" << m_lastTargetUpdateTotal
+		<< " targetUpdateVisible=" << m_lastTargetUpdateVisible
+		<< " targetUpdateSkippedBeyondFar=" << m_lastTargetUpdateSkippedBeyondFar
+		<< " targetUpdateSkippedShaderApply=" << m_lastTargetUpdateSkippedShaderApply;
+	std::cout << line.str() << std::endl;
+}
+
+void HwaSimIR::LogScenePerfProbe(std::uint64_t sourceSeq)
+{
+	if (!m_renderPerfProbe)
+	{
+		return;
+	}
+	if (sourceSeq > 3 && (sourceSeq % 120) != 0)
+	{
+		return;
+	}
+
+	std::ostringstream line;
+	line << std::fixed << std::setprecision(3)
+		<< "[ScenePerfProbe]"
+		<< " sourceSeq=" << sourceSeq
+		<< " processRealSceneMs=" << m_lastProcessRealSceneMs
+		<< " targetMappingMs=" << m_lastTargetMappingMs
+		<< " cameraControlMs=" << m_lastCameraControlMs
+		<< " stage4Stage5UpdateMs=" << m_lastStage4Stage5UpdateMs
+		<< " shaderInputApplyMs=" << m_lastShaderInputApplyMs
+		<< " annotationComputeMs=" << m_lastAnnotationMs
+		<< " annotationBBoxMs=" << m_lastAnnotationBBoxMs
+		<< " annotationOcclusionMs=" << m_lastAnnotationOcclusionMs
+		<< " annotationJsonMs=" << m_lastAnnotationJsonMs
+		<< " pandaDoFrameMs=" << m_lastPandaDoFrameMs
+		<< " readbackMs=" << m_lastReadbackMs
+		<< " frameCopyMs=" << m_lastFrameCopyMs
+		<< " jpegMs=" << m_lastJpegMs
+		<< " annotationFastJsonMode=" << (m_annotationFastJsonMode ? "1" : "0")
+		<< " annotationOverlayInSensorImage=" << (m_annotationOverlayInSensorImage ? "1" : "0")
+		<< " annotationJsonPerFrame=" << (m_annotationJsonPerFrame ? "1" : "0")
+		<< " targetUpdateCullInvisible=" << (m_targetUpdateCullInvisible ? "1" : "0")
+		<< " targetUpdateTotal=" << m_lastTargetUpdateTotal
+		<< " targetUpdateVisible=" << m_lastTargetUpdateVisible
+		<< " targetUpdateSkippedBeyondFar=" << m_lastTargetUpdateSkippedBeyondFar
+		<< " targetUpdateSkippedShaderApply=" << m_lastTargetUpdateSkippedShaderApply;
 	std::cout << line.str() << std::endl;
 }
 
@@ -4490,11 +4552,33 @@ bool HwaSimIR::ResolveAnnotationOutputSize(int& width, int& height) const
 
 void HwaSimIR::RefreshAnnotationOverlay(const BYHWICD::DisplayC2cObjTrackingData& currentData)
 {
+	m_lastAnnotationBBoxMs = 0.0;
+	m_lastAnnotationOcclusionMs = 0.0;
+	m_lastAnnotationJsonMs = 0.0;
+	m_lastAnnotationTargets = 0;
+
 	if (!m_sensorParam.realtimeAnnotation)
 	{
 		if (m_annotationManager.isEnabled())
 		{
 			m_annotationManager.setEnabled(false);
+		}
+		return;
+	}
+
+	if (!m_annotationOverlayInSensorImage && !m_annotationJsonPerFrame)
+	{
+		m_annotationManager.clear();
+		++m_annotationFastPathLogCounter;
+		if (m_annotationFastPathLogCounter <= 3 || (m_annotationFastPathLogCounter % 120) == 0)
+		{
+			std::cout << "[AnnotationFastPath]"
+				<< " enabled=" << (m_annotationFastJsonMode ? "1" : "0")
+				<< " skipped=1"
+				<< " reason=json_and_overlay_disabled"
+				<< " overlayInSensorImage=0"
+				<< " jsonPerFrame=0"
+				<< std::endl;
 		}
 		return;
 	}
@@ -4517,34 +4601,120 @@ void HwaSimIR::RefreshAnnotationOverlay(const BYHWICD::DisplayC2cObjTrackingData
 		? m_currentFrameTelemetry.sourceSeq
 		: m_stage0DisplayFrameCount;
 	const double targetFps = std::max(1.0, static_cast<double>(m_targetVideoFps.load()));
-	const std::uint64_t updateStride = static_cast<std::uint64_t>(
-		std::max(1.0, std::floor(targetFps / std::max(1.0, m_annotationUpdateHz) + 0.5)));
-	const bool updateProjection = sourceSeq <= 3 ||
-		m_annotationLastProjectionSourceSeq == 0 ||
-		sourceSeq >= m_annotationLastProjectionSourceSeq + updateStride;
-	if (updateProjection)
+	const bool drawOverlay = m_annotationOverlayInSensorImage;
+	bool updateProjection = false;
+	bool enableOcclusion = true;
+	bool reused = false;
+
+	if (m_annotationFastJsonMode)
 	{
-		m_annotationManager.updateFrame(
-			sourceSeq,
-			currentData.time,
-			currentData.sensorID,
-			outputWidth,
-			outputHeight,
-			m_targetPlatformList,
-			m_renderRoot,
-			m_cameraNode,
-			m_cameraLens);
-		m_annotationLastProjectionSourceSeq = sourceSeq;
+		const std::uint64_t bboxStride = static_cast<std::uint64_t>(
+			std::max(1.0, std::floor(targetFps / std::max(1.0, m_annotationBBoxUpdateHz) + 0.5)));
+		const std::uint64_t occlusionStride = static_cast<std::uint64_t>(
+			std::max(1.0, std::floor(targetFps / std::max(1.0, m_annotationOcclusionUpdateHz) + 0.5)));
+		const bool bboxDue =
+			m_annotationLastBBoxSourceSeq == 0 ||
+			sourceSeq >= m_annotationLastBBoxSourceSeq + bboxStride;
+		const bool occlusionDue =
+			m_annotationLastOcclusionSourceSeq == 0
+			? sourceSeq >= occlusionStride
+			: sourceSeq >= m_annotationLastOcclusionSourceSeq + occlusionStride;
+		updateProjection = bboxDue || !m_annotationReuseLastWhenSkipped;
+		enableOcclusion = updateProjection && occlusionDue;
+		if (updateProjection)
+		{
+			m_annotationManager.updateFrame(
+				sourceSeq,
+				currentData.time,
+				currentData.sensorID,
+				outputWidth,
+				outputHeight,
+				m_targetPlatformList,
+				m_renderRoot,
+				m_cameraNode,
+				m_cameraLens,
+				drawOverlay,
+				enableOcclusion);
+			m_annotationLastProjectionSourceSeq = sourceSeq;
+			m_annotationLastBBoxSourceSeq = sourceSeq;
+			if (enableOcclusion)
+			{
+				m_annotationLastOcclusionSourceSeq = sourceSeq;
+			}
+		}
+		else
+		{
+			m_annotationManager.reuseFrameMetadata(
+				sourceSeq,
+				currentData.time,
+				currentData.sensorID,
+				outputWidth,
+				outputHeight);
+			reused = true;
+		}
+
+		++m_annotationFastPathLogCounter;
+		if (m_annotationFastPathLogCounter <= 3 || (m_annotationFastPathLogCounter % 120) == 0 || updateProjection)
+		{
+			std::cout << "[AnnotationFastPath]"
+				<< " enabled=1"
+				<< " frame=" << sourceSeq
+				<< " bboxDue=" << (bboxDue ? "1" : "0")
+				<< " occlusionDue=" << (occlusionDue ? "1" : "0")
+				<< " updateProjection=" << (updateProjection ? "1" : "0")
+				<< " reused=" << (reused ? "1" : "0")
+				<< " bboxUpdateHz=" << m_annotationBBoxUpdateHz
+				<< " occlusionUpdateHz=" << m_annotationOcclusionUpdateHz
+				<< " reuseLastWhenSkipped=" << (m_annotationReuseLastWhenSkipped ? "1" : "0")
+				<< " drawOverlay=" << (drawOverlay ? "1" : "0")
+				<< " jsonPerFrame=" << (m_annotationJsonPerFrame ? "1" : "0")
+				<< std::endl;
+		}
 	}
 	else
 	{
-		m_annotationManager.reuseFrameMetadata(
-			sourceSeq,
-			currentData.time,
-			currentData.sensorID,
-			outputWidth,
-			outputHeight);
+		const std::uint64_t updateStride = static_cast<std::uint64_t>(
+			std::max(1.0, std::floor(targetFps / std::max(1.0, m_annotationUpdateHz) + 0.5)));
+		updateProjection = sourceSeq <= 3 ||
+			m_annotationLastProjectionSourceSeq == 0 ||
+			sourceSeq >= m_annotationLastProjectionSourceSeq + updateStride;
+		if (updateProjection)
+		{
+			m_annotationManager.updateFrame(
+				sourceSeq,
+				currentData.time,
+				currentData.sensorID,
+				outputWidth,
+				outputHeight,
+				m_targetPlatformList,
+				m_renderRoot,
+				m_cameraNode,
+				m_cameraLens,
+				drawOverlay,
+				true);
+			m_annotationLastProjectionSourceSeq = sourceSeq;
+			m_annotationLastBBoxSourceSeq = sourceSeq;
+			m_annotationLastOcclusionSourceSeq = sourceSeq;
+		}
+		else
+		{
+			m_annotationManager.reuseFrameMetadata(
+				sourceSeq,
+				currentData.time,
+				currentData.sensorID,
+				outputWidth,
+				outputHeight);
+			reused = true;
+		}
 	}
+
+	const AnnotationProjector::PerfStats& perf = m_annotationManager.lastPerfStats();
+	if (updateProjection)
+	{
+		m_lastAnnotationBBoxMs = perf.bboxMs;
+		m_lastAnnotationOcclusionMs = perf.occlusionMs;
+	}
+	m_lastAnnotationTargets = static_cast<int>(m_annotationManager.latestRecord().targets.size());
 }
 
 // 窗口UI初始化（VisibleWindow专用）
@@ -4908,6 +5078,7 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 	{
 		return;
 	}
+	const auto processBegin = std::chrono::steady_clock::now();
 
 	// ================= 新增：局部拷贝当前帧数据，防止在计算过程中被 UDP 线程覆盖 =================
 	BYHWICD::DisplayC2cObjTrackingData currentData;
@@ -4974,6 +5145,8 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 	int hiddenByTargetViewValid = 0;
 	int hiddenByWeaponViewValid = 0;
 	int beyondFarClipCount = 0;
+	m_targetUpdateRenderableByKey.clear();
+	m_targetUpdateBeyondFarByKey.clear();
 	for (auto& targetPlat : m_targetPlatformList)
 	{
 		if (targetPlat.isExist)
@@ -4983,6 +5156,7 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 	}
 
 	TargetPlatformData* lookAtTarget = nullptr;
+	const auto targetMappingBegin = std::chrono::steady_clock::now();
 	for (int i = 0; i < 5; ++i)
 	{
 		const BYHWICD::TargetState& targetState = currentData.targetState[i];
@@ -5051,6 +5225,10 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 		{
 			++targetVisibleCount;
 		}
+		const bool renderRenderable = renderVisible && !beyondFarClip;
+		const std::string targetUpdateKey = H4TargetRuntimeKey(*targetPlat);
+		m_targetUpdateRenderableByKey[targetUpdateKey] = renderRenderable;
+		m_targetUpdateBeyondFarByKey[targetUpdateKey] = beyondFarClip;
 		LogAeroSpeedState(*targetPlat, renderVisible && !beyondFarClip);
 		const bool nearFarClip = renderVisible &&
 			!beyondFarClip &&
@@ -5068,7 +5246,7 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 				<< std::endl;
 			m_stage7NearFarClipWarningLogged = true;
 		}
-		if (renderVisible)
+		if (m_targetUpdateCullInvisible ? renderRenderable : renderVisible)
 		{
 			targetPlat->nodePath.show();
 		}
@@ -5124,9 +5302,14 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 				<< std::endl;
 		}
 	}
+	m_lastTargetMappingMs = std::chrono::duration<double, std::milli>(
+		std::chrono::steady_clock::now() - targetMappingBegin).count();
 	m_isInitTargetPlatID = true;
 
+	const auto cameraBegin = std::chrono::steady_clock::now();
 	ApplyWeaponCameraControl(currentData, lookAtTarget);
+	m_lastCameraControlMs = std::chrono::duration<double, std::milli>(
+		std::chrono::steady_clock::now() - cameraBegin).count();
 	LogStage6FrameDiag(currentData, targetMappedCount, targetVisibleCount, hiddenByTargetNum, hiddenByTargetViewValid, hiddenByWeaponViewValid, beyondFarClipCount);
 	const auto annotationBegin = std::chrono::steady_clock::now();
 	RefreshAnnotationOverlay(currentData);
@@ -5134,6 +5317,9 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 		std::chrono::steady_clock::now() - annotationBegin).count();
 	m_lastAnnotationMs = annotationMs;
 	m_perfStats.recordAnnotation(annotationMs);
+	m_lastProcessRealSceneMs = std::chrono::duration<double, std::milli>(
+		std::chrono::steady_clock::now() - processBegin).count();
+	LogScenePerfProbe(frameSeq);
 
 	//for (int i = 0; i < validTargetNum; ++i)
 	//{
@@ -6473,6 +6659,11 @@ void HwaSimIR::InitInfraredSimulation()
 	std::string annotationUpdateHzSource;
 	std::string annotationOverlayInSensorSource;
 	std::string annotationJsonPerFrameSource;
+	std::string annotationFastJsonModeSource;
+	std::string annotationBBoxUpdateHzSource;
+	std::string annotationOcclusionUpdateHzSource;
+	std::string annotationReuseLastSource;
+	std::string targetUpdateCullSource;
 	bool enableModtranTauDebug = m_runtimeConfig.getBool("Stage3", "EnableModtranTauDebug", "EnableModtranTauDebug", false, &stage3TauDebugSource);
 	bool useModtranTauForAtmosphere = m_runtimeConfig.getBool("Stage3", "UseModtranTauForAtmosphere", "UseModtranTauForAtmosphere", false, &stage3UseTauSource);
 	m_enablePerfLog = m_runtimeConfig.getBool("Performance", "EnablePerfLog", "EnablePerfLog", true, &perfLogSource);
@@ -7201,6 +7392,12 @@ void HwaSimIR::InitInfraredSimulation()
 		m_stage4UpdateHz = 30.0;
 	}
 	m_stage4UpdateHz = std::max(1.0, std::min(240.0, m_stage4UpdateHz));
+	m_targetUpdateCullInvisible = m_runtimeConfig.getBool(
+		"Performance",
+		"TargetUpdateCullInvisible",
+		"TargetUpdateCullInvisible",
+		false,
+		&targetUpdateCullSource);
 	if (m_stage4LegacyEngineBodyHeating)
 	{
 		std::cout << "[Stage4][WARN]"
@@ -7238,6 +7435,40 @@ void HwaSimIR::InitInfraredSimulation()
 		"AnnotationJsonPerFrame",
 		true,
 		&annotationJsonPerFrameSource);
+	m_annotationFastJsonMode = m_runtimeConfig.getBool(
+		"Annotation",
+		"FastJsonMode",
+		"AnnotationFastJsonMode",
+		false,
+		&annotationFastJsonModeSource);
+	m_annotationBBoxUpdateHz = m_runtimeConfig.getDouble(
+		"Annotation",
+		"BBoxUpdateHz",
+		"AnnotationBBoxUpdateHz",
+		10.0,
+		&annotationBBoxUpdateHzSource);
+	if (!std::isfinite(m_annotationBBoxUpdateHz) || m_annotationBBoxUpdateHz <= 0.0)
+	{
+		m_annotationBBoxUpdateHz = 10.0;
+	}
+	m_annotationBBoxUpdateHz = std::max(1.0, std::min(240.0, m_annotationBBoxUpdateHz));
+	m_annotationOcclusionUpdateHz = m_runtimeConfig.getDouble(
+		"Annotation",
+		"OcclusionUpdateHz",
+		"AnnotationOcclusionUpdateHz",
+		5.0,
+		&annotationOcclusionUpdateHzSource);
+	if (!std::isfinite(m_annotationOcclusionUpdateHz) || m_annotationOcclusionUpdateHz <= 0.0)
+	{
+		m_annotationOcclusionUpdateHz = 5.0;
+	}
+	m_annotationOcclusionUpdateHz = std::max(1.0, std::min(240.0, m_annotationOcclusionUpdateHz));
+	m_annotationReuseLastWhenSkipped = m_runtimeConfig.getBool(
+		"Annotation",
+		"ReuseLastWhenSkipped",
+		"AnnotationReuseLastWhenSkipped",
+		true,
+		&annotationReuseLastSource);
 	if (!m_annotationOverlayInSensorImage)
 	{
 		annotationOptions.drawOptions.debugOverlay = false;
@@ -7255,11 +7486,19 @@ void HwaSimIR::InitInfraredSimulation()
 		<< " UpdateHz=" << m_annotationUpdateHz
 		<< " OverlayInSensorImage=" << (m_annotationOverlayInSensorImage ? "1" : "0")
 		<< " JsonPerFrame=" << (m_annotationJsonPerFrame ? "1" : "0")
+		<< " FastJsonMode=" << (m_annotationFastJsonMode ? "1" : "0")
+		<< " BBoxUpdateHz=" << m_annotationBBoxUpdateHz
+		<< " OcclusionUpdateHz=" << m_annotationOcclusionUpdateHz
+		<< " ReuseLastWhenSkipped=" << (m_annotationReuseLastWhenSkipped ? "1" : "0")
 		<< " drawBBox=" << (annotationOptions.drawOptions.drawBBox ? "1" : "0")
 		<< " drawKeyPoints=" << (annotationOptions.drawOptions.drawKeyPoints ? "1" : "0")
 		<< " drawModelLabel=" << (annotationOptions.drawOptions.drawModelLabel ? "1" : "0")
 		<< " source=" << annotationUpdateHzSource << "/" << annotationOverlayInSensorSource
 		<< "/" << annotationJsonPerFrameSource
+		<< "/" << annotationFastJsonModeSource
+		<< "/" << annotationBBoxUpdateHzSource
+		<< "/" << annotationOcclusionUpdateHzSource
+		<< "/" << annotationReuseLastSource
 		<< std::endl;
 	m_annotationManager.loadProfileFromCandidates(BuildRuntimeConfigPathCandidates(annotationOptions.profilePath), annotationOptions.profilePath, annotationProfileSource);
 	m_annotationManager.applyRuntimeOptions(annotationOptions);
@@ -7807,8 +8046,10 @@ void HwaSimIR::InitInfraredSimulation()
 		<< " ForceStage4RearHotspotVisible=" << (m_forceStage4RearHotspotVisible ? "1" : "0")
 		<< " LegacyEngineBodyHeating=" << (m_stage4LegacyEngineBodyHeating ? "1" : "0")
 		<< " Stage4UpdateHz=" << m_stage4UpdateHz
+		<< " TargetUpdateCullInvisible=" << (m_targetUpdateCullInvisible ? "1" : "0")
 		<< " source=" << stage4VisualSource << "/" << stage4BrightSource << "/" << stage4RearSource
 		<< "/" << stage4LegacyEngineBodyHeatingSource << "/" << stage4UpdateHzSource
+		<< "/" << targetUpdateCullSource
 		<< "（默认全为0；仅用于可见性/legacy诊断）" << std::endl;
 	std::cout << "[Stage5 Radiance] Stage5DebugDisplayConfig="
 		<< (m_stage5DebugDisplayConfigReady ? "OK" : "fallback")
@@ -8024,6 +8265,11 @@ void HwaSimIR::InitInfraredSimulation()
 			<< ",AnnotationUpdateHz:" << annotationUpdateHzSource
 			<< ",AnnotationOverlayInSensorImage:" << annotationOverlayInSensorSource
 			<< ",AnnotationJsonPerFrame:" << annotationJsonPerFrameSource
+			<< ",AnnotationFastJsonMode:" << annotationFastJsonModeSource
+			<< ",AnnotationBBoxUpdateHz:" << annotationBBoxUpdateHzSource
+			<< ",AnnotationOcclusionUpdateHz:" << annotationOcclusionUpdateHzSource
+			<< ",AnnotationReuseLastWhenSkipped:" << annotationReuseLastSource
+			<< ",TargetUpdateCullInvisible:" << targetUpdateCullSource
 			<< ",EnableIRPhysicalPipeline:" << stage5PhysicalSource
 			<< ",DebugView:" << stage5ViewModeSource
 			<< ",LogComponents:" << stage5ComponentLogSource
@@ -10645,6 +10891,7 @@ void HwaSimIR::LogActiveIREnvironment(const IRRuntimeEnvironment& environment, c
 
 // 动态更新红外状态
 void HwaSimIR::UpdatePlatformIRStatus() {
+	const auto updateBegin = std::chrono::steady_clock::now();
 	IRUpdateBreakdown breakdown;
 	const std::uint64_t breakdownIndex = ++m_irBreakdownUpdateCounter;
 	const bool profileBreakdown = breakdownIndex <= 3 || (breakdownIndex % 30) == 0;
@@ -10769,8 +11016,13 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 	int stage5PlumeNodeCount = 0;
 	int stage5VisiblePlumeCount = 0;
 	double updatePlumeMs = 0.0;
+	int targetUpdateTotal = 0;
+	int targetUpdateVisible = 0;
+	int skippedBeyondFar = 0;
+	int skippedShaderApply = 0;
 	for (auto& targetPlat : m_targetPlatformList) {
 		if (targetPlat.isExist) {
+			++targetUpdateTotal;
 			if (!targetPlat.enginePlumeCoreNodePath.is_empty())
 			{
 				++stage5PlumeNodeCount;
@@ -10785,7 +11037,29 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 				HideEnginePlume(targetPlat);
 				continue;
 			}
-			const bool targetRenderable = targetPlat.targetState.viewValid && !targetPlat.nodePath.is_hidden();
+			const std::string targetUpdateKey = H4TargetRuntimeKey(targetPlat);
+			const std::map<std::string, bool>::const_iterator beyondIt = m_targetUpdateBeyondFarByKey.find(targetUpdateKey);
+			const std::map<std::string, bool>::const_iterator renderableIt = m_targetUpdateRenderableByKey.find(targetUpdateKey);
+			const bool beyondFarClip = beyondIt != m_targetUpdateBeyondFarByKey.end() && beyondIt->second;
+			const bool mappedRenderable = renderableIt != m_targetUpdateRenderableByKey.end()
+				? renderableIt->second
+				: (targetPlat.targetState.viewValid && !targetPlat.nodePath.is_hidden());
+			const bool targetRenderable = targetPlat.targetState.viewValid && !targetPlat.nodePath.is_hidden() && (!m_targetUpdateCullInvisible || mappedRenderable);
+			if (mappedRenderable)
+			{
+				++targetUpdateVisible;
+			}
+			if (m_targetUpdateCullInvisible && !mappedRenderable)
+			{
+				if (beyondFarClip)
+				{
+					++skippedBeyondFar;
+				}
+				++skippedShaderApply;
+				++breakdown.stage4SkipCount;
+				HideEnginePlume(targetPlat);
+				continue;
+			}
 			IRObjectRadianceOutput stage5BaseRadiance;
 			if (targetRenderable)
 			{
@@ -10892,6 +11166,26 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 	m_perfStats.recordIrUpdateBreakdown(breakdown);
 	m_perfStats.recordPlumeUpdate(updatePlumeMs);
 	LogStage5PlumePerf(stage5PlumeNodeCount, stage5VisiblePlumeCount, updatePlumeMs);
+	m_lastStage4Stage5UpdateMs = std::chrono::duration<double, std::milli>(
+		std::chrono::steady_clock::now() - updateBegin).count();
+	m_lastShaderInputApplyMs = breakdown.shaderInputApplyMs;
+	m_lastTargetUpdateTotal = targetUpdateTotal;
+	m_lastTargetUpdateVisible = targetUpdateVisible;
+	m_lastTargetUpdateSkippedBeyondFar = skippedBeyondFar;
+	m_lastTargetUpdateSkippedShaderApply = skippedShaderApply;
+	++m_targetUpdateCullLogCounter;
+	if (m_targetUpdateCullLogCounter <= 3 || (m_targetUpdateCullLogCounter % 120) == 0)
+	{
+		std::cout << "[TargetUpdateCull]"
+			<< " enabled=" << (m_targetUpdateCullInvisible ? "1" : "0")
+			<< " total=" << targetUpdateTotal
+			<< " visible=" << targetUpdateVisible
+			<< " skippedBeyondFar=" << skippedBeyondFar
+			<< " skippedShaderApply=" << skippedShaderApply
+			<< " shaderInputApplyMs=" << m_lastShaderInputApplyMs
+			<< " stage4Stage5UpdateMs=" << m_lastStage4Stage5UpdateMs
+			<< std::endl;
+	}
 }
 
 

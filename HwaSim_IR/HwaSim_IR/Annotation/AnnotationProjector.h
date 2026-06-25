@@ -25,6 +25,7 @@ public:
 		double surfaceMs = 0.0;
 		double occlusionMs = 0.0;
 		int collisionBuilds = 0;
+		int collisionReused = 0;
 		int collisionTriangles = 0;
 		int collisionSolids = 0;
 	};
@@ -33,7 +34,8 @@ public:
 		unsigned long long frameIndex,
 		const std::vector<TargetPlatformData>& allTargets,
 		const AnnotationConfig& config,
-		const NodePath& renderRoot);
+		const NodePath& renderRoot,
+		bool enableOcclusion = true);
 	const PerfStats& perfStats() const;
 
 	bool buildTargetAnnotation(
@@ -264,11 +266,13 @@ private:
 	int m_occlusionWarningCounter = 0;
 	int m_occlusionLogCounter = 0;
 	int m_collisionLogCounter = 0;
+	int m_collisionCacheLogCounter = 0;
 	int m_surfaceLogCounter = 0;
 	int m_bboxWarningCounter = 0;
 	int m_bboxLogCounter = 0;
 	int m_keyPointLogCounter = 0;
 	unsigned long long m_frameIndex = 0;
+	bool m_occlusionEnabledForFrame = true;
 	PerfStats m_perfStats;
 	NodePath m_collisionRoot;
 	NodePath m_rayPath;

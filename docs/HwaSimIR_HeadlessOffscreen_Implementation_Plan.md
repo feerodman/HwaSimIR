@@ -1,6 +1,6 @@
 # HwaSimIR HeadlessOffscreen 实施方案
 
-> 版本：v5，H0/H1/H2 实施记录 + H3 性能收口规划版
+> 版本：v6，H0/H1/H2/H3 实施记录 + H4 RK3588 direct_final 性能收口版
 > 更新时间：2026-06-25  
 > 目标平台：Windows 调试默认 VisibleWindow；Linux/RK3588 可通过配置切换 HeadlessOffscreen  
 > 涉及工程：本阶段只修改 `HwaSim_IR`；不修改 `DataDrivenTestQT`、`HwaSim_IR_VideoDisplay`、TCP 协议或编码逻辑  
@@ -408,6 +408,19 @@ VideoDisplay 图像不是纯黑或仅 annotation overlay
 - Fixed Windows HeadlessOffscreen dual-pass black image: headless `Stage6RawSceneBuffer` now attaches `Stage6RawSceneTex` with `RTM_copy_texture` instead of `RTM_bind_or_copy`; `rawSceneCopyMode` is logged. Verification `B_dual_pass_overlay_off_jpeg_rgb_q100` shows `final_sensor_black=0`, `nonBlackRatio=1.0`, so the scene is present without relying on annotation overlay.
 - H3 unchanged boundaries: no TCP protocol change, no real H.264 implementation, no dual-channel implementation, default production behavior remains VisibleWindow + JPEG/fallback.
 - H3 verification update: Windows Release x64 build passed; Windows default VisibleWindow smoke passed before the dual-pass raw texture fix; Windows HeadlessOffscreen A/B smoke passed after the fix. RK3588/Linux no-DISPLAY runtime validation remains pending.
+
+### 2026-06-25 / v6 H4 implementation update
+
+- H4 goal: RK3588 direct_final performance closure after H3 proved `renderPath=direct_final` and `OverlayInSensorImage=false`; focus moved from render pass count to `sceneUpdateMs`, annotation compute, invisible-target update culling, and diagnostics.
+- Fixed `OverlayInSensorImage=false` semantics: annotation JSON can still update, but image overlay draw is no longer called. Windows validation should show no `[AnnotationDraw]` lines when `OverlayInSensorImage=false`.
+- Added annotation realtime fast path config: `FastJsonMode`, `BBoxUpdateHz`, `OcclusionUpdateHz`, `ReuseLastWhenSkipped` plus environment overrides `AnnotationFastJsonMode`, `AnnotationBBoxUpdateHz`, `AnnotationOcclusionUpdateHz`, `AnnotationReuseLastWhenSkipped`. Default `FastJsonMode=false` keeps existing behavior.
+- FastJson behavior: bbox/keypoint geometry updates at `BBoxUpdateHz`, mesh occlusion updates at `OcclusionUpdateHz`, skipped frames reuse the latest annotation geometry while updating `frameIndex/simTime/sensorID/size`, so TCP JSON can remain per-frame.
+- Added collision cache diagnostics: `[AnnotationCollisionCache] platform=... built=... reused=... triangles=... solids=...` to distinguish first-build cost from cache reuse.
+- Added optional invisible-target update culling via `TargetUpdateCullInvisible=false` default. When enabled, beyond-far or non-renderable targets skip Stage4/Stage5 shader/radiance/plume updates while preserving target mapping state. Logs use `[TargetUpdateCull] total=... visible=... skippedBeyondFar=... skippedShaderApply=...`.
+- Expanded diagnostics with `[ScenePerfProbe]` and extra `[RenderPerfProbe]` fields: `processRealSceneMs`, `targetMappingMs`, `cameraControlMs`, `stage4Stage5UpdateMs`, `shaderInputApplyMs`, `annotationBBoxMs`, `annotationOcclusionMs`, `annotationJsonMs`, `pandaDoFrameMs`, `readbackMs`, `frameCopyMs`, `jpegMs`.
+- Added `tools/phase_h4_rk3588_perf_triage.ps1` A/B cases: current direct_final gray q95 overlay off, fast JSON on, occlusion off, JSON off diagnosis, target update cull on.
+- H4 unchanged boundaries: no TCP protocol change, no real H.264 implementation, no dual-channel implementation, default production behavior remains VisibleWindow + JPEG/fallback.
+- H4 pending verification: Windows Release x64 build, Windows default VisibleWindow smoke, Windows HeadlessOffscreen direct_final smoke, and RK3588/Linux no-DISPLAY runtime validation with the recommended realtime flags.
 
 ### 2026-06-25 / v4
 
