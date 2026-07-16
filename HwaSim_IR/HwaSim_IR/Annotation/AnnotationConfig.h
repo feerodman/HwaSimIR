@@ -69,6 +69,7 @@ struct AnnotationRuntimeOptions
 	bool surfaceKeyPointEnabled = true;
 	bool surfaceSnapEnabled = false;
 	std::string surfaceSnapMode = "profile_surface";
+	bool quietPerfMode = false;
 };
 
 class AnnotationConfig
@@ -86,6 +87,7 @@ public:
 	bool surfaceKeyPointEnabled() const;
 	bool surfaceSnapEnabled() const;
 	const std::string& surfaceSnapMode() const;
+	bool quietPerfMode() const;
 	bool loaded() const;
 	const std::string& loadedPath() const;
 	const std::string& configuredPath() const;
@@ -100,6 +102,7 @@ private:
 	bool m_surfaceKeyPointEnabled = true;
 	bool m_surfaceSnapEnabled = false;
 	std::string m_surfaceSnapMode = "profile_surface";
+	bool m_quietPerfMode = false;
 	bool m_loaded = false;
 	std::string m_loadedPath;
 	std::string m_configuredPath = "Config/Annotation/annotation_profiles.json";

@@ -83,6 +83,12 @@ public:
 		HeadlessOffscreen
 	};
 
+	enum class HeadlessReadbackMode {
+		EveryFrame,
+		DisabledForPerfProbe,
+		EveryN
+	};
+
 	// 构造函数：初始化HwaSimIR框架和渲染宿主
 	HwaSimIR(int argc, char** argv);
 
@@ -531,6 +537,10 @@ private:
 	void LogRenderPerfProbe(double pandaDoFrameMs);
 	void LogScenePerfProbe(std::uint64_t sourceSeq);
 	void LogHeadlessImageProbe(const unsigned char* frameData, int frameWidth, int frameHeight, int textureWidth, int textureHeight, bool textureCropApplied, std::uint64_t sourceSeq);
+	void ApplyRenderBackendPrcConfig(const char* reason);
+	bool ShouldAttachStage6CopyRam() const;
+	const char* HeadlessReadbackModeText() const;
+	bool ShouldLogQuiet(std::uint64_t counter, std::uint64_t sourceSeq = 0) const;
 	bool ResolveAnnotationOutputSize(int& width, int& height) const;
 	void RefreshAnnotationOverlay(const BYHWICD::DisplayC2cObjTrackingData& currentData);
 	void LogActiveIRSensorProfile(int protocolBand, const char* reason, bool forceLog);
@@ -570,6 +580,19 @@ private:
 	bool m_headlessFastDirectFinal = true;
 	bool m_headlessImageProbe = false;
 	bool m_renderPerfProbe = false;
+	bool m_headlessForceSyncVideoFalse = true;
+	HeadlessReadbackMode m_headlessReadbackMode = HeadlessReadbackMode::EveryFrame;
+	std::string m_headlessReadbackModeName = "EveryFrame";
+	int m_headlessReadbackEveryN = 1;
+	bool m_headlessCopyRamAttached = true;
+	std::uint64_t m_headlessReadbackFrameCounter = 0;
+	int m_headlessReadbackDiagLogCounter = 0;
+	std::vector<unsigned char> m_headlessLastFramePixels;
+	int m_headlessLastFrameWidth = 0;
+	int m_headlessLastFrameHeight = 0;
+	int m_headlessLastTextureWidth = 0;
+	int m_headlessLastTextureHeight = 0;
+	bool m_headlessLastTextureCropApplied = false;
 	bool m_renderBackendReady = false;
 	UdpCommThread* m_pUdpThread = nullptr;        // UDP通讯线程
 	TcpCommThread* m_pTcpThread = nullptr;		// TCP通信线程
@@ -600,12 +623,18 @@ private:
 	double m_annotationBBoxUpdateHz = 10.0;
 	double m_annotationOcclusionUpdateHz = 5.0;
 	bool m_annotationReuseLastWhenSkipped = true;
+	std::string m_annotationBBoxFastMode = "mesh_body";
+	std::uint64_t m_annotationBBoxUpdateCount = 0;
+	std::uint64_t m_annotationBBoxReuseCount = 0;
+	std::uint64_t m_annotationOcclusionUpdateCount = 0;
+	std::uint64_t m_annotationOcclusionReuseCount = 0;
 	std::uint64_t m_annotationLastBBoxSourceSeq = 0;
 	std::uint64_t m_annotationLastOcclusionSourceSeq = 0;
 	int m_annotationFastPathLogCounter = 0;
 	std::uint64_t m_annotationLastProjectionSourceSeq = 0;
 	std::uint64_t m_inputQueueBackpressureLogCount = 0;
 	bool m_targetUpdateCullInvisible = false;
+	bool m_quietPerfMode = false;
 	int m_targetUpdateCullLogCounter = 0;
 	std::map<std::string, bool> m_targetUpdateRenderableByKey;
 	std::map<std::string, bool> m_targetUpdateBeyondFarByKey;
@@ -652,6 +681,7 @@ private:
 	std::string m_lastStage6AgcLogState;
 
 	bool m_isInitTargetPlatID;	//TargetState平台初始化ID映射标记
+	bool m_isInitReferencePoint = false; //初始化仿真中心原点标记
 
 	// 协议数据缓存
 	BYHWICD::InitP2cObjectTrackingCmd m_initSceneData;       // 初始化数据缓存

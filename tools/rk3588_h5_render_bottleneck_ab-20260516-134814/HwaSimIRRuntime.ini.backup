@@ -1,0 +1,296 @@
+; HwaSimIR 运行配置入口
+; 优先级：环境变量 > 本 ini > 代码默认值。
+; UDP 初始化/实时包仍负责仿真输入，本文件只负责运行开关、显示策略和调试开关。
+
+[RenderBackend]
+; H2: HeadlessOffscreen creates real offscreen GraphicsBuffer outputs and Stage6FinalSensorTex.
+; Default remains VisibleWindow; set env RenderPresentationMode=HeadlessOffscreen on Linux/RK3588 without DISPLAY.
+; 渲染宿主模式：VisibleWindow / HeadlessOffscreen。
+; 默认保持 Windows/生产调试行为不变；RK3588 无显示器部署可用环境变量 RenderPresentationMode=HeadlessOffscreen 覆盖。
+PresentationMode=VisibleWindow
+WindowPreview=true
+EnableFrameRateMeter=true
+HeadlessWidth=800
+HeadlessHeight=800
+; H3: Headless direct-final planner. Only affects PresentationMode=HeadlessOffscreen.
+; When true and Stage6 final postprocess is no-op, render scene directly into Stage6FinalSensorTex.
+HeadlessFastDirectFinal=true
+; H3 diagnostics: final sensor black/mean/max/nonBlackRatio probe for HeadlessOffscreen.
+HeadlessImageProbe=false
+; H3 diagnostics: split coarse renderMs into do_frame/output/region/readback/copy/codec hints.
+RenderPerfProbe=false
+; H5: HeadlessOffscreen vsync/readback bottleneck isolation. Defaults preserve normal output.
+; HeadlessForceSyncVideoFalse only affects PresentationMode=HeadlessOffscreen.
+HeadlessForceSyncVideoFalse=true
+; HeadlessReadbackMode: EveryFrame / DisabledForPerfProbe / EveryN.
+; DisabledForPerfProbe is diagnostic_only and does not send new TCP image frames.
+HeadlessReadbackMode=EveryFrame
+HeadlessReadbackEveryN=1
+
+[Stage3]
+; MODTRAN tau 调试日志开关，默认关闭。
+EnableModtranTauDebug=0
+; 是否把 MODTRAN tau 用到大气透过率，当前阶段默认关闭。
+UseModtranTauForAtmosphere=0
+
+[Stage4]
+; Hotspot/BrightSpot 可视化调试开关，默认关闭。
+EnableHotspotVisualDebug=0
+; 强制显示头/中部 BrightSpot，仅调试用。
+ForceBrightSpotVisible=0
+; 强制显示尾喷 rear Hotspot，仅调试用。
+ForceRearHotspotVisible=0
+; Legacy/debug only. When 0, engineState affects EngineRear/EnginePlume only,
+; never the whole target body temperature/radiance.
+LegacyEngineBodyHeating=false
+Stage4UpdateHz=30
+
+[Stage5]
+; Stage5 辐射 debug composite 路径，默认关闭，legacy 路径保持默认输出。
+EnableRadianceDebug=0
+; Stage5 debug 视图：Composite / BodyOnly / HotspotOnly / BrightSpotOnly。
+DebugViewMode=Composite
+; Stage5 debug tone map：linear / log / asinh。
+DebugToneMap=asinh
+
+[Stage5Radiance]
+EnableIRPhysicalPipeline=true
+DebugView=Off
+LogComponents=false
+ComponentLogEveryFrames=120
+UseSensorInputForDisplay=false
+SensorInputDisplayMode=Manual
+SensorInputDisplayScale=1.0
+SensorInputDisplayOffset=0.0
+SensorInputDisplayClampMin=0.0
+SensorInputDisplayClampMax=1.0
+SensorInputDisplayGamma=1.0
+SensorInputDisplayBand=MWIR
+
+[Stage5AeroThermal]
+EnableAeroThermalModel=true
+ApplyAeroToRadiance=false
+AeroDebugLog=false
+AeroLogEveryFrames=120
+RecoveryFactor=0.85
+Gamma=1.4
+BodyCoeff=0.20
+NoseCoeff=0.60
+EdgeCoeff=0.45
+RearCoeff=0.10
+HeatTauSec=2.0
+CoolTauSec=5.0
+ClampMachMin=0.0
+ClampMachMax=4.0
+ClampDeltaKMax=250.0
+AeroApplyScale=0.25
+AeroApplyClampBodyDeltaK=40.0
+AeroApplyOnlyBand=MWIR
+
+[Stage5ModtranRadiance]
+EnableModtranRadianceDebug=false
+UseModtranPathRuntime=false
+UseModtranSkyRuntime=false
+UseModtranSolarRuntime=false
+ModtranPathRuntimeBand=MWIR
+ModtranPathRuntimeMode=Off
+ModtranPathUnitMode=Native
+ModtranPathScale=1.0
+ModtranPathOffset=0.0
+ModtranPathClampMin=0.0
+ModtranPathClampMax=10.0
+ModtranPathBlend=1.0
+ModtranPathABLog=true
+PreferredSource=band_lut
+LogEveryFrames=120
+CompareLegacy=false
+
+[Stage5Plume]
+UpdateHz=30
+PerfBudgetMs=1.0
+; EnginePlume 是一个独立的 Stage5E 尾部羽流体；它不会改变后方 ThermalHotspot 或 BrightSpot 的语义。
+EnableEnginePlume=1
+EnginePlume配置文件路径=Config/IRPlume/engine_plume_profiles.json
+MaxPlumeNodes=16
+UseEngineState=1
+UseProceduralNoise=1
+EnablePlumeDebug=0
+ForcePlumeVisible=0
+PlumeDisplayGain=1.5
+PlumeCoreDisplayGain=1.8
+PlumeHaloDisplayGain=1.0
+PlumeOpacityScale=1.0
+PlumeCoreOpacityScale=1.1
+PlumeHaloOpacityScale=0.9
+
+[Stage6Display]
+; 白热=1，黑热=0。
+WhiteHot=1
+; 最小显示层手动增益。
+DisplayGain=1.0
+; 最小显示层手动偏置，单位灰度值。
+DisplayOffset=0.0
+; 是否把显示层作用到窗口预览。当前最终输出管线默认窗口/TCP 同源。
+ApplyToWindow=1
+; 背景是否进入显示层处理，主要用于诊断。
+BackgroundDisplayEnable=1
+; 噪声配置是否覆盖 UDP 协议噪声字段。默认覆盖，便于手动测试。
+NoiseOverrideEnable=1
+; 轻量显示噪声开关，默认关闭。
+NoiseEnable=0
+; 轻量噪声 sigma，单位灰度值，不做 NETD 物理标定。
+NoiseSigmaGray=0.0
+
+[Stage7Background]
+; 最小天空/地面背景开关。
+EnableSkyHorizon=1
+; 背景调试模式：Off / SkyOnly / GroundOnly / SkyGroundColor。
+DebugMode=Off
+; 地面/海面参考高度微调，默认 0。
+GroundZOffset=0.0
+; 使用真实 3D 背景：sky dome + lower hemisphere shell。
+UseReal3DBackground=1
+Stage7UpdateHz=10
+
+[Stage7Weather]
+; Stage7C 最小天气效果总开关：天气只影响背景/云雾雨雪显示层，不接 MODTRAN sky/path/solar 表。
+EnableWeatherEffects=1
+; 天气 profile 路径，env > ini > profile > default。
+WeatherProfilePath=Config/Weather/weather_profiles.json
+; 天气纹理索引路径，只引用仓库内 Config/Weather/Textures。
+WeatherTextureConfig=Config/Weather/weather_textures.json
+; 云层 billboard/density texture 层开关。
+EnableCloudLayer=0
+; 雾/霾近似混合开关。
+EnableFog=1
+; 雨雪轻量 billboard 粒子开关。
+EnablePrecipitation=0
+Stage7PrecipitationMode=ScreenOverlay
+; 云层最多 card 数，本阶段保持轻量。
+CloudLayerMaxCards=0
+; 雨雪最多粒子 card 数，本阶段保持轻量。
+PrecipitationMaxParticles=0
+; 是否用 UDP init 的 envSky/envVisibility/envHumidity/envWindV/envWindDir/envTemp 驱动当前天气。
+UseWeatherUdpInput=1
+
+[Performance]
+; 低频性能汇总默认开启；逐帧红外详细日志默认关闭。
+EnablePerfLog=1
+EnableIRVerboseLog=0
+IRUpdateHz=30
+; H5: suppress high-frequency per-target logs for RK3588 realtime profiling.
+; Env override: RenderQuietPerfMode or QuietPerfMode.
+QuietPerfMode=false
+; H4: RK3588 realtime can set true to skip Stage4/Stage5 shader/radiance/plume updates for invisible or beyond-far targets.
+; Default false keeps existing production behavior unchanged.
+TargetUpdateCullInvisible=false
+
+[Stage6MTF]
+EnableMTFBlur=false
+MTFBlurMode=GaussianSeparable
+MTFBlurSigmaPixels=0.65
+MTFBlurRadiusPixels=2
+MTFBlurPasses=1
+MTFApplyTo=final_display
+MTFDebugLog=false
+MTFLogEveryFrames=120
+
+[Stage6DetectorNoise]
+EnableDetectorNoise=false
+NoiseApplyTo=final_display
+NoisePosition=BeforeAGC
+EnableTemporalNoise=true
+TemporalNoiseSigmaGray=0.005
+EnableFPN=false
+FPNSigmaGray=0.003
+FPNSeed=12345
+EnableColumnNoise=false
+ColumnNoiseSigmaGray=0.002
+EnableRowNoise=false
+RowNoiseSigmaGray=0.001
+EnableBadPixels=false
+BadPixelRatio=0.0001
+BadPixelHotGray=1.0
+BadPixelDeadGray=0.0
+NoiseClampMin=0.0
+NoiseClampMax=1.0
+NoiseDebugLog=false
+NoiseLogEveryFrames=120
+
+[Stage6AGC]
+EnableAGC=false
+AGCMode=Percentile
+AGCApplyTo=final_display
+AGCStatsSource=previous_readback
+AGCUpdateHz=30
+AGCLogEveryFrames=120
+AGCLowPercentile=2.0
+AGCHighPercentile=98.0
+AGCMeanStdK=2.5
+AGCMinGain=0.25
+AGCMaxGain=8.0
+AGCMinOffset=-1.0
+AGCMaxOffset=1.0
+AGCSmoothingAlpha=0.15
+AGCTargetLowGray=0.05
+AGCTargetHighGray=0.95
+AGCStride=8
+AGCExcludeAnnotationOverlay=true
+AGCDebugLog=false
+
+[Stage6Capture]
+; 默认保持阶段1B方向：窗口不翻转，TCP读回线程执行垂直翻转。
+FlipInShader=false
+FlipInTcpThread=true
+
+[TcpOutput]
+Codec=auto
+; RK3588 realtime JPEG recommendation for headless profiling:
+; JpegEncodeMode=gray
+; JpegQuality=90 or 95
+; Defaults stay rgb/q100 to preserve production behavior.
+JpegQuality=100
+JpegEncodeMode=rgb
+JpegGrayConvertMethod=luma
+EnableH264Experimental=false
+H264Encoder=auto
+H264BitrateKbps=4000
+H264GopFrames=30
+H264LowLatency=true
+H264FallbackToJpeg=true
+H264ForceKeyFrameOnStart=true
+JpegPerfABTest=false
+
+[Debug]
+; 收到 stop/control 后是否退出进程，默认不退出。
+ExitOnStop=0
+ 
+[Annotation]
+; H3: Set OverlayInSensorImage=false on RK3588 realtime runs to keep JSON but skip drawing overlay into final sensor image.
+OverlayInSensorImage=true
+JsonPerFrame=true
+; H4: RK3588 realtime fast JSON path. Default false keeps legacy Annotation UpdateHz behavior.
+; Recommended realtime profile: FastJsonMode=true, BBoxUpdateHz=10, OcclusionUpdateHz=5, ReuseLastWhenSkipped=true.
+FastJsonMode=false
+BBoxUpdateHz=10
+OcclusionUpdateHz=5
+ReuseLastWhenSkipped=true
+UpdateHz=15
+ProfilePath=Config/Annotation/annotation_profiles.json
+DebugOverlay=false
+BBoxMode=mesh_body
+; H5 realtime bbox option: mesh_body / cached_aabb_8corners. Default keeps legacy mesh bbox behavior.
+BBoxFastMode=mesh_body
+BBoxMarginPx=3
+MinBBoxSizePx=4
+DrawKeyPoints=true
+DrawModelLabel=true
+DrawBBox=true
+OcclusionEnable=true
+OcclusionMode=mesh_collision
+OcclusionEpsilonM=0.25
+OcclusionCollisionMaskBit=20
+OcclusionSelfTarget=false
+SurfaceKeyPointEnable=true
+SurfaceSnapEnable=false
+SurfaceSnapMode=profile_surface

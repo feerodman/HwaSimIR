@@ -120,7 +120,10 @@ AnnotationFrameRecord AnnotationManager::updateFrame(
 	const double totalMs = NowMs() - totalBeginMs;
 	++m_updateCounter;
 
-	if (m_updateCounter <= 3 || (m_updateCounter % 120) == 0)
+	const bool logDue = m_config.quietPerfMode()
+		? (m_latestRecord.frameIndex > 0 && (m_latestRecord.frameIndex % 120) == 0)
+		: (m_updateCounter <= 3 || (m_updateCounter % 120) == 0);
+	if (logDue)
 	{
 		std::cout << "[Annotation] frame=" << m_latestRecord.frameIndex
 			<< " size=" << m_latestRecord.width << "x" << m_latestRecord.height

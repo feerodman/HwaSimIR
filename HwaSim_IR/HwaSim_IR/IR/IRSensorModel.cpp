@@ -83,8 +83,12 @@ IRSensorDisplayConfig IRSensorModel::BuildSensorDisplayConfig(
 	}
 
 	config.pixelAngleRad = config.pixelAngleUrad * 1.0e-6;
-	const double horizontalFovRad = 2.0 * std::atan(static_cast<double>(config.width) * std::tan(config.pixelAngleRad / 2.0));
-	const double verticalFovRad = 2.0 * std::atan(static_cast<double>(config.height) * std::tan(config.pixelAngleRad / 2.0));
+	//const double horizontalFovRad = 2.0 * std::atan(static_cast<double>(config.width) * std::tan(config.pixelAngleRad / 2.0));
+	//const double verticalFovRad = 2.0 * std::atan(static_cast<double>(config.height) * std::tan(config.pixelAngleRad / 2.0));
+
+	const double horizontalFovRad = static_cast<double>(config.width) * config.pixelAngleRad;
+	const double verticalFovRad =static_cast<double>(config.height) * config.pixelAngleRad;
+
 	config.horizontalFovDeg = horizontalFovRad * 180.0 / kPi;
 	config.verticalFovDeg = verticalFovRad * 180.0 / kPi;
 	config.fovSource = "pixelAngle_urad_per_pixel";

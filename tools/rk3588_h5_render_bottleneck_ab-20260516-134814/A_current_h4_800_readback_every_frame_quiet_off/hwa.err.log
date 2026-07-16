@@ -1,0 +1,39 @@
+Known pipe types:
+  eglGraphicsPipe
+(2 aux display modules not yet loaded.)
+:loader: loading file type module: p3assimp
+:assimp: Reading ./Config/TargetLib/models/f35/F35C.obj
+:assimp: Load ./Config/TargetLib/models/f35/F35C.obj
+:assimp: Found a matching importer for this file format: Wavefront Object Importer.
+:assimp: Import root directory is './Config/TargetLib/models/f35/'
+:assimp(warning): ScenePreprocessor: UVs are declared to be 3D but they're obviously not. Reverting to 2D.
+:assimp: Entering post processing pipeline
+:assimp: RemoveRedundantMatsProcess finished. Removed 0 redundant and 1 unused materials.
+:assimp: TriangulateProcess finished. All polygons have been triangulated.
+:assimp: JoinVerticesProcess finished | Verts in: 3880 out: 1703 | ~56.1082
+:assimp: Cache relevant are 1 meshes (1602 faces). Average output ACMR is 1.17291
+:assimp: Leaving post processing pipeline
+:assimp: Reading ./Config/TargetLib/models/aim120/AIM120.obj
+:assimp: Load ./Config/TargetLib/models/aim120/AIM120.obj
+:assimp: Found a matching importer for this file format: Wavefront Object Importer.
+:assimp: Import root directory is './Config/TargetLib/models/aim120/'
+:assimp(warning): ScenePreprocessor: UVs are declared to be 3D but they're obviously not. Reverting to 2D.
+:assimp: Entering post processing pipeline
+:assimp: RemoveRedundantMatsProcess finished. Removed 0 redundant and 1 unused materials.
+:assimp: TriangulateProcess finished. All polygons have been triangulated.
+:assimp: JoinVerticesProcess finished | Verts in: 3108 out: 1418 | ~54.3758
+:assimp: Cache relevant are 1 meshes (1532 faces). Average output ACMR is 1.00392
+:assimp: Leaving post processing pipeline
+:assimp: Reading ./Config/TargetLib/models/aim9x/aim9x.obj
+:assimp: Load ./Config/TargetLib/models/aim9x/aim9x.obj
+:assimp: Found a matching importer for this file format: Wavefront Object Importer.
+:assimp: Import root directory is './Config/TargetLib/models/aim9x/'
+:assimp(warning): ScenePreprocessor: UVs are declared to be 3D but they're obviously not. Reverting to 2D.
+:assimp: Entering post processing pipeline
+:assimp: RemoveRedundantMatsProcess finished. Removed 0 redundant and 1 unused materials.
+:assimp(error): Failed to triangulate polygon (no ear found). Probably not a simple polygon?
+:assimp(error): Failed to triangulate polygon (no ear found). Probably not a simple polygon?
+:assimp: TriangulateProcess finished. All polygons have been triangulated.
+:assimp: JoinVerticesProcess finished | Verts in: 13718 out: 7688 | ~43.9568
+:assimp: Cache relevant are 1 meshes (7922 faces). Average output ACMR is 1.04065
+:assimp: Leaving post processing pipeline

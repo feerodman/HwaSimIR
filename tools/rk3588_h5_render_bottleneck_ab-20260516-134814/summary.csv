@@ -1,0 +1,7 @@
+case,outputFps,renderFps,udpFps,pandaDoFrameMs,renderMs,sceneUpdateMs,annotationMs,annotationBBoxMs,annotationOcclusionMs,readbackMs,frameCopyMs,jpegMs,tcpSendMs,inputQueueDepth,sourceSeqLag,latencyAvgMs,readbackMode,quietPerfMode,headlessWidth,headlessHeight,bboxFastMode
+A_current_h4_800_readback_every_frame_quiet_off,0.000,0.000,0.000,12.701,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0,0,0.000,EveryFrame,0,800,800,mesh_body
+B_quiet_on,0.000,0.000,0.000,60.166,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0,0,0.000,EveryFrame,1,800,800,mesh_body
+C_quiet_on_readback_disabled_for_probe,0.000,0.000,0.000,0.377,0.000,0.000,0.002,0.000,0.000,0.000,0.000,0.000,0.000,0,0,0.000,DisabledForPerfProbe,1,800,800,mesh_body
+D_quiet_on_640_readback_every_frame,0.000,0.000,0.000,12.564,0.000,0.000,0.000,9.969,3.973,0.000,0.000,0.000,0.000,0,0,0.000,EveryFrame,1,800,800,mesh_body
+E_quiet_on_400_readback_every_frame,0.000,0.000,0.000,60.607,0.000,0.000,0.004,0.000,0.000,1.775,0.686,8.651,0.000,0,0,0.000,EveryFrame,1,800,800,mesh_body
+F_quiet_on_bbox_cached_aabb_8corners,0.000,0.000,0.000,12.557,0.000,0.000,0.003,0.000,0.000,1.977,0.681,8.745,0.000,0,0,0.000,EveryFrame,1,800,800,cached_aabb_8corners

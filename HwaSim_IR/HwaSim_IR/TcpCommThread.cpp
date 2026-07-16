@@ -366,7 +366,8 @@ bool TcpCommThread::sendInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& initDat
 
 	m_initCompleted = true;
 	std::cout << "[TcpInitForward] sensorID=" << initData.sensorID
-		<< " platNumValid=" << initData.platNumValid << std::endl;
+		<< " platID=" << initData.platID << std::endl;
+		//<< " platNumValid=" << initData.platNumValid << std::endl;
 	return true;
 }
 

@@ -36,12 +36,16 @@ enum PLATFORM_TYPE
 	//飞机
 	NONE = 0 UMETA(DisplayName = "NONE"),
 	F35 = 1 UMETA(DisplayName = "F35"),
-	J20 = 5 UMETA(DisplayName = "J20"),
+	F22 = 2 UMETA(DisplayName = "F22"),
 
 	//导弹
-	AIM120 = 2 UMETA(DisplayName = "AIM120"),
-	AIM9 = 3 UMETA(DisplayName = "AIM9"),
-	MMD = 4 UMETA(DisplayName = "MMD"),
+	AIM120 = 3 UMETA(DisplayName = "AIM120"),
+	AIM9 = 4 UMETA(DisplayName = "AIM9"),
+	MMD = 5 UMETA(DisplayName = "MMD"),
+
+	//预留
+	Resv1 = 6 UMETA(DisplayName = "Resv1"),
+	Resv2 = 7 UMETA(DisplayName = "Resv2"),
 };
 
 // 平台资源路径结构体

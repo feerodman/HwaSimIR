@@ -259,7 +259,14 @@ bool AnnotationProjector::buildTargetAnnotation(
 
 	LPoint3f localMin;
 	LPoint3f localMax;
-	if (!getLocalBounds(targetPlat.nodePath, localMin, localMax))
+	if (targetConfig.bbox.mode == "cached_aabb_8corners")
+	{
+		if (!getCachedLocalBounds(targetPlat.nodePath, localMin, localMax))
+		{
+			return false;
+		}
+	}
+	else if (!getLocalBounds(targetPlat.nodePath, localMin, localMax))
 	{
 		return false;
 	}
@@ -267,7 +274,7 @@ bool AnnotationProjector::buildTargetAnnotation(
 	BBoxBuildStats bboxStats;
 	AnnotationRect2D bbox;
 	const double bboxBeginMs = NowMs();
-	if (!buildBoundingBox(targetPlat.nodePath, renderRoot, cameraNode, cameraLens, width, height, targetConfig, localMin, localMax, bbox, bboxStats))
+	if (!buildBoundingBox(targetPlat.nodePath, renderRoot, cameraNode, cameraLens, width, height, targetConfig, config.quietPerfMode(), localMin, localMax, bbox, bboxStats))
 	{
 		m_perfStats.bboxMs += NowMs() - bboxBeginMs;
 		return false;
@@ -299,20 +306,27 @@ bool AnnotationProjector::buildTargetAnnotation(
 	}
 
 	++m_bboxLogCounter;
-	if (m_bboxLogCounter <= 6 || (m_bboxLogCounter % 120) == 0)
+	const bool bboxLogDue = config.quietPerfMode()
+		? (m_frameIndex > 0 && (m_frameIndex % 120) == 0)
+		: (m_bboxLogCounter <= 6 || (m_bboxLogCounter % 120) == 0);
+	if (bboxLogDue)
 	{
 		std::cout << "[AnnotationBBox]"
 			<< " targetID=" << targetPlat.targetState.targetID
 			<< " platform=" << outAnnotation.modelLabel
 			<< " mode=" << bboxStats.mode
 			<< " vertexCount=" << bboxStats.vertexCount
+			<< " vertexEval=" << bboxStats.vertexCount
 			<< " bbox=(" << bbox.x << "," << bbox.y << "," << bbox.width << "," << bbox.height << ")"
 			<< std::endl;
 	}
 	if (!bboxStats.fallback.empty())
 	{
 		++m_bboxWarningCounter;
-		if (m_bboxWarningCounter <= 6 || (m_bboxWarningCounter % 120) == 0)
+		const bool warningLogDue = config.quietPerfMode()
+			? (m_frameIndex > 0 && (m_frameIndex % 120) == 0)
+			: (m_bboxWarningCounter <= 6 || (m_bboxWarningCounter % 120) == 0);
+		if (warningLogDue)
 		{
 			std::cout << "[AnnotationBBox][WARN]"
 				<< " targetID=" << targetPlat.targetState.targetID
@@ -323,7 +337,10 @@ bool AnnotationProjector::buildTargetAnnotation(
 	}
 
 	++m_keyPointLogCounter;
-	if (m_keyPointLogCounter <= 6 || (m_keyPointLogCounter % 120) == 0)
+	const bool keyPointLogDue = config.quietPerfMode()
+		? (m_frameIndex > 0 && (m_frameIndex % 120) == 0)
+		: (m_keyPointLogCounter <= 6 || (m_keyPointLogCounter % 120) == 0);
+	if (keyPointLogDue)
 	{
 		std::cout << "[AnnotationKeyPoint]"
 			<< " targetID=" << targetPlat.targetState.targetID
@@ -388,6 +405,31 @@ bool AnnotationProjector::getLocalBounds(const NodePath& targetNode, LPoint3f& l
 	return dx > 0.0001f || dy > 0.0001f || dz > 0.0001f;
 }
 
+bool AnnotationProjector::getCachedLocalBounds(const NodePath& targetNode, LPoint3f& localMin, LPoint3f& localMax)
+{
+	if (targetNode.is_empty())
+	{
+		return false;
+	}
+	PandaNode* node = targetNode.node();
+	std::map<PandaNode*, LocalBoundsCache>::const_iterator it = m_localBoundsCache.find(node);
+	if (it != m_localBoundsCache.end())
+	{
+		localMin = it->second.localMin;
+		localMax = it->second.localMax;
+		return true;
+	}
+	if (!getLocalBounds(targetNode, localMin, localMax))
+	{
+		return false;
+	}
+	LocalBoundsCache cache;
+	cache.localMin = localMin;
+	cache.localMax = localMax;
+	m_localBoundsCache[node] = cache;
+	return true;
+}
+
 bool AnnotationProjector::buildBoundingBox(
 	const NodePath& targetNode,
 	const NodePath& renderRoot,
@@ -396,12 +438,35 @@ bool AnnotationProjector::buildBoundingBox(
 	int width,
 	int height,
 	const TargetAnnotationConfig& targetConfig,
+	bool quietPerfMode,
 	const LPoint3f& localMin,
 	const LPoint3f& localMax,
 	AnnotationRect2D& outRect,
 	BBoxBuildStats& stats)
 {
 	stats.mode = targetConfig.bbox.mode.empty() ? "mesh_body" : targetConfig.bbox.mode;
+	if (stats.mode == "cached_aabb_8corners")
+	{
+		stats.vertexCount = 8;
+		const bool ok = buildBoundsFromLocalCorners(targetNode, renderRoot, cameraNode, cameraLens, width, height, localMin, localMax, targetConfig, outRect);
+		++m_bboxLogCounter;
+		const bool modeLogDue = quietPerfMode
+			? (m_frameIndex > 0 && (m_frameIndex % 120) == 0)
+			: (m_bboxLogCounter <= 6 || (m_bboxLogCounter % 120) == 0);
+		if (modeLogDue)
+		{
+			std::cout << "[AnnotationBBoxMode]"
+				<< " mode=cached_aabb_8corners"
+				<< " vertexEval=8"
+				<< " result=" << (ok ? "1" : "0")
+				<< std::endl;
+		}
+		if (!ok)
+		{
+			stats.fallback = "cached_aabb_8corners_outside_or_small";
+		}
+		return ok;
+	}
 	if (stats.mode == "mesh_body" &&
 		buildMeshBodyBoundingBox(targetNode, renderRoot, cameraNode, cameraLens, width, height, targetConfig, outRect, stats))
 	{

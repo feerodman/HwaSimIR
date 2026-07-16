@@ -422,6 +422,26 @@ VideoDisplay 图像不是纯黑或仅 annotation overlay
 - H4 unchanged boundaries: no TCP protocol change, no real H.264 implementation, no dual-channel implementation, default production behavior remains VisibleWindow + JPEG/fallback.
 - H4 pending verification: Windows Release x64 build, Windows default VisibleWindow smoke, Windows HeadlessOffscreen direct_final smoke, and RK3588/Linux no-DISPLAY runtime validation with the recommended realtime flags.
 
+### 2026-06-26 / v7 H5 implementation update
+
+- H5 goal: isolate the remaining RK3588 bottleneck after H4 field logs showed `direct_final`, `FastJsonMode`, and `OverlayInSensorImage=false` working while output stayed near 47 FPS. Current suspect is Panda3D `do_frame()` / GLES offscreen wait / `RTM_copy_ram` / sync-video / console logging / bbox spikes.
+- Added `[RenderBackend] HeadlessForceSyncVideoFalse=true`. In HeadlessOffscreen mode HwaSimIR applies PRC `sync-video false` and `show-frame-rate-meter false` before offscreen output creation, and logs `[RenderBackend] syncVideo=false forced=1 clockMode=normal presentationMode=HeadlessOffscreen`.
+- Added Headless readback diagnostics: `HeadlessReadbackMode=EveryFrame|DisabledForPerfProbe|EveryN` and `HeadlessReadbackEveryN`. `DisabledForPerfProbe` does not attach `RTM_copy_ram` and logs `diagnostic_only=1 noTcpFrame=1`; it is only for isolating whether copy_ram/readback drives `pandaDoFrameMs`.
+- Added readback/capture log fields: `readbackMode`, `readbackEveryN`, `copyRamAttached`, `copyRamMode`, and `tcpFrameReused`. `EveryN` can reuse the last CPU frame without changing the TCP frame format.
+- Added `[Performance] QuietPerfMode=false` with env overrides `RenderQuietPerfMode` or `QuietPerfMode`. When enabled, high-frequency per-target logs such as Stage4 input/target mapping/aero/stage4 uniform/annotation bbox/keypoint/fast-path logs are suppressed or sampled, while low-frequency `[Perf]`, `[Stage6 Capture]`, `[RenderPerfProbe]`, and `[ScenePerfProbe]` remain.
+- Added annotation bbox fast mode: `[Annotation] BBoxFastMode=mesh_body|cached_aabb_8corners`, default `mesh_body`. The RK3588 realtime option `cached_aabb_8corners` caches each model local AABB and projects 8 corners instead of traversing mesh body vertices; logs use `[AnnotationBBoxMode] mode=cached_aabb_8corners vertexEval=8`.
+- FastJson logging now includes `bboxUpdateCount`, `bboxReuseCount`, `occlusionUpdateCount`, and `occlusionReuseCount`; in QuietPerfMode it logs only on 120-frame samples.
+- Added RK3588 tooling: `tools/rk3588_h5_render_bottleneck_ab.sh` and `tools/rk3588_parse_perf_summary.py`.
+- H5 A/B cases:
+  - `A_current_h4_800_readback_every_frame_quiet_off`
+  - `B_quiet_on`
+  - `C_quiet_on_readback_disabled_for_probe`
+  - `D_quiet_on_640_readback_every_frame`
+  - `E_quiet_on_400_readback_every_frame`
+  - `F_quiet_on_bbox_cached_aabb_8corners`
+- H5 unchanged boundaries: no TCP protocol change, no real H.264 implementation, no dual-channel implementation, default production behavior remains VisibleWindow + JPEG/fallback.
+- H5 verification on 2026-06-26: Windows Release x64 build plus short VisibleWindow and HeadlessOffscreen startup smoke passed. Headless logs showed forced `sync-video false`, `direct_final` ready, `OverlayInSensorImage=false`, and no `AnnotationDraw`. A separate short UDP/TCP integration run through VideoDisplay also passed: direct-final RGB and gray cases logged `final_sensor_black=0`, `nonBlackRatio=1.0`, and JPEG receive/decode near 60 FPS. The short Windows run validates the nonblack delivery path only; it is not an RK3588 throughput result. RK3588 no-DISPLAY A/B remains pending. Key decision rule: if 400x400 and readback-disabled still show `pandaDoFrameMs` near 17 ms, suspect sync/driver wait; if they drop materially, suspect fill/readback bandwidth.
+
 ### 2026-06-25 / v4
 
 - H2 实现真实 HeadlessOffscreen 离屏渲染宿主：`Stage6RawSceneBuffer` -> final postprocess -> `Stage6FinalSensorBuffer` -> `Stage6FinalSensorTex`。

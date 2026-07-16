@@ -517,6 +517,7 @@ void AnnotationConfig::applyRuntimeOptions(const AnnotationRuntimeOptions& optio
 	m_surfaceKeyPointEnabled = options.surfaceKeyPointEnabled;
 	m_surfaceSnapEnabled = options.surfaceSnapEnabled;
 	m_surfaceSnapMode = options.surfaceSnapMode.empty() ? "profile_surface" : options.surfaceSnapMode;
+	m_quietPerfMode = options.quietPerfMode;
 	const int marginPx = std::max(0, options.bboxMarginPx);
 	const int minSizePx = std::max(1, options.minBBoxSizePx);
 	const std::string mode = options.bboxMode.empty() ? "mesh_body" : options.bboxMode;
@@ -571,6 +572,11 @@ bool AnnotationConfig::surfaceSnapEnabled() const
 const std::string& AnnotationConfig::surfaceSnapMode() const
 {
 	return m_surfaceSnapMode;
+}
+
+bool AnnotationConfig::quietPerfMode() const
+{
+	return m_quietPerfMode;
 }
 
 bool AnnotationConfig::loaded() const

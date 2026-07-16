@@ -1000,12 +1000,23 @@ double WeatherSunStrength(int weatherCode, double sunElevationDeg)
 HwaSimIR::HwaSimIR(int argc, char** argv)
 	: m_pFramework(new PandaFramework()), m_pMainWindow(nullptr)
 	,m_isAddPlatform(false), m_isSimRunning(false), m_currentRound(0), m_isCameraAttached(false), m_isInitTargetPlatID(false), m_stage0DisplayFrameCount(0){
-	// 关闭垂直同步，突破帧率上限
-	load_prc_file_data("", "sync-video false");
-	// 初始化HwaSimIR框架（解析命令行参数）
-	m_pFramework->open_framework(argc, argv);
 	m_runtimeConfig.loadFromCandidates(BuildRuntimeConfigCandidatePaths());
 	LoadRenderBackendConfig();
+	m_annotationOverlayInSensorImage = m_runtimeConfig.getBool(
+		"Annotation",
+		"OverlayInSensorImage",
+		"AnnotationOverlayInSensorImage",
+		m_annotationOverlayInSensorImage,
+		0);
+	m_annotationJsonPerFrame = m_runtimeConfig.getBool(
+		"Annotation",
+		"JsonPerFrame",
+		"AnnotationJsonPerFrame",
+		m_annotationJsonPerFrame,
+		0);
+	ApplyRenderBackendPrcConfig("pre-open_framework");
+	// 初始化HwaSimIR框架（解析命令行参数）
+	m_pFramework->open_framework(argc, argv);
 
 	if (IsVisibleWindowMode())
 	{
@@ -1296,6 +1307,9 @@ void HwaSimIR::LoadRenderBackendConfig()
 	std::string fastDirectSource;
 	std::string imageProbeSource;
 	std::string renderPerfProbeSource;
+	std::string forceSyncVideoSource;
+	std::string readbackModeSource;
+	std::string readbackEveryNSource;
 	const std::string requestedMode = m_runtimeConfig.getString(
 		"RenderBackend",
 		"PresentationMode",
@@ -1365,6 +1379,59 @@ void HwaSimIR::LoadRenderBackendConfig()
 		"RenderPerfProbe",
 		false,
 		&renderPerfProbeSource);
+	m_headlessForceSyncVideoFalse = m_runtimeConfig.getBool(
+		"RenderBackend",
+		"HeadlessForceSyncVideoFalse",
+		"RenderHeadlessForceSyncVideoFalse",
+		true,
+		&forceSyncVideoSource);
+	m_headlessReadbackModeName = m_runtimeConfig.getString(
+		"RenderBackend",
+		"HeadlessReadbackMode",
+		"RenderHeadlessReadbackMode",
+		"EveryFrame",
+		&readbackModeSource);
+	std::string readbackModeLower = m_headlessReadbackModeName;
+	std::transform(readbackModeLower.begin(), readbackModeLower.end(), readbackModeLower.begin(),
+		[](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+	if (readbackModeLower == "disabledforperfprobe" || readbackModeLower == "disabled" || readbackModeLower == "off")
+	{
+		m_headlessReadbackMode = HeadlessReadbackMode::DisabledForPerfProbe;
+		m_headlessReadbackModeName = "DisabledForPerfProbe";
+	}
+	else if (readbackModeLower == "everyn" || readbackModeLower == "every_n")
+	{
+		m_headlessReadbackMode = HeadlessReadbackMode::EveryN;
+		m_headlessReadbackModeName = "EveryN";
+	}
+	else
+	{
+		if (readbackModeLower != "everyframe" && readbackModeLower != "every_frame")
+		{
+			std::cout << "[RenderBackend][WARN]"
+				<< " invalid HeadlessReadbackMode=" << m_headlessReadbackModeName
+				<< " fallback=EveryFrame"
+				<< std::endl;
+		}
+		m_headlessReadbackMode = HeadlessReadbackMode::EveryFrame;
+		m_headlessReadbackModeName = "EveryFrame";
+	}
+	m_headlessReadbackEveryN = m_runtimeConfig.getInt(
+		"RenderBackend",
+		"HeadlessReadbackEveryN",
+		"RenderHeadlessReadbackEveryN",
+		1,
+		&readbackEveryNSource);
+	if (m_headlessReadbackEveryN <= 0)
+	{
+		std::cout << "[RenderBackend][WARN]"
+			<< " invalid HeadlessReadbackEveryN=" << m_headlessReadbackEveryN
+			<< " fallback=1"
+			<< std::endl;
+		m_headlessReadbackEveryN = 1;
+	}
+	m_headlessReadbackEveryN = std::max(1, std::min(600, m_headlessReadbackEveryN));
+	m_headlessCopyRamAttached = ShouldAttachStage6CopyRam();
 	if (m_headlessWidth <= 0)
 	{
 		std::cout << "[RenderBackend][WARN]"
@@ -1392,9 +1459,14 @@ void HwaSimIR::LoadRenderBackendConfig()
 		<< " HeadlessFastDirectFinal=" << (m_headlessFastDirectFinal ? "1" : "0")
 		<< " HeadlessImageProbe=" << (m_headlessImageProbe ? "1" : "0")
 		<< " RenderPerfProbe=" << (m_renderPerfProbe ? "1" : "0")
+		<< " HeadlessForceSyncVideoFalse=" << (m_headlessForceSyncVideoFalse ? "1" : "0")
+		<< " HeadlessReadbackMode=" << HeadlessReadbackModeText()
+		<< " HeadlessReadbackEveryN=" << m_headlessReadbackEveryN
+		<< " copyRamAttached=" << (m_headlessCopyRamAttached ? "1" : "0")
 		<< " source=" << modeSource << "/" << previewSource << "/" << frameRateSource
 		<< "/" << widthSource << "/" << heightSource
 		<< "/" << fastDirectSource << "/" << imageProbeSource << "/" << renderPerfProbeSource
+		<< "/" << forceSyncVideoSource << "/" << readbackModeSource << "/" << readbackEveryNSource
 		<< std::endl;
 }
 
@@ -1413,6 +1485,62 @@ bool HwaSimIR::IsRenderBackendReady() const
 	return m_renderBackendReady;
 }
 
+const char* HwaSimIR::HeadlessReadbackModeText() const
+{
+	switch (m_headlessReadbackMode)
+	{
+	case HeadlessReadbackMode::DisabledForPerfProbe:
+		return "DisabledForPerfProbe";
+	case HeadlessReadbackMode::EveryN:
+		return "EveryN";
+	case HeadlessReadbackMode::EveryFrame:
+	default:
+		return "EveryFrame";
+	}
+}
+
+bool HwaSimIR::ShouldAttachStage6CopyRam() const
+{
+	if (!IsHeadlessOffscreenMode())
+	{
+		return true;
+	}
+	return m_headlessReadbackMode != HeadlessReadbackMode::DisabledForPerfProbe;
+}
+
+bool HwaSimIR::ShouldLogQuiet(std::uint64_t counter, std::uint64_t sourceSeq) const
+{
+	if (!m_quietPerfMode)
+	{
+		return true;
+	}
+	if (sourceSeq > 0)
+	{
+		return sourceSeq <= 3 || (sourceSeq % 120) == 0;
+	}
+	return counter <= 3 || (counter % 120) == 0;
+}
+
+void HwaSimIR::ApplyRenderBackendPrcConfig(const char* reason)
+{
+	const bool forceHeadlessSyncVideoFalse =
+		IsHeadlessOffscreenMode() && m_headlessForceSyncVideoFalse;
+	if (forceHeadlessSyncVideoFalse)
+	{
+		load_prc_file_data("HwaSimIRHeadless", "sync-video false");
+		load_prc_file_data("HwaSimIRHeadless", "show-frame-rate-meter false");
+	}
+
+	std::cout << "[RenderBackend]"
+		<< " syncVideo=" << (forceHeadlessSyncVideoFalse ? "false" : "unchanged")
+		<< " forced=" << (forceHeadlessSyncVideoFalse ? "1" : "0")
+		<< " clockMode=normal"
+		<< " presentationMode=" << m_renderPresentationModeName
+		<< " showFrameRateMeter=" << (forceHeadlessSyncVideoFalse ? "false" : (m_renderEnableFrameRateMeter ? "true" : "false"))
+		<< " reason=" << (reason != nullptr ? reason : "unknown")
+		<< std::endl;
+}
+
 void HwaSimIR::LogRenderBackendConfig(const char* reason) const
 {
 	std::cout << "[RenderBackend]"
@@ -1427,6 +1555,9 @@ void HwaSimIR::LogRenderBackendConfig(const char* reason) const
 		<< " headlessFastDirectFinal=" << (m_headlessFastDirectFinal ? "1" : "0")
 		<< " headlessImageProbe=" << (m_headlessImageProbe ? "1" : "0")
 		<< " renderPerfProbe=" << (m_renderPerfProbe ? "1" : "0")
+		<< " readbackMode=" << HeadlessReadbackModeText()
+		<< " readbackEveryN=" << m_headlessReadbackEveryN
+		<< " copyRamAttached=" << (m_headlessCopyRamAttached ? "1" : "0")
 		<< std::endl;
 }
 
@@ -2282,7 +2413,8 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 			return;
 		}
 		m_stage6FinalSensorBuffer->clear_render_textures();
-		if (m_renderTex != nullptr)
+		m_headlessCopyRamAttached = ShouldAttachStage6CopyRam();
+		if (m_renderTex != nullptr && m_headlessCopyRamAttached)
 		{
 			m_stage6FinalSensorBuffer->add_render_texture(m_renderTex, GraphicsOutput::RTM_copy_ram);
 		}
@@ -2394,7 +2526,8 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 			return;
 		}
 		m_stage6FinalSensorBuffer->clear_render_textures();
-		if (m_renderTex != nullptr)
+		m_headlessCopyRamAttached = ShouldAttachStage6CopyRam();
+		if (m_renderTex != nullptr && m_headlessCopyRamAttached)
 		{
 			m_stage6FinalSensorBuffer->add_render_texture(m_renderTex, GraphicsOutput::RTM_copy_ram);
 		}
@@ -2727,7 +2860,10 @@ void HwaSimIR::LogStage6FinalPipeline(const char* reason)
 		<< " detectorNoisePosition=" << m_stage6DetectorNoisePosition
 		<< " temporalNoiseSigmaGray=" << m_stage6TemporalNoiseSigmaGray
 		<< " fpnSigmaGray=" << m_stage6FpnSigmaGray
-		<< " copyRamMode=RTM_copy_ram"
+		<< " readbackMode=" << HeadlessReadbackModeText()
+		<< " readbackEveryN=" << m_headlessReadbackEveryN
+		<< " copyRamAttached=" << (m_headlessCopyRamAttached ? "1" : "0")
+		<< " copyRamMode=" << (m_headlessCopyRamAttached ? "RTM_copy_ram" : "disabled_for_perf_probe")
 		<< " sameOutput=1"
 		<< std::endl;
 	LogStage6ViewportDiag(reason);
@@ -3255,7 +3391,12 @@ void HwaSimIR::LogRenderPerfProbe(double pandaDoFrameMs)
 		<< " rawPassEnabled=" << (rawPassEnabled ? "1" : "0")
 		<< " finalPassEnabled=" << (finalPassEnabled ? "1" : "0")
 		<< " annotationOverlayEnabled=" << (annotationOverlayEnabled ? "1" : "0")
-		<< " copyRamMode=RTM_copy_ram"
+		<< " readbackMode=" << HeadlessReadbackModeText()
+		<< " readbackEveryN=" << m_headlessReadbackEveryN
+		<< " copyRamAttached=" << (m_headlessCopyRamAttached ? "1" : "0")
+		<< " copyRamMode=" << (m_headlessCopyRamAttached ? "RTM_copy_ram" : "disabled_for_perf_probe")
+		<< " quietPerfMode=" << (m_quietPerfMode ? "1" : "0")
+		<< " bboxFastMode=" << m_annotationBBoxFastMode
 		<< " processRealSceneMs=" << m_lastProcessRealSceneMs
 		<< " targetMappingMs=" << m_lastTargetMappingMs
 		<< " cameraControlMs=" << m_lastCameraControlMs
@@ -3269,6 +3410,10 @@ void HwaSimIR::LogRenderPerfProbe(double pandaDoFrameMs)
 		<< " annotationOcclusionMs=" << m_lastAnnotationOcclusionMs
 		<< " annotationJsonMs=" << m_lastAnnotationJsonMs
 		<< " annotationTargets=" << m_lastAnnotationTargets
+		<< " bboxUpdateCount=" << m_annotationBBoxUpdateCount
+		<< " bboxReuseCount=" << m_annotationBBoxReuseCount
+		<< " occlusionUpdateCount=" << m_annotationOcclusionUpdateCount
+		<< " occlusionReuseCount=" << m_annotationOcclusionReuseCount
 		<< " targetUpdateCullInvisible=" << (m_targetUpdateCullInvisible ? "1" : "0")
 		<< " targetUpdateTotal=" << m_lastTargetUpdateTotal
 		<< " targetUpdateVisible=" << m_lastTargetUpdateVisible
@@ -3305,9 +3450,17 @@ void HwaSimIR::LogScenePerfProbe(std::uint64_t sourceSeq)
 		<< " readbackMs=" << m_lastReadbackMs
 		<< " frameCopyMs=" << m_lastFrameCopyMs
 		<< " jpegMs=" << m_lastJpegMs
+		<< " readbackMode=" << HeadlessReadbackModeText()
+		<< " copyRamAttached=" << (m_headlessCopyRamAttached ? "1" : "0")
+		<< " quietPerfMode=" << (m_quietPerfMode ? "1" : "0")
+		<< " bboxFastMode=" << m_annotationBBoxFastMode
 		<< " annotationFastJsonMode=" << (m_annotationFastJsonMode ? "1" : "0")
 		<< " annotationOverlayInSensorImage=" << (m_annotationOverlayInSensorImage ? "1" : "0")
 		<< " annotationJsonPerFrame=" << (m_annotationJsonPerFrame ? "1" : "0")
+		<< " bboxUpdateCount=" << m_annotationBBoxUpdateCount
+		<< " bboxReuseCount=" << m_annotationBBoxReuseCount
+		<< " occlusionUpdateCount=" << m_annotationOcclusionUpdateCount
+		<< " occlusionReuseCount=" << m_annotationOcclusionReuseCount
 		<< " targetUpdateCullInvisible=" << (m_targetUpdateCullInvisible ? "1" : "0")
 		<< " targetUpdateTotal=" << m_lastTargetUpdateTotal
 		<< " targetUpdateVisible=" << m_lastTargetUpdateVisible
@@ -4570,7 +4723,7 @@ void HwaSimIR::RefreshAnnotationOverlay(const BYHWICD::DisplayC2cObjTrackingData
 	{
 		m_annotationManager.clear();
 		++m_annotationFastPathLogCounter;
-		if (m_annotationFastPathLogCounter <= 3 || (m_annotationFastPathLogCounter % 120) == 0)
+		if (ShouldLogQuiet(static_cast<std::uint64_t>(m_annotationFastPathLogCounter)))
 		{
 			std::cout << "[AnnotationFastPath]"
 				<< " enabled=" << (m_annotationFastJsonMode ? "1" : "0")
@@ -4623,6 +4776,15 @@ void HwaSimIR::RefreshAnnotationOverlay(const BYHWICD::DisplayC2cObjTrackingData
 		enableOcclusion = updateProjection && occlusionDue;
 		if (updateProjection)
 		{
+			++m_annotationBBoxUpdateCount;
+			if (enableOcclusion)
+			{
+				++m_annotationOcclusionUpdateCount;
+			}
+			else
+			{
+				++m_annotationOcclusionReuseCount;
+			}
 			m_annotationManager.updateFrame(
 				sourceSeq,
 				currentData.time,
@@ -4644,6 +4806,8 @@ void HwaSimIR::RefreshAnnotationOverlay(const BYHWICD::DisplayC2cObjTrackingData
 		}
 		else
 		{
+			++m_annotationBBoxReuseCount;
+			++m_annotationOcclusionReuseCount;
 			m_annotationManager.reuseFrameMetadata(
 				sourceSeq,
 				currentData.time,
@@ -4654,7 +4818,10 @@ void HwaSimIR::RefreshAnnotationOverlay(const BYHWICD::DisplayC2cObjTrackingData
 		}
 
 		++m_annotationFastPathLogCounter;
-		if (m_annotationFastPathLogCounter <= 3 || (m_annotationFastPathLogCounter % 120) == 0 || updateProjection)
+		const bool fastPathLogDue = m_quietPerfMode
+			? (sourceSeq > 0 && (sourceSeq % 120) == 0)
+			: (m_annotationFastPathLogCounter <= 3 || (m_annotationFastPathLogCounter % 120) == 0 || updateProjection);
+		if (fastPathLogDue)
 		{
 			std::cout << "[AnnotationFastPath]"
 				<< " enabled=1"
@@ -4668,6 +4835,11 @@ void HwaSimIR::RefreshAnnotationOverlay(const BYHWICD::DisplayC2cObjTrackingData
 				<< " reuseLastWhenSkipped=" << (m_annotationReuseLastWhenSkipped ? "1" : "0")
 				<< " drawOverlay=" << (drawOverlay ? "1" : "0")
 				<< " jsonPerFrame=" << (m_annotationJsonPerFrame ? "1" : "0")
+				<< " quietPerfMode=" << (m_quietPerfMode ? "1" : "0")
+				<< " bboxUpdateCount=" << m_annotationBBoxUpdateCount
+				<< " bboxReuseCount=" << m_annotationBBoxReuseCount
+				<< " occlusionUpdateCount=" << m_annotationOcclusionUpdateCount
+				<< " occlusionReuseCount=" << m_annotationOcclusionReuseCount
 				<< std::endl;
 		}
 	}
@@ -4680,6 +4852,8 @@ void HwaSimIR::RefreshAnnotationOverlay(const BYHWICD::DisplayC2cObjTrackingData
 			sourceSeq >= m_annotationLastProjectionSourceSeq + updateStride;
 		if (updateProjection)
 		{
+			++m_annotationBBoxUpdateCount;
+			++m_annotationOcclusionUpdateCount;
 			m_annotationManager.updateFrame(
 				sourceSeq,
 				currentData.time,
@@ -4698,6 +4872,8 @@ void HwaSimIR::RefreshAnnotationOverlay(const BYHWICD::DisplayC2cObjTrackingData
 		}
 		else
 		{
+			++m_annotationBBoxReuseCount;
+			++m_annotationOcclusionReuseCount;
 			m_annotationManager.reuseFrameMetadata(
 				sourceSeq,
 				currentData.time,
@@ -4787,6 +4963,9 @@ void HwaSimIR::InitCommonCaptureTask() {
 			<< " mode=" << m_renderPresentationModeName
 			<< " captureTask=Stage6FinalSensorTex"
 			<< " ramCopyBinding=deferred_until_final_sensor_buffer"
+			<< " readbackMode=" << HeadlessReadbackModeText()
+			<< " readbackEveryN=" << m_headlessReadbackEveryN
+			<< " copyRamAttached=" << (m_headlessCopyRamAttached ? "1" : "0")
 			<< std::endl;
 	}
 
@@ -4844,13 +5023,22 @@ void HwaSimIR::InitPlatformModels()
 	m_platformResMap.clear();
 
 	// 初始化各平台的模型路径和纹理路径
-	// 飞机：协议 0x11 当前仍默认绑定 F35；F22 已入库但暂未接协议枚举，避免改变现有测试语义。
+	// 飞机：协议 0x11 当前绑定 F35； 0x12 绑定 F22。
 	m_platformResMap[F35] = {
 		"Config/TargetLib/models/f35/F35C.obj",
 		"Config/TargetLib/models/f35/f35c.jpg",
 		"Config/TargetLib/models/f35/f35c_mat.tif",
 		"Config/TargetLib/models/f35/f35c_mat.tif.xml",
 		"Config/TargetLib/models/f35",
+		"F35",
+		"BM_METAL-ALUMINIUM"
+	};
+	m_platformResMap[F22] = {
+		"Config/TargetLib/models/f22/f22.obj",
+		"Config/TargetLib/models/f22/f22.rgb",
+		"Config/TargetLib/models/f22/f22_mat.tif",
+		"Config/TargetLib/models/f22/f22_mat.tif.xml",
+		"Config/TargetLib/models/f22",
 		"F35",
 		"BM_METAL-ALUMINIUM"
 	};
@@ -5059,12 +5247,12 @@ void HwaSimIR::ProcessRealSimSceneInitData()
 	m_stage7LastSkyHorizonState.clear();
 	UpdateStage7SkyHorizon(BuildRuntimeEnvironment(), "init-command", true);
 	UpdateStage7WeatherNodes(m_stage7WeatherState, ClockObject::get_global_clock()->get_frame_time());
-	BYHWICD::SpatialState spatial;
+	/*BYHWICD::SpatialState spatial;
 	spatial = m_initSceneData.platParam[0].spatial;
 	m_geoTrans.InitReferencePoint(spatial.lat, spatial.lon, spatial.alt);
 
 	std::cout << "初始化仿真中心原点：ID=" << m_initSceneData.platParam[0].id
-		<< " 位置(" << spatial.lat << "," << spatial.lon << "," << spatial.alt << ")" << std::endl;
+		<< " 位置(" << spatial.lat << "," << spatial.lon << "," << spatial.alt << ")" << std::endl;*/
 
 	std::cout << "成像初始化完成：军别=" << m_initSceneData.JB
 		<< " 挂载平台ID=" << m_initSceneData.platID
@@ -5096,6 +5284,14 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 
 		// 更新平台位置/姿态（从实时数据的platLoc读取）
 		const BYHWICD::SpatialState& platSpatial = currentData.platLoc;
+		if (!m_isInitReferencePoint)
+		{
+			m_geoTrans.InitReferencePoint(platSpatial.lat, platSpatial.lon, platSpatial.alt);
+			std::cout << "初始化仿真中心原点：ID=" << m_initSceneData.platParamInit.id
+				<< " 位置(" << platSpatial.lat << "," << platSpatial.lon << "," << platSpatial.alt << ")" << std::endl;
+			m_isInitReferencePoint = true;
+		}
+		
 
 
 		/*double px, py, pz;
@@ -5106,6 +5302,16 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 
 		pakPlat.nodePath.set_mat(LMatrix4(exactTransform));
 
+		double m_cameraLensNear = m_cameraLens->get_near();
+		double m_cameraLensFar = m_cameraLens->get_far();
+		bool ISHIDE = pakPlat.nodePath.is_hidden();
+		LPoint3 cameraNodepos = m_cameraNode.get_pos();
+		
+		/*std::cout << " m_cameraLensNear=" << m_cameraLensNear
+			<< " m_cameraLensFar=" << m_cameraLensFar
+			<< " ISHIDE=" << ISHIDE
+			<< " cameraNodepos=" << cameraNodepos
+			<< std::endl;*/
 
 		//pakPlat.nodePath.set_pos(platSpatial.lat, platSpatial.lon, platSpatial.alt);
 		//pakPlat.nodePath.set_hpr(-platSpatial.yaw, platSpatial.pitch, platSpatial.roll);
@@ -5177,6 +5383,14 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 		targetPlat->platID = targetState.targetID;
 
 		const BYHWICD::SpatialState& spatial = targetState.targetLoc;
+		/*std::cout << " spatial.lat=" << spatial.lat
+			<< " spatial.lon=" << spatial.lon
+			<< " spatial.alt=" << spatial.alt
+			<< " spatial.pitch=" << spatial.pitch
+			<< " spatial.roll=" << spatial.roll
+			<< " spatial.yaw=" << spatial.yaw
+			<< std::endl;*/
+
 		LMatrix4f exactTransform = m_geoTrans.GetPandaMatrix(spatial);
 		targetPlat->nodePath.set_mat(LMatrix4(exactTransform));
 		const float targetRangeM = EstimateRangeToCamera(targetPlat->nodePath);
@@ -5286,7 +5500,7 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 			lookAtTarget = targetPlat;
 		}
 
-		if (frameSeq <= 3 || (frameSeq % 120) == 0)
+		if (!m_quietPerfMode && (frameSeq <= 3 || (frameSeq % 120) == 0))
 		{
 			std::cout << "[TargetMapping]"
 				<< " packet=" << frameSeq
@@ -5372,9 +5586,12 @@ PLATFORM_TYPE HwaSimIR::TargetTypeToPlatformType(int targetType) const
 	{
 	case 0x00: return NONE;
 	case 0x11: return F35; // 飞机类型暂时默认F35
+	case 0x12: return F22;
 	case 0x22: return AIM120;
 	case 0x33: return AIM9;
 	case 0x44: return MMD;
+	case 0x55: return Resv1;
+	case 0x66: return Resv2;
 	default: return NONE;
 	}
 }
@@ -5429,6 +5646,7 @@ NodePath HwaSimIR::LoadPlatformAssetNode(PLATFORM_TYPE type, const PlatformResPa
 // 处理PlatParamPak平台增删（飞机平台）
 void HwaSimIR::ProcessAddRemovePakPlatform()
 {
+	/*
 	if (m_isAddPlatform)
 	{
 		// 增加PlatParamPak平台（飞机）
@@ -5493,6 +5711,71 @@ void HwaSimIR::ProcessAddRemovePakPlatform()
 						<< m_sensorDisplayConfig.horizontalFovDeg << ","
 						<< m_sensorDisplayConfig.verticalFovDeg << std::endl;
 				}
+			}
+		}
+	}
+	*/
+	if (m_isAddPlatform)
+	{
+		// 增加PlatParamPak平台（飞机）
+		std::cout << "开始生成PlatParamPak平台!" <<  std::endl;
+
+		const BYHWICD::PlatParamPak& platParam = m_initSceneData.platParamInit;
+		// 根据飞机编号映射平台类型
+		//PLATFORM_TYPE platType = TargetTypeToPlatformType(platParam.type);
+		PLATFORM_TYPE platType = TargetTypeToPlatformType(0x11);
+		if (platType == NONE)
+		{
+			std::cerr << "无效的飞机编号：" << platParam.id << "，跳过生成" << std::endl;
+			return;
+		}
+
+		auto resIter = m_platformResMap.find(platType);
+		if (resIter == m_platformResMap.end())
+		{
+			std::cerr << "未找到平台类型" << platType << "的资源路径，跳过" << std::endl;
+			return;
+		}
+		// 阶段2统一入口：加载模型、基础纹理，并绑定材质ID纹理/材质参数。
+		NodePath modelNode = LoadPlatformAssetNode(platType, resIter->second);
+		if (modelNode.is_empty())
+		{
+			return;
+		}
+
+		// 初始化PakPlatformData
+		PakPlatformData newPakPlat;
+		newPakPlat.type = platType;
+		newPakPlat.platID = platParam.id;
+		newPakPlat.platParam = platParam; // 直接拷贝协议参数
+		newPakPlat.isExist = true;
+		newPakPlat.nodePath = modelNode;
+
+		// 设置初始位置/姿态（从协议SpatialState读取）
+		const BYHWICD::SpatialState& spatial = platParam.spatial;
+		modelNode.set_pos(spatial.lat, spatial.lon, spatial.alt);
+		modelNode.set_hpr(-spatial.yaw, spatial.pitch, spatial.roll);
+
+		// 添加到列表并显示
+		m_pakPlatformList.push_back(newPakPlat);
+		//modelNode.show();
+		modelNode.hide();
+
+		std::cout << "PlatParamPak平台生成成功：类型=" << platType << " ID=" << platParam.id << std::endl;
+		// ========== 绑定相机到第一个平台 ==========
+		if (!m_isCameraAttached) {
+			//m_cameraNode = m_pMainWindow->get_camera_group();
+			//m_camera = m_pMainWindow->get_camera();
+			m_cameraNode.reparent_to(modelNode);
+			m_cameraNode.set_pos(0, 0, 0); // 往后15单位，往上8单位
+											//m_cameraNode.look_at(modelNode);
+											// 标记相机已绑定
+			m_isCameraAttached = true;
+			std::cout << "相机已绑定到第一个PlatParamPak平台（ID=" << platParam.id << "），偏移：(0, 0, -8)" << std::endl;
+			if (m_sensorDisplayConfigReady) {
+				std::cout << "相机视场角(Stage6 SensorGeometry)："
+					<< m_sensorDisplayConfig.horizontalFovDeg << ","
+					<< m_sensorDisplayConfig.verticalFovDeg << std::endl;
 			}
 		}
 	}
@@ -5593,8 +5876,9 @@ void HwaSimIR::ProcessAddRemoveTargetPlatform()
 	if (m_isAddPlatform)
 	{
 		// 增加TargetState平台
-		std::cout << "开始生成TargetState平台，有效数--120：" << m_initSceneData.MissileMaxCount120 <<"--9："<< m_initSceneData.MissileMaxCount9 << "--MMD：" << m_initSceneData.MissileMaxCountMMD << std::endl;
-		//int 
+		std::cout << "开始生成TargetState平台，有效数--120：" << m_initSceneData.MissileMaxCount120 <<"--9："<< m_initSceneData.MissileMaxCount9 << "--MMD：" << m_initSceneData.MissileMaxCountMMD 
+			<< "--35：" << m_initSceneData.MissileMaxCountF35 << "--22：" << m_initSceneData.MissileMaxCountF22 << std::endl;
+
 
 		for (int i = 0; i < m_initSceneData.MissileMaxCount120; ++i)
 		{
@@ -5750,6 +6034,103 @@ void HwaSimIR::ProcessAddRemoveTargetPlatform()
 
 			std::cout << "TargetState平台生成成功：类型=" << platType << " 目标ID=" << newTargetPlat.platID << std::endl;
 		}
+		for (int i = 0; i < m_initSceneData.MissileMaxCountF35; ++i)
+		{
+			PLATFORM_TYPE platType = TargetTypeToPlatformType(0x11);
+			if (platType == NONE)
+			{
+				std::cerr << "无效的TargetState目标类型：0x" << std::hex << 0x11 << std::endl;
+				continue;
+			}
+
+			auto resIter = m_platformResMap.find(platType);
+			if (resIter == m_platformResMap.end()) continue;
+
+			// 阶段2统一入口：加载模型、基础纹理，并绑定材质ID纹理/材质参数。
+			NodePath modelNode = LoadPlatformAssetNode(platType, resIter->second);
+			if (modelNode.is_empty()) continue;
+
+			// 初始化TargetPlatformData
+			TargetPlatformData newTargetPlat;
+			newTargetPlat.type = platType;
+			newTargetPlat.platID = -1; // 初始化时尚未绑定协议目标ID，Display包到达后按三元组映射
+			newTargetPlat.targetState.targetType = 0x11;
+			newTargetPlat.targetState.targetPlatID = -1;
+			newTargetPlat.targetState.targetID = -1;
+			newTargetPlat.targetState.engineState = false;
+			newTargetPlat.targetState.viewValid = false;
+			newTargetPlat.targetState.targetLoc.lat = 0.0;
+			newTargetPlat.targetState.targetLoc.lon = 0.0;
+			newTargetPlat.targetState.targetLoc.alt = 0.0;
+			newTargetPlat.targetState.targetLoc.yaw = 0.0;
+			newTargetPlat.targetState.targetLoc.pitch = 0.0;
+			newTargetPlat.targetState.targetLoc.roll = 0.0;
+			newTargetPlat.targetState.targetState = 0x01;
+			newTargetPlat.isExist = true;
+			newTargetPlat.nodePath = modelNode;
+			CreateEnginePlumeForTarget(newTargetPlat);
+
+			// 设置初始位置（从目标空间状态读取）
+			const BYHWICD::SpatialState& spatial = newTargetPlat.targetState.targetLoc;
+			modelNode.set_pos(spatial.lat, spatial.lon, spatial.alt);
+			modelNode.set_hpr(-spatial.yaw, spatial.pitch, spatial.roll);
+
+			// 添加到列表并显示
+			m_targetPlatformList.push_back(newTargetPlat);
+			modelNode.hide(); // 未收到有效TargetState前不渲染
+
+			std::cout << "TargetState平台生成成功：类型=" << platType << " 目标ID=" << newTargetPlat.platID << std::endl;
+		}
+		for (int i = 0; i < m_initSceneData.MissileMaxCountF22; ++i)
+		{
+			//if (i >= 5) break; // 协议中targetState最多5个
+
+			//const BYHWICD::TargetState& targetState = m_initSceneData.targetState[i];
+			PLATFORM_TYPE platType = TargetTypeToPlatformType(0x12);
+			if (platType == NONE)
+			{
+				std::cerr << "无效的TargetState目标类型：0x" << std::hex << 0x12 << std::endl;
+				continue;
+			}
+
+			auto resIter = m_platformResMap.find(platType);
+			if (resIter == m_platformResMap.end()) continue;
+
+			// 阶段2统一入口：加载模型、基础纹理，并绑定材质ID纹理/材质参数。
+			NodePath modelNode = LoadPlatformAssetNode(platType, resIter->second);
+			if (modelNode.is_empty()) continue;
+
+			// 初始化TargetPlatformData
+			TargetPlatformData newTargetPlat;
+			newTargetPlat.type = platType;
+			newTargetPlat.platID = -1; // 初始化时尚未绑定协议目标ID，Display包到达后按三元组映射
+			newTargetPlat.targetState.targetType = 0x12;
+			newTargetPlat.targetState.targetPlatID = -1;
+			newTargetPlat.targetState.targetID = -1;
+			newTargetPlat.targetState.engineState = false;
+			newTargetPlat.targetState.viewValid = false;
+			newTargetPlat.targetState.targetLoc.lat = 0.0;
+			newTargetPlat.targetState.targetLoc.lon = 0.0;
+			newTargetPlat.targetState.targetLoc.alt = 0.0;
+			newTargetPlat.targetState.targetLoc.yaw = 0.0;
+			newTargetPlat.targetState.targetLoc.pitch = 0.0;
+			newTargetPlat.targetState.targetLoc.roll = 0.0;
+			newTargetPlat.targetState.targetState = 0x01;
+			newTargetPlat.isExist = true;
+			newTargetPlat.nodePath = modelNode;
+			CreateEnginePlumeForTarget(newTargetPlat);
+
+			// 设置初始位置（从目标空间状态读取）
+			const BYHWICD::SpatialState& spatial = newTargetPlat.targetState.targetLoc;
+			modelNode.set_pos(spatial.lat, spatial.lon, spatial.alt);
+			modelNode.set_hpr(-spatial.yaw, spatial.pitch, spatial.roll);
+
+			// 添加到列表并显示
+			m_targetPlatformList.push_back(newTargetPlat);
+			modelNode.hide(); // 未收到有效TargetState前不渲染
+
+			std::cout << "TargetState平台生成成功：类型=" << platType << " 目标ID=" << newTargetPlat.platID << std::endl;
+		}
 	}
 	else
 	{
@@ -5868,10 +6249,17 @@ void HwaSimIR::LoadNetworkConfig()
 {
 	IRRuntimeConfig networkConfig;
 	std::vector<std::string> configPaths;
-	configPaths.push_back("Config/NetworkConfig.ini");
-	configPaths.push_back("../Bin/Config/NetworkConfig.ini");
-	configPaths.push_back("HwaSim_IR/Bin/Config/NetworkConfig.ini");
-	configPaths.push_back("../HwaSim_IR/Bin/Config/NetworkConfig.ini");
+//粗
+//	configPaths.push_back("Config/NetworkConfig_coarse.ini");
+//	configPaths.push_back("../Bin/Config/NetworkConfig_coarse.ini");
+//	configPaths.push_back("HwaSim_IR/Bin/Config/NetworkConfig_coarse.ini");
+//	configPaths.push_back("../HwaSim_IR/Bin/Config/NetworkConfig_coarse.ini");
+//精
+    configPaths.push_back("Config/NetworkConfig_precise.ini");
+    configPaths.push_back("../Bin/Config/NetworkConfig_precise.ini");
+    configPaths.push_back("HwaSim_IR/Bin/Config/NetworkConfig_precise.ini");
+    configPaths.push_back("../HwaSim_IR/Bin/Config/NetworkConfig_precise.ini");
+
 	networkConfig.loadFromCandidates(configPaths);
 
 	m_udpLocalIp = networkConfig.getString("UDP", "localIp", "", m_udpLocalIp);
@@ -5982,7 +6370,8 @@ void HwaSimIR::ProcessPendingNetworkCommands()
 		{
 			std::cout << "[Stage0] Processing queued init command on render thread"
 				<< " sensorID=" << it->initCmd.sensorID
-				<< " platNumValid=" << it->initCmd.platNumValid
+				<< " platID=" << it->initCmd.platID
+				//<< " platNumValid=" << it->initCmd.platNumValid
 				<< std::endl;
 			ProcessInitCmdOnMainThread(it->initCmd);
 		}
@@ -6044,6 +6433,8 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		m_isAddPlatform = false;
 		// 设置TargetState平台初始化ID映射标记
 		m_isInitTargetPlatID = false;
+		// 设置初始化仿真中心原点标记
+		m_isInitReferencePoint = false;
 		// 删除所有三类平台
 		ProcessAddRemovePakPlatform();
 		ProcessAddRemoveWeaponPlatform();
@@ -6168,7 +6559,8 @@ void HwaSimIR::handleInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& cmd)
 		m_pendingNetworkCommands.push_back(pending);
 	}
 	std::cout << "[Stage0] Init command queued for main thread: sensorID=" << cmd.sensorID
-		<< ", platNumValid=" << cmd.platNumValid << std::endl;
+		<< ", platID=" << cmd.platID << std::endl;
+		//<< ", platNumValid=" << cmd.platNumValid << std::endl;
 	m_cvNewData.notify_one();
 }
 
@@ -6179,13 +6571,12 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 	std::cout << "  军别：" << cmd.JB << std::endl;
 	std::cout << "  挂载平台ID：" << cmd.platID << std::endl;
 	std::cout << "  传感器ID：" << cmd.sensorID << std::endl;
-	std::cout << "  有效平台数：" << cmd.platNumValid << std::endl;
+	//std::cout << "  有效平台数：" << cmd.platNumValid << std::endl;
 	const BYHWICD::trackerSensorParam& sensor = cmd.trackingInit.trackerSensor[0];
 	std::cout << "[Stage0] Init baseline: sensorBand=" << sensor.trackerSensorBand
 		<< ", sensorSize=" << sensor.trackerSensorWidth << "x" << sensor.trackerSensorHeight
 		<< ", viewMinMax=" << sensor.trackerSensorViewMin << "/" << sensor.trackerSensorViewMax
 		<< ", pixelAngleUrad=" << sensor.trackerSensorPixelAngle
-		<< ", legacyResolution=" << sensor.coarseTrackResolution << "x" << sensor.preciseTrackResolution
 		<< ", videoFps=" << cmd.trackingInit.videoFps
 		<< ", missileMax(AIM120/AIM9/MMD)=" << cmd.MissileMaxCount120 << "/"
 		<< cmd.MissileMaxCount9 << "/" << cmd.MissileMaxCountMMD << std::endl;
@@ -6197,12 +6588,27 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 	m_udpSequence = 0;
 	m_inputQueueBackpressureLogCount = 0;
 	m_annotationLastProjectionSourceSeq = 0;
+	m_annotationLastBBoxSourceSeq = 0;
+	m_annotationLastOcclusionSourceSeq = 0;
+	m_annotationBBoxUpdateCount = 0;
+	m_annotationBBoxReuseCount = 0;
+	m_annotationOcclusionUpdateCount = 0;
+	m_annotationOcclusionReuseCount = 0;
+	m_annotationFastPathLogCounter = 0;
 	m_lastIrUpdateSourceSeq = 0;
 	m_irBreakdownUpdateCounter = 0;
 	m_lastIrUpdateState.clear();
 	m_currentFrameTelemetry = IRFrameTelemetry();
 	m_latestUdpSourceSeq.store(0);
 	m_lastCapturedSourceSeq = 0;
+	m_headlessReadbackFrameCounter = 0;
+	m_headlessReadbackDiagLogCounter = 0;
+	m_headlessLastFramePixels.clear();
+	m_headlessLastFrameWidth = 0;
+	m_headlessLastFrameHeight = 0;
+	m_headlessLastTextureWidth = 0;
+	m_headlessLastTextureHeight = 0;
+	m_headlessLastTextureCropApplied = false;
 	m_lastOutputSourceSeq.store(0);
 	m_lastSourceSeqContinuous.store(true);
 	m_lastStage4TargetLogState.clear();
@@ -6333,10 +6739,11 @@ void HwaSimIR::handleDisplayData(const BYHWICD::DisplayC2cObjTrackingData& data)
 	}
 	const std::string stage4StateKey = stage4State.str();
 	const bool logStage4Input =
-		m_enableIRVerboseLog ||
-		m_stage0DisplayFrameCount <= 3 ||
-		(m_stage0DisplayFrameCount % 120) == 0 ||
-		stage4StateKey != m_lastStage4InputState;
+		!m_quietPerfMode &&
+		(m_enableIRVerboseLog ||
+			m_stage0DisplayFrameCount <= 3 ||
+			(m_stage0DisplayFrameCount % 120) == 0 ||
+			stage4StateKey != m_lastStage4InputState);
 	m_lastStage4InputState = stage4StateKey;
 	for (int i = 0; i < 5; ++i)
 	{
@@ -6380,9 +6787,10 @@ void HwaSimIR::handleDisplayData(const BYHWICD::DisplayC2cObjTrackingData& data)
 			<< std::endl;
 	}
 	const bool logAeroSpeedRecv =
-		m_enableIRVerboseLog ||
-		m_stage0DisplayFrameCount <= 3 ||
-		(m_stage0DisplayFrameCount % 600) == 0;
+		!m_quietPerfMode &&
+		(m_enableIRVerboseLog ||
+			m_stage0DisplayFrameCount <= 3 ||
+			(m_stage0DisplayFrameCount % 600) == 0);
 	if (logAeroSpeedRecv)
 	{
 		const int aeroTargetCount = std::max(0, std::min(data.targetNumValid, 5));
@@ -6663,11 +7071,19 @@ void HwaSimIR::InitInfraredSimulation()
 	std::string annotationBBoxUpdateHzSource;
 	std::string annotationOcclusionUpdateHzSource;
 	std::string annotationReuseLastSource;
+	std::string annotationBBoxFastModeSource;
 	std::string targetUpdateCullSource;
+	std::string quietPerfSource;
 	bool enableModtranTauDebug = m_runtimeConfig.getBool("Stage3", "EnableModtranTauDebug", "EnableModtranTauDebug", false, &stage3TauDebugSource);
 	bool useModtranTauForAtmosphere = m_runtimeConfig.getBool("Stage3", "UseModtranTauForAtmosphere", "UseModtranTauForAtmosphere", false, &stage3UseTauSource);
 	m_enablePerfLog = m_runtimeConfig.getBool("Performance", "EnablePerfLog", "EnablePerfLog", true, &perfLogSource);
 	m_enableIRVerboseLog = m_runtimeConfig.getBool("Performance", "EnableIRVerboseLog", "EnableIRVerboseLog", false, &verboseLogSource);
+	m_quietPerfMode = m_runtimeConfig.getBool("Performance", "QuietPerfMode", "RenderQuietPerfMode", false, &quietPerfSource);
+	if (m_runtimeConfig.hasEnvValue("QuietPerfMode"))
+	{
+		m_quietPerfMode = m_runtimeConfig.getBool("Performance", "QuietPerfMode", "QuietPerfMode", m_quietPerfMode, &quietPerfSource);
+		quietPerfSource = "env:QuietPerfMode";
+	}
 	m_irUpdateHz = m_runtimeConfig.getDouble("Performance", "IRUpdateHz", "IRUpdateHz", 30.0, &irUpdateHzSource);
 	if (!std::isfinite(m_irUpdateHz) || m_irUpdateHz <= 0.0)
 	{
@@ -6678,8 +7094,9 @@ void HwaSimIR::InitInfraredSimulation()
 	std::cout << "[PerfConfig]"
 		<< " EnablePerfLog=" << (m_enablePerfLog ? "1" : "0")
 		<< " EnableIRVerboseLog=" << (m_enableIRVerboseLog ? "1" : "0")
+		<< " QuietPerfMode=" << (m_quietPerfMode ? "1" : "0")
 		<< " IRUpdateHz=" << m_irUpdateHz
-		<< " source=" << perfLogSource << "/" << verboseLogSource << "/" << irUpdateHzSource
+		<< " source=" << perfLogSource << "/" << verboseLogSource << "/" << quietPerfSource << "/" << irUpdateHzSource
 		<< std::endl;
 	const bool stage6FlipInShaderRequested = m_runtimeConfig.getBool(
 		"Stage6Capture",
@@ -7409,7 +7826,18 @@ void HwaSimIR::InitInfraredSimulation()
 	annotationOptions.profilePath = m_runtimeConfig.getString("Annotation", "ProfilePath", "AnnotationProfilePath", "Config/Annotation/annotation_profiles.json", &annotationProfileSource);
 	annotationOptions.profilePathSource = annotationProfileSource;
 	annotationOptions.drawOptions.debugOverlay = m_runtimeConfig.getBool("Annotation", "DebugOverlay", "AnnotationDebugOverlay", false, &annotationDebugSource);
+	annotationOptions.quietPerfMode = m_quietPerfMode;
 	annotationOptions.bboxMode = m_runtimeConfig.getString("Annotation", "BBoxMode", "AnnotationBBoxMode", "mesh_body", &annotationBBoxModeSource);
+	m_annotationBBoxFastMode = ToLowerAscii(m_runtimeConfig.getString("Annotation", "BBoxFastMode", "AnnotationBBoxFastMode", "mesh_body", &annotationBBoxFastModeSource));
+	if (m_annotationBBoxFastMode != "mesh_body" && m_annotationBBoxFastMode != "cached_aabb_8corners")
+	{
+		std::cout << "[AnnotationBBoxMode][WARN]"
+			<< " invalid BBoxFastMode=" << m_annotationBBoxFastMode
+			<< " fallback=mesh_body"
+			<< std::endl;
+		m_annotationBBoxFastMode = "mesh_body";
+	}
+	annotationOptions.bboxMode = m_annotationBBoxFastMode;
 	annotationOptions.bboxMarginPx = std::max(0, m_runtimeConfig.getInt("Annotation", "BBoxMarginPx", "AnnotationBBoxMarginPx", 3, &annotationBBoxMarginSource));
 	annotationOptions.minBBoxSizePx = std::max(1, m_runtimeConfig.getInt("Annotation", "MinBBoxSizePx", "AnnotationMinBBoxSizePx", 4, &annotationMinBBoxSource));
 	annotationOptions.drawOptions.drawKeyPoints = m_runtimeConfig.getBool("Annotation", "DrawKeyPoints", "AnnotationDrawKeyPoints", true, &annotationDrawKeyPointsSource);
@@ -7490,6 +7918,7 @@ void HwaSimIR::InitInfraredSimulation()
 		<< " BBoxUpdateHz=" << m_annotationBBoxUpdateHz
 		<< " OcclusionUpdateHz=" << m_annotationOcclusionUpdateHz
 		<< " ReuseLastWhenSkipped=" << (m_annotationReuseLastWhenSkipped ? "1" : "0")
+		<< " BBoxFastMode=" << m_annotationBBoxFastMode
 		<< " drawBBox=" << (annotationOptions.drawOptions.drawBBox ? "1" : "0")
 		<< " drawKeyPoints=" << (annotationOptions.drawOptions.drawKeyPoints ? "1" : "0")
 		<< " drawModelLabel=" << (annotationOptions.drawOptions.drawModelLabel ? "1" : "0")
@@ -7499,6 +7928,7 @@ void HwaSimIR::InitInfraredSimulation()
 		<< "/" << annotationBBoxUpdateHzSource
 		<< "/" << annotationOcclusionUpdateHzSource
 		<< "/" << annotationReuseLastSource
+		<< "/" << annotationBBoxFastModeSource
 		<< std::endl;
 	m_annotationManager.loadProfileFromCandidates(BuildRuntimeConfigPathCandidates(annotationOptions.profilePath), annotationOptions.profilePath, annotationProfileSource);
 	m_annotationManager.applyRuntimeOptions(annotationOptions);
@@ -8214,6 +8644,7 @@ void HwaSimIR::InitInfraredSimulation()
 		sourceSummary
 			<< "EnablePerfLog:" << perfLogSource
 			<< ",EnableIRVerboseLog:" << verboseLogSource
+			<< ",QuietPerfMode:" << quietPerfSource
 			<< ",IRUpdateHz:" << irUpdateHzSource
 			<< ",EnableMTFBlur:" << stage6MtfEnableSource
 			<< ",MTFBlurMode:" << stage6MtfModeSource
@@ -8269,6 +8700,7 @@ void HwaSimIR::InitInfraredSimulation()
 			<< ",AnnotationBBoxUpdateHz:" << annotationBBoxUpdateHzSource
 			<< ",AnnotationOcclusionUpdateHz:" << annotationOcclusionUpdateHzSource
 			<< ",AnnotationReuseLastWhenSkipped:" << annotationReuseLastSource
+			<< ",AnnotationBBoxFastMode:" << annotationBBoxFastModeSource
 			<< ",TargetUpdateCullInvisible:" << targetUpdateCullSource
 			<< ",EnableIRPhysicalPipeline:" << stage5PhysicalSource
 			<< ",DebugView:" << stage5ViewModeSource
@@ -9052,9 +9484,9 @@ IRObjectRadianceOutput HwaSimIR::EvaluateNodeRadiance(const std::string& materia
 		input.observerAltitudeMeters = m_realTimeSceneData.platLoc.alt;
 		input.hasObserverAltitude = true;
 	}
-	else if (m_isAddPlatform && IsReasonableAltitudeMeters(m_initSceneData.platParam[0].spatial.alt))
+	else if (m_isAddPlatform && IsReasonableAltitudeMeters(m_initSceneData.platParamInit.spatial.alt))
 	{
-		input.observerAltitudeMeters = m_initSceneData.platParam[0].spatial.alt;
+		input.observerAltitudeMeters = m_initSceneData.platParamInit.spatial.alt;
 		input.hasObserverAltitude = true;
 	}
 
@@ -9089,7 +9521,7 @@ std::string HwaSimIR::MaterialNameForPlatform(PLATFORM_TYPE type) const
 	switch (type)
 	{
 	case F35:
-	case J20:
+	case F22:
 		return "BM_METAL-ALUMINIUM";
 	case AIM9:
 		return "IR_CERAMIC";
@@ -9191,20 +9623,23 @@ TargetPlatformData* HwaSimIR::FindOrMapTargetPlatform(const BYHWICD::TargetState
 			targetPlat.targetState.targetPlatID = targetState.targetPlatID;
 			targetPlat.targetState.targetID = targetState.targetID;
 			targetPlat.nodePath.hide();
-			std::cout << "[TargetMapping] bind"
-				<< " index=" << targetStateIndex
-				<< " platformIndex=" << platIdx
-				<< " targetType=0x" << std::hex << targetState.targetType << std::dec
-				<< " targetPlatID=" << targetState.targetPlatID
-				<< " targetID=" << targetState.targetID
-				<< std::endl;
+			if (!m_quietPerfMode)
+			{
+				std::cout << "[TargetMapping] bind"
+					<< " index=" << targetStateIndex
+					<< " platformIndex=" << platIdx
+					<< " targetType=0x" << std::hex << targetState.targetType << std::dec
+					<< " targetPlatID=" << targetState.targetPlatID
+					<< " targetID=" << targetState.targetID
+					<< std::endl;
+			}
 			return &targetPlat;
 		}
 	}
 
 	const std::uint64_t frameSeq = m_currentFrameTelemetry.sourceSeq > 0
 		? m_currentFrameTelemetry.sourceSeq : m_stage0DisplayFrameCount;
-	if (frameSeq <= 3 || (frameSeq % 120) == 0)
+	if (!m_quietPerfMode && (frameSeq <= 3 || (frameSeq % 120) == 0))
 	{
 		std::cout << "[TargetMapping][WARN] no_free_target_platform"
 			<< " index=" << targetStateIndex
@@ -9249,9 +9684,14 @@ void HwaSimIR::ApplyWeaponCameraControl(BYHWICD::DisplayC2cObjTrackingData& curr
 			targetSpatial.lat, targetSpatial.lon, targetSpatial.alt,
 			range, relPitch, relYaw);
 
-		m_cameraNode.set_hpr(-relYaw, relPitch, 0.0);
-		weaponState.offsetAng[0] = relPitch;
-		weaponState.offsetAng[1] = relYaw;
+		double offsetAngYaw = weaponState.offsetAng[1];
+		double offsetAngPitch = weaponState.offsetAng[0];
+		relYaw = relYaw + offsetAngYaw;
+		relPitch = relPitch + offsetAngPitch;
+
+		m_cameraNode.set_hpr(-relYaw, relPitch , 0.0);
+		//weaponState.offsetAng[0] = relPitch;
+		//weaponState.offsetAng[1] = relYaw;
 		if (frameSeq <= 3 || (frameSeq % 120) == 0)
 		{
 			std::cout << "[CameraControl]"
@@ -9267,10 +9707,11 @@ void HwaSimIR::ApplyWeaponCameraControl(BYHWICD::DisplayC2cObjTrackingData& curr
 	}
 
 	// 手动角模式：xxOutAng[0] 是方位角，xxOutAng[1] 是俯仰角；同步写入 offsetAng[pitch,yaw]。
-	const double yaw = weaponState.xxOutAng[0];
-	const double pitch = weaponState.xxOutAng[1];
-	weaponState.offsetAng[0] = pitch;
-	weaponState.offsetAng[1] = yaw;
+	const double yaw = weaponState.xxOutAng[0] + weaponState.offsetAng[1];
+	const double pitch = weaponState.xxOutAng[1] + weaponState.offsetAng[0];
+    int uoi=0;
+	//weaponState.offsetAng[0] = pitch;
+	//weaponState.offsetAng[1] = yaw;
 	m_cameraNode.set_hpr(-yaw, pitch, 0.0);
 	if (frameSeq <= 3 || (frameSeq % 120) == 0)
 	{
@@ -9295,9 +9736,12 @@ std::string HwaSimIR::Stage4PlatformName(PLATFORM_TYPE type) const
 	switch (type)
 	{
 	case F35: return "F35";
+	case F22: return "F22";
 	case AIM120: return "AIM120";
 	case AIM9: return "AIM9X";
 	case MMD: return "MMD";
+	case Resv1: return "Resv1";
+	case Resv2: return "Resv2";
 	default: return "default";
 	}
 }
@@ -9361,11 +9805,12 @@ bool HwaSimIR::ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHW
 	const std::string thermalLogState =
 		std::to_string(engineState ? 1 : 0) + ":" + std::to_string(rearEnabledForShader ? 1 : 0);
 	const bool logThermal =
-		m_enableIRVerboseLog ||
-		frameSeq <= 3 ||
-		(frameSeq % 120) == 0 ||
-		m_enableStage4HotspotVisualDebug ||
-		m_lastStage4TargetLogState[thermalLogKey] != thermalLogState;
+		!m_quietPerfMode &&
+		(m_enableIRVerboseLog ||
+			frameSeq <= 3 ||
+			(frameSeq % 120) == 0 ||
+			m_enableStage4HotspotVisualDebug ||
+			m_lastStage4TargetLogState[thermalLogKey] != thermalLogState);
 	m_lastStage4TargetLogState[thermalLogKey] = thermalLogState;
 	if (logThermal)
 	{
@@ -9411,11 +9856,12 @@ bool HwaSimIR::ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHW
 		std::to_string(weaponState.strikePart) + ":" +
 		std::to_string(brightSpot.enabled ? 1 : 0);
 	const bool logBright =
-		m_enableIRVerboseLog ||
-		frameSeq <= 3 ||
-		(frameSeq % 120) == 0 ||
-		m_enableStage4HotspotVisualDebug ||
-		m_lastStage4TargetLogState[brightLogKey] != brightLogState;
+		!m_quietPerfMode &&
+		(m_enableIRVerboseLog ||
+			frameSeq <= 3 ||
+			(frameSeq % 120) == 0 ||
+			m_enableStage4HotspotVisualDebug ||
+			m_lastStage4TargetLogState[brightLogKey] != brightLogState);
 	m_lastStage4TargetLogState[brightLogKey] = brightLogState;
 	if (logBright)
 	{
@@ -9450,11 +9896,12 @@ bool HwaSimIR::ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHW
 		std::to_string(static_cast<int>(brightSpot.part)) + ":" +
 		std::to_string(m_stage4LegacyEngineBodyHeating ? 1 : 0);
 	const bool logHeatSource =
-		m_enableIRVerboseLog ||
-		frameSeq <= 3 ||
-		(frameSeq % 120) == 0 ||
-		m_enableStage4HotspotVisualDebug ||
-		m_lastStage4TargetLogState[heatLogKey] != heatLogState;
+		!m_quietPerfMode &&
+		(m_enableIRVerboseLog ||
+			frameSeq <= 3 ||
+			(frameSeq % 120) == 0 ||
+			m_enableStage4HotspotVisualDebug ||
+			m_lastStage4TargetLogState[heatLogKey] != heatLogState);
 	m_lastStage4TargetLogState[heatLogKey] = heatLogState;
 	if (logHeatSource)
 	{
@@ -9562,9 +10009,9 @@ IRModtranRadianceResult HwaSimIR::QueryStage5ModtranRadiance(const TargetPlatfor
 	{
 		observerAltKm = m_realTimeSceneData.platLoc.alt / 1000.0;
 	}
-	else if (m_isAddPlatform && IsReasonableAltitudeMeters(m_initSceneData.platParam[0].spatial.alt))
+	else if (m_isAddPlatform && IsReasonableAltitudeMeters(m_initSceneData.platParamInit.spatial.alt))
 	{
-		observerAltKm = m_initSceneData.platParam[0].spatial.alt / 1000.0;
+		observerAltKm = m_initSceneData.platParamInit.spatial.alt / 1000.0;
 	}
 	double targetAltKm = IsReasonableAltitudeMeters(targetPlat.targetState.targetLoc.alt)
 		? targetPlat.targetState.targetLoc.alt / 1000.0
@@ -9751,6 +10198,10 @@ void HwaSimIR::LogEffectiveRuntimeConfig(
 		<< " H264LowLatency=" << (m_h264LowLatency ? "1" : "0")
 		<< " H264ForceKeyFrameOnStart=" << (m_h264ForceKeyFrameOnStart ? "1" : "0")
 		<< " JpegPerfABTest=" << (m_jpegPerfABTest ? "1" : "0")
+		<< " readbackMode=" << HeadlessReadbackModeText()
+		<< " readbackEveryN=" << m_headlessReadbackEveryN
+		<< " copyRamAttached=" << (m_headlessCopyRamAttached ? "1" : "0")
+		<< " BBoxFastMode=" << m_annotationBBoxFastMode
 		<< " saveMP4En=" << (saveMP4En ? "1" : "0")
 		<< " source=videoFps:" << (videoFpsSource ? videoFpsSource : "unknown")
 		<< ",targetNumValid:" << (targetNumSource ? targetNumSource : "unknown")
@@ -10043,7 +10494,7 @@ void HwaSimIR::LogAeroSpeedState(const TargetPlatformData& targetPlat, bool rend
 	const bool stateChanged = m_lastAeroSpeedStateLogState[logKey] != state.str();
 	m_lastAeroSpeedStateLogState[logKey] = state.str();
 	const bool sampleDue = frameSeq <= 3 || (frameSeq % 600) == 0;
-	if (!sampleDue && !stateChanged && !m_enableIRVerboseLog)
+	if (m_quietPerfMode || (!sampleDue && !stateChanged && !m_enableIRVerboseLog))
 	{
 		return;
 	}
@@ -10392,9 +10843,9 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	{
 		observerAltKmForLog = m_realTimeSceneData.platLoc.alt / 1000.0;
 	}
-	else if (m_isAddPlatform && IsReasonableAltitudeMeters(m_initSceneData.platParam[0].spatial.alt))
+	else if (m_isAddPlatform && IsReasonableAltitudeMeters(m_initSceneData.platParamInit.spatial.alt))
 	{
-		observerAltKmForLog = m_initSceneData.platParam[0].spatial.alt / 1000.0;
+		observerAltKmForLog = m_initSceneData.platParamInit.spatial.alt / 1000.0;
 	}
 	const double targetAltKmForLog = IsReasonableAltitudeMeters(targetPlat.targetState.targetLoc.alt)
 		? targetPlat.targetState.targetLoc.alt / 1000.0
@@ -10502,7 +10953,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	const bool logStage5 =
 		m_enableIRVerboseLog ||
 		((m_stage5LogComponents || m_enableStage5RadianceDebug) && stage5LogDue);
-	if (tauFallbackReason != "none" && (stage5LogDue || m_enableIRVerboseLog))
+	if (!m_quietPerfMode && tauFallbackReason != "none" && (stage5LogDue || m_enableIRVerboseLog))
 	{
 		std::cout << "[Stage5 Tau][WARN]"
 			<< " sourceSeq=" << frameSeq
@@ -11365,171 +11816,280 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 		return AsyncTask::DS_cont;
 	}
 
-	const auto readbackBegin = std::chrono::steady_clock::now();
-	if (self->m_renderTex->has_ram_image()) {
-		CPTA_uchar ram_image = self->m_renderTex->get_ram_image_as("RGB");
-		const double readbackMs = std::chrono::duration<double, std::milli>(
+	++self->m_headlessReadbackFrameCounter;
+	const bool headlessMode = self->IsHeadlessOffscreenMode();
+	const bool readbackDisabled =
+		headlessMode &&
+		self->m_headlessReadbackMode == HeadlessReadbackMode::DisabledForPerfProbe;
+	const bool readbackEveryN =
+		headlessMode &&
+		self->m_headlessReadbackMode == HeadlessReadbackMode::EveryN &&
+		self->m_headlessReadbackEveryN > 1;
+	const bool readbackDue =
+		!readbackEveryN ||
+		((self->m_headlessReadbackFrameCounter - 1) %
+			static_cast<std::uint64_t>(self->m_headlessReadbackEveryN)) == 0;
+
+	if (readbackDisabled)
+	{
+		self->m_lastReadbackMs = 0.0;
+		++self->m_stage6CaptureLogCounter;
+		if (self->ShouldLogQuiet(self->m_stage6CaptureLogCounter))
+		{
+			std::cout << "[Stage6 Capture]"
+				<< " diagnostic_only=1"
+				<< " noTcpFrame=1"
+				<< " reason=HeadlessReadbackMode_DisabledForPerfProbe"
+				<< " readbackMode=" << self->HeadlessReadbackModeText()
+				<< " copyRamAttached=0"
+				<< " tcpFrameReused=0"
+				<< " renderPath=" << self->m_stage6RenderPath
+				<< std::endl;
+		}
+		return AsyncTask::DS_cont;
+	}
+
+	CPTA_uchar ram_image;
+	int width = 0;
+	int height = 0;
+	int frameWidth = 0;
+	int frameHeight = 0;
+	const uchar* frameData = nullptr;
+	std::vector<uchar> sensorSizedFrame;
+	double readbackMs = 0.0;
+	double resizeMs = 0.0;
+	bool textureCropApplied = false;
+	bool tcpFrameReused = false;
+
+	if (readbackEveryN && !readbackDue)
+	{
+		if (self->m_headlessLastFramePixels.empty())
+		{
+			++self->m_stage6CaptureLogCounter;
+			if (self->ShouldLogQuiet(self->m_stage6CaptureLogCounter))
+			{
+				std::cout << "[Stage6 Capture]"
+					<< " diagnostic_only=0"
+					<< " noTcpFrame=1"
+					<< " reason=EveryN_no_cached_frame"
+					<< " readbackMode=" << self->HeadlessReadbackModeText()
+					<< " readbackEveryN=" << self->m_headlessReadbackEveryN
+					<< " copyRamAttached=" << (self->m_headlessCopyRamAttached ? "1" : "0")
+					<< " tcpFrameReused=0"
+					<< std::endl;
+			}
+			return AsyncTask::DS_cont;
+		}
+		width = self->m_headlessLastTextureWidth;
+		height = self->m_headlessLastTextureHeight;
+		frameWidth = self->m_headlessLastFrameWidth;
+		frameHeight = self->m_headlessLastFrameHeight;
+		frameData = self->m_headlessLastFramePixels.data();
+		textureCropApplied = self->m_headlessLastTextureCropApplied;
+		tcpFrameReused = true;
+	}
+	else
+	{
+		const auto readbackBegin = std::chrono::steady_clock::now();
+		if (self->m_renderTex == nullptr || !self->m_renderTex->has_ram_image())
+		{
+			self->m_lastReadbackMs = 0.0;
+			++self->m_stage6CaptureLogCounter;
+			if (self->ShouldLogQuiet(self->m_stage6CaptureLogCounter))
+			{
+				std::cout << "[Stage6 Capture]"
+					<< " diagnostic_only=0"
+					<< " noTcpFrame=1"
+					<< " reason=render_texture_ram_image_unavailable"
+					<< " readbackMode=" << self->HeadlessReadbackModeText()
+					<< " copyRamAttached=" << (self->m_headlessCopyRamAttached ? "1" : "0")
+					<< " tcpFrameReused=0"
+					<< std::endl;
+			}
+			return AsyncTask::DS_cont;
+		}
+		ram_image = self->m_renderTex->get_ram_image_as("RGB");
+		readbackMs = std::chrono::duration<double, std::milli>(
 			std::chrono::steady_clock::now() - readbackBegin).count();
 		self->m_lastReadbackMs = readbackMs;
-		if (ram_image) {
-			int width = self->m_renderTex->get_x_size();
-			int height = self->m_renderTex->get_y_size();
-			int frameWidth = width;
-			int frameHeight = height;
-			const uchar* frameData = ram_image.p();
-			std::vector<uchar> sensorSizedFrame;
-			double resizeMs = 0.0;
-			bool textureCropApplied = false;
+		if (!ram_image)
+		{
+			return AsyncTask::DS_cont;
+		}
+		width = self->m_renderTex->get_x_size();
+		height = self->m_renderTex->get_y_size();
+		frameWidth = width;
+		frameHeight = height;
+		frameData = ram_image.p();
+	}
 
-			if (self->IsHeadlessOffscreenMode() &&
-				self->m_stage6FinalPipelineReady &&
-				self->m_stage6FinalWidth > 0 &&
-				self->m_stage6FinalHeight > 0 &&
-				(width != self->m_stage6FinalWidth || height != self->m_stage6FinalHeight))
+	if (!tcpFrameReused)
+	{
+		if (headlessMode &&
+			self->m_stage6FinalPipelineReady &&
+			self->m_stage6FinalWidth > 0 &&
+			self->m_stage6FinalHeight > 0 &&
+			(width != self->m_stage6FinalWidth || height != self->m_stage6FinalHeight))
+		{
+			const int effectiveWidth = std::min(width, self->m_stage6FinalWidth);
+			const int effectiveHeight = std::min(height, self->m_stage6FinalHeight);
+			if (effectiveWidth > 0 && effectiveHeight > 0)
 			{
-				const int effectiveWidth = std::min(width, self->m_stage6FinalWidth);
-				const int effectiveHeight = std::min(height, self->m_stage6FinalHeight);
-				if (effectiveWidth > 0 && effectiveHeight > 0)
-				{
-					const auto cropBegin = std::chrono::steady_clock::now();
-					cv::Mat rawFrame(height, width, CV_8UC3, const_cast<uchar*>(frameData));
-					cv::Mat croppedFrame = rawFrame(cv::Rect(0, 0, effectiveWidth, effectiveHeight)).clone();
-					frameWidth = effectiveWidth;
-					frameHeight = effectiveHeight;
-					sensorSizedFrame.resize(static_cast<size_t>(frameWidth) * static_cast<size_t>(frameHeight) * 3u);
-					memcpy(sensorSizedFrame.data(), croppedFrame.data, sensorSizedFrame.size());
-					frameData = sensorSizedFrame.data();
-					textureCropApplied = true;
-					resizeMs += std::chrono::duration<double, std::milli>(
-						std::chrono::steady_clock::now() - cropBegin).count();
-				}
-			}
-
-			if (self->m_sensorDisplayConfigReady &&
-				(frameWidth != self->m_sensorDisplayConfig.width || frameHeight != self->m_sensorDisplayConfig.height)) {
-				const auto resizeBegin = std::chrono::steady_clock::now();
-				cv::Mat rawFrame(frameHeight, frameWidth, CV_8UC3, const_cast<uchar*>(frameData));
-				cv::Mat resizedFrame;
-				cv::resize(rawFrame, resizedFrame, cv::Size(self->m_sensorDisplayConfig.width, self->m_sensorDisplayConfig.height));
-				frameWidth = self->m_sensorDisplayConfig.width;
-				frameHeight = self->m_sensorDisplayConfig.height;
+				const auto cropBegin = std::chrono::steady_clock::now();
+				cv::Mat rawFrame(height, width, CV_8UC3, const_cast<uchar*>(frameData));
+				cv::Mat croppedFrame = rawFrame(cv::Rect(0, 0, effectiveWidth, effectiveHeight)).clone();
+				frameWidth = effectiveWidth;
+				frameHeight = effectiveHeight;
 				sensorSizedFrame.resize(static_cast<size_t>(frameWidth) * static_cast<size_t>(frameHeight) * 3u);
-				memcpy(sensorSizedFrame.data(), resizedFrame.data, sensorSizedFrame.size());
+				memcpy(sensorSizedFrame.data(), croppedFrame.data, sensorSizedFrame.size());
 				frameData = sensorSizedFrame.data();
+				textureCropApplied = true;
 				resizeMs += std::chrono::duration<double, std::milli>(
-					std::chrono::steady_clock::now() - resizeBegin).count();
+					std::chrono::steady_clock::now() - cropBegin).count();
 			}
+		}
 
-			BYHWICD::DisplayC2cObjTrackingData trackingSnapshot;
-			unsigned long long displayFrameIndex = 0;
-			IRFrameTelemetry telemetry;
-			{
-				std::lock_guard<std::mutex> lock(self->m_mtx);
-				trackingSnapshot = self->m_realTimeSceneData;
-				telemetry = self->m_currentFrameTelemetry;
-				displayFrameIndex = telemetry.sourceSeq > 0 ? telemetry.sourceSeq : self->m_stage0DisplayFrameCount;
-			}
-			telemetry.readbackMs = readbackMs;
-			if (self->m_bSyncRenderMode.load() &&
-				(telemetry.sourceSeq == 0 || telemetry.sourceSeq == self->m_lastCapturedSourceSeq))
-			{
-				return AsyncTask::DS_cont;
-			}
-			self->UpdateStage6AgcFromFrame(
-				frameData,
-				frameWidth,
-				frameHeight,
-				telemetry.sourceSeq);
-			self->LogHeadlessImageProbe(
-				frameData,
-				frameWidth,
-				frameHeight,
-				width,
-				height,
-				textureCropApplied,
-				telemetry.sourceSeq);
-			if (trackingSnapshot.flag != 0x38)
-			{
-				trackingSnapshot.flag = 0x38;
-			}
+		if (self->m_sensorDisplayConfigReady &&
+			(frameWidth != self->m_sensorDisplayConfig.width || frameHeight != self->m_sensorDisplayConfig.height)) {
+			const auto resizeBegin = std::chrono::steady_clock::now();
+			cv::Mat rawFrame(frameHeight, frameWidth, CV_8UC3, const_cast<uchar*>(frameData));
+			cv::Mat resizedFrame;
+			cv::resize(rawFrame, resizedFrame, cv::Size(self->m_sensorDisplayConfig.width, self->m_sensorDisplayConfig.height));
+			frameWidth = self->m_sensorDisplayConfig.width;
+			frameHeight = self->m_sensorDisplayConfig.height;
+			sensorSizedFrame.resize(static_cast<size_t>(frameWidth) * static_cast<size_t>(frameHeight) * 3u);
+			memcpy(sensorSizedFrame.data(), resizedFrame.data, sensorSizedFrame.size());
+			frameData = sensorSizedFrame.data();
+			resizeMs += std::chrono::duration<double, std::milli>(
+				std::chrono::steady_clock::now() - resizeBegin).count();
+		}
 
-			const bool annotationEnabled =
-				self->m_annotationJsonPerFrame &&
-				self->m_sensorParam.realtimeAnnotation &&
-				self->m_annotationManager.isEnabled();
-			AnnotationFrameRecord annotationSnapshot = self->m_annotationManager.latestRecord();
-			if (!annotationEnabled)
-			{
-				annotationSnapshot.targets.clear();
-			}
-			if (annotationSnapshot.frameIndex == 0)
-			{
-				annotationSnapshot.frameIndex = displayFrameIndex;
-			}
-			annotationSnapshot.simTimeMs = trackingSnapshot.time;
-			annotationSnapshot.sensorID = trackingSnapshot.sensorID;
-			if (annotationSnapshot.width <= 0)
-			{
-				annotationSnapshot.width = frameWidth;
-			}
-			if (annotationSnapshot.height <= 0)
-			{
-				annotationSnapshot.height = frameHeight;
-			}
+		if (readbackEveryN && frameData != nullptr && frameWidth > 0 && frameHeight > 0)
+		{
+			const size_t frameBytes = static_cast<size_t>(frameWidth) * static_cast<size_t>(frameHeight) * 3u;
+			self->m_headlessLastFramePixels.assign(frameData, frameData + frameBytes);
+			self->m_headlessLastFrameWidth = frameWidth;
+			self->m_headlessLastFrameHeight = frameHeight;
+			self->m_headlessLastTextureWidth = width;
+			self->m_headlessLastTextureHeight = height;
+			self->m_headlessLastTextureCropApplied = textureCropApplied;
+		}
+	}
 
-			// 将同源 final sensor 像素、实时数据、标注快照和帧遥测推送给 TCP 子线程。
-			const IRFrameEnqueueResult enqueueResult = self->m_pTcpThread->updateFrame(
-				frameData,
-				frameWidth,
-				frameHeight,
-				trackingSnapshot,
-				annotationSnapshot,
-				annotationEnabled,
-				telemetry);
-			if (!enqueueResult.accepted)
-			{
-				return AsyncTask::DS_cont;
-			}
-			if (self->m_bSyncRenderMode.load())
-			{
-				self->m_lastCapturedSourceSeq = telemetry.sourceSeq;
-				if (enqueueResult.queueWasFull)
-				{
-					self->m_perfStats.recordSyncOverrun();
-				}
-			}
-			self->m_perfStats.recordCapture(
-				readbackMs,
-				resizeMs,
-				enqueueResult.copyMs,
-				enqueueResult.queueDepth);
-			self->m_lastFrameCopyMs = enqueueResult.copyMs;
-			++self->m_stage6CaptureLogCounter;
-			if (self->m_stage6CaptureLogCounter <= 3 || (self->m_stage6CaptureLogCounter % 120) == 0) {
-				std::ostringstream captureLog;
-				captureLog << "[Stage6 Capture]"
-					<< " frameWidth=" << frameWidth
-					<< " frameHeight=" << frameHeight
-					<< " tcpWidth=" << frameWidth
-					<< " tcpHeight=" << frameHeight
-					<< " renderTextureWidth=" << width
-					<< " renderTextureHeight=" << height
-					<< " textureCropApplied=" << (textureCropApplied ? "1" : "0")
-					<< " source=final_sensor"
-					<< " channels=RGB8"
-					<< " copyRamMode=RTM_copy_ram"
-					<< " renderPath=" << self->m_stage6RenderPath
-					<< " sourceSeq=" << telemetry.sourceSeq
-					<< " readbackMs=" << readbackMs
-					<< " resizeMs=" << resizeMs
-					<< " frameCopyMs=" << enqueueResult.copyMs
-					<< " tcpQueueDepth=" << enqueueResult.queueDepth
-					<< " annotationJsonPerFrame=" << (self->m_annotationJsonPerFrame ? "1" : "0")
-					<< " annotationOverlayInSensorImage=" << (self->m_annotationOverlayInSensorImage ? "1" : "0");
-				std::cout << captureLog.str() << std::endl;
-			}
+	BYHWICD::DisplayC2cObjTrackingData trackingSnapshot;
+	unsigned long long displayFrameIndex = 0;
+	IRFrameTelemetry telemetry;
+	{
+		std::lock_guard<std::mutex> lock(self->m_mtx);
+		trackingSnapshot = self->m_realTimeSceneData;
+		telemetry = self->m_currentFrameTelemetry;
+		displayFrameIndex = telemetry.sourceSeq > 0 ? telemetry.sourceSeq : self->m_stage0DisplayFrameCount;
+	}
+	telemetry.readbackMs = readbackMs;
+	if (self->m_bSyncRenderMode.load() &&
+		(telemetry.sourceSeq == 0 || telemetry.sourceSeq == self->m_lastCapturedSourceSeq))
+	{
+		return AsyncTask::DS_cont;
+	}
+	self->UpdateStage6AgcFromFrame(
+		frameData,
+		frameWidth,
+		frameHeight,
+		telemetry.sourceSeq);
+	self->LogHeadlessImageProbe(
+		frameData,
+		frameWidth,
+		frameHeight,
+		width,
+		height,
+		textureCropApplied,
+		telemetry.sourceSeq);
+	if (trackingSnapshot.flag != 0x38)
+	{
+		trackingSnapshot.flag = 0x38;
+	}
 
-			if (self->m_stage5OutputFrameDumpEnabled && self->m_enableStage5RadianceDebug && !self->m_stage5OutputFrameDumpPath.empty()) {
+	const bool annotationEnabled =
+		self->m_annotationJsonPerFrame &&
+		self->m_sensorParam.realtimeAnnotation &&
+		self->m_annotationManager.isEnabled();
+	AnnotationFrameRecord annotationSnapshot = self->m_annotationManager.latestRecord();
+	if (!annotationEnabled)
+	{
+		annotationSnapshot.targets.clear();
+	}
+	if (annotationSnapshot.frameIndex == 0)
+	{
+		annotationSnapshot.frameIndex = displayFrameIndex;
+	}
+	annotationSnapshot.simTimeMs = trackingSnapshot.time;
+	annotationSnapshot.sensorID = trackingSnapshot.sensorID;
+	if (annotationSnapshot.width <= 0)
+	{
+		annotationSnapshot.width = frameWidth;
+	}
+	if (annotationSnapshot.height <= 0)
+	{
+		annotationSnapshot.height = frameHeight;
+	}
+
+	const IRFrameEnqueueResult enqueueResult = self->m_pTcpThread->updateFrame(
+		frameData,
+		frameWidth,
+		frameHeight,
+		trackingSnapshot,
+		annotationSnapshot,
+		annotationEnabled,
+		telemetry);
+	if (!enqueueResult.accepted)
+	{
+		return AsyncTask::DS_cont;
+	}
+	if (self->m_bSyncRenderMode.load())
+	{
+		self->m_lastCapturedSourceSeq = telemetry.sourceSeq;
+		if (enqueueResult.queueWasFull)
+		{
+			self->m_perfStats.recordSyncOverrun();
+		}
+	}
+	self->m_perfStats.recordCapture(
+		readbackMs,
+		resizeMs,
+		enqueueResult.copyMs,
+		enqueueResult.queueDepth);
+	self->m_lastFrameCopyMs = enqueueResult.copyMs;
+	++self->m_stage6CaptureLogCounter;
+	if (self->ShouldLogQuiet(self->m_stage6CaptureLogCounter)) {
+		std::ostringstream captureLog;
+		/*captureLog << "[Stage6 Capture]"
+			<< " frameWidth=" << frameWidth
+			<< " frameHeight=" << frameHeight
+			<< " tcpWidth=" << frameWidth
+			<< " tcpHeight=" << frameHeight
+			<< " renderTextureWidth=" << width
+			<< " renderTextureHeight=" << height
+			<< " textureCropApplied=" << (textureCropApplied ? "1" : "0")
+			<< " source=final_sensor"
+			<< " channels=RGB8"
+			<< " readbackMode=" << self->HeadlessReadbackModeText()
+			<< " readbackEveryN=" << self->m_headlessReadbackEveryN
+			<< " copyRamAttached=" << (self->m_headlessCopyRamAttached ? "1" : "0")
+			<< " copyRamMode=" << (self->m_headlessCopyRamAttached ? "RTM_copy_ram" : "disabled_for_perf_probe")
+			<< " tcpFrameReused=" << (tcpFrameReused ? "1" : "0")
+			<< " diagnostic_only=0"
+			<< " renderPath=" << self->m_stage6RenderPath
+			<< " sourceSeq=" << telemetry.sourceSeq
+			<< " readbackMs=" << readbackMs
+			<< " resizeMs=" << resizeMs
+			<< " frameCopyMs=" << enqueueResult.copyMs
+			<< " tcpQueueDepth=" << enqueueResult.queueDepth
+			<< " annotationJsonPerFrame=" << (self->m_annotationJsonPerFrame ? "1" : "0")
+			<< " annotationOverlayInSensorImage=" << (self->m_annotationOverlayInSensorImage ? "1" : "0");
+		std::cout << captureLog.str() << std::endl;*/
+	}
+
+	if (self->m_stage5OutputFrameDumpEnabled && self->m_enableStage5RadianceDebug && !self->m_stage5OutputFrameDumpPath.empty()) {
 				++self->m_stage5OutputFrameCounter;
 				if (self->m_stage5OutputFrameCounter % self->m_stage5OutputFrameDumpEvery == 0) {
 					try {
@@ -11581,8 +12141,6 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 					}
 				}
 			}
-		}
-	}
 	// 返回 DS_cont 让任务在下一帧继续执行
 	return AsyncTask::DoneStatus::DS_cont;
 }

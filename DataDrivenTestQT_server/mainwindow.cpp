@@ -1,0 +1,1165 @@
+﻿// mainwindow.cpp
+#include "mainwindow.h"
+#include <QTimer>
+#include <QHostAddress>
+#include <QCoreApplication>
+#include <QDebug>
+#include <QDateTime>
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QSettings>
+#include <QNetworkInterface>
+#include <QStringList>
+#include <algorithm>
+
+#include "ICD/math_algorithm.h"
+
+//#define M_PI 3.1415926
+
+namespace
+{
+QString targetTypeHex(int targetType)
+{
+	return QStringLiteral("0x%1").arg(targetType, 0, 16).toUpper();
+}
+
+bool targetUsesRedSpeed(int targetType)
+{
+	return targetType == 0x11;
+}
+
+double clampDouble(double value, double low, double high)
+{
+	return std::max(low, std::min(high, value));
+}
+
+double isaAirTemperatureK(double altitudeM)
+{
+	const double clampedAltitude = clampDouble(altitudeM, 0.0, 20000.0);
+	if (clampedAltitude <= 11000.0)
+	{
+		return 288.15 - 0.0065 * clampedAltitude;
+	}
+	return 216.65;
+}
+
+double speedOfSoundMps(double airTempK)
+{
+	const double gamma = 1.4;
+	const double gasConstantDryAir = 287.05287;
+	return std::sqrt(gamma * gasConstantDryAir * clampDouble(airTempK, 120.0, 400.0));
+}
+
+bool isAnyBindAddress(const QHostAddress& address)
+{
+	return address == QHostAddress::Any ||
+		address == QHostAddress::AnyIPv4 ||
+		address == QHostAddress::AnyIPv6;
+}
+
+bool isLoopbackAddress(const QHostAddress& address)
+{
+	bool ok = false;
+	const quint32 ipv4 = address.toIPv4Address(&ok);
+	if (ok)
+	{
+		return (ipv4 & 0xFF000000u) == 0x7F000000u;
+	}
+	return address == QHostAddress::LocalHostIPv6;
+}
+
+bool isAddressAssignedToThisHost(const QHostAddress& address)
+{
+	if (address.isNull())
+	{
+		return false;
+	}
+	if (isAnyBindAddress(address) || isLoopbackAddress(address))
+	{
+		return true;
+	}
+	const QList<QHostAddress> addresses = QNetworkInterface::allAddresses();
+	for (const QHostAddress& hostAddress : addresses)
+	{
+		if (hostAddress == address)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+QString localIpv4Summary()
+{
+	QStringList items;
+	const QList<QHostAddress> addresses = QNetworkInterface::allAddresses();
+	for (const QHostAddress& hostAddress : addresses)
+	{
+		if (hostAddress.protocol() == QAbstractSocket::IPv4Protocol)
+		{
+			items << hostAddress.toString();
+		}
+	}
+	return items.isEmpty() ? QStringLiteral("none") : items.join(QStringLiteral(","));
+}
+}
+
+MainWindow::MainWindow(QObject *parent) : QObject(parent)
+{
+	loadNetworkConfig();
+	setupUI();
+	setupUDP();
+
+
+    //讀取文件内容
+    QString tmp = "./1.txt";
+    readData(tmp);
+
+	// 初始化位置参数（构造时同步UI初始值）
+	m_targetType= m_targetTypeEdit->text().toInt(nullptr,16);
+	m_fovH = m_fovHEdit->text().toDouble();
+	m_fovV = m_fovVEdit->text().toDouble();
+    plane_init_pos.x = realTimeData.at(0).platPos.lat;
+    plane_init_pos.y = realTimeData.at(0).platPos.lon;
+    plane_init_pos.z = realTimeData.at(0).platPos.alt;
+    plane_init_attitude.yaw = realTimeData.at(0).platEul.yaw;
+    plane_init_attitude.pitch = realTimeData.at(0).platEul.pitch;
+    plane_init_attitude.roll = realTimeData.at(0).platEul.roll;
+    missile_init_pos.x = realTimeData.at(0).tarPos.lat;
+    missile_init_pos.y = realTimeData.at(0).tarPos.lon;
+    missile_init_pos.z = realTimeData.at(0).tarPos.alt;
+    missile_init_attitude.yaw = realTimeData.at(0).tarEul.yaw;
+    missile_init_attitude.pitch = realTimeData.at(0).tarEul.pitch;
+    missile_init_attitude.roll = realTimeData.at(0).tarEul.roll;
+    plane_speed_y = realTimeData.at(0).platSpeed;
+//	collision_time = m_collisionTime->text().toDouble();
+	m_targetVideoFps = targetVideoFps();
+	time_step = qMax(1, qRound(1000.0 / static_cast<double>(m_targetVideoFps)));
+
+
+	m_realTimeTimer = new QTimer(this);
+	m_realTimeTimer->setSingleShot(true);
+	m_realTimeTimer->setTimerType(Qt::PreciseTimer);
+	connect(m_realTimeTimer, &QTimer::timeout, this, &MainWindow::onSendRealTimeData);
+
+	// 状态初始化
+	m_statusLabel->setText(QStringLiteral("状态: 就绪"));
+
+	m_autoCommandTimer = new QTimer(this);
+	m_autoCommandTimer->setInterval(5000);
+	connect(m_autoCommandTimer, &QTimer::timeout, this, &MainWindow::onAutoExecuteStep);
+	m_autoCommandTimer->start();
+
+	qInfo() << "Headless simulation server started. Auto command sequence: reset in 5s, init in 10s, start in 15s.";
+
+}
+
+MainWindow::~MainWindow()
+{
+	if (m_udpSocket) {
+		m_udpSocket->close();
+		delete m_udpSocket;
+	}
+}
+
+void MainWindow::configurePhase4cAeroMachTest(bool enabled, double altitudeKm, double mach)
+{
+	m_phase4cAeroMachMode = enabled;
+	m_phase4cAltitudeKm = clampDouble(altitudeKm, 0.0, 20.0);
+	m_phase4cMach = clampDouble(mach, 0.0, 4.0);
+	const double altitudeM = m_phase4cAltitudeKm * 1000.0;
+	const double airTempK = isaAirTemperatureK(altitudeM);
+	m_phase4cSpeedMps = m_phase4cMach * speedOfSoundMps(airTempK);
+	m_phase4cSpeedKmh = m_phase4cSpeedMps * 3.6;
+	if (m_phase4cAeroMachMode)
+	{
+		qInfo().noquote()
+			<< QStringLiteral("[Phase4C AeroMachConfig] enabled=1 altitudeKm=%1 machCommand=%2 speedMps=%3 speedKmh=%4 speedUnit=km/h")
+				.arg(m_phase4cAltitudeKm, 0, 'f', 3)
+				.arg(m_phase4cMach, 0, 'f', 3)
+				.arg(m_phase4cSpeedMps, 0, 'f', 3)
+				.arg(m_phase4cSpeedKmh, 0, 'f', 3);
+	}
+}
+
+// ==================== 核心修正：补充缺失的槽函数 ====================
+void MainWindow::onSendRealTimeData()
+{
+	if (!m_isRealtimeSending)
+	{
+		return;
+	}
+	sendRealTimeData();
+	if (m_isRealtimeSending)
+	{
+		scheduleNextRealTimeFrame();
+	}
+}
+// ===============================================================
+
+void MainWindow::onAutoExecuteStep()
+{
+	++m_autoCommandStep;
+	switch (m_autoCommandStep)
+	{
+	case 1:
+		qInfo() << "Auto command step 1/3: reset";
+		onResetButtonClicked();
+		break;
+	case 2:
+		qInfo() << "Auto command step 2/3: init";
+		onInitButtonClicked();
+		break;
+	case 3:
+		qInfo() << "Auto command step 3/3: start simulation";
+		onStartButtonClicked();
+		m_autoCommandTimer->stop();
+		qInfo() << "Auto command sequence finished.";
+		break;
+	default:
+		m_autoCommandTimer->stop();
+		break;
+	}
+}
+
+int MainWindow::targetVideoFps() const
+{
+	const int requested = m_videoFpsEdit ? m_videoFpsEdit->text().toInt() : m_targetVideoFps;
+	return qBound(1, requested, 240);
+}
+
+void MainWindow::scheduleNextRealTimeFrame()
+{
+	++m_sendDeadlineIndex;
+	const qint64 targetNs = static_cast<qint64>(
+		(static_cast<long double>(m_sendDeadlineIndex) * 1000000000.0L) /
+		static_cast<long double>(m_targetVideoFps));
+	const qint64 remainingNs = qMax<qint64>(0, targetNs - m_sendClock.nsecsElapsed());
+	const int delayMs = static_cast<int>((remainingNs + 999999LL) / 1000000LL);
+	m_realTimeTimer->start(delayMs);
+}
+
+void MainWindow::setupUI()
+{
+	m_localIpEdit = new HeadlessLineEdit(m_udpLocalIp, this);
+	m_localPortEdit = new HeadlessLineEdit(QString::number(m_udpLocalPort), this);
+	m_remoteIpEdit = new HeadlessLineEdit(m_udpRemoteIp, this);
+	m_remotePortEdit = new HeadlessLineEdit(QString::number(m_udpRemotePort), this);
+
+	m_targetTypeEdit = new HeadlessLineEdit(QStringLiteral("0x11"), this);
+	m_videoFpsEdit = new HeadlessLineEdit(QString::number(m_targetVideoFps), this);
+	m_fovHEdit = new HeadlessLineEdit(QStringLiteral("0.1"), this);
+	m_fovVEdit = new HeadlessLineEdit(QStringLiteral("0.1"), this);
+	m_latEdit = new HeadlessLineEdit(QStringLiteral("0.0"), this);
+	m_lonEdit = new HeadlessLineEdit(QStringLiteral("0.0"), this);
+	m_altEdit = new HeadlessLineEdit(QStringLiteral("0.0"), this);
+	m_yawEdit = new HeadlessLineEdit(QStringLiteral("0.0"), this);
+	m_pitchEdit = new HeadlessLineEdit(QStringLiteral("0.0"), this);
+	m_rollEdit = new HeadlessLineEdit(QStringLiteral("0.0"), this);
+	m_latEditTarget = new HeadlessLineEdit(QStringLiteral("50000.0"), this);
+	m_lonEditTarget = new HeadlessLineEdit(QStringLiteral("0.0"), this);
+	m_altEditTarget = new HeadlessLineEdit(QStringLiteral("0.0"), this);
+	m_yawEditTarget = new HeadlessLineEdit(QStringLiteral("0.0"), this);
+	m_pitchEditTarget = new HeadlessLineEdit(QStringLiteral("0.0"), this);
+	m_rollEditTarget = new HeadlessLineEdit(QStringLiteral("0.0"), this);
+	m_speed = new HeadlessLineEdit(QStringLiteral("100.0"), this);
+	m_timeStep = new HeadlessLineEdit(QStringLiteral("25"), this);
+
+	m_resetButton = new HeadlessButton(this);
+	m_initButton = new HeadlessButton(this);
+	m_startButton = new HeadlessButton(this);
+	m_stopButton = new HeadlessButton(this);
+	m_stopButton->setEnabled(false);
+
+	m_statusLabel = new HeadlessLabel(QStringLiteral("状态: 就绪 | 未开始发送"), this);
+	m_lastSentLabel = new HeadlessLabel(QStringLiteral("最后发送: 无"), this);
+	m_lastReceivedLabel = new HeadlessLabel(QStringLiteral("最后接收: 无"), this);
+}
+
+void MainWindow::loadNetworkConfig()
+{
+	const QString configPath = QDir(QCoreApplication::applicationDirPath()).filePath("NetworkConfig.ini");
+	const bool configExists = QFileInfo::exists(configPath);
+	QSettings settings(configPath, QSettings::IniFormat);
+	settings.setIniCodec("UTF-8");
+
+	const QString defaultLocalIp = QStringLiteral("0.0.0.0");
+	const quint16 defaultLocalPort = 9999;
+	const QString defaultRemoteIp = QStringLiteral("127.0.0.1");
+	const quint16 defaultRemotePort = 8888;
+	const int defaultTargetFps = 60;
+
+	if (!configExists)
+	{
+		settings.setValue(QStringLiteral("UDP/localIp"), defaultLocalIp);
+		settings.setValue(QStringLiteral("UDP/localPort"), defaultLocalPort);
+		settings.setValue(QStringLiteral("UDP/remoteIp"), defaultRemoteIp);
+		settings.setValue(QStringLiteral("UDP/remotePort"), defaultRemotePort);
+		settings.setValue(QStringLiteral("Simulation/targetFps"), defaultTargetFps);
+		settings.sync();
+	}
+	else if (!settings.contains(QStringLiteral("Simulation/targetFps")))
+	{
+		settings.setValue(QStringLiteral("Simulation/targetFps"), defaultTargetFps);
+		settings.sync();
+	}
+
+	QString localIp = settings.value(QStringLiteral("UDP/localIp"), defaultLocalIp).toString().trimmed();
+	QString remoteIp = settings.value(QStringLiteral("UDP/remoteIp"), defaultRemoteIp).toString().trimmed();
+	int localPort = settings.value(QStringLiteral("UDP/localPort"), defaultLocalPort).toInt();
+	int remotePort = settings.value(QStringLiteral("UDP/remotePort"), defaultRemotePort).toInt();
+	int targetFps = settings.value(QStringLiteral("Simulation/targetFps"), defaultTargetFps).toInt();
+
+	if (QHostAddress(localIp).isNull())
+	{
+		qWarning() << "Invalid UDP localIp in" << configPath << ":" << localIp
+			<< "- using" << defaultLocalIp;
+		localIp = defaultLocalIp;
+	}
+	if (QHostAddress(remoteIp).isNull())
+	{
+		qWarning() << "Invalid UDP remoteIp in" << configPath << ":" << remoteIp
+			<< "- using" << defaultRemoteIp;
+		remoteIp = defaultRemoteIp;
+	}
+	if (localPort <= 0 || localPort > 65535)
+	{
+		qWarning() << "Invalid UDP localPort in" << configPath << ":" << localPort
+			<< "- using" << defaultLocalPort;
+		localPort = defaultLocalPort;
+	}
+	if (remotePort <= 0 || remotePort > 65535)
+	{
+		qWarning() << "Invalid UDP remotePort in" << configPath << ":" << remotePort
+			<< "- using" << defaultRemotePort;
+		remotePort = defaultRemotePort;
+	}
+	if (targetFps < 1 || targetFps > 240)
+	{
+		qWarning() << "Invalid Simulation targetFps in" << configPath << ":" << targetFps
+			<< "- using" << defaultTargetFps;
+		targetFps = defaultTargetFps;
+	}
+
+	m_udpLocalIp = localIp;
+	m_udpLocalPort = static_cast<quint16>(localPort);
+	m_udpRemoteIp = remoteIp;
+	m_udpRemotePort = static_cast<quint16>(remotePort);
+	m_targetVideoFps = targetFps;
+
+	qInfo() << "Loaded network config:" << configPath
+		<< "UDP local" << localIp << localPort
+		<< "remote" << remoteIp << remotePort
+		<< "targetFps" << targetFps;
+}
+
+void MainWindow::setupUDP()
+{
+	m_udpSocket = new QUdpSocket(this);
+
+	// 绑定本地端口（可选，用于接收应答）。本机测试时 0.0.0.0 更稳，避免配置到不存在网卡 IP 后启动失败。
+	QString requestedLocalIp = m_localIpEdit->text().trimmed();
+	const quint16 requestedLocalPort = m_localPortEdit->text().toUShort();
+	QHostAddress bindAddress(requestedLocalIp);
+	QString effectiveLocalIp = requestedLocalIp;
+	if (!isAddressAssignedToThisHost(bindAddress))
+	{
+		qWarning().noquote()
+			<< QStringLiteral("[UDP][WARN] localIp=%1 不在本机地址列表中，改为绑定 0.0.0.0:%2；本机IPv4=%3")
+				.arg(requestedLocalIp)
+				.arg(requestedLocalPort)
+				.arg(localIpv4Summary());
+		bindAddress = QHostAddress::AnyIPv4;
+		effectiveLocalIp = QStringLiteral("0.0.0.0");
+	}
+	bool bound = m_udpSocket->bind(bindAddress, requestedLocalPort);
+	if (!bound && effectiveLocalIp != QStringLiteral("0.0.0.0"))
+	{
+		const QString firstError = m_udpSocket->errorString();
+		qWarning().noquote()
+			<< QStringLiteral("[UDP][WARN] 绑定 %1:%2 失败：%3；重试 0.0.0.0:%2")
+				.arg(effectiveLocalIp)
+				.arg(requestedLocalPort)
+				.arg(firstError);
+		m_udpSocket->close();
+		bindAddress = QHostAddress::AnyIPv4;
+		effectiveLocalIp = QStringLiteral("0.0.0.0");
+		bound = m_udpSocket->bind(bindAddress, requestedLocalPort);
+	}
+	if (!bound) {
+		const QString message = QString(QStringLiteral("[UDP][ERROR] 无法绑定到 %1:%2，错误：%3，本机IPv4：%4"))
+			.arg(effectiveLocalIp)
+			.arg(requestedLocalPort)
+			.arg(m_udpSocket->errorString())
+			.arg(localIpv4Summary());
+		qWarning().noquote() << message;
+		m_statusLabel->setText(message);
+		m_statusLabel->setStyleSheet(QStringLiteral("color: #D32F2F; font-weight: bold;"));
+	}
+	else
+	{
+		m_localIpEdit->setText(effectiveLocalIp);
+		qInfo().noquote()
+			<< QStringLiteral("[UDP] bound local=%1:%2 requestedLocal=%3 remote=%4:%5")
+				.arg(effectiveLocalIp)
+				.arg(requestedLocalPort)
+				.arg(requestedLocalIp)
+				.arg(m_remoteIpEdit->text().trimmed())
+				.arg(m_remotePortEdit->text().trimmed());
+	}
+
+	connect(m_udpSocket, &QUdpSocket::readyRead, [=]() {
+		while (m_udpSocket->hasPendingDatagrams()) {
+			QByteArray datagram;
+			datagram.resize(m_udpSocket->pendingDatagramSize());
+			QHostAddress sender;
+			quint16 senderPort;
+			m_udpSocket->readDatagram(datagram.data(), datagram.size(), &sender, &senderPort);
+
+			if (datagram.size() >= sizeof(int)) {
+				int flag = *reinterpret_cast<const int*>(datagram.data());
+				if (flag == 0x37) { // 初始化应答
+					m_lastReceivedLabel->setText(QString(QStringLiteral("↓ 接收: 初始化应答 (0x37) 来自 %1:%2"))
+						.arg(sender.toString()).arg(senderPort));
+					m_statusLabel->setText(QStringLiteral("● 状态: 初始化完成 | 等待开始指令"));
+					m_statusLabel->setStyleSheet("color: #388E3C; font-weight: bold;");
+				}
+			}
+		}
+	});
+}
+
+void MainWindow::sendControlCommand(int command)
+{
+	BYHWICD::ControlP2cX1ObjTrackingCmd cmd = {};
+	cmd.flag = 0x41;
+	cmd.JB = 1; // 红方
+	cmd.platID = 1;
+	cmd.simCommand = command;
+	//cmd.roundCut = m_roundCutEdit->text().toInt();
+	//cmd.currentRound = m_currentRoundEdit->text().toInt();
+	cmd.roundCut = 1;
+	cmd.currentRound = 1;
+	if (m_udpSocket)
+	{
+		QHostAddress remoteIp(m_remoteIpEdit->text());
+		quint16 remotePort = m_remotePortEdit->text().toUShort();
+		qint64 sent = m_udpSocket->writeDatagram(reinterpret_cast<const char*>(&cmd), sizeof(cmd), remoteIp, remotePort);
+
+		QString cmdStr = (command == 1) ? QStringLiteral("复位") : (command == 2) ? QStringLiteral("开始") : QStringLiteral("停止");
+		m_lastSentLabel->setText(QString(QStringLiteral("↑ 发送: 控制命令 %1 (0x%2) | %3 bytes"))
+			.arg(cmdStr).arg(cmd.flag, 0, 16).arg(sent));
+
+		if (sent < 0) {
+			m_statusLabel->setText(QStringLiteral("● 状态: 发送失败！检查网络配置"));
+			m_statusLabel->setStyleSheet("color: #D32F2F; font-weight: bold;");
+		}
+		qDebug() << "Sent Control Command:" << cmdStr << "Bytes:" << sent;
+	}
+	else
+	{
+		m_statusLabel->setText(QStringLiteral("● 状态: 发送失败！ | udpSocket错误"));
+		m_statusLabel->setStyleSheet("color: #D32F2F; font-weight: bold;");
+	}
+	
+
+	
+}
+
+void MainWindow::sendInitCommand()
+{
+	BYHWICD::InitP2cObjectTrackingCmd cmd = {};
+	cmd.flag = 0x36;
+	cmd.JB = 1;
+	cmd.platID = 1;
+	cmd.sensorID = 1;
+	cmd.platNumValid = 1;
+
+//	// 从UI实时读取初始位置
+//	cmd.platParam[0].id = 1;
+//	cmd.platParam[0].type = 0x11;
+//	cmd.platParam[0].spatial.lat = m_latEdit->text().toDouble();
+//	cmd.platParam[0].spatial.lon = m_lonEdit->text().toDouble();
+//	cmd.platParam[0].spatial.alt = m_altEdit->text().toDouble();
+//	cmd.platParam[0].spatial.yaw = m_yawEdit->text().toDouble();
+//	cmd.platParam[0].spatial.pitch = m_pitchEdit->text().toDouble();
+//	cmd.platParam[0].spatial.roll = m_rollEdit->text().toDouble();
+//	cmd.platParam[0].spatial.speed = 0.0;
+
+//	// 传感器参数（简化配置）
+//	cmd.trackingInit.enable = true;
+//	cmd.trackingInit.envTerrain = 0; // 戈壁
+//	cmd.trackingInit.envSky = 0;    // 晴
+//	cmd.trackingInit.envTemp = 25.0;
+//	cmd.trackingInit.videoFps = 30;
+//	cmd.trackingInit.trackerSensor[0].index = 0;
+//	cmd.trackingInit.trackerSensor[0].trackerSensorBand = 2; // 中波红外
+//	cmd.trackingInit.trackerSensor[0].trackerSensorWidth = 640;
+//    cmd.trackingInit.trackerSensor[0].trackerSensorHeight = 512;//hml
+//	cmd.trackingInit.trackerSensor[0].coarseTrackEn = true;
+//	cmd.trackingInit.trackerSensor[0].preciseTrackEn = true;
+//	cmd.trackingInit.trackerSensor[0].coarseTrackResolution = m_fovHEdit->text().toDouble();
+//	cmd.trackingInit.trackerSensor[0].preciseTrackResolution = m_fovVEdit->text().toDouble();
+
+    // 从UI实时读取初始位置
+    cmd.platParam[0].id = 1;
+    cmd.platParam[0].type = 0x11;
+    cmd.platParam[0].spatial.lat = realTimeData.at(0).platPos.lat;
+    cmd.platParam[0].spatial.lon = realTimeData.at(0).platPos.lon;
+    cmd.platParam[0].spatial.alt = realTimeData.at(0).platPos.alt;
+    cmd.platParam[0].spatial.yaw = realTimeData.at(0).platEul.yaw;
+    cmd.platParam[0].spatial.pitch = realTimeData.at(0).platEul.pitch;
+    cmd.platParam[0].spatial.roll = realTimeData.at(0).platEul.roll;
+    cmd.platParam[0].spatial.speed = realTimeData.at(0).platSpeed;
+
+    // 传感器参数（简化配置）
+    cmd.trackingInit.enable = true;
+    cmd.trackingInit.envTerrain = 0; // 戈壁
+    cmd.trackingInit.envSky = 0;    // 晴
+    cmd.trackingInit.envTemp = 25.0;
+    cmd.trackingInit.videoFps = targetVideoFps();
+
+    cmd.trackingInit.envVisibility = 6000;
+    cmd.trackingInit.envHumidity = 85;
+    cmd.trackingInit.envWindV = 8;
+    cmd.trackingInit.envWindDir = 30;
+    cmd.trackingInit.envRadScaleSky = 1.0;
+    cmd.trackingInit.envRadScaleTerrain = 1.0;
+
+
+    cmd.trackingInit.trackerSensor[0].index = 0;
+    cmd.trackingInit.trackerSensor[0].trackerSensorBand = 2; // 中波红外
+    cmd.trackingInit.trackerSensor[0].trackerSensorWidth = 800;
+    cmd.trackingInit.trackerSensor[0].trackerSensorHeight = 800;//hml
+    cmd.trackingInit.trackerSensor[0].trackerSensorViewMin = 1;
+    cmd.trackingInit.trackerSensor[0].trackerSensorViewMax = 50000;
+    cmd.trackingInit.trackerSensor[0].trackerSensorPixelAngle = 2.18166;
+    //2.18166
+
+    cmd.trackingInit.trackerSensor[0].realtimeAnnotation = true;
+    cmd.trackingInit.trackerSensor[0].saveMP4En = true;
+    cmd.trackingInit.trackerSensor[0].h264En = m_h264Enabled;
+
+    cmd.trackingInit.trackerSensor[0].coarseTrackEn = true;
+    cmd.trackingInit.trackerSensor[0].preciseTrackEn = true;
+    cmd.trackingInit.trackerSensor[0].coarseTrackResolution = m_fovHEdit->text().toDouble();
+    cmd.trackingInit.trackerSensor[0].preciseTrackResolution = m_fovVEdit->text().toDouble();
+    cmd.trackingInit.trackerSensor[0].noiseEn =true;
+    cmd.trackingInit.trackerSensor[0].trackerSensorNoise =0.5;
+
+
+    cmd.MissileMaxCount120 = 5;
+    cmd.MissileMaxCount9 = 5;
+    cmd.MissileMaxCountMMD = 0;
+
+	if (m_udpSocket)
+	{
+		QHostAddress remoteIp(m_remoteIpEdit->text());
+		quint16 remotePort = m_remotePortEdit->text().toUShort();
+		qint64 sent = m_udpSocket->writeDatagram(reinterpret_cast<const char*>(&cmd), sizeof(cmd), remoteIp, remotePort);
+
+		m_lastSentLabel->setText(QString(QStringLiteral("↑ 发送: 初始化命令 (0x36) | %1 bytes")).arg(sent));
+		m_statusLabel->setText(QStringLiteral("● 状态: 已发送初始化 | 等待边缘端应答"));
+		m_statusLabel->setStyleSheet("color: #FF9800; font-weight: bold;");
+
+		if (sent < 0) {
+			m_statusLabel->setText(QStringLiteral("● 状态: 初始化发送失败！"));
+			m_statusLabel->setStyleSheet("color: #D32F2F; font-weight: bold;");
+		}
+
+		qDebug() << "Sent Init Command, Bytes:" << sent;
+	}
+	else
+	{
+		m_statusLabel->setText(QStringLiteral("● 状态: 初始化发送失败！ | udpSocket错误"));
+		m_statusLabel->setStyleSheet("color: #D32F2F; font-weight: bold;");
+	}
+	
+
+
+	initStepSimData();
+}
+
+void MainWindow::sendRealTimeData()
+{
+	BYHWICD::DisplayC2cObjTrackingData data = {};
+	data.flag = 0x38;
+	data.platID = 1;
+	data.sensorID = 1;
+	data.time = QDateTime::currentMSecsSinceEpoch();
+
+
+	// 使用当前累积位置（关键：发送前使用当前值）
+	data.platLoc.lat = m_currPlane_pos.x;
+	data.platLoc.lon = m_currPlane_pos.y;
+	data.platLoc.alt = m_currPlane_pos.z;
+	data.platLoc.yaw = m_currPlane_att.yaw;
+	data.platLoc.pitch = m_currPlane_att.pitch;
+	data.platLoc.roll = m_currPlane_att.roll;
+    data.platLoc.speed = realTimeData.at(dataNum-1).platSpeed;
+
+	// Wg信息
+    data.weaponState.targetType = 0x22;
+	data.weaponState.targetPlatID = 3;
+    data.weaponState.targetID = 3;
+	data.weaponState.xxOutAng[0] = 0.0;
+	data.weaponState.xxOutAng[1] = 0.0;
+	data.weaponState.lookatEn = true;
+	data.weaponState.illuminatorEn = true;
+    if(current_time > 5){
+        //5秒后發動機熄火
+        data.weaponState.strikeFlag = true;
+        data.weaponState.strikePart=2;
+    }else{
+        data.weaponState.strikeFlag = false;
+    }
+
+    data.weaponState.viewValid = realTimeData.at(dataNum-1).viewValid;
+
+
+	// 目标状态（相对平台偏移）
+    data.targetNumValid = 5;
+    data.targetState[0].targetType = 0x22;
+	data.targetState[0].targetPlatID = 3;
+	data.targetState[0].targetID = 3;
+    if(current_time > 5){
+        //5秒后發動機熄火
+        data.targetState[0].engineState = true;
+    }else{
+        data.targetState[0].engineState = false;
+    }
+
+    data.targetState[0].viewValid = realTimeData.at(dataNum-1).viewValid;
+
+	data.targetState[0].targetLoc.lat = m_currMissile_pos.x;
+	data.targetState[0].targetLoc.lon = m_currMissile_pos.y;
+	data.targetState[0].targetLoc.alt = m_currMissile_pos.z;
+    adddate = adddate+0.5;
+    if(adddate>360)
+    {
+        adddate=1.0;
+    }
+    data.targetState[0].targetLoc.yaw = m_currMissile_att.yaw+adddate;
+	data.targetState[0].targetLoc.pitch = m_currMissile_att.pitch;
+	data.targetState[0].targetLoc.roll = m_currMissile_att.roll;
+	data.targetState[0].targetState = 0x01;
+
+
+    data.targetState[1].targetType = 0x22;
+    data.targetState[1].targetPlatID = 3;
+    data.targetState[1].targetID = 34;
+    data.targetState[1].viewValid = realTimeData.at(dataNum-1).viewValid;
+    data.targetState[1].targetLoc.lat = 0.0;
+    data.targetState[1].targetLoc.lon = 0.0;
+    data.targetState[1].targetLoc.alt = 0.0;
+    data.targetState[1].targetLoc.yaw = 0.0;
+    data.targetState[1].targetLoc.pitch = 0.0;
+    data.targetState[1].targetLoc.roll = 0.0;
+    data.targetState[1].targetState = 0x01;
+
+
+    data.targetState[2].targetType = 0x33;
+    data.targetState[2].targetPlatID = 3;
+    data.targetState[2].targetID = 4;
+    data.targetState[2].viewValid = realTimeData.at(dataNum-1).viewValid;
+    data.targetState[2].targetLoc.lat = 0.0;
+    data.targetState[2].targetLoc.lon = 0.0;
+    data.targetState[2].targetLoc.alt = 0.0;
+    data.targetState[2].targetLoc.yaw = 0.0;
+    data.targetState[2].targetLoc.pitch = 0.0;
+    data.targetState[2].targetLoc.roll = 0.0;
+    data.targetState[2].targetState = 0x01;
+
+    data.targetState[3].targetType = 0x33;
+    data.targetState[3].targetPlatID = 3;
+    data.targetState[3].targetID = 34;
+    data.targetState[3].viewValid = realTimeData.at(dataNum-1).viewValid;
+    data.targetState[3].targetLoc.lat = 0.0;
+    data.targetState[3].targetLoc.lon = 0.0;
+    data.targetState[3].targetLoc.alt = 0.0;
+    data.targetState[3].targetLoc.yaw = 0.0;
+    data.targetState[3].targetLoc.pitch = 0.0;
+    data.targetState[3].targetLoc.roll = 0.0;
+    data.targetState[3].targetState = 0x01;
+
+    data.targetState[4].targetType = 0x22;
+    data.targetState[4].targetPlatID = 3;
+    data.targetState[4].targetID = 4;
+    data.targetState[4].viewValid = realTimeData.at(dataNum-1).viewValid;
+    data.targetState[4].targetLoc.lat = 0.0;
+    data.targetState[4].targetLoc.lon = 0.0;
+    data.targetState[4].targetLoc.alt = 0.0;
+    data.targetState[4].targetLoc.yaw = 0.0;
+    data.targetState[4].targetLoc.pitch = 0.0;
+	data.targetState[4].targetLoc.roll = 0.0;
+	data.targetState[4].targetState = 0x01;
+
+	const realtimeInfo& currentSample = realTimeData.at(dataNum - 1);
+	for (int targetIndex = 0; targetIndex < 5; ++targetIndex)
+	{
+		const bool useRedSpeed = targetUsesRedSpeed(data.targetState[targetIndex].targetType);
+		data.targetState[targetIndex].targetLoc.speed = useRedSpeed
+			? currentSample.platSpeed
+			: currentSample.tarSpeed;
+	}
+
+    if(current_time > 3)
+    {
+        data.targetState[1].targetLoc.lat = m_currMissile_pos.x;
+        data.targetState[1].targetLoc.lon = m_currMissile_pos.y;
+        data.targetState[1].targetLoc.alt = m_currMissile_pos.z + 1.0;
+        data.targetState[1].targetLoc.yaw = m_currMissile_att.yaw;
+        data.targetState[1].targetLoc.pitch = m_currMissile_att.pitch;
+        data.targetState[1].targetLoc.roll = m_currMissile_att.roll;
+    }
+
+    if(current_time > 5)
+    {
+        data.targetState[2].targetLoc.lat = m_currMissile_pos.x;
+        data.targetState[2].targetLoc.lon = m_currMissile_pos.y+0.00002;
+        data.targetState[2].targetLoc.alt = m_currMissile_pos.z - 1.0;
+        data.targetState[2].targetLoc.yaw = m_currMissile_att.yaw;
+        data.targetState[2].targetLoc.pitch = m_currMissile_att.pitch;
+        data.targetState[2].targetLoc.roll = m_currMissile_att.roll;
+    }
+
+    if(current_time > 7)
+    {
+        data.targetState[3].targetLoc.lat = m_currMissile_pos.x;
+        data.targetState[3].targetLoc.lon = m_currMissile_pos.y-0.00002;
+        data.targetState[3].targetLoc.alt = m_currMissile_pos.z - 1.0;
+        data.targetState[3].targetLoc.yaw = m_currMissile_att.yaw;
+        data.targetState[3].targetLoc.pitch = m_currMissile_att.pitch;
+        data.targetState[3].targetLoc.roll = m_currMissile_att.roll;
+    }
+
+    if(current_time > 9)
+    {
+        data.targetState[4].targetLoc.lat = m_currMissile_pos.x;
+        data.targetState[4].targetLoc.lon = m_currMissile_pos.y-0.00002;
+        data.targetState[4].targetLoc.alt = m_currMissile_pos.z;
+        data.targetState[4].targetLoc.yaw = m_currMissile_att.yaw;
+        data.targetState[4].targetLoc.pitch = m_currMissile_att.pitch;
+        data.targetState[4].targetLoc.roll = m_currMissile_att.roll;
+    }
+    if(current_time > 11)
+    {
+         data.weaponState.targetID = 34;
+    }
+
+	applyPhase4cAeroMachOverride(data);
+
+	if (m_udpSocket)
+	{
+		// 发送
+		QHostAddress remoteIp(m_remoteIpEdit->text());
+		quint16 remotePort = m_remotePortEdit->text().toUShort();
+		qint64 sent = m_udpSocket->writeDatagram(reinterpret_cast<const char*>(&data), sizeof(data), remoteIp, remotePort);
+
+		if (sent > 0) {
+			++m_sentFrameCount;
+			logAeroSpeedSend(data);
+			const qint64 nowNs = m_sendClock.isValid() ? m_sendClock.nsecsElapsed() : 0;
+			const bool shouldLog = nowNs - m_lastSendPerfLogNs >= 2000000000LL;
+			if (shouldLog)
+			{
+				const qint64 intervalNs = qMax<qint64>(1, nowNs - m_lastSendPerfLogNs);
+				const quint64 intervalFrames = m_sentFrameCount - m_lastSendPerfFrameCount;
+				const double sentFpsInstant =
+					static_cast<double>(intervalFrames) * 1.0e9 / static_cast<double>(intervalNs);
+				const double sentFpsAvg =
+					static_cast<double>(m_sentFrameCount) /
+					qMax(0.001, static_cast<double>(nowNs) / 1.0e9);
+				const qint64 expectedSendNs = static_cast<qint64>(
+					(static_cast<long double>(m_sentFrameCount - 1) * 1000000000.0L) /
+					static_cast<long double>(m_targetVideoFps));
+				const double behindMs =
+					static_cast<double>(nowNs - expectedSendNs) / 1.0e6;
+				qInfo().noquote()
+					<< QStringLiteral("[StimPerf] targetFps=%1 sentFpsInstant=%2 sentFpsAvg=%3 packetSeq=%4 timerIntervalMs=%5 behindMs=%6")
+						.arg(m_targetVideoFps)
+						.arg(sentFpsInstant, 0, 'f', 3)
+						.arg(sentFpsAvg, 0, 'f', 3)
+						.arg(m_sentFrameCount)
+						.arg(1000.0 / static_cast<double>(m_targetVideoFps), 0, 'f', 3)
+						.arg(behindMs, 0, 'f', 3);
+				m_lastSendPerfLogNs = nowNs;
+				m_lastSendPerfFrameCount = m_sentFrameCount;
+			}
+			if (m_sentFrameCount <= 3 || (m_sentFrameCount % m_uiUpdateEveryFrames) == 0)
+			{
+				m_lastSentLabel->setText(QString(QStringLiteral("↑ 发送: 实时数据 (0x38) | Lat:%1° | %2 bytes"))
+					.arg(m_currentLat, 0, 'f', 4).arg(sent));
+				m_statusLabel->setText(QString(QStringLiteral("● 状态: 仿真中 | 已发送 %1 帧 | 目标 %2 FPS"))
+					.arg(m_sentFrameCount)
+					.arg(m_targetVideoFps));
+				m_statusLabel->setStyleSheet("color: #388E3C; font-weight: bold;");
+			}
+		}
+		else {
+			m_statusLabel->setText(QStringLiteral("● 状态: 发送失败！检查网络"));
+			m_statusLabel->setStyleSheet("color: #D32F2F; font-weight: bold;");
+		}
+	}
+	else
+	{
+		m_statusLabel->setText(QStringLiteral("● 状态: 发送失败！ | udpSocket错误"));
+		m_statusLabel->setStyleSheet("color: #D32F2F; font-weight: bold;");
+	}
+	
+
+	// 关键：发送后立即更新位置（为下一次发送准备）
+	updatePosition();
+}
+
+void MainWindow::applyPhase4cAeroMachOverride(BYHWICD::DisplayC2cObjTrackingData& data) const
+{
+	if (!m_phase4cAeroMachMode)
+	{
+		return;
+	}
+	const double altitudeM = m_phase4cAltitudeKm * 1000.0;
+	data.platLoc.speed = m_phase4cSpeedKmh;
+	for (int targetIndex = 0; targetIndex < qBound(0, data.targetNumValid, 5); ++targetIndex)
+	{
+		BYHWICD::DisplayC2cObjTrackingData::TargetState& target = data.targetState[targetIndex];
+		const double relativeOffsetM = target.targetLoc.alt - m_currMissile_pos.z;
+		target.targetLoc.alt = altitudeM + clampDouble(relativeOffsetM, -5.0, 5.0);
+		target.targetLoc.speed = m_phase4cSpeedKmh;
+	}
+}
+
+void MainWindow::logAeroSpeedSend(const BYHWICD::DisplayC2cObjTrackingData& data) const
+{
+	const bool shouldLog =
+		m_sentFrameCount <= 3 ||
+		(m_sentFrameCount % 600) == 0;
+	if (!shouldLog)
+	{
+		return;
+	}
+	const int targetCount = qBound(0, data.targetNumValid, 5);
+	for (int targetIndex = 0; targetIndex < targetCount; ++targetIndex)
+	{
+		const BYHWICD::DisplayC2cObjTrackingData::TargetState& target = data.targetState[targetIndex];
+		const bool useRedSpeed = targetUsesRedSpeed(target.targetType);
+		const QString sourceColumn = useRedSpeed
+			? QStringLiteral("RedSpeedAir(km/h)")
+			: QStringLiteral("MissileSpeedAir(km/h)");
+		qInfo().noquote()
+			<< QStringLiteral("[AeroSpeedSend] sourceSeq=%1 targetIndex=%2 targetID=%3 targetType=%4 speedSourceColumn=%5 speedRawKmh=%6 altitudeM=%7 lat=%8 lon=%9 phase4cAeroMach=%10 altitudeKm=%11 machCommand=%12 speedKmh=%13 speedMps=%14 speedUnit=km/h")
+				.arg(m_sentFrameCount)
+				.arg(targetIndex)
+				.arg(target.targetID)
+				.arg(targetTypeHex(target.targetType))
+				.arg(m_phase4cAeroMachMode ? QStringLiteral("Phase4CProtocolMach") : sourceColumn)
+				.arg(target.targetLoc.speed, 0, 'f', 3)
+				.arg(target.targetLoc.alt, 0, 'f', 3)
+				.arg(target.targetLoc.lat, 0, 'f', 9)
+				.arg(target.targetLoc.lon, 0, 'f', 9)
+				.arg(m_phase4cAeroMachMode ? 1 : 0)
+				.arg(target.targetLoc.alt / 1000.0, 0, 'f', 3)
+				.arg(m_phase4cAeroMachMode ? m_phase4cMach : -1.0, 0, 'f', 3)
+				.arg(target.targetLoc.speed, 0, 'f', 3)
+				.arg(target.targetLoc.speed / 3.6, 0, 'f', 3);
+	}
+}
+
+void MainWindow::updatePosition()
+{
+	
+	if (step(m_currPlane_pos, m_currPlane_att, m_currMissile_pos, m_currMissile_att))
+	{
+		onStopButtonClicked();
+	}
+
+	if (m_sentFrameCount <= 3 || (m_sentFrameCount % m_uiUpdateEveryFrames) == 0)
+	{
+		m_latEdit->setText(QString::number(m_currPlane_pos.x, 'f', 6));
+		m_lonEdit->setText(QString::number(m_currPlane_pos.y, 'f', 6));
+		m_altEdit->setText(QString::number(m_currPlane_pos.z, 'f', 6));
+		m_yawEdit->setText(QString::number(m_currPlane_att.yaw, 'f', 6));
+		m_pitchEdit->setText(QString::number(m_currPlane_att.pitch, 'f', 6));
+		m_rollEdit->setText(QString::number(m_currPlane_att.roll, 'f', 6));
+		m_latEditTarget->setText(QString::number(m_currMissile_pos.x, 'f', 6));
+		m_lonEditTarget->setText(QString::number(m_currMissile_pos.y, 'f', 6));
+		m_altEditTarget->setText(QString::number(m_currMissile_pos.z, 'f', 6));
+		m_yawEditTarget->setText(QString::number(m_currMissile_att.yaw, 'f', 6));
+		m_pitchEditTarget->setText(QString::number(m_currMissile_att.pitch, 'f', 6));
+		m_rollEditTarget->setText(QString::number(m_currMissile_att.roll, 'f', 6));
+	}
+}
+
+void MainWindow::onResetButtonClicked()
+{
+	sendControlCommand(1);
+	//initStepSimData();
+	
+
+    dataNum = 1;
+
+	m_targetTypeEdit->setText("0x" + QString::number(m_targetType, 16));
+	m_fovHEdit->setText(QString::number(m_fovH, 'f', 2));
+	m_fovVEdit->setText(QString::number(m_fovV, 'f', 2));
+    m_latEdit->setText(QString::number(plane_init_pos.x, 'f', 6));
+    m_lonEdit->setText(QString::number(plane_init_pos.y, 'f', 6));
+    m_altEdit->setText(QString::number(plane_init_pos.z, 'f', 6));
+    m_yawEdit->setText(QString::number(plane_init_attitude.yaw, 'f', 6));
+    m_pitchEdit->setText(QString::number(plane_init_attitude.pitch, 'f', 6));
+    m_rollEdit->setText(QString::number(plane_init_attitude.roll, 'f', 6));
+	m_latEditTarget->setText(QString::number(missile_init_pos.x, 'f', 6));
+	m_lonEditTarget->setText(QString::number(missile_init_pos.y, 'f', 6));
+	m_altEditTarget->setText(QString::number(missile_init_pos.z, 'f', 6));
+	m_yawEditTarget->setText(QString::number(missile_init_attitude.yaw, 'f', 6));
+	m_pitchEditTarget->setText(QString::number(missile_init_attitude.pitch, 'f', 6));
+	m_rollEditTarget->setText(QString::number(missile_init_attitude.roll, 'f', 6));
+//	m_collisionTime->setText(QString::number(collision_time, 'f', 2));
+	m_speed->setText(QString::number(plane_speed_y, 'f', 2));
+	m_timeStep->setText(QString::number(time_step));
+
+	m_statusLabel->setText(QStringLiteral("● 状态: 已发送复位指令"));
+	m_statusLabel->setStyleSheet("color: #1976D2; font-weight: bold;");
+}
+
+void MainWindow::onInitButtonClicked()
+{
+	// 重置当前位置为UI起始值（重要！避免累积误差）
+	m_currentLat = m_latEdit->text().toDouble();
+	m_currentLon = m_lonEdit->text().toDouble();
+	m_currentAlt = m_altEdit->text().toDouble();
+	m_currentYaw = m_yawEdit->text().toDouble();
+	m_currentPitch = m_pitchEdit->text().toDouble();
+	m_currentRoll = m_rollEdit->text().toDouble();
+
+    dataNum = 1;
+
+	sendInitCommand();
+}
+
+void MainWindow::onStartButtonClicked()
+{
+	// 关键：开始前同步UI当前值到内部变量（解决起始点问题）
+	m_currentLat = m_latEdit->text().toDouble();
+	m_currentLon = m_lonEdit->text().toDouble();
+	m_currentAlt = m_altEdit->text().toDouble();
+	m_currentYaw = m_yawEdit->text().toDouble();
+	m_currentPitch = m_pitchEdit->text().toDouble();
+	m_currentRoll = m_rollEdit->text().toDouble();
+
+	sendControlCommand(2); // 发送开始命令
+
+	if (!m_isRealtimeSending) {
+		m_targetVideoFps = targetVideoFps();
+		time_step = qMax(1, qRound(1000.0 / static_cast<double>(m_targetVideoFps)));
+		m_timeStep->setText(QString::number(time_step));
+		m_isRealtimeSending = true;
+		m_sentFrameCount = 0;
+		m_sendDeadlineIndex = 0;
+		m_sendClock.restart();
+		m_lastSendPerfLogNs = 0;
+		m_lastSendPerfFrameCount = 0;
+		m_uiUpdateEveryFrames = qMax(1, m_targetVideoFps / 5);
+		m_startButton->setEnabled(false);
+		m_stopButton->setEnabled(true);
+		m_statusLabel->setText(QString(QStringLiteral("● 状态: 仿真运行中 (%1 FPS)")).arg(m_targetVideoFps));
+		m_statusLabel->setStyleSheet("color: #388E3C; font-weight: bold;");
+		onSendRealTimeData();
+	}
+}
+
+void MainWindow::onStopButtonClicked()
+{
+	if (m_isRealtimeSending || m_realTimeTimer->isActive()) {
+		m_isRealtimeSending = false;
+		m_realTimeTimer->stop();
+		sendControlCommand(3); // 发送停止命令
+		m_startButton->setEnabled(true);
+		m_stopButton->setEnabled(false);
+		m_statusLabel->setText(QStringLiteral("● 状态: 仿真已停止"));
+		m_statusLabel->setStyleSheet("color: #1976D2; font-weight: bold;");
+	}
+}
+
+// 单次步进，返回是否相撞，并输出当前位置/姿态
+bool MainWindow::step(BYHWICD::CartesianCoordinate& plane_pos, BYHWICD::Euler& plane_att,
+	BYHWICD::CartesianCoordinate& missile_pos, BYHWICD::Euler& missile_att) {
+	// 如果已相撞，直接返回
+	if (is_collided) {
+		std::cout << "已相撞，停止模拟！" << std::endl;
+		return true;
+	}
+
+//	// 计算飞机当前位置和姿态（姿态固定）
+//	plane_pos.x = plane_init_pos.x;
+//	plane_pos.y = plane_init_pos.y + plane_speed_y * current_time;
+//	plane_pos.z = plane_init_pos.z;
+//	plane_att = plane_init_attitude;//飛機姿態
+
+//	// 计算导弹当前位置（xy平面抛物线，z固定）
+//	// 抛物线方程：x(t) = x0 - k*t² （t=collision_time时x=飞机x）
+//	missile_pos.x = missile_init_pos.x - parabola_k * pow(current_time, 2);
+//	// y坐标和飞机同步（确保最终相撞）
+//	missile_pos.y = plane_pos.y;
+//	missile_pos.z = plane_init_pos.z;
+
+//	// 计算导弹速度矢量（用于计算yaw）
+//	double vx = -2.0 * parabola_k * current_time;  // x方向速度（dx/dt）
+//	double vy = plane_speed_y;                  // y方向速度（dy/dt）
+//	double vz = 0.0;                            // z方向速度（无运动）
+
+//	// 计算导弹yaw角（绕z轴，顺时针为正，单位：度）
+//	// 公式：yaw = atan2(vx, vy) * 180/π （atan2(vy, vx)是逆时针，这里反转参数）
+//	missile_att.yaw = atan2(vx, vy) * 180.0 / M_PI;
+//	// 俯仰/滚转固定（无变化）
+//	missile_att.pitch = 0.0;
+//	missile_att.roll = 0.0;
+
+//	// 检查是否相撞（位置误差小于1米则判定相撞）
+//	double dx = fabs(missile_pos.x - plane_pos.x);
+//	double dy = fabs(missile_pos.y - plane_pos.y);
+//	double dz = fabs(missile_pos.z - plane_pos.z);
+
+    plane_pos.x = realTimeData.at(dataNum).platPos.lat;
+    plane_pos.y = realTimeData.at(dataNum).platPos.lon;
+    plane_pos.z = realTimeData.at(dataNum).platPos.alt;
+    plane_att.pitch = realTimeData.at(dataNum).platEul.pitch;
+    plane_att.yaw = realTimeData.at(dataNum).platEul.yaw;
+    plane_att.roll = realTimeData.at(dataNum).platEul.roll;
+
+    missile_pos.x = realTimeData.at(dataNum).tarPos.lat;
+    missile_pos.y = realTimeData.at(dataNum).tarPos.lon;
+    missile_pos.z = realTimeData.at(dataNum).tarPos.alt;
+    missile_att.pitch = realTimeData.at(dataNum).tarEul.pitch;
+    missile_att.yaw = realTimeData.at(dataNum).tarEul.yaw;
+    missile_att.roll = realTimeData.at(dataNum).tarEul.roll;
+
+    if (dataNum >= (realTimeData.size()-1)) {
+		is_collided = true;
+        std::cout << "===== data is over =====" << std::endl;
+	}
+
+	// 更新时间步
+	current_time += 1.0 / static_cast<double>(qMax(1, m_targetVideoFps));
+    dataNum++;
+
+	return is_collided;
+}
+
+void MainWindow::initStepSimData()
+{
+	is_collided = false;
+	current_time = 0.0;
+	m_targetType = m_targetTypeEdit->text().toInt(nullptr, 16);
+	m_fovH = m_fovHEdit->text().toDouble();
+	m_fovV = m_fovVEdit->text().toDouble();
+    plane_init_pos.x = m_latEdit->text().toDouble();
+    plane_init_pos.y = m_lonEdit->text().toDouble();
+    plane_init_pos.z = m_altEdit->text().toDouble();
+    plane_init_attitude.yaw = m_yawEdit->text().toDouble();
+    plane_init_attitude.pitch = m_pitchEdit->text().toDouble();
+    plane_init_attitude.roll = m_rollEdit->text().toDouble();
+    missile_init_pos.x = m_latEditTarget->text().toDouble();
+    missile_init_pos.y = m_lonEditTarget->text().toDouble();
+    missile_init_pos.z = m_altEditTarget->text().toDouble();
+    missile_init_attitude.yaw = m_yawEditTarget->text().toDouble();
+    missile_init_attitude.pitch = m_pitchEditTarget->text().toDouble();
+    missile_init_attitude.roll = m_rollEditTarget->text().toDouble();
+    plane_speed_y = m_speed->text().toDouble();
+
+//	collision_time = m_collisionTime->text().toDouble();
+	m_targetVideoFps = targetVideoFps();
+	time_step = qMax(1, qRound(1000.0 / static_cast<double>(m_targetVideoFps)));
+	m_timeStep->setText(QString::number(time_step));
+
+	// 抛物线参数：确保t=collision_time时导弹x坐标等于飞机x坐标
+//    parabola_k = (missile_init_pos.x - plane_init_pos.x) / (collision_time * collision_time);
+}
+
+void MainWindow::readData(QString tmp)
+{
+    QFile file(tmp);
+    QByteArray fileValueTmp;
+
+    realtimeInfo data;
+//    QVector<realtimeInfo> coeOpaPgVector;
+//    qDebug() << "当前工作目录:" << QDir::currentPath();
+    if(file.open(QIODevice::ReadOnly))
+    {
+        //读取所有数据
+        fileValueTmp=file.readAll();
+        //将QByteArray转换为QString
+        QString QStringTmp(fileValueTmp);
+        //将QString的内容用\r\n进行切分，存入QStringList
+//        QStringList list = QStringTmp.split("\r\n");
+        QStringList list = QStringTmp.split("\n");
+
+        //迭代器代替for循环，不用计算循环的次数
+        //QList的迭代器，定义如下，对list进行迭代
+        QListIterator<QString> i(list);
+
+        //将QStringList的内容放至coeRis
+       //将\r\n获得的数据进行拆分，存入QStringList
+        QStringList list1;
+        int index=0;
+
+        while (i.hasNext())
+        {
+            list1 = i.next().split(",");
+            if(list1.length()==63 && index != 0)
+            {
+                data.distance = list1[1].toDouble();
+                //redplat
+                data.platPos.lat = list1[2].toDouble();
+                data.platPos.lon = list1[3].toDouble();
+                data.platPos.alt = list1[4].toDouble();
+                data.platEul.yaw = list1[5].toDouble();
+                data.platEul.pitch = list1[6].toDouble();
+                data.platEul.roll = list1[7].toDouble();
+                data.platSpeed = list1[8].toDouble();
+
+                //mission
+                data.tarPos.lat = list1[10].toDouble();
+                data.tarPos.lon = list1[11].toDouble();
+                data.tarPos.alt = list1[12].toDouble();
+                data.tarEul.yaw = list1[13].toDouble();
+                data.tarEul.pitch = list1[14].toDouble();
+                data.tarEul.roll = list1[15].toDouble();
+                data.tarSpeed = list1[16].toDouble();
+//                data.target2plat.azimuth = list1[30].toDouble();
+//                data.target2plat.pitch = list1[31].toDouble();
+                switch (list1[17].toInt()) {
+                case 0:{
+                    data.targetType = 0x22;
+                    break;
+                }
+                case 1:{
+                    data.targetType = 0x33;
+                    break;
+                }
+                default:{
+                    qDebug()<<"unknown target type!";
+                    break;
+                }
+                }
+                //data.viewValid = list1[53].toInt();
+                data.viewValid = 1;
+                data.damageFlag = list1[29].toInt();
+                data.strikeFlag = list1[28].toInt();
+
+                realTimeData.push_back(data);
+            }
+            else
+            {
+                qDebug()<<"OpaPg data error,the line number is"<<index;
+            }
+            index++;
+        }
+    }
+    else
+    {
+        qDebug()<<"open OpaPg file error";
+        return;
+    }
+    qDebug()<<"the data is ready!";
+}

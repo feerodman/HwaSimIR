@@ -580,16 +580,16 @@ void HwaSim_IR_VideoDisplay::initCommandReceivedSlot(const BYHWICD::InitP2cObjec
         break;
     }
 
-    ui.lineEdit_sensorIndex->setText(QString::number(cmd.trackingInit.trackerSensor[0].index));
-    if (cmd.trackingInit.trackerSensor[0].coarseTrackEn)
+    //ui.lineEdit_sensorIndex->setText(QString::number(cmd.trackingInit.trackerSensor[0].index));
+   /* if (cmd.trackingInit.trackerSensor[0].coarseTrackEn)
         ui.lineEdit_coarseTrackEn->setText("是");
     else
-        ui.lineEdit_coarseTrackEn->setText("否");
+        ui.lineEdit_coarseTrackEn->setText("否");*/
 
-    if (cmd.trackingInit.trackerSensor[0].preciseTrackEn)
+   /* if (cmd.trackingInit.trackerSensor[0].preciseTrackEn)
         ui.lineEdit_preciseTrackEn->setText("是");
     else
-        ui.lineEdit_preciseTrackEn->setText("否");
+        ui.lineEdit_preciseTrackEn->setText("否");*/
 
     if (cmd.trackingInit.trackerSensor[0].h264En)
         ui.lineEdit_h264En->setText("是");
@@ -606,8 +606,8 @@ void HwaSim_IR_VideoDisplay::initCommandReceivedSlot(const BYHWICD::InitP2cObjec
             .arg(m_h264Requested ? 1 : 0)
             .arg(m_codecFallbackReason);
 
-    ui.lineEdit_coarseTrackResolution->setText(QString::number(cmd.trackingInit.trackerSensor[0].coarseTrackResolution));
-    ui.lineEdit_preciseTrackResolution->setText(QString::number(cmd.trackingInit.trackerSensor[0].preciseTrackResolution));
+    //ui.lineEdit_coarseTrackResolution->setText(QString::number(cmd.trackingInit.trackerSensor[0].coarseTrackResolution));
+    //ui.lineEdit_preciseTrackResolution->setText(QString::number(cmd.trackingInit.trackerSensor[0].preciseTrackResolution));
 
     if (cmd.trackingInit.trackerSensor[0].noiseEn)
         ui.lineEdit_noiseEn->setText("是");
@@ -655,10 +655,10 @@ void HwaSim_IR_VideoDisplay::initCommandReceivedSlot(const BYHWICD::InitP2cObjec
 
     // ----- 平台数据表格填充 -----
     ui.tableWidget_platData->setRowCount(0);
-    int count = cmd.platNumValid;
-    if (count > 2) count = 2;  // platParam 固定长度 2
-    for (int i = 0; i < count; ++i) {
-        const BYHWICD::PlatParamPak& pp = cmd.platParam[i];
+   // int count = cmd.platNumValid;
+   // if (count > 2) count = 2;  // platParam 固定长度 2
+   // for (int i = 0; i < count; ++i) {
+        const BYHWICD::PlatParamPak& pp = cmd.platParamInit;
         int row = ui.tableWidget_platData->rowCount();
         ui.tableWidget_platData->insertRow(row);
 
@@ -671,7 +671,7 @@ void HwaSim_IR_VideoDisplay::initCommandReceivedSlot(const BYHWICD::InitP2cObjec
         ui.tableWidget_platData->setItem(row, 6, new QTableWidgetItem(QString::number(pp.spatial.pitch, 'f', 2)));
         ui.tableWidget_platData->setItem(row, 7, new QTableWidgetItem(QString::number(pp.spatial.roll, 'f', 2)));
         ui.tableWidget_platData->setItem(row, 8, new QTableWidgetItem(QString::number(pp.spatial.speed, 'f', 2)));
-    }
+   // }
 }
 
 // ==================== 控制命令接收槽 ====================
@@ -686,7 +686,7 @@ void HwaSim_IR_VideoDisplay::controlCmdReceivedSlot(const BYHWICD::ControlP2cX1O
         ui.tableWidget_platData->setRowCount(0);
         ui.tableWidget_targetData->setRowCount(0);
         ui.lineEdit_controlType->clear();
-        qDebug() << "收到复位命令";
+        qDebug() << QStringLiteral("收到复位命令");
         break;
     }
     case 2: // 开始
@@ -698,8 +698,8 @@ void HwaSim_IR_VideoDisplay::controlCmdReceivedSlot(const BYHWICD::ControlP2cX1O
                                 .arg(cmd.currentRound).arg(cmd.roundCut));
 
         if (!m_saveMP4Requested || !m_recorder) {
-            qDebug() << "收到开始命令，本回合不录制"
-                     << "saveMP4En=" << m_saveMP4Requested;
+            qDebug() << QStringLiteral("收到开始命令，本回合不录制")
+                     << QStringLiteral("saveMP4En=") << m_saveMP4Requested;
             break;
         }
 
@@ -711,7 +711,7 @@ void HwaSim_IR_VideoDisplay::controlCmdReceivedSlot(const BYHWICD::ControlP2cX1O
                     .arg(cmd.currentRound);
             break;
         }
-        qDebug() << "收到开始命令，异步录像等待有效目标数据，round=" << cmd.currentRound;
+        qDebug() << QStringLiteral("收到开始命令，异步录像等待有效目标数据，round=") << cmd.currentRound;
         break;
     }
     case 3: // 停止
@@ -721,9 +721,9 @@ void HwaSim_IR_VideoDisplay::controlCmdReceivedSlot(const BYHWICD::ControlP2cX1O
         const RecorderSnapshot snapshot = m_recorder
             ? m_recorder->snapshot()
             : RecorderSnapshot();
-        qDebug() << "收到停止命令，异步录像写入" << snapshot.writtenFrames
-                 << "帧，丢弃" << snapshot.droppedFrames
-                 << "路径" << snapshot.outputPath;
+        qDebug() << QStringLiteral("收到停止命令，异步录像写入") << snapshot.writtenFrames
+                 << QStringLiteral("帧，丢弃") << snapshot.droppedFrames
+                 << QStringLiteral("路径") << snapshot.outputPath;
         break;
     }
     default:

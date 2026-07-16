@@ -192,7 +192,12 @@ void MainWindow::onSendRealTimeData()
 	{
 		return;
 	}
-	sendRealTimeData();
+//    while (dataNum == 7000) {
+
+
+//    }
+    sendRealTimeData();
+
 	if (m_isRealtimeSending)
 	{
 		scheduleNextRealTimeFrame();
@@ -496,7 +501,7 @@ void MainWindow::sendInitCommand()
 	cmd.JB = 1;
 	cmd.platID = 1;
 	cmd.sensorID = 1;
-	cmd.platNumValid = 1;
+    //cmd.platNumValid = 1;
 
 //	// 从UI实时读取初始位置
 //	cmd.platParam[0].id = 1;
@@ -525,15 +530,15 @@ void MainWindow::sendInitCommand()
 //	cmd.trackingInit.trackerSensor[0].preciseTrackResolution = m_fovVEdit->text().toDouble();
 
     // 从UI实时读取初始位置
-    cmd.platParam[0].id = 1;
-    cmd.platParam[0].type = 0x11;
-    cmd.platParam[0].spatial.lat = realTimeData.at(0).platPos.lat;
-    cmd.platParam[0].spatial.lon = realTimeData.at(0).platPos.lon;
-    cmd.platParam[0].spatial.alt = realTimeData.at(0).platPos.alt;
-    cmd.platParam[0].spatial.yaw = realTimeData.at(0).platEul.yaw;
-    cmd.platParam[0].spatial.pitch = realTimeData.at(0).platEul.pitch;
-    cmd.platParam[0].spatial.roll = realTimeData.at(0).platEul.roll;
-    cmd.platParam[0].spatial.speed = realTimeData.at(0).platSpeed;
+    cmd.platParamInit.id = 1;
+    cmd.platParamInit.type = 1;
+    cmd.platParamInit.spatial.lat = realTimeData.at(0).platPos.lat;
+    cmd.platParamInit.spatial.lon = realTimeData.at(0).platPos.lon;
+    cmd.platParamInit.spatial.alt = realTimeData.at(0).platPos.alt;
+    cmd.platParamInit.spatial.yaw = realTimeData.at(0).platEul.yaw;
+    cmd.platParamInit.spatial.pitch = realTimeData.at(0).platEul.pitch;
+    cmd.platParamInit.spatial.roll = realTimeData.at(0).platEul.roll;
+    cmd.platParamInit.spatial.speed = realTimeData.at(0).platSpeed;
 
     // 传感器参数（简化配置）
     cmd.trackingInit.enable = true;
@@ -550,29 +555,31 @@ void MainWindow::sendInitCommand()
     cmd.trackingInit.envRadScaleTerrain = 1.0;
 
 
-    cmd.trackingInit.trackerSensor[0].index = 0;
+//    cmd.trackingInit.trackerSensor[0].index = 0;
     cmd.trackingInit.trackerSensor[0].trackerSensorBand = 2; // 中波红外
     cmd.trackingInit.trackerSensor[0].trackerSensorWidth = 800;
     cmd.trackingInit.trackerSensor[0].trackerSensorHeight = 800;//hml
     cmd.trackingInit.trackerSensor[0].trackerSensorViewMin = 1;
     cmd.trackingInit.trackerSensor[0].trackerSensorViewMax = 50000;
-    cmd.trackingInit.trackerSensor[0].trackerSensorPixelAngle = 2.18166;
+    cmd.trackingInit.trackerSensor[0].trackerSensorPixelAngle = 2.5;
     //2.18166
 
     cmd.trackingInit.trackerSensor[0].realtimeAnnotation = true;
     cmd.trackingInit.trackerSensor[0].saveMP4En = true;
     cmd.trackingInit.trackerSensor[0].h264En = m_h264Enabled;
 
-    cmd.trackingInit.trackerSensor[0].coarseTrackEn = true;
-    cmd.trackingInit.trackerSensor[0].preciseTrackEn = true;
-    cmd.trackingInit.trackerSensor[0].coarseTrackResolution = m_fovHEdit->text().toDouble();
-    cmd.trackingInit.trackerSensor[0].preciseTrackResolution = m_fovVEdit->text().toDouble();
+//    cmd.trackingInit.trackerSensor[0].coarseTrackEn = true;
+//    cmd.trackingInit.trackerSensor[0].preciseTrackEn = true;
+//    cmd.trackingInit.trackerSensor[0].coarseTrackResolution = m_fovHEdit->text().toDouble();
+//    cmd.trackingInit.trackerSensor[0].preciseTrackResolution = m_fovVEdit->text().toDouble();
     cmd.trackingInit.trackerSensor[0].noiseEn =true;
     cmd.trackingInit.trackerSensor[0].trackerSensorNoise =0.5;
 
 
-    cmd.MissileMaxCount120 = 5;
-    cmd.MissileMaxCount9 = 5;
+    cmd.MissileMaxCount120 = 3;
+    cmd.MissileMaxCount9 = 3;
+    cmd.MissileMaxCountF35 = 3;
+    cmd.MissileMaxCountF22 = 3;
     cmd.MissileMaxCountMMD = 0;
 
 	if (m_udpSocket)
@@ -622,155 +629,155 @@ void MainWindow::sendRealTimeData()
     data.platLoc.speed = realTimeData.at(dataNum-1).platSpeed;
 
 	// Wg信息
-    data.weaponState.targetType = 0x22;
+    data.weaponState.targetType = 0x11;
 	data.weaponState.targetPlatID = 3;
     data.weaponState.targetID = 3;
 	data.weaponState.xxOutAng[0] = 0.0;
 	data.weaponState.xxOutAng[1] = 0.0;
 	data.weaponState.lookatEn = true;
-	data.weaponState.illuminatorEn = true;
-    if(current_time > 5){
-        //5秒后發動機熄火
-        data.weaponState.strikeFlag = true;
-        data.weaponState.strikePart=2;
-    }else{
-        data.weaponState.strikeFlag = false;
-    }
-
-    data.weaponState.viewValid = realTimeData.at(dataNum-1).viewValid;
+//	data.weaponState.illuminatorEn = true;
+//    if(current_time > 5){
+//        //5秒后發動機熄火
+//        data.weaponState.strikeFlag = true;
+//        data.weaponState.strikePart=2;
+//    }else{
+//        data.weaponState.strikeFlag = false;
+//    }
+    data.weaponState.strikeFlag = false;
+    data.weaponState.viewValid = 1/*realTimeData.at(dataNum-1).viewValid*/;
 
 
 	// 目标状态（相对平台偏移）
-    data.targetNumValid = 5;
-    data.targetState[0].targetType = 0x22;
+    data.targetNumValid = 1/*5*/;
+    data.targetState[0].targetType = 0x11;
 	data.targetState[0].targetPlatID = 3;
 	data.targetState[0].targetID = 3;
-    if(current_time > 5){
-        //5秒后發動機熄火
+//    if(current_time > 5){
+//        //5秒后發動機熄火
         data.targetState[0].engineState = true;
-    }else{
-        data.targetState[0].engineState = false;
-    }
+//    }else{
+//        data.targetState[0].engineState = false;
+//    }
 
     data.targetState[0].viewValid = realTimeData.at(dataNum-1).viewValid;
 
 	data.targetState[0].targetLoc.lat = m_currMissile_pos.x;
 	data.targetState[0].targetLoc.lon = m_currMissile_pos.y;
 	data.targetState[0].targetLoc.alt = m_currMissile_pos.z;
-    adddate = adddate+0.5;
-    if(adddate>360)
-    {
-        adddate=1.0;
-    }
-    data.targetState[0].targetLoc.yaw = m_currMissile_att.yaw+adddate;
+//    adddate = adddate+0.5;
+//    if(adddate>360)
+//    {
+//        adddate=1.0;
+//    }
+    data.targetState[0].targetLoc.yaw = m_currMissile_att.yaw/*+adddate*/;
 	data.targetState[0].targetLoc.pitch = m_currMissile_att.pitch;
 	data.targetState[0].targetLoc.roll = m_currMissile_att.roll;
 	data.targetState[0].targetState = 0x01;
 
 
-    data.targetState[1].targetType = 0x22;
-    data.targetState[1].targetPlatID = 3;
-    data.targetState[1].targetID = 34;
-    data.targetState[1].viewValid = realTimeData.at(dataNum-1).viewValid;
-    data.targetState[1].targetLoc.lat = 0.0;
-    data.targetState[1].targetLoc.lon = 0.0;
-    data.targetState[1].targetLoc.alt = 0.0;
-    data.targetState[1].targetLoc.yaw = 0.0;
-    data.targetState[1].targetLoc.pitch = 0.0;
-    data.targetState[1].targetLoc.roll = 0.0;
-    data.targetState[1].targetState = 0x01;
+//    data.targetState[1].targetType = 0x22;
+//    data.targetState[1].targetPlatID = 3;
+//    data.targetState[1].targetID = 34;
+//    data.targetState[1].viewValid = realTimeData.at(dataNum-1).viewValid;
+//    data.targetState[1].targetLoc.lat = 0.0;
+//    data.targetState[1].targetLoc.lon = 0.0;
+//    data.targetState[1].targetLoc.alt = 0.0;
+//    data.targetState[1].targetLoc.yaw = 0.0;
+//    data.targetState[1].targetLoc.pitch = 0.0;
+//    data.targetState[1].targetLoc.roll = 0.0;
+//    data.targetState[1].targetState = 0x01;
 
 
-    data.targetState[2].targetType = 0x33;
-    data.targetState[2].targetPlatID = 3;
-    data.targetState[2].targetID = 4;
-    data.targetState[2].viewValid = realTimeData.at(dataNum-1).viewValid;
-    data.targetState[2].targetLoc.lat = 0.0;
-    data.targetState[2].targetLoc.lon = 0.0;
-    data.targetState[2].targetLoc.alt = 0.0;
-    data.targetState[2].targetLoc.yaw = 0.0;
-    data.targetState[2].targetLoc.pitch = 0.0;
-    data.targetState[2].targetLoc.roll = 0.0;
-    data.targetState[2].targetState = 0x01;
+//    data.targetState[2].targetType = 0x33;
+//    data.targetState[2].targetPlatID = 3;
+//    data.targetState[2].targetID = 4;
+//    data.targetState[2].viewValid = realTimeData.at(dataNum-1).viewValid;
+//    data.targetState[2].targetLoc.lat = 0.0;
+//    data.targetState[2].targetLoc.lon = 0.0;
+//    data.targetState[2].targetLoc.alt = 0.0;
+//    data.targetState[2].targetLoc.yaw = 0.0;
+//    data.targetState[2].targetLoc.pitch = 0.0;
+//    data.targetState[2].targetLoc.roll = 0.0;
+//    data.targetState[2].targetState = 0x01;
 
-    data.targetState[3].targetType = 0x33;
-    data.targetState[3].targetPlatID = 3;
-    data.targetState[3].targetID = 34;
-    data.targetState[3].viewValid = realTimeData.at(dataNum-1).viewValid;
-    data.targetState[3].targetLoc.lat = 0.0;
-    data.targetState[3].targetLoc.lon = 0.0;
-    data.targetState[3].targetLoc.alt = 0.0;
-    data.targetState[3].targetLoc.yaw = 0.0;
-    data.targetState[3].targetLoc.pitch = 0.0;
-    data.targetState[3].targetLoc.roll = 0.0;
-    data.targetState[3].targetState = 0x01;
+//    data.targetState[3].targetType = 0x33;
+//    data.targetState[3].targetPlatID = 3;
+//    data.targetState[3].targetID = 34;
+//    data.targetState[3].viewValid = realTimeData.at(dataNum-1).viewValid;
+//    data.targetState[3].targetLoc.lat = 0.0;
+//    data.targetState[3].targetLoc.lon = 0.0;
+//    data.targetState[3].targetLoc.alt = 0.0;
+//    data.targetState[3].targetLoc.yaw = 0.0;
+//    data.targetState[3].targetLoc.pitch = 0.0;
+//    data.targetState[3].targetLoc.roll = 0.0;
+//    data.targetState[3].targetState = 0x01;
 
-    data.targetState[4].targetType = 0x22;
-    data.targetState[4].targetPlatID = 3;
-    data.targetState[4].targetID = 4;
-    data.targetState[4].viewValid = realTimeData.at(dataNum-1).viewValid;
-    data.targetState[4].targetLoc.lat = 0.0;
-    data.targetState[4].targetLoc.lon = 0.0;
-    data.targetState[4].targetLoc.alt = 0.0;
-    data.targetState[4].targetLoc.yaw = 0.0;
-    data.targetState[4].targetLoc.pitch = 0.0;
-	data.targetState[4].targetLoc.roll = 0.0;
-	data.targetState[4].targetState = 0x01;
+//    data.targetState[4].targetType = 0x22;
+//    data.targetState[4].targetPlatID = 3;
+//    data.targetState[4].targetID = 4;
+//    data.targetState[4].viewValid = realTimeData.at(dataNum-1).viewValid;
+//    data.targetState[4].targetLoc.lat = 0.0;
+//    data.targetState[4].targetLoc.lon = 0.0;
+//    data.targetState[4].targetLoc.alt = 0.0;
+//    data.targetState[4].targetLoc.yaw = 0.0;
+//    data.targetState[4].targetLoc.pitch = 0.0;
+//	data.targetState[4].targetLoc.roll = 0.0;
+//	data.targetState[4].targetState = 0x01;
 
-	const realtimeInfo& currentSample = realTimeData.at(dataNum - 1);
-	for (int targetIndex = 0; targetIndex < 5; ++targetIndex)
-	{
-		const bool useRedSpeed = targetUsesRedSpeed(data.targetState[targetIndex].targetType);
-		data.targetState[targetIndex].targetLoc.speed = useRedSpeed
-			? currentSample.platSpeed
-			: currentSample.tarSpeed;
-	}
+//	const realtimeInfo& currentSample = realTimeData.at(dataNum - 1);
+//	for (int targetIndex = 0; targetIndex < 5; ++targetIndex)
+//	{
+//		const bool useRedSpeed = targetUsesRedSpeed(data.targetState[targetIndex].targetType);
+//		data.targetState[targetIndex].targetLoc.speed = useRedSpeed
+//			? currentSample.platSpeed
+//			: currentSample.tarSpeed;
+//	}
 
-    if(current_time > 3)
-    {
-        data.targetState[1].targetLoc.lat = m_currMissile_pos.x;
-        data.targetState[1].targetLoc.lon = m_currMissile_pos.y;
-        data.targetState[1].targetLoc.alt = m_currMissile_pos.z + 1.0;
-        data.targetState[1].targetLoc.yaw = m_currMissile_att.yaw;
-        data.targetState[1].targetLoc.pitch = m_currMissile_att.pitch;
-        data.targetState[1].targetLoc.roll = m_currMissile_att.roll;
-    }
+//    if(current_time > 3)
+//    {
+//        data.targetState[1].targetLoc.lat = m_currMissile_pos.x;
+//        data.targetState[1].targetLoc.lon = m_currMissile_pos.y;
+//        data.targetState[1].targetLoc.alt = m_currMissile_pos.z + 1.0;
+//        data.targetState[1].targetLoc.yaw = m_currMissile_att.yaw;
+//        data.targetState[1].targetLoc.pitch = m_currMissile_att.pitch;
+//        data.targetState[1].targetLoc.roll = m_currMissile_att.roll;
+//    }
 
-    if(current_time > 5)
-    {
-        data.targetState[2].targetLoc.lat = m_currMissile_pos.x;
-        data.targetState[2].targetLoc.lon = m_currMissile_pos.y+0.00002;
-        data.targetState[2].targetLoc.alt = m_currMissile_pos.z - 1.0;
-        data.targetState[2].targetLoc.yaw = m_currMissile_att.yaw;
-        data.targetState[2].targetLoc.pitch = m_currMissile_att.pitch;
-        data.targetState[2].targetLoc.roll = m_currMissile_att.roll;
-    }
+//    if(current_time > 5)
+//    {
+//        data.targetState[2].targetLoc.lat = m_currMissile_pos.x;
+//        data.targetState[2].targetLoc.lon = m_currMissile_pos.y+0.00002;
+//        data.targetState[2].targetLoc.alt = m_currMissile_pos.z - 1.0;
+//        data.targetState[2].targetLoc.yaw = m_currMissile_att.yaw;
+//        data.targetState[2].targetLoc.pitch = m_currMissile_att.pitch;
+//        data.targetState[2].targetLoc.roll = m_currMissile_att.roll;
+//    }
 
-    if(current_time > 7)
-    {
-        data.targetState[3].targetLoc.lat = m_currMissile_pos.x;
-        data.targetState[3].targetLoc.lon = m_currMissile_pos.y-0.00002;
-        data.targetState[3].targetLoc.alt = m_currMissile_pos.z - 1.0;
-        data.targetState[3].targetLoc.yaw = m_currMissile_att.yaw;
-        data.targetState[3].targetLoc.pitch = m_currMissile_att.pitch;
-        data.targetState[3].targetLoc.roll = m_currMissile_att.roll;
-    }
+//    if(current_time > 7)
+//    {
+//        data.targetState[3].targetLoc.lat = m_currMissile_pos.x;
+//        data.targetState[3].targetLoc.lon = m_currMissile_pos.y-0.00002;
+//        data.targetState[3].targetLoc.alt = m_currMissile_pos.z - 1.0;
+//        data.targetState[3].targetLoc.yaw = m_currMissile_att.yaw;
+//        data.targetState[3].targetLoc.pitch = m_currMissile_att.pitch;
+//        data.targetState[3].targetLoc.roll = m_currMissile_att.roll;
+//    }
 
-    if(current_time > 9)
-    {
-        data.targetState[4].targetLoc.lat = m_currMissile_pos.x;
-        data.targetState[4].targetLoc.lon = m_currMissile_pos.y-0.00002;
-        data.targetState[4].targetLoc.alt = m_currMissile_pos.z;
-        data.targetState[4].targetLoc.yaw = m_currMissile_att.yaw;
-        data.targetState[4].targetLoc.pitch = m_currMissile_att.pitch;
-        data.targetState[4].targetLoc.roll = m_currMissile_att.roll;
-    }
-    if(current_time > 11)
-    {
-         data.weaponState.targetID = 34;
-    }
+//    if(current_time > 9)
+//    {
+//        data.targetState[4].targetLoc.lat = m_currMissile_pos.x;
+//        data.targetState[4].targetLoc.lon = m_currMissile_pos.y-0.00002;
+//        data.targetState[4].targetLoc.alt = m_currMissile_pos.z;
+//        data.targetState[4].targetLoc.yaw = m_currMissile_att.yaw;
+//        data.targetState[4].targetLoc.pitch = m_currMissile_att.pitch;
+//        data.targetState[4].targetLoc.roll = m_currMissile_att.roll;
+//    }
+//    if(current_time > 11)
+//    {
+//         data.weaponState.targetID = 34;
+//    }
 
-	applyPhase4cAeroMachOverride(data);
+    //applyPhase4cAeroMachOverride(data);
 
 	if (m_udpSocket)
 	{

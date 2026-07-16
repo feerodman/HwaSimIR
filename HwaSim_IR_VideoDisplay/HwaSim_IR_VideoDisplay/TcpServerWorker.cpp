@@ -48,19 +48,19 @@ bool parseDisplayFrameBody(
 {
 	if (body.size() < 4)
 	{
-		qWarning() << "显示帧包体过小";
+		qWarning() << QStringLiteral("显示帧包体过小");
 		return false;
 	}
 
 	quint32 structLen1 = qFromBigEndian<quint32>(body.constData());
 	if (structLen1 != sizeof(BYHWICD::DisplayC2cObjTrackingData))
 	{
-		qWarning() << "跟踪数据结构体大小不匹配，期望" << sizeof(BYHWICD::DisplayC2cObjTrackingData) << "实际" << structLen1;
+		qWarning() << QStringLiteral("跟踪数据结构体大小不匹配，期望") << sizeof(BYHWICD::DisplayC2cObjTrackingData) << "实际" << structLen1;
 		return false;
 	}
 	if (body.size() < 4 + static_cast<int>(structLen1))
 	{
-		qWarning() << "显示帧包体不足以容纳跟踪数据";
+		qWarning() << QStringLiteral("显示帧包体不足以容纳跟踪数据");
 		return false;
 	}
 
@@ -68,7 +68,7 @@ bool parseDisplayFrameBody(
 	int offset = 4 + static_cast<int>(structLen1);
 	if (body.size() < offset + 4)
 	{
-		qWarning() << "显示帧缺少第二段长度";
+		qWarning() << QStringLiteral("显示帧缺少第二段长度");
 		return false;
 	}
 
@@ -76,7 +76,7 @@ bool parseDisplayFrameBody(
 	offset += 4;
 	if (structLen2 > 50 * 1024 * 1024 || body.size() < offset + static_cast<int>(structLen2))
 	{
-		qWarning() << "显示帧第二段长度非法:" << structLen2;
+		qWarning() << QStringLiteral("显示帧第二段长度非法:") << structLen2;
 		return false;
 	}
 
@@ -96,14 +96,14 @@ bool parseDisplayFrameBody(
 		annotationJson = QString::fromUtf8(segment2);
 		if (body.size() < offset + 4)
 		{
-			qWarning() << "新显示帧缺少 JPEG 段长度";
+			qWarning() << QStringLiteral("新显示帧缺少 JPEG 段长度");
 			return false;
 		}
 		const quint32 structLen3 = qFromBigEndian<quint32>(body.constData() + offset);
 		offset += 4;
 		if (structLen3 == 0 || structLen3 > 50 * 1024 * 1024 || body.size() < offset + static_cast<int>(structLen3))
 		{
-			qWarning() << "JPEG 段长度非法:" << structLen3;
+			qWarning() << QStringLiteral("JPEG 段长度非法:") << structLen3;
 			return false;
 		}
 		jpegData = QByteArray(body.constData() + offset, structLen3);
@@ -133,7 +133,7 @@ bool parseDisplayFrameBody(
 	jpegDecodeMs = static_cast<double>(decodeTimer.nsecsElapsed()) / 1.0e6;
 	if (!decodeOk)
 	{
-		qWarning() << "JPEG解码失败";
+		qWarning() << QStringLiteral("JPEG解码失败");
 		return false;
 	}
 	decodedChannels = image.isGrayscale() ? 1 : 3;
@@ -155,7 +155,7 @@ void TcpServerWorker::loadConfig(QString& ip, quint16& port)
 
 	QString configPath = QCoreApplication::applicationDirPath() + "/NetworkConfig.ini";
 	if (!QFile::exists(configPath)) {
-		qWarning() << "配置文件不存在:" << configPath << "，使用默认值" << ip << port;
+		qWarning() << QStringLiteral("配置文件不存在:") << configPath << QStringLiteral("，使用默认值") << ip << port;
 		return;
 	}
 
@@ -165,7 +165,7 @@ void TcpServerWorker::loadConfig(QString& ip, quint16& port)
 	port = static_cast<quint16>(settings.value("port", port).toUInt());
 	settings.endGroup();
 
-	qDebug() << "加载网络配置: IP =" << ip << "端口 =" << port;
+	qDebug() << QStringLiteral("LoadNetworkConfig: IP =") << ip << QStringLiteral("port =") << port;
 }
 
 QByteArray TcpServerWorker::readExactBytes(QTcpSocket* socket, qint64 count)
@@ -210,10 +210,10 @@ void TcpServerWorker::doWork()
 
 	QTcpServer server;
 	if (!server.listen(QHostAddress(ip), port)) {
-		qWarning() << "监听失败，无法开启端口" << port << ":" << server.errorString();
+		qWarning() << QStringLiteral("监听失败，无法开启端口") << port << ":" << server.errorString();
 		return;
 	}
-	qDebug() << "服务器启动成功，监听" << ip << "端口" << port << "...";
+	qDebug() << QStringLiteral("ServerRunSuccess，监听") << ip << QStringLiteral("port") << port << "...";
 
 	while (!m_stop) {
 		if (!server.waitForNewConnection(1000)) {
@@ -221,24 +221,24 @@ void TcpServerWorker::doWork()
 		}
 
 		QTcpSocket* client = server.nextPendingConnection();
-		qDebug() << "客户端已连接:" << client->peerAddress().toString();
+		qDebug() << QStringLiteral("clientConnection:") << client->peerAddress().toString();
 
 		while (!m_stop && client->state() == QAbstractSocket::ConnectedState) {
 			// ----- 读取总包长度（4字节，网络序）-----
 			QByteArray totalLenRaw = readExactBytes(client, 4);
 			if (totalLenRaw.isEmpty()) {
-				qWarning() << "客户端断开或读取总长度失败";
+				qWarning() << QStringLiteral("1客户端断开或读取总长度失败");
 				break;
 			}
 			quint32 totalLen = qFromBigEndian<quint32>(totalLenRaw.constData());
 			if (totalLen < 8 || totalLen > 50 * 1024 * 1024) {
-				qWarning() << "非法总包长度:" << totalLen;
+				qWarning() << QStringLiteral("2非法总包长度:") << totalLen;
 				break;
 			}
 
 			// 兼容最老的纯 JPEG 包：4 字节 JPEG 长度 + JPEG 数据。
 			if (client->bytesAvailable() < 2 && !client->waitForReadyRead(3000)) {
-				qWarning() << "等待包体起始字节超时";
+				qWarning() << QStringLiteral("3等待包体起始字节超时");
 				break;
 			}
 			if (looksLikeJpeg(client->peek(2))) {
@@ -248,7 +248,7 @@ void TcpServerWorker::doWork()
 				QElapsedTimer decodeTimer;
 				decodeTimer.start();
 				if (!img.loadFromData(jpegData, "JPEG")) {
-					qWarning() << "旧 JPEG 包解码失败";
+					qWarning() << QStringLiteral("4旧 JPEG 包解码失败");
 					continue;
 				}
 				const double jpegDecodeMs = static_cast<double>(decodeTimer.nsecsElapsed()) / 1.0e6;
@@ -267,23 +267,23 @@ void TcpServerWorker::doWork()
 			// ----- 读取包体（总长度 - 4）-----
 			QByteArray body = readExactBytes(client, totalLen - 4);
 			if (body.isEmpty()) {
-				qWarning() << "读取包体失败";
+				qWarning() << QStringLiteral("5读取包体失败");
 				break;
 			}
 			const qint64 receiveTimeNs = wallTimeNs();
 
 			// ----- 解析第一个结构体长度 -----
 			if (body.size() < 4) {
-				qWarning() << "包体过小";
+				qWarning() << QStringLiteral("6包体过小");
 				break;
 			}
 			quint32 structLen1 = qFromBigEndian<quint32>(body.constData());
 			if (structLen1 < 4 || structLen1 > 1024 * 1024) {
-				qWarning() << "非法结构体长度:" << structLen1;
+				qWarning() << QStringLiteral("7非法结构体长度:") << structLen1;
 				break;
 			}
                 if (body.size() < 4 + static_cast<int>(structLen1)) {
-				qWarning() << "包体不足以容纳第一个结构体";
+				qWarning() << QStringLiteral("8包体不足以容纳第一个结构体");
 				break;
 			}
 
@@ -294,12 +294,12 @@ void TcpServerWorker::doWork()
 			// ---------- 处理初始化命令（单结构体） ----------
 			if (flag == 0x36) {
 				if (structLen1 != sizeof(BYHWICD::InitP2cObjectTrackingCmd)) {
-					qWarning() << "初始化命令结构体大小不匹配";
+					qWarning() << QStringLiteral("9初始化命令结构体大小不匹配");
 					break;
 				}
 				BYHWICD::InitP2cObjectTrackingCmd initCmd;
 				memcpy(&initCmd, structData1, structLen1);
-				qDebug() << "收到初始化命令，platID=" << initCmd.platID << "sensorID=" << initCmd.sensorID;
+				qDebug() << QStringLiteral("initCmd，platID=") << initCmd.platID << "sensorID=" << initCmd.sensorID;
 				emit initCommandReceived(initCmd);
 
 				//BYHWICD::InitAckC2pObjectTrackingCmd ack;
@@ -317,12 +317,12 @@ void TcpServerWorker::doWork()
 			// ---------- 处理控制命令（单结构体） ----------
 			else if (flag == 0x41) {
 				if (structLen1 != sizeof(BYHWICD::ControlP2cX1ObjTrackingCmd)) {
-					qWarning() << "控制命令结构体大小不匹配";
+					qWarning() << QStringLiteral("0控制命令结构体大小不匹配");
 					break;
 				}
 				BYHWICD::ControlP2cX1ObjTrackingCmd cmd;
 				memcpy(&cmd, structData1, structLen1);
-				qDebug() << "收到控制命令，simCommand=" << cmd.simCommand;
+				qDebug() << QStringLiteral("ControlCmd，simCommand=") << cmd.simCommand;
 				emit controlCmdReceived(cmd);
 			}
 			// ---------- 处理实时成像数据（双结构体：跟踪数据 + JPEG图像） ----------
@@ -354,16 +354,16 @@ void TcpServerWorker::doWork()
 					imageFormat);
 			}
 			else {
-				qWarning() << "未知的 flag:" << flag << "，忽略当前包";
+				qWarning() << QStringLiteral("未知的 flag:") << flag << QStringLiteral("，忽略当前包");
 				// 不中断连接，等待下一个包
 				continue;
 			}
 		}
 
 		client->deleteLater();
-		qDebug() << "客户端断开，等待新的连接...\n";
+		qDebug() << QStringLiteral("客户端断开，等待新的连接...\n");
 	}
 
 	server.close();
-	qDebug() << "TCP 服务器线程退出";
+	qDebug() << QStringLiteral("TCP 服务器线程退出");
 }

@@ -113,6 +113,12 @@ private:
 		NodePath collisionPath;
 	};
 
+	struct LocalBoundsCache
+	{
+		LPoint3f localMin;
+		LPoint3f localMax;
+	};
+
 	bool projectWorldPointToPixel(
 		const NodePath& renderRoot,
 		const NodePath& cameraNode,
@@ -125,6 +131,7 @@ private:
 		bool& inViewport) const;
 
 	bool getLocalBounds(const NodePath& targetNode, LPoint3f& localMin, LPoint3f& localMax) const;
+	bool getCachedLocalBounds(const NodePath& targetNode, LPoint3f& localMin, LPoint3f& localMax);
 	bool buildBoundingBox(
 		const NodePath& targetNode,
 		const NodePath& renderRoot,
@@ -133,6 +140,7 @@ private:
 		int width,
 		int height,
 		const TargetAnnotationConfig& targetConfig,
+		bool quietPerfMode,
 		const LPoint3f& localMin,
 		const LPoint3f& localMax,
 		AnnotationRect2D& outRect,
@@ -283,5 +291,6 @@ private:
 	std::map<std::string, CollisionMeshCache> m_collisionCache;
 	std::map<std::string, SurfaceSnapResult> m_surfaceSnapCache;
 	std::map<std::string, AnnotationRect2D> m_frameBBoxCache;
+	std::map<PandaNode*, LocalBoundsCache> m_localBoundsCache;
 	std::vector<CollisionCandidate> m_collisionCandidates;
 };
