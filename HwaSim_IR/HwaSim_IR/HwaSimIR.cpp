@@ -28,9 +28,25 @@
 #include <fstream>
 #include <iomanip>
 #include <sstream>
+#include <thread>
+
+#if defined(_WIN32)
+#include <process.h>
+#else
+#include <unistd.h>
+#endif
 
 namespace
 {
+std::uint64_t CurrentProcessIdValue()
+{
+#if defined(_WIN32)
+	return static_cast<std::uint64_t>(_getpid());
+#else
+	return static_cast<std::uint64_t>(getpid());
+#endif
+}
+
 bool FileExists(const std::string& path)
 {
 	std::ifstream file(path.c_str());
@@ -1174,11 +1190,50 @@ void HwaSimIR::run() {
 	std::cout << "应用程序已启动。按ESC键退出。" << std::endl;
 
 	Thread* current_thread = Thread::get_current_thread();
+	bool asyncDeadlineActive = false;
+	int asyncDeadlineFps = 0;
+	std::chrono::steady_clock::time_point asyncDeadline = std::chrono::steady_clock::now();
 
 	// 接管主循环
 	while (true) {
 		if (m_requestExit.load()) {
 			break;
+		}
+
+		const int requestedAsyncFps = m_targetVideoFps.load();
+		const bool useAsyncDeadline =
+			!m_bSyncRenderMode.load() && m_isSimRunning.load() && requestedAsyncFps > 0;
+		if (useAsyncDeadline)
+		{
+			const std::chrono::steady_clock::duration framePeriod =
+				std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+					std::chrono::duration<double>(1.0 / static_cast<double>(requestedAsyncFps)));
+			const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+			if (!asyncDeadlineActive || asyncDeadlineFps != requestedAsyncFps)
+			{
+				asyncDeadline = now;
+				asyncDeadlineActive = true;
+				asyncDeadlineFps = requestedAsyncFps;
+			}
+			else
+			{
+				asyncDeadline += framePeriod;
+				if (asyncDeadline > now)
+				{
+					std::this_thread::sleep_until(asyncDeadline);
+				}
+				else if (now - asyncDeadline > framePeriod * 2)
+				{
+					// Do not emit a burst of stale catch-up frames after a debugger pause
+					// or a transient stall; resume the absolute 60 Hz deadline from now.
+					asyncDeadline = now;
+				}
+			}
+		}
+		else
+		{
+			asyncDeadlineActive = false;
+			asyncDeadlineFps = 0;
 		}
 
 		ProcessPendingNetworkCommands();
@@ -1534,20 +1589,27 @@ bool HwaSimIR::ShouldLogQuiet(std::uint64_t counter, std::uint64_t sourceSeq) co
 
 void HwaSimIR::ApplyRenderBackendPrcConfig(const char* reason)
 {
-	const bool forceHeadlessSyncVideoFalse =
-		IsHeadlessOffscreenMode() && m_headlessForceSyncVideoFalse;
-	if (forceHeadlessSyncVideoFalse)
+	// R2: packet pacing owns sync mode and the main-loop deadline owns async mode.
+	// Leaving swap-interval pacing enabled adds a second independent 60 Hz wait in
+	// VisibleWindow and consistently turns a requested 60 FPS into about 58 FPS.
+	const bool schedulerOwnsFramePacing = IsVisibleWindowMode() ||
+		(IsHeadlessOffscreenMode() && m_headlessForceSyncVideoFalse);
+	if (schedulerOwnsFramePacing)
 	{
-		load_prc_file_data("HwaSimIRHeadless", "sync-video false");
-		load_prc_file_data("HwaSimIRHeadless", "show-frame-rate-meter false");
+		load_prc_file_data("HwaSimIRScheduler", "sync-video false");
+		if (IsHeadlessOffscreenMode())
+		{
+			load_prc_file_data("HwaSimIRHeadless", "show-frame-rate-meter false");
+		}
 	}
 
 	std::cout << "[RenderBackend]"
-		<< " syncVideo=" << (forceHeadlessSyncVideoFalse ? "false" : "unchanged")
-		<< " forced=" << (forceHeadlessSyncVideoFalse ? "1" : "0")
+		<< " syncVideo=" << (schedulerOwnsFramePacing ? "false" : "unchanged")
+		<< " forced=" << (schedulerOwnsFramePacing ? "1" : "0")
+		<< " pacingOwner=" << (schedulerOwnsFramePacing ? "runtime_scheduler" : "graphics_backend")
 		<< " clockMode=normal"
 		<< " presentationMode=" << m_renderPresentationModeName
-		<< " showFrameRateMeter=" << (forceHeadlessSyncVideoFalse ? "false" : (m_renderEnableFrameRateMeter ? "true" : "false"))
+		<< " showFrameRateMeter=" << (IsHeadlessOffscreenMode() ? "false" : (m_renderEnableFrameRateMeter ? "true" : "false"))
 		<< " reason=" << (reason != nullptr ? reason : "unknown")
 		<< std::endl;
 }
@@ -3395,6 +3457,10 @@ void HwaSimIR::LogRenderPerfProbe(double pandaDoFrameMs)
 	std::ostringstream line;
 	line << std::fixed << std::setprecision(3)
 		<< "[RenderPerfProbe]"
+		<< " channel=" << m_channel
+		<< " platID=" << m_localPlatID
+		<< " sensorID=" << m_localSensorID
+		<< " pid=" << CurrentProcessIdValue()
 		<< " pandaDoFrameMs=" << pandaDoFrameMs
 		<< " renderPath=" << m_stage6RenderPath
 		<< " graphicsOutputCount=" << graphicsOutputCount
@@ -6351,6 +6417,11 @@ void HwaSimIR::LoadNetworkConfig()
 		"Identity", "acceptSensorBroadcast", "", true);
 	m_allowDynamicRemote = networkConfig.getBool(
 		"Identity", "allowDynamicRemote", "", false);
+	m_perfStats.setInstanceContext(
+		m_channel,
+		m_localPlatID,
+		m_localSensorID,
+		CurrentProcessIdValue());
 
 	m_udpLocalIp = networkConfig.getString("UDP", "localIp", "", m_udpLocalIp);
 	m_udpRemoteIp = networkConfig.getString("UDP", "remoteIp", "", m_udpRemoteIp);
@@ -6374,6 +6445,7 @@ void HwaSimIR::LoadNetworkConfig()
 
 	std::cout << "[RuntimeInstance]"
 		<< " channel=" << m_channel
+		<< " pid=" << CurrentProcessIdValue()
 		<< " configPath=" << m_networkConfigPath
 		<< " configLoaded=" << (networkConfig.loaded() ? "1" : "0")
 		<< " platID=" << m_localPlatID
@@ -7008,6 +7080,8 @@ void HwaSimIR::handleDisplayData(const BYHWICD::DisplayC2cObjTrackingData& data)
 	}
 	else
 	{
+		m_perfStats.recordInputOverwrite(
+			static_cast<std::uint64_t>(m_pendingDisplayFrames.size()));
 		m_pendingDisplayFrames.clear();
 	}
 	pending.telemetry.inputQueueDepth = static_cast<int>(m_pendingDisplayFrames.size() + 1);
@@ -11817,10 +11891,10 @@ void HwaSimIR::SetRenderMode(bool isSync, double targetFPS) {
 		std::cout << "切换至【同步渲染模式】，1组UDP数据渲染1帧" << std::endl;
 	}
 	else {
-		// 异步模式：启用内部帧率限制
+		// 异步模式：主循环使用绝对 deadline 限速，避免 M_limited
+		// 在 Windows 上逐帧睡眠误差累计为约 58 FPS。
 		if (targetFPS > 0.0) {
-			globalClock->set_mode(ClockObject::M_limited);
-			globalClock->set_frame_rate(targetFPS);
+			globalClock->set_mode(ClockObject::M_normal);
 			std::cout << "切换至【异步渲染模式】，锁定帧率: " << targetFPS << " FPS" << std::endl;
 		}
 		else {
@@ -11831,7 +11905,7 @@ void HwaSimIR::SetRenderMode(bool isSync, double targetFPS) {
 	std::cout << "[RenderModeApply]"
 		<< " sync=" << (isSync ? "1" : "0")
 		<< " targetFps=" << configuredTarget
-		<< " clockMode=" << (isSync ? "packet_driven" : (targetFPS > 0.0 ? "limited" : "unlimited"))
+		<< " clockMode=" << (isSync ? "packet_driven" : (targetFPS > 0.0 ? "deadline_limited" : "unlimited"))
 		<< std::endl;
 }
 
@@ -11860,7 +11934,8 @@ void HwaSimIR::OnTcpFrameSent(
 		latencyMs,
 		queueDepth,
 		telemetry.sourceSeq,
-		m_latestUdpSourceSeq.load());
+		m_latestUdpSourceSeq.load(),
+		overwritten);
 	m_lastJpegMs = jpegMs;
 	const double targetFps = m_perfStats.videoFpsTarget();
 	const double frameBudgetMs = targetFps > 0.0 ? 1000.0 / targetFps : 0.0;
@@ -11883,6 +11958,10 @@ void HwaSimIR::OnTcpFrameSent(
 		std::ostringstream syncLine;
 		syncLine << std::fixed << std::setprecision(3)
 			<< "[SyncFrame]"
+			<< " channel=" << m_channel
+			<< " platID=" << m_localPlatID
+			<< " sensorID=" << m_localSensorID
+			<< " pid=" << CurrentProcessIdValue()
 			<< " sourceSeq=" << telemetry.sourceSeq
 			<< " outputOrdinal=" << outputOrdinal
 			<< " inputQueueDepth=" << telemetry.inputQueueDepth

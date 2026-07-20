@@ -46,9 +46,13 @@ class MainWindow : public QMainWindow
 	Q_OBJECT
 
 public:
-	explicit MainWindow(QWidget *parent = nullptr);
+	explicit MainWindow(
+		const QString& networkConfigPath = QString(),
+		const QString& channel = QString(),
+		QWidget *parent = nullptr);
 	~MainWindow();
 	void setH264EnabledForTest(bool enabled) { m_h264Enabled = enabled; }
+	void setSaveMP4EnabledForTest(bool enabled) { m_saveMP4Enabled = enabled; }
 	void configurePhase4cAeroMachTest(bool enabled, double altitudeKm, double mach);
 	void configureProtocolForTest(int platID, int sensorID, int simMode, int videoFps);
 
@@ -81,6 +85,8 @@ private:
 	quint16 m_udpLocalPort = 9999;
 	QString m_udpRemoteIp;
 	quint16 m_udpRemotePort = 8888;
+	QString m_networkConfigPath;
+	QString m_channel = QStringLiteral("unknown");
 	int m_protocolPlatID = 1001;
 	int m_protocolSensorID = 2;
 	int m_protocolSimMode = 2;
@@ -146,6 +152,7 @@ private:
 	int m_uiUpdateEveryFrames = 12;
 	int m_targetVideoFps = 60;
 	bool m_h264Enabled = false;
+	bool m_saveMP4Enabled = true;
 	bool m_phase4cAeroMachMode = false;
 	double m_phase4cAltitudeKm = 10.0;
 	double m_phase4cMach = 1.0;

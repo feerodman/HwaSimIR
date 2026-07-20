@@ -6,11 +6,10 @@
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    MainWindow w;
-    w.show();
 
     int autoSeconds = 0;
     bool h264Enabled = false;
+	bool saveMP4Enabled = true;
     bool phase4cAeroMach = false;
     double aeroAltitudeKm = 10.0;
     double aeroMach = 1.0;
@@ -18,9 +17,12 @@ int main(int argc, char *argv[])
     int sensorID = -1;
     int simMode = -1;
     int videoFps = -1;
+	QString networkConfigPath;
+	QString channel;
     const QStringList arguments = a.arguments();
-    for (const QString& argument : arguments)
+	for (int argumentIndex = 0; argumentIndex < arguments.size(); ++argumentIndex)
     {
+		const QString& argument = arguments.at(argumentIndex);
         const QString prefix = QStringLiteral("--phase1b-auto-seconds=");
         if (argument.startsWith(prefix))
         {
@@ -31,6 +33,11 @@ int main(int argc, char *argv[])
         {
             h264Enabled = argument.mid(h264Prefix.size()).toInt() != 0;
         }
+		const QString saveMP4Prefix = QStringLiteral("--save-mp4=");
+		if (argument.startsWith(saveMP4Prefix))
+		{
+			saveMP4Enabled = argument.mid(saveMP4Prefix.size()).toInt() != 0;
+		}
         const QString durationPrefix = QStringLiteral("--duration-sec=");
         if (argument.startsWith(durationPrefix))
         {
@@ -84,6 +91,24 @@ int main(int argc, char *argv[])
         {
             videoFps = qBound(1, argument.mid(videoFpsPrefix.size()).toInt(), 240);
         }
+		const QString networkConfigPrefix = QStringLiteral("--network-config=");
+		if (argument.startsWith(networkConfigPrefix))
+		{
+			networkConfigPath = argument.mid(networkConfigPrefix.size());
+		}
+		else if (argument == QStringLiteral("--network-config") && argumentIndex + 1 < arguments.size())
+		{
+			networkConfigPath = arguments.at(++argumentIndex);
+		}
+		const QString channelPrefix = QStringLiteral("--channel=");
+		if (argument.startsWith(channelPrefix))
+		{
+			channel = argument.mid(channelPrefix.size()).trimmed().toLower();
+		}
+		else if (argument == QStringLiteral("--channel") && argumentIndex + 1 < arguments.size())
+		{
+			channel = arguments.at(++argumentIndex).trimmed().toLower();
+		}
     }
     qInfo().noquote()
         << QStringLiteral("[ProtocolLayout] component=DataDrivenTestQT ControlP2cX1ObjTrackingCmd=%1 InitP2cObjectTrackingCmd=%2 DisplayC2cObjTrackingData=%3 InitAckC2pObjectTrackingCmd=%4")
@@ -91,7 +116,10 @@ int main(int argc, char *argv[])
             .arg(sizeof(BYHWICD::InitP2cObjectTrackingCmd))
             .arg(sizeof(BYHWICD::DisplayC2cObjTrackingData))
             .arg(sizeof(BYHWICD::InitAckC2pObjectTrackingCmd));
+	MainWindow w(networkConfigPath, channel);
+	w.show();
     w.setH264EnabledForTest(h264Enabled);
+	w.setSaveMP4EnabledForTest(saveMP4Enabled);
     w.configureProtocolForTest(platID, sensorID, simMode, videoFps);
     w.configurePhase4cAeroMachTest(phase4cAeroMach, aeroAltitudeKm, aeroMach);
     if (autoSeconds > 0)

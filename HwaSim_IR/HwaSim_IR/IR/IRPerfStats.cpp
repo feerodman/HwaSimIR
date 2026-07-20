@@ -38,6 +38,19 @@ void IRPerfStats::configure(bool syncMode, double videoFpsTarget)
 	m_videoFpsTarget = std::max(0.0, videoFpsTarget);
 }
 
+void IRPerfStats::setInstanceContext(
+	const std::string& channel,
+	int platID,
+	int sensorID,
+	std::uint64_t processId)
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	m_channel = channel.empty() ? "unknown" : channel;
+	m_platID = platID;
+	m_sensorID = sensorID;
+	m_processId = processId;
+}
+
 void IRPerfStats::setEnabled(bool enabled)
 {
 	std::lock_guard<std::mutex> lock(m_mutex);
@@ -52,6 +65,8 @@ void IRPerfStats::reset()
 	m_totalOutputFrames = 0;
 	m_syncOverrunCount = 0;
 	m_inputQueueOverflowCount = 0;
+	m_inputOverwriteCount = 0;
+	m_outputOverwriteCount = 0;
 	m_lastLoggedOutputFrames = 0;
 	resetIntervalLocked(steadyTimeNs());
 }
@@ -184,6 +199,12 @@ void IRPerfStats::recordInputQueueDepth(int queueDepth)
 	m_inputQueueDepthMax = std::max(m_inputQueueDepthMax, m_inputQueueDepth);
 }
 
+void IRPerfStats::recordInputOverwrite(std::uint64_t count)
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	m_inputOverwriteCount += count;
+}
+
 void IRPerfStats::recordCapture(double readbackMs, double resizeMs, double copyMs, int tcpQueueDepth)
 {
 	std::lock_guard<std::mutex> lock(m_mutex);
@@ -201,7 +222,8 @@ std::uint64_t IRPerfStats::recordTcpOutput(
 	double latencyMs,
 	int tcpQueueDepth,
 	std::uint64_t outputSourceSeq,
-	std::uint64_t latestUdpSourceSeq)
+	std::uint64_t latestUdpSourceSeq,
+	bool overwritten)
 {
 	std::lock_guard<std::mutex> lock(m_mutex);
 	m_jpegMsTotal += jpegMs;
@@ -218,6 +240,10 @@ std::uint64_t IRPerfStats::recordTcpOutput(
 	m_sourceSeqLag = latestUdpSourceSeq >= outputSourceSeq
 		? latestUdpSourceSeq - outputSourceSeq
 		: 0;
+	if (overwritten)
+	{
+		++m_outputOverwriteCount;
+	}
 	++m_totalOutputFrames;
 	++m_intervalOutputFrames;
 	return m_totalOutputFrames;
@@ -281,6 +307,10 @@ void IRPerfStats::maybeLog()
 		const double tcpSendMs = Average(m_tcpSendMsTotal, m_tcpSamples);
 		out << std::fixed << std::setprecision(3)
 			<< "[Perf]"
+			<< " channel=" << m_channel
+			<< " platID=" << m_platID
+			<< " sensorID=" << m_sensorID
+			<< " pid=" << m_processId
 			<< " mode=" << (m_syncMode ? "sync" : "async")
 			<< " videoFpsTarget=" << m_videoFpsTarget
 			<< " udpFps=" << udpFps
@@ -344,6 +374,8 @@ void IRPerfStats::maybeLog()
 			<< " tcpSendMs=" << tcpSendMs
 			<< " tcpQueueDepth=" << m_tcpQueueDepth
 			<< " tcpQueueDepthMax=" << m_tcpQueueDepthMax
+			<< " outputQueueDepth=" << m_tcpQueueDepth
+			<< " outputQueueDepthMax=" << m_tcpQueueDepthMax
 			<< " inputQueueDepth=" << m_inputQueueDepth
 			<< " inputQueueDepthMax=" << m_inputQueueDepthMax
 			<< " sourceSeqLag=" << m_sourceSeqLag
@@ -351,6 +383,10 @@ void IRPerfStats::maybeLog()
 			<< " latencyMaxMs=" << m_latencyMsMax
 			<< " syncOverrunCount=" << m_syncOverrunCount
 			<< " inputQueueOverflowCount=" << m_inputQueueOverflowCount
+			<< " dropped=" << m_inputQueueOverflowCount
+			<< " inputOverwritten=" << m_inputOverwriteCount
+			<< " outputOverwritten=" << m_outputOverwriteCount
+			<< " overwritten=" << (m_inputOverwriteCount + m_outputOverwriteCount)
 			<< " udpFrames=" << m_totalUdpFrames
 			<< " renderFrames=" << m_totalRenderFrames
 			<< " outputFrames=" << m_totalOutputFrames;
@@ -365,6 +401,10 @@ void IRPerfStats::maybeLog()
 		if (belowTargetFps && inputStillActive && afterWarmup && (sustainedBelowTarget || significantBacklog))
 		{
 			out << "\n[Perf][WARN]"
+				<< " channel=" << m_channel
+				<< " platID=" << m_platID
+				<< " sensorID=" << m_sensorID
+				<< " pid=" << m_processId
 				<< " outputFps=" << outputFps
 				<< " targetFps=" << m_videoFpsTarget
 				<< " bottleneckSummary=below_60hz"

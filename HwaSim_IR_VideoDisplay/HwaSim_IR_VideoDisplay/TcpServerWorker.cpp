@@ -144,7 +144,8 @@ bool parseDisplayFrameBody(
 }
 }
 
-TcpServerWorker::TcpServerWorker(QObject* parent) : QObject(parent) {}
+TcpServerWorker::TcpServerWorker(const QString& networkConfigPath, QObject* parent)
+	: QObject(parent), m_networkConfigPath(networkConfigPath) {}
 TcpServerWorker::~TcpServerWorker() = default;
 
 void TcpServerWorker::loadConfig(QString& ip, quint16& port)
@@ -153,7 +154,11 @@ void TcpServerWorker::loadConfig(QString& ip, quint16& port)
 	ip = "0.0.0.0";
 	port = 5555;
 
-	QString configPath = QCoreApplication::applicationDirPath() + "/NetworkConfig.ini";
+	QString configPath = m_networkConfigPath.trimmed();
+	if (configPath.isEmpty())
+	{
+		configPath = QCoreApplication::applicationDirPath() + "/NetworkConfig.ini";
+	}
 	if (!QFile::exists(configPath)) {
 		qWarning() << QStringLiteral("配置文件不存在:") << configPath << QStringLiteral("，使用默认值") << ip << port;
 		return;

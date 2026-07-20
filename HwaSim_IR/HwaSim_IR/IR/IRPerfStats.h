@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <mutex>
+#include <string>
 
 struct IRFrameTelemetry
 {
@@ -55,6 +56,11 @@ public:
 	static std::int64_t steadyTimeNs();
 
 	void configure(bool syncMode, double videoFpsTarget);
+	void setInstanceContext(
+		const std::string& channel,
+		int platID,
+		int sensorID,
+		std::uint64_t processId);
 	void setEnabled(bool enabled);
 	void reset();
 
@@ -89,6 +95,7 @@ public:
 		double agcHighInput,
 		int agcSampleCount);
 	void recordInputQueueDepth(int queueDepth);
+	void recordInputOverwrite(std::uint64_t count);
 	void recordCapture(double readbackMs, double resizeMs, double copyMs, int tcpQueueDepth);
 	std::uint64_t recordTcpOutput(
 		double jpegMs,
@@ -96,7 +103,8 @@ public:
 		double latencyMs,
 		int tcpQueueDepth,
 		std::uint64_t outputSourceSeq,
-		std::uint64_t latestUdpSourceSeq);
+		std::uint64_t latestUdpSourceSeq,
+		bool overwritten);
 	void recordSyncOverrun();
 	void recordInputQueueOverflow();
 	void maybeLog();
@@ -110,6 +118,10 @@ private:
 	mutable std::mutex m_mutex;
 	bool m_syncMode = true;
 	bool m_enabled = true;
+	std::string m_channel = "unknown";
+	int m_platID = 0;
+	int m_sensorID = 0;
+	std::uint64_t m_processId = 0;
 	double m_videoFpsTarget = 0.0;
 	std::int64_t m_intervalStartNs = 0;
 	std::uint64_t m_totalUdpFrames = 0;
@@ -117,6 +129,8 @@ private:
 	std::uint64_t m_totalOutputFrames = 0;
 	std::uint64_t m_syncOverrunCount = 0;
 	std::uint64_t m_inputQueueOverflowCount = 0;
+	std::uint64_t m_inputOverwriteCount = 0;
+	std::uint64_t m_outputOverwriteCount = 0;
 	std::uint64_t m_intervalUdpFrames = 0;
 	std::uint64_t m_intervalRenderFrames = 0;
 	std::uint64_t m_intervalOutputFrames = 0;

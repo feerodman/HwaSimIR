@@ -5,6 +5,7 @@
 #include <QResizeEvent>
 #include <QDebug>
 #include <QFile>
+#include <QFileInfo>
 #include <QApplication>
 #include <QDir>
 #include <QDateTime>
@@ -27,9 +28,57 @@ qint64 wallTimeNs()
 }
 }
 
-HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(QWidget *parent)
-    : QWidget(parent)
+HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
+    const QString& networkConfigPath,
+    const QString& channel,
+    int platID,
+    int sensorID,
+    QWidget *parent)
+    : QWidget(parent),
+      m_networkConfigPath(networkConfigPath.trimmed()),
+      m_channel(channel.trimmed().toLower()),
+      m_platID(platID),
+      m_sensorID(sensorID),
+      m_pid(QCoreApplication::applicationPid())
 {
+    if (m_networkConfigPath.isEmpty())
+    {
+        m_networkConfigPath = QDir(QCoreApplication::applicationDirPath())
+            .filePath(QStringLiteral("NetworkConfig.ini"));
+    }
+    else
+    {
+        m_networkConfigPath = QFileInfo(m_networkConfigPath).absoluteFilePath();
+    }
+    QSettings instanceSettings(m_networkConfigPath, QSettings::IniFormat);
+    if (m_channel.isEmpty())
+    {
+        m_channel = instanceSettings.value(
+            QStringLiteral("Identity/channel"), QStringLiteral("unknown"))
+            .toString().trimmed().toLower();
+    }
+    if (m_platID < 0)
+    {
+        m_platID = instanceSettings.value(QStringLiteral("Identity/platID"), 0).toInt();
+    }
+    if (m_sensorID < 0)
+    {
+        m_sensorID = instanceSettings.value(QStringLiteral("Identity/sensorID"), 0).toInt();
+    }
+    const QString tcpIp = instanceSettings.value(
+        QStringLiteral("Network/ip"), QStringLiteral("0.0.0.0")).toString();
+    const int tcpPort = instanceSettings.value(QStringLiteral("Network/port"), 5555).toInt();
+    qInfo().noquote()
+        << QStringLiteral("[RuntimeInstance] component=HwaSim_IR_VideoDisplay channel=%1 platID=%2 sensorID=%3 pid=%4 configPath=%5 tcpListen=%6:%7 configSource=%8")
+            .arg(m_channel)
+            .arg(m_platID)
+            .arg(m_sensorID)
+            .arg(m_pid)
+            .arg(m_networkConfigPath)
+            .arg(tcpIp)
+            .arg(tcpPort)
+            .arg(QFileInfo::exists(m_networkConfigPath) ? QStringLiteral("ini") : QStringLiteral("defaults"));
+
     ui.setupUi(this);
     setWindowTitle("红外仿真图像接收器");
     showMaximized();
@@ -47,7 +96,7 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(QWidget *parent)
 
     // worker 线程...
     m_workerThread = new QThread(this);
-    m_worker = new TcpServerWorker();
+    m_worker = new TcpServerWorker(m_networkConfigPath);
     m_worker->moveToThread(m_workerThread);
 
     // 收到图像信号 → 更新显示
@@ -62,9 +111,7 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(QWidget *parent)
     connect(m_workerThread, &QThread::started, m_worker, &TcpServerWorker::doWork);
     m_workerThread->start();
 
-    QSettings recorderSettings(
-        QApplication::applicationDirPath() + QStringLiteral("/NetworkConfig.ini"),
-        QSettings::IniFormat);
+    QSettings recorderSettings(m_networkConfigPath, QSettings::IniFormat);
     m_maxRecordingQueueFrames = qBound(
         1,
         recorderSettings.value(QStringLiteral("Recorder/MaxRecordingQueueFrames"), 180).toInt(),
@@ -75,7 +122,11 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(QWidget *parent)
         60000);
     m_recorder = new AsyncVideoRecorder(m_maxRecordingQueueFrames);
     qInfo().noquote()
-        << QStringLiteral("[RecorderConfig] MaxRecordingQueueFrames=%1 FlushTimeoutMs=%2")
+        << QStringLiteral("[RecorderConfig] channel=%1 platID=%2 sensorID=%3 pid=%4 MaxRecordingQueueFrames=%5 FlushTimeoutMs=%6")
+            .arg(m_channel)
+            .arg(m_platID)
+            .arg(m_sensorID)
+            .arg(m_pid)
             .arg(m_maxRecordingQueueFrames)
             .arg(m_recorderFlushTimeoutMs);
 }
@@ -469,8 +520,13 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
                 static_cast<int>(std::ceil(static_cast<double>(sortedLatencies.size()) * 0.95)) - 1);
             latencyP95Ms = sortedLatencies[qMax(0, p95Index)];
         }
-        qInfo().noquote()
-            << QString("[VideoPerf] receiveFps=%1 displayFps=%2 decodeMsAvg=%3 queueDepth=%4 sourceSeqContinuous=%5 latencyAvgMs=%6 latencyP95Ms=%7 displayMsAvg=%8 tcpToReceiveMs=%9 sourceSeq=%10 discontinuities=%11 recordingEnqueueMsAvg=%12 recordingEnqueueMsMax=%13 decodedChannels=%14 imageFormat=%15 requestedCodec=%16 activeCodec=%17 decodeCodec=%18 h264En=%19 codecFallbackReason=%20 h264KeyFrameSeen=%21 h264DecodeErrors=%22")
+        QString videoPerfLine = QStringLiteral(
+            "[VideoPerf] channel=%1 platID=%2 sensorID=%3 pid=%4")
+                .arg(m_channel)
+                .arg(m_platID)
+                .arg(m_sensorID)
+                .arg(m_pid);
+        videoPerfLine += QString(" receiveFps=%1 displayFps=%2 decodeMsAvg=%3 queueDepth=%4 sourceSeqContinuous=%5 latencyAvgMs=%6 latencyP95Ms=%7 displayMsAvg=%8 tcpToReceiveMs=%9 sourceSeq=%10 discontinuities=%11 recordingEnqueueMsAvg=%12 recordingEnqueueMsMax=%13 decodedChannels=%14 imageFormat=%15 requestedCodec=%16 activeCodec=%17 decodeCodec=%18 h264En=%19 codecFallbackReason=%20 h264KeyFrameSeen=%21 h264DecodeErrors=%22")
                 .arg(static_cast<double>(receivedIntervalFrames) / displayElapsedSec, 0, 'f', 3)
                 .arg(static_cast<double>(m_videoPerfIntervalFrames) / displayElapsedSec, 0, 'f', 3)
                 .arg(m_decodeMsTotal / sampleCount, 0, 'f', 3)
@@ -493,6 +549,7 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
                 .arg(m_codecFallbackReason)
                 .arg(m_h264KeyFrameSeen ? 1 : 0)
                 .arg(m_h264DecodeErrors);
+        qInfo().noquote() << videoPerfLine;
         m_videoPerfIntervalFrames = 0;
         m_lastReceivedFrameCount = receivedFrameCount;
         m_videoPerfReceiveStartNs = receiveTimeNs;

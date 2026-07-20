@@ -111,7 +111,13 @@ QString localIpv4Summary()
 }
 }
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
+MainWindow::MainWindow(
+	const QString& networkConfigPath,
+	const QString& channel,
+	QWidget *parent)
+	: QMainWindow(parent),
+	  m_networkConfigPath(networkConfigPath.trimmed()),
+	  m_channel(channel.trimmed().toLower())
 {
 	loadNetworkConfig();
 	setupUI();
@@ -205,11 +211,15 @@ void MainWindow::configureProtocolForTest(int platID, int sensorID, int simMode,
 		m_videoFpsEdit->setText(QString::number(m_protocolVideoFps));
 	}
 	qInfo().noquote()
-		<< QStringLiteral("[StimProtocol] platID=%1 sensorID=%2 simMode=%3 videoFps=%4 source=cli_or_config")
+		<< QStringLiteral("[StimProtocol] channel=%1 platID=%2 sensorID=%3 pid=%4 simMode=%5 videoFps=%6 saveMP4En=%7 h264En=%8 source=cli_or_config")
+			.arg(m_channel)
 			.arg(m_protocolPlatID)
 			.arg(m_protocolSensorID)
+			.arg(QCoreApplication::applicationPid())
 			.arg(m_protocolSimMode)
-			.arg(m_protocolVideoFps);
+			.arg(m_protocolVideoFps)
+			.arg(m_saveMP4Enabled ? 1 : 0)
+			.arg(m_h264Enabled ? 1 : 0);
 }
 
 // ==================== 核心修正：补充缺失的槽函数 ====================
@@ -351,7 +361,10 @@ void MainWindow::setupUI()
 
 void MainWindow::loadNetworkConfig()
 {
-	const QString configPath = QDir(QCoreApplication::applicationDirPath()).filePath("NetworkConfig.ini");
+	const QString configPath = m_networkConfigPath.isEmpty()
+		? QDir(QCoreApplication::applicationDirPath()).filePath("NetworkConfig.ini")
+		: QFileInfo(m_networkConfigPath).absoluteFilePath();
+	m_networkConfigPath = configPath;
 	const bool configExists = QFileInfo::exists(configPath);
 	QSettings settings(configPath, QSettings::IniFormat);
 	settings.setIniCodec("UTF-8");
@@ -380,6 +393,11 @@ void MainWindow::loadNetworkConfig()
 	int remotePort = settings.value(QStringLiteral("UDP/remotePort"), defaultRemotePort).toInt();
 	m_protocolPlatID = settings.value(QStringLiteral("Identity/platID"), 1001).toInt();
 	m_protocolSensorID = settings.value(QStringLiteral("Identity/sensorID"), 2).toInt();
+	if (m_channel.isEmpty())
+	{
+		m_channel = settings.value(QStringLiteral("Identity/channel"), QStringLiteral("unknown"))
+			.toString().trimmed().toLower();
+	}
 	m_protocolSimMode = settings.value(QStringLiteral("RenderControl/simMode"), 2).toInt();
 	m_protocolVideoFps = settings.value(QStringLiteral("RenderControl/videoFps"), 60).toInt();
 	if (m_protocolSimMode != 1 && m_protocolSimMode != 2)
@@ -421,16 +439,17 @@ void MainWindow::loadNetworkConfig()
 	m_udpRemotePort = static_cast<quint16>(remotePort);
 
 	qInfo().noquote()
-		<< QStringLiteral("[StimProtocol] configPath=%1 platID=%2 sensorID=%3 simMode=%4 videoFps=%5 udpLocal=%6:%7 udpRemote=%8:%9 source=ini")
-			.arg(configPath)
+		<< QStringLiteral("[RuntimeInstance] component=DataDrivenTestQT channel=%1 platID=%2 sensorID=%3 pid=%4 configPath=%5 udpLocal=%6:%7 udpRemote=%8:%9 configSource=%10")
+			.arg(m_channel)
 			.arg(m_protocolPlatID)
 			.arg(m_protocolSensorID)
-			.arg(m_protocolSimMode)
-			.arg(m_protocolVideoFps)
+			.arg(QCoreApplication::applicationPid())
+			.arg(configPath)
 			.arg(localIp)
 			.arg(localPort)
 			.arg(remoteIp)
-			.arg(remotePort);
+			.arg(remotePort)
+			.arg(configExists ? QStringLiteral("ini") : QStringLiteral("generated_default"));
 }
 
 void MainWindow::setupUDP()
@@ -616,7 +635,7 @@ void MainWindow::sendInitCommand()
     //2.18166
 
     cmd.trackingInit.trackerSensor[0].realtimeAnnotation = true;
-    cmd.trackingInit.trackerSensor[0].saveMP4En = true;
+    cmd.trackingInit.trackerSensor[0].saveMP4En = m_saveMP4Enabled;
     cmd.trackingInit.trackerSensor[0].h264En = m_h264Enabled;
 
 //    cmd.trackingInit.trackerSensor[0].coarseTrackEn = true;
@@ -857,7 +876,11 @@ void MainWindow::sendRealTimeData()
 				const double behindMs =
 					static_cast<double>(nowNs - expectedSendNs) / 1.0e6;
 				qInfo().noquote()
-					<< QStringLiteral("[StimPerf] targetFps=%1 sentFpsInstant=%2 sentFpsAvg=%3 packetSeq=%4 timerIntervalMs=%5 behindMs=%6")
+					<< QStringLiteral("[StimPerf] channel=%1 platID=%2 sensorID=%3 pid=%4 targetFps=%5 sentFpsInstant=%6 sentFpsAvg=%7 packetSeq=%8 timerIntervalMs=%9 behindMs=%10")
+						.arg(m_channel)
+						.arg(m_protocolPlatID)
+						.arg(m_protocolSensorID)
+						.arg(QCoreApplication::applicationPid())
 						.arg(m_targetVideoFps)
 						.arg(sentFpsInstant, 0, 'f', 3)
 						.arg(sentFpsAvg, 0, 'f', 3)

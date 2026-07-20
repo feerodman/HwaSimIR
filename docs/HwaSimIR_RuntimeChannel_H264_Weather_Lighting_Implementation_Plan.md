@@ -1674,3 +1674,101 @@ PASS：Stage4 热源/亮斑职责、完整目标键、可见性门控和无毁�
 - DataDrivenTestQT loopback smoke 的 60 FPS 发送采样为 `60.490 / 59.989 / 59.981 FPS`，363 包累计平均 `60.153 FPS`；该数据只说明输入发送时钟达到目标，不等同于渲染/TCP 端到端性能。
 - 本次是控制闭环与路由 smoke，不宣称已完成持续 800x800 双通道 60 FPS 性能验收；H.264、天气、照明及其持续吞吐测试按范围留给后续阶段。
 - 唯一环境性未完成项为 aarch64 交叉编译；需要提供对应编译器、CMake/构建工具以及 Panda3D/OpenCV aarch64 sysroot 后复测。
+
+### 2026-07-20 / R2 双进程 60 FPS 基线收口实施记录
+
+#### 基线、范围与工作区
+
+- 基线为最新 `main` / `origin/main`：`9fb641891f8cc616924fa628b3ef77f86b08b228`。
+- 本记录对应未提交工作区；未执行 commit 或 push。
+- 仅实施 R2。未实现 H.264、天气或照明；未修改协议字段/布局、红外物理、图像质量、JPEG 默认质量、800x800 分辨率、标注语义或 TCP 帧包格式。
+- 自动验收显式使用 JPEG、`h264En=0`，并关闭不在本轮验收范围内的 `saveMP4En`；DataDrivenTestQT 的默认 `saveMP4En=true` 未改变。
+
+#### 修改文件
+
+```text
+DataDrivenTestQT/main.cpp
+DataDrivenTestQT/mainwindow.cpp
+DataDrivenTestQT/mainwindow.h
+HwaSim_IR/HwaSim_IR/HwaSimIR.cpp
+HwaSim_IR/HwaSim_IR/IR/IRPerfStats.cpp
+HwaSim_IR/HwaSim_IR/IR/IRPerfStats.h
+HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay.cpp
+HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay.h
+HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay/TcpServerWorker.cpp
+HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay/TcpServerWorker.h
+HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay/main.cpp
+tools/r2_dual_60fps_acceptance.ps1
+docs/HwaSimIR_RuntimeChannel_H264_Weather_Lighting_Implementation_Plan.md
+```
+
+#### 完成内容与修复
+
+- 新增 `tools/r2_dual_60fps_acceptance.ps1`。脚本为每组/每通道生成独立 loopback HwaSim_IR、DataDrivenTestQT、VideoDisplay 临时 INI，通过显式配置路径启动，不复制、覆盖或改写生产 precise/coarse 配置；运行前后校验两份生产配置 SHA-256。
+- 五组均执行至少 5 秒预热和 30 秒正式统计。正式窗口通过日志字节偏移隔离，生成每组 `summary.json` 和顶层 `summary.json/csv/md`，按通道给出 PASS/FAIL 与失败原因。
+- 双进程组同时运行同一个 `HwaSim_IR.exe` 的 precise/coarse 实例、两个 DataDrivenTestQT 激励实例和两个 VideoDisplay 实例；`[RuntimeInstance]`、`[Perf]`、`[RenderPerfProbe]`、`[VideoPerf]`、`[StimPerf]` 和同步帧日志带 `channel/platID/sensorID/pid`。
+- DataDrivenTestQT 和 VideoDisplay 增加仅用于实例化/验收的 `--network-config`、`--channel` 和既有 ID 参数入口；DataDrivenTestQT 增加 `--save-mp4=0|1` 测试覆盖入口，协议本身未增加字段。
+- HwaSim_IR 性能汇总补充实例身份、`outputQueueDepth` 统一命名、输入 Latest 覆盖数、TCP 输出覆盖数和 dropped/overwritten 累计值。VideoDisplay 性能汇总补充实例身份和实际配置路径。
+- 自动向每个 HwaSim_IR UDP 端口注入对端 sensorID 的 Display 包；要求出现 `[PacketRouteReject] reason=sensor_mismatch`，并断言不存在对应 accepted 路由，双通道隔离全部通过。
+- 初始 precise/VisibleWindow/Async60 基线只有 `outputFps=58.285`、`displayFps=58.296`；输入为 `59.981 FPS`，队列/lag 不增长，`pandaDoFrameMs=16.557`，而读回/JPEG/TCP 分别只有 `1.045/5.188/0.119 ms`。这将瓶颈定位到帧率锁定，不是红外计算、读回、JPEG 或 TCP。
+- 修复为单一调度所有者：窗口交换不再独立执行 sync-video 等待；同步模式继续由 UDP 包驱动，一包一帧；异步模式将 Panda `M_limited` 的逐帧相对睡眠替换为主循环绝对 deadline 调度。绝对 deadline 消除 Windows 睡眠误差逐帧累计，并在长暂停后重置 deadline，避免补发陈旧突发帧。
+
+#### Windows Release 构建与回归
+
+```text
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\stage0_build.ps1
+PASS：HwaSim_IR Windows x64 Release。
+PASS：DataDrivenTestQT Qt 5.12.12 / MinGW 7.3 x64 Release；仅保留既有未使用变量和有符号/无符号比较警告。
+
+MSBuild HwaSim_IR_VideoDisplay.sln /t:Build /p:Configuration=Release /p:Platform=x64
+PASS：HwaSim_IR_VideoDisplay Windows x64 Release，Qt 5.12.12 msvc2015_64。
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\r1_runtime_route_smoke.ps1
+PASS：R1 同一二进制双通道、Control platID、Init/Display 精确/错误/255 sensorID、错误 platID、ACK 身份、禁用动态远端、simMode=1、simMode=2/60 和非法模式回退全部通过。
+日志：logs/r1-runtime-20260720-160037
+HwaSim_IR.exe SHA-256：4702665E90FFBD84A449601EC20EA93A81D1B90CA34900098848D94D9DD0CC2A
+```
+
+#### R2 自动验收矩阵
+
+命令：
+
+```text
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\r2_dual_60fps_acceptance.ps1 -WarmupSeconds 5 -MeasureSeconds 30
+```
+
+结果：`PASS`。完整日志和机器可读汇总位于 `logs/r2-60fps-20260720-154747`；生产 precise/coarse 配置哈希前后一致。
+
+速率和阶段耗时（FPS 为正式窗口平均值，耗时单位 ms）：
+
+| 场景 | 通道 | udpFps | renderFps | outputFps | displayFps | pandaDoFrame | readback | JPEG | TCP send |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| precise / Visible / Sync | precise | 60.002 | 60.002 | 60.003 | 59.993 | 5.142 | 1.106 | 4.275 | 0.104 |
+| precise / Visible / Async60 | precise | 59.983 | 59.984 | 60.019 | 60.010 | 4.804 | 1.157 | 4.434 | 0.103 |
+| coarse / Visible / Async60 | coarse | 60.019 | 59.986 | 60.021 | 60.003 | 5.233 | 1.289 | 6.273 | 0.128 |
+| dual / Visible / Async60 | precise | 59.994 | 59.994 | 60.029 | 60.003 | 6.577 | 1.618 | 7.858 | 0.156 |
+| dual / Visible / Async60 | coarse | 60.009 | 59.975 | 60.011 | 59.978 | 6.025 | 1.616 | 7.826 | 0.158 |
+| dual / Headless / Async60 | precise | 59.990 | 59.990 | 60.025 | 59.983 | 4.509 | 1.484 | 5.355 | 0.110 |
+| dual / Headless / Async60 | coarse | 59.974 | 60.008 | 60.043 | 60.021 | 4.523 | 1.609 | 5.346 | 0.116 |
+
+队列、序号、延迟和丢弃/覆盖（深度与 lag 为正式窗口最大值；计数从模式应用重置后累计，包含预热）：
+
+| 场景 | 通道 | inputQ | outputQ | sourceSeqLag | latencyAvg | latencyP95 | dropped | input overwritten | output overwritten | 对端 sensorID 拒绝 |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| precise / Visible / Sync | precise | 0 | 1 | 0 | 10.301 | 12.812 | 0 | 0 | 0 | PASS |
+| precise / Visible / Async60 | precise | 1 | 1 | 1 | 16.543 | 27.886 | 0 | 536 | 0 | PASS |
+| coarse / Visible / Async60 | coarse | 1 | 1 | 1 | 21.347 | 34.131 | 0 | 530 | 1 | PASS |
+| dual / Visible / Async60 | precise | 1 | 1 | 1 | 25.145 | 35.647 | 0 | 530 | 3 | PASS |
+| dual / Visible / Async60 | coarse | 1 | 1 | 1 | 24.993 | 35.729 | 0 | 517 | 3 | PASS |
+| dual / Headless / Async60 | precise | 1 | 1 | 1 | 23.458 | 35.847 | 0 | 516 | 1 | PASS |
+| dual / Headless / Async60 | coarse | 1 | 1 | 1 | 23.330 | 35.176 | 0 | 551 | 1 | PASS |
+
+- 所有通道 `outputFps>=59`、`displayFps>=59`，平均端到端延迟均低于 80 ms；最高平均延迟为双进程 Visible precise 的 `25.145 ms`。
+- 同步组有效输入/输出覆盖均为 0，sourceSeqLag 为 0。异步组按 `Latest` 策略允许覆盖旧状态；input/output queue 最大值均为 1，sourceSeqLag 最大值为 1，首段/末段统计均未持续增长。
+- 双进程 Visible 是当前最重组合，JPEG 平均约 `7.83~7.86 ms`，但 `pandaDoFrameMs` 仍仅 `6.03~6.58 ms`，TCP send 低于 `0.16 ms`，有充足的 16.67 ms 帧预算；当前瓶颈已不再限制 60 FPS。
+
+#### 未完成项与下一阶段边界
+
+- RK3588 / Debian 11 / aarch64 实机未测试。本机未找到 `aarch64-linux-gnu-g++`、`aarch64-linux-gnu-gcc` 或 `aarch64-linux-gnu-cmake`，也没有目标机 GPU/驱动环境，因此不以 Windows 结果代替 RK3588 结论。
+- 后续在 RK3588 上必须复用相同 5 秒预热 + 30 秒正式窗口、双激励/双 VideoDisplay（或等价接收器）和逐通道身份化统计，重点复核 Headless 双进程读回、JPEG 和内存带宽。
+- 本轮没有开始 H.264、天气或照明；这些仍按 R3/W1/L1 之后阶段实施，不应回填到 R2 结果中。

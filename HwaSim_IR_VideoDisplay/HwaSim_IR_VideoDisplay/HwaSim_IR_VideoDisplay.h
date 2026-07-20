@@ -13,7 +13,12 @@ class HwaSim_IR_VideoDisplay : public QWidget
     Q_OBJECT
 
 public:
-    HwaSim_IR_VideoDisplay(QWidget *parent = nullptr);
+    HwaSim_IR_VideoDisplay(
+        const QString& networkConfigPath = QString(),
+        const QString& channel = QString(),
+        int platID = -1,
+        int sensorID = -1,
+        QWidget *parent = nullptr);
     ~HwaSim_IR_VideoDisplay();
 
     void InitQss();
@@ -46,6 +51,11 @@ private:
     TcpServerWorker* m_worker = nullptr;
     AsyncVideoRecorder* m_recorder = nullptr;
     bool m_saveMP4Requested = false;
+    QString m_networkConfigPath;
+    QString m_channel = QStringLiteral("unknown");
+    int m_platID = 0;
+    int m_sensorID = 0;
+    qint64 m_pid = 0;
     int m_maxImageWidth = 0;
     int m_maxImageHeight = 0;
     int m_videoFps = 25;

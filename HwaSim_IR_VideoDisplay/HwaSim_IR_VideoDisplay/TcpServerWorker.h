@@ -10,7 +10,7 @@ class TcpServerWorker : public QObject
 {
 	Q_OBJECT
 public:
-	explicit TcpServerWorker(QObject* parent = nullptr);
+	explicit TcpServerWorker(const QString& networkConfigPath = QString(), QObject* parent = nullptr);
 	~TcpServerWorker();
 	quint64 receivedFrameCount() const { return m_receivedFrameCount.load(); }
 
@@ -41,4 +41,5 @@ private:
 
 	std::atomic<bool> m_stop{ false };
 	std::atomic<quint64> m_receivedFrameCount{ 0 };
+	QString m_networkConfigPath;
 };
