@@ -185,6 +185,33 @@ void MainWindow::configurePhase4cAeroMachTest(bool enabled, double altitudeKm, d
 	}
 }
 
+void MainWindow::configureProtocolForTest(int platID, int sensorID, int simMode, int videoFps)
+{
+	if (platID >= 0)
+	{
+		m_protocolPlatID = platID;
+	}
+	if (sensorID >= 0)
+	{
+		m_protocolSensorID = sensorID;
+	}
+	m_protocolSimMode = (simMode == 1 || simMode == 2) ? simMode : m_protocolSimMode;
+	if (videoFps > 0)
+	{
+		m_protocolVideoFps = qBound(1, videoFps, 240);
+	}
+	if (m_videoFpsEdit)
+	{
+		m_videoFpsEdit->setText(QString::number(m_protocolVideoFps));
+	}
+	qInfo().noquote()
+		<< QStringLiteral("[StimProtocol] platID=%1 sensorID=%2 simMode=%3 videoFps=%4 source=cli_or_config")
+			.arg(m_protocolPlatID)
+			.arg(m_protocolSensorID)
+			.arg(m_protocolSimMode)
+			.arg(m_protocolVideoFps);
+}
+
 // ==================== 核心修正：补充缺失的槽函数 ====================
 void MainWindow::onSendRealTimeData()
 {
@@ -265,7 +292,7 @@ void MainWindow::setupUI()
 	m_realTimeDataGroup = new QGroupBox(QStringLiteral("实时成像数据配置 (平台姿态每次+0.01)"));
 	QFormLayout *realTimeLayout = new QFormLayout;
 	realTimeLayout->addRow(QStringLiteral("目标类型:"), m_targetTypeEdit = new QLineEdit("0x11"));
-	realTimeLayout->addRow(QStringLiteral("目标帧率(FPS):"), m_videoFpsEdit = new QLineEdit("60"));
+	realTimeLayout->addRow(QStringLiteral("目标帧率(FPS):"), m_videoFpsEdit = new QLineEdit(QString::number(m_protocolVideoFps)));
     realTimeLayout->addRow(QStringLiteral("横向视场角:"), m_fovHEdit = new QLineEdit("0.1"));
     realTimeLayout->addRow(QStringLiteral("纵向视场角:"), m_fovVEdit = new QLineEdit("0.1"));
 	//realTimeLayout->addRow(QStringLiteral("平台ID:"), m_platIDEdit = new QLineEdit("1"));
@@ -336,6 +363,10 @@ void MainWindow::loadNetworkConfig()
 
 	if (!configExists)
 	{
+		settings.setValue(QStringLiteral("Identity/platID"), 1001);
+		settings.setValue(QStringLiteral("Identity/sensorID"), 2);
+		settings.setValue(QStringLiteral("RenderControl/simMode"), 2);
+		settings.setValue(QStringLiteral("RenderControl/videoFps"), 60);
 		settings.setValue(QStringLiteral("UDP/localIp"), defaultLocalIp);
 		settings.setValue(QStringLiteral("UDP/localPort"), defaultLocalPort);
 		settings.setValue(QStringLiteral("UDP/remoteIp"), defaultRemoteIp);
@@ -347,6 +378,17 @@ void MainWindow::loadNetworkConfig()
 	QString remoteIp = settings.value(QStringLiteral("UDP/remoteIp"), defaultRemoteIp).toString().trimmed();
 	int localPort = settings.value(QStringLiteral("UDP/localPort"), defaultLocalPort).toInt();
 	int remotePort = settings.value(QStringLiteral("UDP/remotePort"), defaultRemotePort).toInt();
+	m_protocolPlatID = settings.value(QStringLiteral("Identity/platID"), 1001).toInt();
+	m_protocolSensorID = settings.value(QStringLiteral("Identity/sensorID"), 2).toInt();
+	m_protocolSimMode = settings.value(QStringLiteral("RenderControl/simMode"), 2).toInt();
+	m_protocolVideoFps = settings.value(QStringLiteral("RenderControl/videoFps"), 60).toInt();
+	if (m_protocolSimMode != 1 && m_protocolSimMode != 2)
+	{
+		qWarning() << "Invalid RenderControl/simMode in" << configPath
+			<< ":" << m_protocolSimMode << "- using 2";
+		m_protocolSimMode = 2;
+	}
+	m_protocolVideoFps = qBound(1, m_protocolVideoFps, 240);
 
 	if (QHostAddress(localIp).isNull())
 	{
@@ -378,9 +420,17 @@ void MainWindow::loadNetworkConfig()
 	m_udpRemoteIp = remoteIp;
 	m_udpRemotePort = static_cast<quint16>(remotePort);
 
-	qInfo() << "Loaded network config:" << configPath
-		<< "UDP local" << localIp << localPort
-		<< "remote" << remoteIp << remotePort;
+	qInfo().noquote()
+		<< QStringLiteral("[StimProtocol] configPath=%1 platID=%2 sensorID=%3 simMode=%4 videoFps=%5 udpLocal=%6:%7 udpRemote=%8:%9 source=ini")
+			.arg(configPath)
+			.arg(m_protocolPlatID)
+			.arg(m_protocolSensorID)
+			.arg(m_protocolSimMode)
+			.arg(m_protocolVideoFps)
+			.arg(localIp)
+			.arg(localPort)
+			.arg(remoteIp)
+			.arg(remotePort);
 }
 
 void MainWindow::setupUDP()
@@ -462,7 +512,7 @@ void MainWindow::sendControlCommand(int command)
 	BYHWICD::ControlP2cX1ObjTrackingCmd cmd = {};
 	cmd.flag = 0x41;
 	cmd.JB = 1; // 红方
-	cmd.platID = 1;
+	cmd.platID = m_protocolPlatID;
 	cmd.simCommand = command;
 	//cmd.roundCut = m_roundCutEdit->text().toInt();
 	//cmd.currentRound = m_currentRoundEdit->text().toInt();
@@ -499,8 +549,8 @@ void MainWindow::sendInitCommand()
 	BYHWICD::InitP2cObjectTrackingCmd cmd = {};
 	cmd.flag = 0x36;
 	cmd.JB = 1;
-	cmd.platID = 1;
-	cmd.sensorID = 1;
+	cmd.platID = m_protocolPlatID;
+	cmd.sensorID = m_protocolSensorID;
     //cmd.platNumValid = 1;
 
 //	// 从UI实时读取初始位置
@@ -530,7 +580,7 @@ void MainWindow::sendInitCommand()
 //	cmd.trackingInit.trackerSensor[0].preciseTrackResolution = m_fovVEdit->text().toDouble();
 
     // 从UI实时读取初始位置
-    cmd.platParamInit.id = 1;
+    cmd.platParamInit.id = 1001;
     cmd.platParamInit.type = 1;
     cmd.platParamInit.spatial.lat = realTimeData.at(0).platPos.lat;
     cmd.platParamInit.spatial.lon = realTimeData.at(0).platPos.lon;
@@ -545,7 +595,8 @@ void MainWindow::sendInitCommand()
     cmd.trackingInit.envTerrain = 0; // 戈壁
     cmd.trackingInit.envSky = 0;    // 晴
     cmd.trackingInit.envTemp = 25.0;
-    cmd.trackingInit.videoFps = targetVideoFps();
+	cmd.trackingInit.simMode = m_protocolSimMode;
+	cmd.trackingInit.videoFps = targetVideoFps();
 
     cmd.trackingInit.envVisibility = 6000;
     cmd.trackingInit.envHumidity = 85;
@@ -560,7 +611,7 @@ void MainWindow::sendInitCommand()
     cmd.trackingInit.trackerSensor[0].trackerSensorWidth = 800;
     cmd.trackingInit.trackerSensor[0].trackerSensorHeight = 800;//hml
     cmd.trackingInit.trackerSensor[0].trackerSensorViewMin = 1;
-    cmd.trackingInit.trackerSensor[0].trackerSensorViewMax = 50000;
+    cmd.trackingInit.trackerSensor[0].trackerSensorViewMax = 200000;
     cmd.trackingInit.trackerSensor[0].trackerSensorPixelAngle = 2.5;
     //2.18166
 
@@ -614,8 +665,8 @@ void MainWindow::sendRealTimeData()
 {
 	BYHWICD::DisplayC2cObjTrackingData data = {};
 	data.flag = 0x38;
-	data.platID = 1;
-	data.sensorID = 1;
+	data.platID = m_protocolPlatID;
+	data.sensorID = m_protocolSensorID;
 	data.time = QDateTime::currentMSecsSinceEpoch();
 
 
@@ -852,7 +903,7 @@ void MainWindow::applyPhase4cAeroMachOverride(BYHWICD::DisplayC2cObjTrackingData
 	data.platLoc.speed = m_phase4cSpeedKmh;
 	for (int targetIndex = 0; targetIndex < qBound(0, data.targetNumValid, 5); ++targetIndex)
 	{
-		BYHWICD::DisplayC2cObjTrackingData::TargetState& target = data.targetState[targetIndex];
+		BYHWICD::TargetState& target = data.targetState[targetIndex];
 		const double relativeOffsetM = target.targetLoc.alt - m_currMissile_pos.z;
 		target.targetLoc.alt = altitudeM + clampDouble(relativeOffsetM, -5.0, 5.0);
 		target.targetLoc.speed = m_phase4cSpeedKmh;
@@ -871,7 +922,7 @@ void MainWindow::logAeroSpeedSend(const BYHWICD::DisplayC2cObjTrackingData& data
 	const int targetCount = qBound(0, data.targetNumValid, 5);
 	for (int targetIndex = 0; targetIndex < targetCount; ++targetIndex)
 	{
-		const BYHWICD::DisplayC2cObjTrackingData::TargetState& target = data.targetState[targetIndex];
+		const BYHWICD::TargetState& target = data.targetState[targetIndex];
 		const bool useRedSpeed = targetUsesRedSpeed(target.targetType);
 		const QString sourceColumn = useRedSpeed
 			? QStringLiteral("RedSpeedAir(km/h)")

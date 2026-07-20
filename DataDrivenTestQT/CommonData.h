@@ -131,37 +131,8 @@ namespace BYHWICD {
         int currentRound;//当前仿真回合数
     };
 
- //成像初始化命令
-    struct InitP2cObjectTrackingCmd {
-        int flag = 0x36;
-        int JB;
-        int platID;//挂载平台ID
-        int sensorID;//传感器ID 为255则全部接收  //todo，添加挂载平台ID、传感器ID唯一映射配置
-        //int platNumValid;//有效平台数
-	struct PlatParamPak {
-		int id;//飞机编号
-		int type;//1-红方 2-蓝方
-		SpatialState spatial;//空间状态
-	};
-        PlatParamPak platParamInit;//载机初始参数  //todo，改平台初始化
-        InitObjectTrackingParam trackingInit;//传感器参数
 
-        int MissileMaxCount120;//可能成像导弹的最大个数
-        int MissileMaxCount9;
-        int MissileMaxCountMMD;
-		int MissileMaxCountF35;
-		int MissileMaxCountF22;
-		int MissileMaxCountResv1;  //todo添加预留模型库
-		int MissileMaxCountResv2;
-    };
- //实时成像数据
-    struct DisplayC2cObjTrackingData {
-        int flag = 0x38;
-        int platID;//挂载平台ID
-        int sensorID;//传感器ID
-        double time;//当前时间（ms）
-        SpatialState platLoc;//传感器挂载平台姿态信息
-			//实时Wg信息
+	//实时Wg信息
 	struct WeaponState {
 		int targetType; //目标类型 0x11-F35 0x12-F22 0x22-雷达导弹 0x33-红外弹 0x44-MMD 0x55-预留1 0x66-预留2
 		int targetPlatID; //被打击目标挂载平台ID
@@ -175,8 +146,6 @@ namespace BYHWICD {
 		bool strikeFlag; //打击标志
 		int strikePart; //打击部位 1-头 2-舱
 	};
-        WeaponState weaponState;
-
 	//目标状态信息
 	struct TargetState {
 		int targetType; //目标类型 0x11-F35 0x12-F22 0x22-雷达导弹 0x33-红外弹 0x44-MMD 0x55-预留1 0x66-预留2
@@ -187,9 +156,37 @@ namespace BYHWICD {
 		SpatialState targetLoc; //目标位置信息
 		int targetState; //0x01-打击态 0x02-爆炸态 0x03-击毁态  //todo 保留不使用
 	};
+	struct PlatParamPak {
+		int id;//飞机编号
+		int type;//1-红方 2-蓝方
+		SpatialState spatial;//空间状态
+	};
+    //成像初始化命令
+    struct InitP2cObjectTrackingCmd {
+        int flag = 0x36;
+        int JB;
+        int platID;//挂载平台ID
+        int sensorID;//传感器ID 为255则全部接收  //todo，添加挂载平台ID、传感器ID唯一映射配置
+        //int platNumValid;//有效平台数
+        PlatParamPak platParamInit;//载机初始参数  //todo，改平台初始化
+        InitObjectTrackingParam trackingInit;//传感器参数
 
-   
-   
+        int MissileMaxCount120;//可能成像导弹的最大个数
+        int MissileMaxCount9;
+        int MissileMaxCountMMD;
+		int MissileMaxCountF35;
+		int MissileMaxCountF22;
+		int MissileMaxCountResv1;  //todo添加预留模型库
+		int MissileMaxCountResv2;
+    };
+    //实时成像数据
+    struct DisplayC2cObjTrackingData {
+        int flag = 0x38;
+        int platID;//挂载平台ID
+        int sensorID;//传感器ID
+        double time;//当前时间（ms）
+        SpatialState platLoc;//传感器挂载平台姿态信息
+        WeaponState weaponState;
         int targetNumValid; //有效目标数
         TargetState targetState[5];
     };

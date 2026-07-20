@@ -2,6 +2,8 @@
 #include <QtWidgets/QApplication>
 #include <QTextCodec>
 #include <QtGlobal>
+#include <QDebug>
+#include "CommonData.h"
 
 int main(int argc, char *argv[])
 {
@@ -10,6 +12,12 @@ int main(int argc, char *argv[])
     QTextCodec::setCodecForLocale(QTextCodec::codecForName("UTF-8"));
 #endif
     QApplication app(argc, argv);
+    qInfo().noquote()
+        << QStringLiteral("[ProtocolLayout] component=HwaSim_IR_VideoDisplay ControlP2cX1ObjTrackingCmd=%1 InitP2cObjectTrackingCmd=%2 DisplayC2cObjTrackingData=%3 InitAckC2pObjectTrackingCmd=%4")
+            .arg(sizeof(BYHWICD::ControlP2cX1ObjTrackingCmd))
+            .arg(sizeof(BYHWICD::InitP2cObjectTrackingCmd))
+            .arg(sizeof(BYHWICD::DisplayC2cObjTrackingData))
+            .arg(sizeof(BYHWICD::InitAckC2pObjectTrackingCmd));
     HwaSim_IR_VideoDisplay window;
     window.show();
     return app.exec();

@@ -6,11 +6,17 @@
 #include <cstring>
 #include <fcntl.h>
 #include <iostream>
+#include <sstream>
 #include <unistd.h>
 
 UdpCommThread::UdpCommThread(HwaSimIR* hwaSimIR, const std::string& localIp, uint16_t localPort,
-	const std::string& remoteIp, uint16_t remotePort)
-	: m_pHwaSimIR(hwaSimIR), m_udpSocket(-1), m_bIsRunning(false), m_mtx()
+	const std::string& remoteIp, uint16_t remotePort,
+	int localPlatID, int localSensorID,
+	bool acceptSensorBroadcast, bool allowDynamicRemote)
+	: m_pHwaSimIR(hwaSimIR), m_udpSocket(-1),
+	  m_localPlatID(localPlatID), m_localSensorID(localSensorID),
+	  m_acceptSensorBroadcast(acceptSensorBroadcast), m_allowDynamicRemote(allowDynamicRemote),
+	  m_bIsRunning(false), m_mtx()
 {
 	memset(&m_localAddr, 0, sizeof(m_localAddr));
 	m_localAddr.sin_family = AF_INET;
@@ -66,6 +72,7 @@ void UdpCommThread::stop()
 
 bool UdpCommThread::sendInitAck(const BYHWICD::InitAckC2pObjectTrackingCmd& ackData)
 {
+	std::lock_guard<std::mutex> lock(m_mtx);
 	if (m_udpSocket == -1)
 	{
 		std::cerr << "UDP Socket无效，发送初始化应答失败！" << std::endl;
@@ -100,17 +107,7 @@ void UdpCommThread::setRemoteAddr(const char* ip, uint16_t port)
 		std::cerr << "[ERR] setRemoteAddr: invalid IP '" << ip << "'\n";
 		return;
 	}
-	if (isMutexLockedByAnyThread())
-	{
-		int d = 1;
-		(void)d;
-	}
-	else
-	{
-		int d = 0;
-		(void)d;
-	}
-
+	std::lock_guard<std::mutex> lock(m_mtx);
 	const bool changed = m_remoteAddr.sin_addr.s_addr != tempAddr.sin_addr.s_addr ||
 		ntohs(m_remoteAddr.sin_port) != port;
 	m_remoteAddr = tempAddr;
@@ -119,6 +116,60 @@ void UdpCommThread::setRemoteAddr(const char* ip, uint16_t port)
 	{
 		std::cout << "[INFO] Remote address set to " << ip << ":" << port << "\n";
 	}
+}
+
+sockaddr_in UdpCommThread::getRemoteAddr() const
+{
+	std::lock_guard<std::mutex> lock(m_mtx);
+	return m_remoteAddr;
+}
+
+void UdpCommThread::updateRemoteFromSender(const sockaddr_in& fromAddr)
+{
+	char fromIpStr[INET_ADDRSTRLEN] = { 0 };
+	if (inet_ntop(AF_INET, &fromAddr.sin_addr, fromIpStr, INET_ADDRSTRLEN) == nullptr)
+	{
+		return;
+	}
+	setRemoteAddr(fromIpStr, ntohs(fromAddr.sin_port));
+}
+
+void UdpCommThread::logRoute(
+	int flag,
+	bool accepted,
+	int packetPlatID,
+	bool hasSensorID,
+	int packetSensorID,
+	const char* reason)
+{
+	std::uint64_t& counter = accepted ? m_routeAcceptCount : m_routeRejectCount;
+	++counter;
+	const bool shouldLog = flag != 0x38 || counter <= 8 || (counter % 120) == 0;
+	if (!shouldLog)
+	{
+		return;
+	}
+	std::ostringstream line;
+	line << (accepted ? "[PacketRoute]" : "[PacketRouteReject]")
+		<< " flag=0x" << std::hex << flag << std::dec
+		<< " accepted=" << (accepted ? "1" : "0")
+		<< " localPlatID=" << m_localPlatID
+		<< " localSensorID=" << m_localSensorID
+		<< " packetPlatID=" << packetPlatID
+		<< " packetSensorID=";
+	if (hasSensorID)
+	{
+		line << packetSensorID;
+	}
+	else
+	{
+		line << "na";
+	}
+	line << " reason=" << reason
+		<< " routeCount=" << counter
+		<< '\n';
+	std::cout << line.str();
+	std::cout.flush();
 }
 
 bool UdpCommThread::initSocket()
@@ -186,8 +237,6 @@ void UdpCommThread::recvThreadFunc()
 
 		if (recvLen > 0)
 		{
-			std::lock_guard<std::mutex> lock(m_mtx);
-
 			char fromIpStr[INET_ADDRSTRLEN] = { 0 };
 			if (inet_ntop(AF_INET, &fromAddr.sin_addr, fromIpStr, INET_ADDRSTRLEN) == nullptr)
 			{
@@ -202,8 +251,7 @@ void UdpCommThread::recvThreadFunc()
 					<< " packet=" << m_receivePacketCount << std::endl;
 			}
 
-			setRemoteAddr(fromIpStr, ntohs(fromAddr.sin_port));
-			parseUdpData(_recvBuf, recvLen);
+			parseUdpData(_recvBuf, recvLen, fromAddr);
 		}
 		else if (recvLen == 0)
 		{
@@ -223,11 +271,11 @@ void UdpCommThread::recvThreadFunc()
 	std::cout << "UDP接收线程退出" << std::endl;
 }
 
-void UdpCommThread::parseUdpData(const char* data, int dataLen)
+void UdpCommThread::parseUdpData(const char* data, int dataLen, const sockaddr_in& fromAddr)
 {
 	if (dataLen < static_cast<int>(sizeof(int)))
 	{
-		std::cerr << "UDP数据长度不足，无法解析" << std::endl;
+		logRoute(0, false, -1, false, -1, "length_too_short");
 		return;
 	}
 
@@ -247,12 +295,22 @@ void UdpCommThread::parseUdpData(const char* data, int dataLen)
 		{
 			BYHWICD::ControlP2cX1ObjTrackingCmd cmd;
 			memcpy(&cmd, data, sizeof(cmd));
+			const bool accepted = cmd.platID == m_localPlatID;
+			logRoute(flag, accepted, cmd.platID, false, -1,
+				accepted ? "plat_match" : "plat_mismatch");
+			if (!accepted)
+			{
+				return;
+			}
+			if (m_allowDynamicRemote)
+			{
+				updateRemoteFromSender(fromAddr);
+			}
 			parseControlCmd(cmd);
 		}
 		else
 		{
-			std::cerr << "控制指令长度不匹配，期望：" << sizeof(BYHWICD::ControlP2cX1ObjTrackingCmd)
-				<< "，实际：" << dataLen << std::endl;
+			logRoute(flag, false, -1, false, -1, "length_mismatch");
 		}
 		break;
 
@@ -261,12 +319,26 @@ void UdpCommThread::parseUdpData(const char* data, int dataLen)
 		{
 			BYHWICD::InitP2cObjectTrackingCmd cmd;
 			memcpy(&cmd, data, sizeof(cmd));
+			const bool platMatch = cmd.platID == m_localPlatID;
+			const bool exactSensor = cmd.sensorID == m_localSensorID;
+			const bool sensorBroadcast = m_acceptSensorBroadcast && cmd.sensorID == 255;
+			const bool accepted = platMatch && (exactSensor || sensorBroadcast);
+			const char* reason = !platMatch ? "plat_mismatch"
+				: (exactSensor ? "exact_match" : (sensorBroadcast ? "sensor_broadcast" : "sensor_mismatch"));
+			logRoute(flag, accepted, cmd.platID, true, cmd.sensorID, reason);
+			if (!accepted)
+			{
+				return;
+			}
+			if (m_allowDynamicRemote)
+			{
+				updateRemoteFromSender(fromAddr);
+			}
 			parseInitCmd(cmd);
 		}
 		else
 		{
-			std::cerr << "初始化指令长度不匹配，期望：" << sizeof(BYHWICD::InitP2cObjectTrackingCmd)
-				<< "，实际：" << dataLen << std::endl;
+			logRoute(flag, false, -1, false, -1, "length_mismatch");
 		}
 		break;
 
@@ -275,17 +347,31 @@ void UdpCommThread::parseUdpData(const char* data, int dataLen)
 		{
 			BYHWICD::DisplayC2cObjTrackingData displayData;
 			memcpy(&displayData, data, sizeof(displayData));
+			const bool platMatch = displayData.platID == m_localPlatID;
+			const bool exactSensor = displayData.sensorID == m_localSensorID;
+			const bool sensorBroadcast = m_acceptSensorBroadcast && displayData.sensorID == 255;
+			const bool accepted = platMatch && (exactSensor || sensorBroadcast);
+			const char* reason = !platMatch ? "plat_mismatch"
+				: (exactSensor ? "exact_match" : (sensorBroadcast ? "sensor_broadcast" : "sensor_mismatch"));
+			logRoute(flag, accepted, displayData.platID, true, displayData.sensorID, reason);
+			if (!accepted)
+			{
+				return;
+			}
+			if (m_allowDynamicRemote)
+			{
+				updateRemoteFromSender(fromAddr);
+			}
 			parseDisplayData(displayData);
 		}
 		else
 		{
-			std::cerr << "实时成像数据长度不匹配，期望：" << sizeof(BYHWICD::DisplayC2cObjTrackingData)
-				<< "，实际：" << dataLen << std::endl;
+			logRoute(flag, false, -1, false, -1, "length_mismatch");
 		}
 		break;
 
 	default:
-		std::cerr << "未知的flag值：0x" << std::hex << flag << std::dec << std::endl;
+		logRoute(flag, false, -1, false, -1, "unsupported_flag");
 		break;
 	}
 }

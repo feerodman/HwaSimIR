@@ -76,6 +76,13 @@
 * 主应用类
 * 封装框架初始化、窗口管理、自定义业务逻辑
 */
+struct HwaSimIRLaunchOptions
+{
+	std::string channel = "precise";
+	std::string networkConfigPath;
+	std::string configSource = "default";
+};
+
 class HwaSimIR {
 public:
 	enum class RenderPresentationMode {
@@ -90,7 +97,7 @@ public:
 	};
 
 	// 构造函数：初始化HwaSimIR框架和渲染宿主
-	HwaSimIR(int argc, char** argv);
+	HwaSimIR(int argc, char** argv, const HwaSimIRLaunchOptions& launchOptions);
 
 	// 析构函数：清理框架和窗口资源
 	~HwaSimIR();
@@ -161,6 +168,9 @@ private:
 	void ProcessPendingNetworkCommands();
 	void ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd);
 	void ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCmd& cmd);
+	void LoadRenderControlConfig();
+	void ApplyRenderControl(int externalSimMode, int externalVideoFps, const char* requestSource);
+	void ResetRenderSchedulingState();
 	void LogGraphicsBackend() const;
 
 	struct PendingDisplayFrame
@@ -606,6 +616,14 @@ private:
 	uint16_t m_udpRemotePort = 9999;
 	std::string m_tcpServerIp = "127.0.0.1";
 	uint16_t m_tcpServerPort = 5555;
+	HwaSimIRLaunchOptions m_launchOptions;
+	std::string m_channel = "precise";
+	std::string m_networkConfigPath;
+	std::string m_networkConfigSource = "default";
+	int m_localPlatID = 0;
+	int m_localSensorID = 0;
+	bool m_acceptSensorBroadcast = true;
+	bool m_allowDynamicRemote = false;
 
 
 									   // 模型/纹理路径映射：平台类型 -> 资源路径
@@ -718,6 +736,12 @@ private:
 	int m_lastTargetUpdateSkippedBeyondFar = 0;
 	int m_lastTargetUpdateSkippedShaderApply = 0;
 	std::atomic<int> m_targetVideoFps{ 0 };
+	std::string m_renderModePolicy = "ExternalPreferred";
+	int m_configuredSimMode = 2;
+	int m_configuredVideoFps = 60;
+	int m_minRealtimeFps = 60;
+	bool m_enforceMinRealtimeFps = true;
+	std::string m_asyncInputPolicy = "Latest";
 
 															 // 控制标记
 	bool m_isAddPlatform;    // 增删标记：true-增加 false-删除

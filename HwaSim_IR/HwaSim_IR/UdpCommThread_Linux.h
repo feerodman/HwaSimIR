@@ -18,7 +18,9 @@ class UdpCommThread
 {
 public:
 	UdpCommThread(HwaSimIR* hwaSimIR, const std::string& localIp, uint16_t localPort,
-		const std::string& remoteIp, uint16_t remotePort);
+		const std::string& remoteIp, uint16_t remotePort,
+		int localPlatID, int localSensorID,
+		bool acceptSensorBroadcast, bool allowDynamicRemote);
 	~UdpCommThread();
 
 	bool start();
@@ -27,20 +29,16 @@ public:
 	bool sendInitAck(const BYHWICD::InitAckC2pObjectTrackingCmd& ackData);
 
 	void setRemoteAddr(const char* ip, uint16_t port);
-	sockaddr_in getRemoteAddr() const { return m_remoteAddr; }
-	bool isMutexLockedByAnyThread() {
-		if (m_mtx.try_lock()) {
-			m_mtx.unlock();
-			return false;
-		}
-		return true;
-	}
+	sockaddr_in getRemoteAddr() const;
 
 private:
 	bool initSocket();
 	void destroySocket();
 	void recvThreadFunc();
-	void parseUdpData(const char* data, int dataLen);
+	void parseUdpData(const char* data, int dataLen, const sockaddr_in& fromAddr);
+	void updateRemoteFromSender(const sockaddr_in& fromAddr);
+	void logRoute(int flag, bool accepted, int packetPlatID,
+		bool hasSensorID, int packetSensorID, const char* reason);
 
 	void parseControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd);
 	void parseInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& cmd);
@@ -52,13 +50,19 @@ private:
 	int m_udpSocket;
 	sockaddr_in m_localAddr;
 	sockaddr_in m_remoteAddr;
+	int m_localPlatID;
+	int m_localSensorID;
+	bool m_acceptSensorBroadcast;
+	bool m_allowDynamicRemote;
 
 	std::thread m_recvThread;
 	std::atomic<bool> m_bIsRunning;
-	std::mutex m_mtx;
+	mutable std::mutex m_mtx;
 
 	static const int RECV_BUF_SIZE = 4096;
 	char _recvBuf[RECV_BUF_SIZE];
 	std::uint64_t m_receivePacketCount = 0;
 	std::uint64_t m_parsePacketCount = 0;
+	std::uint64_t m_routeAcceptCount = 0;
+	std::uint64_t m_routeRejectCount = 0;
 };

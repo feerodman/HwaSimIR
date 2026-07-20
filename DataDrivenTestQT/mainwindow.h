@@ -50,6 +50,7 @@ public:
 	~MainWindow();
 	void setH264EnabledForTest(bool enabled) { m_h264Enabled = enabled; }
 	void configurePhase4cAeroMachTest(bool enabled, double altitudeKm, double mach);
+	void configureProtocolForTest(int platID, int sensorID, int simMode, int videoFps);
 
 	private slots:
 	void onResetButtonClicked();
@@ -80,6 +81,10 @@ private:
 	quint16 m_udpLocalPort = 9999;
 	QString m_udpRemoteIp;
 	quint16 m_udpRemotePort = 8888;
+	int m_protocolPlatID = 1001;
+	int m_protocolSensorID = 2;
+	int m_protocolSimMode = 2;
+	int m_protocolVideoFps = 60;
 
 	// UI Components
 	QGroupBox *m_configGroup;

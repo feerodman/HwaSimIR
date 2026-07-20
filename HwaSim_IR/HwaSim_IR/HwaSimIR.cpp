@@ -997,10 +997,12 @@ double WeatherSunStrength(int weatherCode, double sunElevationDeg)
 
 
 // ========== HwaSimIRMainApp 类实现 ==========
-HwaSimIR::HwaSimIR(int argc, char** argv)
+HwaSimIR::HwaSimIR(int argc, char** argv, const HwaSimIRLaunchOptions& launchOptions)
 	: m_pFramework(new PandaFramework()), m_pMainWindow(nullptr)
 	,m_isAddPlatform(false), m_isSimRunning(false), m_currentRound(0), m_isCameraAttached(false), m_isInitTargetPlatID(false), m_stage0DisplayFrameCount(0){
+	m_launchOptions = launchOptions;
 	m_runtimeConfig.loadFromCandidates(BuildRuntimeConfigCandidatePaths());
+	LoadRenderControlConfig();
 	LoadRenderBackendConfig();
 	m_annotationOverlayInSensorImage = m_runtimeConfig.getBool(
 		"Annotation",
@@ -1077,8 +1079,17 @@ HwaSimIR::HwaSimIR(int argc, char** argv)
 			<< std::endl;
 	}
 
-	SetRenderMode(true, 0);
-	//SetRenderMode(false, 0);
+	m_targetVideoFps.store(m_configuredVideoFps);
+	SetRenderMode(m_configuredSimMode == 1, static_cast<double>(m_configuredVideoFps));
+	std::cout << "[RenderControl]"
+		<< " externalSimMode=none"
+		<< " externalVideoFps=none"
+		<< " policy=" << m_renderModePolicy
+		<< " effectiveSimMode=" << m_configuredSimMode
+		<< " effectiveVideoFps=" << m_configuredVideoFps
+		<< " source=startup_config"
+		<< " asyncInputPolicy=" << m_asyncInputPolicy
+		<< std::endl;
 
 	LogRenderBackendConfig("startup");
 
@@ -5033,6 +5044,15 @@ void HwaSimIR::InitPlatformModels()
 		"F35",
 		"BM_METAL-ALUMINIUM"
 	};
+	//m_platformResMap[F35] = {
+	//	"Config/TargetLib/models/f35/J20.obj",
+	//	"Config/TargetLib/models/f35/j20.jpg",
+	//	"Config/TargetLib/models/f35/f35c_mat.tif",
+	//	"Config/TargetLib/models/f35/f35c_mat.tif.xml",
+	//	"Config/TargetLib/models/f35",
+	//	"F35",
+	//	"BM_METAL-ALUMINIUM"
+	//};
 	m_platformResMap[F22] = {
 		"Config/TargetLib/models/f22/f22.obj",
 		"Config/TargetLib/models/f22/f22.rgb",
@@ -6245,22 +6265,92 @@ void HwaSimIR::on_key_event(const Event * event, void * user_data)
 	}
 }
 
+void HwaSimIR::LoadRenderControlConfig()
+{
+	const std::string requestedPolicy = ToLowerAscii(m_runtimeConfig.getString(
+		"RenderControl", "ModePolicy", "", "ExternalPreferred"));
+	if (requestedPolicy == "configonly")
+	{
+		m_renderModePolicy = "ConfigOnly";
+	}
+	else
+	{
+		m_renderModePolicy = "ExternalPreferred";
+		if (requestedPolicy != "externalpreferred")
+		{
+			std::cerr << "[RenderControl][WARN] invalid ModePolicy=" << requestedPolicy
+				<< " fallback=ExternalPreferred" << std::endl;
+		}
+	}
+
+	m_configuredSimMode = m_runtimeConfig.getInt(
+		"RenderControl", "ConfiguredSimMode", "", 2);
+	if (m_configuredSimMode != 1 && m_configuredSimMode != 2)
+	{
+		std::cerr << "[RenderControl][WARN] invalid ConfiguredSimMode=" << m_configuredSimMode
+			<< " fallback=2" << std::endl;
+		m_configuredSimMode = 2;
+	}
+	m_configuredVideoFps = m_runtimeConfig.getInt(
+		"RenderControl", "ConfiguredVideoFps", "", 60);
+	if (m_configuredVideoFps <= 0)
+	{
+		m_configuredVideoFps = 60;
+	}
+	m_minRealtimeFps = std::max(1, m_runtimeConfig.getInt(
+		"RenderControl", "MinRealtimeFps", "", 60));
+	m_enforceMinRealtimeFps = m_runtimeConfig.getBool(
+		"RenderControl", "EnforceMinRealtimeFps", "", true);
+	const std::string inputPolicy = ToLowerAscii(m_runtimeConfig.getString(
+		"RenderControl", "AsyncInputPolicy", "", "Latest"));
+	m_asyncInputPolicy = "Latest";
+	if (inputPolicy != "latest")
+	{
+		std::cerr << "[RenderControl][WARN] unsupported AsyncInputPolicy=" << inputPolicy
+			<< " fallback=Latest" << std::endl;
+	}
+	if (m_enforceMinRealtimeFps && m_configuredVideoFps < m_minRealtimeFps)
+	{
+		std::cerr << "[RenderControl][WARN] ConfiguredVideoFps=" << m_configuredVideoFps
+			<< " raisedToMinRealtimeFps=" << m_minRealtimeFps << std::endl;
+		m_configuredVideoFps = m_minRealtimeFps;
+	}
+}
+
 void HwaSimIR::LoadNetworkConfig()
 {
 	IRRuntimeConfig networkConfig;
 	std::vector<std::string> configPaths;
-//粗
-//	configPaths.push_back("Config/NetworkConfig_coarse.ini");
-//	configPaths.push_back("../Bin/Config/NetworkConfig_coarse.ini");
-//	configPaths.push_back("HwaSim_IR/Bin/Config/NetworkConfig_coarse.ini");
-//	configPaths.push_back("../HwaSim_IR/Bin/Config/NetworkConfig_coarse.ini");
-//精
-    configPaths.push_back("Config/NetworkConfig_precise.ini");
-    configPaths.push_back("../Bin/Config/NetworkConfig_precise.ini");
-    configPaths.push_back("HwaSim_IR/Bin/Config/NetworkConfig_precise.ini");
-    configPaths.push_back("../HwaSim_IR/Bin/Config/NetworkConfig_precise.ini");
+	if (!m_launchOptions.networkConfigPath.empty())
+	{
+		configPaths.push_back(m_launchOptions.networkConfigPath);
+	}
+	else
+	{
+		const std::string fileName = "NetworkConfig_" + m_launchOptions.channel + ".ini";
+		configPaths.push_back("Config/" + fileName);
+		configPaths.push_back("../Bin/Config/" + fileName);
+		configPaths.push_back("HwaSim_IR/Bin/Config/" + fileName);
+		configPaths.push_back("../HwaSim_IR/Bin/Config/" + fileName);
+	}
 
 	networkConfig.loadFromCandidates(configPaths);
+	m_networkConfigPath = networkConfig.loadedPath();
+	m_networkConfigSource = m_launchOptions.configSource;
+	m_channel = ToLowerAscii(networkConfig.getString(
+		"Identity", "channel", "", m_launchOptions.channel));
+	if (m_channel != "precise" && m_channel != "coarse")
+	{
+		std::cerr << "[RuntimeInstance][WARN] invalid Identity.channel=" << m_channel
+			<< " fallback=" << m_launchOptions.channel << std::endl;
+		m_channel = m_launchOptions.channel;
+	}
+	m_localPlatID = networkConfig.getInt("Identity", "platID", "", 0);
+	m_localSensorID = networkConfig.getInt("Identity", "sensorID", "", 0);
+	m_acceptSensorBroadcast = networkConfig.getBool(
+		"Identity", "acceptSensorBroadcast", "", true);
+	m_allowDynamicRemote = networkConfig.getBool(
+		"Identity", "allowDynamicRemote", "", false);
 
 	m_udpLocalIp = networkConfig.getString("UDP", "localIp", "", m_udpLocalIp);
 	m_udpRemoteIp = networkConfig.getString("UDP", "remoteIp", "", m_udpRemoteIp);
@@ -6282,16 +6372,22 @@ void HwaSimIR::LoadNetworkConfig()
 		m_tcpServerPort = static_cast<uint16_t>(tcpServerPort);
 	}
 
-	std::cout << "[NetworkConfig]"
-		<< " path=" << networkConfig.loadedPath()
-		<< " loaded=" << (networkConfig.loaded() ? "1" : "0")
+	std::cout << "[RuntimeInstance]"
+		<< " channel=" << m_channel
+		<< " configPath=" << m_networkConfigPath
+		<< " configLoaded=" << (networkConfig.loaded() ? "1" : "0")
+		<< " platID=" << m_localPlatID
+		<< " sensorID=" << m_localSensorID
+		<< " acceptSensorBroadcast=" << (m_acceptSensorBroadcast ? "1" : "0")
+		<< " allowDynamicRemote=" << (m_allowDynamicRemote ? "1" : "0")
 		<< " udpLocal=" << m_udpLocalIp << ":" << m_udpLocalPort
 		<< " udpRemote=" << m_udpRemoteIp << ":" << m_udpRemotePort
 		<< " tcpServer=" << m_tcpServerIp << ":" << m_tcpServerPort
+		<< " configSource=" << m_networkConfigSource
 		<< std::endl;
 	if (!networkConfig.loaded())
 	{
-		std::cerr << "[NetworkConfig][WARN] NetworkConfig.ini not found; using built-in defaults."
+		std::cerr << "[RuntimeInstance][WARN] network config not found; using built-in defaults."
 			<< std::endl;
 	}
 }
@@ -6306,7 +6402,11 @@ bool HwaSimIR::InitUdpThread() {
 		m_udpLocalIp,
 		m_udpLocalPort,
 		m_udpRemoteIp,
-		m_udpRemotePort);
+		m_udpRemotePort,
+		m_localPlatID,
+		m_localSensorID,
+		m_acceptSensorBroadcast,
+		m_allowDynamicRemote);
 	if (!m_pUdpThread->start()) {
 		std::cerr << "UDP线程启动失败！" << std::endl;
 		delete m_pUdpThread;
@@ -6577,15 +6677,12 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 		<< ", sensorSize=" << sensor.trackerSensorWidth << "x" << sensor.trackerSensorHeight
 		<< ", viewMinMax=" << sensor.trackerSensorViewMin << "/" << sensor.trackerSensorViewMax
 		<< ", pixelAngleUrad=" << sensor.trackerSensorPixelAngle
+		<< ", simMode=" << cmd.trackingInit.simMode
 		<< ", videoFps=" << cmd.trackingInit.videoFps
 		<< ", missileMax(AIM120/AIM9/MMD)=" << cmd.MissileMaxCount120 << "/"
 		<< cmd.MissileMaxCount9 << "/" << cmd.MissileMaxCountMMD << std::endl;
-	const int targetVideoFps = cmd.trackingInit.videoFps > 0 ? cmd.trackingInit.videoFps : 25;
-	m_targetVideoFps.store(targetVideoFps);
-	m_perfStats.reset();
-	m_perfStats.configure(m_bSyncRenderMode.load(), static_cast<double>(targetVideoFps));
-	m_pendingDisplayFrames.clear();
-	m_udpSequence = 0;
+	ApplyRenderControl(cmd.trackingInit.simMode, cmd.trackingInit.videoFps, "udp_init");
+	const int targetVideoFps = m_targetVideoFps.load();
 	m_inputQueueBackpressureLogCount = 0;
 	m_annotationLastProjectionSourceSeq = 0;
 	m_annotationLastBBoxSourceSeq = 0;
@@ -6640,10 +6737,8 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 	ApplyStage6FinalPostprocessInputs();
 	if (m_pTcpThread)
 	{
-		m_pTcpThread->setSyncMode(m_bSyncRenderMode.load());
 		m_h264EnFromInit = sensor.h264En;
 		m_pTcpThread->setH264Requested(sensor.h264En);
-		m_pTcpThread->resetFrameCounters();
 	}
 	LogEffectiveRuntimeConfig(
 		"after_init",
@@ -6653,10 +6748,6 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 		"cmd",
 		"pending_realtime_packet",
 		"cmd");
-	if (!m_bSyncRenderMode.load())
-	{
-		SetRenderMode(false, static_cast<double>(targetVideoFps));
-	}
 	LogActiveIRSensorProfile(sensor.trackerSensorBand, "init-command", true);
 
 	// ========== 初始化业务逻辑（后续填充） ==========
@@ -6682,8 +6773,8 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 	BYHWICD::InitAckC2pObjectTrackingCmd ack;
 	ack.flag = 0x37;
 	ack.JB = cmd.JB;
-	ack.platID = cmd.platID;
-	ack.sensorID = cmd.sensorID;
+	ack.platID = m_localPlatID;
+	ack.sensorID = m_localSensorID;
 	ack.trackingReady = true; // 标记为已准备好（根据实际初始化结果修改）
 
 							  // 发送应答
@@ -11638,9 +11729,75 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 			<< std::endl;
 	}
 }
+void HwaSimIR::ResetRenderSchedulingState()
+{
+	const std::size_t inputQueueDepth = m_pendingDisplayFrames.size();
+	m_pendingDisplayFrames.clear();
+	m_stage0DisplayFrameCount = 0;
+	m_udpSequence = 0;
+	m_inputQueueBackpressureLogCount = 0;
+	m_currentFrameTelemetry = IRFrameTelemetry();
+	m_latestUdpSourceSeq.store(0);
+	m_lastCapturedSourceSeq = 0;
+	m_lastOutputSourceSeq.store(0);
+	m_lastSourceSeqContinuous.store(true);
+	m_syncFrameActive.store(false);
+	m_perfStats.reset();
+	if (m_pTcpThread)
+	{
+		m_pTcpThread->resetFrameCounters();
+	}
+	m_cvDisplayQueueSpace.notify_all();
+	std::cout << "[RenderModeApply]"
+		<< " clearedInputFrames=" << inputQueueDepth
+		<< " tcpQueueReset=" << (m_pTcpThread ? "1" : "0")
+		<< " telemetryReset=1"
+		<< " sequenceReset=1"
+		<< std::endl;
+}
 
+void HwaSimIR::ApplyRenderControl(
+	int externalSimMode,
+	int externalVideoFps,
+	const char* requestSource)
+{
+	const bool externalModeValid = externalSimMode == 1 || externalSimMode == 2;
+	const bool useExternalMode = m_renderModePolicy == "ExternalPreferred" && externalModeValid;
+	const int effectiveSimMode = useExternalMode ? externalSimMode : m_configuredSimMode;
+	int effectiveVideoFps = useExternalMode && externalVideoFps > 0
+		? externalVideoFps
+		: m_configuredVideoFps;
+	bool minFpsEnforced = false;
+	if (m_enforceMinRealtimeFps && effectiveVideoFps < m_minRealtimeFps)
+	{
+		effectiveVideoFps = m_minRealtimeFps;
+		minFpsEnforced = true;
+	}
+	if (effectiveVideoFps <= 0)
+	{
+		effectiveVideoFps = 60;
+	}
 
+	ResetRenderSchedulingState();
+	m_targetVideoFps.store(effectiveVideoFps);
+	SetRenderMode(effectiveSimMode == 1, static_cast<double>(effectiveVideoFps));
 
+	const char* effectiveSource = useExternalMode
+		? requestSource
+		: (m_renderModePolicy == "ConfigOnly" ? "config_only" : "config_fallback");
+	std::cout << "[RenderControl]"
+		<< " externalSimMode=" << externalSimMode
+		<< " externalVideoFps=" << externalVideoFps
+		<< " externalModeValid=" << (externalModeValid ? "1" : "0")
+		<< " policy=" << m_renderModePolicy
+		<< " effectiveSimMode=" << effectiveSimMode
+		<< " effectiveVideoFps=" << effectiveVideoFps
+		<< " source=" << effectiveSource
+		<< " minRealtimeFps=" << m_minRealtimeFps
+		<< " minFpsEnforced=" << (minFpsEnforced ? "1" : "0")
+		<< " asyncInputPolicy=" << m_asyncInputPolicy
+		<< std::endl;
+}
 
 void HwaSimIR::SetRenderMode(bool isSync, double targetFPS) {
 	m_bSyncRenderMode.store(isSync);
@@ -11671,6 +11828,11 @@ void HwaSimIR::SetRenderMode(bool isSync, double targetFPS) {
 			std::cout << "切换至【异步渲染模式】，不限帧（性能拉满）" << std::endl;
 		}
 	}
+	std::cout << "[RenderModeApply]"
+		<< " sync=" << (isSync ? "1" : "0")
+		<< " targetFps=" << configuredTarget
+		<< " clockMode=" << (isSync ? "packet_driven" : (targetFPS > 0.0 ? "limited" : "unlimited"))
+		<< std::endl;
 }
 
 void HwaSimIR::OnTcpFrameSent(

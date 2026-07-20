@@ -1,0 +1,1676 @@
+# HwaSimIR 运行模式、双通道、H.264、纹理天气与照明系统实施方案
+
+> 版本：v1.1，需求纠错后的总体实施规划  
+> 更新时间：2026-07-16  
+> 基线提交：`2f17f9cbd599fb7d7473a7e00e5ceff620ec4b77`（`修改通信接口后版本备份_20260716_1631`）  
+> 目标平台：Windows Release x64 功能验证；RK3588 / Debian 11 / aarch64 HeadlessOffscreen 生产部署  
+> 主体工程：`HwaSim_IR`、`DataDrivenTestQT`、`HwaSim_IR_VideoDisplay`  
+> 性能目标：单通道实时输出稳定达到 60 FPS；双进程并发时分别统计，禁止以静默降帧代替性能收口  
+> 红外边界：保持 Stage3～Stage7 物理链路语义；天气纹理和 Panda3D 灯光不得直接覆盖 MWIR/LWIR 辐射计算结果  
+
+---
+
+## 0. 本版纠错与硬约束
+
+本版替换上一版规划中的以下错误方向。
+
+### 0.1 不修改现有数据协议
+
+本轮不得为了 ID 路由修改协议结构体，不得给：
+
+```cpp
+ControlP2cX1ObjTrackingCmd
+```
+
+增加 `sensorID`。
+
+正确路由规则为：
+
+```text
+0x41 ControlP2cX1ObjTrackingCmd
+  只检查 platID。
+  cmd.platID == localPlatID 时接收。
+  同一平台下 coarse/precise 两个传感器进程都接收该平台控制命令。
+
+0x36 InitP2cObjectTrackingCmd
+  检查 platID + sensorID。
+  cmd.platID == localPlatID 且
+  (cmd.sensorID == localSensorID 或 cmd.sensorID == 255) 时接收。
+
+0x38 DisplayC2cObjTrackingData
+  检查 platID + sensorID。
+  data.platID == localPlatID 且
+  (data.sensorID == localSensorID 或 data.sensorID == 255) 时接收。
+```
+
+`sensorID=255` 只适用于协议中本来包含 `sensorID` 的初始化和实时数据，不适用于控制命令。
+
+### 0.2 三个程序的协议定义必须同步
+
+本轮涉及的三个主体程序为：
+
+```text
+HwaSim_IR
+DataDrivenTestQT
+HwaSim_IR_VideoDisplay
+```
+
+活动协议头为：
+
+```text
+HwaSim_IR/HwaSim_IR/Common/CommonData.h
+DataDrivenTestQT/CommonData.h
+HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay/CommonData.h
+```
+
+以 `HwaSim_IR/HwaSim_IR/Common/CommonData.h` 为当前基准，将三个活动头文件同步为相同定义。同步时只统一现有结构体定义、顺序、注释和作用域，不增加、删除或重排协议字段。
+
+后续任何经正式 ICD 确认的数据协议修改，也必须一次性同步三个程序并同时完成三工程构建验证，不允许只改发送端或只改接收端。
+
+### 0.3 天气首阶段不使用粒子特效
+
+当前天气完善阶段不使用 Panda3D Particle Effects，不创建逐粒子雨滴或雪花，也不引入体积云。
+
+首阶段只使用：
+
+```text
+HwaSim_IR/Bin/Config/Weather
+```
+
+中的现有纹理和 profile，通过少量固定纹理层生成云、雨、雪：
+
+```text
+云：天空穹顶/大尺寸云层 Card 的纹理混合与 UV 缓慢滚动。
+雨：全屏或相机前固定雨纹理层，按风向和速度滚动 UV。
+雪：全屏或相机前固定雪纹理层，使用 1～2 层不同缩放/速度的 UV 滚动。
+雾：距离相关 shader 混合，不使用粒子。
+```
+
+该方案优先保证红外合理性、Headless 可用和 60 FPS，再评估后续体积云或粒子效果。
+
+---
+
+## 1. 总体结论
+
+近期双通道继续使用两个独立 `HwaSim_IR` 进程，但不再通过修改 `LoadNetworkConfig()` 并重复构建两次实现。
+
+目标运行方式：
+
+```text
+同一套源码 + 同一个 HwaSim_IR 可执行文件 + 两份独立配置
+```
+
+Windows 示例：
+
+```bat
+HwaSim_IR.exe --channel precise
+HwaSim_IR.exe --channel coarse
+```
+
+Linux/RK3588 示例：
+
+```bash
+./HwaSim_IR --channel precise
+./HwaSim_IR --channel coarse
+```
+
+也支持直接指定配置：
+
+```bash
+./HwaSim_IR --network-config Config/NetworkConfig_precise.ini
+./HwaSim_IR --network-config Config/NetworkConfig_coarse.ini
+```
+
+如果部署交付必须保留两个程序名，可以复制同一个构建产物：
+
+```text
+HwaSim_IR_precise.exe
+HwaSim_IR_coarse.exe
+```
+
+但两者的差异仍由参数或配置决定，不允许再由源码注释决定。
+
+总体实施顺序：
+
+```text
+R1  通道配置、三端协议一致性、ID 路由、simMode 调度闭环
+R2  双进程启动与同步/异步 60 FPS 基线验收
+V1  视频编码器抽象和现有 TCP 包兼容改造
+V2  Windows H.264 编码/发送与 VideoDisplay 解码/显示
+V3  RK3588 MPP 硬件 H.264 编码和板端性能收口
+W1  纹理云层和红外云辐射/透射
+W2  纹理雨雪、距离雾和天气综合效果
+L1  24 小时太阳/月亮自然照明
+L2  平台主动照明器及红外波段耦合
+A1  双通道 + Headless + H.264 + 天气 + 照明综合验收
+```
+
+阶段门禁：
+
+1. 每阶段先完成 Windows 构建和 smoke，再进行 RK3588 实测。
+2. 新功能默认可关闭，失败时必须有明确日志和安全回退。
+3. 视频编码、解码、文件写入不得进入 Panda3D 渲染线程。
+4. 天气纹理在初始化或状态变化时加载，禁止每帧读取图片。
+5. 单通道达不到 60 FPS 时暂停后续功能叠加，先定位瓶颈。
+6. 双通道仍是双进程，不在本轮改造成单进程双相机。
+7. 不改变现有红外目标热状态、尾喷、辐射、大气、MTF、噪声和 AGC 的物理语义。
+
+---
+
+## 2. 最新代码现状
+
+### 2.1 数据接口现状
+
+当前 `CommonData.h` 已包含：
+
+```text
+InitObjectTrackingParam.simMode
+InitObjectTrackingParam.videoFps
+trackerSensorParam.trackerSensorPixelAngle
+InitP2cObjectTrackingCmd.platParamInit
+F35/F22/预留目标最大数量
+InitP2cObjectTrackingCmd.platID/sensorID
+DisplayC2cObjTrackingData.platID/sensorID
+ControlP2cX1ObjTrackingCmd.platID
+```
+
+`simMode` 定义：
+
+```text
+1：同步模式
+2：异步模式，使用 videoFps
+```
+
+当前 HwaSimIR 已有：
+
+```text
+SetRenderMode(bool isSync, double targetFPS)
+m_bSyncRenderMode
+m_syncFrameActive
+m_targetVideoFps
+同步 TCP 队列等待
+异步 TCP 队列覆盖旧帧
+```
+
+但 `trackingInit.simMode` 尚未形成完整的配置仲裁、模式切换、队列清理和验收闭环。
+
+### 2.2 协议副本现状
+
+当前：
+
+```text
+HwaSim_IR CommonData.h
+HwaSim_IR_VideoDisplay CommonData.h
+```
+
+内容已经基本一致。
+
+`DataDrivenTestQT/CommonData.h` 仍使用部分嵌套结构体定义，虽然字段目标相近，但长期存在类型作用域、结构体尺寸和后续修改不同步风险。
+
+应在 R1 中完成一次三端同步，并增加自动检查。
+
+### 2.3 网络配置现状
+
+已有：
+
+```text
+NetworkConfig_precise.ini
+NetworkConfig_coarse.ini
+```
+
+两份配置的 UDP/TCP 端口独立，但当前 `LoadNetworkConfig()` 通过注释一组路径、启用另一组路径选择通道。
+
+缺少：
+
+```text
+本进程 channel
+本进程 platID
+本进程 sensorID
+广播接收开关
+配置选择参数
+配置来源日志
+```
+
+### 2.4 当前 UDP 路由隐患
+
+当前 UDP 线程在完成包身份判断前，会用最近一次发包地址更新远端地址，然后才解析数据。
+
+在双通道、多发送端或误发包环境下，可能发生：
+
+```text
+不属于本进程的数据包进入业务处理；
+不属于本进程的发包者覆盖 ACK 远端地址；
+错误初始化/实时包进入队列；
+coarse/precise 状态相互污染。
+```
+
+需要把“包长度验证、flag 解析、ID 过滤、业务入队、远端地址更新”重新排序。
+
+### 2.5 H.264 当前状态
+
+当前只完成：
+
+```text
+h264En 请求字段
+Codec/Encoder/Bitrate/GOP/LowLatency 配置
+H.264 可用性探测占位
+JPEG 安全回退
+annotation JSON 中的 codec 元数据
+```
+
+实际发送端仍然每帧执行：
+
+```cpp
+cv::imencode(".jpg", ...)
+```
+
+Linux 明确返回 H.264 未实现，VideoDisplay 收到 `h264_annexb` 时也会因解码器未集成而拒绝该帧。
+
+因此必须完整补齐：
+
+```text
+编码器 -> H.264 Access Unit -> TCP payload -> 接收端 codec 分流
+       -> 持久解码器 -> QImage -> 显示/录像
+```
+
+### 2.6 天气当前状态
+
+现有模块已经具备：
+
+```text
+IRWeatherEffects
+0～5 六类天气 profile
+分波段 sky/ground 灰度缩放
+云温、云量、云透明度
+雾密度、能见度
+雨雪密度、速度、风速、风向
+weather_profiles.json
+weather_textures.json
+云/雨/雪/太阳/月亮纹理资源
+Stage7 天气状态和纹理缓存框架
+```
+
+当前实际问题：
+
+```text
+EnableCloudLayer=0
+EnablePrecipitation=0
+CloudLayerMaxCards=0
+PrecipitationMaxParticles=0
+```
+
+效果没有真正启用，并且此前的 `PrecipitationMaxParticles` 命名容易把实现引向粒子系统。本轮应改为固定纹理层，不使用粒子。
+
+### 2.7 照明当前状态
+
+已有输入：
+
+```text
+trackerSensorParam.illuminatorX/Y/Z
+trackerSensorParam.illuminatorPitch/Yaw/Roll
+trackerSensorParam.illuminatorAngle
+trackerSensorParam.illuminatorSpotRad
+WeaponState.illuminatorEn
+```
+
+已有红外计算基础：
+
+```text
+太阳方向
+太阳高度/方位
+太阳反射权重
+天气 sunDirectScale/skyDiffuseScale
+Stage5 reflectedRadiance
+```
+
+当前没有完整的 Panda3D 自然灯光节点，也没有主动照明器节点和统一波段规则。
+
+本轮不新增协议字段。主动照明波段先通过运行配置设置，默认可跟随 `trackerSensorBand`。
+
+---
+
+## 3. 目标运行架构
+
+```text
+                        启动参数/环境变量
+                     --channel / --network-config
+                                 │
+                                 v
+                   ┌──────────────────────────┐
+                   │ RuntimeInstanceConfig    │
+                   │ channel/platID/sensorID  │
+                   │ UDP/TCP/config source    │
+                   └─────────────┬────────────┘
+                                 │
+UDP 0x41/0x36/0x38               v
+────────────────────> ┌──────────────────────────┐
+                      │ PacketRouteFilter        │
+                      │ 0x41: platID             │
+                      │ 0x36/0x38: plat+sensor   │
+                      │ sensorID=255 broadcast   │
+                      └─────────────┬────────────┘
+                                    │ accepted only
+                                    v
+                      ┌──────────────────────────┐
+                      │ RenderControlArbiter     │
+                      │ external simMode         │
+                      │ local config fallback    │
+                      └─────────────┬────────────┘
+                                    │
+                ┌───────────────────┴───────────────────┐
+                v                                       v
+       ┌─────────────────┐                    ┌─────────────────┐
+       │ Sync Scheduler  │                    │ Async Scheduler │
+       │ 1 data = 1 frame│                    │ latest + FPS    │
+       └────────┬────────┘                    └────────┬────────┘
+                └───────────────────┬───────────────────┘
+                                    v
+                      ┌──────────────────────────┐
+                      │ Scene + IR + Weather     │
+                      │ + Natural/Active Light   │
+                      └─────────────┬────────────┘
+                                    v
+                      ┌──────────────────────────┐
+                      │ Stage6 final_sensor      │
+                      │ Visible / Headless       │
+                      └─────────────┬────────────┘
+                                    v
+                      ┌──────────────────────────┐
+                      │ Async Encoder            │
+                      │ JPEG / H.264             │
+                      └─────────────┬────────────┘
+                                    v
+                      ┌──────────────────────────┐
+                      │ TCP existing frame packet│
+                      │ tracking + JSON + payload│
+                      └─────────────┬────────────┘
+                                    v
+                      ┌──────────────────────────┐
+                      │ VideoDisplay             │
+                      │ JPEG/H264 decode/display │
+                      └──────────────────────────┘
+```
+
+---
+
+## 4. 配置设计
+
+### 4.1 双通道网络配置
+
+`NetworkConfig_precise.ini`：
+
+```ini
+[Identity]
+channel=precise
+platID=1001
+sensorID=2
+acceptSensorBroadcast=true
+allowDynamicRemote=false
+
+[UDP]
+localIp=192.168.1.189
+localPort=8888
+remoteIp=192.168.1.188
+remotePort=9998
+
+[TCP]
+serverIp=192.168.1.189
+serverPort=5555
+```
+
+`NetworkConfig_coarse.ini`：
+
+```ini
+[Identity]
+channel=coarse
+platID=1001
+sensorID=1
+acceptSensorBroadcast=true
+allowDynamicRemote=false
+
+[UDP]
+localIp=192.168.1.189
+localPort=8889
+remoteIp=192.168.1.188
+remotePort=9999
+
+[TCP]
+serverIp=192.168.1.189
+serverPort=5556
+```
+
+`platID/sensorID` 示例值必须由实际系统配置填写，不在代码中硬编码业务值。
+
+配置选择优先级：
+
+```text
+--network-config <path>
+  > --channel precise|coarse
+  > 环境变量 HWASIMIR_NETWORK_CONFIG / HWASIMIR_CHANNEL
+  > 默认配置通道
+```
+
+启动必须打印：
+
+```text
+[RuntimeInstance]
+channel=precise
+configPath=...
+platID=...
+sensorID=...
+udpLocal=...
+udpRemote=...
+tcpServer=...
+configSource=cli/env/default
+```
+
+### 4.2 simMode 配置
+
+在 `HwaSimIRRuntime.ini` 增加：
+
+```ini
+[RenderControl]
+ModePolicy=ExternalPreferred
+ConfiguredSimMode=2
+ConfiguredVideoFps=60
+MinRealtimeFps=60
+EnforceMinRealtimeFps=true
+AsyncInputPolicy=Latest
+ClearQueuesOnModeApply=true
+```
+
+含义：
+
+```text
+ModePolicy=ExternalPreferred
+  初始化包 simMode 为 1/2 时使用外部值；
+  外部值非法时回退 ConfiguredSimMode。
+
+ModePolicy=ConfigOnly
+  忽略外部 simMode，使用 ConfiguredSimMode。
+
+ConfiguredSimMode
+  1=同步，2=异步。
+
+ConfiguredVideoFps
+  外部 videoFps 无效或 ConfigOnly 时使用。
+```
+
+目标帧率规则：
+
+```text
+同步模式：输出节奏由有效 0x38 数据包驱动，不用时钟重复生成帧。
+异步模式：按有效 videoFps 渲染，场景使用最近一次有效实时数据。
+videoFps=0：不限帧，只作为诊断模式；正式 60 FPS 验收不得使用 0。
+videoFps<60 且 EnforceMinRealtimeFps=true：提升到 60 并告警。
+videoFps>设备能力：保留请求值并通过性能日志暴露未达标，不静默修改协议数据。
+```
+
+### 4.3 天气配置
+
+保留 `[Stage7Weather]`，调整为纹理层语义：
+
+```ini
+[Stage7Weather]
+EnableWeatherEffects=true
+UseWeatherUdpInput=true
+WeatherProfilePath=Config/Weather/weather_profiles.json
+WeatherTextureConfig=Config/Weather/weather_textures.json
+
+EnableCloudLayer=true
+CloudRenderMode=LayeredCards
+CloudLayerCount=2
+CloudUpdateHz=10
+CloudUvSpeedScale=1.0
+
+EnableFog=true
+FogRenderMode=DistanceShader
+
+EnablePrecipitation=true
+PrecipitationRenderMode=TextureOverlay
+RainTextureLayerCount=1
+SnowTextureLayerCount=2
+PrecipitationUpdateHz=30
+PrecipitationOpacityScale=1.0
+
+EnableParticleEffects=false
+EnableVolumetricCloud=false
+```
+
+原有：
+
+```text
+CloudLayerMaxCards
+PrecipitationMaxParticles
+```
+
+可保留兼容读取，但新实现不创建粒子；建议逐步替换为明确的 `LayerCount` 配置。
+
+### 4.4 照明配置
+
+```ini
+[NaturalLighting]
+EnableNaturalLighting=true
+TimeSource=SimulationData
+FallbackHour=12.0
+UpdateHz=2
+EnableSun=true
+EnableMoon=true
+PandaLightAffects=VIS_NIR_SWIR
+ApplyToIRRadiance=true
+
+[ActiveIlluminator]
+EnableActiveIlluminator=true
+BandMode=FollowSensor
+ConfiguredBand=2
+UseProtocolMount=true
+UseProtocolAngle=true
+UseProtocolIntensity=true
+UpdateHz=30
+PandaSpotlightEnable=true
+ApplyToIRRadiance=true
+MaxRangeM=50000
+```
+
+本轮不增加 `illuminatorBand` 协议字段：
+
+```text
+BandMode=FollowSensor：照明波段跟随 trackerSensorBand。
+BandMode=Configured：使用 ConfiguredBand。
+```
+
+等正式 ICD 明确独立照明波段字段后，再统一修改三个程序协议头。
+
+---
+
+## 5. R1：统一实例配置、协议一致性、ID 路由和 simMode
+
+### 5.1 目标
+
+完成本轮最基础、最优先的运行控制闭环：
+
+```text
+一套构建产物运行 coarse/precise 两个进程；
+三个程序使用一致的现有协议定义；
+不同实例只处理属于本实例的数据；
+外部 simMode 和本地配置均可控制同步/异步；
+不改变任何协议结构体布局。
+```
+
+### 5.2 实施内容
+
+#### 5.2.1 统一协议头
+
+以：
+
+```text
+HwaSim_IR/HwaSim_IR/Common/CommonData.h
+```
+
+为基准，将以下两个活动头同步：
+
+```text
+DataDrivenTestQT/CommonData.h
+HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay/CommonData.h
+```
+
+要求：
+
+1. 三份文件中结构体字段、顺序、类型、`#pragma pack(1)` 一致。
+2. 不增加 `ControlP2cX1ObjTrackingCmd.sensorID`。
+3. 不增加、删除或重排其他协议字段。
+4. 修改因结构体作用域统一导致的编译引用。
+5. 增加 `tools/check_commondata_sync.ps1`，对三份活动头做内容或规范化 hash 比较。
+6. 三个程序启动或测试时记录关键结构体 `sizeof`：
+
+```text
+ControlP2cX1ObjTrackingCmd
+InitP2cObjectTrackingCmd
+DisplayC2cObjTrackingData
+InitAckC2pObjectTrackingCmd
+```
+
+#### 5.2.2 通道选择
+
+新增通道选择器：
+
+```text
+--channel precise
+--channel coarse
+--network-config <path>
+```
+
+删除 `LoadNetworkConfig()` 中靠注释切换 coarse/precise 的逻辑。
+
+同一二进制可同时启动两个进程，分别绑定各自 UDP 端口和连接各自 TCP 端口。
+
+#### 5.2.3 ID 路由
+
+新增统一路由方法，例如：
+
+```cpp
+bool ShouldAcceptControl(const ControlP2cX1ObjTrackingCmd& cmd) const;
+bool ShouldAcceptInit(const InitP2cObjectTrackingCmd& cmd) const;
+bool ShouldAcceptDisplay(const DisplayC2cObjTrackingData& data) const;
+```
+
+规则固定为：
+
+```cpp
+controlAccepted = cmd.platID == localPlatID;
+
+initAccepted =
+    cmd.platID == localPlatID &&
+    (cmd.sensorID == localSensorID ||
+     (acceptSensorBroadcast && cmd.sensorID == 255));
+
+displayAccepted =
+    data.platID == localPlatID &&
+    (data.sensorID == localSensorID ||
+     (acceptSensorBroadcast && data.sensorID == 255));
+```
+
+拒绝包必须：
+
+```text
+不进入 pending command/display queue；
+不改变 m_initSceneData/m_realTimeSceneData；
+不改变仿真运行状态；
+不转发到 TCP；
+不发送初始化 ACK；
+不更新 UDP 动态远端地址。
+```
+
+若收到 `sensorID=255` 的初始化包并通过过滤，初始化 ACK 中：
+
+```text
+platID = localPlatID
+sensorID = localSensorID
+```
+
+用于明确应答来自哪个传感器实例，不改变 ACK 结构体。
+
+#### 5.2.4 UDP 地址更新顺序
+
+当前逻辑需改为：
+
+```text
+recvfrom
+  -> 验证长度
+  -> 解析 flag
+  -> 解析对应结构体
+  -> ID 过滤
+  -> accepted 后才允许更新动态 remote
+  -> accepted 后业务入队
+```
+
+`allowDynamicRemote=false` 时永远使用配置文件中的远端地址，不因接收源变化而修改 ACK 目标。
+
+#### 5.2.5 simMode 仲裁
+
+初始化命令在主线程处理时执行：
+
+```text
+读取 trackingInit.simMode/videoFps
+  -> 根据 ModePolicy 选择有效模式
+  -> 合法性检查和回退
+  -> 清理旧输入队列/TCP 帧队列
+  -> 重置 sourceSeq/outputOrdinal/telemetry
+  -> SetRenderMode
+  -> TCP setSyncMode
+  -> 输出 RenderControl 日志
+```
+
+同步模式：
+
+```text
+每个通过 ID 过滤的 0x38 数据包最多触发一帧；
+不得使用旧数据重复渲染额外帧；
+不得覆盖尚未输出的有效同步帧；
+编码/发送速度不足时通过 queueWait/latency 暴露问题。
+```
+
+异步模式：
+
+```text
+实时数据只保留最新状态；
+渲染按 videoFps 时钟执行；
+输入队列不得持续堆积；
+允许覆盖未消费的旧实时状态，但记录 overwrite 数量。
+```
+
+### 5.3 日志
+
+新增低频日志：
+
+```text
+[RuntimeInstance]
+[ProtocolLayout]
+[PacketRoute]
+[PacketRouteReject]
+[RenderControl]
+[RenderModeApply]
+```
+
+示例：
+
+```text
+[PacketRoute] flag=0x38 accepted=1 localPlatID=1001 localSensorID=2 packetPlatID=1001 packetSensorID=2 reason=exact_match
+
+[PacketRouteReject] flag=0x36 accepted=0 localPlatID=1001 localSensorID=2 packetPlatID=1001 packetSensorID=1 reason=sensor_mismatch
+
+[RenderControl] externalSimMode=2 externalVideoFps=60 policy=ExternalPreferred effectiveSimMode=2 effectiveVideoFps=60 source=udp_init
+```
+
+高频 0x38 拒绝日志必须采样，避免控制台拖慢 RK3588。
+
+### 5.4 R1 验收
+
+构建：
+
+```text
+HwaSim_IR Windows Release x64 通过
+DataDrivenTestQT Qt 5.12.12 Release 通过
+HwaSim_IR_VideoDisplay Release x64 通过
+HwaSim_IR aarch64 交叉编译通过（工具链可用时）
+```
+
+功能：
+
+```text
+同一个 HwaSim_IR 构建产物可分别加载 precise/coarse 配置。
+两个进程可同时运行且端口不冲突。
+Control 同 platID 时两个传感器进程均接收。
+Init/Display 只被匹配 sensorID 的进程接收。
+sensorID=255 的 Init/Display 被同 platID 的两个进程接收。
+错误 platID 的所有包均拒绝。
+拒绝包不改变 UDP ACK 远端。
+外部 simMode=1 生效为同步。
+外部 simMode=2 + videoFps=60 生效为异步 60 FPS。
+ConfigOnly 可覆盖外部 simMode。
+三个程序协议 sizeof 完全一致。
+check_commondata_sync.ps1 通过。
+```
+
+性能：
+
+```text
+ID 过滤平均耗时应接近不可测量量级，不引入每帧动态分配。
+单通道基础 smoke 不低于修改前基线。
+异步输入队列不长期满。
+同步 sourceSeq 保持连续。
+```
+
+---
+
+## 6. R2：双进程与 60 FPS 基线收口
+
+### 6.1 目标
+
+在未开启真实 H.264、纹理天气和照明前，先证明新的实例配置和调度不会破坏已有基线。
+
+### 6.2 测试矩阵
+
+```text
+A：precise / VisibleWindow / Sync / JPEG
+B：precise / VisibleWindow / Async 60 / JPEG
+C：coarse / VisibleWindow / Sync / JPEG
+D：coarse / VisibleWindow / Async 60 / JPEG
+E：precise + coarse 双进程 / Async 60 / JPEG
+F：precise + coarse 双进程 / HeadlessOffscreen / Async 60 / JPEG
+```
+
+每组至少输出：
+
+```text
+udpFps
+renderFps
+outputFps
+displayFps
+pandaDoFrameMs
+readbackMs
+jpegMs
+tcpSendMs
+inputQueueDepth
+outputQueueDepth
+sourceSeqLag
+latencyAvgMs
+latencyP95Ms
+dropped/overwritten
+```
+
+验收边界：
+
+```text
+单通道目标 60 FPS。
+双进程分别统计，任何一个通道不得被另一个通道的包污染。
+同步模式不丢有效输入帧。
+异步模式允许覆盖旧状态，但不得出现持续累计延迟。
+```
+
+---
+
+## 7. V1：视频编码器抽象
+
+### 7.1 目标
+
+先重构编码链路，不立即改变默认 JPEG 行为。
+
+新增统一接口，例如：
+
+```cpp
+struct EncodedVideoFrame {
+    std::string codec;
+    std::vector<uint8_t> payload;
+    bool keyFrame;
+    int64_t ptsMs;
+    int width;
+    int height;
+};
+
+class IVideoEncoder {
+public:
+    virtual bool configure(const VideoEncoderConfig&) = 0;
+    virtual bool encode(const RawVideoFrame&, EncodedVideoFrame&) = 0;
+    virtual void requestKeyFrame() = 0;
+    virtual void reset() = 0;
+};
+```
+
+实现：
+
+```text
+JpegFrameEncoder
+H264FrameEncoder（先占位）
+```
+
+要求：
+
+1. 编码仍在 TCP/编码后台线程。
+2. JPEG 输出必须与现有图像兼容。
+3. `TcpCommThread` 不再直接硬编码 `cv::imencode`。
+4. Windows/Linux 共用相同接口，后端实现可不同。
+5. 复用 RGB/YUV/编码输出缓冲，减少逐帧分配。
+6. 编码器切换和新连接必须重置状态。
+
+### 7.2 TCP 包兼容
+
+不修改 `CommonData.h`。
+
+继续使用现有帧包结构：
+
+```text
+[总长度]
+[tracking 长度][DisplayC2cObjTrackingData]
+[annotation JSON 长度][annotation JSON]
+[payload 长度][JPEG 或 H.264 数据]
+```
+
+由 annotation JSON 中现有字段标识：
+
+```json
+{
+  "packetVersion": 2,
+  "payloadCodec": "jpeg",
+  "keyFrame": false,
+  "ptsMs": 0
+}
+```
+
+H.264 时：
+
+```json
+{
+  "packetVersion": 2,
+  "payloadCodec": "h264_annexb",
+  "keyFrame": true,
+  "ptsMs": 0
+}
+```
+
+因此 H.264 传输不需要修改 UDP 数据协议结构体。
+
+---
+
+## 8. V2/V3：H.264 端到端闭环
+
+### 8.1 编码格式
+
+采用：
+
+```text
+H.264 Annex-B
+每个 TCP frame payload 对应一个完整 Access Unit
+```
+
+关键帧要求：
+
+```text
+编码器启动第一帧为 IDR；
+TCP 重连后请求 IDR；
+初始化/开始新回合后请求 IDR；
+按 GOP 周期产生 IDR；
+IDR payload 携带或可获得 SPS/PPS。
+```
+
+### 8.2 Windows 后端
+
+功能验证优先使用 FFmpeg/libavcodec 内存编码：
+
+```text
+RGB/BGR -> YUV420P/NV12 -> H.264 Annex-B
+```
+
+要求低延迟：
+
+```text
+B 帧关闭；
+低延迟 preset/tune；
+编码队列有界；
+输出单 Access Unit；
+不使用 VideoWriter 文件接口冒充实时传输编码。
+```
+
+### 8.3 RK3588 后端
+
+生产编码优先使用 RK MPP 硬件 H.264：
+
+```text
+CPU RGB readback -> RGB/NV12 转换 -> MPP 编码 -> Annex-B
+```
+
+后续优化方向：
+
+```text
+减少 RGB 到 NV12 转换开销；
+复用 MPP buffer；
+评估 RGA 转换；
+评估 GPU/DRM buffer 到 MPP 的低拷贝路径。
+```
+
+首轮先完成稳定闭环，不在同一阶段强制零拷贝。
+
+### 8.4 VideoDisplay 解码
+
+新增持久 H.264 解码器：
+
+```text
+按 payloadCodec 分流；
+JPEG 继续 QImage/loadFromData；
+H.264 送入 FFmpeg decoder；
+解码输出转换为 QImage；
+解码器跨帧保持；
+收到新 SPS/PPS、重连或回合复位时 reset；
+在收到可解码 IDR 前不显示破碎 P/B 帧。
+```
+
+### 8.5 H.264 回退
+
+```text
+h264En=false：JPEG。
+h264En=true 且编码器可用：H.264。
+h264En=true 且编码器不可用、FallbackToJpeg=true：JPEG + 明确告警。
+h264En=true 且编码器不可用、FallbackToJpeg=false：停止视频输出并明确报错，不伪装为 H.264。
+```
+
+### 8.6 H.264 验收
+
+```text
+activeCodec=h264_annexb
+发送端不再执行 JPEG 编码
+VideoDisplay 能连续解码和显示
+重连后在 IDR 恢复图像
+初始化/开始新回合后图像正常
+tracking/annotation/图像仍一帧一一对应
+800x800@60 FPS 持续 30 秒
+无持续编码队列增长
+无持续 sourceSeqLag 增长
+记录 h264EncodeMs/h264DecodeMs/encodedBytes/keyFrame
+```
+
+---
+
+## 9. W1：纹理云层与红外云效果
+
+### 9.1 目标
+
+使用现有云纹理生成可见云层，不使用体积云和粒子系统。
+
+### 9.2 云层实现
+
+优先方案：固定数量的大尺寸纹理层。
+
+```text
+CloudLayer 0：较低层，大尺度纹理，较慢 UV 滚动。
+CloudLayer 1：较高层，不同缩放/偏移，较快或不同方向滚动。
+```
+
+实现载体可选：
+
+```text
+天空穹顶内层云纹理；
+围绕相机的水平/弧形大 Card；
+少量固定云层 Card。
+```
+
+选择原则：
+
+```text
+节点数量固定；
+不逐云团创建对象；
+相机移动时云层跟随传感器参考位置，避免飞出云层范围；
+纹理只在初始化或资源变化时加载；
+每帧只更新 UV 偏移和少量 shader uniform。
+```
+
+### 9.3 云的红外处理
+
+云纹理只提供空间 alpha/密度：
+
+```text
+cloudMask = textureAlphaOrLuma
+```
+
+云的红外灰度不能直接使用 PNG 的 RGB 颜色，应由：
+
+```text
+云温 cloudTemperatureK
+当前 band
+背景天空辐射
+云层透过率
+云自身热辐射
+天气 profile
+```
+
+共同计算。
+
+简化链路：
+
+```text
+L_cloud_pixel = tau_cloud * L_background
+              + (1 - tau_cloud) * L_cloud_emit
+
+tau_cloud = exp(-cloudOpticalDepth * cloudMask)
+```
+
+波段策略：
+
+```text
+VIS/NIR/SWIR：纹理反射和太阳/天空照明占主要作用。
+MWIR：云温热辐射 + 对背景和目标的遮蔽/衰减。
+LWIR：云自身热辐射更明显，按云温映射，不固定为白云。
+```
+
+云层不直接改变目标表面温度。
+
+### 9.4 性能边界
+
+```text
+CloudLayerCount 默认 2，最大先限制为 4。
+云更新 10 Hz，UV 时间可由 shader 每帧推进。
+不创建体积纹理、不做 ray marching。
+不使用动态阴影贴图作为首阶段要求。
+```
+
+---
+
+## 10. W2：纹理雨、雪和距离雾
+
+### 10.1 雨
+
+使用：
+
+```text
+rain_shaft.png / rain.rgba
+```
+
+建立 1 个相机前全屏纹理层或 Stage6 final shader overlay：
+
+```text
+纹理平铺；
+UV 沿降雨方向滚动；
+风向控制水平偏移；
+windV/envRainSnowSpeedScale 控制速度；
+precipitationDensity 控制纹理阈值和透明度；
+envMaxHeightRain/envTransHeightRain 控制是否处于有效降雨层。
+```
+
+红外表现：
+
+```text
+雨纹理不默认画成纯白；
+MWIR/LWIR 中雨滴/雨幕灰度根据天气 profile 和背景灰度确定；
+主要物理作用仍是目标对比度下降、大气透过率下降和路径项变化；
+纹理条纹只作为可视化补充，透明度保持克制。
+```
+
+### 10.2 雪
+
+使用：
+
+```text
+snow.rgba
+```
+
+建立 1～2 个固定纹理层：
+
+```text
+不同纹理缩放；
+不同 UV 初始偏移；
+不同下降速度；
+少量水平漂移；
+不生成单个雪花节点。
+```
+
+红外表现：
+
+```text
+雪花纹理灰度由 band/weather profile 控制；
+MWIR/LWIR 不固定显示为高亮白点；
+雪地地表背景变化由 groundGrayScale/温度模型处理；
+空中雪纹理和地面雪辐射分开。
+```
+
+### 10.3 雾
+
+雾不需要纹理，使用距离相关 shader：
+
+```text
+fogFactor = 1 - exp(-density * distance)
+L = (1 - fogFactor) * L_scene + fogFactor * L_path_or_fog
+```
+
+输入：
+
+```text
+envVisibility
+envHumidity
+envSky
+band
+fogDensity
+fogGray/path radiance
+```
+
+不得只把整帧线性叠灰；必须随距离增加。
+
+### 10.4 天气状态切换
+
+```text
+0 晴：关闭云/雨雪/雾纹理层，恢复晴天 profile。
+1 云：开启云纹理层。
+2 雨：云 + 雨纹理层 + 雾/能见度衰减。
+3 雪：云 + 雪纹理层 + 对应能见度衰减。
+4 雾：关闭降水纹理，启用距离雾。
+5 阴：高覆盖云纹理层，无降水。
+```
+
+状态切换时只 show/hide 或调整 uniform，不重复创建销毁资源。
+
+### 10.5 天气验收
+
+```text
+六类 envSky 可实时切换。
+云/雨/雪使用仓库纹理，画面非空且资源加载成功。
+日志无逐帧 texture load。
+EnableParticleEffects=false。
+无 Panda3D 粒子系统节点。
+MWIR 图像中天气不等同于可见光彩色纹理。
+云、雨、雪不会把目标整体温度改高。
+Headless TCP 输出与 VisibleWindow 效果一致。
+单通道 800x800 开启每种天气短跑，目标仍为 60 FPS。
+```
+
+---
+
+## 11. L1：24 小时自然照明
+
+### 11.1 目标
+
+使用 Panda3D 照明节点表达太阳/月亮方向变化，同时将自然照明物理量接入红外反射辐射链路。
+
+### 11.2 时间来源
+
+优先顺序：
+
+```text
+实时数据 time -> 仿真小时
+本地配置 FallbackHour
+```
+
+将 24 小时时间映射为：
+
+```text
+太阳高度角
+太阳方位角
+昼夜标志
+月亮近似方向
+太阳直射比例
+天空漫射比例
+```
+
+首阶段不做高精度天文历算，可使用配置化日出/日落和连续插值，保留未来接入日期、经纬度天文模型的接口。
+
+### 11.3 Panda3D 灯光
+
+```text
+太阳：DirectionalLight
+月亮：DirectionalLight，强度显著低于太阳
+环境：AmbientLight 或 shader sky diffuse 输入
+```
+
+更新频率建议 1～2 Hz，方向变化进行平滑。
+
+Panda3D 灯光主要影响：
+
+```text
+VIS/NIR/SWIR 场景预览和反射表现
+```
+
+MWIR/LWIR 不直接依赖 Panda3D light color 作为最终灰度。
+
+### 11.4 红外耦合
+
+继续使用 Stage5：
+
+```text
+sun direction
+solar irradiance/weight
+material reflectance
+weather sunDirectScale
+skyDiffuseScale
+```
+
+计算反射辐射。
+
+波段策略：
+
+```text
+VIS/NIR/SWIR：自然照明影响明显。
+MWIR：白天可保留较弱太阳反射，同时热辐射仍存在。
+LWIR：太阳直接反射权重很低，主要通过材料温度慢变化体现；首阶段不做瞬时全局升温。
+夜间：太阳直射为 0，月光只在 VIS/NIR/SWIR 保留弱反射。
+```
+
+---
+
+## 12. L2：平台主动照明器
+
+### 12.1 输入映射
+
+现有协议字段映射：
+
+```text
+illuminatorX/Y/Z        -> 灯具相对载机安装位置
+illuminatorPitch/Yaw/Roll -> 灯具安装姿态
+illuminatorAngle        -> Spotlight 视场角，mrad 转度
+illuminatorSpotRad      -> 强度参数，先按可配置标度映射
+illuminatorEn           -> 实时启停
+```
+
+波段：
+
+```text
+BandMode=FollowSensor：跟随 trackerSensorBand。
+BandMode=Configured：使用本地 ConfiguredBand。
+```
+
+不修改数据协议。
+
+### 12.2 Panda3D Spotlight
+
+创建一个挂在载机平台/传感器安装节点下的 `Spotlight`：
+
+```text
+位置和姿态来自初始化参数；
+FOV 来自 illuminatorAngle；
+实时 illuminatorEn 控制启停；
+强度变化只更新 light/shader 输入；
+节点在初始化时创建并复用。
+```
+
+### 12.3 红外照明链路
+
+主动照明不能通过提高目标温度实现。
+
+按波段分为：
+
+```text
+VIS/NIR/SWIR：
+  Panda3D Spotlight 提供几何照明；
+  shader 根据光锥、距离、表面法线和材料反射率计算反射。
+
+MWIR/LWIR：
+  仅在配置的照明源确实工作于对应红外波段时，
+  将照明辐照度加入 reflectedRadiance；
+  不改变 body temperature；
+  不直接叠加屏幕光斑。
+```
+
+简化模型：
+
+```text
+E_illum = enabled
+        * inCone
+        * intensity
+        * rangeAttenuation
+        * max(0, dot(normal, lightDir))
+        * atmosphereTau
+
+L_reflected_illum = materialReflectanceBand * E_illum / pi
+```
+
+支持光锥边缘平滑，避免硬边。
+
+### 12.4 主动照明性能
+
+```text
+只创建一个 Spotlight 和一组 shader uniform。
+不启用实时阴影贴图作为默认要求。
+照明状态/姿态/波段变化时强制刷新。
+静态时按 ActiveIlluminator.UpdateHz 低频更新 CPU 参数。
+```
+
+---
+
+## 13. A1：综合验收
+
+### 13.1 功能矩阵
+
+```text
+通道：precise / coarse / 双进程
+模式：Sync / Async 60
+宿主：VisibleWindow / HeadlessOffscreen
+编码：JPEG / H.264
+天气：晴 / 云 / 雨 / 雪 / 雾 / 阴
+照明：白天 / 夜间 / 主动照明关 / 主动照明开
+```
+
+### 13.2 性能边界
+
+每个主场景记录：
+
+```text
+udpFps
+renderFps
+outputFps
+displayFps
+sceneUpdateMs
+pandaDoFrameMs
+readbackMs
+weatherUpdateMs
+lightingUpdateMs
+jpegMs/h264EncodeMs
+jpegDecodeMs/h264DecodeMs
+tcpSendMs
+queueDepth
+sourceSeqLag
+latencyAvgMs
+latencyP95Ms
+encodedBytes
+```
+
+目标：
+
+```text
+单通道 800x800：稳定 60 FPS。
+平均端到端延迟不超过 80 ms。
+无持续输入/编码/发送队列增长。
+双进程时分别统计，不互相接收错误传感器数据。
+纹理天气开启后若低于 60 FPS，先减少纹理层数量和更新频率，不改红外物理语义兜底。
+RK3588 H.264 必须优先使用硬件编码达到 60 FPS。
+```
+
+### 13.3 回归边界
+
+```text
+默认 JPEG 路径仍可用。
+默认天气关闭或晴天时画面与原基线一致。
+默认主动照明关闭。
+Headless direct_final 在无屏幕天气 overlay 时继续生效。
+启用雨雪纹理 overlay 时允许进入必要 final pass，但必须记录 renderPath 和开销。
+Annotation JSON、实时数据和图像/H.264 Access Unit 保持帧级对应。
+```
+
+---
+
+## 14. 风险与决策
+
+### 14.1 协议副本风险
+
+风险：三个工程复制 `CommonData.h`，后续容易再次漂移。
+
+当前措施：
+
+```text
+三文件同步；
+自动 hash 检查；
+三工程 sizeof 日志和构建验证。
+```
+
+长期可把协议头提取为共享目录或独立静态库，但不作为 R1 必须重构项。
+
+### 14.2 H.264 依赖风险
+
+Windows FFmpeg、RK3588 MPP 和 Qt 显示工程工具链不同。
+
+决策：
+
+```text
+先统一 IVideoEncoder/decoder 语义；
+Windows 完成功能闭环；
+RK3588 替换为 MPP 后端；
+JPEG 始终保留安全回退。
+```
+
+### 14.3 天气真实性风险
+
+纹理云雨雪不是高精度气象体积模拟。
+
+本阶段目标是：
+
+```text
+可控、低成本、红外合理、能表达六类天气、达到 60 FPS。
+```
+
+后续再独立评估体积云、深度分层云、粒子雨雪，不与本阶段混做。
+
+### 14.4 雨雪屏幕纹理深度不足
+
+首阶段雨雪主要是相机空间效果，缺少真实三维深度。
+
+缓解：
+
+```text
+使用 1～2 层不同缩放/速度纹理；
+结合真实距离雾和大气透过率；
+限制高透明度，避免像可见光贴纸；
+保留以后改成少量空间切片的接口，但仍不必使用粒子。
+```
+
+### 14.5 双进程性能风险
+
+RK3588 同时运行两个 800x800@60 通道可能受 GPU、读回、编码和内存带宽限制。
+
+决策：
+
+```text
+先验证单通道所有功能达到 60 FPS；
+再验证双进程；
+分别记录 readback/encode/do_frame；
+不通过静默降低视频帧率隐藏问题。
+```
+
+---
+
+## 15. 预计修改文件
+
+### R1 主体
+
+```text
+HwaSim_IR/HwaSim_IR/main.cpp
+HwaSim_IR/HwaSim_IR/HwaSimIR.h
+HwaSim_IR/HwaSim_IR/HwaSimIR.cpp
+HwaSim_IR/HwaSim_IR/UdpCommThread.h/.cpp
+HwaSim_IR/HwaSim_IR/UdpCommThread_Linux.h/.cpp
+HwaSim_IR/HwaSim_IR/Common/CommonData.h
+HwaSim_IR/Bin/Config/NetworkConfig_precise.ini
+HwaSim_IR/Bin/Config/NetworkConfig_coarse.ini
+HwaSim_IR/Bin/Config/HwaSimIRRuntime.ini
+DataDrivenTestQT/CommonData.h
+HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay/CommonData.h
+tools/check_commondata_sync.ps1
+docs/HwaSimIR_RuntimeChannel_H264_Weather_Lighting_Implementation_Plan.md
+```
+
+### H.264 阶段
+
+```text
+HwaSim_IR/HwaSim_IR/Video/*
+HwaSim_IR/HwaSim_IR/TcpCommThread*.h/.cpp
+HwaSim_IR/HwaSim_IR/CMakeLists.txt
+HwaSim_IR/HwaSim_IR/HwaSim_IR.vcxproj
+HwaSim_IR_VideoDisplay/.../TcpServerWorker*.h/.cpp
+HwaSim_IR_VideoDisplay/.../VideoDecoder/*
+HwaSim_IR_VideoDisplay 工程文件
+```
+
+### 天气阶段
+
+```text
+HwaSim_IR/HwaSim_IR/IR/IRWeatherEffects.h/.cpp
+HwaSim_IR/HwaSim_IR/HwaSimIR.h/.cpp
+HwaSim_IR/Bin/Config/HwaSimIRRuntime.ini
+HwaSim_IR/Bin/Config/Weather/weather_profiles.json
+HwaSim_IR/Bin/Config/Weather/weather_textures.json
+现有 Weather/Textures 资源，不新增粒子资源
+```
+
+### 照明阶段
+
+```text
+HwaSim_IR/HwaSim_IR/IR/IRLightingModel.h/.cpp（建议新增）
+HwaSim_IR/HwaSim_IR/HwaSimIR.h/.cpp
+HwaSim_IR/HwaSim_IR/IR/IRRadianceModelV2.h/.cpp
+红外 shader 初始化代码
+HwaSim_IR/Bin/Config/HwaSimIRRuntime.ini
+```
+
+---
+
+## 16. 实施记录模板
+
+每阶段完成后在本节追加：
+
+```text
+日期 / 阶段 / 提交前工作区状态
+修改文件
+完成内容
+未完成内容
+Windows 构建结果
+Linux/aarch64 构建结果
+运行配置
+测试命令
+功能结果
+性能摘要
+已知问题
+下一阶段建议
+```
+
+### 2026-07-16 / v1.1 planning correction
+
+- 明确不修改协议，不给 `ControlP2cX1ObjTrackingCmd` 增加 `sensorID`。
+- 控制命令仅按 `platID` 过滤；初始化和实时数据按 `platID + sensorID` 过滤，并支持 `sensorID=255` 广播。
+- 明确三个主体程序的活动 `CommonData.h` 必须同步，但本轮不改变结构体字段布局。
+- 天气首阶段不使用 Panda3D 粒子系统和体积云，只使用现有 Weather 纹理生成云、雨、雪。
+- 云使用固定少量纹理层；雨雪使用固定相机空间纹理层/Stage6 overlay；雾使用距离 shader。
+- 主动照明波段先采用本地配置或跟随传感器波段，不增加协议字段。
+- 保留双进程方案，改为同一可执行文件通过配置选择 coarse/precise。
+
+### 2026-07-16 / R1 实施记录
+
+#### 基线与工作区
+
+- 基线为 `main` / `origin/main`：`2f17f9cbd599fb7d7473a7e00e5ceff620ec4b77`。
+- 本记录对应未提交工作区；未执行 commit 或 push。
+- 仅实施 R1。未实施 H.264、天气或照明，未改变 JPEG、Headless、红外物理、标注和 TCP 帧包语义。
+
+#### 修改文件
+
+```text
+DataDrivenTestQT/CommonData.h
+DataDrivenTestQT/NetworkConfig.ini
+DataDrivenTestQT/main.cpp
+DataDrivenTestQT/mainwindow.cpp
+DataDrivenTestQT/mainwindow.h
+HwaSim_IR/Bin/Config/HwaSimIRRuntime.ini
+HwaSim_IR/Bin/Config/NetworkConfig_precise.ini
+HwaSim_IR/Bin/Config/NetworkConfig_coarse.ini
+HwaSim_IR/HwaSim_IR/main.cpp
+HwaSim_IR/HwaSim_IR/HwaSimIR.h
+HwaSim_IR/HwaSim_IR/HwaSimIR.cpp
+HwaSim_IR/HwaSim_IR/UdpCommThread.h
+HwaSim_IR/HwaSim_IR/UdpCommThread.cpp
+HwaSim_IR/HwaSim_IR/UdpCommThread_Linux.h
+HwaSim_IR/HwaSim_IR/UdpCommThread_Linux.cpp
+HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay/main.cpp
+tools/check_commondata_sync.ps1
+tools/r1_protocol_sender.cpp
+tools/r1_runtime_route_smoke.ps1
+docs/HwaSimIR_RuntimeChannel_H264_Weather_Lighting_Implementation_Plan.md
+```
+
+`HwaSim_IR/HwaSim_IR/Common/CommonData.h` 作为基准未修改；`HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay/CommonData.h` 已与基准一致，因此也无内容差异。三份活动协议头经换行归一化后内容和 SHA-256 完全一致。
+
+#### 完成内容
+
+- 将 DataDrivenTestQT 中嵌套的协议类型作用域与基准统一，并修复对应编译引用；结构体字段、字段顺序和既有协议布局均未改变，`ControlP2cX1ObjTrackingCmd` 仍无 `sensorID`。
+- 增加三文件一致性检查和三端 `[ProtocolLayout]` 日志。关键结构体大小为 `24 / 385 / 506 / 17` 字节，依次对应 Control、Init、Display、InitAck。
+- 同一个 `HwaSim_IR.exe` 支持 `--channel precise|coarse` 和 `--network-config <path>`；移除源码注释切换配置，增加 CLI、环境变量和默认配置的来源优先级。
+- precise/coarse 网络配置增加 `[Identity]`；启动 `[RuntimeInstance]` 输出实际配置路径、通道、本地 ID、广播/动态远端策略以及 UDP/TCP 端点和配置来源。
+- Windows/Linux UDP 路径统一执行“长度和 flag 校验 → 结构体解析 → ID 过滤 → 通过后才更新动态远端和进入业务处理”。Control 仅匹配 `platID`；Init/Display 匹配 `platID` 和本地 `sensorID`，并按配置接受 `sensorID=255`。
+- 拒绝包在业务处理前返回，不入队、不修改状态、不转发 TCP、不发送 ACK，也不更新 UDP 远端。`allowDynamicRemote=false` 时保留配置远端；广播 Init 的 ACK 使用本地真实 `platID/sensorID`。
+- 增加 `[RenderControl]` 配置与 `ExternalPreferred|ConfigOnly` 仲裁。外部合法 `simMode=1/2` 可覆盖本地模式，非法值回退配置；模式应用前清输入/TCP 队列并重置 telemetry、序号和帧计数。同步模式一包一帧，异步模式按有效 `videoFps` 消费最新状态。
+- DataDrivenTestQT 从现有配置读取并发送既有 `simMode/videoFps/platID/sensorID`，测试 CLI 只覆盖这些已有字段，未增加协议字段。
+- 增加低频 `[RuntimeInstance]`、`[ProtocolLayout]`、`[PacketRoute]`、`[PacketRouteReject]` 和 `[RenderControl]` 日志。
+
+#### 构建结果
+
+- HwaSim_IR Windows x64 Release：通过，`HwaSim_IR/Bin/HwaSim_IR.exe`。
+- DataDrivenTestQT Qt 5.12.12 MinGW 7.3 x64 Release：通过，`build-DataDrivenTestQT-codex-mingw73_64-Release/release/DataDrivenTestQT.exe`；仅有既有未使用变量/符号比较警告。
+- HwaSim_IR_VideoDisplay Windows x64 Release：通过，`HwaSim_IR_VideoDisplay/x64/Release/HwaSim_IR_VideoDisplay.exe`；构建时显式指定 Qt 5.12.12 msvc2015_64 安装路径。
+- aarch64：未执行。当前 Windows 环境无 `cmake`、`aarch64-linux-gnu-g++`、`ninja`、`make`，也无 Panda3D/OpenCV aarch64 sysroot；未以宿主编译替代交叉编译结果。
+
+#### 测试结果
+
+```text
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\check_commondata_sync.ps1
+PASS：三协议头归一化 SHA-256 均为 30CD0B98A37C09C661F36D848DF434F53762D941E6BD219CD98604C0F5444FD6；Control.sensorID 不存在。
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\r1_runtime_route_smoke.ps1
+PASS：同一二进制 precise/coarse 双进程；Control 正确/错误 platID；Init 精确/错误/255 sensorID；Display 精确/错误/255 sensorID 与错误 platID；广播 ACK 本地真实 ID；禁用动态远端；simMode=1；simMode=2/videoFps=60；非法 simMode 回退本地 2/60 配置。
+测试使用脚本生成的 loopback precise/coarse 配置，跟踪的生产网络配置保持不变。
+日志：logs/r1-runtime-20260716-234855
+HwaSim_IR.exe SHA-256：419358C9AFAD4CEEC56027C1A9341408D3B71B155549E24BAEDDCC79DE8EBB4F
+
+DataDrivenTestQT 实际发送 smoke
+PASS：临时 loopback 配置下，DataDrivenTestQT 实际发送 platID=1001、sensorID=2、simMode=2、videoFps=60；HwaSim_IR 接受 Init/Display 并应用异步 60 FPS。
+日志：logs/r1-datadriven-20260716-234359
+
+三端 ProtocolLayout 启动 smoke
+PASS：DataDrivenTestQT 和 HwaSim_IR_VideoDisplay 均输出 24/385/506/17；HwaSim_IR 同值由路由 smoke 验证。
+日志：logs/r1-layout-20260716-234726
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\stage3_modtran_tau_loader_check.ps1 -Strict
+PASS：Stage3 保持 MODTRAN tau-only，无 path/sky/solar 或 Stage5 扩展。
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\stage4_hotspot_check.ps1 -Strict
+PASS：Stage4 热源/亮斑职责、完整目标键、可见性门控和无毁伤模型边界保持。
+```
+
+#### 性能摘要与未完成项
+
+- R1 路由热路径只增加固定次数的长度/flag/ID 比较和采样计数；拒绝包在入队与业务处理前终止，未增加逐包动态分配。Display 路由日志仅记录启动阶段首批事件和之后每 120 包一次。
+- 双进程 smoke 中两个通道使用同一个二进制并同时保持运行；异步模式确认应用 `videoFps=60` 和 `AsyncInputPolicy=Latest`，同步模式确认应用一包一帧调度。
+- DataDrivenTestQT loopback smoke 的 60 FPS 发送采样为 `60.490 / 59.989 / 59.981 FPS`，363 包累计平均 `60.153 FPS`；该数据只说明输入发送时钟达到目标，不等同于渲染/TCP 端到端性能。
+- 本次是控制闭环与路由 smoke，不宣称已完成持续 800x800 双通道 60 FPS 性能验收；H.264、天气、照明及其持续吞吐测试按范围留给后续阶段。
+- 唯一环境性未完成项为 aarch64 交叉编译；需要提供对应编译器、CMake/构建工具以及 Panda3D/OpenCV aarch64 sysroot 后复测。

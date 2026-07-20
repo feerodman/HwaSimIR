@@ -14,6 +14,10 @@ int main(int argc, char *argv[])
     bool phase4cAeroMach = false;
     double aeroAltitudeKm = 10.0;
     double aeroMach = 1.0;
+    int platID = -1;
+    int sensorID = -1;
+    int simMode = -1;
+    int videoFps = -1;
     const QStringList arguments = a.arguments();
     for (const QString& argument : arguments)
     {
@@ -56,8 +60,39 @@ int main(int argc, char *argv[])
                 aeroMach = qBound(0.0, value, 4.0);
             }
         }
+        const QString platPrefix = QStringLiteral("--plat-id=");
+        if (argument.startsWith(platPrefix))
+        {
+            platID = argument.mid(platPrefix.size()).toInt();
+        }
+        const QString sensorPrefix = QStringLiteral("--sensor-id=");
+        if (argument.startsWith(sensorPrefix))
+        {
+            sensorID = argument.mid(sensorPrefix.size()).toInt();
+        }
+        const QString simModePrefix = QStringLiteral("--sim-mode=");
+        if (argument.startsWith(simModePrefix))
+        {
+            const int requested = argument.mid(simModePrefix.size()).toInt();
+            if (requested == 1 || requested == 2)
+            {
+                simMode = requested;
+            }
+        }
+        const QString videoFpsPrefix = QStringLiteral("--video-fps=");
+        if (argument.startsWith(videoFpsPrefix))
+        {
+            videoFps = qBound(1, argument.mid(videoFpsPrefix.size()).toInt(), 240);
+        }
     }
+    qInfo().noquote()
+        << QStringLiteral("[ProtocolLayout] component=DataDrivenTestQT ControlP2cX1ObjTrackingCmd=%1 InitP2cObjectTrackingCmd=%2 DisplayC2cObjTrackingData=%3 InitAckC2pObjectTrackingCmd=%4")
+            .arg(sizeof(BYHWICD::ControlP2cX1ObjTrackingCmd))
+            .arg(sizeof(BYHWICD::InitP2cObjectTrackingCmd))
+            .arg(sizeof(BYHWICD::DisplayC2cObjTrackingData))
+            .arg(sizeof(BYHWICD::InitAckC2pObjectTrackingCmd));
     w.setH264EnabledForTest(h264Enabled);
+    w.configureProtocolForTest(platID, sensorID, simMode, videoFps);
     w.configurePhase4cAeroMachTest(phase4cAeroMach, aeroAltitudeKm, aeroMach);
     if (autoSeconds > 0)
     {
