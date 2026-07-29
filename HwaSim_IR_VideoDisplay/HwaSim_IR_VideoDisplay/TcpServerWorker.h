@@ -4,13 +4,17 @@
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <atomic>
+#include <memory>
 #include "CommonData.h"
+#include "Video/VideoDecoder.h"
 
 class TcpServerWorker : public QObject
 {
 	Q_OBJECT
 public:
-	explicit TcpServerWorker(const QString& networkConfigPath = QString(), QObject* parent = nullptr);
+	explicit TcpServerWorker(const QString& networkConfigPath = QString(),
+		const QString& channel = QStringLiteral("unknown"), int platID = 0, int sensorID = 0,
+		QObject* parent = nullptr);
 	~TcpServerWorker();
 	quint64 receivedFrameCount() const { return m_receivedFrameCount.load(); }
 
@@ -38,8 +42,18 @@ private:
 	bool sendStruct(QTcpSocket* socket, const void* structPtr, quint32 structSize);
 	// 从 NetworkConfig.ini 读取网络配置
 	void loadConfig(QString& ip, quint16& port);
+	void resetVideoDecoders(const QString& reason);
+	void logDecoderPerf(const DecodedVideoFrame& decoded, int payloadBytes);
 
 	std::atomic<bool> m_stop{ false };
 	std::atomic<quint64> m_receivedFrameCount{ 0 };
 	QString m_networkConfigPath;
+	QString m_channel;
+	int m_platID = 0;
+	int m_sensorID = 0;
+	std::unique_ptr<JpegFrameDecoder> m_jpegDecoder;
+	std::unique_ptr<H264FfmpegDecoder> m_h264Decoder;
+	qint64 m_lastDecoderPerfLogNs = 0;
+	double m_decodeMsTotal = 0.0;
+	quint64 m_decodeSampleCount = 0;
 };

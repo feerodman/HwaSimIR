@@ -6495,7 +6495,8 @@ bool HwaSimIR::InitTcpThread()
 	std::cout << "[Stage0] TCP video baseline server=" << m_tcpServerIp << ":" << m_tcpServerPort
 		<< " format=length-prefixed JPEG" << std::endl;
 
-	m_pTcpThread = new TcpCommThread(this, m_tcpServerIp, m_tcpServerPort);
+	m_pTcpThread = new TcpCommThread(
+		this, m_tcpServerIp, m_tcpServerPort, m_channel, m_localPlatID, m_localSensorID);
 	m_pTcpThread->setSyncMode(m_bSyncRenderMode.load());
 	m_pTcpThread->setFlipVertical(m_stage6FlipInTcpThread);
 	m_pTcpThread->configureOutput(
@@ -6810,7 +6811,7 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 	if (m_pTcpThread)
 	{
 		m_h264EnFromInit = sensor.h264En;
-		m_pTcpThread->setH264Requested(sensor.h264En);
+		m_pTcpThread->setH264Requested(sensor.h264En, targetVideoFps);
 	}
 	LogEffectiveRuntimeConfig(
 		"after_init",
@@ -7871,6 +7872,8 @@ void HwaSimIR::InitInfraredSimulation()
 		"auto",
 		&h264EncoderSource));
 	if (m_h264Encoder != "auto" &&
+		m_h264Encoder != "ffmpeg" &&
+		m_h264Encoder != "libavcodec" &&
 		m_h264Encoder != "opencv" &&
 		m_h264Encoder != "opencv_videowriter" &&
 		m_h264Encoder != "mediafoundation" &&
@@ -10453,10 +10456,10 @@ void HwaSimIR::LogEffectiveRuntimeConfig(
 	}
 	if (m_enableH264Experimental)
 	{
-		std::cout << "[EffectiveRuntimeConfig][WARN]"
+		std::cout << "[VideoEncoder]"
 			<< " EnableH264Experimental=1"
 			<< " H264Encoder=" << m_h264Encoder
-			<< " reason=stage7a_experimental_transport_not_production_default"
+			<< " backendGate=open"
 			<< std::endl;
 	}
 	if (modtranCompareEffective && !m_stage5UseModtranPathRuntime)

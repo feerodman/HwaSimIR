@@ -96,7 +96,7 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
 
     // worker 线程...
     m_workerThread = new QThread(this);
-    m_worker = new TcpServerWorker(m_networkConfigPath);
+    m_worker = new TcpServerWorker(m_networkConfigPath, m_channel, m_platID, m_sensorID);
     m_worker->moveToThread(m_workerThread);
 
     // 收到图像信号 → 更新显示

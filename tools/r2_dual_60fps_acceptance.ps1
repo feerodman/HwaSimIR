@@ -4,7 +4,10 @@ param(
         "precise_visible_async60_jpeg",
         "coarse_visible_async60_jpeg",
         "dual_visible_async60_jpeg",
-        "dual_headless_async60_jpeg")]
+        "dual_headless_async60_jpeg",
+        "precise_visible_async60_h264",
+        "precise_headless_async60_h264",
+        "dual_visible_async60_h264")]
     [string[]]$Cases = @(
         "precise_visible_sync_jpeg",
         "precise_visible_async60_jpeg",
@@ -310,6 +313,14 @@ function Get-LastValue {
     return $Values[@($Values).Count - 1]
 }
 
+function Get-LastTextValue {
+    param([object[]]$Rows, [string]$Key, [string]$Default = "")
+    for ($i = @($Rows).Count - 1; $i -ge 0; --$i) {
+        if ($Rows[$i].ContainsKey($Key)) { return [string]$Rows[$i][$Key] }
+    }
+    return $Default
+}
+
 function Test-SustainedGrowth {
     param([double[]]$Values)
     $count = @($Values).Count
@@ -340,19 +351,28 @@ function Format-Number {
 
 $caseCatalog = @{
     precise_visible_sync_jpeg = [pscustomobject]@{
-        Name = "precise_visible_sync_jpeg"; Channels = @("precise"); SimMode = 1; Presentation = "VisibleWindow"
+        Name = "precise_visible_sync_jpeg"; Channels = @("precise"); SimMode = 1; Presentation = "VisibleWindow"; H264 = 0
     }
     precise_visible_async60_jpeg = [pscustomobject]@{
-        Name = "precise_visible_async60_jpeg"; Channels = @("precise"); SimMode = 2; Presentation = "VisibleWindow"
+        Name = "precise_visible_async60_jpeg"; Channels = @("precise"); SimMode = 2; Presentation = "VisibleWindow"; H264 = 0
     }
     coarse_visible_async60_jpeg = [pscustomobject]@{
-        Name = "coarse_visible_async60_jpeg"; Channels = @("coarse"); SimMode = 2; Presentation = "VisibleWindow"
+        Name = "coarse_visible_async60_jpeg"; Channels = @("coarse"); SimMode = 2; Presentation = "VisibleWindow"; H264 = 0
     }
     dual_visible_async60_jpeg = [pscustomobject]@{
-        Name = "dual_visible_async60_jpeg"; Channels = @("precise", "coarse"); SimMode = 2; Presentation = "VisibleWindow"
+        Name = "dual_visible_async60_jpeg"; Channels = @("precise", "coarse"); SimMode = 2; Presentation = "VisibleWindow"; H264 = 0
     }
     dual_headless_async60_jpeg = [pscustomobject]@{
-        Name = "dual_headless_async60_jpeg"; Channels = @("precise", "coarse"); SimMode = 2; Presentation = "HeadlessOffscreen"
+        Name = "dual_headless_async60_jpeg"; Channels = @("precise", "coarse"); SimMode = 2; Presentation = "HeadlessOffscreen"; H264 = 0
+    }
+    precise_visible_async60_h264 = [pscustomobject]@{
+        Name = "precise_visible_async60_h264"; Channels = @("precise"); SimMode = 2; Presentation = "VisibleWindow"; H264 = 1
+    }
+    precise_headless_async60_h264 = [pscustomobject]@{
+        Name = "precise_headless_async60_h264"; Channels = @("precise"); SimMode = 2; Presentation = "HeadlessOffscreen"; H264 = 1
+    }
+    dual_visible_async60_h264 = [pscustomobject]@{
+        Name = "dual_visible_async60_h264"; Channels = @("precise", "coarse"); SimMode = 2; Presentation = "VisibleWindow"; H264 = 1
     }
 }
 
@@ -427,7 +447,7 @@ try {
                     "--sensor-id=$($cfg.SensorID)",
                     "--sim-mode=$($case.SimMode)",
                     "--video-fps=60",
-                    "--phase1d-h264=0",
+                    "--phase1d-h264=$($case.H264)",
                     "--save-mp4=0",
                     "--phase1b-auto-seconds=$stimRunSeconds") $stimWorkDir $caseDir
             }
@@ -470,6 +490,7 @@ try {
                 $videoEntry = $entries | Where-Object { $_.Channel -eq $channel -and $_.Component -eq "video" }
                 $stimEntry = $entries | Where-Object { $_.Channel -eq $channel -and $_.Component -eq "stim" }
                 $perfRows = Convert-TaggedRows $formalPaths[$hwaEntry.Stdout] "Perf"
+                $tcpRows = Convert-TaggedRows $formalPaths[$hwaEntry.Stdout] "TcpPerf"
                 $probeRows = Convert-TaggedRows $formalPaths[$hwaEntry.Stdout] "RenderPerfProbe"
                 $videoRows = Convert-TaggedRows $formalPaths[$videoEntry.Stderr] "VideoPerf"
                 $stimRows = Convert-TaggedRows $formalPaths[$stimEntry.Stderr] "StimPerf"
@@ -487,11 +508,20 @@ try {
                 $lagValues = Get-Values $perfRows "sourceSeqLag"
                 $latencyAvgValues = Get-Values $videoRows "latencyAvgMs"
                 $latencyP95Values = Get-Values $videoRows "latencyP95Ms"
+				$decodeMsValues = Get-Values $videoRows "decodeMsAvg"
                 $droppedValues = Get-Values $perfRows "dropped"
                 $inputOverwrittenValues = Get-Values $perfRows "inputOverwritten"
                 $outputOverwrittenValues = Get-Values $perfRows "outputOverwritten"
                 $overwrittenValues = Get-Values $perfRows "overwritten"
                 $stimFpsValues = Get-Values $stimRows "sentFpsInstant"
+                $h264EncodeValues = Get-Values $tcpRows "h264EncodeMs"
+                $encodedBytesValues = Get-Values $tcpRows "encodedBytes"
+                $jpegBytesValues = Get-Values $tcpRows "jpegBytes"
+                $activeCodec = Get-LastTextValue $tcpRows "activeCodec" "missing"
+                $requestedCodec = Get-LastTextValue $tcpRows "requestedCodec" "missing"
+                $videoActiveCodec = Get-LastTextValue $videoRows "activeCodec" "missing"
+                $h264KeyFrameSeen = Get-LastValue (Get-Values $videoRows "h264KeyFrameSeen")
+                $h264DecodeErrors = Get-LastValue (Get-Values $videoRows "h264DecodeErrors")
 
                 $outputFps = Get-Average $outputValues
                 $displayFps = Get-Average $displayValues
@@ -509,6 +539,17 @@ try {
                 if (Test-SustainedGrowth $inputDepthValues) { $failureReasons += "inputQueueDepth_sustained_growth" }
                 if (Test-SustainedGrowth $outputDepthValues) { $failureReasons += "outputQueueDepth_sustained_growth" }
                 if (Test-SustainedGrowth $lagValues) { $failureReasons += "sourceSeqLag_sustained_growth" }
+                if ($case.H264 -eq 1) {
+                    if ($requestedCodec -ne "h264" -or $activeCodec -ne "h264_annexb" -or $videoActiveCodec -ne "h264_annexb") {
+                        $failureReasons += "h264_not_active_end_to_end"
+                    }
+                    if ((Get-Maximum $jpegBytesValues) -gt 0) { $failureReasons += "jpeg_encoded_while_h264_active" }
+                    if ($h264KeyFrameSeen -ne 1) { $failureReasons += "h264_idr_not_seen" }
+                    if ($h264DecodeErrors -gt 0) { $failureReasons += "h264_decode_errors" }
+                }
+                elseif ($activeCodec -ne "jpeg") {
+                    $failureReasons += "jpeg_not_active"
+                }
                 if ($case.SimMode -eq 1 -and (
                     (Get-LastValue $inputOverwrittenValues) -gt 0 -or
                     (Get-LastValue $outputOverwrittenValues) -gt 0)) {
@@ -538,7 +579,10 @@ try {
                     channel = $channel
                     presentation = $case.Presentation
                     simMode = $case.SimMode
-                    codec = "jpeg"
+                    codec = $(if ($case.H264 -eq 1) { "h264_annexb" } else { "jpeg" })
+					requestedCodec = $requestedCodec
+					activeCodec = $activeCodec
+					videoActiveCodec = $videoActiveCodec
                     platID = 1001
                     sensorID = $cfg.SensorID
                     hwaPid = $hwaEntry.Process.Id
@@ -556,6 +600,12 @@ try {
                     pandaDoFrameMs = Get-Average $pandaValues
                     readbackMs = Get-Average $readbackValues
                     jpegMs = Get-Average $jpegValues
+					h264EncodeMs = Get-Average $h264EncodeValues
+					encodedBytes = Get-Average $encodedBytesValues
+					jpegBytesMax = Get-Maximum $jpegBytesValues
+					h264KeyFrameSeen = $h264KeyFrameSeen
+					h264DecodeErrors = $h264DecodeErrors
+					decodeMs = Get-Average $decodeMsValues
                     tcpSendMs = Get-Average $tcpValues
                     inputQueueDepthMax = Get-Maximum $inputDepthValues
                     outputQueueDepthMax = Get-Maximum $outputDepthValues

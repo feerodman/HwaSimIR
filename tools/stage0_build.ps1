@@ -1,6 +1,7 @@
 param(
     [string]$Configuration = "Release",
     [string]$Platform = "x64",
+    [string]$FFmpegRoot = $env:FFMPEG_ROOT,
     [switch]$SkipQt,
     [switch]$SkipVs
 )
@@ -50,11 +51,18 @@ Write-Host "Configuration: $Configuration"
 Write-Host "Platform: $Platform"
 Write-Host "MSBuild: $msbuild"
 Write-Host "qmake: $qmake"
+Write-Host "FFMPEG_ROOT: $(if ([string]::IsNullOrWhiteSpace($FFmpegRoot)) { '<not configured; JPEG fallback build>' } else { $FFmpegRoot })"
 Write-Host ""
 
 if (-not $SkipVs) {
     Write-Host "Building HwaSimIR VS project..."
-    & $msbuild $vsSolution "/m" "/t:Build" "/p:Configuration=$Configuration" "/p:Platform=$Platform" "/verbosity:minimal"
+    $msbuildArgs = @($vsSolution, "/m", "/t:Build", "/p:Configuration=$Configuration", "/p:Platform=$Platform", "/verbosity:minimal")
+    if (-not [string]::IsNullOrWhiteSpace($FFmpegRoot)) {
+        Assert-Path (Join-Path $FFmpegRoot "include\libavcodec\avcodec.h") "FFmpeg headers"
+        Assert-Path (Join-Path $FFmpegRoot "lib\avcodec.lib") "FFmpeg import library"
+        $msbuildArgs += "/p:FFMPEG_ROOT=$FFmpegRoot"
+    }
+    & $msbuild @msbuildArgs
     if ($LASTEXITCODE -ne 0) {
         throw "MSBuild failed with exit code $LASTEXITCODE"
     }

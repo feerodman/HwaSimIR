@@ -72,14 +72,20 @@ int ScaleCoord(int value, int srcSize, int dstSize)
 }
 }
 
-TcpCommThread::TcpCommThread(HwaSimIR* hwaSimIR, const std::string& serverIp, uint16_t serverPort)
+TcpCommThread::TcpCommThread(HwaSimIR* hwaSimIR, const std::string& serverIp, uint16_t serverPort,
+	const std::string& channel, int localPlatID, int localSensorID)
 	: m_pHwaSimIR(hwaSimIR),
+	m_channel(channel),
+	m_localPlatID(localPlatID),
+	m_localSensorID(localSensorID),
 	m_tcpSocket(-1),
 	m_serverIp(serverIp),
 	m_serverPort(serverPort),
 	m_bIsRunning(false),
 	m_bIsConnected(false)
 {
+	m_jpegEncoder.reset(new JpegFrameEncoder());
+	m_h264Encoder.reset(new H264FfmpegEncoder());
 	memset(&m_serverAddr, 0, sizeof(m_serverAddr));
 	m_serverAddr.sin_family = AF_INET;
 	m_serverAddr.sin_port = htons(serverPort);
@@ -137,71 +143,139 @@ void TcpCommThread::configureOutput(
 	m_h264GopFrames.store(std::max(1, h264GopFrames));
 	m_h264LowLatency.store(h264LowLatency);
 	m_h264ForceKeyFrameOnStart.store(h264ForceKeyFrameOnStart);
+	m_encoderResetRequested.store(true);
+	m_encoderKeyFrameRequested.store(true);
 	std::lock_guard<std::mutex> lock(m_codecMtx);
 	m_codecConfig = codecConfig;
 	m_h264EncoderConfig = h264Encoder.empty() ? "auto" : h264Encoder;
 }
 
-void TcpCommThread::setH264Requested(bool enabled)
+void TcpCommThread::setH264Requested(bool enabled, int videoFps)
 {
 	m_h264Requested.store(enabled);
-	std::string requestedCodec;
-	std::string activeCodec;
-	std::string fallbackReason;
-	resolveCodecState(requestedCodec, activeCodec, fallbackReason);
-	if (!fallbackReason.empty())
-	{
-		std::cout << "[Codec][WARN] h264 requested but "
-			<< (fallbackReason == "experimental_disabled" ? "experimental disabled" : "unavailable")
-			<< ", fallback=jpeg"
-			<< " activeCodec=" << activeCodec
-			<< " reason=" << fallbackReason
-			<< std::endl;
-	}
-	std::cout << "[Codec]"
+	m_videoFps.store(std::max(1, videoFps));
+	m_encoderResetRequested.store(true);
+	m_encoderKeyFrameRequested.store(true);
+	std::cout << "[VideoEncoder] channel=" << m_channel
+		<< " platID=" << m_localPlatID << " sensorID=" << m_localSensorID
+		<< " pid=" << getpid()
 		<< " h264En=" << (enabled ? "1" : "0")
-		<< " requestedCodec=" << requestedCodec
-		<< " activeCodec=" << activeCodec
-		<< " codecFallbackReason=" << (fallbackReason.empty() ? "none" : fallbackReason)
+		<< " requestedCodec=" << (enabled ? "h264" : "jpeg")
+		<< " ffmpegCompiled=" << (m_h264Encoder && m_h264Encoder->isAvailable() ? "1" : "0")
+		<< " encoderBackend=ffmpeg"
 		<< std::endl;
 }
 
-void TcpCommThread::resolveCodecState(
-	std::string& requestedCodec,
-	std::string& activeCodec,
-	std::string& fallbackReason) const
+void TcpCommThread::requestEncoderKeyFrame(const char* reason)
 {
-	const bool h264Requested = m_h264Requested.load();
-	const bool experimentalEnabled = m_enableH264Experimental.load();
-	const bool fallbackEnabled = m_h264FallbackToJpeg.load();
+	m_encoderKeyFrameRequested.store(true);
+	std::cout << "[VideoEncoder] channel=" << m_channel
+		<< " platID=" << m_localPlatID << " sensorID=" << m_localSensorID
+		<< " pid=" << getpid()
+		<< " requestKeyFrame=1 reason=" << (reason ? reason : "unspecified") << std::endl;
+}
+
+bool TcpCommThread::encodeFrame(
+	const RawVideoFrame& rawFrame,
+	EncodedVideoFrame& encodedFrame,
+	std::string& requestedCodec)
+{
 	std::string codecConfig;
+	std::string encoderConfig;
 	{
 		std::lock_guard<std::mutex> lock(m_codecMtx);
 		codecConfig = m_codecConfig;
+		encoderConfig = m_h264EncoderConfig;
 	}
+	if (m_encoderResetRequested.exchange(false))
+	{
+		m_jpegEncoder->reset();
+		m_h264Encoder->reset();
+		m_jpegEncoderConfigured = false;
+		m_h264EncoderConfigured = false;
+		m_lastCodecFallbackReason.clear();
+	}
+
+	VideoEncoderConfig config;
+	config.width = rawFrame.width;
+	config.height = rawFrame.height;
+	config.fps = std::max(1, m_videoFps.load());
+	config.bitrateKbps = m_h264BitrateKbps.load();
+	config.gopFrames = m_h264GopFrames.load();
+	config.jpegQuality = m_jpegQuality.load();
+	config.jpegGray = m_jpegGray.load();
+	config.lowLatency = m_h264LowLatency.load();
+	config.forceKeyFrameOnStart = m_h264ForceKeyFrameOnStart.load();
+
+	const bool h264Requested = m_h264Requested.load() && codecConfig != "jpeg";
 	requestedCodec = h264Requested ? "h264" : "jpeg";
-	activeCodec = "jpeg";
-	fallbackReason.clear();
-	if (!h264Requested)
+	std::string fallbackReason;
+	std::string error;
+	if (h264Requested)
 	{
-		return;
+		if (!m_enableH264Experimental.load())
+			fallbackReason = "h264_backend_disabled";
+		else if (!(encoderConfig.empty() || encoderConfig == "auto" || encoderConfig == "ffmpeg" || encoderConfig == "libavcodec"))
+			fallbackReason = "requested_encoder_not_integrated:" + encoderConfig;
+		else if (!m_h264Encoder->isAvailable())
+			fallbackReason = "ffmpeg_sdk_or_h264_encoder_unavailable";
+		else
+		{
+			const bool configChanged = !m_h264EncoderConfigured ||
+				m_h264EncoderRuntimeConfig.width != config.width ||
+				m_h264EncoderRuntimeConfig.height != config.height ||
+				m_h264EncoderRuntimeConfig.fps != config.fps ||
+				m_h264EncoderRuntimeConfig.bitrateKbps != config.bitrateKbps ||
+				m_h264EncoderRuntimeConfig.gopFrames != config.gopFrames;
+			if (configChanged)
+			{
+				m_h264EncoderConfigured = m_h264Encoder->configure(config, error);
+				m_h264EncoderRuntimeConfig = config;
+			}
+			if (m_h264EncoderConfigured)
+			{
+				if (m_encoderKeyFrameRequested.exchange(false)) m_h264Encoder->requestKeyFrame();
+				if (m_h264Encoder->encode(rawFrame, encodedFrame, error)) return true;
+				m_encoderKeyFrameRequested.store(true);
+			}
+			fallbackReason = error.empty() ? "ffmpeg_h264_encode_failed" : error;
+		}
 	}
-	if (codecConfig == "jpeg")
+	if (h264Requested && !m_h264FallbackToJpeg.load())
 	{
-		fallbackReason = "codec_config_forces_jpeg";
+		if (fallbackReason != m_lastCodecFallbackReason)
+		{
+			std::cerr << "[CodecFallback] channel=" << m_channel
+				<< " platID=" << m_localPlatID << " sensorID=" << m_localSensorID
+				<< " pid=" << getpid()
+				<< " allowed=0 action=drop reason=" << fallbackReason << std::endl;
+			m_lastCodecFallbackReason = fallbackReason;
+		}
+		return false;
 	}
-	else if (!experimentalEnabled)
+
+	const bool jpegConfigChanged = !m_jpegEncoderConfigured ||
+		m_jpegEncoderConfig.width != config.width || m_jpegEncoderConfig.height != config.height ||
+		m_jpegEncoderConfig.jpegQuality != config.jpegQuality || m_jpegEncoderConfig.jpegGray != config.jpegGray;
+	if (jpegConfigChanged)
 	{
-		fallbackReason = "experimental_disabled";
+		m_jpegEncoderConfigured = m_jpegEncoder->configure(config, error);
+		m_jpegEncoderConfig = config;
 	}
-	else
+	if (!m_jpegEncoderConfigured || !m_jpegEncoder->encode(rawFrame, encodedFrame, error)) return false;
+	if (h264Requested)
 	{
-		fallbackReason = "h264_stream_transport_not_implemented";
+		encodedFrame.fallbackReason = fallbackReason.empty() ? "h264_encoder_unavailable" : fallbackReason;
+		if (encodedFrame.fallbackReason != m_lastCodecFallbackReason)
+		{
+			std::cout << "[CodecFallback] channel=" << m_channel
+				<< " platID=" << m_localPlatID << " sensorID=" << m_localSensorID
+				<< " pid=" << getpid()
+				<< " allowed=1 requestedCodec=h264 activeCodec=jpeg reason=" << encodedFrame.fallbackReason << std::endl;
+			m_lastCodecFallbackReason = encodedFrame.fallbackReason;
+		}
 	}
-	if (!fallbackEnabled)
-	{
-		fallbackReason += "_forced_safe_fallback";
-	}
+	return true;
 }
 
 void TcpCommThread::resetFrameCounters()
@@ -212,7 +286,16 @@ void TcpCommThread::resetFrameCounters()
 		m_tcpPacketCounter.store(0);
 		m_lastTcpPerfLogNs = 0;
 	}
+	m_encoderResetRequested.store(true);
+	m_encoderKeyFrameRequested.store(true);
 	m_queueSpaceCv.notify_all();
+}
+
+void TcpCommThread::resetInitCompleted()
+{
+	m_initCompleted.store(false);
+	m_encoderResetRequested.store(true);
+	m_encoderKeyFrameRequested.store(true);
 }
 
 bool TcpCommThread::connectToServer()
@@ -305,6 +388,7 @@ bool TcpCommThread::sendControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cm
 
 	std::cout << "[TcpControlForward] simCommand=" << cmd.simCommand
 		<< " round=" << cmd.currentRound << "/" << cmd.roundCut << std::endl;
+	requestEncoderKeyFrame("control_or_round_change");
 	return true;
 }
 
@@ -324,6 +408,7 @@ bool TcpCommThread::sendInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& initDat
 	}
 
 	m_initCompleted = true;
+	requestEncoderKeyFrame("initialization_forwarded");
 	std::cout << "[TcpInitForward] sensorID=" << initData.sensorID
 		<< " platID=" << initData.platID << std::endl;
 	//<< " platNumValid=" << initData.platNumValid << std::endl;
@@ -333,12 +418,12 @@ bool TcpCommThread::sendInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& initDat
 bool TcpCommThread::sendFramePacket(
 	const BYHWICD::DisplayC2cObjTrackingData& trackingData,
 	const std::string& annotationJson,
-	const std::vector<uchar>& jpegData)
+	const std::vector<std::uint8_t>& encodedPayload)
 {
 	const uint32_t trackingLen = static_cast<uint32_t>(sizeof(BYHWICD::DisplayC2cObjTrackingData));
 	const uint32_t annotationLen = static_cast<uint32_t>(annotationJson.size());
-	const uint32_t jpegLen = static_cast<uint32_t>(jpegData.size());
-	const uint32_t totalLen = 4 + 4 + trackingLen + 4 + annotationLen + 4 + jpegLen;
+	const uint32_t payloadLen = static_cast<uint32_t>(encodedPayload.size());
+	const uint32_t totalLen = 4 + 4 + trackingLen + 4 + annotationLen + 4 + payloadLen;
 
 	std::vector<char> packet;
 	packet.reserve(totalLen);
@@ -347,8 +432,8 @@ bool TcpCommThread::sendFramePacket(
 	packet.insert(packet.end(), reinterpret_cast<const char*>(&trackingData), reinterpret_cast<const char*>(&trackingData) + trackingLen);
 	AppendUint32BE(packet, annotationLen);
 	packet.insert(packet.end(), annotationJson.begin(), annotationJson.end());
-	AppendUint32BE(packet, jpegLen);
-	packet.insert(packet.end(), reinterpret_cast<const char*>(jpegData.data()), reinterpret_cast<const char*>(jpegData.data()) + jpegLen);
+	AppendUint32BE(packet, payloadLen);
+	packet.insert(packet.end(), reinterpret_cast<const char*>(encodedPayload.data()), reinterpret_cast<const char*>(encodedPayload.data()) + payloadLen);
 
 	return sendAll(packet.data(), static_cast<int>(packet.size()));
 }
@@ -360,18 +445,19 @@ std::string TcpCommThread::buildAnnotationJson(
 	int tcpHeight,
 	const IRFrameTelemetry& telemetry,
 	std::uint64_t outputOrdinal,
-	std::int64_t tcpSendTimeNs) const
+	std::int64_t tcpSendTimeNs,
+	const std::string& requestedCodec,
+	const EncodedVideoFrame& encodedFrame) const
 {
 	const int srcWidth = record.width > 0 ? record.width : tcpWidth;
 	const int srcHeight = record.height > 0 ? record.height : tcpHeight;
 	const unsigned long long frameIndex = record.frameIndex > 0 ? record.frameIndex : outputOrdinal;
-	std::string requestedCodec;
-	std::string activeCodec;
-	std::string fallbackReason;
-	resolveCodecState(requestedCodec, activeCodec, fallbackReason);
+	const std::string activeCodec = encodedFrame.payloadCodec.empty() ? "none" : encodedFrame.payloadCodec;
+	const std::string fallbackReason = encodedFrame.fallbackReason.empty() ? "none" : encodedFrame.fallbackReason;
 
 	std::ostringstream json;
 	json << "{\"version\":1"
+		<< ",\"packetVersion\":2"
 		<< ",\"enabled\":" << (annotationEnabled ? "true" : "false")
 		<< ",\"frameIndex\":" << frameIndex
 		<< ",\"frameSeq\":" << telemetry.sourceSeq
@@ -381,8 +467,14 @@ std::string TcpCommThread::buildAnnotationJson(
 		<< ",\"tcpSendTimeNs\":\"" << tcpSendTimeNs << "\""
 		<< ",\"requestedCodec\":\"" << JsonEscape(requestedCodec) << "\""
 		<< ",\"activeCodec\":\"" << JsonEscape(activeCodec) << "\""
+		<< ",\"codec\":\"" << JsonEscape(activeCodec) << "\""
+		<< ",\"payloadCodec\":\"" << JsonEscape(activeCodec) << "\""
 		<< ",\"h264En\":" << (m_h264Requested.load() ? "true" : "false")
-		<< ",\"codecFallbackReason\":\"" << JsonEscape(fallbackReason.empty() ? "none" : fallbackReason) << "\""
+		<< ",\"codecFallbackReason\":\"" << JsonEscape(fallbackReason) << "\""
+		<< ",\"encoderName\":\"" << JsonEscape(encodedFrame.encoderName) << "\""
+		<< ",\"keyFrame\":" << (encodedFrame.keyFrame ? "true" : "false")
+		<< ",\"ptsMs\":" << encodedFrame.ptsMs
+		<< ",\"encodedBytes\":" << encodedFrame.payload.size()
 		<< ",\"simTimeMs\":" << record.simTimeMs
 		<< ",\"sensorID\":" << record.sensorID
 		<< ",\"width\":" << tcpWidth
@@ -455,6 +547,7 @@ std::string TcpCommThread::buildAnnotationJson(
 
 void TcpCommThread::sendFrameThreadFunc()
 {
+	EncodedVideoFrame encodedFrame;
 	std::cout << "TCP发送后台线程已启动..." << std::endl;
 
 	while (m_bIsRunning)
@@ -464,6 +557,7 @@ void TcpCommThread::sendFrameThreadFunc()
 			if (connectToServer())
 			{
 				m_bIsConnected = true;
+				requestEncoderKeyFrame("tcp_connected");
 				std::cout << "TCP成功连接到服务器：" << m_serverIp << ":" << m_serverPort << std::endl;
 			}
 			else
@@ -513,36 +607,19 @@ void TcpCommThread::sendFrameThreadFunc()
 
 		if (frame.pixels.empty()) continue;
 
-		const auto flipBegin = std::chrono::steady_clock::now();
-		cv::Mat rawFrame(frame.height, frame.width, CV_8UC3, frame.pixels.data());
-		cv::Mat flippedFrame;
-		const cv::Mat* jpegFrame = &rawFrame;
-		if (m_flipVertical.load())
-		{
-			cv::flip(rawFrame, flippedFrame, 0);
-			jpegFrame = &flippedFrame;
-		}
-		const double flipMs = std::chrono::duration<double, std::milli>(
-			std::chrono::steady_clock::now() - flipBegin).count();
-
-		const int jpegQuality = m_jpegQuality.load();
-		const bool jpegGray = m_jpegGray.load();
-		const auto jpegBegin = std::chrono::steady_clock::now();
-		cv::Mat grayFrame;
-		const cv::Mat* encodeFrame = jpegFrame;
-		if (jpegGray)
-		{
-			cv::cvtColor(*jpegFrame, grayFrame, cv::COLOR_RGB2GRAY);
-			encodeFrame = &grayFrame;
-		}
-		std::vector<uchar> jpegData;
-		std::vector<int> params = { cv::IMWRITE_JPEG_QUALITY, jpegQuality };
-		if (!cv::imencode(".jpg", *encodeFrame, jpegData, params))
-		{
-			continue;
-		}
-		const double jpegMs = std::chrono::duration<double, std::milli>(
-			std::chrono::steady_clock::now() - jpegBegin).count();
+		const std::uint64_t nextOutputOrdinal = m_tcpPacketCounter.load() + 1;
+		RawVideoFrame rawFrame;
+		rawFrame.data = frame.pixels.data();
+		rawFrame.width = frame.width;
+		rawFrame.height = frame.height;
+		rawFrame.stride = frame.width * 3;
+		rawFrame.pixelFormat = RawVideoPixelFormat::Bgr24;
+		rawFrame.flipVertical = m_flipVertical.load();
+		rawFrame.ptsMs = frame.telemetry.udpReceiveTimeNs > 0
+			? frame.telemetry.udpReceiveTimeNs / 1000000LL
+			: static_cast<std::int64_t>(nextOutputOrdinal * 1000ULL / std::max(1, m_videoFps.load()));
+		std::string requestedCodec;
+		if (!encodeFrame(rawFrame, encodedFrame, requestedCodec)) continue;
 
 		const std::uint64_t outputOrdinal = ++m_tcpPacketCounter;
 		const std::int64_t tcpSendTimeNs = IRPerfStats::wallTimeNs();
@@ -553,20 +630,25 @@ void TcpCommThread::sendFrameThreadFunc()
 			frame.height,
 			frame.telemetry,
 			outputOrdinal,
-			tcpSendTimeNs);
+			tcpSendTimeNs,
+			requestedCodec,
+			encodedFrame);
 		if (annotationJson.size() > 1024 * 1024)
 		{
 			std::cout << "[TcpFramePacket][WARN] annotationJsonTooLarge"
+				<< " channel=" << m_channel << " platID=" << m_localPlatID
+				<< " sensorID=" << m_localSensorID << " pid=" << getpid()
 				<< " frame=" << outputOrdinal
 				<< " annotationBytes=" << annotationJson.size()
 				<< std::endl;
 		}
 
 		const auto sendBegin = std::chrono::steady_clock::now();
-		if (!sendFramePacket(frame.trackingData, annotationJson, jpegData))
+		if (!sendFramePacket(frame.trackingData, annotationJson, encodedFrame.payload))
 		{
 			std::cerr << "TCP连接丢失(发送帧包失败)，准备重连..." << std::endl;
 			disconnectFromServer();
+			requestEncoderKeyFrame("tcp_send_failure");
 			continue;
 		}
 		const double tcpSendMs = std::chrono::duration<double, std::milli>(
@@ -575,8 +657,14 @@ void TcpCommThread::sendFrameThreadFunc()
 		if (outputOrdinal <= 3 || (outputOrdinal % 120) == 0)
 		{
 			std::cout << "[TcpFramePacket]"
+				<< " channel=" << m_channel << " platID=" << m_localPlatID
+				<< " sensorID=" << m_localSensorID << " pid=" << getpid()
 				<< " frame=" << outputOrdinal
-				<< " imgBytes=" << jpegData.size()
+				<< " imgBytes=" << encodedFrame.payload.size()
+				<< " payloadBytes=" << encodedFrame.payload.size()
+				<< " codec=" << encodedFrame.payloadCodec
+				<< " activeCodec=" << encodedFrame.payloadCodec
+				<< " keyFrame=" << (encodedFrame.keyFrame ? "1" : "0")
 				<< " annotationBytes=" << annotationJson.size()
 				<< " targets=" << frame.annotationRecord.targets.size()
 				<< " width=" << frame.width
@@ -588,31 +676,52 @@ void TcpCommThread::sendFrameThreadFunc()
 		if (outputOrdinal <= 3 || (outputOrdinal % 120) == 0 ||
 			perfNowNs - m_lastTcpPerfLogNs >= 2000000000LL)
 		{
-			std::string requestedCodec;
-			std::string activeCodec;
-			std::string fallbackReason;
-			resolveCodecState(requestedCodec, activeCodec, fallbackReason);
+			const bool h264Active = encodedFrame.payloadCodec == "h264_annexb";
 			std::ostringstream perfLine;
 			perfLine << std::fixed << std::setprecision(3)
 				<< "[TcpPerf]"
+				<< " channel=" << m_channel
+				<< " platID=" << m_localPlatID
+				<< " sensorID=" << m_localSensorID
+				<< " pid=" << getpid()
 				<< " sourceSeq=" << frame.telemetry.sourceSeq
 				<< " outputOrdinal=" << outputOrdinal
-				<< " codec=" << activeCodec
+				<< " codec=" << encodedFrame.payloadCodec
+				<< " activeCodec=" << encodedFrame.payloadCodec
 				<< " requestedCodec=" << requestedCodec
 				<< " h264En=" << (m_h264Requested.load() ? "1" : "0")
-				<< " codecFallbackReason=" << (fallbackReason.empty() ? "none" : fallbackReason)
-				<< " jpegQuality=" << jpegQuality
-				<< " jpegMode=" << (jpegGray ? "gray" : "rgb")
-				<< " jpegBytes=" << jpegData.size()
-				<< " encodeInputChannels=" << encodeFrame->channels()
-				<< " flipMs=" << flipMs
+				<< " codecFallbackReason=" << (encodedFrame.fallbackReason.empty() ? "none" : encodedFrame.fallbackReason)
+				<< " encoderName=" << encodedFrame.encoderName
+				<< " h264EncoderName=" << encodedFrame.encoderName
+				<< " encodeMs=" << encodedFrame.encodeMs
+				<< " h264EncodeMs=" << (h264Active ? encodedFrame.encodeMs : 0.0)
+				<< " encodedBytes=" << encodedFrame.payload.size()
+				<< " payloadBytes=" << encodedFrame.payload.size()
+				<< " keyFrame=" << (encodedFrame.keyFrame ? "1" : "0")
+				<< " jpegQuality=" << m_jpegQuality.load()
+				<< " jpegMode=" << (m_jpegGray.load() ? "gray" : "rgb")
+				<< " jpegBytes=" << (h264Active ? 0 : encodedFrame.payload.size())
+				<< " encodeInputChannels=" << encodedFrame.inputChannels
+				<< " flipMs=" << encodedFrame.preprocessMs
 				<< " resizeMs=0.000"
-				<< " jpegMs=" << jpegMs
+				<< " jpegMs=" << (h264Active ? 0.0 : encodedFrame.encodeMs)
 				<< " tcpSendMs=" << tcpSendMs
 				<< " queueDepth=" << queueDepth
 				<< " queueWaitMs=" << frame.queueWaitMs
 				<< " overwritten=" << (frame.overwritten ? "1" : "0");
 			std::cout << perfLine.str() << std::endl;
+			if (h264Active)
+			{
+				std::cout << std::fixed << std::setprecision(3)
+					<< "[H264Perf] channel=" << m_channel
+					<< " platID=" << m_localPlatID << " sensorID=" << m_localSensorID
+					<< " pid=" << getpid()
+					<< " outputOrdinal=" << outputOrdinal
+					<< " encodeMs=" << encodedFrame.encodeMs
+					<< " payloadBytes=" << encodedFrame.payload.size()
+					<< " keyFrame=" << (encodedFrame.keyFrame ? "1" : "0")
+					<< " queueDepth=" << queueDepth << std::endl;
+			}
 			m_lastTcpPerfLogNs = perfNowNs;
 		}
 		if (m_pHwaSimIR)
@@ -620,9 +729,9 @@ void TcpCommThread::sendFrameThreadFunc()
 			m_pHwaSimIR->OnTcpFrameSent(
 				frame.telemetry,
 				outputOrdinal,
-				flipMs,
+				encodedFrame.preprocessMs,
 				0.0,
-				jpegMs,
+				(encodedFrame.payloadCodec == "jpeg" ? encodedFrame.encodeMs : 0.0),
 				tcpSendMs,
 				queueDepth,
 				frame.queueWaitMs,

@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <deque>
 #include <mutex>
+#include <memory>
 #include <string>
 #include <thread>
 #include <vector>
@@ -24,12 +25,14 @@
 #include <texture.h>
 #include "Annotation/AnnotationTypes.h"
 #include "IR/IRPerfStats.h"
+#include "Video/VideoEncoder.h"
 
 class HwaSimIR;
 
 class TcpCommThread {
 public:
-	TcpCommThread(HwaSimIR* hwaSimIR, const std::string& serverIp, uint16_t serverPort);
+	TcpCommThread(HwaSimIR* hwaSimIR, const std::string& serverIp, uint16_t serverPort,
+		const std::string& channel, int localPlatID, int localSensorID);
 	~TcpCommThread();
 
 	bool start();
@@ -57,12 +60,12 @@ public:
 		bool h264LowLatency,
 		bool h264ForceKeyFrameOnStart,
 		const std::string& codecConfig);
-	void setH264Requested(bool enabled);
+	void setH264Requested(bool enabled, int videoFps = 60);
 	void resetFrameCounters();
 
 	bool sendControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd);
 	bool sendInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& initData);
-	void resetInitCompleted() { m_initCompleted = false; }
+	void resetInitCompleted();
 
 private:
 	bool initSocket();
@@ -72,7 +75,7 @@ private:
 	bool sendFramePacket(
 		const BYHWICD::DisplayC2cObjTrackingData& trackingData,
 		const std::string& annotationJson,
-		const std::vector<uchar>& jpegData);
+		const std::vector<std::uint8_t>& encodedPayload);
 	bool sendAll(const char* data, int size);
 	bool sendStruct(const void* structPtr, uint32_t structSize);
 	std::string buildAnnotationJson(
@@ -82,17 +85,23 @@ private:
 		int tcpHeight,
 		const IRFrameTelemetry& telemetry,
 		std::uint64_t outputOrdinal,
-		std::int64_t tcpSendTimeNs) const;
-	void resolveCodecState(
-		std::string& requestedCodec,
-		std::string& activeCodec,
-		std::string& fallbackReason) const;
+		std::int64_t tcpSendTimeNs,
+		const std::string& requestedCodec,
+		const EncodedVideoFrame& encodedFrame) const;
+	bool encodeFrame(
+		const RawVideoFrame& rawFrame,
+		EncodedVideoFrame& encodedFrame,
+		std::string& requestedCodec);
+	void requestEncoderKeyFrame(const char* reason);
 
 	bool connectToServer();
 	void disconnectFromServer();
 
 private:
 	HwaSimIR* m_pHwaSimIR;
+	std::string m_channel;
+	int m_localPlatID = 0;
+	int m_localSensorID = 0;
 
 	int m_tcpSocket;
 	sockaddr_in m_serverAddr;
@@ -135,9 +144,19 @@ private:
 	std::atomic<int> m_h264GopFrames{ 30 };
 	std::atomic<bool> m_h264LowLatency{ true };
 	std::atomic<bool> m_h264ForceKeyFrameOnStart{ true };
+	std::atomic<int> m_videoFps{ 60 };
 	std::string m_codecConfig = "auto";
 	std::string m_h264EncoderConfig = "auto";
 	mutable std::mutex m_codecMtx;
+	std::unique_ptr<JpegFrameEncoder> m_jpegEncoder;
+	std::unique_ptr<H264FfmpegEncoder> m_h264Encoder;
+	VideoEncoderConfig m_jpegEncoderConfig;
+	VideoEncoderConfig m_h264EncoderRuntimeConfig;
+	bool m_jpegEncoderConfigured = false;
+	bool m_h264EncoderConfigured = false;
+	std::string m_lastCodecFallbackReason;
+	std::atomic<bool> m_encoderResetRequested{ true };
+	std::atomic<bool> m_encoderKeyFrameRequested{ true };
 	std::atomic<unsigned long long> m_tcpPacketCounter{ 0 };
 	std::int64_t m_lastTcpPerfLogNs = 0;
 };

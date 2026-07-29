@@ -46,6 +46,12 @@
     <ClCompile Include="TcpServerWorker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Video\H264FfmpegDecoder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Video\VideoDecoder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="TcpServerWorker.h">
@@ -57,6 +63,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="CommonData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Video\VideoDecoder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

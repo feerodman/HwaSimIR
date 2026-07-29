@@ -1772,3 +1772,100 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\r2_dual_60fps_ac
 - RK3588 / Debian 11 / aarch64 实机未测试。本机未找到 `aarch64-linux-gnu-g++`、`aarch64-linux-gnu-gcc` 或 `aarch64-linux-gnu-cmake`，也没有目标机 GPU/驱动环境，因此不以 Windows 结果代替 RK3588 结论。
 - 后续在 RK3588 上必须复用相同 5 秒预热 + 30 秒正式窗口、双激励/双 VideoDisplay（或等价接收器）和逐通道身份化统计，重点复核 Headless 双进程读回、JPEG 和内存带宽。
 - 本轮没有开始 H.264、天气或照明；这些仍按 R3/W1/L1 之后阶段实施，不应回填到 R2 结果中。
+
+### 2026-07-21 / V1～V3 编码器解耦与 Windows H.264 端到端闭环实施记录
+
+#### 基线、范围与依赖
+
+- 基线为最新 `main` / `origin/main`：`a5ce85633f99e56592a40efdc4cc4dca53abc515`（`双进程 60 FPS 收口版本_20260720_1632`）。本记录对应未提交工作区；未执行 commit 或 push。
+- 本轮完成通用编码接口、Windows FFmpeg H.264 内存编码、既有 TCP 帧包发送、VideoDisplay 持久解码、显示和现有 MP4 录像闭环。JPEG 仍是 `h264En=false` 时的默认路径。
+- 未实现 RK3588 MPP、天气或照明；未修改 `CommonData.h`、协议结构体、TCP 帧包字节布局、红外物理、800x800 分辨率、JPEG 默认质量、翻转/灰度语义、标注目标语义或录像输入的 `QImage` 链路。
+- Windows 验证依赖为 FFmpeg `n8.1.2-29-g703dcc25b9-20260720` GPL shared build（BtbN；GCC 15.2.0），`libavcodec 62.28.102`、`libavutil 60.26.102`、`libswscale 9.5.102`，构建包含 `libx264`。SDK 通过 `FFMPEG_ROOT` 传入，本地 `.deps/` 已忽略，不写死开发机路径。
+- 继续使用既有 OpenCV 4.4.0、Qt 5.12.12、MSVC/MSBuild 14.0 和 MinGW 7.3 工具链。
+
+#### 修改文件
+
+```text
+.gitignore
+HwaSim_IR/Bin/Config/HwaSimIRRuntime.ini
+HwaSim_IR/HwaSim_IR/CMakeLists.txt
+HwaSim_IR/HwaSim_IR/HwaSimIR.cpp
+HwaSim_IR/HwaSim_IR/HwaSim_IR.vcxproj
+HwaSim_IR/HwaSim_IR/HwaSim_IR.vcxproj.filters
+HwaSim_IR/HwaSim_IR/TcpCommThread.h/.cpp
+HwaSim_IR/HwaSim_IR/TcpCommThread_Linux.h/.cpp
+HwaSim_IR/HwaSim_IR/Video/VideoEncoder.h
+HwaSim_IR/HwaSim_IR/Video/JpegFrameEncoder.cpp
+HwaSim_IR/HwaSim_IR/Video/H264FfmpegEncoder.cpp
+HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay.cpp
+HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay.vcxproj
+HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay.vcxproj.filters
+HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay/TcpServerWorker.h/.cpp
+HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay/Video/VideoDecoder.h
+HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay/Video/VideoDecoder.cpp
+HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay/Video/H264FfmpegDecoder.cpp
+tools/stage0_build.ps1
+tools/r2_dual_60fps_acceptance.ps1
+tools/v3_h264_recovery_smoke.ps1
+tools/r1_protocol_sender.cpp
+tools/phase2a_sync60_save_smoke.ps1
+docs/HwaSimIR_RuntimeChannel_H264_Weather_Lighting_Implementation_Plan.md
+```
+
+#### 完成内容
+
+- 新增 `RawVideoFrame`、`VideoEncoderConfig`、`EncodedVideoFrame`、`IVideoEncoder`、`JpegFrameEncoder` 和 `H264FfmpegEncoder`。Windows/Linux `TcpCommThread` 共用接口；编码器和输出容量跨帧保持，`TcpCommThread` 只负责队列、编码器选择、实际结果 JSON、原 TCP 包组装和发送，不再直接调用 `cv::imencode`。
+- JPEG 编码移入 `JpegFrameEncoder`，保留质量 100、BGR 字节解释、`COLOR_RGB2GRAY` 历史转换、垂直翻转和 RGB/gray 输出；VideoDisplay 的 JPEG 解码仍调用 `QImage::loadFromData(..., "JPEG")`。R2 JPEG 性能回归通过。
+- `H264FfmpegEncoder` 使用持久 `AVCodecContext/AVFrame/AVPacket/SwsContext`，输入转 YUV420P，`max_b_frames=0`、单编码线程、`ultrafast + zerolatency + baseline`，输出 Annex-B。每个 TCP payload 聚合一帧的完整 Access Unit；关键 AU 强制校验同时含 SPS、PPS 和 IDR NAL。
+- 首帧、TCP 成功重连、发送失败、初始化转发、控制/新回合和帧计数复位均请求下一帧 IDR。编码器不逐帧创建；复位时才安全重建。
+- annotation JSON 由实际编码结果填写 `payloadCodec/activeCodec/keyFrame/ptsMs/encodedBytes/encoderName/codecFallbackReason`，兼容字段 `codec/h264EncoderName` 保留。`sendFramePacket` 仅把原 `jpegData` 变量泛化为 encoded payload，长度头、结构体段、JSON 段和 payload 段顺序及 TCP 帧包语义不变。
+- 新增持久 `IVideoDecoder/JpegFrameDecoder/H264FfmpegDecoder`。H.264 接收端按 `payloadCodec` 分流，未收到真实 IDR 前丢弃依赖帧；重连、初始化、控制/回合复位时 reset，SPS/PPS 变化时重建并用同一 IDR 恢复。解码到 RGB `QImage` 后继续走原显示和 `AsyncVideoRecorder` 链路。
+- `FFMPEG_ROOT` 为 MSBuild/CMake 可选依赖：具备头文件和 import library 时定义 `HWASIM_HAS_FFMPEG`、链接 libavcodec/libavutil/libswscale 并复制运行 DLL；未配置时编译真实 unavailable stub，H.264 请求按配置回退 JPEG，不伪报 H.264 可用。
+- 增加低频 `[VideoEncoder]`、`[VideoDecoder]`、`[CodecFallback]`、`[H264Perf]`；发送/接收性能日志均带 `channel/platID/sensorID/pid`，并输出实际 codec、编码/解码耗时、payload 字节、关键帧、队列和既有 FPS/延迟统计。
+
+#### Windows Release 构建与回归
+
+```text
+HwaSim_IR x64 Release + FFMPEG_ROOT                         PASS
+DataDrivenTestQT Qt 5.12.12 / MinGW 7.3 x64 Release       PASS
+HwaSim_IR_VideoDisplay x64 Release + FFMPEG_ROOT           PASS
+HwaSim_IR x64 Release（独立 OutDir、无 FFMPEG_ROOT）       PASS
+HwaSim_IR_VideoDisplay x64 Release（独立 OutDir、无 SDK）  PASS
+```
+
+- 最终 HwaSim_IR.exe SHA-256：`4344A70F57FC79FD2380C1B3F2838F7BEA2FAC5BC63AC6728137A3F5384D7F92`。
+- 无 SDK 构建输出位于 `logs/nosdk-build-20260721/hwa` 和 `logs/nosdk-build-20260721/video`；相关源文件仍参与编译，但 `HWASIM_HAS_FFMPEG` 未定义。
+- R1 最终回归：`PASS`，日志 `logs/r1-runtime-20260721-114847`；协议尺寸仍为 `24/385/506/17`，双通道、ID 路由、广播 ACK、动态远端关闭及 simMode 1/2 全通过。
+- R2 JPEG 最终回归：`PASS`，日志 `logs/r2-60fps-20260721-113146`；生产 precise/coarse 配置哈希前后一致。
+
+#### Windows 端到端测试矩阵
+
+所有正式性能组均预热 5 秒、统计 30 秒，使用脚本生成的 loopback 临时配置；`output/display FPS >= 59`、平均延迟 `< 80 ms`、输入/输出队列和 sourceSeqLag 不持续增长、错误 sensorID 被拒绝。
+
+| 场景 | 通道 | codec | outputFps | displayFps | latency Avg/P95 ms | encode ms | decode ms | 平均 payload B | 结果 |
+|---|---|---|---:|---:|---:|---:|---:|---:|---|
+| JPEG Visible Async60 | precise | jpeg | 60.010 | 60.000 | 26.788 / 40.353 | 7.932 | 4.873 | 31,528 | PASS |
+| JPEG dual Visible Async60 | precise | jpeg | 60.003 | 59.992 | 27.324 / 38.143 | 8.487 | - | 32,331 | PASS |
+| JPEG dual Visible Async60 | coarse | jpeg | 59.995 | 59.990 | 27.639 / 37.980 | 8.491 | - | 32,169 | PASS |
+| H.264 Visible Async60 | precise | h264_annexb | 60.009 | 60.022 | 16.898 / 30.315 | 3.934 | 1.641 | 7,421 | PASS |
+| H.264 Headless Async60 | precise | h264_annexb | 60.003 | 60.017 | 18.246 / 29.322 | 2.934 | 1.241 | 1,675 | PASS |
+| H.264 dual Visible Async60 | precise | h264_annexb | 60.002 | 60.010 | 18.213 / 30.397 | 4.208 | 1.578 | 1,402 | PASS |
+| H.264 dual Visible Async60 | coarse | h264_annexb | 59.969 | 59.991 | 18.996 / 28.926 | 4.168 | 1.655 | 8,085 | PASS |
+
+H.264 正式日志：单 Visible `logs/r2-60fps-20260721-114712`，Headless 与双进程 `logs/r2-60fps-20260721-113354`。所有 H.264 组均为发送端/接收端 `activeCodec=h264_annexb`，`jpegBytesMax=0`、`h264KeyFrameSeen=1`、`h264DecodeErrors=0`，队列深度和 sourceSeqLag 最大值均为 1，且 precise/coarse 对端 sensorID 路由拒绝通过。
+
+恢复性验收命令：
+
+```text
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\v3_h264_recovery_smoke.ps1 -FFmpegRoot <path>
+```
+
+结果：`PASS`，日志 `logs/v3-h264-recovery-20260721-112902`。强制终止并重启 VideoDisplay 后，发送端 TCP 重连请求 IDR，接收端首个可解码 AU 为 IDR；复位→重新初始化→开始后再次恢复 IDR。将后端配置为未集成的 `mediafoundation` 时实际 `requestedCodec=h264 / activeCodec=jpeg`，`codecFallbackReason=requested_encoder_not_integrated:mediafoundation`。H.264 解码后的现有录像链路生成可由 ffprobe 完整读取的 MP4，共 775 帧。
+
+#### JPEG/H.264 对比、瓶颈判断与未完成项
+
+- 同一 precise/Visible/Async60 内容下，JPEG 平均 payload `31,528 B`（约 `15.13 Mbit/s@60`），H.264 平均 `7,421 B`（约 `3.56 Mbit/s@60`），带宽降低约 `76.5%`、为 JPEG 的约 `1/4.25`。
+- 同场景 H.264 编码 `3.934 ms`，低于 JPEG 的 `7.932 ms`；H.264 解码 `1.641 ms`，低于本次 JPEG 解码采样 `4.873 ms`。TCP 发送约 `0.16 ms`，当前 Windows 双进程 60 FPS 下未观察到编码、解码、TCP 或队列瓶颈。
+- payload 大小依赖画面内容，Headless/precise 的低字节数不应用作固定码率承诺；验收依据仍是实际 codec、FPS、延迟、关键帧和队列稳定性。
+- RK3588 MPP 硬件编码未实现，Debian 11/aarch64 也未交叉编译或实机测试；当前 Windows 环境没有 aarch64 编译器、Panda3D/OpenCV sysroot 或目标板驱动。后续 MPP 必须继续实现同一 `IVideoEncoder`，不能改变 TCP payload/JSON/协议语义，也不能用 Windows libx264 结果替代板端结论。
+- 天气与照明未实现；红外物理、目标三元组映射、可见性门控、标注和录像语义保持 R1/R2 基线。

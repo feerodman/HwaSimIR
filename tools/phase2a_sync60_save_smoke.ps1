@@ -202,15 +202,15 @@ try {
 
     [IO.File]::WriteAllText(
         $hwaNetwork,
-        "[UDP]`r`nlocalIp=127.0.0.1`r`nlocalPort=8888`r`nremoteIp=127.0.0.1`r`nremotePort=9999`r`n`r`n[TCP]`r`nserverIp=127.0.0.1`r`nserverPort=5555`r`n",
+        "[Identity]`r`nchannel=precise`r`nplatID=1001`r`nsensorID=2`r`nacceptSensorBroadcast=true`r`nallowDynamicRemote=false`r`n`r`n[UDP]`r`nlocalIp=127.0.0.1`r`nlocalPort=8888`r`nremoteIp=127.0.0.1`r`nremotePort=9999`r`n`r`n[TCP]`r`nserverIp=127.0.0.1`r`nserverPort=5555`r`n",
         $utf8)
     [IO.File]::WriteAllText(
         $videoNetwork,
-        "[Network]`r`nip=127.0.0.1`r`nport=5555`r`n`r`n[Recorder]`r`nMaxRecordingQueueFrames=180`r`nFlushTimeoutMs=10000`r`n",
+        "[Identity]`r`nchannel=precise`r`nplatID=1001`r`nsensorID=2`r`n`r`n[Network]`r`nip=127.0.0.1`r`nport=5555`r`n`r`n[Recorder]`r`nMaxRecordingQueueFrames=180`r`nFlushTimeoutMs=10000`r`n",
         $utf8)
     [IO.File]::WriteAllText(
         $stimNetwork,
-        "[UDP]`r`nlocalIp=127.0.0.1`r`nlocalPort=9999`r`nremoteIp=127.0.0.1`r`nremotePort=8888`r`n",
+        "[Identity]`r`nchannel=precise`r`nplatID=1001`r`nsensorID=2`r`n`r`n[RenderControl]`r`nsimMode=2`r`nvideoFps=60`r`n`r`n[UDP]`r`nlocalIp=127.0.0.1`r`nlocalPort=9999`r`nremoteIp=127.0.0.1`r`nremotePort=8888`r`n",
         $utf8)
 
     $runtimeText = [IO.File]::ReadAllText($runtimeIni)
@@ -311,7 +311,7 @@ try {
         -RedirectStandardOutput (Join-Path $logRoot "video.out.log") `
         -RedirectStandardError (Join-Path $logRoot "video.err.log")
     Start-Sleep -Seconds 2
-    $hwa = Start-Process -FilePath $hwaExe -WorkingDirectory $hwaWork -WindowStyle Hidden -PassThru `
+    $hwa = Start-Process -FilePath $hwaExe -ArgumentList @("--network-config", $hwaNetwork) -WorkingDirectory $hwaWork -WindowStyle Hidden -PassThru `
         -RedirectStandardOutput (Join-Path $logRoot "hwa.out.log") `
         -RedirectStandardError (Join-Path $logRoot "hwa.err.log")
     Start-Sleep -Seconds 5

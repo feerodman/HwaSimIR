@@ -70,6 +70,7 @@ HwaSim_IR/Bin/Panda3D-1.10/
 logs/
 
 # Local environment files and secrets
+.deps/
 .env
 .env.*
 *.pem

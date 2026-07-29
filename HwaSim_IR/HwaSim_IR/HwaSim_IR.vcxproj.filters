@@ -105,6 +105,9 @@
     <ClInclude Include="TcpCommThread.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="Video\VideoEncoder.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
     <ClInclude Include="GeoTransform.h">
       <Filter>头文件\CoordinateConverter</Filter>
     </ClInclude>
@@ -189,6 +192,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="TcpCommThread.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Video\H264FfmpegEncoder.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Video\JpegFrameEncoder.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="GeoTransform.cpp">

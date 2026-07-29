@@ -58,7 +58,13 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(QtMsBuild)\Qt.props" />
   </ImportGroup>
-  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Label="UserMacros">
+    <FFmpegEnabled Condition="'$(FFMPEG_ROOT)' != '' and Exists('$(FFMPEG_ROOT)\include\libavcodec\avcodec.h') and Exists('$(FFMPEG_ROOT)\lib\avcodec.lib')">true</FFmpegEnabled>
+    <FFmpegIncludeDir Condition="'$(FFmpegEnabled)' == 'true'">$(FFMPEG_ROOT)\include;</FFmpegIncludeDir>
+    <FFmpegLibraryDir Condition="'$(FFmpegEnabled)' == 'true'">$(FFMPEG_ROOT)\lib;</FFmpegLibraryDir>
+    <FFmpegDefinitions Condition="'$(FFmpegEnabled)' == 'true'">HWASIM_HAS_FFMPEG=1;</FFmpegDefinitions>
+    <FFmpegLibraries Condition="'$(FFmpegEnabled)' == 'true'">avcodec.lib;avutil.lib;swscale.lib;</FFmpegLibraries>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
@@ -66,11 +72,12 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
-      <AdditionalIncludeDirectories>.\Thirdparty library\opencv2-440;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(FFmpegIncludeDir).\Thirdparty library\opencv2-440;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>$(FFmpegDefinitions)%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>.\Thirdparty library\opencv2-440\opencv_x64\vc15\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opencv_world440.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(FFmpegLibraryDir).\Thirdparty library\opencv2-440\opencv_x64\vc15\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(FFmpegLibraries)opencv_world440.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="Configuration">
@@ -108,6 +115,8 @@
   <ItemGroup>
     <ClCompile Include="AsyncVideoRecorder.cpp" />
     <ClCompile Include="TcpServerWorker.cpp" />
+    <ClCompile Include="Video\H264FfmpegDecoder.cpp" />
+    <ClCompile Include="Video\VideoDecoder.cpp" />
     <QtRcc Include="HwaSim_IR_VideoDisplay.qrc" />
     <QtUic Include="HwaSim_IR_VideoDisplay.ui" />
     <QtMoc Include="HwaSim_IR_VideoDisplay.h" />
@@ -120,7 +129,14 @@
   <ItemGroup>
     <ClInclude Include="AsyncVideoRecorder.h" />
     <ClInclude Include="CommonData.h" />
+    <ClInclude Include="Video\VideoDecoder.h" />
   </ItemGroup>
+  <ItemGroup Condition="'$(FFmpegEnabled)' == 'true'">
+    <FFmpegRuntimeDll Include="$(FFMPEG_ROOT)\bin\*.dll" />
+  </ItemGroup>
+  <Target Name="CopyFFmpegRuntime" AfterTargets="Build" Condition="'$(FFmpegEnabled)' == 'true'">
+    <Copy SourceFiles="@(FFmpegRuntimeDll)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">
     <Import Project="$(QtMsBuild)\qt.targets" />

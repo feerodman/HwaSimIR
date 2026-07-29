@@ -20,6 +20,16 @@ find_package(Threads REQUIRED)
 set(OpenCV_DIR "/usr/lib/aarch64-linux-gnu/cmake/opencv4" CACHE PATH "OpenCV aarch64 cmake dir")
 find_package(OpenCV REQUIRED CONFIG)
 
+set(FFMPEG_ROOT "$ENV{FFMPEG_ROOT}" CACHE PATH "Optional FFmpeg/libavcodec root")
+find_path(FFMPEG_INCLUDE_DIR libavcodec/avcodec.h
+        HINTS ${FFMPEG_ROOT}/include)
+find_library(FFMPEG_AVCODEC_LIBRARY avcodec
+        HINTS ${FFMPEG_ROOT}/lib ${FFMPEG_ROOT}/lib/aarch64-linux-gnu)
+find_library(FFMPEG_AVUTIL_LIBRARY avutil
+        HINTS ${FFMPEG_ROOT}/lib ${FFMPEG_ROOT}/lib/aarch64-linux-gnu)
+find_library(FFMPEG_SWSCALE_LIBRARY swscale
+        HINTS ${FFMPEG_ROOT}/lib ${FFMPEG_ROOT}/lib/aarch64-linux-gnu)
+
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/Common
@@ -70,7 +80,21 @@ add_executable(HwaSim_IR
         IRSimulation.cpp
         TcpCommThread_Linux.cpp
         UdpCommThread_Linux.cpp
+        Video/H264FfmpegEncoder.cpp
+        Video/JpegFrameEncoder.cpp
 )
+
+if (FFMPEG_INCLUDE_DIR AND FFMPEG_AVCODEC_LIBRARY AND FFMPEG_AVUTIL_LIBRARY AND FFMPEG_SWSCALE_LIBRARY)
+    target_compile_definitions(HwaSim_IR PRIVATE HWASIM_HAS_FFMPEG=1)
+    target_include_directories(HwaSim_IR PRIVATE ${FFMPEG_INCLUDE_DIR})
+    target_link_libraries(HwaSim_IR PRIVATE
+            ${FFMPEG_AVCODEC_LIBRARY}
+            ${FFMPEG_AVUTIL_LIBRARY}
+            ${FFMPEG_SWSCALE_LIBRARY})
+    message(STATUS "FFmpeg/libavcodec enabled from ${FFMPEG_INCLUDE_DIR}")
+else()
+    message(STATUS "FFmpeg/libavcodec not found; H.264 reports unavailable and JPEG fallback remains active")
+endif()
 
 target_link_libraries(HwaSim_IR PRIVATE
         p3framework

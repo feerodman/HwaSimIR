@@ -88,6 +88,8 @@ int main(int argc, char** argv)
     const int sensorID = GetInt(args, "--sensor-id", 2);
     const int simMode = GetInt(args, "--sim-mode", 2);
     const int videoFps = GetInt(args, "--video-fps", 60);
+    const int h264En = GetInt(args, "--h264", 0);
+    const int saveMP4En = GetInt(args, "--save-mp4", 0);
     const int simCommand = GetInt(args, "--command", 1);
     const int ackPort = GetInt(args, "--ack-port", 0);
     const int expectAck = GetInt(args, "--expect-ack", -1);
@@ -190,6 +192,8 @@ int main(int argc, char** argv)
         packet.trackingInit.trackerSensor[0].trackerSensorViewMin = 1;
         packet.trackingInit.trackerSensor[0].trackerSensorViewMax = 50000;
         packet.trackingInit.trackerSensor[0].trackerSensorPixelAngle = 2.5;
+        packet.trackingInit.trackerSensor[0].h264En = h264En != 0;
+        packet.trackingInit.trackerSensor[0].saveMP4En = saveMP4En != 0;
         flag = packet.flag;
         packetSize = static_cast<int>(sizeof(packet));
         sent = SendPacket(sendSocket, targetAddress, &packet, packetSize);
@@ -225,6 +229,8 @@ int main(int argc, char** argv)
         << " sensorID=" << (type == "control" ? -1 : sensorID)
         << " simMode=" << simMode
         << " videoFps=" << videoFps
+        << " h264En=" << h264En
+        << " saveMP4En=" << saveMP4En
         << std::endl;
 
     int result = 0;
