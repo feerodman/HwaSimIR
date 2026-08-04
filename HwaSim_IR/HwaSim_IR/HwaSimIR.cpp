@@ -6493,7 +6493,8 @@ bool HwaSimIR::InitUdpThread() {
 bool HwaSimIR::InitTcpThread()
 {
 	std::cout << "[Stage0] TCP video baseline server=" << m_tcpServerIp << ":" << m_tcpServerPort
-		<< " format=length-prefixed JPEG" << std::endl;
+		<< " packetVersion=" << m_tcpPacketVersion
+		<< " codec=runtime-selected" << std::endl;
 
 	m_pTcpThread = new TcpCommThread(
 		this, m_tcpServerIp, m_tcpServerPort, m_channel, m_localPlatID, m_localSensorID);
@@ -6510,6 +6511,12 @@ bool HwaSimIR::InitTcpThread()
 		m_h264LowLatency,
 		m_h264ForceKeyFrameOnStart,
 		m_tcpCodecConfig);
+	m_pTcpThread->configurePayload(
+		m_tcpPacketVersion,
+		m_tcpSendVideo,
+		m_tcpSendAnnotation,
+		m_tcpSendRealtimeData,
+		m_tcpForwardInitControl);
 	if (!m_pTcpThread->start()) {
 		std::cerr << "TCP线程启动失败！" << std::endl;
 		delete m_pTcpThread;
@@ -7214,6 +7221,11 @@ void HwaSimIR::InitInfraredSimulation()
 	std::string h264LowLatencySource;
 	std::string h264ForceKeySource;
 	std::string jpegAbTestSource;
+	std::string tcpPacketVersionSource;
+	std::string tcpSendVideoSource;
+	std::string tcpSendAnnotationSource;
+	std::string tcpSendRealtimeSource;
+	std::string tcpForwardInitControlSource;
 	std::string annotationProfileSource;
 	std::string annotationDebugSource;
 	std::string annotationBBoxModeSource;
@@ -7872,6 +7884,7 @@ void HwaSimIR::InitInfraredSimulation()
 		"auto",
 		&h264EncoderSource));
 	if (m_h264Encoder != "auto" &&
+		m_h264Encoder != "jpeg" &&
 		m_h264Encoder != "ffmpeg" &&
 		m_h264Encoder != "libavcodec" &&
 		m_h264Encoder != "opencv" &&
@@ -7933,6 +7946,44 @@ void HwaSimIR::InitInfraredSimulation()
 		"JpegPerfABTest",
 		false,
 		&jpegAbTestSource);
+	m_tcpPacketVersion = m_runtimeConfig.getInt(
+		"TcpPayload",
+		"PacketVersion",
+		"TcpPacketVersion",
+		3,
+		&tcpPacketVersionSource);
+	if (m_tcpPacketVersion != 2 && m_tcpPacketVersion != 3)
+	{
+		std::cout << "[TcpPayloadConfig][WARN]"
+			<< " invalid PacketVersion=" << m_tcpPacketVersion
+			<< " fallback=3"
+			<< std::endl;
+		m_tcpPacketVersion = 3;
+	}
+	m_tcpSendVideo = m_runtimeConfig.getBool(
+		"TcpPayload",
+		"SendVideo",
+		"TcpSendVideo",
+		true,
+		&tcpSendVideoSource);
+	m_tcpSendAnnotation = m_runtimeConfig.getBool(
+		"TcpPayload",
+		"SendAnnotation",
+		"TcpSendAnnotation",
+		true,
+		&tcpSendAnnotationSource);
+	m_tcpSendRealtimeData = m_runtimeConfig.getBool(
+		"TcpPayload",
+		"SendRealtimeData",
+		"TcpSendRealtimeData",
+		true,
+		&tcpSendRealtimeSource);
+	m_tcpForwardInitControl = m_runtimeConfig.getBool(
+		"TcpPayload",
+		"ForwardInitControl",
+		"TcpForwardInitControl",
+		true,
+		&tcpForwardInitControlSource);
 	if (m_pTcpThread)
 	{
 		m_pTcpThread->configureOutput(
@@ -7946,6 +7997,12 @@ void HwaSimIR::InitInfraredSimulation()
 			m_h264LowLatency,
 			m_h264ForceKeyFrameOnStart,
 			m_tcpCodecConfig);
+		m_pTcpThread->configurePayload(
+			m_tcpPacketVersion,
+			m_tcpSendVideo,
+			m_tcpSendAnnotation,
+			m_tcpSendRealtimeData,
+			m_tcpForwardInitControl);
 	}
 	std::cout << "[TcpOutputConfig]"
 		<< " Codec=" << m_tcpCodecConfig
@@ -7966,6 +8023,16 @@ void HwaSimIR::InitInfraredSimulation()
 		<< "/" << h264BitrateSource << "/" << h264GopSource
 		<< "/" << h264LowLatencySource << "/" << h264ForceKeySource
 		<< "/" << jpegAbTestSource
+		<< std::endl;
+	std::cout << "[TcpPayloadConfig]"
+		<< " PacketVersion=" << m_tcpPacketVersion
+		<< " SendVideo=" << (m_tcpSendVideo ? "1" : "0")
+		<< " SendAnnotation=" << (m_tcpSendAnnotation ? "1" : "0")
+		<< " SendRealtimeData=" << (m_tcpSendRealtimeData ? "1" : "0")
+		<< " ForwardInitControl=" << (m_tcpForwardInitControl ? "1" : "0")
+		<< " source=" << tcpPacketVersionSource << "/" << tcpSendVideoSource
+		<< "/" << tcpSendAnnotationSource << "/" << tcpSendRealtimeSource
+		<< "/" << tcpForwardInitControlSource
 		<< std::endl;
 	m_enableStage4HotspotVisualDebug = m_runtimeConfig.getBool("Stage4", "EnableHotspotVisualDebug", "EnableStage4HotspotVisualDebug", false, &stage4VisualSource);
 	m_forceStage4BrightSpotVisible = m_runtimeConfig.getBool("Stage4", "ForceBrightSpotVisible", "ForceStage4BrightSpotVisible", false, &stage4BrightSource);
@@ -8926,7 +8993,12 @@ void HwaSimIR::InitInfraredSimulation()
 			<< ",H264GopFrames:" << h264GopSource
 			<< ",H264LowLatency:" << h264LowLatencySource
 			<< ",H264ForceKeyFrameOnStart:" << h264ForceKeySource
-			<< ",JpegPerfABTest:" << jpegAbTestSource;
+			<< ",JpegPerfABTest:" << jpegAbTestSource
+			<< ",TcpPacketVersion:" << tcpPacketVersionSource
+			<< ",TcpSendVideo:" << tcpSendVideoSource
+			<< ",TcpSendAnnotation:" << tcpSendAnnotationSource
+			<< ",TcpSendRealtimeData:" << tcpSendRealtimeSource
+			<< ",TcpForwardInitControl:" << tcpForwardInitControlSource;
 		m_effectiveRuntimeConfigSources = sourceSummary.str();
 	}
 	LogEffectiveRuntimeConfig("startup", 0, 0, false, "not_initialized", "not_initialized", "not_initialized");
@@ -10366,6 +10438,11 @@ void HwaSimIR::LogEffectiveRuntimeConfig(
 		<< " H264LowLatency=" << (m_h264LowLatency ? "1" : "0")
 		<< " H264ForceKeyFrameOnStart=" << (m_h264ForceKeyFrameOnStart ? "1" : "0")
 		<< " JpegPerfABTest=" << (m_jpegPerfABTest ? "1" : "0")
+		<< " TcpPacketVersion=" << m_tcpPacketVersion
+		<< " TcpSendVideo=" << (m_tcpSendVideo ? "1" : "0")
+		<< " TcpSendAnnotation=" << (m_tcpSendAnnotation ? "1" : "0")
+		<< " TcpSendRealtimeData=" << (m_tcpSendRealtimeData ? "1" : "0")
+		<< " TcpForwardInitControl=" << (m_tcpForwardInitControl ? "1" : "0")
 		<< " readbackMode=" << HeadlessReadbackModeText()
 		<< " readbackEveryN=" << m_headlessReadbackEveryN
 		<< " copyRamAttached=" << (m_headlessCopyRamAttached ? "1" : "0")

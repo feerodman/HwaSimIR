@@ -60,6 +60,12 @@ public:
 		bool h264LowLatency,
 		bool h264ForceKeyFrameOnStart,
 		const std::string& codecConfig);
+	void configurePayload(
+		int packetVersion,
+		bool sendVideo,
+		bool sendAnnotation,
+		bool sendRealtimeData,
+		bool forwardInitControl);
 	void setH264Requested(bool enabled, int videoFps = 60);
 	void resetFrameCounters();
 
@@ -75,7 +81,14 @@ private:
 	bool sendFramePacket(
 		const BYHWICD::DisplayC2cObjTrackingData& trackingData,
 		const std::string& annotationJson,
-		const std::vector<std::uint8_t>& encodedPayload);
+		const EncodedVideoFrame& encodedFrame,
+		std::uint64_t frameSeq,
+		std::uint64_t outputOrdinal,
+		std::int64_t ptsMs,
+		std::uint32_t& sectionFlags,
+		std::uint32_t& realtimeBytes,
+		std::uint32_t& annotationBytes,
+		std::uint32_t& videoBytes);
 	bool sendAll(const char* data, int size);
 	bool sendStruct(const void* structPtr, uint32_t structSize);
 	std::string buildAnnotationJson(
@@ -86,12 +99,15 @@ private:
 		const IRFrameTelemetry& telemetry,
 		std::uint64_t outputOrdinal,
 		std::int64_t tcpSendTimeNs,
+		int packetVersion,
 		const std::string& requestedCodec,
+		const std::string& requestedBackend,
 		const EncodedVideoFrame& encodedFrame) const;
 	bool encodeFrame(
 		const RawVideoFrame& rawFrame,
 		EncodedVideoFrame& encodedFrame,
-		std::string& requestedCodec);
+		std::string& requestedCodec,
+		std::string& requestedBackend);
 	void requestEncoderKeyFrame(const char* reason);
 
 	bool connectToServer();
@@ -145,15 +161,26 @@ private:
 	std::atomic<bool> m_h264LowLatency{ true };
 	std::atomic<bool> m_h264ForceKeyFrameOnStart{ true };
 	std::atomic<int> m_videoFps{ 60 };
+	std::atomic<int> m_packetVersion{ 3 };
+	std::atomic<bool> m_sendVideo{ true };
+	std::atomic<bool> m_sendAnnotation{ true };
+	std::atomic<bool> m_sendRealtimeData{ true };
+	std::atomic<bool> m_forwardInitControl{ true };
+	std::atomic<bool> m_allPayloadDisabledWarned{ false };
 	std::string m_codecConfig = "auto";
 	std::string m_h264EncoderConfig = "auto";
 	mutable std::mutex m_codecMtx;
 	std::unique_ptr<JpegFrameEncoder> m_jpegEncoder;
 	std::unique_ptr<H264FfmpegEncoder> m_h264Encoder;
+#if defined(HWASIMIR_HAS_RKMPP)
+	std::unique_ptr<H264MppEncoder> m_mppEncoder;
+#endif
 	VideoEncoderConfig m_jpegEncoderConfig;
 	VideoEncoderConfig m_h264EncoderRuntimeConfig;
+	VideoEncoderConfig m_mppEncoderRuntimeConfig;
 	bool m_jpegEncoderConfigured = false;
 	bool m_h264EncoderConfigured = false;
+	bool m_mppEncoderConfigured = false;
 	std::string m_lastCodecFallbackReason;
 	std::atomic<bool> m_encoderResetRequested{ true };
 	std::atomic<bool> m_encoderKeyFrameRequested{ true };

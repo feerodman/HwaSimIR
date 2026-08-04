@@ -370,11 +370,32 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
     const QImage& img,
     const BYHWICD::DisplayC2cObjTrackingData& data,
     const QString& annotationJson,
+    bool hasVideo,
+    bool hasRealtimeData,
+    bool hasAnnotation,
+    int packetVersion,
+    quint32 sectionFlags,
+    int codecId,
+    bool keyFrame,
+    quint64 packetFrameSeq,
+    quint64 outputOrdinal,
+    qint64 ptsMs,
     qint64 receiveTimeNs,
     double jpegDecodeMs,
     int decodedChannels,
     const QString& imageFormat)
 {
+    if (!hasVideo)
+    {
+        // Metadata-only v3 packets must not decode or clear the last displayed frame.
+        if (hasRealtimeData)
+        {
+            updatePlatDataTable(data.platID, data.platLoc);
+            updateTargetDataTable(data);
+        }
+        return;
+    }
+
     QElapsedTimer displayTimer;
     displayTimer.start();
     ui.m_Label_Video->setPixmap(QPixmap::fromImage(img));
@@ -383,39 +404,68 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
 
     const bool updateUiData = m_videoPerfFrames < 3 ||
         (m_videoPerfFrames % static_cast<quint64>(qMax(1, m_uiUpdateEveryFrames))) == 0;
-    if (updateUiData)
+    if (updateUiData && hasRealtimeData)
     {
         updatePlatDataTable(data.platID, data.platLoc);
         updateTargetDataTable(data);
     }
 
-    quint64 frameSeq = 0;
+    quint64 frameSeq = packetFrameSeq;
     qint64 udpReceiveTimeNs = 0;
     qint64 tcpSendTimeNs = 0;
-    m_decodeCodec = imageFormat == QStringLiteral("grayscale")
-        ? QStringLiteral("jpeg_gray")
-        : QStringLiteral("jpeg");
-    if (!annotationJson.isEmpty())
+    if (packetVersion == 3)
+    {
+        m_decodeCodec = codecId == 2
+            ? QStringLiteral("h264_annexb")
+            : (codecId == 1 ? QStringLiteral("jpeg") : QStringLiteral("none"));
+        m_activeCodec = m_decodeCodec;
+        m_requestedCodec = m_decodeCodec == QStringLiteral("h264_annexb")
+            ? QStringLiteral("h264")
+            : m_decodeCodec;
+        m_h264Requested = m_decodeCodec == QStringLiteral("h264_annexb");
+        if (ptsMs > 0)
+        {
+            udpReceiveTimeNs = ptsMs * 1000000LL;
+        }
+        if (m_decodeCodec == QStringLiteral("h264_annexb") && keyFrame)
+        {
+            m_h264KeyFrameSeen = true;
+        }
+    }
+    else
+    {
+        m_decodeCodec = imageFormat == QStringLiteral("grayscale")
+            ? QStringLiteral("jpeg_gray")
+            : QStringLiteral("jpeg");
+    }
+    if (hasAnnotation && !annotationJson.isEmpty())
     {
         QJsonParseError parseError;
         const QJsonDocument document = QJsonDocument::fromJson(annotationJson.toUtf8(), &parseError);
         if (parseError.error == QJsonParseError::NoError && document.isObject())
         {
             const QJsonObject object = document.object();
-            frameSeq = object.value("sourceSeq").toVariant().toULongLong();
             if (frameSeq == 0)
             {
-                frameSeq = object.value("frameSeq").toVariant().toULongLong();
+                frameSeq = object.value("sourceSeq").toVariant().toULongLong();
+                if (frameSeq == 0)
+                {
+                    frameSeq = object.value("frameSeq").toVariant().toULongLong();
+                }
             }
             udpReceiveTimeNs = object.value("udpReceiveTimeNs").toString().toLongLong();
             tcpSendTimeNs = object.value("tcpSendTimeNs").toString().toLongLong();
             m_requestedCodec = object.value("requestedCodec").toString(QStringLiteral("jpeg"));
-            m_activeCodec = object.value("activeCodec").toString(QStringLiteral("jpeg"));
-            m_decodeCodec = object.value("payloadCodec").toString(
-                object.value("codec").toString(m_activeCodec));
+            if (packetVersion != 3)
+            {
+                m_activeCodec = object.value("activeCodec").toString(QStringLiteral("jpeg"));
+                m_decodeCodec = object.value("payloadCodec").toString(
+                    object.value("codec").toString(m_activeCodec));
+            }
             m_h264Requested = object.value("h264En").toBool(false);
             m_codecFallbackReason = object.value("codecFallbackReason").toString(QStringLiteral("none"));
-            if (m_decodeCodec == QStringLiteral("h264_annexb") && object.value("keyFrame").toBool(false))
+            if (m_decodeCodec == QStringLiteral("h264_annexb") &&
+                (keyFrame || object.value("keyFrame").toBool(false)))
             {
                 m_h264KeyFrameSeen = true;
             }
@@ -478,6 +528,8 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
         recordingFrame.image = img;
         recordingFrame.trackingData = data;
         recordingFrame.annotationJson = annotationJson;
+        recordingFrame.hasRealtimeData = hasRealtimeData;
+        recordingFrame.hasAnnotation = hasAnnotation;
         recordingFrame.receiveTimeNs = receiveTimeNs;
         recordingFrame.displayTimeNs = shownTimeNs;
         m_recorder->enqueue(recordingFrame);
@@ -526,7 +578,7 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
                 .arg(m_platID)
                 .arg(m_sensorID)
                 .arg(m_pid);
-        videoPerfLine += QString(" receiveFps=%1 displayFps=%2 decodeMsAvg=%3 queueDepth=%4 sourceSeqContinuous=%5 latencyAvgMs=%6 latencyP95Ms=%7 displayMsAvg=%8 tcpToReceiveMs=%9 sourceSeq=%10 discontinuities=%11 recordingEnqueueMsAvg=%12 recordingEnqueueMsMax=%13 decodedChannels=%14 imageFormat=%15 requestedCodec=%16 activeCodec=%17 decodeCodec=%18 h264En=%19 codecFallbackReason=%20 h264KeyFrameSeen=%21 h264DecodeErrors=%22")
+        videoPerfLine += QString(" receiveFps=%1 displayFps=%2 decodeMsAvg=%3 queueDepth=%4 sourceSeqContinuous=%5 latencyAvgMs=%6 latencyP95Ms=%7 displayMsAvg=%8 tcpToReceiveMs=%9 sourceSeq=%10 discontinuities=%11 recordingEnqueueMsAvg=%12 recordingEnqueueMsMax=%13 decodedChannels=%14 imageFormat=%15 requestedCodec=%16 activeCodec=%17 decodeCodec=%18 h264En=%19 codecFallbackReason=%20 h264KeyFrameSeen=%21 h264DecodeErrors=%22 packetVersion=%23 flags=0x%24 codecId=%25 keyFrame=%26 outputOrdinal=%27 ptsMs=%28 hasAnnotation=%29 hasRealtimeData=%30")
                 .arg(static_cast<double>(receivedIntervalFrames) / displayElapsedSec, 0, 'f', 3)
                 .arg(static_cast<double>(m_videoPerfIntervalFrames) / displayElapsedSec, 0, 'f', 3)
                 .arg(m_decodeMsTotal / sampleCount, 0, 'f', 3)
@@ -548,7 +600,15 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
                 .arg(m_h264Requested ? 1 : 0)
                 .arg(m_codecFallbackReason)
                 .arg(m_h264KeyFrameSeen ? 1 : 0)
-                .arg(m_h264DecodeErrors);
+                .arg(m_h264DecodeErrors)
+                .arg(packetVersion)
+                .arg(sectionFlags, 0, 16)
+                .arg(codecId)
+                .arg(keyFrame ? 1 : 0)
+                .arg(outputOrdinal)
+                .arg(ptsMs)
+                .arg(hasAnnotation ? 1 : 0)
+                .arg(hasRealtimeData ? 1 : 0);
         qInfo().noquote() << videoPerfLine;
         m_videoPerfIntervalFrames = 0;
         m_lastReceivedFrameCount = receivedFrameCount;

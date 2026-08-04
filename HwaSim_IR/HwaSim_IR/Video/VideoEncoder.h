@@ -107,3 +107,22 @@ private:
 	std::atomic<bool> m_forceKeyFrame{ true };
 };
 
+#if defined(HWASIMIR_HAS_RKMPP)
+class H264MppEncoder final : public IVideoEncoder
+{
+public:
+	H264MppEncoder();
+	~H264MppEncoder() override;
+	bool configure(const VideoEncoderConfig& config, std::string& error) override;
+	bool encode(const RawVideoFrame& frame, EncodedVideoFrame& encoded, std::string& error) override;
+	void requestKeyFrame() override;
+	void reset() override;
+	bool isAvailable() const override;
+	const char* name() const override;
+
+private:
+	struct Impl;
+	Impl* m_impl;
+	std::atomic<bool> m_forceKeyFrame{ true };
+};
+#endif

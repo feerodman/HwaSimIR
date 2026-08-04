@@ -99,7 +99,9 @@ bool AsyncVideoRecorder::enqueue(const RecordingFrame& frame)
     {
         return false;
     }
-    if (m_pending && !m_initialized && !hasTargetStateData(frame.trackingData))
+    if (m_pending && !m_initialized &&
+        frame.hasRealtimeData &&
+        !hasTargetStateData(frame.trackingData))
     {
         return false;
     }
@@ -564,11 +566,16 @@ QString AsyncVideoRecorder::trackingJsonLine(
     root.insert(QStringLiteral("recordingFrameIndex"), static_cast<double>(recordingFrameIndex));
     root.insert(QStringLiteral("frameIndex"), static_cast<double>(frame.sourceSeq));
     root.insert(QStringLiteral("sourceSeq"), static_cast<double>(frame.sourceSeq));
+    root.insert(QStringLiteral("hasRealtimeData"), frame.hasRealtimeData);
+    root.insert(QStringLiteral("receiveTimeNs"), QString::number(frame.receiveTimeNs));
+    root.insert(QStringLiteral("displayTimeNs"), QString::number(frame.displayTimeNs));
+    if (!frame.hasRealtimeData)
+    {
+        return QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Compact));
+    }
     root.insert(QStringLiteral("timeMs"), frame.trackingData.time);
     root.insert(QStringLiteral("platID"), frame.trackingData.platID);
     root.insert(QStringLiteral("sensorID"), frame.trackingData.sensorID);
-    root.insert(QStringLiteral("receiveTimeNs"), QString::number(frame.receiveTimeNs));
-    root.insert(QStringLiteral("displayTimeNs"), QString::number(frame.displayTimeNs));
 
     QJsonArray targets;
     for (int i = 0; i < 5; ++i)
@@ -604,7 +611,7 @@ QString AsyncVideoRecorder::targetAnnotationJsonLine(
     const RecordingFrame& frame)
 {
     QJsonObject root;
-    if (!frame.annotationJson.trimmed().isEmpty())
+    if (frame.hasAnnotation && !frame.annotationJson.trimmed().isEmpty())
     {
         QJsonParseError parseError;
         const QJsonDocument document = QJsonDocument::fromJson(
@@ -618,6 +625,11 @@ QString AsyncVideoRecorder::targetAnnotationJsonLine(
     root.insert(QStringLiteral("recordingFrameIndex"), static_cast<double>(recordingFrameIndex));
     root.insert(QStringLiteral("frameIndex"), static_cast<double>(frame.sourceSeq));
     root.insert(QStringLiteral("sourceSeq"), static_cast<double>(frame.sourceSeq));
+    root.insert(QStringLiteral("hasAnnotation"), frame.hasAnnotation);
+    if (!frame.hasAnnotation)
+    {
+        return QString::fromUtf8(QJsonDocument(root).toJson(QJsonDocument::Compact));
+    }
     if (!root.contains(QStringLiteral("simTimeMs")))
     {
         root.insert(QStringLiteral("simTimeMs"), frame.trackingData.time);

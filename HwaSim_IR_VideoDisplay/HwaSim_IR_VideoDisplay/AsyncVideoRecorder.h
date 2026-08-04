@@ -19,6 +19,8 @@ struct RecordingFrame
     QImage image;
     BYHWICD::DisplayC2cObjTrackingData trackingData = {};
     QString annotationJson;
+    bool hasRealtimeData = true;
+    bool hasAnnotation = true;
     qint64 receiveTimeNs = 0;
     qint64 displayTimeNs = 0;
 };

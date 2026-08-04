@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <sstream>
 #include <process.h>
+#include "Common/TcpVideoPacketV3.h"
 //#include <core.h>
 
 namespace
@@ -69,6 +70,19 @@ int ScaleCoord(int value, int srcSize, int dstSize)
 	}
 	const double scaled = static_cast<double>(value) * static_cast<double>(dstSize) / static_cast<double>(srcSize);
 	return static_cast<int>(std::floor(scaled + 0.5));
+}
+
+std::uint8_t CodecIdForPayload(const std::string& payloadCodec)
+{
+	if (payloadCodec == "jpeg")
+	{
+		return HwaSimTcpVideoV3::CodecJpeg;
+	}
+	if (payloadCodec == "h264_annexb")
+	{
+		return HwaSimTcpVideoV3::CodecH264AnnexB;
+	}
+	return HwaSimTcpVideoV3::CodecNone;
 }
 }
 
@@ -149,6 +163,38 @@ void TcpCommThread::configureOutput(
 	m_h264EncoderConfig = h264Encoder.empty() ? "auto" : h264Encoder;
 }
 
+void TcpCommThread::configurePayload(
+	int packetVersion,
+	bool sendVideo,
+	bool sendAnnotation,
+	bool sendRealtimeData,
+	bool forwardInitControl)
+{
+	m_packetVersion.store(packetVersion == 2 ? 2 : 3);
+	m_sendVideo.store(sendVideo);
+	m_sendAnnotation.store(sendAnnotation);
+	m_sendRealtimeData.store(sendRealtimeData);
+	m_forwardInitControl.store(forwardInitControl);
+	m_allPayloadDisabledWarned.store(false);
+	std::cout << "[TcpPayloadConfig]"
+		<< " channel=" << m_channel
+		<< " platID=" << m_localPlatID
+		<< " sensorID=" << m_localSensorID
+		<< " pid=" << _getpid()
+		<< " PacketVersion=" << m_packetVersion.load()
+		<< " SendVideo=" << (sendVideo ? "1" : "0")
+		<< " SendAnnotation=" << (sendAnnotation ? "1" : "0")
+		<< " SendRealtimeData=" << (sendRealtimeData ? "1" : "0")
+		<< " ForwardInitControl=" << (forwardInitControl ? "1" : "0")
+		<< std::endl;
+	if (m_packetVersion.load() == 2 && (!sendVideo || !sendAnnotation || !sendRealtimeData))
+	{
+		std::cout << "[TcpPayloadConfig][WARN]"
+			<< " PacketVersion=2 ignores section switches and preserves legacy realtime+annotation+video layout"
+			<< std::endl;
+	}
+}
+
 void TcpCommThread::setH264Requested(bool enabled, int videoFps)
 {
 	m_h264Requested.store(enabled);
@@ -163,7 +209,7 @@ void TcpCommThread::setH264Requested(bool enabled, int videoFps)
 		<< " h264En=" << (enabled ? "1" : "0")
 		<< " requestedCodec=" << (enabled ? "h264" : "jpeg")
 		<< " ffmpegCompiled=" << (m_h264Encoder && m_h264Encoder->isAvailable() ? "1" : "0")
-		<< " encoderBackend=ffmpeg"
+		<< " platformAutoOrder=ffmpeg,jpeg"
 		<< " videoFps=" << m_videoFps.load()
 		<< std::endl;
 }
@@ -180,7 +226,8 @@ void TcpCommThread::requestEncoderKeyFrame(const char* reason)
 bool TcpCommThread::encodeFrame(
 	const RawVideoFrame& rawFrame,
 	EncodedVideoFrame& encodedFrame,
-	std::string& requestedCodec)
+	std::string& requestedCodec,
+	std::string& requestedBackend)
 {
 	std::string codecConfig;
 	std::string encoderConfig;
@@ -210,8 +257,14 @@ bool TcpCommThread::encodeFrame(
 	config.lowLatency = m_h264LowLatency.load();
 	config.forceKeyFrameOnStart = m_h264ForceKeyFrameOnStart.load();
 
-	const bool h264Requested = m_h264Requested.load() && codecConfig != "jpeg";
+	const bool h264Requested =
+		m_h264Requested.load() &&
+		codecConfig != "jpeg" &&
+		encoderConfig != "jpeg";
 	requestedCodec = h264Requested ? "h264" : "jpeg";
+	requestedBackend = h264Requested
+		? (encoderConfig.empty() ? "auto" : encoderConfig)
+		: "jpeg";
 	std::string fallbackReason;
 	std::string error;
 
@@ -220,6 +273,10 @@ bool TcpCommThread::encodeFrame(
 		if (!m_enableH264Experimental.load())
 		{
 			fallbackReason = "h264_backend_disabled";
+		}
+		else if (encoderConfig == "mpp" || encoderConfig == "rk_mpp")
+		{
+			fallbackReason = "mpp_backend_unavailable_on_windows";
 		}
 		else if (!(encoderConfig.empty() || encoderConfig == "auto" ||
 			encoderConfig == "ffmpeg" || encoderConfig == "libavcodec"))
@@ -249,6 +306,8 @@ bool TcpCommThread::encodeFrame(
 						<< " platID=" << m_localPlatID << " sensorID=" << m_localSensorID
 						<< " pid=" << _getpid()
 						<< " configured=1 activeCodec=h264_annexb"
+						<< " requestedBackend=" << requestedBackend
+						<< " activeBackend=ffmpeg"
 						<< " encoderName=" << m_h264Encoder->name()
 						<< " size=" << config.width << "x" << config.height
 						<< " fps=" << config.fps
@@ -284,7 +343,9 @@ bool TcpCommThread::encodeFrame(
 			std::cerr << "[CodecFallback] channel=" << m_channel
 				<< " platID=" << m_localPlatID << " sensorID=" << m_localSensorID
 				<< " pid=" << _getpid()
-				<< " allowed=0 action=drop requestedCodec=h264 reason=" << fallbackReason << std::endl;
+				<< " allowed=0 action=drop requestedCodec=h264"
+				<< " requestedBackend=" << requestedBackend
+				<< " activeBackend=none reason=" << fallbackReason << std::endl;
 			m_lastCodecFallbackReason = fallbackReason;
 		}
 		return false;
@@ -317,6 +378,8 @@ bool TcpCommThread::encodeFrame(
 				<< " platID=" << m_localPlatID << " sensorID=" << m_localSensorID
 				<< " pid=" << _getpid()
 				<< " allowed=1 requestedCodec=h264 activeCodec=jpeg"
+				<< " requestedBackend=" << requestedBackend
+				<< " activeBackend=jpeg"
 				<< " reason=" << encodedFrame.fallbackReason << std::endl;
 			m_lastCodecFallbackReason = encodedFrame.fallbackReason;
 		}
@@ -410,6 +473,12 @@ bool TcpCommThread::sendStruct(const void* structPtr, uint32_t structSize)
 
 bool TcpCommThread::sendControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd)
 {
+	if (!m_forwardInitControl.load())
+	{
+		std::cout << "[TcpControlForward] skipped=1 reason=ForwardInitControl_false"
+			<< " simCommand=" << cmd.simCommand << std::endl;
+		return true;
+	}
 	if (!m_bIsConnected)
 	{
 		std::cerr << "sendControlCmd: TCP未连接，无法转发控制命令" << std::endl;
@@ -431,6 +500,13 @@ bool TcpCommThread::sendControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cm
 
 bool TcpCommThread::sendInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& initData)
 {
+	if (!m_forwardInitControl.load())
+	{
+		std::cout << "[TcpInitForward] skipped=1 reason=ForwardInitControl_false"
+			<< " platID=" << initData.platID
+			<< " sensorID=" << initData.sensorID << std::endl;
+		return true;
+	}
 	if (!m_bIsConnected)
 	{
 		std::cerr << "sendInitCmd: TCP未连接，无法转发初始化命令" << std::endl;
@@ -455,22 +531,110 @@ bool TcpCommThread::sendInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& initDat
 bool TcpCommThread::sendFramePacket(
 	const BYHWICD::DisplayC2cObjTrackingData& trackingData,
 	const std::string& annotationJson,
-	const std::vector<std::uint8_t>& encodedPayload)
+	const EncodedVideoFrame& encodedFrame,
+	std::uint64_t frameSeq,
+	std::uint64_t outputOrdinal,
+	std::int64_t ptsMs,
+	std::uint32_t& sectionFlags,
+	std::uint32_t& realtimeBytes,
+	std::uint32_t& annotationBytes,
+	std::uint32_t& videoBytes)
 {
-	const uint32_t trackingLen = static_cast<uint32_t>(sizeof(BYHWICD::DisplayC2cObjTrackingData));
-	const uint32_t annotationLen = static_cast<uint32_t>(annotationJson.size());
-	const uint32_t payloadLen = static_cast<uint32_t>(encodedPayload.size());
-	const uint32_t totalLen = 4 + 4 + trackingLen + 4 + annotationLen + 4 + payloadLen;
+	const int packetVersion = m_packetVersion.load();
+	const bool includeRealtime = packetVersion == 2 || m_sendRealtimeData.load();
+	const bool includeAnnotation = packetVersion == 2 || m_sendAnnotation.load();
+	const bool includeVideo = packetVersion == 2 || m_sendVideo.load();
+	realtimeBytes = includeRealtime
+		? static_cast<std::uint32_t>(sizeof(BYHWICD::DisplayC2cObjTrackingData))
+		: 0U;
+	annotationBytes = includeAnnotation
+		? static_cast<std::uint32_t>(annotationJson.size())
+		: 0U;
+	videoBytes = includeVideo
+		? static_cast<std::uint32_t>(encodedFrame.payload.size())
+		: 0U;
+	sectionFlags =
+		(includeRealtime ? HwaSimTcpVideoV3::HasRealtimeData : 0U) |
+		(includeAnnotation ? HwaSimTcpVideoV3::HasAnnotation : 0U) |
+		(includeVideo ? HwaSimTcpVideoV3::HasVideo : 0U);
 
 	std::vector<char> packet;
-	packet.reserve(totalLen);
-	AppendUint32BE(packet, totalLen);
-	AppendUint32BE(packet, trackingLen);
-	packet.insert(packet.end(), reinterpret_cast<const char*>(&trackingData), reinterpret_cast<const char*>(&trackingData) + trackingLen);
-	AppendUint32BE(packet, annotationLen);
-	packet.insert(packet.end(), annotationJson.begin(), annotationJson.end());
-	AppendUint32BE(packet, payloadLen);
-	packet.insert(packet.end(), reinterpret_cast<const char*>(encodedPayload.data()), reinterpret_cast<const char*>(encodedPayload.data()) + payloadLen);
+	if (packetVersion == 2)
+	{
+		const std::uint32_t totalLen =
+			4U + 4U + realtimeBytes + 4U + annotationBytes + 4U + videoBytes;
+		packet.reserve(totalLen);
+		AppendUint32BE(packet, totalLen);
+		AppendUint32BE(packet, realtimeBytes);
+		packet.insert(
+			packet.end(),
+			reinterpret_cast<const char*>(&trackingData),
+			reinterpret_cast<const char*>(&trackingData) + realtimeBytes);
+		AppendUint32BE(packet, annotationBytes);
+		packet.insert(packet.end(), annotationJson.begin(), annotationJson.end());
+		AppendUint32BE(packet, videoBytes);
+		packet.insert(
+			packet.end(),
+			reinterpret_cast<const char*>(encodedFrame.payload.data()),
+			reinterpret_cast<const char*>(encodedFrame.payload.data()) + videoBytes);
+	}
+	else
+	{
+		HwaSimTcpVideoV3::Header header;
+		header.sectionFlags = sectionFlags;
+		header.codecId = includeVideo
+			? CodecIdForPayload(encodedFrame.payloadCodec)
+			: HwaSimTcpVideoV3::CodecNone;
+		header.keyFrame = includeVideo && encodedFrame.keyFrame;
+		header.frameSeq = frameSeq;
+		header.outputOrdinal = outputOrdinal;
+		header.ptsMs = ptsMs;
+		header.realtimeBytes = realtimeBytes;
+		header.annotationBytes = annotationBytes;
+		header.videoBytes = videoBytes;
+		const std::array<std::uint8_t, HwaSimTcpVideoV3::kHeaderBytes> headerBytes =
+			HwaSimTcpVideoV3::EncodeHeader(header);
+		const std::uint64_t totalLen64 =
+			4ULL + HwaSimTcpVideoV3::kHeaderBytes +
+			HwaSimTcpVideoV3::PayloadBytes(header);
+		if (header.codecId == HwaSimTcpVideoV3::CodecNone && includeVideo)
+		{
+			std::cerr << "[TcpFramePacket][ERROR] packetVersion=3 reason=unknown_video_codec"
+				<< " payloadCodec=" << encodedFrame.payloadCodec << std::endl;
+			return false;
+		}
+		if (totalLen64 > 0xffffffffULL)
+		{
+			std::cerr << "[TcpFramePacket][ERROR] packetVersion=3 reason=packet_too_large"
+				<< " totalBytes=" << totalLen64 << std::endl;
+			return false;
+		}
+		const std::uint32_t totalLen = static_cast<std::uint32_t>(totalLen64);
+		packet.reserve(totalLen);
+		AppendUint32BE(packet, totalLen);
+		packet.insert(
+			packet.end(),
+			reinterpret_cast<const char*>(headerBytes.data()),
+			reinterpret_cast<const char*>(headerBytes.data()) + headerBytes.size());
+		if (includeRealtime)
+		{
+			packet.insert(
+				packet.end(),
+				reinterpret_cast<const char*>(&trackingData),
+				reinterpret_cast<const char*>(&trackingData) + realtimeBytes);
+		}
+		if (includeAnnotation)
+		{
+			packet.insert(packet.end(), annotationJson.begin(), annotationJson.end());
+		}
+		if (includeVideo)
+		{
+			packet.insert(
+				packet.end(),
+				reinterpret_cast<const char*>(encodedFrame.payload.data()),
+				reinterpret_cast<const char*>(encodedFrame.payload.data()) + videoBytes);
+		}
+	}
 
 	return sendAll(packet.data(), static_cast<int>(packet.size()));
 }
@@ -483,7 +647,9 @@ std::string TcpCommThread::buildAnnotationJson(
 	const IRFrameTelemetry& telemetry,
 	std::uint64_t outputOrdinal,
 	std::int64_t tcpSendTimeNs,
+	int packetVersion,
 	const std::string& requestedCodec,
+	const std::string& requestedBackend,
 	const EncodedVideoFrame& encodedFrame) const
 {
 	const int srcWidth = record.width > 0 ? record.width : tcpWidth;
@@ -494,7 +660,7 @@ std::string TcpCommThread::buildAnnotationJson(
 
 	std::ostringstream json;
 	json << "{\"version\":1"
-		<< ",\"packetVersion\":2"
+		<< ",\"packetVersion\":" << packetVersion
 		<< ",\"enabled\":" << (annotationEnabled ? "true" : "false")
 		<< ",\"frameIndex\":" << frameIndex
 		<< ",\"frameSeq\":" << telemetry.sourceSeq
@@ -503,6 +669,7 @@ std::string TcpCommThread::buildAnnotationJson(
 		<< ",\"udpReceiveTimeNs\":\"" << telemetry.udpReceiveTimeNs << "\""
 		<< ",\"tcpSendTimeNs\":\"" << tcpSendTimeNs << "\""
 		<< ",\"requestedCodec\":\"" << JsonEscape(requestedCodec) << "\""
+		<< ",\"requestedBackend\":\"" << JsonEscape(requestedBackend) << "\""
 		<< ",\"activeCodec\":\"" << JsonEscape(activeCodec) << "\""
 		<< ",\"codec\":\"" << JsonEscape(activeCodec) << "\""
 		<< ",\"payloadCodec\":\"" << JsonEscape(activeCodec) << "\""
@@ -636,7 +803,29 @@ void TcpCommThread::sendFrameThreadFunc() {
 			}
 		}
 
-		if (frame.pixels.empty()) continue;
+		const int packetVersion = m_packetVersion.load();
+		const bool includeVideo = packetVersion == 2 || m_sendVideo.load();
+		const bool includeAnnotation = packetVersion == 2 || m_sendAnnotation.load();
+		const bool includeRealtime = packetVersion == 2 || m_sendRealtimeData.load();
+		if (!includeVideo && !includeAnnotation && !includeRealtime)
+		{
+			if (!m_allPayloadDisabledWarned.exchange(true))
+			{
+				std::cout << "[TcpPayloadConfig][WARN]"
+					<< " channel=" << m_channel
+					<< " platID=" << m_localPlatID
+					<< " sensorID=" << m_localSensorID
+					<< " pid=" << _getpid()
+					<< " packetVersion=3 action=no_frame_packet"
+					<< " reason=all_frame_sections_disabled"
+					<< std::endl;
+			}
+			continue;
+		}
+		if (includeVideo && frame.pixels.empty())
+		{
+			continue;
+		}
 
 		const std::uint64_t nextOutputOrdinal = m_tcpPacketCounter.load() + 1;
 		RawVideoFrame rawFrame;
@@ -651,24 +840,32 @@ void TcpCommThread::sendFrameThreadFunc() {
 			? frame.telemetry.udpReceiveTimeNs / 1000000LL
 			: static_cast<std::int64_t>(nextOutputOrdinal * 1000ULL / std::max(1, m_videoFps.load()));
 
-		std::string requestedCodec;
-		if (!encodeFrame(rawFrame, encodedFrame, requestedCodec))
+		std::string requestedCodec = "none";
+		std::string requestedBackend = "none";
+		encodedFrame.clearForReuse();
+		encodedFrame.ptsMs = rawFrame.ptsMs;
+		if (includeVideo &&
+			!encodeFrame(rawFrame, encodedFrame, requestedCodec, requestedBackend))
 		{
 			continue;
 		}
 
 		const std::uint64_t outputOrdinal = ++m_tcpPacketCounter;
 		const std::int64_t tcpSendTimeNs = IRPerfStats::wallTimeNs();
-		const std::string annotationJson = buildAnnotationJson(
-			frame.annotationRecord,
-			frame.annotationEnabled,
-			frame.width,
-			frame.height,
-			frame.telemetry,
-			outputOrdinal,
-			tcpSendTimeNs,
-			requestedCodec,
-			encodedFrame);
+		const std::string annotationJson = includeAnnotation
+			? buildAnnotationJson(
+				frame.annotationRecord,
+				frame.annotationEnabled,
+				frame.width,
+				frame.height,
+				frame.telemetry,
+				outputOrdinal,
+				tcpSendTimeNs,
+				packetVersion,
+				requestedCodec,
+				requestedBackend,
+				encodedFrame)
+			: std::string();
 		if (annotationJson.size() > 1024 * 1024)
 		{
 			std::cout << "[TcpFramePacket][WARN] annotationJsonTooLarge"
@@ -679,8 +876,22 @@ void TcpCommThread::sendFrameThreadFunc() {
 				<< std::endl;
 		}
 
+		std::uint32_t sectionFlags = 0;
+		std::uint32_t realtimeBytes = 0;
+		std::uint32_t annotationBytes = 0;
+		std::uint32_t videoBytes = 0;
 		const auto sendBegin = std::chrono::steady_clock::now();
-		if (!sendFramePacket(frame.trackingData, annotationJson, encodedFrame.payload)) {
+		if (!sendFramePacket(
+			frame.trackingData,
+			annotationJson,
+			encodedFrame,
+			frame.telemetry.sourceSeq,
+			outputOrdinal,
+			rawFrame.ptsMs,
+			sectionFlags,
+			realtimeBytes,
+			annotationBytes,
+			videoBytes)) {
 			std::cerr << "TCP连接丢失(发送帧包失败)，准备重连..." << std::endl;
 			disconnectFromServer();
 			requestEncoderKeyFrame("tcp_send_failure");
@@ -695,15 +906,23 @@ void TcpCommThread::sendFrameThreadFunc() {
 				<< " channel=" << m_channel << " platID=" << m_localPlatID
 				<< " sensorID=" << m_localSensorID << " pid=" << _getpid()
 				<< " frame=" << outputOrdinal
-				<< " imgBytes=" << encodedFrame.payload.size()
-				<< " payloadBytes=" << encodedFrame.payload.size()
-				<< " packetVersion=2"
-				<< " codec=" << encodedFrame.payloadCodec
-				<< " activeCodec=" << encodedFrame.payloadCodec
+				<< " imgBytes=" << videoBytes
+				<< " payloadBytes=" << videoBytes
+				<< " packetVersion=" << packetVersion
+				<< " flags=0x" << std::hex << sectionFlags << std::dec
+				<< " codec=" << (includeVideo ? encodedFrame.payloadCodec : "none")
+				<< " activeCodec=" << (includeVideo ? encodedFrame.payloadCodec : "none")
 				<< " keyFrame=" << (encodedFrame.keyFrame ? "1" : "0")
+				<< " requestedBackend=" << requestedBackend
+				<< " activeBackend=" << (includeVideo ? encodedFrame.encoderName : "none")
 				<< " encoderName=" << encodedFrame.encoderName
 				<< " h264EncoderName=" << encodedFrame.encoderName
-				<< " annotationBytes=" << annotationJson.size()
+				<< " realtimeBytes=" << realtimeBytes
+				<< " annotationBytes=" << annotationBytes
+				<< " videoBytes=" << videoBytes
+				<< " frameSeq=" << frame.telemetry.sourceSeq
+				<< " outputOrdinal=" << outputOrdinal
+				<< " ptsMs=" << rawFrame.ptsMs
 				<< " targets=" << frame.annotationRecord.targets.size()
 				<< " width=" << frame.width
 				<< " height=" << frame.height
@@ -725,9 +944,13 @@ void TcpCommThread::sendFrameThreadFunc() {
 				<< " pid=" << _getpid()
 				<< " sourceSeq=" << frame.telemetry.sourceSeq
 				<< " outputOrdinal=" << outputOrdinal
-				<< " codec=" << encodedFrame.payloadCodec
-				<< " activeCodec=" << encodedFrame.payloadCodec
+				<< " packetVersion=" << packetVersion
+				<< " flags=0x" << std::hex << sectionFlags << std::dec
+				<< " codec=" << (includeVideo ? encodedFrame.payloadCodec : "none")
+				<< " activeCodec=" << (includeVideo ? encodedFrame.payloadCodec : "none")
 				<< " requestedCodec=" << requestedCodec
+				<< " requestedBackend=" << requestedBackend
+				<< " activeBackend=" << (includeVideo ? encodedFrame.encoderName : "none")
 				<< " h264En=" << (m_h264Requested.load() ? "1" : "0")
 				<< " codecFallbackReason=" << (encodedFrame.fallbackReason.empty() ? "none" : encodedFrame.fallbackReason)
 				<< " encoderName=" << encodedFrame.encoderName
@@ -737,7 +960,10 @@ void TcpCommThread::sendFrameThreadFunc() {
 				<< " h264EncodeMs=" << (h264Active ? encodedFrame.encodeMs : 0.0)
 				<< " encodeMs=" << encodedFrame.encodeMs
 				<< " encodedBytes=" << encodedFrame.payload.size()
-				<< " payloadBytes=" << encodedFrame.payload.size()
+				<< " payloadBytes=" << videoBytes
+				<< " realtimeBytes=" << realtimeBytes
+				<< " annotationBytes=" << annotationBytes
+				<< " videoBytes=" << videoBytes
 				<< " keyFrame=" << (encodedFrame.keyFrame ? "1" : "0")
 				<< " jpegQuality=" << m_jpegQuality.load()
 				<< " jpegMode=" << (m_jpegGray.load() ? "gray" : "rgb")
@@ -830,9 +1056,15 @@ IRFrameEnqueueResult TcpCommThread::updateFrame(
 
 	const auto copyBegin = std::chrono::steady_clock::now();
 	PendingFrame frame;
-	const size_t size = static_cast<size_t>(width) * static_cast<size_t>(height) * 3u;
-	frame.pixels.resize(size);
-	memcpy(frame.pixels.data(), data, size);
+	const bool copyVideo =
+		m_packetVersion.load() == 2 ||
+		m_sendVideo.load();
+	if (copyVideo)
+	{
+		const size_t size = static_cast<size_t>(width) * static_cast<size_t>(height) * 3u;
+		frame.pixels.resize(size);
+		memcpy(frame.pixels.data(), data, size);
+	}
 	frame.width = width;
 	frame.height = height;
 	frame.trackingData = trackingData;

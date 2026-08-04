@@ -1869,3 +1869,167 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\v3_h264_recovery
 - payload 大小依赖画面内容，Headless/precise 的低字节数不应用作固定码率承诺；验收依据仍是实际 codec、FPS、延迟、关键帧和队列稳定性。
 - RK3588 MPP 硬件编码未实现，Debian 11/aarch64 也未交叉编译或实机测试；当前 Windows 环境没有 aarch64 编译器、Panda3D/OpenCV sysroot 或目标板驱动。后续 MPP 必须继续实现同一 `IVideoEncoder`，不能改变 TCP payload/JSON/协议语义，也不能用 Windows libx264 结果替代板端结论。
 - 天气与照明未实现；红外物理、目标三元组映射、可见性门控、标注和录像语义保持 R1/R2 基线。
+
+### 2026-07-29 / V4 RK3588 MPP 与 TCP Packet v3 实施记录
+
+#### 基线、范围与环境边界
+
+- 基线为最新 `main` / `origin/main`：`c523d02c9a6d593ccffcfcf0033b5885740dbd2d`（`Windows端H264实现_20260729_1301`）。未执行 commit 或 push。
+- 只实施 V4：Linux/aarch64 RKMPP 编码后端、编码后端选择、TCP Packet v3、VideoDisplay v3 兼容和验收/部署工具。未实现天气或照明。
+- `CommonData.h`、UDP 协议/路由、红外物理、800x800 分辨率、R1/R2 调度和标注目标语义均未修改。工作区原有 `.idea` 删除/修改不属于 V4，实施过程未覆盖。
+- Windows 可访问 FFmpeg SDK，但当前机器没有 `cmake`、`aarch64-linux-gnu-g++`、MPP sysroot、Debian 虚拟机连接信息或 RK3588 设备连接，因此没有执行或声称 aarch64 编译、MPP 运行和板端性能实测。
+
+#### 修改文件
+
+```text
+HwaSim_IR/HwaSim_IR/Common/TcpVideoPacketV3.h
+HwaSim_IR/Bin/Config/HwaSimIRRuntime.ini
+HwaSim_IR/HwaSim_IR/CMakeLists.txt
+HwaSim_IR/HwaSim_IR/HwaSimIR.cpp
+HwaSim_IR/HwaSim_IR/HwaSimIR.h
+HwaSim_IR/HwaSim_IR/TcpCommThread.cpp
+HwaSim_IR/HwaSim_IR/TcpCommThread.h
+HwaSim_IR/HwaSim_IR/TcpCommThread_Linux.cpp
+HwaSim_IR/HwaSim_IR/TcpCommThread_Linux.h
+HwaSim_IR/HwaSim_IR/Video/VideoEncoder.h
+HwaSim_IR/HwaSim_IR/Video/H264MppEncoder.cpp
+HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay/AsyncVideoRecorder.cpp
+HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay/AsyncVideoRecorder.h
+HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay.cpp
+HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay.h
+HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay/TcpServerWorker.cpp
+HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay/TcpServerWorker.h
+tools/runtime_config_check.ps1
+tools/rk3588_mpp_compile_check.cpp
+tools/rk3588_mpp_compile_check.sh
+tools/rk3588_v4_deploy_acceptance.sh
+tools/tcp_packet_v3_header_check.cpp
+tools/tcp_packet_v3_header_check.ps1
+tools/v4_packet_v3_acceptance.ps1
+docs/HwaSimIR_V4_RK3588_MPP_CLion_Deployment.md
+docs/HwaSimIR_RuntimeChannel_H264_Weather_Lighting_Implementation_Plan.md
+```
+
+#### RK3588 MPP 编码器
+
+- 新增 `H264MppEncoder : IVideoEncoder`，仅由 CMake 在 Linux+aarch64 且定义 `HWASIMIR_HAS_RKMPP` 时编译。Windows VS 工程不包含 MPP 源文件、头文件或库。
+- 输入支持 BGR24、RGB24 和 Gray8，按既有垂直翻转标志转换到 NV12 / `MPP_FMT_YUV420SP`；宽高要求为偶数，stride 按 16 对齐。
+- 持久复用 `MppCtx/MppApi/MppEncCfg`、DRM `MppBufferGroup`、输入 `MppBuffer` 和 `MppFrame`。编码配置为 `MPP_VIDEO_CodingAVC`、CBR、既有码率/FPS/GOP、Baseline、无 CABAC/8x8/B 帧；输出分片聚合到一个完整 Annex-B Access Unit。
+- 首帧、编码器 reset、初始化/控制新回合和 TCP 重连沿用 `IVideoEncoder::requestKeyFrame()` 闭环，使用 `MPP_ENC_SET_IDR_FRAME`；配置 `MPP_ENC_HEADER_MODE_EACH_IDR`，并缓存 `MPP_ENC_GET_HDR_SYNC` 返回的 SPS/PPS。IDR AU 缺 SPS/PPS 时在内存中补入，随后校验 SPS/PPS/IDR NAL 均存在。
+- `[VideoEncoder]`/`[CodecFallback]` 准确记录 requested/active backend；`[MppPerf]` 记录 `colorConvertMs/mppEncodeMs/payloadBytes/keyFrame/queueDepth`。
+- 后端选择为：Windows auto = FFmpeg → JPEG；Linux/aarch64 auto = MPP → FFmpeg → JPEG；显式支持 `mpp|rk_mpp|ffmpeg|libavcodec|jpeg`。显式 MPP 失败不转 FFmpeg，只按 `H264FallbackToJpeg` 选择 JPEG 或丢帧，避免违反显式后端请求。
+- CMake 增加 `HWASIMIR_ENABLE_RKMPP`、`RKMPP_ROOT`、`HWASIMIR_ENABLE_FFMPEG`。MPP 开启时严格检查：
+
+```text
+${RKMPP_ROOT}/usr/include/rockchip/rk_mpi.h
+${RKMPP_ROOT}/usr/lib/aarch64-linux-gnu/librockchip_mpp.so
+```
+
+  缺失、非 Linux 或非 aarch64 均 `FATAL_ERROR`；成功时输出实际 header/library 路径。
+
+#### TCP Packet v3 格式
+
+TCP 外层仍以 4 字节网络序 `totalLength` 开始；初始化和控制转发仍保持原 `[totalLength][structLength][struct]` 格式。显示帧 v3 的包体固定为：
+
+```text
+[56-byte v3 header]
+[optional realtime DisplayC2cObjTrackingData]
+[optional annotation UTF-8 JSON]
+[optional encoded video Access Unit/JPEG]
+```
+
+固定头所有多字节整数均为网络序：
+
+| Offset | 大小 | 字段 |
+|---:|---:|---|
+| 0 | 4 | magic = `0x48575633` (`HWV3`) |
+| 4 | 2 | version = `3` |
+| 6 | 2 | headerBytes = `56` |
+| 8 | 4 | section flags：bit0 realtime、bit1 annotation、bit2 video |
+| 12 | 1 | codecId：0 none、1 JPEG、2 H.264 Annex-B |
+| 13 | 1 | keyFrame |
+| 14 | 2 | reserved |
+| 16 | 8 | frameSeq |
+| 24 | 8 | outputOrdinal |
+| 32 | 8 | ptsMs |
+| 40 | 4 | realtimeBytes |
+| 44 | 4 | annotationBytes |
+| 48 | 4 | videoBytes |
+| 52 | 4 | reserved |
+
+- `[TcpPayload] PacketVersion=3` 为当前默认；`SendVideo/SendAnnotation/SendRealtimeData/ForwardInitControl` 均默认 true，并支持同名环境变量覆盖。
+- v3 codec 只由固定头决定，接收端不依赖 annotation JSON 分流。v2 继续从既有 annotation codec 字段识别 H.264，最旧的纯 JPEG 包也继续兼容。
+- `SendVideo=false` 时发送线程不复制像素、不选择或执行 JPEG/H.264 编码；`SendAnnotation=false` 时不调用完整 annotation JSON 构造；`SendRealtimeData=false` 时不写入 tracking 结构体段。
+- 三段全部关闭时不发送显示帧包，并且每次配置应用后只告警一次。`ForwardInitControl=false` 只关闭既有 init/control TCP 转发，不改变 UDP 处理。
+- VideoDisplay 严格校验 magic/version/header size/flags/长度/codec 和 tracking 结构体大小；只有 HasVideo 才调用持久 JPEG/H.264 解码器。无视频包不报解码错误、不清空最后画面；是否存在 annotation/realtime 通过独立布尔值传递，录像侧不会用零结构体伪造缺失数据。
+- 新增 `[TcpFramePacket]` / `[TcpFramePacketRx]` 低频字段：`packetVersion/flags/codec/keyFrame/realtimeBytes/annotationBytes/videoBytes/frameSeq/outputOrdinal/ptsMs`。关键帧到达时强制记录，不受 120 帧采样间隔影响。
+
+#### Windows 构建与协议测试
+
+```text
+HwaSim_IR x64 Release + FFMPEG_ROOT                   PASS
+DataDrivenTestQT Qt 5.12.12 / MinGW 7.3 x64 Release PASS
+HwaSim_IR_VideoDisplay x64 Release + FFMPEG_ROOT     PASS
+HwaSim_IR x64 Release（未设置 FFMPEG_ROOT）          PASS
+Packet v3 固定头 round-trip/非法 flags-length       PASS
+CommonData 三文件一致、Control.sensorID 不存在       PASS
+```
+
+最终 HwaSim_IR.exe SHA-256：
+`6F2237C67024A71135AE37D645103D72323EF3DD71C60F987180FBC11EF93AC0`。
+
+V4 Windows 分段矩阵使用 `tools/v4_packet_v3_acceptance.ps1` 和 loopback 配置。各 case 均生成独立 summary；首次整组运行暴露“IDR 到达时可能未命中 120 帧低频包日志”的诊断缺口，补为关键帧强制日志后，下列组合均通过：
+
+| 场景 | version | flags | 结果/日志 |
+|---|---:|---:|---|
+| v2 JPEG（video+annotation+realtime） | 2 | 0x7 | PASS，`logs/v4-packet-v3-20260729-144421/v2_jpeg` |
+| v2 H.264 | 2 | 0x7 | PASS，`logs/v4-packet-v3-20260729-145316` |
+| v3 仅 JPEG 视频 | 3 | 0x4 | PASS，`logs/v4-packet-v3-20260729-144315` |
+| v3 仅 H.264 视频 | 3 | 0x4 | PASS，`logs/v4-packet-v3-20260729-145222` |
+| v3 H.264 + annotation | 3 | 0x6 | PASS，`logs/v4-packet-v3-20260729-145408` |
+| v3 H.264 + realtime | 3 | 0x5 | PASS，`logs/v4-packet-v3-20260729-145504` |
+| v3 H.264 + annotation + realtime | 3 | 0x7 | PASS，`logs/v4-packet-v3-20260729-145558` |
+| v3 annotation + realtime，无视频 | 3 | 0x3 | PASS，`logs/v4-packet-v3-20260729-144421/v3_annotation_realtime` |
+| v3 三段全部关闭 | 3 | 0x0 | PASS，`logs/v4-packet-v3-20260729-144421/v3_all_disabled` |
+
+无视频两组确认发送端不配置编码器、JPEG/H.264 编码字节为 0，接收端不执行解码；全关闭组无显示帧包且告警恰好一次。v3 各组合的 header flags 和三段长度均由发送/接收日志交叉校验。
+
+#### R1/R2/V1～V3 回归与性能摘要
+
+- R1：`PASS`，`logs/r1-runtime-20260729-145921`。同一二进制 precise/coarse、Control/Init/Display ID 路由、255 广播、ACK 身份、禁用动态远端、simMode 1/2/非法回退全部通过。
+- R2 JPEG 五组：全部 `PASS`，日志 `logs/r2-60fps-20260729-150008`、`150126`、`150243`、`150405`、`150521`；生产 precise/coarse 配置哈希前后一致。
+- V1～V3 H.264 单 Visible、单 Headless、双 Visible：全部 `PASS`，日志 `logs/r2-60fps-20260729-150851`、`151005`、`151338`。实际 codec 均为 `h264_annexb`、发送端 JPEG 字节为 0、解码错误为 0、队列和 lag 不持续增长。
+- TCP 重连、初始化/复位 IDR、不可用后端 JPEG 回退和 H.264→MP4：`PASS`，`logs/v3-h264-recovery-20260729-150710`；ffprobe 读取 760 帧。
+
+| 场景 | 通道 | codec | output/display FPS | latency Avg/P95 ms | encode/decode ms | 平均 payload B |
+|---|---|---|---:|---:|---:|---:|
+| precise Visible Sync | precise | JPEG | 60.014 / 59.989 | 18.003 / 21.792 | 7.865 / 4.296 | 31,344 |
+| precise Visible Async60 | precise | JPEG | 60.013 / 59.998 | 24.393 / 34.040 | 7.124 / 4.026 | 31,876 |
+| coarse Visible Async60 | coarse | JPEG | 59.986 / 59.967 | 24.703 / 40.211 | 7.287 / 4.073 | 31,258 |
+| dual Visible Async60 | precise | JPEG | 59.997 / 60.011 | 29.424 / 44.235 | 8.586 / 5.229 | 31,720 |
+| dual Visible Async60 | coarse | JPEG | 60.005 / 60.001 | 29.134 / 42.015 | 8.576 / 5.231 | 32,261 |
+| dual Headless Async60 | precise | JPEG | 60.054 / 59.994 | 26.172 / 35.662 | 5.685 / 4.977 | 29,987 |
+| dual Headless Async60 | coarse | JPEG | 60.022 / 59.989 | 26.496 / 35.542 | 5.682 / 4.962 | 30,044 |
+| precise Visible Async60 | precise | H.264 | 60.008 / 59.994 | 16.935 / 29.276 | 4.011 / 1.529 | 8,633 |
+| precise Headless Async60 | precise | H.264 | 59.978 / 59.999 | 19.469 / 34.949 | 2.756 / 1.515 | 8,480 |
+| dual Visible Async60 | precise | H.264 | 59.993 / 60.019 | 19.139 / 31.518 | 4.511 / 1.834 | 8,407 |
+| dual Visible Async60 | coarse | H.264 | 60.009 / 60.004 | 18.594 / 31.843 | 4.079 / 1.755 | 992 |
+
+所有正式性能组 input/output queue 最大深度均为 1；sourceSeqLag 最大为 1～2，未持续增长；跨通道 sensorID 拒绝通过。JPEG 性能没有明显回退。
+
+#### CLion、部署脚本与未完成项
+
+CLion 参数和手动流程见 `docs/HwaSimIR_V4_RK3588_MPP_CLion_Deployment.md`，核心参数为：
+
+```text
+-DHWASIMIR_ENABLE_RKMPP=ON
+-DRKMPP_ROOT=/home/linaro/sysroots/rk3588-mpp
+-DHWASIMIR_ENABLE_FFMPEG=OFF
+-DPANDA3D_ROOT=/opt/panda3d-aarch64
+-DOpenCV_DIR=/usr/lib/aarch64-linux-gnu/cmake/opencv4
+```
+
+- `tools/rk3588_mpp_compile_check.sh` 编译最小 AVC MPP API 程序，并验证输出 ELF 为 aarch64。
+- `tools/rk3588_v4_deploy_acceptance.sh build|deploy|run|verify` 提供 Debian 交叉编译、复制运行资产、板端显式 MPP 启动和日志断言；两份 shell 脚本已通过 `bash -n`。
+- 尚未完成：Debian VM 上最小 MPP 编译、完整 CMake Release 交叉编译、RK3588 `/dev/mpp_service` 编码、三输入颜色验证、双进程 60 FPS、CPU/带宽/延迟实测、MPP 失败回退和板端重连/复位 IDR。必须由用户在已知 VM/板卡环境执行脚本并把日志回填，Windows FFmpeg 结果不能替代这些结论。
+- 天气与照明仍未实施；V4 没有修改相关模型或配置。

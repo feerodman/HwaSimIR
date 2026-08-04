@@ -28,6 +28,16 @@ signals:
 		const QImage& img,
 		const BYHWICD::DisplayC2cObjTrackingData& trackingData,
 		const QString& annotationJson,
+		bool hasVideo,
+		bool hasRealtimeData,
+		bool hasAnnotation,
+		int packetVersion,
+		quint32 sectionFlags,
+		int codecId,
+		bool keyFrame,
+		quint64 frameSeq,
+		quint64 outputOrdinal,
+		qint64 ptsMs,
 		qint64 receiveTimeNs,
 		double jpegDecodeMs,
 		int decodedChannels,
@@ -47,6 +57,7 @@ private:
 
 	std::atomic<bool> m_stop{ false };
 	std::atomic<quint64> m_receivedFrameCount{ 0 };
+	std::atomic<quint64> m_receivedPacketCount{ 0 };
 	QString m_networkConfigPath;
 	QString m_channel;
 	int m_platID = 0;

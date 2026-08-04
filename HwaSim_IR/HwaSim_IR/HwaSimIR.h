@@ -277,6 +277,11 @@ private:
 	bool m_h264ForceKeyFrameOnStart = true;
 	bool m_h264EnFromInit = false;
 	bool m_jpegPerfABTest = false;
+	int m_tcpPacketVersion = 3;
+	bool m_tcpSendVideo = true;
+	bool m_tcpSendAnnotation = true;
+	bool m_tcpSendRealtimeData = true;
+	bool m_tcpForwardInitControl = true;
 	std::uint64_t m_lastIrUpdateSourceSeq = 0;
 	std::uint64_t m_irBreakdownUpdateCounter = 0;
 	double m_stage7LastFullUpdateTime = -1.0;
