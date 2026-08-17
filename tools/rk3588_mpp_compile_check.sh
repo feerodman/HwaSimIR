@@ -6,8 +6,22 @@ RKMPP_ROOT="${RKMPP_ROOT:-/home/linaro/sysroots/rk3588-mpp}"
 CXX="${CXX:-/usr/bin/aarch64-linux-gnu-g++}"
 BUILD_DIR="${BUILD_DIR:-${ROOT}/build-rk3588-mpp-check}"
 SOURCE="${ROOT}/tools/rk3588_mpp_compile_check.cpp"
-PRODUCTION_SOURCE="${ROOT}/HwaSim_IR/HwaSim_IR/Video/H264MppEncoder.cpp"
-VIDEO_INCLUDE="${ROOT}/HwaSim_IR/HwaSim_IR/Video"
+
+# Windows checkout uses a repository root above HwaSim_IR/HwaSim_IR, while the
+# existing CLion deployment maps that CMake subproject directly to the remote
+# project root.  Accept both layouts so the same check compiles the production
+# encoder source in either environment.
+if [[ -f "${ROOT}/HwaSim_IR/HwaSim_IR/Video/H264MppEncoder.cpp" ]]; then
+    PRODUCTION_ROOT="${ROOT}/HwaSim_IR/HwaSim_IR"
+elif [[ -f "${ROOT}/Video/H264MppEncoder.cpp" ]]; then
+    PRODUCTION_ROOT="${ROOT}"
+else
+    echo "[RKMPPCompileCheck] FAIL production source root not found under ${ROOT}" >&2
+    exit 2
+fi
+
+PRODUCTION_SOURCE="${PRODUCTION_ROOT}/Video/H264MppEncoder.cpp"
+VIDEO_INCLUDE="${PRODUCTION_ROOT}/Video"
 HEADER="${RKMPP_ROOT}/usr/include/rockchip/rk_mpi.h"
 LIBRARY="${RKMPP_ROOT}/usr/lib/aarch64-linux-gnu/librockchip_mpp.so"
 OUTPUT="${BUILD_DIR}/rk3588_mpp_compile_check"
