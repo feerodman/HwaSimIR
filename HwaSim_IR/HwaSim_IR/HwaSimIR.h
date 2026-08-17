@@ -171,7 +171,7 @@ private:
 	void LoadRenderControlConfig();
 	void ApplyRenderControl(int externalSimMode, int externalVideoFps, const char* requestSource);
 	void ResetRenderSchedulingState();
-	void LogGraphicsBackend() const;
+	void LogGraphicsBackend(GraphicsOutput* output);
 
 	struct PendingDisplayFrame
 	{
@@ -609,6 +609,7 @@ private:
 	int m_headlessLastTextureHeight = 0;
 	bool m_headlessLastTextureCropApplied = false;
 	bool m_renderBackendReady = false;
+	bool m_gpuBackendLogged = false;
 	UdpCommThread* m_pUdpThread = nullptr;        // UDP通讯线程
 	TcpCommThread* m_pTcpThread = nullptr;		// TCP通信线程
 	std::mutex m_mtx;                  // 业务逻辑互斥锁
@@ -723,6 +724,9 @@ private:
 	int m_lastWeaponDamageFlag = -1;
 	IRPerfStats m_perfStats;
 	double m_lastPandaDoFrameMs = 0.0;
+	double m_lastPandaCoreMs = 0.0;
+	double m_lastIrTaskMs = 0.0;
+	double m_lastCaptureTaskMs = 0.0;
 	double m_lastReadbackMs = 0.0;
 	double m_lastFrameCopyMs = 0.0;
 	double m_lastJpegMs = 0.0;
@@ -740,6 +744,8 @@ private:
 	int m_lastTargetUpdateVisible = 0;
 	int m_lastTargetUpdateSkippedBeyondFar = 0;
 	int m_lastTargetUpdateSkippedShaderApply = 0;
+	int m_lastVisibilityHideCalls = 0;
+	int m_lastVisibilityShowCalls = 0;
 	std::atomic<int> m_targetVideoFps{ 0 };
 	std::string m_renderModePolicy = "ExternalPreferred";
 	int m_configuredSimMode = 2;

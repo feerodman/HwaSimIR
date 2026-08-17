@@ -2089,3 +2089,50 @@ Windows 传输矩阵、天气或照明，也未修改 `.idea`。
 `/home/linaro/userdata/HwaSimIR` 执行 `tools/rk3588_mpp_compile_check.sh` 和
 `tools/rk3588_v4_deploy_acceptance.sh build|deploy|run|verify`，并留存
 `[H264EncodeSuccess]`、Windows `[H264DecodeSuccess]`、60 FPS、延迟与队列日志。
+
+### 2026-08-17 / RK3588 H.264/Mali 基线固定与 60 FPS 性能收口记录
+
+#### 固定基线与范围
+
+- 工作区基线为 `main@fbac7275558b004498a7fa6c036c3007e5abd871`，全过程未 commit、未 push、未修改 `.idea`。
+- 固定板端链路为最小 Xorg `:0` + `HeadlessOffscreen` + `GL_VENDOR=ARM` + `GL_RENDERER=Mali-LODX` + `hardwareGpu=1` + MPP H.264 + Packet v3 `flags=0x7`。
+- 运行配置保持 `H264Encoder=mpp`、`H264FallbackToJpeg=false`、视频/标注/realtime 三段全开；800×800、红外物理、H.264、标注意义和 TCP/UDP 协议均未改变。
+- 基线清单、SHA-256、源码 patch 和两轮 45 秒数据保存于 `logs/rk3588-60fps-closeout-20260817-173046`。
+
+#### 修改文件与有效优化
+
+```text
+HwaSim_IR/HwaSim_IR/HwaSimIR.cpp
+HwaSim_IR/HwaSim_IR/HwaSimIR.h
+HwaSim_IR/Bin/Config/HwaSimIRRuntime.ini
+tools/rk3588_hwasimir_performance_mode.sh
+docs/HwaSimIR_RuntimeChannel_H264_Weather_Lighting_Implementation_Plan.md
+```
+
+- 增加真实 `[GpuBackend]` 和可按需开启的 render/IR/capture 分段计时，确认单 Stage6 `direct_final`、Panda core 约 13.2 ms、capture 约 2.5～2.9 ms；生产正式轮关闭深度 `RenderPerfProbe`，保留低频汇总。
+- 目标可见性 `show/hide` 只在状态变化时写入，重复写入从每帧 13 次降为 0；每帧末仍隐藏本包未映射目标。
+- 修复 Async 模式无条件绕过 `IRUpdateHz` 的问题；状态变化仍立即刷新，目标姿态、实时协议处理和视频输出仍保持 60 Hz 调度。
+- 标注几何更新由 15 Hz 调整到 10 Hz，跳过帧复用最近有效几何；标注 JSON、realtime 和视频三段仍逐帧发送，Packet v3 格式与语义不变。
+- 新增非持久 governor 辅助脚本，保存原 CPU/GPU governor 后启用 performance，并可恢复；不修改驱动、频率表、网络或开机服务。
+
+#### 性能数据
+
+| 组别 | output FPS | display FPS | renderMs | sceneMs | IR ms | annotation ms | readback ms | preprocess ms | MPP ms | CPU |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| baseline-01 | 55.004 | 55.048 | 17.402 | 0.710 | 0.831 | 0.570 | 2.082 | 11.478 | 2.123 | 152.4% |
+| baseline-02 | 55.818 | 55.943 | 17.119 | 0.728 | 0.876 | 0.570 | 1.944 | 10.819 | 2.127 | 151.7% |
+| final 60s-01 | 59.028 | 59.084 | 16.383 | 0.483 | 0.486 | 0.336 | 1.804 | 8.145 | 2.103 | 137.8% |
+| final 60s-02 | 58.761 | 58.800 | 16.454 | 0.488 | 0.498 | 0.335 | 1.840 | 8.089 | 2.096 | 147.9% |
+
+- 两轮最终测试均预热 5 秒后正式统计 60 秒；平均 output/display 为 `58.895/58.942 FPS`，较基线均值提高 `3.484/3.446 FPS`。
+- 第一轮满足 `>=59`，第二轮未满足，因此结论为“接近 60 FPS，但尚未稳定达到验收线”，没有通过降低质量、分辨率或物理精度掩盖问题。
+- 最终两轮 input queue 最大 1、output/TCP queue 最大 0、sourceSeqLag 最大 1、dropped=0；有效流平均延迟约 22 ms、最大约 32 ms。三端未离线校时，不声明跨机 P95。
+- MPP encode 约 2.10 ms，NV12 preprocess 约 8.12 ms 且在独立线程，队列不增长；当前首要瓶颈仍是 Panda/Mali render 主路径，而非 MPP。
+
+#### 构建、恢复回归与撤销项
+
+- Windows 三个 Release 构建：PASS；VM 生产 MPP API compile check：PASS；最终 ELF 为 AArch64 且 `NEEDED librockchip_mpp.so.1`。
+- 最终 AArch64 SHA-256：`b36108625a426e1d8584ebe28f0ea093ce9d469ac75bd3f7aecacb073f9c5577`。
+- TCP 重连/再次初始化恢复：PASS。同一板端进程记录 7 次真实 MPP `[H264EncodeSuccess]`、2 次 TCP connected IDR 请求、2 个 init；Windows 重连前后均有 `[H264DecodeSuccess]`，CodecFallback=0。
+- `TargetUpdateCullInvisible=true`、`IRUpdateHz=20` 和帧 vector 回收池均因没有稳定端到端收益而撤销；未叠加无效修改。
+- 剩余最大三项：Panda cull/draw 约 13.2 ms；readback+800×800 RGB copy 约 2.5 ms；编码线程 NV12 preprocess 约 8.1 ms。后续如继续优化，应先处理前两项；不建议在队列稳定时优先引入 RGA/DMA-BUF 大改。

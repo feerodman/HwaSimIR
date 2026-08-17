@@ -38,6 +38,25 @@
 
 namespace
 {
+class ScopedSteadyMs
+{
+public:
+	explicit ScopedSteadyMs(double& destination)
+		: m_destination(destination), m_begin(std::chrono::steady_clock::now())
+	{
+	}
+
+	~ScopedSteadyMs()
+	{
+		m_destination = std::chrono::duration<double, std::milli>(
+			std::chrono::steady_clock::now() - m_begin).count();
+	}
+
+private:
+	double& m_destination;
+	std::chrono::steady_clock::time_point m_begin;
+};
+
 std::uint64_t CurrentProcessIdValue()
 {
 #if defined(_WIN32)
@@ -1080,7 +1099,7 @@ HwaSimIR::HwaSimIR(int argc, char** argv, const HwaSimIRLaunchOptions& launchOpt
 		m_renderRoot = m_pMainWindow->get_render();
 		m_renderBackendReady = true;
 		InitVisibleWindowUi();
-		LogGraphicsBackend();
+		LogGraphicsBackend(m_pGraphicsWindow);
 	}
 	else
 	{
@@ -1289,9 +1308,17 @@ void HwaSimIR::run() {
 		if (!m_pFramework->do_frame(current_thread)) {
 			break;
 		}
+		if (!m_gpuBackendLogged)
+		{
+			LogGraphicsBackend(IsHeadlessOffscreenMode()
+				? m_stage6PresentationOutput.p()
+				: static_cast<GraphicsOutput*>(m_pGraphicsWindow));
+		}
 		const double renderMs = std::chrono::duration<double, std::milli>(
 			std::chrono::steady_clock::now() - renderBegin).count();
 		m_lastPandaDoFrameMs = renderMs;
+		m_lastPandaCoreMs = std::max(0.0,
+			renderMs - m_lastIrTaskMs - m_lastCaptureTaskMs);
 		LogRenderPerfProbe(renderMs);
 		if (!m_bSyncRenderMode.load() || hasDisplayFrame)
 		{
@@ -1329,38 +1356,54 @@ WindowFramework* HwaSimIR::get_main_window() const {
 	return m_pMainWindow;
 }
 
-void HwaSimIR::LogGraphicsBackend() const
+void HwaSimIR::LogGraphicsBackend(GraphicsOutput* output)
 {
-	if (m_pGraphicsWindow == nullptr)
+	if (m_gpuBackendLogged || output == nullptr)
 	{
-		std::cout << "[GPU][WARN] graphics window unavailable" << std::endl;
 		return;
 	}
 
-	GraphicsPipe* pipe = m_pGraphicsWindow->get_pipe();
-	GraphicsStateGuardian* gsg = m_pGraphicsWindow->get_gsg();
-	const std::string pipeName = pipe != nullptr ? pipe->get_interface_name() : "unknown";
-	const std::string vendor = gsg != nullptr ? gsg->get_driver_vendor() : "unknown";
-	const std::string renderer = gsg != nullptr ? gsg->get_driver_renderer() : "unknown";
-	const std::string driverVersion = gsg != nullptr ? gsg->get_driver_version() : "unknown";
-	std::cout << "[GPU]"
-		<< " graphicsPipe=" << pipeName
-		<< " vendor=" << vendor
-		<< " renderer=" << renderer
-		<< " driverVersion=" << driverVersion
-		<< " apiVersion=" << driverVersion
-		<< std::endl;
+	GraphicsPipe* pipe = output->get_pipe();
+	GraphicsStateGuardian* gsg = output->get_gsg();
+	if (gsg == nullptr)
+	{
+		return;
+	}
 
+	const std::string pipeName = pipe != nullptr ? pipe->get_interface_name() : "unknown";
+	const std::string gsgType = gsg->get_type().get_name();
+	const std::string vendor = gsg->get_driver_vendor();
+	const std::string renderer = gsg->get_driver_renderer();
+	const std::string driverVersion = gsg->get_driver_version();
+
+	std::string vendorLower = vendor;
 	std::string rendererLower = renderer;
+	std::transform(vendorLower.begin(), vendorLower.end(), vendorLower.begin(),
+		[](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 	std::transform(rendererLower.begin(), rendererLower.end(), rendererLower.begin(),
 		[](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-	if (rendererLower.find("llvmpipe") != std::string::npos ||
+	const bool softwareRenderer =
+		rendererLower.find("llvmpipe") != std::string::npos ||
 		rendererLower.find("softpipe") != std::string::npos ||
-		rendererLower.find("software") != std::string::npos)
-	{
-		std::cout << "[GPU][WARN] software renderer detected"
-			<< " renderer=" << renderer << std::endl;
-	}
+		rendererLower.find("llvm") != std::string::npos ||
+		rendererLower.find("software rasterizer") != std::string::npos ||
+		rendererLower.find("software") != std::string::npos;
+	const bool maliRenderer =
+		vendorLower.find("arm") != std::string::npos ||
+		vendorLower.find("mali") != std::string::npos ||
+		rendererLower.find("mali") != std::string::npos;
+	const bool hardwareGpu = maliRenderer && !softwareRenderer;
+
+	std::cout << "[GpuBackend]"
+		<< " presentationMode=" << m_renderPresentationModeName
+		<< " graphicsPipe=" << pipeName
+		<< " gsgType=" << gsgType
+		<< " glVendor=" << vendor
+		<< " glRenderer=" << renderer
+		<< " glVersion=" << driverVersion
+		<< " hardwareGpu=" << (hardwareGpu ? "1" : "0")
+		<< std::endl;
+	m_gpuBackendLogged = true;
 }
 
 void HwaSimIR::LoadRenderBackendConfig()
@@ -2485,6 +2528,7 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 				<< std::endl;
 			return;
 		}
+		LogGraphicsBackend(m_stage6FinalSensorBuffer);
 		m_stage6FinalSensorBuffer->clear_render_textures();
 		m_headlessCopyRamAttached = ShouldAttachStage6CopyRam();
 		if (m_renderTex != nullptr && m_headlessCopyRamAttached)
@@ -2549,6 +2593,7 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 			<< std::endl;
 		return;
 	}
+	LogGraphicsBackend(m_stage6RawSceneBuffer);
 
 	m_stage6RawSceneBuffer->remove_all_display_regions();
 	m_stage6RawSceneBuffer->set_sort(IsVisibleWindowMode() && m_pGraphicsWindow != nullptr ? (m_pGraphicsWindow->get_sort() - 10) : -10);
@@ -3440,6 +3485,10 @@ void HwaSimIR::LogRenderPerfProbe(double pandaDoFrameMs)
 		m_annotationOverlayInSensorImage &&
 		m_annotationRegion != nullptr &&
 		m_annotationManager.isEnabled();
+	const int stage6PassCount = (rawPassEnabled ? 1 : 0) + (finalPassEnabled ? 1 : 0);
+	const double captureOtherMs = std::max(
+		0.0,
+		m_lastCaptureTaskMs - m_lastReadbackMs - m_lastFrameCopyMs);
 	int activeDisplayRegionCount = 0;
 	if (rawPassEnabled && m_stage6RawSceneRegion != nullptr)
 	{
@@ -3462,7 +3511,13 @@ void HwaSimIR::LogRenderPerfProbe(double pandaDoFrameMs)
 		<< " sensorID=" << m_localSensorID
 		<< " pid=" << CurrentProcessIdValue()
 		<< " pandaDoFrameMs=" << pandaDoFrameMs
+		<< " pandaCoreMs=" << m_lastPandaCoreMs
+		<< " irTaskMs=" << m_lastIrTaskMs
+		<< " captureTaskMs=" << m_lastCaptureTaskMs
+		<< " captureOtherMs=" << captureOtherMs
 		<< " renderPath=" << m_stage6RenderPath
+		<< " stage6PassCount=" << stage6PassCount
+		<< " stage6SeparatePostPass=" << (rawPassEnabled ? "1" : "0")
 		<< " graphicsOutputCount=" << graphicsOutputCount
 		<< " activeDisplayRegionCount=" << activeDisplayRegionCount
 		<< " rawPassEnabled=" << (rawPassEnabled ? "1" : "0")
@@ -3495,7 +3550,9 @@ void HwaSimIR::LogRenderPerfProbe(double pandaDoFrameMs)
 		<< " targetUpdateTotal=" << m_lastTargetUpdateTotal
 		<< " targetUpdateVisible=" << m_lastTargetUpdateVisible
 		<< " targetUpdateSkippedBeyondFar=" << m_lastTargetUpdateSkippedBeyondFar
-		<< " targetUpdateSkippedShaderApply=" << m_lastTargetUpdateSkippedShaderApply;
+		<< " targetUpdateSkippedShaderApply=" << m_lastTargetUpdateSkippedShaderApply
+		<< " visibilityHideCalls=" << m_lastVisibilityHideCalls
+		<< " visibilityShowCalls=" << m_lastVisibilityShowCalls;
 	std::cout << line.str() << std::endl;
 }
 
@@ -5362,6 +5419,8 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 	}
 	const std::uint64_t frameSeq = m_currentFrameTelemetry.sourceSeq > 0
 		? m_currentFrameTelemetry.sourceSeq : m_stage0DisplayFrameCount;
+	m_lastVisibilityHideCalls = 0;
+	m_lastVisibilityShowCalls = 0;
 
 	// 更新PlatParamPak平台（核心：platLoc映射到飞机平台）
 	for (auto& pakPlat : m_pakPlatformList)
@@ -5439,13 +5498,8 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 	int beyondFarClipCount = 0;
 	m_targetUpdateRenderableByKey.clear();
 	m_targetUpdateBeyondFarByKey.clear();
-	for (auto& targetPlat : m_targetPlatformList)
-	{
-		if (targetPlat.isExist)
-		{
-			targetPlat.nodePath.hide();
-		}
-	}
+	std::vector<TargetPlatformData*> mappedTargetPlatforms;
+	mappedTargetPlatforms.reserve(5);
 
 	TargetPlatformData* lookAtTarget = nullptr;
 	const auto targetMappingBegin = std::chrono::steady_clock::now();
@@ -5462,6 +5516,7 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 		{
 			continue;
 		}
+		mappedTargetPlatforms.push_back(targetPlat);
 		++targetMappedCount;
 
 		// 通过 targetType + targetPlatID + targetID 唯一键更新同一个目标，避免不同挂载平台目标ID冲突。
@@ -5548,11 +5603,19 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 		}
 		if (m_targetUpdateCullInvisible ? renderRenderable : renderVisible)
 		{
-			targetPlat->nodePath.show();
+			if (targetPlat->nodePath.is_hidden())
+			{
+				targetPlat->nodePath.show();
+				++m_lastVisibilityShowCalls;
+			}
 		}
 		else
 		{
-			targetPlat->nodePath.hide();
+			if (!targetPlat->nodePath.is_hidden())
+			{
+				targetPlat->nodePath.hide();
+				++m_lastVisibilityHideCalls;
+			}
 			HideEnginePlume(*targetPlat);
 			if ((!targetPlat->enginePlumeCoreNodePath.is_empty() || !targetPlat->enginePlumeHaloNodePath.is_empty()) &&
 				(m_stage5PlumeOptions.enablePlumeDebug || m_stage5PlumeOptions.forcePlumeVisible ||
@@ -5600,6 +5663,19 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 				<< " beyondFarClip=" << (beyondFarClip ? "1" : "0")
 				<< " renderVisible=" << (renderVisible ? "1" : "0")
 				<< std::endl;
+		}
+	}
+	for (auto& targetPlat : m_targetPlatformList)
+	{
+		if (!targetPlat.isExist ||
+			std::find(mappedTargetPlatforms.begin(), mappedTargetPlatforms.end(), &targetPlat) != mappedTargetPlatforms.end())
+		{
+			continue;
+		}
+		if (!targetPlat.nodePath.is_hidden())
+		{
+			targetPlat.nodePath.hide();
+			++m_lastVisibilityHideCalls;
 		}
 	}
 	m_lastTargetMappingMs = std::chrono::duration<double, std::milli>(
@@ -12071,6 +12147,7 @@ void HwaSimIR::OnTcpFrameSent(
 // HwaSimIR 的每帧更新任务回调
 AsyncTask::DoneStatus HwaSimIR::shader_update_task(GenericAsyncTask* task, void* data) {
 	HwaSimIR* self = static_cast<HwaSimIR*>(data);
+	ScopedSteadyMs taskTimer(self->m_lastIrTaskMs);
 	if (self->m_isSimRunning.load() &&
 		(!self->m_bSyncRenderMode.load() || self->m_syncFrameActive.load())) {
 		const std::uint64_t sourceSeq = self->m_currentFrameTelemetry.sourceSeq;
@@ -12097,8 +12174,7 @@ AsyncTask::DoneStatus HwaSimIR::shader_update_task(GenericAsyncTask* task, void*
 		}
 		const std::string stateKey = state.str();
 		const bool stateChanged = stateKey != self->m_lastIrUpdateState;
-		const bool updateDue = !self->m_bSyncRenderMode.load() ||
-			sourceSeq <= 3 ||
+		const bool updateDue = sourceSeq <= 3 ||
 			self->m_lastIrUpdateSourceSeq == 0 ||
 			sourceSeq >= self->m_lastIrUpdateSourceSeq + updateStride;
 		if (stateChanged || updateDue)
@@ -12127,6 +12203,7 @@ AsyncTask::DoneStatus HwaSimIR::scene_update_task(GenericAsyncTask* task, void* 
 
 AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data) {
 	HwaSimIR* self = static_cast<HwaSimIR*>(data);
+	ScopedSteadyMs taskTimer(self->m_lastCaptureTaskMs);
 	if (!self->m_pTcpThread)
 	{
 		return AsyncTask::DS_cont;
