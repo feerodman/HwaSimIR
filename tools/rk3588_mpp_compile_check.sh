@@ -6,11 +6,13 @@ RKMPP_ROOT="${RKMPP_ROOT:-/home/linaro/sysroots/rk3588-mpp}"
 CXX="${CXX:-/usr/bin/aarch64-linux-gnu-g++}"
 BUILD_DIR="${BUILD_DIR:-${ROOT}/build-rk3588-mpp-check}"
 SOURCE="${ROOT}/tools/rk3588_mpp_compile_check.cpp"
+PRODUCTION_SOURCE="${ROOT}/HwaSim_IR/HwaSim_IR/Video/H264MppEncoder.cpp"
+VIDEO_INCLUDE="${ROOT}/HwaSim_IR/HwaSim_IR/Video"
 HEADER="${RKMPP_ROOT}/usr/include/rockchip/rk_mpi.h"
 LIBRARY="${RKMPP_ROOT}/usr/lib/aarch64-linux-gnu/librockchip_mpp.so"
 OUTPUT="${BUILD_DIR}/rk3588_mpp_compile_check"
 
-for required in "${CXX}" "${SOURCE}" "${HEADER}" "${LIBRARY}"; do
+for required in "${CXX}" "${SOURCE}" "${PRODUCTION_SOURCE}" "${HEADER}" "${LIBRARY}"; do
     if [[ ! -e "${required}" ]]; then
         echo "[RKMPPCompileCheck] FAIL missing=${required}" >&2
         exit 2
@@ -20,8 +22,10 @@ done
 mkdir -p "${BUILD_DIR}"
 "${CXX}" \
     -std=c++14 -O2 -Wall -Wextra -Werror \
+    -DHWASIMIR_HAS_RKMPP=1 \
+    -I"${VIDEO_INCLUDE}" \
     -I"${RKMPP_ROOT}/usr/include/rockchip" \
-    "${SOURCE}" \
+    "${SOURCE}" "${PRODUCTION_SOURCE}" \
     -L"${RKMPP_ROOT}/usr/lib/aarch64-linux-gnu" \
     -Wl,-rpath-link,"${RKMPP_ROOT}/usr/lib/aarch64-linux-gnu" \
     -lrockchip_mpp \
@@ -40,4 +44,6 @@ echo "target=${machine}"
 echo "header=${HEADER}"
 echo "library=${LIBRARY}"
 echo "binary=${OUTPUT}"
+echo "productionSource=${PRODUCTION_SOURCE}"
+echo "cmakeOptions=-DHWASIMIR_ENABLE_RKMPP=ON -DRKMPP_ROOT=${RKMPP_ROOT} -DHWASIMIR_ENABLE_FFMPEG=OFF"
 echo "note=run this binary only on RK3588 with /dev/mpp_service and the matching librockchip_mpp.so"

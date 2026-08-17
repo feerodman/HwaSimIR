@@ -86,6 +86,7 @@ verify_log() {
     grep -q 'requestedBackend=mpp' "${log_file}"
     grep -q 'activeBackend=mpp' "${log_file}"
     grep -q 'activeCodec=h264_annexb' "${log_file}"
+    grep -q '\[H264EncodeSuccess\].*backend=mpp.*codec=h264_annexb.*keyFrame=true.*spsPps=true.*payloadBytes=[1-9]' "${log_file}"
     grep -q '\[MppPerf\].*payloadBytes=[1-9]' "${log_file}"
     grep -q '\[TcpFramePacket\].*packetVersion=3.*flags=0x7' "${log_file}"
     if grep -q '\[CodecFallback\].*activeCodec=jpeg' "${log_file}"; then

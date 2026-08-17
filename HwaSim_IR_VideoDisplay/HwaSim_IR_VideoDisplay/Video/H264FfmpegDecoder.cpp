@@ -101,6 +101,7 @@ struct H264FfmpegDecoder::Impl
 {
 	bool waitingForIdr = true;
 	bool configured = false;
+	bool successLogged = false;
 	QByteArray packetBuffer;
 	QByteArray rgbBuffer;
 	QByteArray parameterSetSignature;
@@ -161,6 +162,7 @@ void H264FfmpegDecoder::reset(const QString& reason)
 #endif
 	m_impl->configured = false;
 	m_impl->waitingForIdr = true;
+	m_impl->successLogged = false;
 	m_impl->packetBuffer.clear();
 	m_impl->parameterSetSignature.clear();
 	qDebug().noquote() << QStringLiteral("[VideoDecoder] reset=1 decoder=h264_ffmpeg reason=%1").arg(reason);
@@ -305,6 +307,11 @@ bool H264FfmpegDecoder::decode(
 	}
 	QImage view(reinterpret_cast<const uchar*>(m_impl->rgbBuffer.constData()), width, height, rgbStride, QImage::Format_RGB888);
 	decoded.image = view.copy();
+	if (decoded.image.isNull())
+	{
+		error = QStringLiteral("decoded_image_copy_failed");
+		return false;
+	}
 	decoded.payloadCodec = QStringLiteral("h264_annexb");
 	decoded.decoderName = name();
 	decoded.keyFrame = keyFrame || containsIdr;
@@ -313,6 +320,17 @@ bool H264FfmpegDecoder::decode(
 	decoded.decodedChannels = 3;
 	decoded.imageFormat = QStringLiteral("rgb");
 	m_impl->waitingForIdr = false;
+	if (!m_impl->successLogged)
+	{
+		m_impl->successLogged = true;
+		qInfo().noquote() << QStringLiteral(
+			"[H264DecodeSuccess] backend=ffmpeg codec=h264_annexb resolution=%1x%2 keyFrame=%3 payloadBytes=%4 decodeMs=%5")
+			.arg(width)
+			.arg(height)
+			.arg(decoded.keyFrame ? QStringLiteral("true") : QStringLiteral("false"))
+			.arg(payload.size())
+			.arg(decoded.decodeMs, 0, 'f', 3);
+	}
 	error.clear();
 	return true;
 #endif

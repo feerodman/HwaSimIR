@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <chrono>
 #include <cstring>
+#include <iomanip>
+#include <iostream>
 #include <sstream>
 
 extern "C"
@@ -211,7 +213,6 @@ struct H264MppEncoder::Impl
 	MppEncCfg encoderConfig = nullptr;
 	MppBufferGroup bufferGroup = nullptr;
 	MppBuffer inputBuffer = nullptr;
-	MppFrame inputFrame = nullptr;
 	std::vector<std::uint8_t> parameterSets;
 };
 
@@ -242,10 +243,6 @@ void H264MppEncoder::reset()
 	if (!m_impl)
 	{
 		return;
-	}
-	if (m_impl->inputFrame)
-	{
-		mpp_frame_deinit(&m_impl->inputFrame);
 	}
 	if (m_impl->inputBuffer)
 	{
@@ -278,11 +275,13 @@ void H264MppEncoder::reset()
 	m_impl->inputBufferBytes = 0;
 	m_impl->parameterSets.clear();
 	m_forceKeyFrame.store(true);
+	m_successLogged.store(false);
 }
 
 void H264MppEncoder::requestKeyFrame()
 {
 	m_forceKeyFrame.store(true);
+	m_successLogged.store(false);
 }
 
 bool H264MppEncoder::configure(const VideoEncoderConfig& config, std::string& error)
@@ -343,10 +342,10 @@ bool H264MppEncoder::configure(const VideoEncoderConfig& config, std::string& er
 		!SetCfgS32(m_impl->encoderConfig, "rc:mode", MPP_ENC_RC_MODE_CBR, error) ||
 		!SetCfgS32(m_impl->encoderConfig, "rc:fps_in_flex", 0, error) ||
 		!SetCfgS32(m_impl->encoderConfig, "rc:fps_in_num", config.fps, error) ||
-		!SetCfgS32(m_impl->encoderConfig, "rc:fps_in_denom", 1, error) ||
+		!SetCfgS32(m_impl->encoderConfig, "rc:fps_in_denorm", 1, error) ||
 		!SetCfgS32(m_impl->encoderConfig, "rc:fps_out_flex", 0, error) ||
 		!SetCfgS32(m_impl->encoderConfig, "rc:fps_out_num", config.fps, error) ||
-		!SetCfgS32(m_impl->encoderConfig, "rc:fps_out_denom", 1, error) ||
+		!SetCfgS32(m_impl->encoderConfig, "rc:fps_out_denorm", 1, error) ||
 		!SetCfgS32(m_impl->encoderConfig, "rc:gop", std::max(1, config.gopFrames), error) ||
 		!SetCfgS32(m_impl->encoderConfig, "rc:bps_target", bitrate, error) ||
 		!SetCfgS32(m_impl->encoderConfig, "rc:bps_min", bitrate * 15 / 16, error) ||
@@ -379,7 +378,12 @@ bool H264MppEncoder::configure(const VideoEncoderConfig& config, std::string& er
 		return false;
 	}
 
-	result = mpp_buffer_group_get_internal(&m_impl->bufferGroup, MPP_BUFFER_TYPE_DRM);
+	MppBufferType inputBufferType = MPP_BUFFER_TYPE_DRM;
+#if defined(HWASIMIR_MPP_HAS_BUFFER_SYNC)
+	inputBufferType = static_cast<MppBufferType>(
+		MPP_BUFFER_TYPE_DRM | MPP_BUFFER_FLAGS_CACHABLE);
+#endif
+	result = mpp_buffer_group_get_internal(&m_impl->bufferGroup, inputBufferType);
 	if (result != MPP_OK || !m_impl->bufferGroup)
 	{
 		error = MppFailure("mpp_buffer_group_get_internal", result);
@@ -399,21 +403,6 @@ bool H264MppEncoder::configure(const VideoEncoderConfig& config, std::string& er
 		reset();
 		return false;
 	}
-	result = mpp_frame_init(&m_impl->inputFrame);
-	if (result != MPP_OK || !m_impl->inputFrame)
-	{
-		error = MppFailure("mpp_frame_init", result);
-		reset();
-		return false;
-	}
-	mpp_frame_set_width(m_impl->inputFrame, config.width);
-	mpp_frame_set_height(m_impl->inputFrame, config.height);
-	mpp_frame_set_hor_stride(m_impl->inputFrame, m_impl->horizontalStride);
-	mpp_frame_set_ver_stride(m_impl->inputFrame, m_impl->verticalStride);
-	mpp_frame_set_fmt(m_impl->inputFrame, MPP_FMT_YUV420SP);
-	mpp_frame_set_eos(m_impl->inputFrame, 0);
-	mpp_frame_set_buffer(m_impl->inputFrame, m_impl->inputBuffer);
-
 	MppBuffer headerBuffer = nullptr;
 	MppPacket headerPacket = nullptr;
 	result = mpp_buffer_get(m_impl->bufferGroup, &headerBuffer, 64U * 1024U);
@@ -469,7 +458,7 @@ bool H264MppEncoder::encode(
 {
 	encoded.clearForReuse();
 	if (!m_impl || !m_impl->configured || !m_impl->api || !m_impl->context ||
-		!m_impl->inputBuffer || !m_impl->inputFrame)
+		!m_impl->inputBuffer)
 	{
 		error = "mpp_h264_encoder_not_configured";
 		return false;
@@ -488,18 +477,22 @@ bool H264MppEncoder::encode(
 		error = "mpp_input_buffer_map_failed";
 		return false;
 	}
+#if defined(HWASIMIR_MPP_HAS_BUFFER_SYNC)
 	mpp_buffer_sync_begin(m_impl->inputBuffer);
-	if (!ConvertToNv12(
+#endif
+	const bool converted = ConvertToNv12(
 		raw,
 		input,
 		m_impl->horizontalStride,
 		m_impl->verticalStride,
-		error))
+		error);
+#if defined(HWASIMIR_MPP_HAS_BUFFER_SYNC)
+	mpp_buffer_sync_end(m_impl->inputBuffer);
+#endif
+	if (!converted)
 	{
-		mpp_buffer_sync_end(m_impl->inputBuffer);
 		return false;
 	}
-	mpp_buffer_sync_end(m_impl->inputBuffer);
 	encoded.preprocessMs = std::chrono::duration<double, std::milli>(
 		std::chrono::steady_clock::now() - conversionBegin).count();
 
@@ -515,11 +508,26 @@ bool H264MppEncoder::encode(
 			return false;
 		}
 	}
-	mpp_frame_set_pts(m_impl->inputFrame, raw.ptsMs);
-	mpp_frame_set_eos(m_impl->inputFrame, 0);
+	MppFrame inputFrame = nullptr;
+	MPP_RET result = mpp_frame_init(&inputFrame);
+	if (result != MPP_OK || !inputFrame)
+	{
+		error = MppFailure("mpp_frame_init", result);
+		m_forceKeyFrame.store(true);
+		return false;
+	}
+	mpp_frame_set_width(inputFrame, m_impl->config.width);
+	mpp_frame_set_height(inputFrame, m_impl->config.height);
+	mpp_frame_set_hor_stride(inputFrame, m_impl->horizontalStride);
+	mpp_frame_set_ver_stride(inputFrame, m_impl->verticalStride);
+	mpp_frame_set_fmt(inputFrame, MPP_FMT_YUV420SP);
+	mpp_frame_set_pts(inputFrame, raw.ptsMs);
+	mpp_frame_set_eos(inputFrame, 0);
+	mpp_frame_set_buffer(inputFrame, m_impl->inputBuffer);
 
 	const auto encodeBegin = std::chrono::steady_clock::now();
-	MPP_RET result = m_impl->api->encode_put_frame(m_impl->context, m_impl->inputFrame);
+	result = m_impl->api->encode_put_frame(m_impl->context, inputFrame);
+	mpp_frame_deinit(&inputFrame);
 	if (result != MPP_OK)
 	{
 		error = MppFailure("mpp_encode_put_frame", result);
@@ -593,6 +601,19 @@ bool H264MppEncoder::encode(
 	encoded.inputChannels = raw.pixelFormat == RawVideoPixelFormat::Gray8 ? 1 : 3;
 	encoded.encodeMs = std::chrono::duration<double, std::milli>(
 		std::chrono::steady_clock::now() - encodeBegin).count();
+	if (!m_successLogged.exchange(true))
+	{
+		std::cout << "[H264EncodeSuccess] backend=mpp codec=h264_annexb"
+			<< " resolution=" << raw.width << 'x' << raw.height
+			<< " keyFrame=" << (encoded.keyFrame ? "true" : "false")
+			<< " spsPps=" << ((AnnexBContainsNalType(encoded.payload, 7) &&
+				AnnexBContainsNalType(encoded.payload, 8)) ? "true" : "false")
+			<< " payloadBytes=" << encoded.payload.size()
+			<< std::fixed << std::setprecision(3)
+			<< " preprocessMs=" << encoded.preprocessMs
+			<< " encodeMs=" << encoded.encodeMs
+			<< std::endl;
+	}
 	error.clear();
 	return true;
 }

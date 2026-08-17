@@ -60,6 +60,32 @@ if (HWASIMIR_ENABLE_RKMPP)
     if (NOT EXISTS "${RKMPP_LIBRARY}")
         message(FATAL_ERROR "RK MPP library not found: ${RKMPP_LIBRARY}")
     endif()
+
+    include(CheckCXXSourceCompiles)
+    set(_HWASIMIR_SAVED_REQUIRED_INCLUDES "${CMAKE_REQUIRED_INCLUDES}")
+    set(_HWASIMIR_SAVED_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
+    set(CMAKE_REQUIRED_INCLUDES "${RKMPP_INCLUDE_DIR}")
+    set(CMAKE_REQUIRED_LIBRARIES "${RKMPP_LIBRARY}")
+    unset(HWASIMIR_MPP_BUFFER_SYNC_AVAILABLE CACHE)
+    check_cxx_source_compiles([=[
+extern "C" {
+#include <mpp_buffer.h>
+}
+int main()
+{
+    MppBuffer buffer = nullptr;
+    MppBufferType type = static_cast<MppBufferType>(
+        MPP_BUFFER_TYPE_DRM | MPP_BUFFER_FLAGS_CACHABLE);
+    (void)type;
+    mpp_buffer_sync_begin(buffer);
+    mpp_buffer_sync_end(buffer);
+    return 0;
+}
+]=] HWASIMIR_MPP_BUFFER_SYNC_AVAILABLE)
+    set(CMAKE_REQUIRED_INCLUDES "${_HWASIMIR_SAVED_REQUIRED_INCLUDES}")
+    set(CMAKE_REQUIRED_LIBRARIES "${_HWASIMIR_SAVED_REQUIRED_LIBRARIES}")
+    unset(_HWASIMIR_SAVED_REQUIRED_INCLUDES)
+    unset(_HWASIMIR_SAVED_REQUIRED_LIBRARIES)
 endif()
 
 include_directories(
@@ -119,6 +145,12 @@ add_executable(HwaSim_IR
 if (HWASIMIR_ENABLE_RKMPP)
     target_sources(HwaSim_IR PRIVATE Video/H264MppEncoder.cpp)
     target_compile_definitions(HwaSim_IR PRIVATE HWASIMIR_HAS_RKMPP=1)
+    if (HWASIMIR_MPP_BUFFER_SYNC_AVAILABLE)
+        target_compile_definitions(HwaSim_IR PRIVATE HWASIMIR_MPP_HAS_BUFFER_SYNC=1)
+        message(STATUS "RK MPP buffer sync API available: cached DRM buffers enabled")
+    else()
+        message(STATUS "RK MPP buffer sync API unavailable: MPP 1.3.8-compatible non-cached DRM buffers enabled")
+    endif()
     target_include_directories(HwaSim_IR PRIVATE ${RKMPP_INCLUDE_DIR})
     target_link_libraries(HwaSim_IR PRIVATE ${RKMPP_LIBRARY})
     message(STATUS "RK MPP encoder enabled")

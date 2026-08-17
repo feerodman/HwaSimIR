@@ -8,7 +8,7 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
 
     int autoSeconds = 0;
-    bool h264Enabled = false;
+    bool h264Enabled = true;
 	bool saveMP4Enabled = true;
     bool phase4cAeroMach = false;
     double aeroAltitudeKm = 10.0;

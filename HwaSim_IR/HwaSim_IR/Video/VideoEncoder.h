@@ -124,5 +124,6 @@ private:
 	struct Impl;
 	Impl* m_impl;
 	std::atomic<bool> m_forceKeyFrame{ true };
+	std::atomic<bool> m_successLogged{ false };
 };
 #endif

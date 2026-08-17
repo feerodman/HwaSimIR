@@ -151,8 +151,8 @@ private:
 	quint64 m_lastSendPerfFrameCount = 0;
 	int m_uiUpdateEveryFrames = 12;
 	int m_targetVideoFps = 60;
-	bool m_h264Enabled = false;
-	bool m_saveMP4Enabled = true;
+    bool m_h264Enabled = false;
+    bool m_saveMP4Enabled = true;
 	bool m_phase4cAeroMachMode = false;
 	double m_phase4cAltitudeKm = 10.0;
 	double m_phase4cMach = 1.0;

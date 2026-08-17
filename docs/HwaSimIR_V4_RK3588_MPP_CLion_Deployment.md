@@ -104,3 +104,40 @@ chmod +x rk3588_v4_deploy_acceptance.sh
 7. `mpp` 显式失败时，分别验证 `H264FallbackToJpeg=true/false`。
 
 Windows 结果不能替代上述 aarch64 编译和 RK3588 实机结论。
+
+## 6. MPP 1.3.8 buffer 兼容修正（2026-08-04）
+
+生产编码器只使用 `RKMPP_ROOT` 下的目标头文件；不声明缺失 API，也不从仓库内
+`rockchip/` 目录覆盖 sysroot。CMake 会编译并链接探测
+`mpp_buffer_sync_begin/end` 和 `MPP_BUFFER_FLAGS_CACHABLE`：
+
+- 探测成功：定义 `HWASIMIR_MPP_HAS_BUFFER_SYNC`，使用
+  `MPP_BUFFER_TYPE_DRM | MPP_BUFFER_FLAGS_CACHABLE`，CPU 写入前后调用 sync API；
+- 探测失败（目标 MPP 1.3.8）：使用非缓存 `MPP_BUFFER_TYPE_DRM`，通过
+  `mpp_buffer_get_ptr()` 取得持久输入 buffer 指针并直接写入 NV12，不调用 sync API。
+
+最小编译检查现在会编译并链接生产 `Video/H264MppEncoder.cpp`，覆盖编码器实际使用的
+MPP API。Debian 虚拟机中执行：
+
+```bash
+RKMPP_ROOT=/home/linaro/sysroots/rk3588-mpp \
+  tools/rk3588_mpp_compile_check.sh
+```
+
+目标 1.3.8 sysroot 的 CMake 配置输出应包含：
+
+```text
+RK MPP buffer sync API unavailable: MPP 1.3.8-compatible non-cached DRM buffers enabled
+```
+
+首个真实 AU 输出后，以及每次 init/reset/TCP reconnect 后的首次真实 AU，应看到：
+
+```text
+[H264EncodeSuccess] backend=mpp codec=h264_annexb resolution=800x800 keyFrame=true spsPps=true payloadBytes=<positive> preprocessMs=<ms> encodeMs=<ms>
+```
+
+Windows 接收端首次真正解码出图像后应看到：
+
+```text
+[H264DecodeSuccess] backend=ffmpeg codec=h264_annexb resolution=800x800 keyFrame=true payloadBytes=<positive> decodeMs=<ms>
+```

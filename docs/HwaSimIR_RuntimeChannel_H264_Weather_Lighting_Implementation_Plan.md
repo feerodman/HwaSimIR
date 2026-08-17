@@ -2033,3 +2033,59 @@ CLion 参数和手动流程见 `docs/HwaSimIR_V4_RK3588_MPP_CLion_Deployment.md`
 - `tools/rk3588_v4_deploy_acceptance.sh build|deploy|run|verify` 提供 Debian 交叉编译、复制运行资产、板端显式 MPP 启动和日志断言；两份 shell 脚本已通过 `bash -n`。
 - 尚未完成：Debian VM 上最小 MPP 编译、完整 CMake Release 交叉编译、RK3588 `/dev/mpp_service` 编码、三输入颜色验证、双进程 60 FPS、CPU/带宽/延迟实测、MPP 失败回退和板端重连/复位 IDR。必须由用户在已知 VM/板卡环境执行脚本并把日志回填，Windows FFmpeg 结果不能替代这些结论。
 - 天气与照明仍未实施；V4 没有修改相关模型或配置。
+
+### 2026-08-04 / V4 RK3588 MPP 1.3.8 兼容修正记录
+
+基线为 `main@e3b18b4b9432f51501977fc030a9a30577d13961`。根因是原实现无条件使用新版
+MPP 的 `mpp_buffer_sync_begin/end`，而目标板端 MPP 1.3.8 的 `mpp_buffer.h` 不声明
+这两个 API，导致生产 `H264MppEncoder.cpp` 交叉编译失败。
+
+#### 修正内容与文件
+
+- `HwaSim_IR/HwaSim_IR/CMakeLists.txt`
+  - 用编译并链接探测确认 `MPP_BUFFER_FLAGS_CACHABLE` 与 buffer sync API 同时可用；
+  - 仅探测成功时定义 `HWASIMIR_MPP_HAS_BUFFER_SYNC`；
+  - 探测失败明确打印 MPP 1.3.8 非缓存 DRM 路径，不静默关闭 MPP。
+- `HwaSim_IR/HwaSim_IR/Video/H264MppEncoder.cpp`
+  - MPP 1.3.8 使用 `MPP_BUFFER_TYPE_DRM`，通过 `mpp_buffer_get_ptr()` 直接填写 NV12，
+    不引用 sync API；新版路径才使用 cachable DRM 和 sync begin/end；
+  - `MppCtx/MppApi/MppEncCfg/MppBufferGroup/输入 MppBuffer` 持久复用；每帧创建并设置
+    `MppFrame`，`encode_put_frame` 后立即释放，保持既有 Annex-B 分片聚合、SPS/PPS、
+    IDR、码率/FPS/GOP 逻辑；
+  - 首个真实 AU 成功后输出一次 `[H264EncodeSuccess]`，init/reset/TCP reconnect
+    请求关键帧后允许再次输出。
+- `HwaSim_IR/HwaSim_IR/Video/VideoEncoder.h`
+  - 增加 MPP 成功日志的一次性状态，不改变通用帧接口。
+- `HwaSim_IR_VideoDisplay/HwaSim_IR_VideoDisplay/Video/H264FfmpegDecoder.cpp`
+  - 仅在 FFmpeg 真正输出非空 `QImage` 后打印 `[H264DecodeSuccess]`。
+- `tools/rk3588_mpp_compile_check.cpp`、`tools/rk3588_mpp_compile_check.sh`
+  - 从少量 API 探针改为直接编译、链接生产 `H264MppEncoder.cpp`，覆盖生产源实际
+    使用的 MPP API，并打印与 CLion 一致的三个核心 CMake options。
+- `tools/rk3588_v4_deploy_acceptance.sh`
+  - 板端 verify 增加真实 MPP IDR/SPS/PPS/payload 成功日志断言。
+- `docs/HwaSimIR_V4_RK3588_MPP_CLion_Deployment.md`
+  - 补充 1.3.8/新版分支、预期 CMake 输出和端到端成功日志说明。
+
+未修改 `CommonData.h`、Packet v3 固定头/三段格式、UDP、红外物理、分辨率、
+Windows 传输矩阵、天气或照明，也未修改 `.idea`。
+
+#### Windows Release 与回归
+
+- `HwaSim_IR` Release x64（FFmpeg 8.1 SDK）：PASS；
+- `DataDrivenTestQT` Qt 5.12.12 Release：PASS；
+- `HwaSim_IR_VideoDisplay` Release x64（FFmpeg 8.1 SDK）：PASS；
+- Packet v3 header 静态检查：PASS，header 56 bytes，magic `0x48575633`；
+- v2 JPEG/H.264 与 v3 九组传输矩阵：9/9 PASS，汇总
+  `logs/v4-packet-v3-20260804-171657/summary.json`；
+- 五个 H.264 视频组合均记录真实 `[H264DecodeSuccess]`，800x800、keyFrame=true，
+  首次解码耗时为 2.465～11.127 ms；
+- TCP 重连 IDR、初始化/复位 IDR、不可用后端 JPEG fallback、解码后 MP4：PASS，
+  `logs/v3-h264-recovery-20260804-172230`，MP4 读取 778 帧。
+
+#### 未完成项
+
+当前 Windows 环境没有 Debian VM/RK3588 主机入口，因此没有执行或宣称 aarch64
+交叉编译、MPP 1.3.8 链接或板端硬件编码通过。用户仍需在
+`/home/linaro/userdata/HwaSimIR` 执行 `tools/rk3588_mpp_compile_check.sh` 和
+`tools/rk3588_v4_deploy_acceptance.sh build|deploy|run|verify`，并留存
+`[H264EncodeSuccess]`、Windows `[H264DecodeSuccess]`、60 FPS、延迟与队列日志。
