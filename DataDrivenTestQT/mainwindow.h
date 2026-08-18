@@ -55,6 +55,7 @@ public:
 	void setSaveMP4EnabledForTest(bool enabled) { m_saveMP4Enabled = enabled; }
 	void configurePhase4cAeroMachTest(bool enabled, double altitudeKm, double mach);
 	void configureProtocolForTest(int platID, int sensorID, int simMode, int videoFps);
+	void configureEnvironmentForTest(int envSky, int sensorBand);
 
 	private slots:
 	void onResetButtonClicked();
@@ -91,6 +92,8 @@ private:
 	int m_protocolSensorID = 2;
 	int m_protocolSimMode = 2;
 	int m_protocolVideoFps = 60;
+	int m_protocolEnvSky = 0;
+	int m_protocolSensorBand = 2;
 
 	// UI Components
 	QGroupBox *m_configGroup;

@@ -39,13 +39,15 @@ $checks = New-Object System.Collections.Generic.List[object]
 
 $defaultOk = ($runtimeIniText -match "\[Stage7Weather\]") -and
     ($runtimeIniText -match "EnableWeatherEffects=1") -and
-    ($runtimeIniText -match "EnableCloudLayer=0") -and
+    ($runtimeIniText -match "EnableCloudLayer=1") -and
+    ($runtimeIniText -match "CloudLayerCount=2") -and
+    ($runtimeIniText -match "CloudUpdateHz=10") -and
     ($runtimeIniText -match "EnableFog=1") -and
     ($runtimeIniText -match "EnablePrecipitation=0") -and
     ($runtimeIniText -match "Stage7PrecipitationMode=ScreenOverlay") -and
-    ($runtimeIniText -match "CloudLayerMaxCards=0") -and
+    ($runtimeIniText -match "CloudLayerMaxCards=2") -and
     ($runtimeIniText -match "PrecipitationMaxParticles=0")
-$checks.Add((Add-Check "Stage7Weather defaults are low-cost" $defaultOk $runtimeIni)) | Out-Null
+$checks.Add((Add-Check "Stage7Weather W1 defaults use two cached cloud cards" $defaultOk $runtimeIni)) | Out-Null
 
 $textureCacheOk = ($appHeaderText -match "m_stage7CloudTexture") -and
     ($appHeaderText -match "m_stage7RainTexture") -and
@@ -73,10 +75,10 @@ $perfLogOk = ($appSourceText -match "\[Stage7 Perf\]") -and
 $checks.Add((Add-Check "Stage7 perf logs and texture-load warning exist" $perfLogOk $appSource)) | Out-Null
 
 $nodeGuardOk = ($appSourceText -match "if \(!m_stage7WeatherEnabled \|\| m_cameraNode\.is_empty\(\)\)") -and
-    ($appSourceText -match "const int cloudCardCount = 0") -and
+    ($appSourceText -match "std::max\(1, std::min\(2, m_stage7CloudLayerCount\)\)") -and
     ($appSourceText -match "m_stage7PrecipitationEnabled && m_stage7PrecipitationMode == 2") -and
     ($appSourceText -match "m_stage7PrecipitationMaxParticles")
-$checks.Add((Add-Check "weather/cloud/precipitation nodes are disabled unless explicitly requested" $nodeGuardOk $appSource)) | Out-Null
+$checks.Add((Add-Check "W1 cloud nodes are fixed at one or two and precipitation remains guarded" $nodeGuardOk $appSource)) | Out-Null
 
 $overlayOk = ($appSourceText -match "Stage7PrecipitationMode") -and
     ($appSourceText -match "ScreenOverlay") -and
@@ -88,11 +90,11 @@ $overlayOk = ($appSourceText -match "Stage7PrecipitationMode") -and
     ($appSourceText -match "\[Stage7 PrecipitationOverlay\]")
 $checks.Add((Add-Check "screen-space final sensor precipitation overlay exists" $overlayOk $appSource)) | Out-Null
 
-$skyCloudOk = ($appSourceText -match "default cloud rendering is a sky-dome shader perturbation") -and
-    ($appSourceText -match "u_stage7_background_kind == 1") -and
-    ($appSourceText -match "u_stage7_cloud_coverage > 0\.01") -and
-    ($appSourceText -match "stage7_intensity = mix\(stage7_intensity, clamp\(u_stage7_cloud_gray")
-$checks.Add((Add-Check "cloud layer affects sky dome instead of default camera cards" $skyCloudOk $appSource)) | Out-Null
+$skyCloudOk = ($appSourceText -match "Stage7_CloudLayer_Card") -and
+    ($appSourceText -match "u_cloud_uv_speed") -and
+    ($appSourceText -match "tau_cloud = exp\(-extinction\)") -and
+    ($appSourceText -match "Lout=tau\*Lbackground\+\(1-tau\)\*Lcloud")
+$checks.Add((Add-Check "W1 uses fixed textured cloud cards and exponential IR transmittance" $skyCloudOk $appSource)) | Out-Null
 
 $sameOutputOk = ($displayCheckText -match "windowSource=final_sensor") -and
     ($displayCheckText -match "tcpSource=final_sensor") -and

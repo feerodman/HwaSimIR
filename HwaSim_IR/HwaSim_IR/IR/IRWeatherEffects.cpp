@@ -246,19 +246,18 @@ int BandIndex(IRBand band)
 
 double DefaultCloudGray(IRBand band, double cloudTemperatureK, double skyDiffuseScale)
 {
-	switch (band)
-	{
-	case IRBand::Visible:
-	case IRBand::NearInfrared:
-	case IRBand::ShortWaveInfrared:
-		return Clamp(0.55 + 0.18 * skyDiffuseScale, 0.30, 0.86);
-	case IRBand::MidWaveInfrared:
-		return Clamp(0.34 + (cloudTemperatureK - 245.0) / 220.0, 0.24, 0.58);
-	case IRBand::LongWaveInfrared:
-		return Clamp(0.30 + (cloudTemperatureK - 230.0) / 120.0, 0.22, 0.74);
-	default:
-		return 0.45;
-	}
+	return IRWeatherEffects::cloudEmissionGray(band, cloudTemperatureK, 0.5, skyDiffuseScale);
+}
+
+double PlanckRadiance(double wavelengthUm, double temperatureK)
+{
+	const double lambdaUm = Clamp(wavelengthUm, 0.1, 100.0);
+	const double temperature = Clamp(temperatureK, 1.0, 6000.0);
+	const double c1 = 1.191042e8;
+	const double c2 = 1.4387752e4;
+	const double exponent = Clamp(c2 / (lambdaUm * temperature), 1.0e-9, 700.0);
+	const double denominator = std::pow(lambdaUm, 5.0) * (std::exp(exponent) - 1.0);
+	return denominator > 0.0 ? c1 / denominator : 0.0;
 }
 
 } // namespace
@@ -289,10 +288,12 @@ void IRWeatherEffects::resetDefaults()
 			profile.cloudEnable = true;
 			profile.cloudCoverage = i == 5 ? 0.9 : 0.5;
 			profile.cloudOpacity = i == 5 ? 0.7 : 0.45;
+			profile.cloudOpticalDepth = i == 5 ? 1.8 : 1.0;
 			profile.sunDirectScale = i == 5 ? 0.18 : 0.55;
 			profile.skyDiffuseScale = i == 5 ? 0.68 : 0.90;
 			profile.targetContrastScale = i == 5 ? 0.70 : 0.90;
 			profile.cloudTexture = i == 5 ? "cloud_overcast" : "cloud_scattered";
+			profile.cloudMaskChannel = i == 5 ? "luminance" : "alpha";
 		}
 		else if (i == 2)
 		{
@@ -309,6 +310,8 @@ void IRWeatherEffects::resetDefaults()
 			profile.skyDiffuseScale = 0.62;
 			profile.targetContrastScale = 0.72;
 			profile.cloudTexture = "cloud_storm";
+			profile.cloudOpticalDepth = 2.0;
+			profile.cloudMaskChannel = "luminance";
 		}
 		else if (i == 3)
 		{
@@ -325,6 +328,8 @@ void IRWeatherEffects::resetDefaults()
 			profile.skyDiffuseScale = 0.78;
 			profile.targetContrastScale = 0.82;
 			profile.cloudTexture = "cloud_overcast";
+			profile.cloudOpticalDepth = 1.6;
+			profile.cloudMaskChannel = "luminance";
 		}
 		else if (i == 4)
 		{
@@ -411,7 +416,9 @@ bool IRWeatherEffects::loadProfileFile(const std::string& path)
 		AssignNumber(objectText, "cloudCoverage", profile.cloudCoverage);
 		AssignNumber(objectText, "cloudOpacity", profile.cloudOpacity);
 		AssignNumber(objectText, "cloudTemperatureK", profile.cloudTemperatureK);
+		AssignNumber(objectText, "cloudOpticalDepth", profile.cloudOpticalDepth);
 		AssignString(objectText, "cloudTexture", profile.cloudTexture);
+		AssignString(objectText, "cloudMaskChannel", profile.cloudMaskChannel);
 		AssignBool(objectText, "fogEnable", profile.fogEnable);
 		AssignNumber(objectText, "fogDensity", profile.fogDensity);
 		AssignNumber(objectText, "fogColorGray", profile.fogColorGray);
@@ -496,8 +503,12 @@ IRStage7WeatherState IRWeatherEffects::evaluate(const IRStage7WeatherRuntimeInpu
 	state.cloudOpacity = state.cloudEnable ? Clamp(profile.cloudOpacity, 0.0, 1.0) : 0.0;
 	state.cloudTemperatureK = Clamp(profile.cloudTemperatureK, 180.0, 330.0);
 	state.cloudGray = DefaultCloudGray(band, state.cloudTemperatureK, profile.skyDiffuseScale);
+	state.cloudBackgroundGray = 0.5;
+	state.cloudOpticalDepth = state.cloudEnable ? Clamp(profile.cloudOpticalDepth, 0.0, 8.0) : 0.0;
 	state.cloudTextureKey = profile.cloudTexture;
 	state.cloudTexturePath = texturePathForKey(profile.cloudTexture);
+	state.cloudMaskChannel = profile.cloudMaskChannel;
+	state.cloudMaskUsesAlpha = profile.cloudMaskChannel != "luminance";
 	state.cloudTextureFound = !state.cloudTexturePath.empty() && FileExists(state.cloudTexturePath);
 	state.fogEnable = enableWeatherEffects && enableFog && profile.fogEnable;
 	const double visibilityFog = Clamp((12000.0 - state.visibilityM) / 12000.0, 0.0, 0.80);
@@ -539,4 +550,37 @@ const char* IRWeatherEffects::precipitationName(IRStage7PrecipitationType type)
 int IRWeatherEffects::precipitationCode(IRStage7PrecipitationType type)
 {
 	return static_cast<int>(type);
+}
+
+double IRWeatherEffects::cloudEmissionGray(IRBand band,
+	double cloudTemperatureK,
+	double backgroundGray,
+	double skyDiffuseScale)
+{
+	const double background = Clamp(backgroundGray, 0.0, 1.0);
+	const double diffuse = Clamp(skyDiffuseScale, 0.0, 1.5);
+	const double temperature = Clamp(cloudTemperatureK, 180.0, 330.0);
+	switch (band)
+	{
+	case IRBand::Visible:
+		return Clamp(background + 0.10 * diffuse, 0.18, 0.88);
+	case IRBand::NearInfrared:
+		return Clamp(background + 0.06 * diffuse, 0.16, 0.84);
+	case IRBand::ShortWaveInfrared:
+		return Clamp(background * 0.82 + 0.10 * diffuse, 0.14, 0.76);
+	case IRBand::MidWaveInfrared:
+	{
+		const double ratio = PlanckRadiance(4.0, temperature) / std::max(1.0e-12, PlanckRadiance(4.0, 300.0));
+		const double thermalGray = 0.16 + 0.48 * std::sqrt(Clamp(ratio, 0.0, 1.5));
+		return Clamp(thermalGray * 0.82 + background * 0.18, 0.12, 0.72);
+	}
+	case IRBand::LongWaveInfrared:
+	{
+		const double ratio = PlanckRadiance(10.0, temperature) / std::max(1.0e-12, PlanckRadiance(10.0, 300.0));
+		const double thermalGray = 0.12 + 0.66 * Clamp(ratio, 0.0, 1.25);
+		return Clamp(thermalGray * 0.90 + background * 0.10, 0.14, 0.82);
+	}
+	default:
+		return background;
+	}
 }

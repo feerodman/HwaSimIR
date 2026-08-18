@@ -454,6 +454,13 @@ private:
 	int m_stage7PrecipitationMode = 1; // 0 None, 1 ScreenOverlay, 2 Cards
 	std::string m_stage7PrecipitationModeName = "ScreenOverlay";
 	int m_stage7CloudLayerMaxCards = 0;
+	int m_stage7CloudLayerCount = 2;
+	double m_stage7CloudUpdateHz = 10.0;
+	double m_stage7CloudScale = 1.25;
+	double m_stage7CloudBaseDistanceM = 1200.0;
+	double m_stage7CloudLayerSpacingM = 350.0;
+	double m_stage7CloudUvSpeedScale = 1.0;
+	double m_stage7CloudOpticalDepthScale = 1.0;
 	int m_stage7PrecipitationMaxParticles = 0;
 	std::string m_stage7WeatherProfilePath = "Config/Weather/weather_profiles.json";
 	std::string m_stage7WeatherTextureConfigPath = "Config/Weather/weather_textures.json";
@@ -469,6 +476,7 @@ private:
 	PT(Texture) m_stage7CloudTexture;
 	PT(Texture) m_stage7RainTexture;
 	PT(Texture) m_stage7SnowTexture;
+	std::map<std::string, PT(Texture)> m_stage7WeatherTextureCache;
 	std::vector<NodePath> m_stage7PrecipitationNodes;
 
 	void InitInfraredShader();                              // 初始化着色器代码
@@ -508,6 +516,7 @@ private:
 	void ApplyStage7WeatherInputs(NodePath& node, const IRStage7WeatherState& weatherState);
 	int RefreshStage7WeatherTextureCache(const IRStage7WeatherState& weatherState);
 	void UpdateStage7WeatherNodes(const IRStage7WeatherState& weatherState, double currentTime);
+	void UpdateStage7CloudAnimationTime(double currentTime);
 	void LogStage7Weather(const IRStage7WeatherState& weatherState, const char* reason, bool forceLog);
 	void LogStage7Perf(const IRStage7WeatherState& weatherState, int weatherNodeCount, int cloudNodeCount, int precipitationNodeCount, int textureLoadCountThisFrame, double updateWeatherNodesMs, double totalWeatherMs);
 	void CreateEnginePlumeForTarget(TargetPlatformData& targetPlat);

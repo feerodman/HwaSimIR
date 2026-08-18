@@ -23,7 +23,9 @@ struct IRStage7WeatherProfile
 	double cloudCoverage = 0.0;
 	double cloudOpacity = 0.0;
 	double cloudTemperatureK = 255.0;
+	double cloudOpticalDepth = 1.0;
 	std::string cloudTexture = "cloud_few";
+	std::string cloudMaskChannel = "alpha";
 	bool fogEnable = false;
 	double fogDensity = 0.0;
 	double fogColorGray = 0.45;
@@ -71,8 +73,12 @@ struct IRStage7WeatherState
 	double cloudOpacity = 0.0;
 	double cloudTemperatureK = 255.0;
 	double cloudGray = 0.5;
+	double cloudBackgroundGray = 0.5;
+	double cloudOpticalDepth = 0.0;
 	std::string cloudTextureKey = "cloud_few";
 	std::string cloudTexturePath;
+	std::string cloudMaskChannel = "alpha";
+	bool cloudMaskUsesAlpha = true;
 	bool cloudTextureFound = false;
 	bool fogEnable = false;
 	double fogDensity = 0.0;
@@ -113,6 +119,10 @@ public:
 
 	static const char* precipitationName(IRStage7PrecipitationType type);
 	static int precipitationCode(IRStage7PrecipitationType type);
+	static double cloudEmissionGray(IRBand band,
+		double cloudTemperatureK,
+		double backgroundGray,
+		double skyDiffuseScale);
 
 private:
 	void resetDefaults();

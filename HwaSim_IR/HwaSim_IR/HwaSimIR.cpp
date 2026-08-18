@@ -3714,6 +3714,8 @@ void HwaSimIR::ApplyStage7WeatherInputs(NodePath& node, const IRStage7WeatherSta
 	SetShaderInputCached(node, "u_stage7_cloud_opacity", LVecBase2f(static_cast<float>(weatherState.cloudOpacity), 0.0f));
 	SetShaderInputCached(node, "u_stage7_cloud_temperature_K", LVecBase2f(static_cast<float>(weatherState.cloudTemperatureK), 0.0f));
 	SetShaderInputCached(node, "u_stage7_cloud_gray", LVecBase2f(static_cast<float>(weatherState.cloudGray), 0.0f));
+	SetShaderInputCached(node, "u_stage7_cloud_optical_depth", LVecBase2f(static_cast<float>(weatherState.cloudOpticalDepth * m_stage7CloudOpticalDepthScale), 0.0f));
+	SetShaderInputCached(node, "u_stage7_cloud_mask_channel", LVecBase2i(weatherState.cloudMaskUsesAlpha ? 1 : 0, 0));
 	SetShaderInputCached(node, "u_stage7_fog_density", LVecBase2f(static_cast<float>(weatherState.fogDensity), 0.0f));
 	SetShaderInputCached(node, "u_stage7_fog_gray", LVecBase2f(static_cast<float>(weatherState.fogGray), 0.0f));
 	SetShaderInputCached(node, "u_stage7_precipitation_type", LVecBase2i(IRWeatherEffects::precipitationCode(weatherState.precipitationType), 0));
@@ -3755,25 +3757,33 @@ void HwaSimIR::InitStage7WeatherScene()
 		return;
 	}
 
-	// Stage7C.1: default cloud rendering is a sky-dome shader perturbation.
-	// Camera-attached cloud cards are intentionally not created on the main path.
-	const int cloudCardCount = 0;
+	// W1：固定数量的相机参考云层。节点只在初始化时创建，天气切换只改变纹理、显隐和 uniform。
+	const int cloudCardCount = m_stage7CloudLayerEnabled
+		? std::max(1, std::min(2, m_stage7CloudLayerCount))
+		: 0;
+	const double horizontalFovDeg = std::max(0.1, m_sensorDisplayConfig.horizontalFovDeg);
+	const double verticalFovDeg = std::max(0.1, m_sensorDisplayConfig.verticalFovDeg);
 	for (int i = 0; i < cloudCardCount; ++i)
 	{
 		CardMaker cloudMaker("Stage7_CloudLayer_Card");
-		cloudMaker.set_frame(-1.0f, 1.0f, -0.35f, 0.35f);
+		cloudMaker.set_frame(-1.0f, 1.0f, -1.0f, 1.0f);
 		NodePath cloud = m_cameraNode.attach_new_node(cloudMaker.generate());
-		const float x = -900.0f + static_cast<float>((i * 173) % 1800);
-		const float y = 1800.0f + static_cast<float>((i % 5) * 180);
-		const float z = 240.0f + static_cast<float>((i * 97) % 520);
-		const float scale = 180.0f + static_cast<float>((i % 4) * 55);
-		cloud.set_pos(x, y, z);
-		cloud.set_scale(scale * 2.1f, 1.0f, scale);
+		const double distanceM = m_stage7CloudBaseDistanceM + static_cast<double>(i) * m_stage7CloudLayerSpacingM;
+		const double halfWidthM = distanceM * std::tan(horizontalFovDeg * 3.14159265358979323846 / 360.0) * m_stage7CloudScale;
+		const double halfHeightM = distanceM * std::tan(verticalFovDeg * 3.14159265358979323846 / 360.0) * m_stage7CloudScale;
+		cloud.set_pos(0.0f, static_cast<float>(distanceM), 0.0f);
+		cloud.set_scale(static_cast<float>(halfWidthM), 1.0f, static_cast<float>(halfHeightM));
 		cloud.set_transparency(TransparencyAttrib::M_alpha);
 		cloud.set_depth_write(false);
-		cloud.set_bin("transparent", 10);
+		cloud.set_depth_test(false);
+		cloud.set_two_sided(true);
+		cloud.set_bin("transparent", 30 + i);
 		ApplyInfraredShader(cloud, false);
 		cloud.set_shader_input("u_object_kind", LVecBase2i(2, 0));
+		cloud.set_shader_input("u_cloud_uv_scale", i == 0 ? LVecBase2f(1.35f, 1.05f) : LVecBase2f(2.10f, 1.65f));
+		cloud.set_shader_input("u_cloud_uv_speed", i == 0 ? LVecBase2f(0.0030f, 0.0014f) : LVecBase2f(-0.0016f, 0.0022f));
+		cloud.set_shader_input("u_cloud_uv_offset", i == 0 ? LVecBase2f(0.0f, 0.0f) : LVecBase2f(0.37f, 0.19f));
+		cloud.set_shader_input("u_cloud_layer_weight", LVecBase2f(i == 0 ? 0.72f : 0.46f, 0.0f));
 		cloud.hide();
 		m_cloudNodes.push_back(cloud);
 	}
@@ -3829,12 +3839,28 @@ int HwaSimIR::RefreshStage7WeatherTextureCache(const IRStage7WeatherState& weath
 			m_stage7CloudTexture = nullptr;
 			if (!resolvedCloudTexturePath.empty() && FileExists(resolvedCloudTexturePath))
 			{
-				m_stage7CloudTexture = TexturePool::load_texture(resolvedCloudTexturePath);
-				++loadCount;
+				std::map<std::string, PT(Texture)>::const_iterator cached = m_stage7WeatherTextureCache.find(resolvedCloudTexturePath);
+				if (cached != m_stage7WeatherTextureCache.end())
+				{
+					m_stage7CloudTexture = cached->second;
+				}
+				else
+				{
+					m_stage7CloudTexture = TexturePool::load_texture(resolvedCloudTexturePath);
+					m_stage7WeatherTextureCache[resolvedCloudTexturePath] = m_stage7CloudTexture;
+					++loadCount;
+					std::cout << "[WeatherTextureLoaded]"
+						<< " key=" << weatherState.cloudTextureKey
+						<< " path=" << resolvedCloudTexturePath
+						<< " success=" << (m_stage7CloudTexture ? "1" : "0")
+						<< std::endl;
+				}
 			}
 		}
 		if (m_stage7CloudTexture)
 		{
+			m_stage7CloudTexture->set_wrap_u(SamplerState::WM_repeat);
+			m_stage7CloudTexture->set_wrap_v(SamplerState::WM_repeat);
 			for (size_t i = 0; i < m_cloudNodes.size(); ++i)
 			{
 				if (!m_cloudNodes[i].is_empty())
@@ -3909,9 +3935,25 @@ void HwaSimIR::UpdateStage7WeatherNodes(const IRStage7WeatherState& weatherState
 		{
 			m_cloudNodes[i].hide();
 		}
+		const double horizontalFovDeg = std::max(0.1, m_sensorDisplayConfig.horizontalFovDeg);
+		const double verticalFovDeg = std::max(0.1, m_sensorDisplayConfig.verticalFovDeg);
+		const double distanceM = m_stage7CloudBaseDistanceM + static_cast<double>(i) * m_stage7CloudLayerSpacingM;
+		const double halfWidthM = distanceM * std::tan(horizontalFovDeg * 3.14159265358979323846 / 360.0) * m_stage7CloudScale;
+		const double halfHeightM = distanceM * std::tan(verticalFovDeg * 3.14159265358979323846 / 360.0) * m_stage7CloudScale;
+		m_cloudNodes[i].set_pos(0.0f, static_cast<float>(distanceM), 0.0f);
+		m_cloudNodes[i].set_scale(static_cast<float>(halfWidthM), 1.0f, static_cast<float>(halfHeightM));
 		ApplyStage7WeatherInputs(m_cloudNodes[i], weatherState);
 		SetShaderInputCached(m_cloudNodes[i], "u_object_kind", LVecBase2i(2, 0));
 		SetShaderInputCached(m_cloudNodes[i], "u_cloud_density", LVecBase2f(static_cast<float>(weatherState.cloudCoverage), 0.0f));
+		const float uvSpeedScale = static_cast<float>(m_stage7CloudUvSpeedScale * (1.0 + weatherState.windV * 0.015));
+		const LVecBase2f uvScale = i == 0 ? LVecBase2f(1.35f, 1.05f) : LVecBase2f(2.10f, 1.65f);
+		const LVecBase2f uvSpeed = i == 0
+			? LVecBase2f(0.0030f * uvSpeedScale, 0.0014f * uvSpeedScale)
+			: LVecBase2f(-0.0016f * uvSpeedScale, 0.0022f * uvSpeedScale);
+		SetShaderInputCached(m_cloudNodes[i], "u_cloud_uv_scale", uvScale);
+		SetShaderInputCached(m_cloudNodes[i], "u_cloud_uv_speed", uvSpeed);
+		SetShaderInputCached(m_cloudNodes[i], "u_cloud_uv_offset", i == 0 ? LVecBase2f(0.0f, 0.0f) : LVecBase2f(0.37f, 0.19f));
+		SetShaderInputCached(m_cloudNodes[i], "u_cloud_layer_weight", LVecBase2f(i == 0 ? 0.72f : 0.46f, 0.0f));
 		SetShaderInputCached(m_cloudNodes[i], "u_time", LVecBase2f(static_cast<float>(currentTime), 0.0f));
 	}
 
@@ -3954,6 +3996,21 @@ void HwaSimIR::UpdateStage7WeatherNodes(const IRStage7WeatherState& weatherState
 	LogStage7Perf(weatherState, cloudNodeCount + precipitationNodeCount, cloudNodeCount, precipitationNodeCount, textureLoadCountThisFrame, updateWeatherNodesMs, totalWeatherMs);
 }
 
+void HwaSimIR::UpdateStage7CloudAnimationTime(double currentTime)
+{
+	if (!m_stage7CloudLayerEnabled)
+	{
+		return;
+	}
+	for (size_t i = 0; i < m_cloudNodes.size(); ++i)
+	{
+		if (!m_cloudNodes[i].is_empty() && !m_cloudNodes[i].is_hidden())
+		{
+			SetShaderInputCached(m_cloudNodes[i], "u_time", LVecBase2f(static_cast<float>(currentTime), 0.0f));
+		}
+	}
+}
+
 void HwaSimIR::LogStage7Perf(const IRStage7WeatherState& weatherState, int weatherNodeCount, int cloudNodeCount, int precipitationNodeCount, int textureLoadCountThisFrame, double updateWeatherNodesMs, double totalWeatherMs)
 {
 	std::ostringstream state;
@@ -3980,6 +4037,7 @@ void HwaSimIR::LogStage7Perf(const IRStage7WeatherState& weatherState, int weath
 		<< " precipitationNodeCount=" << precipitationNodeCount
 		<< " textureLoadCountThisFrame=" << textureLoadCountThisFrame
 		<< " updateWeatherNodesMs=" << updateWeatherNodesMs
+		<< " weatherUpdateMs=" << totalWeatherMs
 		<< " totalWeatherMs=" << totalWeatherMs
 		<< " precipitationMode=" << m_stage7PrecipitationModeName
 		<< std::endl;
@@ -4289,6 +4347,11 @@ void HwaSimIR::LogStage7Weather(const IRStage7WeatherState& weatherState, const 
 	state << weatherState.envSky
 		<< ":" << weatherState.weatherName
 		<< ":" << static_cast<int>(weatherState.cloudCoverage * 1000.0)
+		<< ":" << static_cast<int>(weatherState.cloudOpacity * 1000.0)
+		<< ":" << static_cast<int>(weatherState.cloudTemperatureK * 10.0)
+		<< ":" << static_cast<int>(weatherState.cloudOpticalDepth * 1000.0)
+		<< ":" << weatherState.cloudTextureKey
+		<< ":" << IRBandName(BuildRuntimeEnvironment().band)
 		<< ":" << static_cast<int>(weatherState.fogDensity * 1000.0)
 		<< ":" << IRWeatherEffects::precipitationCode(weatherState.precipitationType)
 		<< ":" << static_cast<int>(weatherState.precipitationDensity * 1000.0);
@@ -4315,19 +4378,24 @@ void HwaSimIR::LogStage7Weather(const IRStage7WeatherState& weatherState, const 
 		<< " targetContrastScale=" << weatherState.targetContrastScale
 		<< " source=" << weatherState.source
 		<< std::endl;
-	std::cout << "[Stage7 CloudLayer]"
+	std::cout << "[WeatherCloud]"
+		<< " envSky=" << weatherState.envSky
 		<< " enabled=" << (weatherState.cloudEnable ? "1" : "0")
-		<< " texture=" << (weatherState.cloudTexturePath.empty() ? "procedural" : weatherState.cloudTexturePath)
+		<< " texture=" << (weatherState.cloudTexturePath.empty() ? "missing" : weatherState.cloudTexturePath)
 		<< " textureFound=" << (weatherState.cloudTextureFound ? "1" : "0")
+		<< " layers=" << m_cloudNodes.size()
 		<< " coverage=" << weatherState.cloudCoverage
 		<< " opacity=" << weatherState.cloudOpacity
-		<< " temperatureK=" << weatherState.cloudTemperatureK
+		<< " cloudTempK=" << weatherState.cloudTemperatureK
 		<< " band=" << IRBandName(BuildRuntimeEnvironment().band)
+		<< " opticalDepth=" << weatherState.cloudOpticalDepth * m_stage7CloudOpticalDepthScale
+		<< " maskChannel=" << weatherState.cloudMaskChannel
+		<< " backgroundGray=" << weatherState.cloudBackgroundGray
 		<< " cloudGray=" << weatherState.cloudGray
 		<< std::endl;
 	if (weatherState.cloudEnable && !weatherState.cloudTextureFound)
 	{
-		std::cout << "[Stage7 CloudLayer][WARN] STAGE7_WEATHER_TEXTURE_FALLBACK"
+		std::cout << "[WeatherCloud][WARN] STAGE7_WEATHER_TEXTURE_FALLBACK"
 			<< " textureKey=" << weatherState.cloudTextureKey
 			<< " path=" << weatherState.cloudTexturePath
 			<< std::endl;
@@ -4535,6 +4603,12 @@ void HwaSimIR::UpdateStage7SkyHorizon(const IRRuntimeEnvironment& environment, c
 		skyGray = 0.65;
 		groundGray = 0.35;
 	}
+	m_stage7WeatherState.cloudBackgroundGray = skyGray;
+	m_stage7WeatherState.cloudGray = IRWeatherEffects::cloudEmissionGray(
+		environment.band,
+		m_stage7WeatherState.cloudTemperatureK,
+		skyGray,
+		m_stage7WeatherState.skyDiffuseScale);
 
 	double farClipM = m_sensorDisplayConfigReady ? m_sensorDisplayConfig.farClipM : 50000.0;
 	if (!std::isfinite(farClipM) || farClipM <= 1.0)
@@ -8616,6 +8690,13 @@ void HwaSimIR::InitInfraredSimulation()
 	std::string stage7PrecipSource;
 	std::string stage7PrecipModeSource;
 	std::string stage7CloudCardsSource;
+	std::string stage7CloudCountSource;
+	std::string stage7CloudUpdateHzSource;
+	std::string stage7CloudScaleSource;
+	std::string stage7CloudBaseDistanceSource;
+	std::string stage7CloudSpacingSource;
+	std::string stage7CloudUvSpeedSource;
+	std::string stage7CloudOpticalDepthSource;
 	std::string stage7PrecipParticlesSource;
 	std::string stage7UdpSource;
 	std::string plumeEnableSource;
@@ -8653,6 +8734,23 @@ void HwaSimIR::InitInfraredSimulation()
 	m_stage7PrecipitationMode = ParseStage7PrecipitationMode(m_runtimeConfig.getString("Stage7Weather", "Stage7PrecipitationMode", "Stage7PrecipitationMode", "ScreenOverlay", &stage7PrecipModeSource));
 	m_stage7PrecipitationModeName = Stage7PrecipitationModeName(m_stage7PrecipitationMode);
 	m_stage7CloudLayerMaxCards = std::max(0, std::min(64, m_runtimeConfig.getInt("Stage7Weather", "CloudLayerMaxCards", "Stage7CloudLayerMaxCards", 0, &stage7CloudCardsSource)));
+	m_stage7CloudLayerCount = std::max(1, std::min(2, m_runtimeConfig.getInt("Stage7Weather", "CloudLayerCount", "Stage7CloudLayerCount", m_stage7CloudLayerMaxCards > 0 ? m_stage7CloudLayerMaxCards : 2, &stage7CloudCountSource)));
+	m_stage7CloudUpdateHz = m_runtimeConfig.getDouble("Stage7Weather", "CloudUpdateHz", "Stage7CloudUpdateHz", 10.0, &stage7CloudUpdateHzSource);
+	m_stage7CloudScale = m_runtimeConfig.getDouble("Stage7Weather", "CloudScale", "Stage7CloudScale", 1.25, &stage7CloudScaleSource);
+	m_stage7CloudBaseDistanceM = m_runtimeConfig.getDouble("Stage7Weather", "CloudBaseDistanceM", "Stage7CloudBaseDistanceM", 1200.0, &stage7CloudBaseDistanceSource);
+	m_stage7CloudLayerSpacingM = m_runtimeConfig.getDouble("Stage7Weather", "CloudLayerSpacingM", "Stage7CloudLayerSpacingM", 350.0, &stage7CloudSpacingSource);
+	m_stage7CloudUvSpeedScale = m_runtimeConfig.getDouble("Stage7Weather", "CloudUvSpeedScale", "Stage7CloudUvSpeedScale", 1.0, &stage7CloudUvSpeedSource);
+	m_stage7CloudOpticalDepthScale = m_runtimeConfig.getDouble("Stage7Weather", "CloudOpticalDepthScale", "Stage7CloudOpticalDepthScale", 1.0, &stage7CloudOpticalDepthSource);
+	if (!std::isfinite(m_stage7CloudUpdateHz) || m_stage7CloudUpdateHz <= 0.0) m_stage7CloudUpdateHz = 10.0;
+	if (!std::isfinite(m_stage7CloudScale) || m_stage7CloudScale < 1.0) m_stage7CloudScale = 1.25;
+	if (!std::isfinite(m_stage7CloudBaseDistanceM) || m_stage7CloudBaseDistanceM < 10.0) m_stage7CloudBaseDistanceM = 1200.0;
+	if (!std::isfinite(m_stage7CloudLayerSpacingM) || m_stage7CloudLayerSpacingM < 1.0) m_stage7CloudLayerSpacingM = 350.0;
+	if (!std::isfinite(m_stage7CloudUvSpeedScale) || m_stage7CloudUvSpeedScale < 0.0) m_stage7CloudUvSpeedScale = 1.0;
+	if (!std::isfinite(m_stage7CloudOpticalDepthScale) || m_stage7CloudOpticalDepthScale < 0.0) m_stage7CloudOpticalDepthScale = 1.0;
+	m_stage7CloudUpdateHz = std::max(1.0, std::min(60.0, m_stage7CloudUpdateHz));
+	m_stage7CloudScale = std::min(4.0, m_stage7CloudScale);
+	m_stage7CloudUvSpeedScale = std::min(10.0, m_stage7CloudUvSpeedScale);
+	m_stage7CloudOpticalDepthScale = std::min(8.0, m_stage7CloudOpticalDepthScale);
 	m_stage7PrecipitationMaxParticles = std::max(0, std::min(512, m_runtimeConfig.getInt("Stage7Weather", "PrecipitationMaxParticles", "Stage7PrecipitationMaxParticles", 0, &stage7PrecipParticlesSource)));
 	m_stage7UseWeatherUdpInput = m_runtimeConfig.getBool("Stage7Weather", "UseWeatherUdpInput", "Stage7UseWeatherUdpInput", true, &stage7UdpSource);
 	m_stage5PlumeOptions.enableEnginePlume = m_runtimeConfig.getBool("Stage5Plume", "EnableEnginePlume", "EnableEnginePlume", true, &plumeEnableSource);
@@ -8944,11 +9042,21 @@ void HwaSimIR::InitInfraredSimulation()
 		<< " enablePrecipitation=" << (m_stage7PrecipitationEnabled ? "1" : "0")
 		<< " precipitationMode=" << m_stage7PrecipitationModeName
 		<< " cloudLayerMaxCards=" << m_stage7CloudLayerMaxCards
+		<< " cloudLayerCount=" << m_stage7CloudLayerCount
+		<< " cloudUpdateHz=" << m_stage7CloudUpdateHz
+		<< " cloudScale=" << m_stage7CloudScale
+		<< " cloudBaseDistanceM=" << m_stage7CloudBaseDistanceM
+		<< " cloudLayerSpacingM=" << m_stage7CloudLayerSpacingM
+		<< " cloudUvSpeedScale=" << m_stage7CloudUvSpeedScale
+		<< " cloudOpticalDepthScale=" << m_stage7CloudOpticalDepthScale
 		<< " precipitationMaxParticles=" << m_stage7PrecipitationMaxParticles
 		<< " useWeatherUdpInput=" << (m_stage7UseWeatherUdpInput ? "1" : "0")
 		<< " source=" << stage7WeatherEnableSource << "/" << stage7WeatherProfileSource << "/" << stage7WeatherTextureSource
 		<< "/" << stage7CloudSource << "/" << stage7FogSource << "/" << stage7PrecipSource
-		<< "/" << stage7PrecipModeSource << "/" << stage7CloudCardsSource << "/" << stage7PrecipParticlesSource << "/" << stage7UdpSource
+		<< "/" << stage7PrecipModeSource << "/" << stage7CloudCardsSource << "/" << stage7CloudCountSource
+		<< "/" << stage7CloudUpdateHzSource << "/" << stage7CloudScaleSource << "/" << stage7CloudBaseDistanceSource
+		<< "/" << stage7CloudSpacingSource << "/" << stage7CloudUvSpeedSource << "/" << stage7CloudOpticalDepthSource
+		<< "/" << stage7PrecipParticlesSource << "/" << stage7UdpSource
 		<< std::endl;
 	{
 		std::ostringstream sourceSummary;
@@ -9136,25 +9244,11 @@ void HwaSimIR::InitSkyAndCloudScene()
 	m_skyNode.set_bin("background", 0);
 	ApplyInfraredShader(m_skyNode, true);
 
-	for (int i = 0; i < 18; ++i)
-	{
-		CardMaker cloudMaker("IR_Cloud_Particle");
-		cloudMaker.set_frame(-1.0f, 1.0f, -0.45f, 0.45f);
-		NodePath cloud = m_cameraNode.attach_new_node(cloudMaker.generate());
-		float x = -900.0f + static_cast<float>((i * 137) % 1800);
-		float z = 180.0f + static_cast<float>((i * 79) % 620);
-		float y = 1200.0f + static_cast<float>((i % 5) * 120);
-		float scale = 160.0f + static_cast<float>((i % 4) * 45);
-		cloud.set_pos(x, y, z);
-		cloud.set_scale(scale * 1.9f, 1.0f, scale);
-		cloud.set_transparency(TransparencyAttrib::M_alpha);
-		cloud.set_depth_write(false);
-		cloud.set_bin("transparent", 10);
-		ApplyInfraredShader(cloud, false);
-		m_cloudNodes.push_back(cloud);
-	}
-
-	std::cout << "天空背景与粒子云初始化完成：cloud cards=" << m_cloudNodes.size() << std::endl;
+	IRRuntimeEnvironment environment = BuildRuntimeEnvironment();
+	InitStage7WeatherScene();
+	UpdateStage7SkyHorizon(environment, "init-flat-sky", true);
+	UpdateStage7WeatherNodes(m_stage7WeatherState, ClockObject::get_global_clock()->get_frame_time());
+	std::cout << "天空背景与W1固定纹理云层初始化完成：cloud cards=" << m_cloudNodes.size() << std::endl;
 }
 
 // 初始化红外仿真着色器
@@ -9259,6 +9353,12 @@ void HwaSimIR::InitInfraredShader() {
     uniform float u_stage7_cloud_opacity;
     uniform float u_stage7_cloud_temperature_K;
     uniform float u_stage7_cloud_gray;
+    uniform float u_stage7_cloud_optical_depth;
+    uniform int u_stage7_cloud_mask_channel; // 0 luminance, 1 alpha
+    uniform vec2 u_cloud_uv_scale;
+    uniform vec2 u_cloud_uv_speed;
+    uniform vec2 u_cloud_uv_offset;
+    uniform float u_cloud_layer_weight;
     uniform float u_stage7_fog_density;
     uniform float u_stage7_fog_gray;
     uniform int u_stage7_precipitation_type; // 0 none, 1 rain, 2 snow
@@ -9362,13 +9462,6 @@ void HwaSimIR::InitInfraredShader() {
                 } else if (u_stage7_background_kind == 1) {
                     float vertical = clamp(v_local_pos.z * 0.5 + 0.5, 0.0, 1.0);
                     stage7_intensity = clamp(u_stage7_sky_gray + vertical * 0.035, 0.0, 1.0);
-                    if (u_stage7_cloud_coverage > 0.01 && u_stage7_cloud_opacity > 0.01) {
-                        float cloud_noise = 0.5 + 0.25 * sin(v_local_pos.x * 5.7 + u_time * 0.04)
-                                                  + 0.25 * cos(v_local_pos.y * 4.3 - u_time * 0.03);
-                        float cloud_mask = smoothstep(0.42, 0.78, cloud_noise) *
-                                           clamp(u_stage7_cloud_coverage * u_stage7_cloud_opacity, 0.0, 1.0) * 0.55;
-                        stage7_intensity = mix(stage7_intensity, clamp(u_stage7_cloud_gray, 0.0, 1.0), cloud_mask);
-                    }
                 }
                 stage7_intensity = ApplyStage7WeatherDisplay(stage7_intensity);
                 gl_FragColor = vec4(stage7_intensity, stage7_intensity, stage7_intensity, 1.0);
@@ -9382,15 +9475,25 @@ void HwaSimIR::InitInfraredShader() {
         }
 
         if (u_object_kind == 2) {
-            float edge = 1.0 - smoothstep(0.45, 1.0, length(v_local_pos.xz));
-            float texture_density = clamp(max(texColor.a, dot(texColor.rgb, vec3(0.299, 0.587, 0.114))), 0.0, 1.0);
-            edge *= mix(0.55, 1.0, texture_density);
-            float cloud_noise = 0.65 + 0.20 * sin(v_local_pos.x * 8.0 + u_time * 0.2)
-                                      + 0.15 * cos(v_local_pos.y * 11.0);
-            float cloud_base = clamp((u_ir_radiance + u_sky_radiance + 0.12) * cloud_noise, 0.0, 1.0);
-            float cloud_intensity = mix(cloud_base, clamp(u_stage7_cloud_gray, 0.0, 1.0), 0.70);
+            vec2 cloud_uv = fract(texcoord * u_cloud_uv_scale + u_cloud_uv_offset + u_cloud_uv_speed * u_time);
+            vec4 cloud_texel = texture2D(p3d_Texture0, cloud_uv);
+            float alpha_mask = clamp(cloud_texel.a, 0.0, 1.0);
+            float luma_mask = clamp(dot(cloud_texel.rgb, vec3(0.299, 0.587, 0.114)), 0.0, 1.0);
+            float texture_mask = (u_stage7_cloud_mask_channel == 1) ? alpha_mask : luma_mask;
+            float coverage_threshold = clamp(0.75 - u_stage7_cloud_coverage * 0.65, 0.05, 0.72);
+            float cloud_mask = smoothstep(coverage_threshold, min(0.98, coverage_threshold + 0.20), texture_mask);
+            float extinction = max(0.0, u_stage7_cloud_optical_depth)
+                             * clamp(u_stage7_cloud_opacity, 0.0, 1.0)
+                             * clamp(u_cloud_layer_weight, 0.0, 1.0)
+                             * cloud_mask;
+            float tau_cloud = exp(-extinction);
+            float cloud_intensity = clamp(u_stage7_cloud_gray, 0.0, 1.0);
+            if (u_ir_band_class == 0) {
+                cloud_intensity = clamp(cloud_intensity + (texture_mask - 0.5) * 0.08, 0.0, 1.0);
+            }
             cloud_intensity = ApplyStage7WeatherDisplay(cloud_intensity);
-            float cloud_alpha = edge * clamp(max(u_cloud_density, u_stage7_cloud_coverage) * u_stage7_cloud_opacity, 0.0, 0.90);
+            // Standard alpha blending yields Lout=tau*Lbackground+(1-tau)*Lcloud.
+            float cloud_alpha = clamp(1.0 - tau_cloud, 0.0, 0.94);
             gl_FragColor = vec4(cloud_intensity, cloud_intensity, cloud_intensity, cloud_alpha);
             return;
         }
@@ -9675,6 +9778,12 @@ void HwaSimIR::ApplyInfraredShader(NodePath& node, bool isBackground) {
 	node.set_shader_input("u_stage7_cloud_opacity", LVecBase2f(0.0f, 0.0f));
 	node.set_shader_input("u_stage7_cloud_temperature_K", LVecBase2f(255.0f, 0.0f));
 	node.set_shader_input("u_stage7_cloud_gray", LVecBase2f(0.5f, 0.0f));
+	node.set_shader_input("u_stage7_cloud_optical_depth", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage7_cloud_mask_channel", LVecBase2i(1, 0));
+	node.set_shader_input("u_cloud_uv_scale", LVecBase2f(1.0f, 1.0f));
+	node.set_shader_input("u_cloud_uv_speed", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_cloud_uv_offset", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_cloud_layer_weight", LVecBase2f(1.0f, 0.0f));
 	node.set_shader_input("u_stage7_fog_density", LVecBase2f(0.0f, 0.0f));
 	node.set_shader_input("u_stage7_fog_gray", LVecBase2f(0.45f, 0.0f));
 	node.set_shader_input("u_stage7_precipitation_type", LVecBase2i(0, 0));
@@ -11710,7 +11819,7 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 	if (hasStage7Background)
 	{
 		const std::string stage7Key = BuildStage7UpdateKey(environment);
-		const double stage7IntervalSec = 1.0 / std::max(1.0, m_stage7UpdateHz);
+		const double stage7IntervalSec = 1.0 / std::max(1.0, std::max(m_stage7UpdateHz, m_stage7CloudUpdateHz));
 		const bool stage7Dirty = stage7Key != m_stage7LastFullUpdateKey;
 		const bool stage7Due = m_stage7LastFullUpdateTime < 0.0 ||
 			(current_time - m_stage7LastFullUpdateTime) >= stage7IntervalSec;
@@ -11746,6 +11855,7 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 	{
 		++breakdown.stage7SkipCount;
 	}
+	UpdateStage7CloudAnimationTime(current_time);
 	if (profileBreakdown)
 	{
 		breakdown.stage7SkyGroundMs = std::chrono::duration<double, std::milli>(

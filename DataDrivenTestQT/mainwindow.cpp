@@ -222,6 +222,22 @@ void MainWindow::configureProtocolForTest(int platID, int sensorID, int simMode,
 			.arg(m_h264Enabled ? 1 : 0);
 }
 
+void MainWindow::configureEnvironmentForTest(int envSky, int sensorBand)
+{
+	if (envSky >= 0 && envSky <= 5)
+	{
+		m_protocolEnvSky = envSky;
+	}
+	if (sensorBand >= 0 && sensorBand <= 4)
+	{
+		m_protocolSensorBand = sensorBand;
+	}
+	qInfo().noquote()
+		<< QStringLiteral("[StimWeather] envSky=%1 sensorBand=%2 source=cli_or_default")
+			.arg(m_protocolEnvSky)
+			.arg(m_protocolSensorBand);
+}
+
 // ==================== 核心修正：补充缺失的槽函数 ====================
 void MainWindow::onSendRealTimeData()
 {
@@ -612,7 +628,7 @@ void MainWindow::sendInitCommand()
     // 传感器参数（简化配置）
     cmd.trackingInit.enable = true;
     cmd.trackingInit.envTerrain = 0; // 戈壁
-    cmd.trackingInit.envSky = 0;    // 晴
+    cmd.trackingInit.envSky = m_protocolEnvSky;
     cmd.trackingInit.envTemp = 25.0;
 	cmd.trackingInit.simMode = m_protocolSimMode;
 	cmd.trackingInit.videoFps = targetVideoFps();
@@ -626,7 +642,7 @@ void MainWindow::sendInitCommand()
 
 
 //    cmd.trackingInit.trackerSensor[0].index = 0;
-    cmd.trackingInit.trackerSensor[0].trackerSensorBand = 2; // 中波红外
+    cmd.trackingInit.trackerSensor[0].trackerSensorBand = m_protocolSensorBand;
     cmd.trackingInit.trackerSensor[0].trackerSensorWidth = 800;
     cmd.trackingInit.trackerSensor[0].trackerSensorHeight = 800;//hml
     cmd.trackingInit.trackerSensor[0].trackerSensorViewMin = 1;
@@ -668,6 +684,16 @@ void MainWindow::sendInitCommand()
 		}
 
 		qDebug() << "Sent Init Command, Bytes:" << sent;
+		qInfo().noquote()
+			<< QStringLiteral("[StimInit] platID=%1 sensorID=%2 simMode=%3 videoFps=%4 h264En=%5 envSky=%6 sensorBand=%7 bytes=%8")
+				.arg(cmd.platID)
+				.arg(cmd.sensorID)
+				.arg(cmd.trackingInit.simMode)
+				.arg(cmd.trackingInit.videoFps)
+				.arg(cmd.trackingInit.trackerSensor[0].h264En ? 1 : 0)
+				.arg(cmd.trackingInit.envSky)
+				.arg(cmd.trackingInit.trackerSensor[0].trackerSensorBand)
+				.arg(sent);
 	}
 	else
 	{

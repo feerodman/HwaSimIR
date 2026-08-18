@@ -17,6 +17,9 @@ int main(int argc, char *argv[])
     int sensorID = -1;
     int simMode = -1;
     int videoFps = -1;
+	int envSky = -1;
+	int sensorBand = -1;
+	bool initOnly = false;
 	QString networkConfigPath;
 	QString channel;
     const QStringList arguments = a.arguments();
@@ -91,6 +94,20 @@ int main(int argc, char *argv[])
         {
             videoFps = qBound(1, argument.mid(videoFpsPrefix.size()).toInt(), 240);
         }
+		const QString envSkyPrefix = QStringLiteral("--env-sky=");
+		if (argument.startsWith(envSkyPrefix))
+		{
+			envSky = qBound(0, argument.mid(envSkyPrefix.size()).toInt(), 5);
+		}
+		const QString sensorBandPrefix = QStringLiteral("--sensor-band=");
+		if (argument.startsWith(sensorBandPrefix))
+		{
+			sensorBand = qBound(0, argument.mid(sensorBandPrefix.size()).toInt(), 4);
+		}
+		if (argument == QStringLiteral("--init-only"))
+		{
+			initOnly = true;
+		}
 		const QString networkConfigPrefix = QStringLiteral("--network-config=");
 		if (argument.startsWith(networkConfigPrefix))
 		{
@@ -121,8 +138,16 @@ int main(int argc, char *argv[])
     w.setH264EnabledForTest(h264Enabled);
 	w.setSaveMP4EnabledForTest(saveMP4Enabled);
     w.configureProtocolForTest(platID, sensorID, simMode, videoFps);
+	w.configureEnvironmentForTest(envSky, sensorBand);
     w.configurePhase4cAeroMachTest(phase4cAeroMach, aeroAltitudeKm, aeroMach);
-    if (autoSeconds > 0)
+	if (initOnly)
+	{
+		QTimer::singleShot(500, &w, [&w]() {
+			QMetaObject::invokeMethod(&w, "onInitButtonClicked", Qt::DirectConnection);
+		});
+		QTimer::singleShot(1500, &a, &QApplication::quit);
+	}
+    else if (autoSeconds > 0)
     {
         QTimer::singleShot(500, &w, [&w]() {
             QMetaObject::invokeMethod(&w, "onInitButtonClicked", Qt::DirectConnection);
