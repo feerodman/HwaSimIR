@@ -19,9 +19,11 @@ int main(int argc, char *argv[])
     int videoFps = -1;
 	int envSky = -1;
 	int sensorBand = -1;
+	double sensorPixelAngleUrad = -1.0;
 	bool initOnly = false;
 	QString networkConfigPath;
 	QString channel;
+	QString inputDataPath;
     const QStringList arguments = a.arguments();
 	for (int argumentIndex = 0; argumentIndex < arguments.size(); ++argumentIndex)
     {
@@ -104,6 +106,16 @@ int main(int argc, char *argv[])
 		{
 			sensorBand = qBound(0, argument.mid(sensorBandPrefix.size()).toInt(), 4);
 		}
+		const QString sensorPixelAnglePrefix = QStringLiteral("--sensor-pixel-angle-urad=");
+		if (argument.startsWith(sensorPixelAnglePrefix))
+		{
+			bool ok = false;
+			const double value = argument.mid(sensorPixelAnglePrefix.size()).toDouble(&ok);
+			if (ok && value > 0.0)
+			{
+				sensorPixelAngleUrad = value;
+			}
+		}
 		if (argument == QStringLiteral("--init-only"))
 		{
 			initOnly = true;
@@ -126,6 +138,15 @@ int main(int argc, char *argv[])
 		{
 			channel = arguments.at(++argumentIndex).trimmed().toLower();
 		}
+		const QString inputFilePrefix = QStringLiteral("--input-file=");
+		if (argument.startsWith(inputFilePrefix))
+		{
+			inputDataPath = argument.mid(inputFilePrefix.size()).trimmed();
+		}
+		else if (argument == QStringLiteral("--input-file") && argumentIndex + 1 < arguments.size())
+		{
+			inputDataPath = arguments.at(++argumentIndex).trimmed();
+		}
     }
     qInfo().noquote()
         << QStringLiteral("[ProtocolLayout] component=DataDrivenTestQT ControlP2cX1ObjTrackingCmd=%1 InitP2cObjectTrackingCmd=%2 DisplayC2cObjTrackingData=%3 InitAckC2pObjectTrackingCmd=%4")
@@ -133,12 +154,13 @@ int main(int argc, char *argv[])
             .arg(sizeof(BYHWICD::InitP2cObjectTrackingCmd))
             .arg(sizeof(BYHWICD::DisplayC2cObjTrackingData))
             .arg(sizeof(BYHWICD::InitAckC2pObjectTrackingCmd));
-	MainWindow w(networkConfigPath, channel);
+	MainWindow w(networkConfigPath, channel, inputDataPath);
 	w.show();
     w.setH264EnabledForTest(h264Enabled);
 	w.setSaveMP4EnabledForTest(saveMP4Enabled);
     w.configureProtocolForTest(platID, sensorID, simMode, videoFps);
 	w.configureEnvironmentForTest(envSky, sensorBand);
+	w.setSensorPixelAngleForTest(sensorPixelAngleUrad);
     w.configurePhase4cAeroMachTest(phase4cAeroMach, aeroAltitudeKm, aeroMach);
 	if (initOnly)
 	{

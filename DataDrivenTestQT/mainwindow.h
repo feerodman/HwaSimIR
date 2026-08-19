@@ -49,6 +49,7 @@ public:
 	explicit MainWindow(
 		const QString& networkConfigPath = QString(),
 		const QString& channel = QString(),
+		const QString& inputDataPath = QString(),
 		QWidget *parent = nullptr);
 	~MainWindow();
 	void setH264EnabledForTest(bool enabled) { m_h264Enabled = enabled; }
@@ -56,6 +57,7 @@ public:
 	void configurePhase4cAeroMachTest(bool enabled, double altitudeKm, double mach);
 	void configureProtocolForTest(int platID, int sensorID, int simMode, int videoFps);
 	void configureEnvironmentForTest(int envSky, int sensorBand);
+	void setSensorPixelAngleForTest(double pixelAngleUrad);
 
 	private slots:
 	void onResetButtonClicked();
@@ -87,6 +89,7 @@ private:
 	QString m_udpRemoteIp;
 	quint16 m_udpRemotePort = 8888;
 	QString m_networkConfigPath;
+	QString m_inputDataPath;
 	QString m_channel = QStringLiteral("unknown");
 	int m_protocolPlatID = 1001;
 	int m_protocolSensorID = 2;
@@ -94,6 +97,7 @@ private:
 	int m_protocolVideoFps = 60;
 	int m_protocolEnvSky = 0;
 	int m_protocolSensorBand = 2;
+	double m_protocolSensorPixelAngleUrad = 2.5;
 
 	// UI Components
 	QGroupBox *m_configGroup;

@@ -243,7 +243,7 @@ function Invoke-HwaRun {
         "Stage7EnableFog",
         "Stage7EnablePrecipitation",
         "Stage7PrecipitationMode",
-        "Stage7CloudLayerMaxCards",
+        "Stage7CloudLayerCount",
         "Stage7PrecipitationMaxParticles"
     )
     $previous = @{}
@@ -263,7 +263,7 @@ function Invoke-HwaRun {
         [Environment]::SetEnvironmentVariable("Stage7EnableFog", $Scenario.EnableFog, "Process")
         [Environment]::SetEnvironmentVariable("Stage7EnablePrecipitation", $Scenario.EnablePrecipitation, "Process")
         [Environment]::SetEnvironmentVariable("Stage7PrecipitationMode", $Scenario.PrecipitationMode, "Process")
-        [Environment]::SetEnvironmentVariable("Stage7CloudLayerMaxCards", $Scenario.CloudCards, "Process")
+        [Environment]::SetEnvironmentVariable("Stage7CloudLayerCount", $Scenario.CloudCards, "Process")
         [Environment]::SetEnvironmentVariable("Stage7PrecipitationMaxParticles", $Scenario.PrecipitationCards, "Process")
 
         $process = Start-Process -FilePath $hwaExe -WorkingDirectory $hwaWorkDir -PassThru -WindowStyle Hidden -RedirectStandardOutput $stdout -RedirectStandardError $stderr

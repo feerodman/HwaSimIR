@@ -1,7 +1,9 @@
 param(
     [int]$WeatherSeconds = 10,
     [ValidateSet(0, 1, 2, 3, 4)]
-    [int]$SensorBand = 2
+    [int]$SensorBand = 2,
+    [ValidateSet("World2D", "Layered2_5D")]
+    [string]$CloudRenderMode = "Layered2_5D"
 )
 
 $ErrorActionPreference = "Stop"
@@ -81,6 +83,7 @@ $oldQtLog = $env:QT_FORCE_STDERR_LOGGING
 $oldMode = $env:RenderPresentationMode
 $oldH264Encoder = $env:H264Encoder
 $oldH264Fallback = $env:H264FallbackToJpeg
+$oldCloudRenderMode = $env:Stage7CloudRenderMode
 $video = $null
 $hwa = $null
 $stim = $null
@@ -90,6 +93,7 @@ try {
     $env:RenderPresentationMode = "HeadlessOffscreen"
     $env:H264Encoder = "ffmpeg"
     $env:H264FallbackToJpeg = "false"
+    $env:Stage7CloudRenderMode = $CloudRenderMode
     $video = Start-Process -FilePath $videoExe -ArgumentList @("--network-config", $videoNetwork) `
         -WorkingDirectory $videoWork -WindowStyle Hidden -PassThru `
         -RedirectStandardOutput (Join-Path $logDir "video.out.log") `
@@ -147,6 +151,7 @@ finally {
     $env:RenderPresentationMode = $oldMode
     $env:H264Encoder = $oldH264Encoder
     $env:H264FallbackToJpeg = $oldH264Fallback
+    $env:Stage7CloudRenderMode = $oldCloudRenderMode
 }
 
 $hwaText = ((Get-Content (Join-Path $logDir "hwa.out.log") -Raw -ErrorAction SilentlyContinue) + "`n" +
@@ -158,7 +163,13 @@ $checks = [ordered]@{
     Clear = $hwaText -match "\[WeatherCloud\][^\r\n]*envSky=0[^\r\n]*enabled=0"
     Cloudy = $hwaText -match "\[WeatherCloud\][^\r\n]*envSky=1[^\r\n]*enabled=1[^\r\n]*cloud_scattered"
     Overcast = $hwaText -match "\[WeatherCloud\][^\r\n]*envSky=5[^\r\n]*enabled=1[^\r\n]*cloud_overcast"
-    TwoLayers = $hwaText -match "\[WeatherCloud\][^\r\n]*layers=2"
+    CloudMode = if ($CloudRenderMode -eq "World2D") {
+        $hwaText -match "\[WeatherCloudRenderer\][^\r\n]*mode=World2D[^\r\n]*parent=m_renderRoot[^\r\n]*slices=1"
+    } else {
+        $hwaText -match "\[WeatherCloudRenderer\][^\r\n]*mode=Layered2_5D[^\r\n]*parent=m_renderRoot[^\r\n]*slices=3"
+    }
+    WorldSpace = ($hwaText -match "\[WeatherCloudRenderer\][^\r\n]*worldUv=1[^\r\n]*cameraAttached=0") -and
+        ($hwaText -match "\[WeatherCloudSpatial\][^\r\n]*worldUvAnchor=absolute_world_xy")
     TextureLoaded = $hwaText -match "\[WeatherTextureLoaded\][^\r\n]*success=1"
     TextureCached = ([regex]::Matches($hwaText, "\[WeatherTextureLoaded\][^\r\n]*cloud_scattered").Count -eq 1) -and
         ([regex]::Matches($hwaText, "\[WeatherTextureLoaded\][^\r\n]*cloud_overcast").Count -eq 1)
@@ -167,7 +178,7 @@ $checks = [ordered]@{
     PacketV3 = $videoText -match "packetVersion=3"
     NoCodecFallback = $hwaText -notmatch "\[CodecFallback\]"
 }
-$summary = @("# W1 Windows Cloud Smoke", "", "- logDir: $logDir", "- sensorBand: $SensorBand", "")
+$summary = @("# W1 Windows Cloud Smoke", "", "- logDir: $logDir", "- sensorBand: $SensorBand", "- cloudRenderMode: $CloudRenderMode", "")
 foreach ($entry in $checks.GetEnumerator()) {
     $summary += "- $(if ($entry.Value) { 'PASS' } else { 'FAIL' }): $($entry.Key)"
 }

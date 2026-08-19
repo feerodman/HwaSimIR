@@ -96,6 +96,13 @@ public:
 		EveryN
 	};
 
+	// Stage7 云渲染入口。Volumetric3D 仅保留类型入口，本阶段不创建体积云实现。
+	enum class CloudRenderMode {
+		World2D,
+		Layered2_5D,
+		Volumetric3D
+	};
+
 	// 构造函数：初始化HwaSimIR框架和渲染宿主
 	HwaSimIR(int argc, char** argv, const HwaSimIRLaunchOptions& launchOptions);
 
@@ -442,6 +449,7 @@ private:
 	double m_stage7SkyDomeRadius = 42500.0;
 	double m_stage7LowerShellRadius = 42500.0;
 	double m_stage7GroundReferenceZ = 0.0;
+	double m_stage7GeoReferenceAltitudeM = 0.0;
 	bool m_stage7NearFarClipWarningLogged = false;
 	int m_stage7SkyHorizonLogCounter = 0;
 	std::string m_stage7LastSkyHorizonState;
@@ -453,19 +461,28 @@ private:
 	bool m_stage7UseWeatherUdpInput = true;
 	int m_stage7PrecipitationMode = 1; // 0 None, 1 ScreenOverlay, 2 Cards
 	std::string m_stage7PrecipitationModeName = "ScreenOverlay";
-	int m_stage7CloudLayerMaxCards = 0;
-	int m_stage7CloudLayerCount = 2;
+	CloudRenderMode m_stage7CloudRenderMode = CloudRenderMode::Layered2_5D;
+	std::string m_stage7CloudRenderModeName = "Layered2_5D";
+	int m_stage7CloudLayerCount = 3;
 	double m_stage7CloudUpdateHz = 10.0;
-	double m_stage7CloudScale = 1.25;
-	double m_stage7CloudBaseDistanceM = 1200.0;
-	double m_stage7CloudLayerSpacingM = 350.0;
+	double m_stage7CloudBaseAltitudeM = 2500.0;
+	double m_stage7CloudThicknessM = 800.0;
+	double m_stage7CloudWorldSizeM = 30000.0;
+	double m_stage7CloudTileSizeM = 5000.0;
 	double m_stage7CloudUvSpeedScale = 1.0;
 	double m_stage7CloudOpticalDepthScale = 1.0;
+	double m_stage7CloudEdgeSoftness = 0.15;
+	double m_stage7CloudDetailScale = 3.0;
+	double m_stage7CloudDetailStrength = 0.35;
+	double m_stage7CloudGridOriginX = 0.0;
+	double m_stage7CloudGridOriginY = 0.0;
+	bool m_stage7CloudGridOriginReady = false;
 	int m_stage7PrecipitationMaxParticles = 0;
 	std::string m_stage7WeatherProfilePath = "Config/Weather/weather_profiles.json";
 	std::string m_stage7WeatherTextureConfigPath = "Config/Weather/weather_textures.json";
 	IRStage7WeatherState m_stage7WeatherState;
 	int m_stage7WeatherLogCounter = 0;
+	int m_stage7CloudSpatialLogCounter = 0;
 	std::string m_stage7LastWeatherState;
 	int m_stage7PerfLogCounter = 0;
 	std::string m_stage7LastPerfState;
@@ -511,11 +528,13 @@ private:
 	void UpdateStage7SkyHorizon(const IRRuntimeEnvironment& environment, const char* reason, bool forceLog);
 	void LogStage7SkyGround(const IRRuntimeEnvironment& environment, int envTerrain, int envSky, double skyGrayRaw, double groundGrayRaw, double skyGrayFinal, double groundGrayFinal, double farClipM, double groundReferenceZ, bool forceLog, const char* reason);
 	void InitStage7WeatherScene();
+	void InitStage7CloudRenderer();
+	void UpdateStage7CloudWorldGrid(const IRStage7WeatherState& weatherState, double currentTime, bool stateChanged);
 	IRStage7WeatherRuntimeInput BuildStage7WeatherInput() const;
 	IRStage7WeatherState EvaluateStage7WeatherState(const IRRuntimeEnvironment& environment) const;
 	void ApplyStage7WeatherInputs(NodePath& node, const IRStage7WeatherState& weatherState);
 	int RefreshStage7WeatherTextureCache(const IRStage7WeatherState& weatherState);
-	void UpdateStage7WeatherNodes(const IRStage7WeatherState& weatherState, double currentTime);
+	void UpdateStage7WeatherNodes(const IRStage7WeatherState& weatherState, double currentTime, bool stateChanged);
 	void UpdateStage7CloudAnimationTime(double currentTime);
 	void LogStage7Weather(const IRStage7WeatherState& weatherState, const char* reason, bool forceLog);
 	void LogStage7Perf(const IRStage7WeatherState& weatherState, int weatherNodeCount, int cloudNodeCount, int precipitationNodeCount, int textureLoadCountThisFrame, double updateWeatherNodesMs, double totalWeatherMs);

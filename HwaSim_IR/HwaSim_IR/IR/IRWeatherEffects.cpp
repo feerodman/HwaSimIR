@@ -1,4 +1,5 @@
 #include "IRWeatherEffects.h"
+#include "IRRadianceModelV2.h"
 
 #include <algorithm>
 #include <cctype>
@@ -247,17 +248,6 @@ int BandIndex(IRBand band)
 double DefaultCloudGray(IRBand band, double cloudTemperatureK, double skyDiffuseScale)
 {
 	return IRWeatherEffects::cloudEmissionGray(band, cloudTemperatureK, 0.5, skyDiffuseScale);
-}
-
-double PlanckRadiance(double wavelengthUm, double temperatureK)
-{
-	const double lambdaUm = Clamp(wavelengthUm, 0.1, 100.0);
-	const double temperature = Clamp(temperatureK, 1.0, 6000.0);
-	const double c1 = 1.191042e8;
-	const double c2 = 1.4387752e4;
-	const double exponent = Clamp(c2 / (lambdaUm * temperature), 1.0e-9, 700.0);
-	const double denominator = std::pow(lambdaUm, 5.0) * (std::exp(exponent) - 1.0);
-	return denominator > 0.0 ? c1 / denominator : 0.0;
 }
 
 } // namespace
@@ -570,13 +560,17 @@ double IRWeatherEffects::cloudEmissionGray(IRBand band,
 		return Clamp(background * 0.82 + 0.10 * diffuse, 0.14, 0.76);
 	case IRBand::MidWaveInfrared:
 	{
-		const double ratio = PlanckRadiance(4.0, temperature) / std::max(1.0e-12, PlanckRadiance(4.0, 300.0));
+		const double wavelengthUm = IRRadianceModelV2::bandCenterUm(band);
+		const double ratio = IRRadianceModelV2::planckRadianceWm2SrUm(wavelengthUm, temperature) /
+			std::max(1.0e-12, IRRadianceModelV2::planckRadianceWm2SrUm(wavelengthUm, 300.0));
 		const double thermalGray = 0.16 + 0.48 * std::sqrt(Clamp(ratio, 0.0, 1.5));
 		return Clamp(thermalGray * 0.82 + background * 0.18, 0.12, 0.72);
 	}
 	case IRBand::LongWaveInfrared:
 	{
-		const double ratio = PlanckRadiance(10.0, temperature) / std::max(1.0e-12, PlanckRadiance(10.0, 300.0));
+		const double wavelengthUm = IRRadianceModelV2::bandCenterUm(band);
+		const double ratio = IRRadianceModelV2::planckRadianceWm2SrUm(wavelengthUm, temperature) /
+			std::max(1.0e-12, IRRadianceModelV2::planckRadianceWm2SrUm(wavelengthUm, 300.0));
 		const double thermalGray = 0.12 + 0.66 * Clamp(ratio, 0.0, 1.25);
 		return Clamp(thermalGray * 0.90 + background * 0.10, 0.14, 0.82);
 	}

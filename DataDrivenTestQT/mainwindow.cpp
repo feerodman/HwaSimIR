@@ -114,9 +114,11 @@ QString localIpv4Summary()
 MainWindow::MainWindow(
 	const QString& networkConfigPath,
 	const QString& channel,
+	const QString& inputDataPath,
 	QWidget *parent)
 	: QMainWindow(parent),
 	  m_networkConfigPath(networkConfigPath.trimmed()),
+	  m_inputDataPath(inputDataPath.trimmed()),
 	  m_channel(channel.trimmed().toLower())
 {
 	loadNetworkConfig();
@@ -125,8 +127,16 @@ MainWindow::MainWindow(
 
 
     //讀取文件内容
-    QString tmp = "./1.txt";
+    QString tmp = m_inputDataPath.isEmpty() ? QStringLiteral("./1.txt") : m_inputDataPath;
     readData(tmp);
+	qInfo().noquote() << QStringLiteral("[StimInput] path=%1 rows=%2 source=%3")
+		.arg(QFileInfo(tmp).absoluteFilePath())
+		.arg(realTimeData.size())
+		.arg(m_inputDataPath.isEmpty() ? QStringLiteral("default") : QStringLiteral("command_line"));
+	if (realTimeData.isEmpty())
+	{
+		qFatal("实时激励文件没有有效数据行: %s", qPrintable(QFileInfo(tmp).absoluteFilePath()));
+	}
 
 	QRegularExpression regExp(R"(0x[0-9A-Fa-f]+|[0-9A-Fa-f]+)");
 	QRegularExpressionValidator *validator = new QRegularExpressionValidator(regExp, this);
@@ -236,6 +246,17 @@ void MainWindow::configureEnvironmentForTest(int envSky, int sensorBand)
 		<< QStringLiteral("[StimWeather] envSky=%1 sensorBand=%2 source=cli_or_default")
 			.arg(m_protocolEnvSky)
 			.arg(m_protocolSensorBand);
+}
+
+void MainWindow::setSensorPixelAngleForTest(double pixelAngleUrad)
+{
+	if (std::isfinite(pixelAngleUrad) && pixelAngleUrad > 0.0)
+	{
+		m_protocolSensorPixelAngleUrad = qBound(0.1, pixelAngleUrad, 1000.0);
+	}
+	qInfo().noquote()
+		<< QStringLiteral("[StimSensorGeometry] pixelAngleUrad=%1 source=cli_or_default")
+			.arg(m_protocolSensorPixelAngleUrad, 0, 'f', 3);
 }
 
 // ==================== 核心修正：补充缺失的槽函数 ====================
@@ -647,7 +668,7 @@ void MainWindow::sendInitCommand()
     cmd.trackingInit.trackerSensor[0].trackerSensorHeight = 800;//hml
     cmd.trackingInit.trackerSensor[0].trackerSensorViewMin = 1;
     cmd.trackingInit.trackerSensor[0].trackerSensorViewMax = 200000;
-    cmd.trackingInit.trackerSensor[0].trackerSensorPixelAngle = 2.5;
+    cmd.trackingInit.trackerSensor[0].trackerSensorPixelAngle = m_protocolSensorPixelAngleUrad;
     //2.18166
 
     cmd.trackingInit.trackerSensor[0].realtimeAnnotation = true;
@@ -1179,22 +1200,30 @@ void MainWindow::initStepSimData()
 {
 	is_collided = false;
 	current_time = 0.0;
+	dataNum = 1;
 	m_targetType = m_targetTypeEdit->text().toInt(nullptr, 16);
 	m_fovH = m_fovHEdit->text().toDouble();
 	m_fovV = m_fovVEdit->text().toDouble();
-    plane_init_pos.x = m_latEdit->text().toDouble();
-    plane_init_pos.y = m_lonEdit->text().toDouble();
-    plane_init_pos.z = m_altEdit->text().toDouble();
-    plane_init_attitude.yaw = m_yawEdit->text().toDouble();
-    plane_init_attitude.pitch = m_pitchEdit->text().toDouble();
-    plane_init_attitude.roll = m_rollEdit->text().toDouble();
-    missile_init_pos.x = m_latEditTarget->text().toDouble();
-    missile_init_pos.y = m_lonEditTarget->text().toDouble();
-    missile_init_pos.z = m_altEditTarget->text().toDouble();
-    missile_init_attitude.yaw = m_yawEditTarget->text().toDouble();
-    missile_init_attitude.pitch = m_pitchEditTarget->text().toDouble();
-    missile_init_attitude.roll = m_rollEditTarget->text().toDouble();
-    plane_speed_y = m_speed->text().toDouble();
+	const realtimeInfo& firstSample = realTimeData.at(0);
+	plane_init_pos.x = firstSample.platPos.lat;
+	plane_init_pos.y = firstSample.platPos.lon;
+	plane_init_pos.z = firstSample.platPos.alt;
+	plane_init_attitude.yaw = firstSample.platEul.yaw;
+	plane_init_attitude.pitch = firstSample.platEul.pitch;
+	plane_init_attitude.roll = firstSample.platEul.roll;
+	missile_init_pos.x = firstSample.tarPos.lat;
+	missile_init_pos.y = firstSample.tarPos.lon;
+	missile_init_pos.z = firstSample.tarPos.alt;
+	missile_init_attitude.yaw = firstSample.tarEul.yaw;
+	missile_init_attitude.pitch = firstSample.tarEul.pitch;
+	missile_init_attitude.roll = firstSample.tarEul.roll;
+	plane_speed_y = firstSample.platSpeed;
+
+	// 第一帧必须直接使用输入文件第 0 行；否则零初始化位置会被接收端误当作地理参考点。
+	m_currPlane_pos = plane_init_pos;
+	m_currPlane_att = plane_init_attitude;
+	m_currMissile_pos = missile_init_pos;
+	m_currMissile_att = missile_init_attitude;
 
 //	collision_time = m_collisionTime->text().toDouble();
 	m_targetVideoFps = targetVideoFps();

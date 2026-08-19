@@ -71,13 +71,17 @@ $runtimeOk = ($runtimeIniText -match "\[Stage7Weather\]") -and
     ($runtimeIniText -match "WeatherProfilePath=Config/Weather/weather_profiles\.json") -and
     ($runtimeIniText -match "WeatherTextureConfig=Config/Weather/weather_textures\.json") -and
     ($runtimeIniText -match "EnableCloudLayer=1") -and
-    ($runtimeIniText -match "CloudLayerCount=2") -and
+    ($runtimeIniText -match "CloudRenderMode=Layered2_5D") -and
+    ($runtimeIniText -match "CloudLayerCount=3") -and
     ($runtimeIniText -match "CloudUpdateHz=10") -and
+    ($runtimeIniText -match "CloudBaseAltitudeM=2500") -and
+    ($runtimeIniText -match "CloudThicknessM=800") -and
+    ($runtimeIniText -match "CloudWorldSizeM=30000") -and
+    ($runtimeIniText -match "CloudTileSizeM=5000") -and
     ($runtimeIniText -match "CloudOpticalDepthScale=1\.0") -and
     ($runtimeIniText -match "EnableFog=1") -and
     ($runtimeIniText -match "EnablePrecipitation=0") -and
     ($runtimeIniText -match "Stage7PrecipitationMode=ScreenOverlay") -and
-    ($runtimeIniText -match "CloudLayerMaxCards=2") -and
     ($runtimeIniText -match "PrecipitationMaxParticles=0") -and
     ($runtimeIniText -match "UseWeatherUdpInput=1")
 $checks.Add((Add-Check "RuntimeConfig has Stage7Weather section" $runtimeOk $runtimeIni)) | Out-Null
@@ -165,6 +169,8 @@ $checks.Add((Add-Check "precipitation uses screen overlay by default with option
 $shaderOk = ($appSourceText -match "u_stage7_weather_type") -and
     ($appSourceText -match "u_stage7_cloud_coverage") -and
     ($appSourceText -match "u_stage7_cloud_optical_depth") -and
+    ($appSourceText -match "v_cloud_world_uv") -and
+    ($appSourceText -match "raw_density") -and
     ($appSourceText -match "tau_cloud = exp\(-extinction\)") -and
     ($appSourceText -match "u_stage7_fog_density") -and
     ($appSourceText -match "u_stage7_precipitation_type") -and

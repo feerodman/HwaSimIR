@@ -2136,3 +2136,76 @@ docs/HwaSimIR_RuntimeChannel_H264_Weather_Lighting_Implementation_Plan.md
 - TCP 重连/再次初始化恢复：PASS。同一板端进程记录 7 次真实 MPP `[H264EncodeSuccess]`、2 次 TCP connected IDR 请求、2 个 init；Windows 重连前后均有 `[H264DecodeSuccess]`，CodecFallback=0。
 - `TargetUpdateCullInvisible=true`、`IRUpdateHz=20` 和帧 vector 回收池均因没有稳定端到端收益而撤销；未叠加无效修改。
 - 剩余最大三项：Panda cull/draw 约 13.2 ms；readback+800×800 RGB copy 约 2.5 ms；编码线程 NV12 preprocess 约 8.1 ms。后续如继续优化，应先处理前两项；不建议在队列稳定时优先引入 RGA/DMA-BUF 大改。
+
+### 2026-08-18 / W1 世界空间纹理云层与红外云实施记录
+
+#### 范围、参考与架构
+
+- 基线为 `main@8f16293afb782833abc0e45ecb966f224d385963`，未 commit、未 push、未修改 `.idea`，未实施雨、雪、雾、体积云、ray marching、天气照明或 SilverLining。
+- 只阅读本机合法安装内容：`D:\Presagis\Suite22\Ondulus_IR_22_0` 与 `D:\Presagis\Suite22\Vega_Prime_22_0` 的公开 docs/include/samples/appdata/config；未反编译、未复制私有实现。参考结论是 2D 云层应有世界高度、底/顶边界、覆盖率、风场和观察者无关纹理坐标；3D/SilverLining 只作为后续规划。
+- 旧的 `m_cameraNode.attach_new_node(...)` 相机前固定 Cloud Card、FOV 撑屏、`depth_test=false`、`CloudBaseDistanceM/CloudLayerSpacingM` 正式路径已删除。Stage7 现有 3D Sky Dome 和 Lower Hemisphere Shell 保持不变，`UseReal3DBackground=1` 仍是默认。
+- 新增统一 `CloudRenderMode`：`World2D` 为一层世界平面；`Layered2_5D` 为 2～3 层水平切片，默认 3 层；`Volumetric3D` 仅保留枚举和明确禁用日志，本轮没有生产 raymarch 代码。
+- 云几何挂在 `m_renderRoot`，默认云底为 `m_stage7GroundReferenceZ + 2500 m`，厚度 800 m；30 km 世界网格按 5 km 固定网格围绕相机吸附，纹理 UV 来自绝对 world XY，因此相机运动不会带动纹理贴屏滑动。网格使用固定节点，Clear 只隐藏、不反复创建销毁。
+- 修复 WGS84 到局部 ENU 建立参考点后的高度重基准：记录初始平台海拔并将 Stage7 地面参考转换为局部坐标，避免相机归零后云层仍错误保留在绝对 `+2500 m`。低频 `[WeatherCloudGrid]/[WeatherCloudSpatial]` 可验证世界位置、投影和穿云因子。
+
+#### 云形状与红外模型
+
+- 纹理来自 `weather_textures.json` 的 `cloud_few/cloud_scattered/cloud_overcast/cloud_storm/cloud_cumulus`，由路径级缓存和 Panda `TexturePool` 复用；同一纹理只在首次加载或天气切换时输出 `[WeatherTextureLoaded]`。
+- 每层 shader 以绝对世界坐标采样同一缓存纹理的 base/detail 两级频率，叠加各层独立 scale/offset/weight，再以 coverage threshold 和 edge softness 得到密度。Overcast 使用非线性 coverage 阈值，避免 luminance mask 饱和成均匀灰膜，同时保留高覆盖。
+- PNG alpha/luminance 只生成云密度 `M`，不直接作为 MWIR/LWIR 灰度。红外合成为：`opticalDepth=profileOpticalDepth*M`、`tau=exp(-opticalDepth)`、`Lout=tau*Lin+(1-tau)*Lcloud`、`alpha=1-tau`。
+- `Lcloud` 复用 `IRRadianceModelV2` 的波段中心与 Planck 辐射计算；`cloudTemperatureK`、当前 sensor band、天空背景辐射和 profile 共同决定云灰度，不修改目标温度或 Stage3～Stage6 目标物理。VIS/NIR/SWIR 保留更明显纹理反射变化，MWIR/LWIR 使用云自身辐射与透射衰减。
+- 10 Hz 天气更新只在状态变化时重写常量 shader 状态，世界 UV 时间仍逐帧更新；移除了同一更新周期内重复的 Stage6 最终参数写入。板端稳态 weather CPU 为 `0.015～0.178 ms`。
+
+#### 修改文件
+
+```text
+DataDrivenTestQT/main.cpp
+DataDrivenTestQT/mainwindow.cpp
+DataDrivenTestQT/mainwindow.h
+HwaSim_IR/Bin/Config/HwaSimIRRuntime.ini
+HwaSim_IR/HwaSim_IR/HwaSimIR.cpp
+HwaSim_IR/HwaSim_IR/HwaSimIR.h
+HwaSim_IR/HwaSim_IR/IR/IRWeatherEffects.cpp
+tools/stage7_weather_check.ps1
+tools/stage7_weather_perf_check.ps1
+tools/stage7_weather_perf_smoke.ps1
+tools/w1_cloud_windows_smoke.ps1
+tools/w1_world_cloud_imaging_test.ps1
+tools/w1_cloud_rk3588_acceptance.ps1
+docs/HwaSimIR_RuntimeChannel_H264_Weather_Lighting_Implementation_Plan.md
+```
+
+DataDrivenTestQT 只增加测试 CLI 对既有字段和 `1.txt` 的控制，并修复自动测试首帧用默认零值而非文件首条实时数据的问题；没有增加协议字段。`CommonData.h`、Packet v3、UDP、800×800、标注语义、H.264/MPP 和 Stage3～Stage6 均未修改。
+
+#### Windows 成像与构建
+
+- `HwaSim_IR` x64 Release + FFmpeg：PASS；DataDrivenTestQT Qt 5.12.12 Release：PASS；HwaSim_IR_VideoDisplay x64 Release + FFmpeg：PASS。
+- `World2D`：PASS，日志与图像 `logs/w1-world-cloud-imaging-20260818-175140`。
+- `Layered2_5D` Clear/Cloudy/Overcast：PASS；最终 Quick 回归 `logs/w1-world-cloud-imaging-20260818-185034`，完整波段/温度矩阵 `logs/w1-world-cloud-imaging-20260818-174359`。
+- 同一路径下 cloud-front 使用 500 m 云底、cloud-behind 使用 2500 m 云底：前方目标不被云覆盖，后方目标出现云密度和辐射衰减。移动输入的 MP4 中世界纹理相对画面连续运动，无相机贴屏锁定。
+- MWIR `240 K/260 K` A/B 的最终帧 YAVG 为 `87.916/88.128`；NIR/LWIR 为 `92.513/86.127`，证明云灰度来自温度/波段模型而非固定 PNG RGB。最终 Overcast 结构图在 `logs/w1-world-cloud-imaging-20260818-183951`。
+- Windows 所有正式图像包均为 H.264 Annex-B、Packet v3 `flags=0x7`，发送端无 CodecFallback，VideoDisplay 有真实 `[H264DecodeSuccess]`。
+
+#### RK3588 实机结果
+
+板端保持无 default route；使用最小 Xorg `:0`、HeadlessOffscreen、`GL_VENDOR=ARM`、`GL_RENDERER=Mali-LODX`、`hardwareGpu=1`、MPP H.264、Packet v3 三段全开。VM 的 MPP 生产 API 检查和完整 Release 交叉构建均通过，最终 ELF 为 AArch64 且 `NEEDED librockchip_mpp.so.1`，最终 SHA-256 为 `c441bf0819dadfabe6c952097802ffb5d792f6e87242441f30f0efb61ec94b55`。
+
+三层正式矩阵每组预热 5 秒、统计 30 秒：
+
+| 天气 | render FPS | output FPS | display FPS | render ms | weather ms | readback ms | preprocess ms | MPP ms | CPU |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Clear | 60.005 | 60.004 | 60.644 | 15.925 | 0.178 | 1.761 | 8.105 | 2.061 | 140.3% |
+| Cloudy | 58.882 | 58.882 | 59.394 | 16.434 | 0.039 | 1.767 | 8.074 | 2.028 | 145.0% |
+| Overcast（最终阈值） | 59.138 | 59.138 | 59.691 | 16.363 | 0.058 | 1.758 | 8.064 | 2.015 | 143.4% |
+
+- 相对同轮 Clear，Cloudy/Overcast render 增量约 `+0.509/+0.438 ms`；weather CPU 达到 `<=0.2 ms`。Cloudy 同配置复测为 `58.108 output / 58.630 display FPS、16.649 ms`，说明 59 FPS 目标尚未稳定达到，而不是单次统计误差；未通过降低分辨率、关闭红外/标注或修改 H.264 掩盖。
+- 两层透明 slice A/B 没有稳定收益，已撤销并恢复 3 层正式配置；没有叠加无效优化。
+- 三组均有 `[H264EncodeSuccess] backend=mpp`、Windows `[H264DecodeSuccess] backend=ffmpeg`、SPS/PPS+IDR、Packet v3 `flags=0x7`；input queue 最大 1、output queue 最大 0、sourceSeqLag 最大 1、dropped=0、CodecFallback=0。
+- TCP 重连回归 PASS：同一板端进程记录 4 次 `[H264EncodeSuccess]`，Windows 接收端重启后重新真实解码；日志 `logs/w1-world-cloud-rk3588-20260818-175756-final/tcp_reconnect`。
+- 正式矩阵见 `logs/w1-world-cloud-rk3588-20260818-175756-final`，最终阈值补测见 `logs/w1-world-cloud-rk3588-20260818-175756-final-shader`。测试后已恢复板端原 runtime/profile 与 CPU/GPU governor，保留最小 Xorg 基线和最终 W1 ELF；网络始终只有 `192.168.1.0/24`。
+
+#### 已知限制与后续入口
+
+- 当前是大尺度世界平面/切片，不包含真实体积内部散射、云影、自遮挡和云顶/云底独立温度场；透明排序仍采用 Panda 常规 back-to-front，不引入 OIT。
+- 下一阶段可定义为 W1.5/W3 `Volumetric3D Cloud`：低分辨率 3D noise、weather volume、adaptive raymarch、temporal reprojection、cloud shadow 与分层温度。W1 未实现任何生产 raymarch 代码。
+- W2 的雨、雪、雾仍未实施。
