@@ -182,6 +182,7 @@
     <ClInclude Include="IR\IRTemperatureModel.h" />
     <ClInclude Include="IR\IRTypes.h" />
     <ClInclude Include="IR\IRWeatherEffects.h" />
+    <ClInclude Include="IR\IRWorldCloudStreaming.h" />
     <ClInclude Include="IRSimulation.h" />
     <ClInclude Include="math_algorithm.h" />
     <ClInclude Include="stdafx.h" />
@@ -212,6 +213,7 @@
     <ClCompile Include="IR\IRTemperatureModel.cpp" />
     <ClCompile Include="IR\IRTypes.cpp" />
     <ClCompile Include="IR\IRWeatherEffects.cpp" />
+    <ClCompile Include="IR\IRWorldCloudStreaming.cpp" />
     <ClCompile Include="IRSimulation.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="stdafx.cpp">

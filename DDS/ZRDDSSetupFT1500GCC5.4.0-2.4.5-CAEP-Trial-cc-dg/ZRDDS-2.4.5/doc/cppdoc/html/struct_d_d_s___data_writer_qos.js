@@ -1,0 +1,26 @@
+var struct_d_d_s___data_writer_qos =
+[
+    [ "batch", "struct_d_d_s___data_writer_qos.html#aabe661383f0bb3547120cac6a646af6c", null ],
+    [ "deadline", "struct_d_d_s___data_writer_qos.html#ab284b26a18a210317c6baef434b56b61", null ],
+    [ "destination_order", "struct_d_d_s___data_writer_qos.html#a972988e874b7c100a33ad1beb3c08214", null ],
+    [ "durability", "struct_d_d_s___data_writer_qos.html#a2a6d176a467dddca750b0d5e6ba9dc40", null ],
+    [ "durability_service", "struct_d_d_s___data_writer_qos.html#a8ecf690ecca284de5cedee5c73643d03", null ],
+    [ "history", "struct_d_d_s___data_writer_qos.html#a85224e72d00a91c3c19943359dbc9088", null ],
+    [ "latency_budget", "struct_d_d_s___data_writer_qos.html#af1497e43f4efbda6b1cc0583099d2437", null ],
+    [ "lifespan", "struct_d_d_s___data_writer_qos.html#a1f3c55682c2bff48bba37ac00e4f1819", null ],
+    [ "liveliness", "struct_d_d_s___data_writer_qos.html#a5c7d2ac75222f69f415fc9f6087f6d77", null ],
+    [ "message_mode", "struct_d_d_s___data_writer_qos.html#abe247a48d06c6219daf7e363fcdfd447", null ],
+    [ "ownership", "struct_d_d_s___data_writer_qos.html#ac1307d6cb08cac2c43779b9b9da5e246", null ],
+    [ "ownership_strength", "struct_d_d_s___data_writer_qos.html#a04a73d5cf649cee513aafde8a575d848", null ],
+    [ "property", "struct_d_d_s___data_writer_qos.html#a7a609b3d7b64b2e040b458b17bf76221", null ],
+    [ "protocol", "struct_d_d_s___data_writer_qos.html#a1e5bef5cbf03580ae6a0a1481a59bdb6", null ],
+    [ "publish_mode", "struct_d_d_s___data_writer_qos.html#aeeb43c1b9a20383c4f10f8028535879d", null ],
+    [ "receive_addresses", "struct_d_d_s___data_writer_qos.html#a61064f6ce7a86f9aec62c366086c7fad", null ],
+    [ "reliability", "struct_d_d_s___data_writer_qos.html#ac9e4700ee10d220fbad2ef0ad76fdac7", null ],
+    [ "resource_limits", "struct_d_d_s___data_writer_qos.html#a671a6853844f68bb15bf66467168b4b4", null ],
+    [ "send_addresses", "struct_d_d_s___data_writer_qos.html#ab939e8df6a2311f91e0b1721423ae0d5", null ],
+    [ "transport_priority", "struct_d_d_s___data_writer_qos.html#a7ccab409a2b1be4918c26bb3175a03b3", null ],
+    [ "user_data", "struct_d_d_s___data_writer_qos.html#aa7680089d97af0f92f5c0ad61f2b6c4a", null ],
+    [ "writer_data_lifecycle", "struct_d_d_s___data_writer_qos.html#a6fdf244747a9c5403224b98d8c35ebd3", null ],
+    [ "writer_resource_limits", "struct_d_d_s___data_writer_qos.html#ac74b40e39832121e2f566f6d84c72888", null ]
+];

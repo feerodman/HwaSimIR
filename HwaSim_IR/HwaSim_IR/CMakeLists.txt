@@ -134,6 +134,7 @@ add_executable(HwaSim_IR
         IR/IRTemperatureModel.cpp
         IR/IRTypes.cpp
         IR/IRWeatherEffects.cpp
+        IR/IRWorldCloudStreaming.cpp
 
         IRSimulation.cpp
         TcpCommThread_Linux.cpp

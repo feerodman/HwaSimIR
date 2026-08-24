@@ -1,0 +1,968 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: 核心接口QoS相关数据类型</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>类</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('group___core_qos_struct.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="summary">
+<a href="#nested-classes">类</a> &#124;
+<a href="#typedef-members">类型定义</a> &#124;
+<a href="#enum-members">枚举</a> &#124;
+<a href="#enumval-members">枚举值</a>  </div>
+  <div class="headertitle">
+<div class="title">核心接口QoS相关数据类型<div class="ingroups"><a class="el" href="group___core_struct.html">核心接口数据类型</a></div></div>  </div>
+</div><!--header-->
+<div class="contents">
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+类</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___asynchronous_publisher_qos_policy.html">DDS_AsynchronousPublisherQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">配置Publisher是否使用异步发送数据或异步批量发送的QoS。  <a href="struct_d_d_s___asynchronous_publisher_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___batch_qos_policy.html">DDS_BatchQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">批量发送配置。  <a href="struct_d_d_s___batch_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___data_reader_qos.html">DDS_DataReaderQos</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">定义数据读者的QoS配置。  <a href="struct_d_d_s___data_reader_qos.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___data_representation_qos_policy.html">DDS_DataRepresentationQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">数据封装格式配置QoS。  <a href="struct_d_d_s___data_representation_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___data_writer_message_mode_qos_policy.html">DDS_DataWriterMessageModeQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">提供控制DataWriter消息处理的功能。  <a href="struct_d_d_s___data_writer_message_mode_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___rtps_reliable_writer_protocol.html">DDS_RtpsReliableWriterProtocol</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">控制可靠数据写者的相关行为。  <a href="struct_d_d_s___rtps_reliable_writer_protocol.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___data_writer_protocol_qos_policy.html">DDS_DataWriterProtocolQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">数据写者中与RTPS协议相关的行为配置。  <a href="struct_d_d_s___data_writer_protocol_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___data_writer_qos.html">DDS_DataWriterQos</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">定义数据写者的QoS  <a href="struct_d_d_s___data_writer_qos.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___data_writer_resource_limits_qos_policy.html">DDS_DataWriterResourceLimitsQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">数据写者资源限制QoS配置。  <a href="struct_d_d_s___data_writer_resource_limits_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___log_qos_policy.html">DDS_LogQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">DDS的日志系统配置QoS。  <a href="struct_d_d_s___log_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___msg_statistics_info_qos_policy.html">DDS_MsgStatisticsInfoQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">实体报文统计信息发布配置。  <a href="struct_d_d_s___msg_statistics_info_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___security_plugin_qos_policy.html">DDS_SecurityPluginQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">描述DDS安全插件集合的QoS配置项，可以配置一组DDS安全插件，然后通过名字进行区分。  <a href="struct_d_d_s___security_plugin_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___deadline_qos_policy.html">DDS_DeadlineQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">截止时间配置。  <a href="struct_d_d_s___deadline_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___destination_order_qos_policy.html">DDS_DestinationOrderQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">样本顺序配置。  <a href="struct_d_d_s___destination_order_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___discovery_config_qos_policy.html">DDS_DiscoveryConfigQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">配置SPDP协议。  <a href="struct_d_d_s___discovery_config_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___domain_participant_factory_qos.html">DDS_DomainParticipantFactoryQos</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">定义域参与者工厂的QoS。  <a href="struct_d_d_s___domain_participant_factory_qos.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___domain_participant_qos.html">DDS_DomainParticipantQos</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">定义域参与者的QoS配置。  <a href="struct_d_d_s___domain_participant_qos.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___durability_qos_policy.html">DDS_DurabilityQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">实体数据持久化配置。  <a href="struct_d_d_s___durability_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___durability_service_qos_policy.html">DDS_DurabilityServiceQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">历史数据资源配置。  <a href="struct_d_d_s___durability_service_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___entity_factory_qos_policy.html">DDS_EntityFactoryQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">实体工厂配置。  <a href="struct_d_d_s___entity_factory_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___group_data_qos_policy.html">DDS_GroupDataQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">组携带数据。  <a href="struct_d_d_s___group_data_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___history_qos_policy.html">DDS_HistoryQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">历史数据数据实例队列配置。  <a href="struct_d_d_s___history_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___latency_budget_qos_policy.html">DDS_LatencyBudgetQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">延时优化配置。  <a href="struct_d_d_s___latency_budget_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___lifespan_qos_policy.html">DDS_LifespanQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">数据有效期配置。  <a href="struct_d_d_s___lifespan_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___liveliness_qos_policy.html">DDS_LivelinessQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">数据写者存活性声明与判定配置。  <a href="struct_d_d_s___liveliness_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___ownership_qos_policy.html">DDS_OwnershipQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">数据实例所有权配置。  <a href="struct_d_d_s___ownership_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___ownership_strength_qos_policy.html">DDS_OwnershipStrengthQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">所有权值配置。  <a href="struct_d_d_s___ownership_strength_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___partition_qos_policy.html">DDS_PartitionQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">分区QoS配置。  <a href="struct_d_d_s___partition_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___presentation_qos_policy.html">DDS_PresentationQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">数据展示配置。  <a href="struct_d_d_s___presentation_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___property_qos_policy.html">DDS_PropertyQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">属性配置。  <a href="struct_d_d_s___property_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___publisher_qos.html">DDS_PublisherQos</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">发布者QoS配置  <a href="struct_d_d_s___publisher_qos.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___publish_mode_qos_policy.html">DDS_PublishModeQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">数据写者发布模式配置。  <a href="struct_d_d_s___publish_mode_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___qos_profile_qos_policy.html">DDS_QosProfileQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">定义与Qos配置文件有关的配置项。  <a href="struct_d_d_s___qos_profile_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___r_t_p_s___m_e_s_s_a_g_e___k_i_n_d.html">DDS_RTPS_MESSAGE_KIND</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">RTPS报文统计中的子消息类型。  <a href="struct_d_d_s___r_t_p_s___m_e_s_s_a_g_e___k_i_n_d.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___link_quality_evaluation_info.html">DDS_LinkQualityEvaluationInfo</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">定义通信质量评估内置主题关联的数据类型，为支持扩展，该类型为 MUTABLE 类型。  <a href="struct_d_d_s___link_quality_evaluation_info.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___quality_evaluation_qos_policy.html">DDS_QualityEvaluationQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">定义通信质量评估QoS测试。  <a href="struct_d_d_s___quality_evaluation_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___reader_data_lifecycle_qos_policy.html">DDS_ReaderDataLifecycleQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">数据读者数据实例的生命周期配置。  <a href="struct_d_d_s___reader_data_lifecycle_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___receiver_thread_config_qos_policy.html">DDS_ReceiverThreadConfigQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">域参与者的接收线程配置。  <a href="struct_d_d_s___receiver_thread_config_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___reliability_qos_policy.html">DDS_ReliabilityQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">可靠性配置。  <a href="struct_d_d_s___reliability_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___resource_limits_qos_policy.html">DDS_ResourceLimitsQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">资源限制配置。  <a href="struct_d_d_s___resource_limits_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___subscriber_qos.html">DDS_SubscriberQos</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">定义订阅者的QoS配置。  <a href="struct_d_d_s___subscriber_qos.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___thread_core_affinity_qos_policy.html">DDS_ThreadCoreAffinityQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">线程依附性配置。  <a href="struct_d_d_s___thread_core_affinity_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___time_based_filter_qos_policy.html">DDS_TimeBasedFilterQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">基于时间过滤配置。  <a href="struct_d_d_s___time_based_filter_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___topic_data_qos_policy.html">DDS_TopicDataQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">主题携带数据配置。  <a href="struct_d_d_s___topic_data_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___topic_qos.html">DDS_TopicQos</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">主题实体的QoS配置。  <a href="struct_d_d_s___topic_qos.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___transport_config_qos_policy.html">DDS_TransportConfigQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">传输方式配置。  <a href="struct_d_d_s___transport_config_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___transport_priority_qos_policy.html">DDS_TransportPriorityQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">传输优先级配置。  <a href="struct_d_d_s___transport_priority_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___type_consistency_enforcement_qos_policy.html">DDS_TypeConsistencyEnforcementQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">发布订阅数据类型兼容规则配置。  <a href="struct_d_d_s___type_consistency_enforcement_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___user_data_qos_policy.html">DDS_UserDataQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">实体携带数据。  <a href="struct_d_d_s___user_data_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_d_d_s___writer_data_lifecycle_qos_policy.html">DDS_WriterDataLifecycleQosPolicy</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">数据写者样本生命周期配置。  <a href="struct_d_d_s___writer_data_lifecycle_qos_policy.html#details">更多...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
+类型定义</h2></td></tr>
+<tr class="memitem:gaa71cebc11a22f46c69b18c6929b6fe65"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="gaa71cebc11a22f46c69b18c6929b6fe65"></a>
+typedef struct DDS_SecurityPlugin&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_qos_struct.html#gaa71cebc11a22f46c69b18c6929b6fe65">DDS_SecurityPlugin</a></td></tr>
+<tr class="memdesc:gaa71cebc11a22f46c69b18c6929b6fe65"><td class="mdescLeft">&#160;</td><td class="mdescRight">描述一项DDS安全插件的结构. <br /></td></tr>
+<tr class="separator:gaa71cebc11a22f46c69b18c6929b6fe65"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
+枚举</h2></td></tr>
+<tr class="memitem:ga4e1d22822e791111c475586408e5af88"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_qos_struct.html#ga4e1d22822e791111c475586408e5af88">DDS_DataWriterResourceLimitsInstanceReplacementKind</a> { <br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4e1d22822e791111c475586408e5af88a3b91cc2e153df3da80e7f4b34e2b6f1b">DDS_UNREGISTERED_INSTANCE_REPLACEMENT</a>, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4e1d22822e791111c475586408e5af88a3bd754f39231c8997cb372d31a83b4d1">DDS_ALIVE_INSTANCE_REPLACEMENT</a>, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4e1d22822e791111c475586408e5af88a30271662385c3265b54df551c7ee08c1">DDS_DISPOSED_INSTANCE_REPLACEMENT</a>, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4e1d22822e791111c475586408e5af88ac0cd646be98852eacf8bb217ea9a6fd8">DDS_ALIVE_THEN_DISPOSED_INSTANCE_REPLACEMENT</a>, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4e1d22822e791111c475586408e5af88a3ee1048f6f6b01ea79b19ac8213762db">DDS_DISPOSED_THEN_ALIVE_INSTANCE_REPLACEMENT</a>, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4e1d22822e791111c475586408e5af88a6cc7f716a9606e4ae9ba3547d666297f">DDS_ALIVE_OR_DISPOSED_INSTANCE_REPLACEMENT</a>
+<br />
+ }<tr class="memdesc:ga4e1d22822e791111c475586408e5af88"><td class="mdescLeft">&#160;</td><td class="mdescRight">配置数据写者实例替换策略。  <a href="group___core_qos_struct.html#ga4e1d22822e791111c475586408e5af88">更多...</a><br /></td></tr>
+<tr class="separator:ga4e1d22822e791111c475586408e5af88"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</td></tr>
+<tr class="memitem:ga9de9830bb01784aff1c4bc796290e732"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ga9de9830bb01784aff1c4bc796290e732"></a>enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_qos_struct.html#ga9de9830bb01784aff1c4bc796290e732">DDS_SecurityPluginType</a> <tr class="memdesc:ga9de9830bb01784aff1c4bc796290e732"><td class="mdescLeft">&#160;</td><td class="mdescRight">定义安全插件的类型。 <br /></td></tr>
+<tr class="separator:ga9de9830bb01784aff1c4bc796290e732"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</td></tr>
+<tr class="memitem:ga8f1c0c2b179c6281aa9e92d5ea88cbfe"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_qos_struct.html#ga8f1c0c2b179c6281aa9e92d5ea88cbfe">DDS_DestinationOrderQosPolicyKind</a> { <br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga8f1c0c2b179c6281aa9e92d5ea88cbfeaa718dc1f974fc792af552d293986bb26">DDS_BY_RECEPTION_TIMESTAMP_DESTINATIONORDER_QOS</a>, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga8f1c0c2b179c6281aa9e92d5ea88cbfeac7a65745504a7d4ccbc41299154fe67b">DDS_BY_SOURCE_TIMESTAMP_DESTINATIONORDER_QOS</a>
+<br />
+ }<tr class="memdesc:ga8f1c0c2b179c6281aa9e92d5ea88cbfe"><td class="mdescLeft">&#160;</td><td class="mdescRight">标识样本顺序类型。  <a href="group___core_qos_struct.html#ga8f1c0c2b179c6281aa9e92d5ea88cbfe">更多...</a><br /></td></tr>
+<tr class="separator:ga8f1c0c2b179c6281aa9e92d5ea88cbfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</td></tr>
+<tr class="memitem:ga4bc6b72c72928cb9ed6432e3e6a83e2e"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_qos_struct.html#ga4bc6b72c72928cb9ed6432e3e6a83e2e">DDS_DurabilityQosPolicyKind</a> { <br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4bc6b72c72928cb9ed6432e3e6a83e2eab81cc94a7a319b48b17e177d217a09d4">DDS_VOLATILE_DURABILITY_QOS</a>, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4bc6b72c72928cb9ed6432e3e6a83e2ea82f8bcc308fa4721d8d8525c383e7d25">DDS_TRANSIENT_LOCAL_DURABILITY_QOS</a>, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4bc6b72c72928cb9ed6432e3e6a83e2ea81786bd134fe8ca8cf5525715004c39e">DDS_TRANSIENT_DURABILITY_QOS</a>, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4bc6b72c72928cb9ed6432e3e6a83e2eacbd6b266c74543d92befcec26ccf38c2">DDS_PERSISTENT_DURABILITY_QOS</a>
+<br />
+ }<tr class="memdesc:ga4bc6b72c72928cb9ed6432e3e6a83e2e"><td class="mdescLeft">&#160;</td><td class="mdescRight">数据持久化类型。  <a href="group___core_qos_struct.html#ga4bc6b72c72928cb9ed6432e3e6a83e2e">更多...</a><br /></td></tr>
+<tr class="separator:ga4bc6b72c72928cb9ed6432e3e6a83e2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</td></tr>
+<tr class="memitem:ga96c54dadb2beb87b23776e766e282185"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_qos_struct.html#ga96c54dadb2beb87b23776e766e282185">DDS_HistoryQosPolicyKind</a> { <br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga96c54dadb2beb87b23776e766e282185a993d3120b7bbb347ce11e0e6f68b29ff">DDS_KEEP_LAST_HISTORY_QOS</a>, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga96c54dadb2beb87b23776e766e282185a9e526d876dae232aa083125c72135f5b">DDS_KEEP_ALL_HISTORY_QOS</a>
+<br />
+ }<tr class="memdesc:ga96c54dadb2beb87b23776e766e282185"><td class="mdescLeft">&#160;</td><td class="mdescRight">样本数据保存类型。  <a href="group___core_qos_struct.html#ga96c54dadb2beb87b23776e766e282185">更多...</a><br /></td></tr>
+<tr class="separator:ga96c54dadb2beb87b23776e766e282185"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</td></tr>
+<tr class="memitem:ga3ea638553fd66356c38071040de062e5"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_qos_struct.html#ga3ea638553fd66356c38071040de062e5">DDS_LivelinessQosPolicyKind</a> { <br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga3ea638553fd66356c38071040de062e5ad9cee7b01dd754152a13b6999b57911b">DDS_AUTOMATIC_LIVELINESS_QOS</a>, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga3ea638553fd66356c38071040de062e5a5519eb00b713987173ff0858e7e3c1f0">DDS_MANUAL_BY_PARTICIPANT_LIVELINESS_QOS</a>, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga3ea638553fd66356c38071040de062e5a6ea670a089709fe482e1c92f5ad1c255">DDS_MANUAL_BY_TOPIC_LIVELINESS_QOS</a>
+<br />
+ }<tr class="memdesc:ga3ea638553fd66356c38071040de062e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">指明数据写者声明存活性的类型。  <a href="group___core_qos_struct.html#ga3ea638553fd66356c38071040de062e5">更多...</a><br /></td></tr>
+<tr class="separator:ga3ea638553fd66356c38071040de062e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</td></tr>
+<tr class="memitem:gaa88100c64a26cc036cb2eb2d631c3f43"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_qos_struct.html#gaa88100c64a26cc036cb2eb2d631c3f43">DDS_OwnershipQosPolicyKind</a> { <br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#ggaa88100c64a26cc036cb2eb2d631c3f43a262c9859d5c214495c02cd39366a335f">DDS_SHARED_OWNERSHIP_QOS</a>, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#ggaa88100c64a26cc036cb2eb2d631c3f43a6f223289a81f87d7929408a84a27f316">DDS_EXCLUSIVE_OWNERSHIP_QOS</a>
+<br />
+ }<tr class="memdesc:gaa88100c64a26cc036cb2eb2d631c3f43"><td class="mdescLeft">&#160;</td><td class="mdescRight">指明数据实例所有权类型。  <a href="group___core_qos_struct.html#gaa88100c64a26cc036cb2eb2d631c3f43">更多...</a><br /></td></tr>
+<tr class="separator:gaa88100c64a26cc036cb2eb2d631c3f43"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</td></tr>
+<tr class="memitem:ga123d979f855f637f32eb525b778175b2"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_qos_struct.html#ga123d979f855f637f32eb525b778175b2">DDS_PresentationQosPolicyAccessScopeKind</a> { <br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga123d979f855f637f32eb525b778175b2ab7e8c01f13b9c46013094fdee7d6af36">DDS_INSTANCE_PRESENTATION_QOS</a>, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga123d979f855f637f32eb525b778175b2a6d21a371adc6e10a62c2739171f5c22f">DDS_TOPIC_PRESENTATION_QOS</a>, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga123d979f855f637f32eb525b778175b2ae0591a04e045da1d86f25fa8bec39937">DDS_GROUP_PRESENTATION_QOS</a>
+<br />
+ }<tr class="memdesc:ga123d979f855f637f32eb525b778175b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">表明数据展现控制域类型。  <a href="group___core_qos_struct.html#ga123d979f855f637f32eb525b778175b2">更多...</a><br /></td></tr>
+<tr class="separator:ga123d979f855f637f32eb525b778175b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</td></tr>
+<tr class="memitem:ga7c71d1e8aba7e852f23c9fcce4b80b42"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_qos_struct.html#ga7c71d1e8aba7e852f23c9fcce4b80b42">DDS_PublishModeQosPolicyKind</a> { <br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga7c71d1e8aba7e852f23c9fcce4b80b42ac767f78a22d81ac1988d6b94d2908a3b">DDS_SYNCHRONOUS_PUBLISH_MODE_QOS</a>, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga7c71d1e8aba7e852f23c9fcce4b80b42a4ca8021581a2541bb90d19d64fb0ac1e">DDS_ASYNCHRONOUS_PUBLISH_MODE_QOS</a>
+<br />
+ }<tr class="memdesc:ga7c71d1e8aba7e852f23c9fcce4b80b42"><td class="mdescLeft">&#160;</td><td class="mdescRight">定义数据写者的发送模式类型。  <a href="group___core_qos_struct.html#ga7c71d1e8aba7e852f23c9fcce4b80b42">更多...</a><br /></td></tr>
+<tr class="separator:ga7c71d1e8aba7e852f23c9fcce4b80b42"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</td></tr>
+<tr class="memitem:ga4b2c4d85475a58758fba7601082a40f8"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_qos_struct.html#ga4b2c4d85475a58758fba7601082a40f8">DDS_QosPolicyId_t</a> { <br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4b2c4d85475a58758fba7601082a40f8a3b381d1bfefadadd7bdc4a6df94066ba">DDS_INVALID_QOS_POLICY_ID</a> = 0, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4b2c4d85475a58758fba7601082a40f8afd439068503642ba27ae03e82cd5dfc8">DDS_USERDATA_QOS_POLICY_ID</a> = 1, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4b2c4d85475a58758fba7601082a40f8abc6c3daf8f99df31ca60def2b953b800">DDS_DURABILITY_QOS_POLICY_ID</a> = 2, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4b2c4d85475a58758fba7601082a40f8a9515752aa5a5e4580593a819446767ff">DDS_PRESENTATION_QOS_POLICY_ID</a> = 3, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4b2c4d85475a58758fba7601082a40f8abd77e173b457d7c9a4455c00f5a72d32">DDS_DEADLINE_QOS_POLICY_ID</a> = 4, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4b2c4d85475a58758fba7601082a40f8a4307e6cf33965ad1b332de72c7b0a3e6">DDS_LATENCYBUDGET_QOS_POLICY_ID</a> = 5, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4b2c4d85475a58758fba7601082a40f8afd0f507c4cc38a933f5817d0ea873d03">DDS_OWNERSHIP_QOS_POLICY_ID</a> = 6, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4b2c4d85475a58758fba7601082a40f8a766d1409fe6aa9ee6264f4efe69731c5">DDS_OWNERSHIPSTRENGTH_QOS_POLICY_ID</a> = 7, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4b2c4d85475a58758fba7601082a40f8ad155c60f378087fa8fdbb0f3eddca268">DDS_LIVELINESS_QOS_POLICY_ID</a> = 8, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4b2c4d85475a58758fba7601082a40f8a5c24a0ad10b8b5557f608306acff7e50">DDS_TIMEBASEDFILTER_QOS_POLICY_ID</a> = 9, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4b2c4d85475a58758fba7601082a40f8a2914476b818ff9a6c16a5a15cc4c9859">DDS_PARTITION_QOS_POLICY_ID</a> = 10, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4b2c4d85475a58758fba7601082a40f8a33cceb8ac73aa06ef39485b3d887c815">DDS_RELIABILITY_QOS_POLICY_ID</a> = 11, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4b2c4d85475a58758fba7601082a40f8abc7d529d3a26069586a80b7aac6763c4">DDS_DESTINATIONORDER_QOS_POLICY_ID</a> = 12, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4b2c4d85475a58758fba7601082a40f8ae84e1113bab59340942bfd52193ea428">DDS_HISTORY_QOS_POLICY_ID</a> = 13, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4b2c4d85475a58758fba7601082a40f8af6dc4ee596d5cbe34bf5c4cb67533c57">DDS_RESOURCELIMITS_QOS_POLICY_ID</a> = 14, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4b2c4d85475a58758fba7601082a40f8a02e9e33058e0cdbce813165a59c53438">DDS_ENTITYFACTORY_QOS_POLICY_ID</a> = 15, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4b2c4d85475a58758fba7601082a40f8ac87a7459f45e7dfb8b4fe6d7948edb89">DDS_WRITERDATALIFECYCLE_QOS_POLICY_ID</a> = 16, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4b2c4d85475a58758fba7601082a40f8aa62ade0f5a05654c5f959dd33bbeb07e">DDS_READERDATALIFECYCLE_QOS_POLICY_ID</a> = 17, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4b2c4d85475a58758fba7601082a40f8a12f9b3bb36fe960675fe077b11ea99ce">DDS_TOPICDATA_QOS_POLICY_ID</a> = 18, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4b2c4d85475a58758fba7601082a40f8aac3715c5385e49e1b6a995f0f8fdec6f">DDS_GROUPDATA_QOS_POLICY_ID</a> = 19, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4b2c4d85475a58758fba7601082a40f8ab76060ee902af0589e55e15a7a213797">DDS_TRANSPORTPRIORITY_QOS_POLICY_ID</a> = 20, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4b2c4d85475a58758fba7601082a40f8a8e8deda6f1b1d576fcea58e66e1eb00b">DDS_LIFESPAN_QOS_POLICY_ID</a> = 21, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4b2c4d85475a58758fba7601082a40f8a6e16affba7e7d1abee18b0a8fb5ced47">DDS_DURABILITYSERVICE_QOS_POLICY_ID</a> = 22, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4b2c4d85475a58758fba7601082a40f8a445430c03168ba1923fcd989f9108331">DDS_DATA_REPRESENTATION_QOS_POLICY_ID</a> = 23, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4b2c4d85475a58758fba7601082a40f8a832635ecb9be4de866ea695b9072d74e">DDS_TYPE_CONSISTENCY_ENFORCEMENT_QOS_POLICY_ID</a> = 24, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4b2c4d85475a58758fba7601082a40f8a0017a3216c1bfa9e87d53a95d909726d">DDS_NETWORKCONFIG_QOS_POLICY_ID</a> = 50, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4b2c4d85475a58758fba7601082a40f8ade5040911724bc9981fc93fd49c9a76c">DDS_DISCOVERYCONFIG_QOS_POLICY_ID</a> = 51
+<br />
+ }<tr class="memdesc:ga4b2c4d85475a58758fba7601082a40f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">枚举值标识QoS的类型。  <a href="group___core_qos_struct.html#ga4b2c4d85475a58758fba7601082a40f8">更多...</a><br /></td></tr>
+<tr class="separator:ga4b2c4d85475a58758fba7601082a40f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</td></tr>
+<tr class="memitem:gafd4a33ca8f3f25a52d1e884ae385660b"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_qos_struct.html#gafd4a33ca8f3f25a52d1e884ae385660b">DDS_ReceiverThreadKind</a> { <br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#ggafd4a33ca8f3f25a52d1e884ae385660ba3e9a7ed1033cc02f232130293bd42cb9">DDS_THREAD_PER_PORT</a>, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#ggafd4a33ca8f3f25a52d1e884ae385660bac8069d85dc35d864a00e7e5fa3a51cab">DDS_THREAD_PER_KIND</a>, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#ggafd4a33ca8f3f25a52d1e884ae385660bac83827c839f0f57f8f2a4b8c871e9c25">DDS_THREAD_ALL_PORTS</a>
+<br />
+ }<tr class="memdesc:gafd4a33ca8f3f25a52d1e884ae385660b"><td class="mdescLeft">&#160;</td><td class="mdescRight">配置域参与者下接收线程策略。  <a href="group___core_qos_struct.html#gafd4a33ca8f3f25a52d1e884ae385660b">更多...</a><br /></td></tr>
+<tr class="separator:gafd4a33ca8f3f25a52d1e884ae385660b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</td></tr>
+<tr class="memitem:ga2f14b750ee0af86a09a0663a9c2c08f2"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_qos_struct.html#ga2f14b750ee0af86a09a0663a9c2c08f2">DDS_TypeConsistencyKind</a> { <br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga2f14b750ee0af86a09a0663a9c2c08f2a81457fae2aea099cb0374e4cba506750">DDS_DISALLOW_TYPE_COERCION</a>, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga2f14b750ee0af86a09a0663a9c2c08f2afb435413e3805242703990f8a4032942">DDS_ALLOW_TYPE_COERCION</a>
+<br />
+ }<tr class="memdesc:ga2f14b750ee0af86a09a0663a9c2c08f2"><td class="mdescLeft">&#160;</td><td class="mdescRight">定义兼容的类型，用于从预先定义的策略中选取。  <a href="group___core_qos_struct.html#ga2f14b750ee0af86a09a0663a9c2c08f2">更多...</a><br /></td></tr>
+<tr class="separator:ga2f14b750ee0af86a09a0663a9c2c08f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</td></tr>
+<tr class="memitem:gae4033e1174016dbd31c46763f740d227"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_qos_struct.html#gae4033e1174016dbd31c46763f740d227">DDS_LogType</a> { <br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227a56218878acc4b04bf527311b97e6d9e0">ZRLOG_ERROR</a> = 0x0001 &lt;&lt; 1, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227ae757b8532c0973c14bdd73e67845cd12">ZRLOG_ADMIN_INFO</a> = 0x0001 &lt;&lt; 2, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227a9daa5fcc4a75eb768bd865701dc4c88e">ZRLOG_USER_INFO</a> = 0x0001 &lt;&lt; 3, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227a981fd02cacae783d343bc88196f8479e">ZRLOG_WARNING</a> = 0x0001 &lt;&lt; 4, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227a3c84d63470191c327ad32d830fb497e9">LOGTYPE_UNKNOWN</a> = 0x0001 &lt;&lt; 9
+<br />
+ }<tr class="memdesc:gae4033e1174016dbd31c46763f740d227"><td class="mdescLeft">&#160;</td><td class="mdescRight">用于表示某一条日志的输出等级，对于不同的等级的用户可以看到不同的日志文件。  <a href="group___core_qos_struct.html#gae4033e1174016dbd31c46763f740d227">更多...</a><br /></td></tr>
+<tr class="separator:gae4033e1174016dbd31c46763f740d227"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</td></tr>
+<tr class="memitem:ga4c3f6f46b600d6c53ddbea9a7518e717"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_qos_struct.html#ga4c3f6f46b600d6c53ddbea9a7518e717">DDS_LogBackupKind</a> { <br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4c3f6f46b600d6c53ddbea9a7518e717a30fc7849bc95477763a130d75d67c168">DDS_LOG_BACKUP_NOTUSED_QOS</a>, 
+<br />
+&#160;&#160;<b>DDS_LOG_BACKUP_EXIST_FILE</b>, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4c3f6f46b600d6c53ddbea9a7518e717aad98ab7d8aa56fd32e1a342583fd23d6">DDS_LOG_BACKUP_FILE_SIZE_QOS</a>, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga4c3f6f46b600d6c53ddbea9a7518e717a3bdc646ce19ecac5c70374fee25444fa">DDS_LOG_BACKUP_TIME_INTERVAL_QOS</a>
+<br />
+ }<tr class="memdesc:ga4c3f6f46b600d6c53ddbea9a7518e717"><td class="mdescLeft">&#160;</td><td class="mdescRight">本地日志文件的备份策略。  <a href="group___core_qos_struct.html#ga4c3f6f46b600d6c53ddbea9a7518e717">更多...</a><br /></td></tr>
+<tr class="separator:ga4c3f6f46b600d6c53ddbea9a7518e717"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</td></tr>
+<tr class="memitem:ga0ca36486e23cb11196fdfb245bb15ff9"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_qos_struct.html#ga0ca36486e23cb11196fdfb245bb15ff9">DDS_ReliabilityQosPolicyKind</a> { <br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga0ca36486e23cb11196fdfb245bb15ff9aae82431f2015239328733f3cb41d780d">DDS_BEST_EFFORT_RELIABILITY_QOS</a> = 1, 
+<br />
+&#160;&#160;<a class="el" href="group___core_qos_struct.html#gga0ca36486e23cb11196fdfb245bb15ff9ae5d04022c6405f9db6406489956d1923">DDS_RELIABLE_RELIABILITY_QOS</a> = 2
+<br />
+ }<tr class="memdesc:ga0ca36486e23cb11196fdfb245bb15ff9"><td class="mdescLeft">&#160;</td><td class="mdescRight">可靠性配置类型。  <a href="group___core_qos_struct.html#ga0ca36486e23cb11196fdfb245bb15ff9">更多...</a><br /></td></tr>
+<tr class="separator:ga0ca36486e23cb11196fdfb245bb15ff9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<p>本模块定义核心接口定义的QoS结构体。 </p>
+<h2 class="groupheader">枚举类型说明</h2>
+<a class="anchor" id="ga4e1d22822e791111c475586408e5af88"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="group___core_qos_struct.html#ga4e1d22822e791111c475586408e5af88">DDS_DataWriterResourceLimitsInstanceReplacementKind</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>配置数据写者实例替换策略。 </p>
+<table class="fieldtable">
+<tr><th colspan="2">枚举值</th></tr><tr><td class="fieldname"><a class="anchor" id="gga4e1d22822e791111c475586408e5af88a3b91cc2e153df3da80e7f4b34e2b6f1b"></a>DDS_UNREGISTERED_INSTANCE_REPLACEMENT&#160;</td><td class="fielddoc">
+<p>只替换已注销的实例。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4e1d22822e791111c475586408e5af88a3bd754f39231c8997cb372d31a83b4d1"></a>DDS_ALIVE_INSTANCE_REPLACEMENT&#160;</td><td class="fielddoc">
+<p>只替换存活的实例。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4e1d22822e791111c475586408e5af88a30271662385c3265b54df551c7ee08c1"></a>DDS_DISPOSED_INSTANCE_REPLACEMENT&#160;</td><td class="fielddoc">
+<p>只替换已销毁的实例。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4e1d22822e791111c475586408e5af88ac0cd646be98852eacf8bb217ea9a6fd8"></a>DDS_ALIVE_THEN_DISPOSED_INSTANCE_REPLACEMENT&#160;</td><td class="fielddoc">
+<p>优先替换存活的实例，若不存在则替换已注销的实例。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4e1d22822e791111c475586408e5af88a3ee1048f6f6b01ea79b19ac8213762db"></a>DDS_DISPOSED_THEN_ALIVE_INSTANCE_REPLACEMENT&#160;</td><td class="fielddoc">
+<p>优先替换已销毁的实例，若不存在则替换存活的实例。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4e1d22822e791111c475586408e5af88a6cc7f716a9606e4ae9ba3547d666297f"></a>DDS_ALIVE_OR_DISPOSED_INSTANCE_REPLACEMENT&#160;</td><td class="fielddoc">
+<p>替换存活或者已注销的实例。 </p>
+</td></tr>
+</table>
+
+</div>
+</div>
+<a class="anchor" id="ga8f1c0c2b179c6281aa9e92d5ea88cbfe"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="group___core_qos_struct.html#ga8f1c0c2b179c6281aa9e92d5ea88cbfe">DDS_DestinationOrderQosPolicyKind</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>标识样本顺序类型。 </p>
+<table class="fieldtable">
+<tr><th colspan="2">枚举值</th></tr><tr><td class="fieldname"><a class="anchor" id="gga8f1c0c2b179c6281aa9e92d5ea88cbfeaa718dc1f974fc792af552d293986bb26"></a>DDS_BY_RECEPTION_TIMESTAMP_DESTINATIONORDER_QOS&#160;</td><td class="fielddoc">
+<p>以数据读者接收到的顺序存储在数据读者的内部队列中。 </p>
+<p>默认情况下选择该类型。数据会被以接收到的顺序提交给数据读者，这可能会导致不同的数据读者以不同的样本顺序接收数据。 例如同一个主题下的数据写者DW1与DW2以及数据读者DR1与DR2，相互匹配，以顺序DW1(1)、DW2(1)、DW1(2)、DW2(2)发布主题数据， 在该QoS条件下，DR1与DR2可能的接收顺序包括：</p><ul>
+<li>DW1(1)、DW2(1)、DW1(2)、DW2(2)</li>
+<li>DW1(1)、DW2(1)、DW2(2)、DW1(2)</li>
+<li>DW1(1)、DW1(2)、DW2(1)、DW2(2)</li>
+<li>DW2(1)、DW1(1)、DW1(2)、DW2(2)</li>
+<li>DW2(1)、DW1(1)、DW2(2)、DW1(2)</li>
+<li>DW2(1)、DW2(2)、DW1(1)、DW1(2) </li>
+</ul>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga8f1c0c2b179c6281aa9e92d5ea88cbfeac7a65745504a7d4ccbc41299154fe67b"></a>DDS_BY_SOURCE_TIMESTAMP_DESTINATIONORDER_QOS&#160;</td><td class="fielddoc">
+<p>以样本数据的源时间戳顺序存储在数据读者的内部队列中。 </p>
+<p>当数据写者设置为此类型时，发布一个数据的时间戳必须不小于前一个发布的数据的时间戳，否则发布数据会失败。 当数据读者设置为此类型时，数据读者只会接收发送时间戳比上一个收到的数据发送时间戳大的数据。 其他数据会被拒绝，但是不会影响 DDS_SAMPLE_REJECTED_STATUS 状态。</p>
+<p>例如同一个主题下的数据写者DW1与DW2以及数据读者DR1与DR2，相互匹配，假设DW1与DW2使用统一的时间系统 以顺序DW1(1)、DW2(1)、DW1(2)、DW2(2)发布主题数据， 在该QoS条件下，DR1与DR2可能的接收顺序包括：</p><ul>
+<li>DW1(1)、DW2(1)、DW1(2)、DW2(2)</li>
+<li>DW1(1)、DW2(1)、DW2(2)</li>
+<li>DW1(1)、DW1(2)、DW2(2)</li>
+<li>DW2(1)、DW2(2)</li>
+</ul>
+<p>未收到的样本被数据读者根据时间戳拒绝。 </p>
+</td></tr>
+</table>
+
+</div>
+</div>
+<a class="anchor" id="ga4bc6b72c72928cb9ed6432e3e6a83e2e"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="group___core_qos_struct.html#ga4bc6b72c72928cb9ed6432e3e6a83e2e">DDS_DurabilityQosPolicyKind</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>数据持久化类型。 </p>
+<table class="fieldtable">
+<tr><th colspan="2">枚举值</th></tr><tr><td class="fieldname"><a class="anchor" id="gga4bc6b72c72928cb9ed6432e3e6a83e2eab81cc94a7a319b48b17e177d217a09d4"></a>DDS_VOLATILE_DURABILITY_QOS&#160;</td><td class="fielddoc">
+<p>无持久化。 </p>
+<p>该类型为默认类型，数据写者设置为该类型表示该数据写者不存储已经发送完成（当前匹配的数据读者都收到）的数据样本， 数据读者设置为该类型表示对于在该数据读者加入DDS网络之前的数据写者发布完成的历史数据不感兴趣。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4bc6b72c72928cb9ed6432e3e6a83e2ea82f8bcc308fa4721d8d8525c383e7d25"></a>DDS_TRANSIENT_LOCAL_DURABILITY_QOS&#160;</td><td class="fielddoc">
+<p>存活的数据写者在内存中持久化。 </p>
+<p>数据写者设置为该类型表示该数据写者将在内存中存储已经发送完成（当前匹配的数据读者都收到）， 存储的数量受资源限制配置控制 <a class="el" href="struct_d_d_s___resource_limits_qos_policy.html" title="资源限制配置。 ">DDS_ResourceLimitsQosPolicy</a> ，在数据写者删除时，这些历史数据也会被同时删除。 数据读者设置为该类型表示对于在该数据读者加入DDS网络之前且此时仍存活的数据写者发布完成的历史数据感兴趣。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4bc6b72c72928cb9ed6432e3e6a83e2ea81786bd134fe8ca8cf5525715004c39e"></a>DDS_TRANSIENT_DURABILITY_QOS&#160;</td><td class="fielddoc">
+<p>所有数据写者（包括在数据读者加入DDS网络时已经被删除的数据写者）在内存中持久化。 </p>
+<dl class="section warning"><dt>警告</dt><dd>该类型未实现。 </dd></dl>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4bc6b72c72928cb9ed6432e3e6a83e2eacbd6b266c74543d92befcec26ccf38c2"></a>DDS_PERSISTENT_DURABILITY_QOS&#160;</td><td class="fielddoc">
+<p>所有数据写者（包括在数据读者加入DDS网络时已经被删除的数据写者）在持久化存储（文件、数据库）中持久化。 </p>
+<dl class="section warning"><dt>警告</dt><dd>该类型未实现。 </dd></dl>
+</td></tr>
+</table>
+
+</div>
+</div>
+<a class="anchor" id="ga96c54dadb2beb87b23776e766e282185"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="group___core_qos_struct.html#ga96c54dadb2beb87b23776e766e282185">DDS_HistoryQosPolicyKind</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>样本数据保存类型。 </p>
+<table class="fieldtable">
+<tr><th colspan="2">枚举值</th></tr><tr><td class="fieldname"><a class="anchor" id="gga96c54dadb2beb87b23776e766e282185a993d3120b7bbb347ce11e0e6f68b29ff"></a>DDS_KEEP_LAST_HISTORY_QOS&#160;</td><td class="fielddoc">
+<p>保存最新样本数据类型。 </p>
+<p>该类型为默认类型。这种情况下，ZRDDS会尝试为每个实例保存最新的样本，当样本的数量达到 <a class="el" href="struct_d_d_s___history_qos_policy.html#aef0fb3fd3579866be17d1a936f5e3729" title="当 kind == DDS_KEEP_LAST_HISTORY_QOS 数据实例队列的最大长度。 ">DDS_HistoryQosPolicy::depth</a> 限制时， ZRDDS 会用最新的样本覆盖最旧的样本，当实体设置为该类型时，不能保证绝对的可靠。</p>
+<p>设置为该类型的数据写者的可靠性表现如下：</p><ul>
+<li>当队列中一个数据实例下样本的数量 达到 depth 值，该数据实例下新的样本会替换队列中该实例中最旧的样本；</li>
+<li>此时如果被覆盖的数据样本未被匹配的数据读者接收，则会造成数据样本丢失，数据读者的样本丢失状态会被触发 （DataReaderListener::on_sample_lost 以及 DataReader::get_sample_lost_status获取状态）。</li>
+</ul>
+<p>设置为该类型的数据读者的可靠性表现如下：</p><ul>
+<li>当队列中一个数据实例下样本的数量 达到 depth 值，该数据实例下新的样本会替换队列中该实例中最旧的样本；</li>
+<li>此时如果被替换的样本未被用户通过 DataReader::read/take系列方法访问时，用户将会丢失被替换样本。 </li>
+</ul>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga96c54dadb2beb87b23776e766e282185a9e526d876dae232aa083125c72135f5b"></a>DDS_KEEP_ALL_HISTORY_QOS&#160;</td><td class="fielddoc">
+<p>尝试保存所有样本数据类型。 </p>
+<p>以上描述中使用“尝试”一词是因为实际保存的数量受限于 <a class="el" href="struct_d_d_s___resource_limits_qos_policy.html" title="资源限制配置。 ">DDS_ResourceLimitsQosPolicy</a> 否则设置为该保存类型 将导致内存资源耗尽，设置为该类型时， <a class="el" href="struct_d_d_s___history_qos_policy.html#aef0fb3fd3579866be17d1a936f5e3729" title="当 kind == DDS_KEEP_LAST_HISTORY_QOS 数据实例队列的最大长度。 ">DDS_HistoryQosPolicy::depth</a> 成员无效。</p>
+<p>设置为该类型的数据写者的可靠性表现如下：</p><ul>
+<li>当队列中一个数据实例下样本的数量 达到 <a class="el" href="struct_d_d_s___resource_limits_qos_policy.html#ae3d9339bebf4c7163cf6dff82882cbef" title="单个数据实例下存储的最大样本个数。 ">DDS_ResourceLimitsQosPolicy::max_samples_per_instance</a> 值 ；</li>
+<li>如果最旧的数据样本已经被所有数据读者接收时，数据实例下新的样本会替换该实例在发送队列中最旧的样本。</li>
+<li>如果实例下最旧的样本没有被所有数据读者接收时，尝试写入一个该数据实例下的新样本的 DataWriter::write 操作会产生阻塞（时间由 <a class="el" href="struct_d_d_s___reliability_qos_policy.html#afb69024df5cf52ba12ad4e0947be89aa" title="可靠通信下，数据写者因资源不足而导致阻塞时的最长阻塞时长。 ">DDS_ReliabilityQosPolicy::max_blocking_time</a> 决定）。</li>
+</ul>
+<p>设置为该类型的数据读者的可靠性表现如下：</p><ul>
+<li>当队列中一个数据实例下样本的数量 达到 DDS_ResourceLimitsQosPolicy::max_samples_per_instance值 ；</li>
+<li>该新的数据样本将被拒绝，此时数据读者的样本拒绝状态会被触发 （ DataReaderListener::on_sample_reject 以及 DataReader::get_sample_reject_status 获取状态）。 此时需要用户通过DataReader::take 系列方法腾出存储存储空间，使得新的样本能够提交给用户， 注意此时不会造成丢包，因为被拒绝的样本会通过重传等机制重新尝试提交给用户。 </li>
+</ul>
+</td></tr>
+</table>
+
+</div>
+</div>
+<a class="anchor" id="ga3ea638553fd66356c38071040de062e5"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="group___core_qos_struct.html#ga3ea638553fd66356c38071040de062e5">DDS_LivelinessQosPolicyKind</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>指明数据写者声明存活性的类型。 </p>
+<table class="fieldtable">
+<tr><th colspan="2">枚举值</th></tr><tr><td class="fieldname"><a class="anchor" id="gga3ea638553fd66356c38071040de062e5ad9cee7b01dd754152a13b6999b57911b"></a>DDS_AUTOMATIC_LIVELINESS_QOS&#160;</td><td class="fielddoc">
+<p>由ZRDDS底层自动管理存活性声明。 </p>
+<p>默认为该类型，ZRDDS内部负责自动地声明该类型数据写者，ZRDDS会至少以 <a class="el" href="struct_d_d_s___liveliness_qos_policy.html#a5e56fdc6376b5dcd69180b5deba7d7a1" title="失活时间。 ">DDS_LivelinessQosPolicy::lease_duration</a> 的频率向其他域参与者声明该类数据写者的存活性，该设置是最方便的也是最不精确的声明数据写者存活性的方法。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga3ea638553fd66356c38071040de062e5a5519eb00b713987173ff0858e7e3c1f0"></a>DDS_MANUAL_BY_PARTICIPANT_LIVELINESS_QOS&#160;</td><td class="fielddoc">
+<p>通过域参与者手动管理存活性声明。 </p>
+<p>假设数据写者设置该类型，则ZRDDS假设用户程序在 <a class="el" href="struct_d_d_s___liveliness_qos_policy.html#a5e56fdc6376b5dcd69180b5deba7d7a1" title="失活时间。 ">DDS_LivelinessQosPolicy::lease_duration</a> 内声明了属于同一个域参与者下至少一个数据写者的存活性或域参与者自身的存活性，则该数据写者也是存活的。 该设置允许用户代码通过声明同一个域参与者下任意一个数据写者或域参与者自身的存活性来代表整组数据写者的存活性的声明。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga3ea638553fd66356c38071040de062e5a6ea670a089709fe482e1c92f5ad1c255"></a>DDS_MANUAL_BY_TOPIC_LIVELINESS_QOS&#160;</td><td class="fielddoc">
+<p>由数据写者手动管理存活性声明。 </p>
+<p>只有用户程序明确的调用数据写者声明存活性的操作，该数据写者才会被认为是存活的。该设置强制用户程序声明 数据写者的存活性，可以让用户程序更好地控制何时其他程序会认为数据写者变为不活跃的，但是会变得很不方便。 </p>
+</td></tr>
+</table>
+
+</div>
+</div>
+<a class="anchor" id="ga4c3f6f46b600d6c53ddbea9a7518e717"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum enum <a class="el" href="group___core_qos_struct.html#ga4c3f6f46b600d6c53ddbea9a7518e717">DDS_LogBackupKind</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>本地日志文件的备份策略。 </p>
+<table class="fieldtable">
+<tr><th colspan="2">枚举值</th></tr><tr><td class="fieldname"><a class="anchor" id="gga4c3f6f46b600d6c53ddbea9a7518e717a30fc7849bc95477763a130d75d67c168"></a>DDS_LOG_BACKUP_NOTUSED_QOS&#160;</td><td class="fielddoc">
+<p>默认模式。不使用日志备份功能。每次重启应用，都将覆盖原有日志。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4c3f6f46b600d6c53ddbea9a7518e717aad98ab7d8aa56fd32e1a342583fd23d6"></a>DDS_LOG_BACKUP_FILE_SIZE_QOS&#160;</td><td class="fielddoc">
+<p>当前日志文件达到一定大小后将进行备份，并重新创建日志文件。 选用该模式后，日志文件的名称将为“日志文件名称_创建时间.ddslog”。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4c3f6f46b600d6c53ddbea9a7518e717a3bdc646ce19ecac5c70374fee25444fa"></a>DDS_LOG_BACKUP_TIME_INTERVAL_QOS&#160;</td><td class="fielddoc">
+<p>每隔一段时间后将进行备份，并重新创建日志文件。 选用该模式后，日志文件的名称将为“日志文件名称_创建时间.ddslog”。 </p>
+</td></tr>
+</table>
+
+</div>
+</div>
+<a class="anchor" id="gae4033e1174016dbd31c46763f740d227"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="group___core_qos_struct.html#gae4033e1174016dbd31c46763f740d227">DDS_LogType</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>用于表示某一条日志的输出等级，对于不同的等级的用户可以看到不同的日志文件。 </p>
+<table class="fieldtable">
+<tr><th colspan="2">枚举值</th></tr><tr><td class="fieldname"><a class="anchor" id="ggae4033e1174016dbd31c46763f740d227a56218878acc4b04bf527311b97e6d9e0"></a>ZRLOG_ERROR&#160;</td><td class="fielddoc">
+<p>程序出现不可忽略的错误。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="ggae4033e1174016dbd31c46763f740d227ae757b8532c0973c14bdd73e67845cd12"></a>ZRLOG_ADMIN_INFO&#160;</td><td class="fielddoc">
+<p>系统管理员视角的信息,比如一些调试信息。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="ggae4033e1174016dbd31c46763f740d227a9daa5fcc4a75eb768bd865701dc4c88e"></a>ZRLOG_USER_INFO&#160;</td><td class="fielddoc">
+<p>通知用户视角信息，即只能看到自定义Endpoint之间的数据交互。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="ggae4033e1174016dbd31c46763f740d227a981fd02cacae783d343bc88196f8479e"></a>ZRLOG_WARNING&#160;</td><td class="fielddoc">
+<p>警告信息但是能够正常运行。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="ggae4033e1174016dbd31c46763f740d227a3c84d63470191c327ad32d830fb497e9"></a>LOGTYPE_UNKNOWN&#160;</td><td class="fielddoc">
+<p>无效的选项。 </p>
+</td></tr>
+</table>
+
+</div>
+</div>
+<a class="anchor" id="gaa88100c64a26cc036cb2eb2d631c3f43"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="group___core_qos_struct.html#gaa88100c64a26cc036cb2eb2d631c3f43">DDS_OwnershipQosPolicyKind</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>指明数据实例所有权类型。 </p>
+<table class="fieldtable">
+<tr><th colspan="2">枚举值</th></tr><tr><td class="fieldname"><a class="anchor" id="ggaa88100c64a26cc036cb2eb2d631c3f43a262c9859d5c214495c02cd39366a335f"></a>DDS_SHARED_OWNERSHIP_QOS&#160;</td><td class="fielddoc">
+<p>共享所有权类型。 </p>
+<p>默认为该类型，允许多个数据写者去更新同一个数据实例，即数据读者会通知用户所有匹配数据写者发布的数据。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="ggaa88100c64a26cc036cb2eb2d631c3f43a6f223289a81f87d7929408a84a27f316"></a>DDS_EXCLUSIVE_OWNERSHIP_QOS&#160;</td><td class="fielddoc">
+<p>独占所有权类型。 </p>
+<p>设置为该类型表示每个数据实例只能被拥有该数据实例所有权的数据写者修改，即数据读者仅会通知用户该数据写者发布的数据。 在数据读者端数据实例的所有权属于满足以下条件的数据写者：</p><ol type="1">
+<li><a class="el" href="struct_d_d_s___ownership_strength_qos_policy.html#afda6a59cd3cfd9bc904c98efc68a61eb" title="指明权值，数值越大权值越高。 ">DDS_OwnershipStrengthQosPolicy::value</a> 最大的数据写者；</li>
+<li>数据写者必须处于存活状态 <a class="el" href="struct_d_d_s___liveliness_qos_policy.html" title="数据写者存活性声明与判定配置。 ">DDS_LivelinessQosPolicy</a> ；</li>
+<li>数据写者未违反 <a class="el" href="struct_d_d_s___deadline_qos_policy.html" title="截止时间配置。 ">DDS_DeadlineQosPolicy</a> ；</li>
+<li>数据读者收到该数据写者的数据；</li>
+</ol>
+<p>以下几个方面会导致所有权的变化：</p><ul>
+<li>系统中具有更大 <a class="el" href="struct_d_d_s___ownership_strength_qos_policy.html#afda6a59cd3cfd9bc904c98efc68a61eb" title="指明权值，数值越大权值越高。 ">DDS_OwnershipStrengthQosPolicy::value</a> 值的数据写者发布了该数据实例下的数据；</li>
+<li>拥有该数据实例的数据写者的 <a class="el" href="struct_d_d_s___ownership_strength_qos_policy.html#afda6a59cd3cfd9bc904c98efc68a61eb" title="指明权值，数值越大权值越高。 ">DDS_OwnershipStrengthQosPolicy::value</a> 值改变且不再为最大；</li>
+<li>拥有该数据实例的数据写者的存活性发生了变化 <a class="el" href="struct_d_d_s___liveliness_qos_policy.html" title="数据写者存活性声明与判定配置。 ">DDS_LivelinessQosPolicy</a> ；<ul>
+<li>从alive变为not_alive时，该数据写者失去了拥有权；</li>
+<li>从not_alive变为alive时，并且重新发布了数据，该数据写者重新获取拥有权；</li>
+</ul>
+</li>
+<li>拥有该数据实例的数据写者违反了 <a class="el" href="struct_d_d_s___deadline_qos_policy.html" title="截止时间配置。 ">DDS_DeadlineQosPolicy</a> 的约定；<ul>
+<li>当违反了截止时间约定时，该数据写者失去拥有权； </li>
+</ul>
+</li>
+</ul>
+</td></tr>
+</table>
+
+</div>
+</div>
+<a class="anchor" id="ga123d979f855f637f32eb525b778175b2"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="group___core_qos_struct.html#ga123d979f855f637f32eb525b778175b2">DDS_PresentationQosPolicyAccessScopeKind</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>表明数据展现控制域类型。 </p>
+<table class="fieldtable">
+<tr><th colspan="2">枚举值</th></tr><tr><td class="fieldname"><a class="anchor" id="gga123d979f855f637f32eb525b778175b2ab7e8c01f13b9c46013094fdee7d6af36"></a>DDS_INSTANCE_PRESENTATION_QOS&#160;</td><td class="fielddoc">
+<p>范围为数据实例，具体含义参见 <a class="el" href="struct_d_d_s___presentation_qos_policy.html" title="数据展示配置。 ">DDS_PresentationQosPolicy</a> </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga123d979f855f637f32eb525b778175b2a6d21a371adc6e10a62c2739171f5c22f"></a>DDS_TOPIC_PRESENTATION_QOS&#160;</td><td class="fielddoc">
+<p>范围为主题，具体含义参见 <a class="el" href="struct_d_d_s___presentation_qos_policy.html" title="数据展示配置。 ">DDS_PresentationQosPolicy</a> </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga123d979f855f637f32eb525b778175b2ae0591a04e045da1d86f25fa8bec39937"></a>DDS_GROUP_PRESENTATION_QOS&#160;</td><td class="fielddoc">
+<p>范围为组，具体含义参见 <a class="el" href="struct_d_d_s___presentation_qos_policy.html" title="数据展示配置。 ">DDS_PresentationQosPolicy</a> </p>
+</td></tr>
+</table>
+
+</div>
+</div>
+<a class="anchor" id="ga7c71d1e8aba7e852f23c9fcce4b80b42"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="group___core_qos_struct.html#ga7c71d1e8aba7e852f23c9fcce4b80b42">DDS_PublishModeQosPolicyKind</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>定义数据写者的发送模式类型。 </p>
+<table class="fieldtable">
+<tr><th colspan="2">枚举值</th></tr><tr><td class="fieldname"><a class="anchor" id="gga7c71d1e8aba7e852f23c9fcce4b80b42ac767f78a22d81ac1988d6b94d2908a3b"></a>DDS_SYNCHRONOUS_PUBLISH_MODE_QOS&#160;</td><td class="fielddoc">
+<p>同步发送模式。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga7c71d1e8aba7e852f23c9fcce4b80b42a4ca8021581a2541bb90d19d64fb0ac1e"></a>DDS_ASYNCHRONOUS_PUBLISH_MODE_QOS&#160;</td><td class="fielddoc">
+<p>异步发送模式。 </p>
+</td></tr>
+</table>
+
+</div>
+</div>
+<a class="anchor" id="ga4b2c4d85475a58758fba7601082a40f8"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="group___core_qos_struct.html#ga4b2c4d85475a58758fba7601082a40f8">DDS_QosPolicyId_t</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>枚举值标识QoS的类型。 </p>
+<table class="fieldtable">
+<tr><th colspan="2">枚举值</th></tr><tr><td class="fieldname"><a class="anchor" id="gga4b2c4d85475a58758fba7601082a40f8a3b381d1bfefadadd7bdc4a6df94066ba"></a>DDS_INVALID_QOS_POLICY_ID&#160;</td><td class="fielddoc">
+<p>无效的标识。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4b2c4d85475a58758fba7601082a40f8afd439068503642ba27ae03e82cd5dfc8"></a>DDS_USERDATA_QOS_POLICY_ID&#160;</td><td class="fielddoc">
+<p>标识 <a class="el" href="struct_d_d_s___user_data_qos_policy.html" title="实体携带数据。 ">DDS_UserDataQosPolicy</a> 。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4b2c4d85475a58758fba7601082a40f8abc6c3daf8f99df31ca60def2b953b800"></a>DDS_DURABILITY_QOS_POLICY_ID&#160;</td><td class="fielddoc">
+<p>标识 <a class="el" href="struct_d_d_s___durability_qos_policy.html" title="实体数据持久化配置。 ">DDS_DurabilityQosPolicy</a> 。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4b2c4d85475a58758fba7601082a40f8a9515752aa5a5e4580593a819446767ff"></a>DDS_PRESENTATION_QOS_POLICY_ID&#160;</td><td class="fielddoc">
+<p>标识 <a class="el" href="struct_d_d_s___presentation_qos_policy.html" title="数据展示配置。 ">DDS_PresentationQosPolicy</a> 。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4b2c4d85475a58758fba7601082a40f8abd77e173b457d7c9a4455c00f5a72d32"></a>DDS_DEADLINE_QOS_POLICY_ID&#160;</td><td class="fielddoc">
+<p>标识 <a class="el" href="struct_d_d_s___deadline_qos_policy.html" title="截止时间配置。 ">DDS_DeadlineQosPolicy</a> 。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4b2c4d85475a58758fba7601082a40f8a4307e6cf33965ad1b332de72c7b0a3e6"></a>DDS_LATENCYBUDGET_QOS_POLICY_ID&#160;</td><td class="fielddoc">
+<p>标识 <a class="el" href="struct_d_d_s___latency_budget_qos_policy.html" title="延时优化配置。 ">DDS_LatencyBudgetQosPolicy</a> 。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4b2c4d85475a58758fba7601082a40f8afd0f507c4cc38a933f5817d0ea873d03"></a>DDS_OWNERSHIP_QOS_POLICY_ID&#160;</td><td class="fielddoc">
+<p>标识 <a class="el" href="struct_d_d_s___ownership_qos_policy.html" title="数据实例所有权配置。 ">DDS_OwnershipQosPolicy</a> 。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4b2c4d85475a58758fba7601082a40f8a766d1409fe6aa9ee6264f4efe69731c5"></a>DDS_OWNERSHIPSTRENGTH_QOS_POLICY_ID&#160;</td><td class="fielddoc">
+<p>标识 <a class="el" href="struct_d_d_s___ownership_strength_qos_policy.html" title="所有权值配置。 ">DDS_OwnershipStrengthQosPolicy</a> 。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4b2c4d85475a58758fba7601082a40f8ad155c60f378087fa8fdbb0f3eddca268"></a>DDS_LIVELINESS_QOS_POLICY_ID&#160;</td><td class="fielddoc">
+<p>标识 <a class="el" href="struct_d_d_s___liveliness_qos_policy.html" title="数据写者存活性声明与判定配置。 ">DDS_LivelinessQosPolicy</a> 。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4b2c4d85475a58758fba7601082a40f8a5c24a0ad10b8b5557f608306acff7e50"></a>DDS_TIMEBASEDFILTER_QOS_POLICY_ID&#160;</td><td class="fielddoc">
+<p>标识 <a class="el" href="struct_d_d_s___time_based_filter_qos_policy.html" title="基于时间过滤配置。 ">DDS_TimeBasedFilterQosPolicy</a> 。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4b2c4d85475a58758fba7601082a40f8a2914476b818ff9a6c16a5a15cc4c9859"></a>DDS_PARTITION_QOS_POLICY_ID&#160;</td><td class="fielddoc">
+<p>标识 <a class="el" href="struct_d_d_s___partition_qos_policy.html" title="分区QoS配置。 ">DDS_PartitionQosPolicy</a> 。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4b2c4d85475a58758fba7601082a40f8a33cceb8ac73aa06ef39485b3d887c815"></a>DDS_RELIABILITY_QOS_POLICY_ID&#160;</td><td class="fielddoc">
+<p>标识 <a class="el" href="struct_d_d_s___reliability_qos_policy.html" title="可靠性配置。 ">DDS_ReliabilityQosPolicy</a> 。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4b2c4d85475a58758fba7601082a40f8abc7d529d3a26069586a80b7aac6763c4"></a>DDS_DESTINATIONORDER_QOS_POLICY_ID&#160;</td><td class="fielddoc">
+<p>标识 <a class="el" href="struct_d_d_s___destination_order_qos_policy.html" title="样本顺序配置。 ">DDS_DestinationOrderQosPolicy</a> 。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4b2c4d85475a58758fba7601082a40f8ae84e1113bab59340942bfd52193ea428"></a>DDS_HISTORY_QOS_POLICY_ID&#160;</td><td class="fielddoc">
+<p>标识 <a class="el" href="struct_d_d_s___history_qos_policy.html" title="历史数据数据实例队列配置。 ">DDS_HistoryQosPolicy</a> 。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4b2c4d85475a58758fba7601082a40f8af6dc4ee596d5cbe34bf5c4cb67533c57"></a>DDS_RESOURCELIMITS_QOS_POLICY_ID&#160;</td><td class="fielddoc">
+<p>标识 <a class="el" href="struct_d_d_s___resource_limits_qos_policy.html" title="资源限制配置。 ">DDS_ResourceLimitsQosPolicy</a> 。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4b2c4d85475a58758fba7601082a40f8a02e9e33058e0cdbce813165a59c53438"></a>DDS_ENTITYFACTORY_QOS_POLICY_ID&#160;</td><td class="fielddoc">
+<p>标识 <a class="el" href="struct_d_d_s___entity_factory_qos_policy.html" title="实体工厂配置。 ">DDS_EntityFactoryQosPolicy</a> 。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4b2c4d85475a58758fba7601082a40f8ac87a7459f45e7dfb8b4fe6d7948edb89"></a>DDS_WRITERDATALIFECYCLE_QOS_POLICY_ID&#160;</td><td class="fielddoc">
+<p>标识 DDS_WriterDataLifeCycleQosPolicy 。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4b2c4d85475a58758fba7601082a40f8aa62ade0f5a05654c5f959dd33bbeb07e"></a>DDS_READERDATALIFECYCLE_QOS_POLICY_ID&#160;</td><td class="fielddoc">
+<p>标识 DDS_ReaderDataLifeCycleQosPolicy 。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4b2c4d85475a58758fba7601082a40f8a12f9b3bb36fe960675fe077b11ea99ce"></a>DDS_TOPICDATA_QOS_POLICY_ID&#160;</td><td class="fielddoc">
+<p>标识 <a class="el" href="struct_d_d_s___topic_data_qos_policy.html" title="主题携带数据配置。 ">DDS_TopicDataQosPolicy</a> 。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4b2c4d85475a58758fba7601082a40f8aac3715c5385e49e1b6a995f0f8fdec6f"></a>DDS_GROUPDATA_QOS_POLICY_ID&#160;</td><td class="fielddoc">
+<p>标识 <a class="el" href="struct_d_d_s___group_data_qos_policy.html" title="组携带数据。 ">DDS_GroupDataQosPolicy</a> 。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4b2c4d85475a58758fba7601082a40f8ab76060ee902af0589e55e15a7a213797"></a>DDS_TRANSPORTPRIORITY_QOS_POLICY_ID&#160;</td><td class="fielddoc">
+<p>标识 <a class="el" href="struct_d_d_s___transport_priority_qos_policy.html" title="传输优先级配置。 ">DDS_TransportPriorityQosPolicy</a> 。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4b2c4d85475a58758fba7601082a40f8a8e8deda6f1b1d576fcea58e66e1eb00b"></a>DDS_LIFESPAN_QOS_POLICY_ID&#160;</td><td class="fielddoc">
+<p>标识 <a class="el" href="struct_d_d_s___lifespan_qos_policy.html" title="数据有效期配置。 ">DDS_LifespanQosPolicy</a> 。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4b2c4d85475a58758fba7601082a40f8a6e16affba7e7d1abee18b0a8fb5ced47"></a>DDS_DURABILITYSERVICE_QOS_POLICY_ID&#160;</td><td class="fielddoc">
+<p>标识 <a class="el" href="struct_d_d_s___durability_service_qos_policy.html" title="历史数据资源配置。 ">DDS_DurabilityServiceQosPolicy</a> 。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4b2c4d85475a58758fba7601082a40f8a445430c03168ba1923fcd989f9108331"></a>DDS_DATA_REPRESENTATION_QOS_POLICY_ID&#160;</td><td class="fielddoc">
+<p>标识 DDS_RepresentationQosPolicy 。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4b2c4d85475a58758fba7601082a40f8a832635ecb9be4de866ea695b9072d74e"></a>DDS_TYPE_CONSISTENCY_ENFORCEMENT_QOS_POLICY_ID&#160;</td><td class="fielddoc">
+<p>保留类型。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4b2c4d85475a58758fba7601082a40f8a0017a3216c1bfa9e87d53a95d909726d"></a>DDS_NETWORKCONFIG_QOS_POLICY_ID&#160;</td><td class="fielddoc">
+<p>保留类型。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga4b2c4d85475a58758fba7601082a40f8ade5040911724bc9981fc93fd49c9a76c"></a>DDS_DISCOVERYCONFIG_QOS_POLICY_ID&#160;</td><td class="fielddoc">
+<p>保留类型。 </p>
+</td></tr>
+</table>
+
+</div>
+</div>
+<a class="anchor" id="gafd4a33ca8f3f25a52d1e884ae385660b"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="group___core_qos_struct.html#gafd4a33ca8f3f25a52d1e884ae385660b">DDS_ReceiverThreadKind</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>配置域参与者下接收线程策略。 </p>
+<p>接收线程用于ZRDDS从协议栈接收数据并处理。接收线程从协议栈获取到原始数据后，需要对原始数据进行反序列化和分发。 从协议栈中获取到的数据包括内置发现报文和用户的数据报文，两者使用不同的端口，为避免DDS内置数据影响用户数据报文的处理， ZRDDS利用该QoS向用户提供配置接收线程模型的能力。在典型情况下，ZRDDS需监听如下几类端口：</p><ol type="1">
+<li>接收内置组播数据包；</li>
+<li>接收内部单播数据包；</li>
+<li>接收用户单播数据包； </li>
+</ol>
+<table class="fieldtable">
+<tr><th colspan="2">枚举值</th></tr><tr><td class="fieldname"><a class="anchor" id="ggafd4a33ca8f3f25a52d1e884ae385660ba3e9a7ed1033cc02f232130293bd42cb9"></a>DDS_THREAD_PER_PORT&#160;</td><td class="fielddoc">
+<p>每个端口一个接收线程。 </p>
+<p>默认类型，域参与者中配置的每个端口均使用单独的线程监听并处理，默认情况下为 总接收线程数 = 用户有效IP数量 * 3。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="ggafd4a33ca8f3f25a52d1e884ae385660bac8069d85dc35d864a00e7e5fa3a51cab"></a>DDS_THREAD_PER_KIND&#160;</td><td class="fielddoc">
+<p>每个类型一个接收线程，内置的一个线程，用户的一个线程。 </p>
+<p>域参与者中配置的每类端口使用单独的线程监听并处理，默认情况下 总接收线程数 = 2。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="ggafd4a33ca8f3f25a52d1e884ae385660bac83827c839f0f57f8f2a4b8c871e9c25"></a>DDS_THREAD_ALL_PORTS&#160;</td><td class="fielddoc">
+<p>所有的端口都使用一个线程。 </p>
+<p>域参与者中配置的所有端口使用单独的线程监听并处理，默认情况下 总接收线程数 = 1。 </p>
+</td></tr>
+</table>
+
+</div>
+</div>
+<a class="anchor" id="ga0ca36486e23cb11196fdfb245bb15ff9"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum enum <a class="el" href="group___core_qos_struct.html#ga0ca36486e23cb11196fdfb245bb15ff9">DDS_ReliabilityQosPolicyKind</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>可靠性配置类型。 </p>
+<table class="fieldtable">
+<tr><th colspan="2">枚举值</th></tr><tr><td class="fieldname"><a class="anchor" id="gga0ca36486e23cb11196fdfb245bb15ff9aae82431f2015239328733f3cb41d780d"></a>DDS_BEST_EFFORT_RELIABILITY_QOS&#160;</td><td class="fielddoc">
+<p>尽力而为配置。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga0ca36486e23cb11196fdfb245bb15ff9ae5d04022c6405f9db6406489956d1923"></a>DDS_RELIABLE_RELIABILITY_QOS&#160;</td><td class="fielddoc">
+<p>可靠配置。 </p>
+</td></tr>
+</table>
+
+</div>
+</div>
+<a class="anchor" id="ga2f14b750ee0af86a09a0663a9c2c08f2"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="group___core_qos_struct.html#ga2f14b750ee0af86a09a0663a9c2c08f2">DDS_TypeConsistencyKind</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>定义兼容的类型，用于从预先定义的策略中选取。 </p>
+<table class="fieldtable">
+<tr><th colspan="2">枚举值</th></tr><tr><td class="fieldname"><a class="anchor" id="gga2f14b750ee0af86a09a0663a9c2c08f2a81457fae2aea099cb0374e4cba506750"></a>DDS_DISALLOW_TYPE_COERCION&#160;</td><td class="fielddoc">
+<p>数据写者与数据读者必须支持相同的数据类型。 </p>
+</td></tr>
+<tr><td class="fieldname"><a class="anchor" id="gga2f14b750ee0af86a09a0663a9c2c08f2afb435413e3805242703990f8a4032942"></a>DDS_ALLOW_TYPE_COERCION&#160;</td><td class="fielddoc">
+<p>只需要满足数据读者的类型 &gt;= 数据写者的类型即可。 </p>
+</td></tr>
+</table>
+
+</div>
+</div>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

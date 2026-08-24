@@ -1,0 +1,219 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: ZRDDSCSimpleInterface.h 源文件</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>结构体</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('_z_r_d_d_s_c_simple_interface_8h_source.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">ZRDDSCSimpleInterface.h</div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#ifndef ZRDDSCSimpleInterface_h__</span></div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#define ZRDDSCSimpleInterface_h__</span></div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;</div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &quot;ZROSDefine.h&quot;</span></div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;</div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#ifdef _ZRDDS_INCLUDE_SIMPLE_INTERFACE</span></div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#include &quot;DomainParticipantFactory.h&quot;</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="preprocessor">#include &quot;DomainParticipant.h&quot;</span></div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#include &quot;ZRDDSTypeSupport.h&quot;</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#include &quot;DataReader.h&quot;</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="preprocessor">#include &quot;DataWriter.h&quot;</span></div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#include &quot;ZRBuiltinTypesTypeSupport.h&quot;</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="preprocessor">#include &quot;ZRBuiltinTypesDataReader.h&quot;</span></div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="preprocessor">#include &quot;ZRBuiltinTypesDataWriter.h&quot;</span></div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="preprocessor">#include &quot;DataReaderListener.h&quot;</span></div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="preprocessor">#include &quot;ZRSleep.h&quot;</span></div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;{</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="keyword">extern</span> DCPSDLL <a class="code" href="struct_d_d_s___domain_participant_factory.html">DDS_DomainParticipantFactory</a>* <a class="code" href="group___simple_interface.html#gafba8345d351be9aa3a66773fac903983">DDS_Init</a>(</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="keyword">const</span> <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>* qosFilePath, </div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <span class="keyword">const</span> <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>* qosName);</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="keyword">extern</span> DCPSDLL <a class="code" href="struct_d_d_s___domain_participant.html">DDS_DomainParticipant</a>* <a class="code" href="group___simple_interface.html#ga6a10094a97e3c90e4958ba8d2c0b0f8a">DDS_CreateDP</a>(</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#ga4746170369a8b1fd00f9be49999997c3">DDS_DomainId_t</a> domainId,</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <span class="keyword">const</span> <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>* qos_name);</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;<span class="keyword">extern</span> DCPSDLL <a class="code" href="struct_d_d_s___data_writer.html">DDS_DataWriter</a>* <a class="code" href="group___simple_interface.html#ga238c40f1cdc5183ed5936ed98156f96c">DDS_PubTopic</a>(</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <a class="code" href="struct_d_d_s___domain_participant.html">DDS_DomainParticipant</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <span class="keyword">const</span> <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>* topicName,</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    DDS_TypeSupport* typeSupport,</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <span class="keyword">const</span> <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>* qos_name,</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <a class="code" href="struct_d_d_s___data_writer_listener.html">DDS_DataWriterListener</a>* dwListener);</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;<span class="keyword">extern</span> DCPSDLL <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___simple_interface.html#ga87309fb16abbb38ce56b8afeb80d586d">DDS_UnPubTopic</a>(<a class="code" href="struct_d_d_s___data_writer.html">DDS_DataWriter</a>* writer);</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;<span class="keyword">extern</span> DCPSDLL <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___simple_interface.html#ga489ef056fd8c0a3391995b977503cd45">DDS_UnPubTopicWTopicName</a>(<a class="code" href="group___core_base_struct.html#ga4746170369a8b1fd00f9be49999997c3">DDS_DomainId_t</a> domainId, <span class="keyword">const</span> <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>* topicName);</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;<span class="keyword">extern</span> DCPSDLL <a class="code" href="struct_d_d_s___data_reader.html">DDS_DataReader</a>* <a class="code" href="group___simple_interface.html#ga55b3bb36aa9d47849578622687b1b451">DDS_SubTopic</a>(</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;    <a class="code" href="struct_d_d_s___domain_participant.html">DDS_DomainParticipant</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;    <span class="keyword">const</span> <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>* topicName,</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;    DDS_TypeSupport* typeSupport,</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;    <span class="keyword">const</span> <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>* qos_name,</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;    <a class="code" href="struct_d_d_s___data_reader_listener.html">DDS_DataReaderListener</a>* drListener);</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;<span class="keyword">extern</span> DCPSDLL <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___simple_interface.html#gaf15d2d59e610333dcb88d9ea5b0d4316">DDS_UnSubTopic</a>(<a class="code" href="struct_d_d_s___data_reader.html">DDS_DataReader</a>* reader);</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;<span class="keyword">extern</span> DCPSDLL <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___simple_interface.html#gad86fb2d359ff1524248b2b8043842160">DDS_UnSubTopicWTopicName</a>(<a class="code" href="group___core_base_struct.html#ga4746170369a8b1fd00f9be49999997c3">DDS_DomainId_t</a> domainId, <span class="keyword">const</span> <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>* topicName);</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;<span class="keyword">extern</span> DCPSDLL <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___simple_interface.html#ga4333f00c24612efca8a9823c7e43c888">DDS_Finalize</a>();</div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;<span class="keyword">extern</span> DCPSDLL <a class="code" href="struct_d_d_s___zero_copy_bytes.html">DDS_ZeroCopyBytes</a>* <a class="code" href="group___simple_interface.html#ga7e3192fbf5dd3e7671f7b66210d58555">DDS_ZeroCopyBytesCreate</a>(<a class="code" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> maximum);</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;<span class="keyword">extern</span> DCPSDLL <span class="keywordtype">void</span> <a class="code" href="group___simple_interface.html#ga9bf7f8e452a8251f17238494ed1a22a8">DDS_ZeroCopyBytesDestroy</a>(<a class="code" href="struct_d_d_s___zero_copy_bytes.html">DDS_ZeroCopyBytes</a>* sample);</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;<span class="keyword">extern</span> DCPSDLL <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___simple_interface.html#gad921924f8b71416afd1ee131efa01774">DDS_ZeroCopyBytesWrite</a>(</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;    <a class="code" href="group___core_base_struct.html#ga4746170369a8b1fd00f9be49999997c3">DDS_DomainId_t</a> domainId,</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>* topicName,</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;    <a class="code" href="struct_d_d_s___zero_copy_bytes.html">DDS_ZeroCopyBytes</a>* sample);</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;<span class="keyword">extern</span> DCPSDLL <a class="code" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> <a class="code" href="group___simple_interface.html#ga565e3026e588da04f0da6dd0fd9e0f17">DDS_BytesWrapper</a>(<a class="code" href="struct_d_d_s___bytes.html">DDS_Bytes</a>* <span class="keyword">self</span>, <span class="keyword">const</span> <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>* buffer, <span class="keyword">const</span> <a class="code" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> length);</div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;<span class="keyword">extern</span> DCPSDLL <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___simple_interface.html#ga026a26eae62702e4e81e5b283c619c38">DDS_BytesWrite</a>(</div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;    <a class="code" href="group___core_base_struct.html#ga4746170369a8b1fd00f9be49999997c3">DDS_DomainId_t</a> domainId, </div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>* topicName, </div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;    <span class="keyword">const</span> <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>* content, </div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;    <span class="keyword">const</span> <a class="code" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> length);</div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;</div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;}</div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;</div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* _ZRDDS_INCLUDE_SIMPLE_INTERFACE*/</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;</div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* ZRDDSCSimpleInterface_h__ */</span><span class="preprocessor"></span></div>
+<div class="ttc" id="group___simple_interface_html_ga9bf7f8e452a8251f17238494ed1a22a8"><div class="ttname"><a href="group___simple_interface.html#ga9bf7f8e452a8251f17238494ed1a22a8">DDS_ZeroCopyBytesDestroy</a></div><div class="ttdeci">DCPSDLL void DDS_ZeroCopyBytesDestroy(DDS_ZeroCopyBytes *sample)</div><div class="ttdoc">与 DDS_ZeroCopyBytesCreate 函数对应的回收零拷贝对象空间。 </div></div>
+<div class="ttc" id="struct_d_d_s___domain_participant_html"><div class="ttname"><a href="struct_d_d_s___domain_participant.html">DDS_DomainParticipant</a></div><div class="ttdoc">该类抽象域参与者实体。 </div></div>
+<div class="ttc" id="group___simple_interface_html_gafba8345d351be9aa3a66773fac903983"><div class="ttname"><a href="group___simple_interface.html#gafba8345d351be9aa3a66773fac903983">DDS_Init</a></div><div class="ttdeci">DCPSDLL DDS_DomainParticipantFactory * DDS_Init(const DDS_Char *qosFilePath, const DDS_Char *qosName)</div><div class="ttdoc">以指定配置初始化DDS中间件，只在整个程序初始化时调用一次即可。 </div></div>
+<div class="ttc" id="group___simple_interface_html_ga026a26eae62702e4e81e5b283c619c38"><div class="ttname"><a href="group___simple_interface.html#ga026a26eae62702e4e81e5b283c619c38">DDS_BytesWrite</a></div><div class="ttdeci">DCPSDLL DDS_ReturnCode_t DDS_BytesWrite(DDS_DomainId_t domainId, DDS_Char *topicName, const DDS_Char *content, const DDS_Long length)</div><div class="ttdoc">向指定的域发送指定主题的非零拷贝Bytes数据。使用该接口的前提： </div></div>
+<div class="ttc" id="group___simple_interface_html_ga6a10094a97e3c90e4958ba8d2c0b0f8a"><div class="ttname"><a href="group___simple_interface.html#ga6a10094a97e3c90e4958ba8d2c0b0f8a">DDS_CreateDP</a></div><div class="ttdeci">DCPSDLL DDS_DomainParticipant * DDS_CreateDP(const DDS_DomainId_t domainId, const DDS_Char *qos_name)</div><div class="ttdoc">DDS创建域参与者，并指明域号与QoS配置名称，同一个域号可能有多个域参与者， 需要为使用不同底层传输协议的...</div></div>
+<div class="ttc" id="struct_d_d_s___data_writer_listener_html"><div class="ttname"><a href="struct_d_d_s___data_writer_listener.html">DDS_DataWriterListener</a></div><div class="ttdoc">数据写者监听器类型。 </div><div class="ttdef"><b>Definition:</b> DataWriterListener.h:91</div></div>
+<div class="ttc" id="group___simple_interface_html_ga238c40f1cdc5183ed5936ed98156f96c"><div class="ttname"><a href="group___simple_interface.html#ga238c40f1cdc5183ed5936ed98156f96c">DDS_PubTopic</a></div><div class="ttdeci">DCPSDLL DDS_DataWriter * DDS_PubTopic(DDS_DomainParticipant *self, const DDS_Char *topicName, DDS_TypeSupport *typeSupport, const DDS_Char *qos_name, DDS_DataWriterListener *dwListener)</div><div class="ttdoc">发布主题，指定域参与者、主题名、类型名、QoS配置名称以及监听器。 </div></div>
+<div class="ttc" id="struct_d_d_s___bytes_html"><div class="ttname"><a href="struct_d_d_s___bytes.html">DDS_Bytes</a></div><div class="ttdoc">为方便用户直接传输缓冲区数据类型，ZRDDS提供内置的缓冲区类型，该类型与字符串类型的主要区别为，允许内容...</div><div class="ttdef"><b>Definition:</b> ZRBuiltinTypes.h:2214</div></div>
+<div class="ttc" id="group___simple_interface_html_gad921924f8b71416afd1ee131efa01774"><div class="ttname"><a href="group___simple_interface.html#gad921924f8b71416afd1ee131efa01774">DDS_ZeroCopyBytesWrite</a></div><div class="ttdeci">DCPSDLL DDS_ReturnCode_t DDS_ZeroCopyBytesWrite(DDS_DomainId_t domainId, DDS_Char *topicName, DDS_ZeroCopyBytes *sample)</div><div class="ttdoc">向指定的域发送指定主题的零拷贝数据。使用该接口的前提： </div></div>
+<div class="ttc" id="group___core_base_struct_html_ga4746170369a8b1fd00f9be49999997c3"><div class="ttname"><a href="group___core_base_struct.html#ga4746170369a8b1fd00f9be49999997c3">DDS_DomainId_t</a></div><div class="ttdeci">DDS_ULong DDS_DomainId_t</div><div class="ttdoc">用来表示域参与者所属域的值。 </div><div class="ttdef"><b>Definition:</b> DomainId_t.h:24</div></div>
+<div class="ttc" id="group___simple_interface_html_ga7e3192fbf5dd3e7671f7b66210d58555"><div class="ttname"><a href="group___simple_interface.html#ga7e3192fbf5dd3e7671f7b66210d58555">DDS_ZeroCopyBytesCreate</a></div><div class="ttdeci">DCPSDLL DDS_ZeroCopyBytes * DDS_ZeroCopyBytesCreate(DDS_ULong maximum)</div><div class="ttdoc">创建零拷贝对象，并按最大长度分配空间。 </div></div>
+<div class="ttc" id="struct_d_d_s___domain_participant_factory_html"><div class="ttname"><a href="struct_d_d_s___domain_participant_factory.html">DDS_DomainParticipantFactory</a></div><div class="ttdoc">域参与者工厂接口的核心功能在于是创建以及销毁域参与者实体，即作为域参与者实体的工厂。 ...</div></div>
+<div class="ttc" id="group___simple_interface_html_ga55b3bb36aa9d47849578622687b1b451"><div class="ttname"><a href="group___simple_interface.html#ga55b3bb36aa9d47849578622687b1b451">DDS_SubTopic</a></div><div class="ttdeci">DCPSDLL DDS_DataReader * DDS_SubTopic(DDS_DomainParticipant *self, const DDS_Char *topicName, DDS_TypeSupport *typeSupport, const DDS_Char *qos_name, DDS_DataReaderListener *drListener)</div><div class="ttdoc">订阅主题，指定域参与者、主题名、类型名以及QoS配置名称。 </div></div>
+<div class="ttc" id="struct_d_d_s___data_reader_html"><div class="ttname"><a href="struct_d_d_s___data_reader.html">DDS_DataReader</a></div><div class="ttdoc">表示ZRDDS中的数据读者。 </div></div>
+<div class="ttc" id="struct_d_d_s___data_writer_html"><div class="ttname"><a href="struct_d_d_s___data_writer.html">DDS_DataWriter</a></div><div class="ttdoc">表示ZRDDS中的数据写者。 </div></div>
+<div class="ttc" id="group___simple_interface_html_ga4333f00c24612efca8a9823c7e43c888"><div class="ttname"><a href="group___simple_interface.html#ga4333f00c24612efca8a9823c7e43c888">DDS_Finalize</a></div><div class="ttdeci">DCPSDLL DDS_ReturnCode_t DDS_Finalize()</div><div class="ttdoc">清理资源。 </div></div>
+<div class="ttc" id="group___simple_interface_html_ga565e3026e588da04f0da6dd0fd9e0f17"><div class="ttname"><a href="group___simple_interface.html#ga565e3026e588da04f0da6dd0fd9e0f17">DDS_BytesWrapper</a></div><div class="ttdeci">DCPSDLL DDS_Long DDS_BytesWrapper(DDS_Bytes *self, const DDS_Char *buffer, const DDS_Long length)</div><div class="ttdoc">用户缓冲区包装成DDS_Bytes类型（非零拷贝缓冲区数据类型），该接口不分配空间，无需对应的回收函数。 ...</div></div>
+<div class="ttc" id="struct_d_d_s___zero_copy_bytes_html"><div class="ttname"><a href="struct_d_d_s___zero_copy_bytes.html">DDS_ZeroCopyBytes</a></div><div class="ttdoc">ZRDDS内置的零拷贝数据类型。 </div><div class="ttdef"><b>Definition:</b> ZRBuiltinTypes.h:2517</div></div>
+<div class="ttc" id="group___simple_interface_html_gad86fb2d359ff1524248b2b8043842160"><div class="ttname"><a href="group___simple_interface.html#gad86fb2d359ff1524248b2b8043842160">DDS_UnSubTopicWTopicName</a></div><div class="ttdeci">DCPSDLL DDS_ReturnCode_t DDS_UnSubTopicWTopicName(DDS_DomainId_t domainId, const DDS_Char *topicName)</div><div class="ttdoc">通过域以及主题名称取消订阅，如果域内存在多个主题名相同的订阅将删除所有同名主题订阅。 该接口仅在指定域...</div></div>
+<div class="ttc" id="group___simple_interface_html_gaf15d2d59e610333dcb88d9ea5b0d4316"><div class="ttname"><a href="group___simple_interface.html#gaf15d2d59e610333dcb88d9ea5b0d4316">DDS_UnSubTopic</a></div><div class="ttdeci">DCPSDLL DDS_ReturnCode_t DDS_UnSubTopic(DDS_DataReader *reader)</div><div class="ttdoc">指明数据读者指针取消订阅。 </div></div>
+<div class="ttc" id="group___core_builtin_types_html_gab598f8f664dfec10ab367e753dc68419"><div class="ttname"><a href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a></div><div class="ttdeci">ZR_UINT32 DDS_ULong</div><div class="ttdoc">ZRDDS内置的4字节无符号整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:258</div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga07e4e24db44e921d6b33e916c4442dab"><div class="ttname"><a href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a></div><div class="ttdeci">char DDS_Char</div><div class="ttdoc">ZRDDS内置的1字节整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:218</div></div>
+<div class="ttc" id="group___simple_interface_html_ga87309fb16abbb38ce56b8afeb80d586d"><div class="ttname"><a href="group___simple_interface.html#ga87309fb16abbb38ce56b8afeb80d586d">DDS_UnPubTopic</a></div><div class="ttdeci">DCPSDLL DDS_ReturnCode_t DDS_UnPubTopic(DDS_DataWriter *writer)</div><div class="ttdoc">指明数据写者指针取消发布。 </div></div>
+<div class="ttc" id="struct_d_d_s___data_reader_listener_html"><div class="ttname"><a href="struct_d_d_s___data_reader_listener.html">DDS_DataReaderListener</a></div><div class="ttdoc">数据读者监听器类型。 </div><div class="ttdef"><b>Definition:</b> DataReaderListener.h:145</div></div>
+<div class="ttc" id="group___core_base_struct_html_ga73f148aaf96b5f6f9fc630b7cfeb0c91"><div class="ttname"><a href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a></div><div class="ttdeci">DDS_ReturnCode_t</div><div class="ttdoc">ZRDDS接口的返回值类型。 </div><div class="ttdef"><b>Definition:</b> ReturnCode_t.h:18</div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga7ebc41ac14e48dd9ee0b7b83acec714c"><div class="ttname"><a href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a></div><div class="ttdeci">ZR_INT32 DDS_Long</div><div class="ttdoc">ZRDDS内置的4字节整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:248</div></div>
+<div class="ttc" id="group___simple_interface_html_ga489ef056fd8c0a3391995b977503cd45"><div class="ttname"><a href="group___simple_interface.html#ga489ef056fd8c0a3391995b977503cd45">DDS_UnPubTopicWTopicName</a></div><div class="ttdeci">DCPSDLL DDS_ReturnCode_t DDS_UnPubTopicWTopicName(DDS_DomainId_t domainId, const DDS_Char *topicName)</div><div class="ttdoc">通过域以及主题名称取消发布，如果域内存在多个主题名相同的发布者将删除所有同名主题发布者。 该接口仅在指...</div></div>
+</div><!-- fragment --></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="dir_0fc3f8f3ef96ce2d45d66d6e29832317.html">resources</a></li><li class="navelem"><a class="el" href="dir_cf9ceadfa18f25e608d16251156af657.html">zrdds</a></li><li class="navelem"><a class="el" href="dir_49213087373222e5c37cddb4e4d5f33e.html">src</a></li><li class="navelem"><a class="el" href="dir_a789ccf0f178fa94fb7fe735f25025ab.html">CInterface</a></li><li class="navelem"><b>ZRDDSCSimpleInterface.h</b></li>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

@@ -284,6 +284,8 @@ void IRWeatherEffects::resetDefaults()
 			profile.targetContrastScale = i == 5 ? 0.70 : 0.90;
 			profile.cloudTexture = i == 5 ? "cloud_overcast" : "cloud_scattered";
 			profile.cloudMaskChannel = i == 5 ? "luminance" : "alpha";
+			profile.volumeCloudProbability = i == 5 ? 0.65 : 0.35;
+			profile.volumeCloudDensityScale = i == 5 ? 1.15 : 0.88;
 		}
 		else if (i == 2)
 		{
@@ -302,6 +304,8 @@ void IRWeatherEffects::resetDefaults()
 			profile.cloudTexture = "cloud_storm";
 			profile.cloudOpticalDepth = 2.0;
 			profile.cloudMaskChannel = "luminance";
+			profile.volumeCloudProbability = 0.72;
+			profile.volumeCloudDensityScale = 1.22;
 		}
 		else if (i == 3)
 		{
@@ -320,6 +324,8 @@ void IRWeatherEffects::resetDefaults()
 			profile.cloudTexture = "cloud_overcast";
 			profile.cloudOpticalDepth = 1.6;
 			profile.cloudMaskChannel = "luminance";
+			profile.volumeCloudProbability = 0.58;
+			profile.volumeCloudDensityScale = 1.0;
 		}
 		else if (i == 4)
 		{
@@ -407,6 +413,8 @@ bool IRWeatherEffects::loadProfileFile(const std::string& path)
 		AssignNumber(objectText, "cloudOpacity", profile.cloudOpacity);
 		AssignNumber(objectText, "cloudTemperatureK", profile.cloudTemperatureK);
 		AssignNumber(objectText, "cloudOpticalDepth", profile.cloudOpticalDepth);
+		AssignNumber(objectText, "volumeCloudProbability", profile.volumeCloudProbability);
+		AssignNumber(objectText, "volumeCloudDensityScale", profile.volumeCloudDensityScale);
 		AssignString(objectText, "cloudTexture", profile.cloudTexture);
 		AssignString(objectText, "cloudMaskChannel", profile.cloudMaskChannel);
 		AssignBool(objectText, "fogEnable", profile.fogEnable);
@@ -495,6 +503,8 @@ IRStage7WeatherState IRWeatherEffects::evaluate(const IRStage7WeatherRuntimeInpu
 	state.cloudGray = DefaultCloudGray(band, state.cloudTemperatureK, profile.skyDiffuseScale);
 	state.cloudBackgroundGray = 0.5;
 	state.cloudOpticalDepth = state.cloudEnable ? Clamp(profile.cloudOpticalDepth, 0.0, 8.0) : 0.0;
+	state.volumeCloudProbability = state.cloudEnable ? Clamp(profile.volumeCloudProbability, 0.0, 1.0) : 0.0;
+	state.volumeCloudDensityScale = Clamp(profile.volumeCloudDensityScale, 0.0, 2.0);
 	state.cloudTextureKey = profile.cloudTexture;
 	state.cloudTexturePath = texturePathForKey(profile.cloudTexture);
 	state.cloudMaskChannel = profile.cloudMaskChannel;

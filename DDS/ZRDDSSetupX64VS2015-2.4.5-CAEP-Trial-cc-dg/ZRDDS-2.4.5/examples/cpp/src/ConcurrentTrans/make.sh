@@ -1,0 +1,1 @@
+g++ pub_main.cpp sub_main.cpp ZRDDSSemaphore.cpp ZRDDSTimeUtility.cpp -Ideps/zrdds/include/CPlusPlusInterface -Ideps/zrdds/include/ZRDDSCoreInterface -D_ZRDDSCPPINTERFACE -Ldeps/zrdds/lib -lZRDDSCppz -lpthread -ldl -o concurrent_example

@@ -1,0 +1,6 @@
+struct ShapeType
+{
+    long x; //@key
+    long y;
+    string z;
+};

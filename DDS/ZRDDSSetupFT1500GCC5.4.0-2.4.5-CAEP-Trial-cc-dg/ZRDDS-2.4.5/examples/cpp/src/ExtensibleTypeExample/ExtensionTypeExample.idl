@@ -1,0 +1,15 @@
+@Extensibility(EXTENSIBLE_EXTENSIBILITY)
+struct OrignalType
+{
+    long x;
+    long y;
+};
+
+@Extensibility(EXTENSIBLE_EXTENSIBILITY)
+struct NewType
+{
+    long x;
+    long y;
+    long z;
+    float angle;
+};

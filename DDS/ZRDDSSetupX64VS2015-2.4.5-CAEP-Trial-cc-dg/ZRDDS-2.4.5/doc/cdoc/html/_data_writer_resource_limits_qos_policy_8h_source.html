@@ -1,0 +1,155 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: DataWriterResourceLimitsQosPolicy.h 源文件</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>结构体</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('_data_writer_resource_limits_qos_policy_8h_source.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">DataWriterResourceLimitsQosPolicy.h</div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#ifndef DataWriterResourceLimitsQosPolicy_h__</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#define DataWriterResourceLimitsQosPolicy_h__</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#include &quot;OsResource.h&quot;</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;</div>
+<div class="line"><a name="l00019"></a><span class="lineno"><a class="line" href="group___core_qos_struct.html#ga4e1d22822e791111c475586408e5af88">   19</a></span>&#160;<span class="keyword">typedef</span> <span class="keyword">enum</span> <a class="code" href="group___core_qos_struct.html#ga4e1d22822e791111c475586408e5af88">DDS_DataWriterResourceLimitsInstanceReplacementKind</a></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;{</div>
+<div class="line"><a name="l00022"></a><span class="lineno"><a class="line" href="group___core_qos_struct.html#gga4e1d22822e791111c475586408e5af88a3b91cc2e153df3da80e7f4b34e2b6f1b">   22</a></span>&#160;    <a class="code" href="group___core_qos_struct.html#gga4e1d22822e791111c475586408e5af88a3b91cc2e153df3da80e7f4b34e2b6f1b">DDS_UNREGISTERED_INSTANCE_REPLACEMENT</a>,</div>
+<div class="line"><a name="l00024"></a><span class="lineno"><a class="line" href="group___core_qos_struct.html#gga4e1d22822e791111c475586408e5af88a3bd754f39231c8997cb372d31a83b4d1">   24</a></span>&#160;    <a class="code" href="group___core_qos_struct.html#gga4e1d22822e791111c475586408e5af88a3bd754f39231c8997cb372d31a83b4d1">DDS_ALIVE_INSTANCE_REPLACEMENT</a>,</div>
+<div class="line"><a name="l00026"></a><span class="lineno"><a class="line" href="group___core_qos_struct.html#gga4e1d22822e791111c475586408e5af88a30271662385c3265b54df551c7ee08c1">   26</a></span>&#160;    <a class="code" href="group___core_qos_struct.html#gga4e1d22822e791111c475586408e5af88a30271662385c3265b54df551c7ee08c1">DDS_DISPOSED_INSTANCE_REPLACEMENT</a>,</div>
+<div class="line"><a name="l00028"></a><span class="lineno"><a class="line" href="group___core_qos_struct.html#gga4e1d22822e791111c475586408e5af88ac0cd646be98852eacf8bb217ea9a6fd8">   28</a></span>&#160;    <a class="code" href="group___core_qos_struct.html#gga4e1d22822e791111c475586408e5af88ac0cd646be98852eacf8bb217ea9a6fd8">DDS_ALIVE_THEN_DISPOSED_INSTANCE_REPLACEMENT</a>,</div>
+<div class="line"><a name="l00030"></a><span class="lineno"><a class="line" href="group___core_qos_struct.html#gga4e1d22822e791111c475586408e5af88a3ee1048f6f6b01ea79b19ac8213762db">   30</a></span>&#160;    <a class="code" href="group___core_qos_struct.html#gga4e1d22822e791111c475586408e5af88a3ee1048f6f6b01ea79b19ac8213762db">DDS_DISPOSED_THEN_ALIVE_INSTANCE_REPLACEMENT</a>,</div>
+<div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="group___core_qos_struct.html#gga4e1d22822e791111c475586408e5af88a6cc7f716a9606e4ae9ba3547d666297f">   32</a></span>&#160;    <a class="code" href="group___core_qos_struct.html#gga4e1d22822e791111c475586408e5af88a6cc7f716a9606e4ae9ba3547d666297f">DDS_ALIVE_OR_DISPOSED_INSTANCE_REPLACEMENT</a></div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;}<a class="code" href="group___core_qos_struct.html#ga4e1d22822e791111c475586408e5af88">DDS_DataWriterResourceLimitsInstanceReplacementKind</a>;</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;</div>
+<div class="line"><a name="l00053"></a><span class="lineno"><a class="line" href="struct_d_d_s___data_writer_resource_limits_qos_policy.html">   53</a></span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="struct_d_d_s___data_writer_resource_limits_qos_policy.html">DDS_DataWriterResourceLimitsQosPolicy</a></div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;{</div>
+<div class="line"><a name="l00056"></a><span class="lineno"><a class="line" href="struct_d_d_s___data_writer_resource_limits_qos_policy.html#a2a2d9a727c43ed04e4001747b811b6d8">   56</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> <a class="code" href="struct_d_d_s___data_writer_resource_limits_qos_policy.html#a2a2d9a727c43ed04e4001747b811b6d8">initial_concurrent_blocking_threads</a>;</div>
+<div class="line"><a name="l00058"></a><span class="lineno"><a class="line" href="struct_d_d_s___data_writer_resource_limits_qos_policy.html#ad1b89d8f400e16f849574dbe043f2011">   58</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> <a class="code" href="struct_d_d_s___data_writer_resource_limits_qos_policy.html#ad1b89d8f400e16f849574dbe043f2011">max_concurrent_blocking_threads</a>;</div>
+<div class="line"><a name="l00060"></a><span class="lineno"><a class="line" href="struct_d_d_s___data_writer_resource_limits_qos_policy.html#a6eb4ab5981fda3c164d7460567857a90">   60</a></span>&#160;    <a class="code" href="group___core_qos_struct.html#ga4e1d22822e791111c475586408e5af88">DDS_DataWriterResourceLimitsInstanceReplacementKind</a> <a class="code" href="struct_d_d_s___data_writer_resource_limits_qos_policy.html#a6eb4ab5981fda3c164d7460567857a90">instance_replacement</a>;</div>
+<div class="line"><a name="l00062"></a><span class="lineno"><a class="line" href="struct_d_d_s___data_writer_resource_limits_qos_policy.html#a887dab2645bf1b8cf38c7e4ca589ae8c">   62</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> <a class="code" href="struct_d_d_s___data_writer_resource_limits_qos_policy.html#a887dab2645bf1b8cf38c7e4ca589ae8c">replace_empty_instances</a>;</div>
+<div class="line"><a name="l00064"></a><span class="lineno"><a class="line" href="struct_d_d_s___data_writer_resource_limits_qos_policy.html#a0fd796e8c427edbdd50ff56ad138388e">   64</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> <a class="code" href="struct_d_d_s___data_writer_resource_limits_qos_policy.html#a0fd796e8c427edbdd50ff56ad138388e">autoregister_instances</a>;</div>
+<div class="line"><a name="l00066"></a><span class="lineno"><a class="line" href="struct_d_d_s___data_writer_resource_limits_qos_policy.html#a634e717304b1d5fe26550e755376da1a">   66</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> <a class="code" href="struct_d_d_s___data_writer_resource_limits_qos_policy.html#a634e717304b1d5fe26550e755376da1a">max_batches</a>;</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;}<a class="code" href="struct_d_d_s___data_writer_resource_limits_qos_policy.html">DDS_DataWriterResourceLimitsQosPolicy</a>;</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* DataWriterResourceLimitsQosPolicy_h__*/</span><span class="preprocessor"></span></div>
+<div class="ttc" id="group___core_qos_struct_html_gga4e1d22822e791111c475586408e5af88a3b91cc2e153df3da80e7f4b34e2b6f1b"><div class="ttname"><a href="group___core_qos_struct.html#gga4e1d22822e791111c475586408e5af88a3b91cc2e153df3da80e7f4b34e2b6f1b">DDS_UNREGISTERED_INSTANCE_REPLACEMENT</a></div><div class="ttdoc">只替换已注销的实例。 </div><div class="ttdef"><b>Definition:</b> DataWriterResourceLimitsQosPolicy.h:22</div></div>
+<div class="ttc" id="struct_d_d_s___data_writer_resource_limits_qos_policy_html"><div class="ttname"><a href="struct_d_d_s___data_writer_resource_limits_qos_policy.html">DDS_DataWriterResourceLimitsQosPolicy</a></div><div class="ttdoc">数据写者资源限制QoS配置。 </div><div class="ttdef"><b>Definition:</b> DataWriterResourceLimitsQosPolicy.h:53</div></div>
+<div class="ttc" id="struct_d_d_s___data_writer_resource_limits_qos_policy_html_a634e717304b1d5fe26550e755376da1a"><div class="ttname"><a href="struct_d_d_s___data_writer_resource_limits_qos_policy.html#a634e717304b1d5fe26550e755376da1a">DDS_DataWriterResourceLimitsQosPolicy::max_batches</a></div><div class="ttdeci">DDS_Long max_batches</div><div class="ttdoc">配置批量发送样本（Batch）的最大数量 </div><div class="ttdef"><b>Definition:</b> DataWriterResourceLimitsQosPolicy.h:66</div></div>
+<div class="ttc" id="struct_d_d_s___data_writer_resource_limits_qos_policy_html_a2a2d9a727c43ed04e4001747b811b6d8"><div class="ttname"><a href="struct_d_d_s___data_writer_resource_limits_qos_policy.html#a2a2d9a727c43ed04e4001747b811b6d8">DDS_DataWriterResourceLimitsQosPolicy::initial_concurrent_blocking_threads</a></div><div class="ttdeci">DDS_Long initial_concurrent_blocking_threads</div><div class="ttdoc">配置当数据写者样本达到上限时，同时等待的线程初始数量，由于需要等待的线程占用一定资源，该QoS配置初始分...</div><div class="ttdef"><b>Definition:</b> DataWriterResourceLimitsQosPolicy.h:56</div></div>
+<div class="ttc" id="group___core_qos_struct_html_ga4e1d22822e791111c475586408e5af88"><div class="ttname"><a href="group___core_qos_struct.html#ga4e1d22822e791111c475586408e5af88">DDS_DataWriterResourceLimitsInstanceReplacementKind</a></div><div class="ttdeci">DDS_DataWriterResourceLimitsInstanceReplacementKind</div><div class="ttdoc">配置数据写者实例替换策略。 </div><div class="ttdef"><b>Definition:</b> DataWriterResourceLimitsQosPolicy.h:19</div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga40aa7a1400d66542eba212ef019321bf"><div class="ttname"><a href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a></div><div class="ttdeci">ZR_BOOLEAN DDS_Boolean</div><div class="ttdoc">ZRDDS内置的true/false类型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:197</div></div>
+<div class="ttc" id="group___core_qos_struct_html_gga4e1d22822e791111c475586408e5af88a3ee1048f6f6b01ea79b19ac8213762db"><div class="ttname"><a href="group___core_qos_struct.html#gga4e1d22822e791111c475586408e5af88a3ee1048f6f6b01ea79b19ac8213762db">DDS_DISPOSED_THEN_ALIVE_INSTANCE_REPLACEMENT</a></div><div class="ttdoc">优先替换已销毁的实例，若不存在则替换存活的实例。 </div><div class="ttdef"><b>Definition:</b> DataWriterResourceLimitsQosPolicy.h:30</div></div>
+<div class="ttc" id="struct_d_d_s___data_writer_resource_limits_qos_policy_html_ad1b89d8f400e16f849574dbe043f2011"><div class="ttname"><a href="struct_d_d_s___data_writer_resource_limits_qos_policy.html#ad1b89d8f400e16f849574dbe043f2011">DDS_DataWriterResourceLimitsQosPolicy::max_concurrent_blocking_threads</a></div><div class="ttdeci">DDS_Long max_concurrent_blocking_threads</div><div class="ttdoc">配置当数据写者样本达到上限时，同时等待的线程最大数量。 </div><div class="ttdef"><b>Definition:</b> DataWriterResourceLimitsQosPolicy.h:58</div></div>
+<div class="ttc" id="group___core_qos_struct_html_gga4e1d22822e791111c475586408e5af88a30271662385c3265b54df551c7ee08c1"><div class="ttname"><a href="group___core_qos_struct.html#gga4e1d22822e791111c475586408e5af88a30271662385c3265b54df551c7ee08c1">DDS_DISPOSED_INSTANCE_REPLACEMENT</a></div><div class="ttdoc">只替换已销毁的实例。 </div><div class="ttdef"><b>Definition:</b> DataWriterResourceLimitsQosPolicy.h:26</div></div>
+<div class="ttc" id="struct_d_d_s___data_writer_resource_limits_qos_policy_html_a887dab2645bf1b8cf38c7e4ca589ae8c"><div class="ttname"><a href="struct_d_d_s___data_writer_resource_limits_qos_policy.html#a887dab2645bf1b8cf38c7e4ca589ae8c">DDS_DataWriterResourceLimitsQosPolicy::replace_empty_instances</a></div><div class="ttdeci">DDS_Boolean replace_empty_instances</div><div class="ttdoc">配置当需要替换实例时是否替换空实例（即未发布过样本的实例） </div><div class="ttdef"><b>Definition:</b> DataWriterResourceLimitsQosPolicy.h:62</div></div>
+<div class="ttc" id="group___core_qos_struct_html_gga4e1d22822e791111c475586408e5af88ac0cd646be98852eacf8bb217ea9a6fd8"><div class="ttname"><a href="group___core_qos_struct.html#gga4e1d22822e791111c475586408e5af88ac0cd646be98852eacf8bb217ea9a6fd8">DDS_ALIVE_THEN_DISPOSED_INSTANCE_REPLACEMENT</a></div><div class="ttdoc">优先替换存活的实例，若不存在则替换已注销的实例。 </div><div class="ttdef"><b>Definition:</b> DataWriterResourceLimitsQosPolicy.h:28</div></div>
+<div class="ttc" id="struct_d_d_s___data_writer_resource_limits_qos_policy_html_a0fd796e8c427edbdd50ff56ad138388e"><div class="ttname"><a href="struct_d_d_s___data_writer_resource_limits_qos_policy.html#a0fd796e8c427edbdd50ff56ad138388e">DDS_DataWriterResourceLimitsQosPolicy::autoregister_instances</a></div><div class="ttdeci">DDS_Boolean autoregister_instances</div><div class="ttdoc">配置发布样本时，是否自动注册未注册的实例 </div><div class="ttdef"><b>Definition:</b> DataWriterResourceLimitsQosPolicy.h:64</div></div>
+<div class="ttc" id="struct_d_d_s___data_writer_resource_limits_qos_policy_html_a6eb4ab5981fda3c164d7460567857a90"><div class="ttname"><a href="struct_d_d_s___data_writer_resource_limits_qos_policy.html#a6eb4ab5981fda3c164d7460567857a90">DDS_DataWriterResourceLimitsQosPolicy::instance_replacement</a></div><div class="ttdeci">DDS_DataWriterResourceLimitsInstanceReplacementKind instance_replacement</div><div class="ttdoc">配置数据写者实例替换策略。 </div><div class="ttdef"><b>Definition:</b> DataWriterResourceLimitsQosPolicy.h:60</div></div>
+<div class="ttc" id="group___core_qos_struct_html_gga4e1d22822e791111c475586408e5af88a6cc7f716a9606e4ae9ba3547d666297f"><div class="ttname"><a href="group___core_qos_struct.html#gga4e1d22822e791111c475586408e5af88a6cc7f716a9606e4ae9ba3547d666297f">DDS_ALIVE_OR_DISPOSED_INSTANCE_REPLACEMENT</a></div><div class="ttdoc">替换存活或者已注销的实例。 </div><div class="ttdef"><b>Definition:</b> DataWriterResourceLimitsQosPolicy.h:32</div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga7ebc41ac14e48dd9ee0b7b83acec714c"><div class="ttname"><a href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a></div><div class="ttdeci">ZR_INT32 DDS_Long</div><div class="ttdoc">ZRDDS内置的4字节整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:248</div></div>
+<div class="ttc" id="group___core_qos_struct_html_gga4e1d22822e791111c475586408e5af88a3bd754f39231c8997cb372d31a83b4d1"><div class="ttname"><a href="group___core_qos_struct.html#gga4e1d22822e791111c475586408e5af88a3bd754f39231c8997cb372d31a83b4d1">DDS_ALIVE_INSTANCE_REPLACEMENT</a></div><div class="ttdoc">只替换存活的实例。 </div><div class="ttdef"><b>Definition:</b> DataWriterResourceLimitsQosPolicy.h:24</div></div>
+</div><!-- fragment --></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="dir_0fc3f8f3ef96ce2d45d66d6e29832317.html">resources</a></li><li class="navelem"><a class="el" href="dir_cf9ceadfa18f25e608d16251156af657.html">zrdds</a></li><li class="navelem"><a class="el" href="dir_49213087373222e5c37cddb4e4d5f33e.html">src</a></li><li class="navelem"><a class="el" href="dir_53336e619d60bf3f94a9dfb5f5011ef0.html">ZRDDSCoreInterface</a></li><li class="navelem"><b>DataWriterResourceLimitsQosPolicy.h</b></li>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

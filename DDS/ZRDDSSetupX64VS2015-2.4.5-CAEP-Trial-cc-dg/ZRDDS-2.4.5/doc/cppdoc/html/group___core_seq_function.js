@@ -1,0 +1,25 @@
+var group___core_seq_function =
+[
+    [ "FooSeq_append", "group___core_seq_function.html#ga04cc623466880ea8fd4d9a0c825a1f15", null ],
+    [ "FooSeq_clear", "group___core_seq_function.html#gad54526c03ccbceac724205f96ac65479", null ],
+    [ "FooSeq_compare", "group___core_seq_function.html#ga05d08e0f845b3adff69d74a52b2684e9", null ],
+    [ "FooSeq_ensure_length", "group___core_seq_function.html#ga3ac092480e7b10ff19b78455547a2b41", null ],
+    [ "FooSeq_finalize", "group___core_seq_function.html#gae1a415ca306572994f50eb07476b5299", null ],
+    [ "FooSeq_from_array", "group___core_seq_function.html#gaf4331b80ceab81c444d61196d789cd85", null ],
+    [ "FooSeq_get_contiguous_buffer", "group___core_seq_function.html#ga01e8c59d2d026617139eaf68a9c96fde", null ],
+    [ "FooSeq_get_discontiguous_buffer", "group___core_seq_function.html#ga4db01196c5baf98cca4c027f3a8c7314", null ],
+    [ "FooSeq_get_length", "group___core_seq_function.html#ga6ae2c01c4c1405536c3ef43a8516b66a", null ],
+    [ "FooSeq_get_maximum", "group___core_seq_function.html#ga3b69de412be79602a9c73b7af57f2e6d", null ],
+    [ "FooSeq_get_reference", "group___core_seq_function.html#ga84d1511f880882648b6d46a32d5aa33a", null ],
+    [ "FooSeq_has_ownership", "group___core_seq_function.html#gaca64a79c4b5c96bb230cf3d5075f35aa", null ],
+    [ "FooSeq_initialize", "group___core_seq_function.html#ga0473521eb6444c7b0de50fc5cdf2f1f2", null ],
+    [ "FooSeq_is_initialized", "group___core_seq_function.html#ga99e3877178cb841b099ab4169567bbe4", null ],
+    [ "FooSeq_loan_contiguous", "group___core_seq_function.html#gae8c29ed29411ffb25d00b719bffe1152", null ],
+    [ "FooSeq_loan_discontiguous", "group___core_seq_function.html#ga2c6279aec855163efff8954d6a84804a", null ],
+    [ "FooSeq_new", "group___core_seq_function.html#ga1361769f33fb6e8f632e2c4b723eefd0", null ],
+    [ "FooSeq_set_length", "group___core_seq_function.html#gac7740f57c8543452c72666a83579c742", null ],
+    [ "FooSeq_set_maximum", "group___core_seq_function.html#ga131ed994ac6990052d7e178d927b05bd", null ],
+    [ "FooSeq_to_array", "group___core_seq_function.html#ga113857e139b112ca5ff5fb4014092113", null ],
+    [ "FooSeq_unloan", "group___core_seq_function.html#gaba7a2c4cf49f72627f9b445b697b2364", null ],
+    [ "FooSeqSet", "group___core_seq_function.html#ga70f2ff1bbac26af399826f8966cb18d3", null ]
+];

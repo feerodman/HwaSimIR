@@ -1,0 +1,995 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: 臻融数据分发服务（ZRDDSv2.4.0）在线文档</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li class="current"><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>类</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('index.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">臻融数据分发服务（ZRDDSv2.4.0）在线文档 </div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><h1><a class="anchor" id="introduction"></a>
+ZRDDS介绍</h1>
+<p>　　臻融数据分发服务（下文中简述为：ZRDDS）是由南京臻融软件科技有限公司自主研发的服从OMG DDS规范的通信中间件。数据分发服务（Data Distribution Service，DDS），是OMG提出的一个高效的基于主题的发布/订阅数据模型标准，具有如下特点：</p><ul>
+<li>DDS是一个通信中间件标准，向下屏蔽不同硬件平台、操作系统以及通信协议，向上提供规范的统一DDS应用程序开发接口；</li>
+<li>以数据为中心，提出全局数据空间概念，实现空间、时间上解耦合；</li>
+<li>丰富的QoS定制通信行为、资源使用等。</li>
+</ul>
+<h2><a class="anchor" id="pub-sub-modle"></a>
+以数据为中心的订阅发布模型</h2>
+<p>　　在发布订阅模型中，参与通信的节点被区分为两类：产生数据的发布者和使用数据的订阅者，一个节点可以既是发布者又是订阅者。对于用户而言，仅仅需要标识自己所需求的通信类型，并以特定格式描述所使用的数据格式就能与其他节点建立通信。所有的通信细节都由通信中间件进行管理。数据产生的节点，即发布者，只需要将产生的数据提交给通信中间件，通信中间件根据其所掌握的信息将数据传输给需要这些数据的节点，即订阅者。订阅者须告诉通信中间件所需数据信息，通信中间件会在收到此种数据时将其提交给订阅者。</p>
+<p>　　ZRDDS系统实现了基于主题的发布订阅模型，其通信模型参见<a href="#figure-1">图1</a>，订阅发布模型具备如下的特点：</p><ul>
+<li>按主题组织系统中的所有数据，“存储”在全局数据空间中，全局数据空间是一个逻辑上的概念，真正的存储是在各个节点之上；</li>
+<li>发布需要分享的主题数据；</li>
+<li>订阅自己感兴趣的主题数据；</li>
+<li>无需其他应用程序的存在性以及位置信息，实现空间、时间上解耦合；</li>
+</ul>
+<p><a class="anchor" id="figure-1"></a> </p><div class="image">
+<img src="globaldataspace.png" alt="globaldataspace.png"/>
+<div class="caption">
+图1. 全局数据空间示意图</div></div>
+ <h2><a class="anchor" id="entity-introduction"></a>
+实体</h2>
+<p>实体（ <a class="el" href="class_d_d_s_1_1_entity.html" title="实体（实体) 作为所有实体（包括域参与者、主题、发布者、订阅者、数据读者、数据写者）的基类，抽象实体的�...">DDS::Entity</a> ）作为所有实体（包括域参与者、主题、发布者、订阅者、数据读者、数据写者）的基类，抽象实体的基本属性以及操作。由工厂创建的实体称为该工厂的子实体，例如：数据读者实体为其创建订阅者的子实体。</p>
+<h2><a class="anchor" id="entity-lifecycle"></a>
+实体的生命周期</h2>
+<p>　　实体为抽象的概念，不能直接创建一个实体，必须创建具体的实体对象，例如：主题、发布者。在ZRDDS中，使用工厂模式（Factory Pattern）来创建、删除具体实体。工厂模式是指用工厂对象（factory）方法创建、删除实体，而不是直接声明创建、删除实体。在ZRDDS中，由工厂创建出来的实体对象，称为该工厂的子实体，子实体属于其父工厂，由于某些实体也可以实体工厂，故而父工厂也可以称为父实体。ZRDDS中工厂与实体的关系见<a href="#table-1">表1</a>。</p>
+<p>　　在删除实体时，若其子实体没有被全部删除，该实体不满足删除条件。例如，发布者作为工厂对象创建、删除数据写者，当发布者所创建的数据写者未全部删除时，该发布者不可以被创建它的工厂域参与者删除。每一个由create_&lt;Entity&gt;()函数创建的实体最终都要被delete_&lt;Entity&gt;()函数，或者delete_contained_entities()函数删除。例如，通过 <a class="el" href="class_d_d_s_1_1_publisher.html#a04c18041cc57db814400926da3df4bdd" title="创建DataWriter。 ">DDS::Publisher::create_datawriter()</a> 函数创建的数据写者必须被 <a class="el" href="class_d_d_s_1_1_publisher.html#a638462bd712d57d1ef855b924e50675a" title="删除一个数据写者。 ">DDS::Publisher::delete_datawriter()</a> 或 <a class="el" href="class_d_d_s_1_1_publisher.html#af0631af8fba225cc6fa86319854a6ed8" title="删除Publisher所包含的所有DataWriter。 ">DDS::Publisher::delete_contained_entities()</a> 函数删除。</p>
+<p><a class="anchor" id="table-1"></a> 表1. ZRDDS中工厂与实体关系</p>
+<table class="doxtable">
+<tr>
+<th align="left">工厂 </th><th align="left">子实体  </th></tr>
+<tr>
+<td align="left">域参与者工厂（ <a class="el" href="class_d_d_s_1_1_domain_participant_factory.html" title="域参与者工厂接口的核心功能在于是创建以及销毁域参与者实体，即作为域参与者实体的工厂，域参与者工厂是一�...">DDS::DomainParticipantFactory</a> ） </td><td align="left">域参与者（ <a class="el" href="class_d_d_s_1_1_domain_participant.html" title="该类抽象域参与者实体。 ">DDS::DomainParticipant</a> ） </td></tr>
+<tr>
+<td align="left">域参与者（ <a class="el" href="class_d_d_s_1_1_domain_participant.html" title="该类抽象域参与者实体。 ">DDS::DomainParticipant</a> ） </td><td align="left">主题（ <a class="el" href="class_d_d_s_1_1_topic.html" title="主题是发布订阅模型中数据基本的抽象。 ">DDS::Topic</a> ） </td></tr>
+<tr>
+<td align="left">^ </td><td align="left">发布者（ <a class="el" href="class_d_d_s_1_1_publisher.html" title="ZRDDS提供的发布者接口，应用创建发布者表示自身想向指定的域内提供数据； ">DDS::Publisher</a> ） </td></tr>
+<tr>
+<td align="left">^ </td><td align="left">订阅者（ <a class="el" href="class_d_d_s_1_1_subscriber.html" title="ZRDDS提供的订阅者接口，应用创建订阅者表示自身想从指定的域内获取数据； ">DDS::Subscriber</a> ） </td></tr>
+<tr>
+<td align="left">发布者（ <a class="el" href="class_d_d_s_1_1_publisher.html" title="ZRDDS提供的发布者接口，应用创建发布者表示自身想向指定的域内提供数据； ">DDS::Publisher</a> ） </td><td align="left">数据写者（ <a class="el" href="class_d_d_s_1_1_data_writer.html" title="DDS标准中的数据读者接口。 ">DDS::DataWriter</a> ） </td></tr>
+<tr>
+<td align="left">订阅者（ <a class="el" href="class_d_d_s_1_1_subscriber.html" title="ZRDDS提供的订阅者接口，应用创建订阅者表示自身想从指定的域内获取数据； ">DDS::Subscriber</a> ） </td><td align="left">数据读者（ <a class="el" href="class_d_d_s_1_1_data_reader.html" title="DDS标准中的数据读者接口。 ">DDS::DataReader</a> ） </td></tr>
+</table>
+<h3><a class="anchor" id="entity-instancehandle"></a>
+实体唯一标识</h3>
+<p>　　为有效的标识ZRDDS中的实体，ZRDDS在创建实体时将自动分配实体在域内的唯一标识，并提供接口给用户获取该标识，标识结构参见 DDS::InstanceHandle_t 。</p>
+<h3><a class="anchor" id="entity-enable"></a>
+实体使能</h3>
+<p>　　使能函数 <a class="el" href="class_d_d_s_1_1_entity.html#acaf66ba087d9c1c5d716eda0756f2254" title="手动使能该实体，参见实体使能 。 ">DDS::Entity::enable()</a> 可以将一个实体从未使能状态变更为使能状态。实体在创建后是否自动使能，由父实体的实体工厂策略（ <a class="el" href="struct_d_d_s___entity_factory_qos_policy.html" title="实体工厂配置。 ">DDS_EntityFactoryQosPolicy</a> ）决定。在默认情况下，所有实体将会在创建时被自动使能， 即一个实体对象在创建后就处于可操作状态。在某些特殊情况下，用户可能希望去创建一个未使能的实体。例如：当用户创建一个新的数据读者时，在默认情况下，这个数据读者将会立即开始订阅新的数据，但此时数据读者并未准备好处理订阅数据。在该情况下，用户应该配置订阅者的实体工厂配置使新创建的数据读者处于未使能状态。在准备好处理订阅数据后，用户调用数据读者的 enable() 函数使能数据读者，从而开始处理订阅到的数据。具体的设置方法参见 <a class="el" href="_create_disabled_entity_8cpp-example.html">CreateDisabledEntity.cpp</a></p>
+<h3><a class="anchor" id="entity-status"></a>
+实体状态</h3>
+<p>　　实体状态表示ZRDDS为用户关心的底层事件所维护的状态，例如数据写者关联成功匹配远程数据读者、检测到数据读者数据样本丢失、检测到主题的类型不兼容等。每个实体会关联一系列的代表该实体“通信状态”的状态对象。实体关联的状态参见<a href="#table-2">表2</a>。状态结构体中包含的数值可以提供更多关于该状态的信息。</p>
+<p><a class="anchor" id="table-2"></a> 表2. ZRDDS中实体与状态的对应关系</p>
+<table class="doxtable">
+<tr>
+<th>实体 </th><th>状态标识 </th><th>状态结构  </th></tr>
+<tr>
+<td>主题 </td><td><a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fa1cdc1326d8bc09a1be3a8045f080fa88" title="主题不匹配状态。 ">DDS_INCONSISTENT_TOPIC_STATUS</a> </td><td><a class="el" href="struct_d_d_s___inconsistent_topic_status.html" title="描述名称同一个域中主题名相同但关联的类型不同的主题状态。 ">DDS_InconsistentTopicStatus</a> </td></tr>
+<tr>
+<td>数据写者 </td><td><a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fabb958f0f7fe005d227e808949509961c" title="数据写者存活性状态丢失状态。 ">DDS_LIVELINESS_LOST_STATUS</a> </td><td><a class="el" href="struct_d_d_s___liveliness_lost_status.html" title="数据写者存活性丢失状态。 ">DDS_LivelinessLostStatus</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fa84f12530ffc8d6e68906054b06972342" title="数据写者截止时间未满足状态类型。 ">DDS_OFFERED_DEADLINE_MISSED_STATUS</a> </td><td><a class="el" href="struct_d_d_s___offered_deadline_missed_status.html" title="数据写者端截止时间未满足状态。 ">DDS_OfferedDeadlineMissedStatus</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fa1eb2a68f0c66c314784737a7728922b8" title="数据写者端QoS不匹配状态类型。 ">DDS_OFFERED_INCOMPATIBLE_QOS_STATUS</a> </td><td><a class="el" href="struct_d_d_s___offered_incompatible_qos_status.html" title="数据写者端QoS不匹配状态。 ">DDS_OfferedIncompatibleQosStatus</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fa3052f04c67620660f92aa3b5da2455d2" title="数据写者匹配状态类型。 ">DDS_PUBLICATION_MATCHED_STATUS</a> </td><td><a class="el" href="struct_d_d_s___publication_matched_status.html" title="数据写者端与数据读者的匹配状态。 ">DDS_PublicationMatchedStatus</a> </td></tr>
+<tr>
+<td>订阅者 </td><td><a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fa7962fc85687ca40e2674e4f66811f670" title="订阅者数据到达状态类型。 ">DDS_DATA_ON_READERS_STATUS</a> </td><td><a class="el" href="class_d_d_s_1_1_subscriber_listener.html#affb0d4133c1b9ca2230f8307403c8148" title="回调 DDS_DATA_ON_READERS_STATUS 状态。 ">DDS::SubscriberListener::on_data_on_readers</a> </td></tr>
+<tr>
+<td>数据读者 </td><td><a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fa9d2d926d515abd0ddd0b537efd42f03e" title="数据读者数据到达状态类型。 ">DDS_DATA_AVAILABLE_STATUS</a> </td><td><a class="el" href="class_d_d_s_1_1_data_reader_listener.html#a7a07786485f549a7efa59ef0c8737ff5" title="有新的样本存储到数据读者底层时回调。 ">DDS::DataReaderListener::on_data_available</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fa267a5ad100a1e87c372752b6900a9965" title="数据写者存活性改变状态类型。 ">DDS_LIVELINESS_CHANGED_STATUS</a> </td><td><a class="el" href="struct_d_d_s___liveliness_changed_status.html" title="数据写者存活性变化状态。 ">DDS_LivelinessChangedStatus</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fab4c627eaeae35f65790cc564208ca2e6" title="数据读者截止时间未满足状态类型。 ">DDS_REQUESTED_DEADLINE_MISSED_STATUS</a> </td><td><a class="el" href="struct_d_d_s___requested_deadline_missed_status.html" title="数据读者端截止时间未满足状态。 ">DDS_RequestedDeadlineMissedStatus</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fa126ff1b38cdfc905353cb2dac57b6796" title="数据读者端QoS不匹配状态类型。 ">DDS_REQUESTED_INCOMPATIBLE_QOS_STATUS</a> </td><td><a class="el" href="struct_d_d_s___requested_incompatible_qos_status.html" title="数据读者端QoS不匹配状态。 ">DDS_RequestedIncompatibleQosStatus</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fa0114c506e39a7fef5a42587556fc812f" title="数据样本丢失状态类型。 ">DDS_SAMPLE_LOST_STATUS</a> </td><td><a class="el" href="struct_d_d_s___sample_lost_status.html" title="样本丢失状态。 ">DDS_SampleLostStatus</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fa9e9d4b8dec6fa48c37aa32aa51ad2dd0" title="数据样本拒绝状态类型。 ">DDS_SAMPLE_REJECTED_STATUS</a> </td><td><a class="el" href="struct_d_d_s___sample_rejected_status.html" title="数据样本被拒绝状态。 ">DDS_SampleRejectedStatus</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26faceedf0fda6d695b4fabd8ac0af807bb1" title="数据读者匹配状态类型。 ">DDS_SUBSCRIPTION_MATCHED_STATUS</a> </td><td><a class="el" href="struct_d_d_s___subscription_matched_status.html" title="数据读者端与数据写者的匹配状态。 ">DDS_SubscriptionMatchedStatus</a> </td></tr>
+</table>
+<h3><a class="anchor" id="get-plain-status"></a>
+获取实体状态</h3>
+<p>状态分为两种类型：</p><ul>
+<li>简单通信状态 ：除了表明状态是否改变的标识还包含保存当前状态的对应结构体。</li>
+<li>读通信状态：读通信状态更像一个事件，除了是否发生以外没有其他声明。只有两个状态是读通信状态： <a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fa9d2d926d515abd0ddd0b537efd42f03e" title="数据读者数据到达状态类型。 ">DDS_DATA_AVAILABLE_STATUS</a> 和 <a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fa7962fc85687ca40e2674e4f66811f670" title="订阅者数据到达状态类型。 ">DDS_DATA_ON_READERS_STATUS</a> 。</li>
+</ul>
+<p><a class="anchor" id="figure-2"></a> </p><div class="image">
+<img src="getdatapattern.png" alt="getdatapattern.png"/>
+<div class="caption">
+图2. 从ZRDDS中获取状态以及数据的三种模式</div></div>
+ 下面分别描述获取实体简单通信状态有三种方式，详细例子参见<a class="el" href="_get_plain_status_8cpp-example.html">GetPlainStatus.cpp</a> :</p><ul>
+<li>同步获取实体状态，参见<a href="#figure-2">图2</a>最左边图，用户想要获取某个状态的当前值时，主动调用该状态有关的实体方法，获取各实体状态的实体方法参见 DDS_StatusKind ；</li>
+<li>同步等待并获取实体状态，参见<a href="#figure-2">图2</a>中间的图，用户设置等待条件，并调用ZRDDS接口进行阻塞等待，在ZRDDS底层检测到该状态发生变化后，解开阻塞，用户再通过方法1获取该状态。详见<a class="el" href="index.html#waitset-introduction">条件-等待</a> 。</li>
+<li>异步回调实体状态，参见<a href="#figure-2">图2</a>右边的图，该方式为通过监听器异步回调状态，详见<a class="el" href="index.html#listener-introduction">监听器</a> ，用户为实体设置相应的监听器（再进行其他的业务逻辑），ZRDDS底层检测到该状态变化时，通过回调监听器的相应方法，用户即可获取该状态的值，各实体状态关联的回调方法参见 <a class="el" href="group___core_status_struct.html#gaa99b5585ecdf8c5f93ac3108439ad26f" title="位域定义实体状态类型。 ">DDS_StatusKind</a> ；</li>
+</ul>
+<h2><a class="anchor" id="waitset-introduction"></a>
+条件-等待</h2>
+<p>　　ZRDDS使用条件（ <a class="el" href="class_d_d_s_1_1_condition.html" title="ZRDDS中条件的基类。 ">DDS::Condition</a> ）以及等待（ <a class="el" href="class_d_d_s_1_1_wait_set.html" title="该类型抽象等待条件 条件-等待 。 ">DDS::WaitSet</a> ）来实现同步等待模型，其中每个条件均有一个触发状态，不同类型的状态的触发条件不一样，可以将一个或者多个条件加入到等待集合中，即允许用户同时等待多个状态的集合中的某个状态触发。条件的类型及其相关的操作参见<a href="#figure-3">表3</a>，使用条件等待的详细例子参见<a class="el" href="_wait-_condition_8cpp-example.html">Wait-Condition.cpp</a></p>
+<p><a class="anchor" id="table-3"></a> 表3. ZRDDS中条件的种类、触发状态以及获取方式</p>
+<table class="doxtable">
+<tr>
+<th>说明 </th><th>状态条件（ <a class="el" href="class_d_d_s_1_1_status_condition.html" title="实体状态条件，该条件用于获取实体状态改变。 ">DDS::StatusCondition</a> ） </th><th>读取条件 （ <a class="el" href="class_d_d_s_1_1_read_condition.html" title="该类抽象ZRDDS中的读取条件条件-等待 。 ">DDS::ReadCondition</a> ） </th><th>监视条件（ <a class="el" href="class_d_d_s_1_1_guard_condition.html" title="监视条件用于手动控制等待条件。 ">DDS::GuardCondition</a> ）  </th></tr>
+<tr>
+<td>简介 </td><td>该条件用于获取实体状态改变 </td><td>该条件用于获取数据读者的数据状态改变 </td><td>该条件用于手动解开阻塞的条件集合 </td></tr>
+<tr>
+<td>获取方式 </td><td>每个实体均会关联一个该条件，调用 <a class="el" href="class_d_d_s_1_1_entity.html#aa2bbb1f4eb6fcb40efeaee0a8ea56fad" title="返回该实体关联的状态条件。 ">DDS::Entity::get_statuscondition</a> 方法获取 </td><td>由数据读者作为该条件的工厂， <a class="el" href="class_d_d_s_1_1_data_reader.html#afcb26d7099cdd91487bebe7863e4ab11" title="创建一个与该数据读者绑定的读取条件。 ">DDS::DataReader::create_readcondition</a> 、 <a class="el" href="class_d_d_s_1_1_data_reader.html#addaecc54d66d8a08177f3c2b8e7eb40c" title="删除指定的读取条件。 ">DDS::DataReader::delete_readcondition</a> </td><td>用户负责状态的生命周期管理 (new/delete) </td></tr>
+<tr>
+<td>触发方式 </td><td><a class="el" href="class_d_d_s_1_1_status_condition.html#a520df0f60826b2b8b94173473266d120" title="以掩码的方式设置用户关心的状态。 ">DDS::StatusCondition::set_enabled_statuses</a> 设置的关心的状态发生改变 </td><td>数据读者底层有该状态所表示的数据样本的时候触发 </td><td>用户通过监视条件的接口手动设置 </td></tr>
+<tr>
+<td>触发后的动作 </td><td>首先测试发生改变的状态，再调用相应的状态获取方法获取 </td><td>调用数据读者的读取数据方法获取改变的数据 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a4dce67f92202ee067732ec4214edf8d7" title="该接口从数据读者底层获取用户样本数据。 ">DDS::ZRDDSDataReader::read_w_condition</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a6724c9784a29c0928adbae9b494a4e96" title="该接口从数据读者底层取出用户样本数据。 ">DDS::ZRDDSDataReader::take_w_condition</a> </td><td>无 </td></tr>
+</table>
+<h2><a class="anchor" id="listener-introduction"></a>
+监听器</h2>
+<p>　　ZRDDS通过监听器提供底层状态事件异步回调的机制，每个实体状态在相应的实体监听器中均有相应的回调函数与之对应，实体回调函数与实体状态的对应关系参见 <a class="el" href="group___core_status_struct.html#gaa99b5585ecdf8c5f93ac3108439ad26f">DDS_StatusKind</a> 。<a href="#figure-3">图3</a>显示了ZRDDS中各个监听器的继承关系，即父实体的监听器继承于子类的监听器，这就意味着父实体监听器能够获取所有子实体的状态变化。</p>
+<p><a class="anchor" id="figure-3"></a> </p><div class="image">
+<img src="class_d_d_s_1_1_listener.png" alt="class_d_d_s_1_1_listener.png"/>
+<div class="caption">
+图3. ZRDDS中各个监听器的继承关系</div></div>
+ 　　ZRDDS针对普通实体状态以及数据实体状态的通知机制不同，其中普通实体状态的通知机制如下：</p><ol type="1">
+<li>维护内部状态，并检查是否触发实体条件；</li>
+<li>检查用户设置的监听器状态掩码是否包含本状态；<ol type="a">
+<li>如果不包含本状态，则将本状态向父实体传递；</li>
+<li>如果包含本状态，则检查用户是否给本实体设置监听器；<ol type="i">
+<li>如果设置了监听器，则调用本状态对应的回调函数，结束处理；</li>
+<li>如果未设置监听器，则忽略该状态的回调，并结束处理；</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<p>　　数据实体状态的通知机制如下，当有新数据到达数据读者，并存储成功时：</p><ol type="1">
+<li>维护状态 <a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fa9d2d926d515abd0ddd0b537efd42f03e" title="数据读者数据到达状态类型。 ">DDS_DATA_AVAILABLE_STATUS</a> ，并检查是否触发实体条件；</li>
+<li>将该事件提交给订阅者，并触发 <a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fa7962fc85687ca40e2674e4f66811f670" title="订阅者数据到达状态类型。 ">DDS_DATA_ON_READERS_STATUS</a> 状态 ；</li>
+<li>如果订阅者监听器掩码包含 <a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fa7962fc85687ca40e2674e4f66811f670" title="订阅者数据到达状态类型。 ">DDS_DATA_ON_READERS_STATUS</a> 状态，则检查是否包含了订阅者监听器；<ol type="a">
+<li>如果有，则调用 <a class="el" href="class_d_d_s_1_1_subscriber_listener.html#affb0d4133c1b9ca2230f8307403c8148" title="回调 DDS_DATA_ON_READERS_STATUS 状态。 ">DDS::SubscriberListener::on_data_on_readers</a> 回调函数；</li>
+<li>如果没有则将该状态提交给数据读者处理；</li>
+</ol>
+</li>
+<li>如果订阅者监听器掩码包含 <a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fa7962fc85687ca40e2674e4f66811f670" title="订阅者数据到达状态类型。 ">DDS_DATA_ON_READERS_STATUS</a> 状态，则检查是否包含了订阅者监听器；<ol type="a">
+<li>如果有，则调用 <a class="el" href="class_d_d_s_1_1_subscriber_listener.html#affb0d4133c1b9ca2230f8307403c8148" title="回调 DDS_DATA_ON_READERS_STATUS 状态。 ">DDS::SubscriberListener::on_data_on_readers</a> 回调函数，并结束处理；</li>
+<li>如果没有则将该状态提交给数据读者处理；</li>
+</ol>
+</li>
+<li>如果数据读者监听器掩码包含 <a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fa9d2d926d515abd0ddd0b537efd42f03e" title="数据读者数据到达状态类型。 ">DDS_DATA_AVAILABLE_STATUS</a> 状态，则检查是否包含了数据读者监听器；<ol type="a">
+<li>如果有，则调用 <a class="el" href="class_d_d_s_1_1_data_reader_listener.html#a7a07786485f549a7efa59ef0c8737ff5" title="有新的样本存储到数据读者底层时回调。 ">DDS::DataReaderListener::on_data_available</a> 回调函数，并结束处理；</li>
+<li>如果未设置监听器，则忽略该状态的回调，并结束处理；</li>
+</ol>
+</li>
+</ol>
+<p>　　ZRDDS在回调用户接口时，已经获取了底层的资源锁，故而在回调函数中在涉及到线程锁的使用时，应该谨慎使用避免造成死锁。在ZRDDS内部有三类资源锁，域参与者资源锁、订阅者资源锁（所有子实体数据读者共享）、发布者资源锁（所有子实体数据写者共享），在调用某实体的方法之前，ZRDDS均会请求该实体的资源锁，在获取订阅者或者发布者资源锁前，会优先获取域参与者锁。为避免死锁，使用所有的资源锁（包括用户自定义的资源锁）均应具备相同的顺序，ZRDDS在调用某个实体的回调函数时，已经获取了该实体级别的资源锁。</p>
+<h2><a class="anchor" id="entity-qos"></a>
+QoS</h2>
+<p>　　服务质量（QoS）是ZRDDS中的一个重要概念。通过服务质量策略配置，ZRDDS可以适应不同的使用场景，帮助用户以简易的方式建立复杂系统并充分挖掘系统潜能，具体参见<a class="el" href="group___core_qos_struct.html">核心接口QoS相关数据类型</a> 。</p>
+<h2><a class="anchor" id="domain-introduction"></a>
+域/域参与者</h2>
+<p>　　在发布订阅模型中，理论上每个计算机上的中间件都需要掌握全局的节点信息，以提供分布式的数据传输服务。但在实际应用中，可能存在需要隔离的情况，例如网络中的节点数量过于庞大，掌握全局信息会付出巨大的代价，或者从属于不同分区的小组之间不希望互相干扰。为了解决隔离的问题，ZRDDS引入了域的概念。每个参与通信的计算机都可以加入一个或多个域，相同域内的节点可以互相通信，不同域之间的节点则不会有数据交互。ZRDDS中使用 <a class="el" href="group___core_base_struct.html#ga4746170369a8b1fd00f9be49999997c3" title="用来表示域参与者所属域的值。 ">DDS_DomainId_t</a> 来唯一标识一个域。域参与者实体是ZRDDS的入口，用户创建一个域参与者表示该程序想要在指定的域中交互数据。域模型示意图参见<a href="#figure-4">图4</a>，一个应用程序可以在多个域中交互数据。</p>
+<p><a class="anchor" id="figure-4"></a> </p><div class="image">
+<img src="domain.png" alt="domain.png"/>
+<div class="caption">
+图4. ZRDDS中域与域参与者概念</div></div>
+ <h3><a class="anchor" id="dpf-introduction"></a>
+域参与者工厂</h3>
+<p>　　域参与者实体的工厂为全局单例的域参与者工厂( DDS::DomainParticipantFactory )，域参与者工厂的主要功能参见<a href="#table-4">表4</a>。</p>
+<p><a class="anchor" id="table-4"></a> 表4. 域参与者工厂功能描述</p>
+<table class="doxtable">
+<tr>
+<th>功能 </th><th>接口  </th></tr>
+<tr>
+<td>单例管理 </td><td><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#aac93dd83a14bb246001d86b74ad48071" title="获取域参与者工厂单例对象， TheParticipantFactory 宏为该函数的简写。 ">DDS::DomainParticipantFactory::get_instance</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#abd43aa3275d32e1adb2ad08948cd8b1d" title="析构单例，该方法同样是线程不安全的，多个线程同时调用该函数，可能会出问题。 ">DDS::DomainParticipantFactory::finalize_instance</a> </td></tr>
+<tr>
+<td>作为域参与者的工厂 </td><td><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#a67cee171a35fe248f9f069c3ebaf6eb9" title="创建一个新的域参与者实体，并设置QoS以及监听器，域参与者的创建表明应用程序打算加入domainId 指定的域中�...">DDS::DomainParticipantFactory::create_participant</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#a1144ca83c9f8d4e972bf1a8d94dc0119" title="该方法删除指定的域参与者。在调用该方法之前需要保证该域参与者的所有子实体都已经被删除。否则将会返回错�...">DDS::DomainParticipantFactory::delete_participant</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#a961d598592a4fd8eef4d8b29539e74fa" title="该方法在指定域domainId 下查找域参与者，如果有多个域参与者，则返回其中一个。 ">DDS::DomainParticipantFactory::lookup_participant</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#a938f5d6e51b1fbfb05b6c172fe47f3e4" title="该方法获取该工厂为域参与者保存的默认QoS配置。 ">DDS::DomainParticipantFactory::get_default_participant_qos</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#a9e8b49fcfc73b7687039f0658cd965fc" title="该方法设置该工厂为域参与者保存的默认QoS配置。 ">DDS::DomainParticipantFactory::set_default_participant_qos</a> </td></tr>
+<tr>
+<td>自身QoS管理 </td><td><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#aea6dff518d8ae2ea75980a2637f6893d" title="该方法设置域参与者工厂本身的QoS，特殊的值 DDS::DOMAINPARTICIPANT_FACTORY_QOS_DEFAULT 表示设置为默认值...">DDS::DomainParticipantFactory::set_qos</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#a827024810f2ee4f8841d610e14f6cff2" title="该方法获取为域参与者工厂设置的QoS。 ">DDS::DomainParticipantFactory::get_qos</a> </td></tr>
+</table>
+<h3><a class="anchor" id="dp-introduction"></a>
+域参与者</h3>
+<p>　　域参与者( DDS::DomainParticipant )，主要接口的功能参见<a href="#table-5">表5</a>，此外，域参与者内部还实现发现协议、根据线程模型配置初始化线程、创建定时器、申请并创建网络传输需要的资源，并监听对应的网络端口，负责处理网络报文等，域参与者所需的资源较多，内部逻辑复杂，因而在一个应用中因尽可能的减少域参与者的创建。</p>
+<p><a class="anchor" id="table-5"></a> 表5. 域参与者功能描述</p>
+<table class="doxtable">
+<tr>
+<th>功能 </th><th>接口  </th></tr>
+<tr>
+<td>实体功能 </td><td><a class="el" href="class_d_d_s_1_1_entity.html#acaf66ba087d9c1c5d716eda0756f2254" title="手动使能该实体，参见实体使能 。 ">DDS::DomainParticipant::enable</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#a41c2e7b6734872dd8e84a3809fb50909" title="设置该域参与者的监听器。 ">DDS::DomainParticipant::set_listener</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#ac17be2747991d6b44f1aa0e4afc6a147" title="该方法获取通过 set_listener 方法或者创建时为域参与者设置的监听器对象。 ">DDS::DomainParticipant::get_listener</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#ad96580db7408206e23e520ed092155f2" title="该方法设置为域参与者设置的QoS。 ">DDS::DomainParticipant::set_qos</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#ac62fcb5d263c29a611b1338bfca437e9" title="获取该域参与者的QoS配置。 ">DDS::DomainParticipant::get_qos</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_entity.html#aef72ffc167d867c1f3d2a8ef594b0011" title="获取该实体的唯一标识。 ">DDS::DomainParticipant::get_instance_handle</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_entity.html#abfefe5840f713c729630757a57c494af" title="获取该实体从上一次获取任意状态后的状态变化。 ">DDS::DomainParticipant::get_status_changes</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_entity.html#aa2bbb1f4eb6fcb40efeaee0a8ea56fad" title="返回该实体关联的状态条件。 ">DDS::DomainParticipant::get_statuscondition</a> </td></tr>
+<tr>
+<td>作为实体工厂 </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#ad9e649762791146a566e2ed34f575127" title="该方法删除域参与者创建的所有实体。 ">DDS::DomainParticipant::delete_contained_entities</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#a93daae62585e1865877eb2e420a39a05" title="该方法用于测试实体是否是域参与者的子实体。 ">DDS::DomainParticipant::contains_entity</a> </td></tr>
+<tr>
+<td>作为主题实体工厂 </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#a2d6170dace4cc2744d4f5faef8f9158c" title="该方法在域参与者下创建一个主题子实体，并设置域内唯一的名称、关联的数据类型、QoS以及监听器，用于抽象域...">DDS::DomainParticipant::create_topic</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#a4df7bb7228ba33a1dc5e1b0f791f569e" title="删除指定主题。 ">DDS::DomainParticipant::delete_topic</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#acfd3e52b2fb2b0a0a4db4d4dc7f6902a" title="该方法获取为主题保存的默认QoS配置。 ">DDS::DomainParticipant::get_default_topic_qos</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#ade8b90f7ffda88f5311afea0c06065f4" title="该方法设置为主题保存的默认QoS配置。 ">DDS::DomainParticipant::set_default_topic_qos</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#aca632dde942406763a8d952125e638f8" title="根据主题名字查找本地创建的主题，包括主题以及基于内容过滤的主题。 ">DDS::DomainParticipant::lookup_topicdescription</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#aa275e302c62f1b273519527e065b55e9" title="根据主题名字阻塞查找本地主题。 ">DDS::DomainParticipant::find_topic</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#a3d001ed1b8fb5390a4860d4af8ba769f" title="创建基于内容过滤的主题。 ">DDS::DomainParticipant::create_contentfilteredtopic</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#a7f96e8395c5f0d5966d0b894d0de4161" title="删除指定基于内容过滤的主题。 ">DDS::DomainParticipant::delete_contentfilteredtopic</a> </td></tr>
+<tr>
+<td>作为发布者实体工厂 </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#a503f98f2792e078113ffd193a3df3890" title="该方法在域参与者下创建一个发布者子实体，并设置QoS以及监听器，表明应用想要向该域内发布数据。 ...">DDS::DomainParticipant::create_publisher</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#acc06433bdaa3f81aeaab869f7a0517ef" title="删除指定的发布者实体。 ">DDS::DomainParticipant::delete_publisher</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#a6f92920f7567d0b8d6fb217df15a27df" title="该方法获取为发布者保存的默认QoS配置。 ">DDS::DomainParticipant::get_default_publisher_qos</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#a4b27eb09fa4384a203d89c3814c8a30d" title="该方法设置为发布者保存的默认QoS配置。 ">DDS::DomainParticipant::set_default_publisher_qos</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#a7127e3dd7a90bb5e4d5839f4954cf29c" title="获取当前未被删除的由该域参与者创建的发布者列表。 ">DDS::DomainParticipant::get_publishers</a> </td></tr>
+<tr>
+<td>作为订阅者实体工厂 </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#a55e5c42616e3f268655fe4cae88dc21c" title="该方法在域参与者下创建一个订阅者子实体，并设置QoS以及监听器，表明应用想要向该域内订阅数据。 ...">DDS::DomainParticipant::create_subscriber</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#a54343328a1bdd04cd7f73e2427cc93e3" title="删除指定的订阅者实体。 ">DDS::DomainParticipant::delete_subscriber</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#a196a6ace12de00e7b7234206677d739f" title="该方法获取为订阅者保存的默认QoS配置。 ">DDS::DomainParticipant::get_default_subscriber_qos</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#a511e19745a36beb7a7f90969f57459fe" title="该方法设置为订阅者保存的默认QoS配置。 ">DDS::DomainParticipant::set_default_subscriber_qos</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#a5e5337f33081b4fd63a837647d9a5e38" title="获取当前未被删除的由该域参与者创建的订阅者列表。 ">DDS::DomainParticipant::get_subscribers</a> </td></tr>
+<tr>
+<td>内置实体管理 </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#a10633af7e8d0b9eb6fd9858325a2a1bc" title="获取用户实体发现的内置订阅者。 ">DDS::DomainParticipant::get_builtin_subscriber</a> </td></tr>
+<tr>
+<td>通信管理 </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#a629ea11108b478ea281c0f94519e83da" title="该方法用于忽略指定的域参与者，即如同未发现该域参与者，忽略该域参与者下的所有订阅、发布信息。 ...">DDS::DomainParticipant::ignore_participant</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#a6fb334726006116892d0dc26e653e1e4" title="忽略指定数据写者，即不与本地数据读者匹配。 ">DDS::DomainParticipant::ignore_publication</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#ac40720008db275eac6f6376d6c1640c7" title="忽略指定数据读者，即不与本地数据写者匹配。 ">DDS::DomainParticipant::ignore_subscription</a> </td></tr>
+<tr>
+<td>域信息查询 </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#af62946b2db366aecc63d12ed7c4b6213" title="获取该域参与者所属的域。 ">DDS::DomainParticipant::get_domain_id</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#afeec1e8edb5d976efc49c6cd6f417a7b" title="获取该域参与者发现的远程（逻辑上，也有可能在同一个节点，甚至在同一个应用程序中）域参与者的标识列表。 ...">DDS::DomainParticipant::get_discovered_participants</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#a5c92d69e0bb58784176aabc6a1e6b3e9" title="该方法查询指定标识的域参与者的详细信息。 ">DDS::DomainParticipant::get_discovered_participant_data</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#abeeb872fdc23861e8635a7ec36dbef66" title="获取已经被发现且没有被忽略的其他主题的标识。 ">DDS::DomainParticipant::get_discovered_topics</a> </td></tr>
+<tr>
+<td>^ </td><td>DDS::DomainParticipant::get_discovered_topic_data </td></tr>
+<tr>
+<td>存活性管理 </td><td><a class="el" href="class_d_d_s_1_1_domain_participant.html#a5ec759f822576d388501c689e20d01f1" title="该方法用于手动声明域参与者的存活性，当存活性策略设置为 DDS_MANUAL_BY_PARTICIPANT_LIVELINESS_QOS 时有�...">DDS::DomainParticipant::assert_liveliness</a> </td></tr>
+</table>
+<h2><a class="anchor" id="data-types"></a>
+数据类型</h2>
+<p>　　在以数据为中心的发布/订阅通信中，不同平台、不同编程语言的应用程序之间实现互相通信的基础是拥有一套通用的数据类型定义来描述数据。然而，不同类型的的编程语言之间会使用几种相同的基本数据类型，例如int、float、bool、char等。因此，不同平台、不同编程语言的应用程序之间可以通过共享基本数据类型的定义来实现互相通信。此外，如果只能通过几种基本数据类型实现通信的话，互通数据的内容结构局限性太大，因此，除了共享基本数据类型定义外，还可以通过共享基本数据类型的简单数据结构来实现数据互通。例如共享struct结构及其嵌套结构，用C/C++语言描述如下： </p><div class="fragment"><div class="line"><span class="keyword">struct </span><a class="code" href="struct_foo.html">Foo</a></div>
+<div class="line">{</div>
+<div class="line">    <span class="keywordtype">long</span> x1;</div>
+<div class="line">    <span class="keywordtype">short</span> x2;</div>
+<div class="line">};</div>
+<div class="line"><span class="keyword">struct </span>ShapeType</div>
+<div class="line">{</div>
+<div class="line">    <a class="code" href="struct_foo.html">Foo</a> y1;</div>
+<div class="line">    <span class="keywordtype">float</span> y2;</div>
+<div class="line">};</div>
+</div><!-- fragment --><p> 　　由于操作系统、编程语言不同，同一内容的数据定义的表现格式也会不同（例如C++语言中的bool，在java里为boolean）。因此还需要定义一个通用的数据结构的表现形式来实现不同平台、不同编程语言的应用程序之间的互通。在DDS模型中，用户可以通过定义IDL文件的形式来描述数据结构。IDL文件的描述与平台无关，独立于操作系统、编程语言之外。在定义IDL文件后，通过DDS编译器可以将IDL文件描述的数据结构转换为平台相关的数据类型描述文件，IDL的详细描述参见 <a class="el" href="index.html#DDSCompiler">ZRDDS编译器</a> 。</p>
+<p>　　数据类型在DDS系统中用于描述主题关联的数据的数据格式，DDS中的主题必须关联一个特定的数据类型，该主题下的数据都具有关联的数据类型的结构。ZRDDS提供的用户接口为强类型安全接口，即用户在使用数据写者发送数据以及数据读者读取数据样本时，接口参数为具体的数据类型，而非缓冲区等还需要解释的原始数据类型。强类型安全的接口具有如下特点：</p><ul>
+<li>用户与DDS交互都是通过带类型的接口，使程序清晰易于使用，例如： <div class="fragment"><div class="line"><span class="comment">// 发布数据</span></div>
+<div class="line"><a class="code" href="struct_foo.html">Foo</a> sample;</div>
+<div class="line"><a class="code" href="group___cpp_typed_example.html#gaadcdba3e3cbc39b133d9059fab1b946a">FooDataWriter</a>* writer = ...;</div>
+<div class="line">writer-&gt;write(sample, <a class="code" href="group___core_var.html#ga9c4dcdd857c325221ab74b89b23cf8c3">DDS_HANDLE_NIL_NATIVE</a>);</div>
+<div class="line"></div>
+<div class="line"><span class="comment">// 订阅数据</span></div>
+<div class="line"><a class="code" href="struct_foo.html">Foo</a> sample;</div>
+<div class="line"><a class="code" href="group___cpp_core_struct.html#ga7836a2fa552fc2e4dc177df88a910eb6">SampleInfo</a> info;</div>
+<div class="line"><a class="code" href="group___cpp_typed_example.html#gaa1b962fb78eeb1792eafe0013cf544fe">FooDataReader</a>* reader = ...;</div>
+<div class="line">reader-&gt;read_next_sample(sample, info);</div>
+</div><!-- fragment --></li>
+<li>将序列化、反序列化的工作从用户转移到ZRDDS中间件（涉及到不同平台时会变得复杂），简化用户编程难度以及工作量；</li>
+</ul>
+<p>　　为支持强类型安全接口，ZRDDS提供 <a class="el" href="index.html#DDSCompiler">ZRDDS编译器</a> 为用户自动生成与用户定义的数据类型相关的接口，例如针对 <a class="el" href="_foo_8idl_source.html">Foo.idl</a> 文件生成的内容参见<a href="#table-5">表5</a>，详细参见<a class="el" href="group___cpp_typed_example.html">编译器生成的文件模块</a> 。</p>
+<p><a class="anchor" id="table-5"></a> 表5. 编译器生成的文件描述</p>
+<table class="doxtable">
+<tr>
+<th>支持文件 </th><th>功能描述  </th></tr>
+<tr>
+<td><a class="el" href="_foo_8h_source.html">Foo.h</a> Foo.cpp </td><td>类型对象的生命周期管理（创建、销毁、拷贝），序列化/反序列化等功能的声明与实现。 </td></tr>
+<tr>
+<td><a class="el" href="_foo_data_writer_8h_source.html">FooDataWriter.h</a> </td><td>强类型安全的数据写者接口。 </td></tr>
+<tr>
+<td><a class="el" href="_foo_data_reader_8h_source.html">FooDataReader.h</a> </td><td>强类型安全的数据读者接口。 </td></tr>
+<tr>
+<td><a class="el" href="_foo_type_support_8h_source.html">FooTypeSupport.h</a> FooTypeSupport.cpp </td><td>向底层注册类型的接口与实现。 </td></tr>
+</table>
+<h3><a class="anchor" id="instance"></a>
+键、实例、样本</h3>
+<p>　　一个主题关联一个特定的数据类型，数据类型的数据域可以取任意值。一个主题下数据类型的一组取值称为该主题的一个样本（sample）。键是区分同一个主题下的不同实例的标识。键可以看成是主题之上对数据的进一步的划分。对于一个数据类型，可以选择它的一个或多个数据成员作为键（key）。数据类型的键域（选择的一个或多个数据成员的数据域）是可以任意取值的，一个主题下的数据类型的键域的一组取值称为该主题的一个实例（instance）。当一个主题下的数据类型存在键时，该键域的一个特定取值称为该主题下的一个特定的实例，并且与非键域的取值组成该主题下的一个样本。注意：不是所有的数据类型都必须定义键，因此不是所有的主题都有键，如果一个数据类型未定义键，那么关联它的主题下有且仅有一个实例。假设自定义一个数据类型MyDataType，其中x为键，如下示例代码所示。在一个主题下，键、实例、样本的关系如<a href="#figure-5">图5</a>所示。键可以由多个成员变量组成。如果在下例中数据成员y后面也加上”//@key”，那么MyDataType对象的键将由数据成员x和y共同组成。</p>
+<div class="fragment"><div class="line"><span class="comment">// 定义一个数据类型Foo。</span></div>
+<div class="line"><span class="keyword">struct </span><a class="code" href="struct_foo.html">Foo</a> </div>
+<div class="line">{</div>
+<div class="line">    <span class="keywordtype">long</span> <a class="code" href="struct_foo.html#a6864364aac8516327f60918d392e1958">x</a>;  <span class="comment">//@key</span></div>
+<div class="line">    <span class="keywordtype">long</span> <a class="code" href="struct_foo.html#afdb8f51467c6025c888750a49ab93431">y</a>;</div>
+<div class="line">    <span class="keywordtype">long</span> z;</div>
+<div class="line">};</div>
+</div><!-- fragment --><p><a class="anchor" id="figure-5"></a> </p><div class="image">
+<img src="instance.png" alt="instance.png"/>
+<div class="caption">
+图5. 键、实例、样本的关系图</div></div>
+ <h2><a class="anchor" id="topic"></a>
+主题</h2>
+<p>　　如<a href="#figure-6">图6</a>所示，主题（ <a class="el" href="class_d_d_s_1_1_topic.html" title="主题是发布订阅模型中数据基本的抽象。 ">DDS::Topic</a> ）包括一个域内唯一主题名称作为标识，还有一个其关联的类型名称用于描述主题数据的格式。类型名称是一个已经在ZRDDS中注册过的数据类型的名字，通过注册操作让底层知道该数据类型的格式及其创建、删除、拷贝等方法；一个数据类型可以同时被多个主题关联，但是每个主题只能关联一个数据类型，数据写者和数据读者之间必须使用相同的主题才能够相互通信。数据读者以及数据写者通过主题进行匹配，匹配规则参见 <a class="el" href="struct_d_d_s___partition_qos_policy.html" title="分区QoS配置。 ">DDS_PartitionQosPolicy</a> ，再根据主题信息进行数据分发。</p>
+<p><a class="anchor" id="figure-6"></a> </p><div class="image">
+<img src="topic.png" alt="topic.png"/>
+<div class="caption">
+图6. ZRDDS中主题的概念</div></div>
+ <h2><a class="anchor" id="cft-topic"></a>
+基于内容过滤的主题</h2>
+<p>　　如果数据写者与数据读者关联同一个主题，则数据读者可能接收到数据写者的所有数据，而在某些情况下，数据读者只需要满足一定条件的主题数据，故而在基础主题的基础上，ZRDDS提供设置基于数据类型条件表达式的过滤条件，称为基于内容过滤的主题( DDS::ContentFilteredTopic )。关联基于内容过滤的主题的数据读者只会收到满足过滤条件的主题数据，过滤条件由过滤表达式以及与之关联的过滤参数组成，只有过滤表达式值为true的样本会被数据读者接受，过滤表达式的语法规则在下面章节中描述。</p>
+<h3><a class="anchor" id="expression-grammer"></a>
+语法规则</h3>
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;FilterExpression : </div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;      Condition;</div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;</div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;Condition : </div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;      Predicate</div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;    | Condition AND Condition</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;    | Condition OR Condition</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;    | NOT Condition</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;    | &#39;(&#39; Condition &#39;)&#39;;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;Predicate : </div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;      ComparisonPredicate</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    | BetweenPredicate;</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;ComparisonPredicate :</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;      Fieldname RelOp Parameter</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    | Parameter RelOp Fieldname</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    | Fieldname RelOp Fieldname; </div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;BetweenPredicate :</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    Fieldname BETWEEN Range</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    | Fieldname NOT_BETWEEN Range;</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;Range : Parameter TO Parameter;</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;Parameter :</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    INTEGERVALUE</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    | FLOATVALUE    </div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    | STRINGVALUE</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    | PARAMETER;</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;Fieldname : FIELDNAME;</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;INTEGERVALUE:</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    [+-]?[0-9]+</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    | [+-]?0[xX][0-9a-fA-F]+ </div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;FLOATVALUE:</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;     [+-]?[0-9]+\.[0-9]+</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;     | [+-]?[0-9]+(\.[0-9]+)?[eE][+-]?[0-9]+</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;STRINGVALUE: &#39;(\\.|[^&#39;\\])*&#39;</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;PARAMETER: %[0-9][0-9]?</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;FIELDNAME: [a-zA-Z_][a-zA-Z0-9_]*(\[[0-9]+\])?(\.[a-zA-Z_][a-zA-Z0-9_]*(\[[0-9]+\])?)*</div>
+</div><!-- fragment --><p>终结符的含义及其规则参见<a href="#table-6">表6</a>，终结符的优先级定义如下：() &gt; TO &gt; NOT_BETWEEN = BETWEEN = RelOp(所有关系运算符同优先级，从左向右) &gt; NOT &gt; AND &gt; OR,运算的兼容性规则为：所有的数值型数据类型均可以比较（包括字符），字符串只能与字符串比较。</p>
+<p><a class="anchor" id="table-6"></a> 表6. 过滤表达式中终结符含义及其规则</p>
+<table class="doxtable">
+<tr>
+<th>终结符 </th><th>含义 </th><th>规则 </th><th>例子  </th></tr>
+<tr>
+<td>RelOp </td><td>关系运算符 </td><td>=表示相等、&gt;表示大于、&gt;=表示大于等于、&lt;表示小于、&lt;=表示小于等于、&lt;&gt;表示不等于 </td><td>a &lt;&gt; 10 </td></tr>
+<tr>
+<td>AND OR NOT </td><td>逻辑运算符 </td><td>AND表示逻辑与、OR表示逻辑或、NOT表示逻辑非 </td><td>a &gt; 10 AND b &lt; 10 </td></tr>
+<tr>
+<td>TO BETWEEN NOT_BETWEEN </td><td>区间运算符 </td><td>TO表示闭区间、BETWEEN表示包含在区间内、NOT_BETWEEN表示在区间外 </td><td>a BETWEEN 1 TO 10、a NOT_BETWEEN 1 TO 10 </td></tr>
+<tr>
+<td>() </td><td>小括号用于改变优先级 </td><td>括号优先级最高 </td><td>(a &gt; 10 OR b &lt; 10) AND c &lt; 10 </td></tr>
+<tr>
+<td>FIELDNAME </td><td>表示主题关联的数据结构成员的名称 </td><td>使用0个或者多个.操作符来表示任意深度的嵌套数据成员，引用数组和序列中元素使用中括号'[n]'，下标从0开始。FIELDNAME的最终计算结果必须是一个基础数据类型。 </td><td>complexMember.charSeq[2]表示 <a class="el" href="struct_foo.html" title="IDL映射到C++数据类型。 ">Foo</a> 结构中的复杂成员的序列的第3个元素。 </td></tr>
+<tr>
+<td>INTEGERVALUE </td><td>表示整型 </td><td>可以选择在之前添加加号或减号， 代表系统范围之内的十进制整数。十六进制数使用 0x 开头并且必须是有效的十六进制表达式。 </td><td>10, 0xab </td></tr>
+<tr>
+<td>FLOATVALUE </td><td>浮点型 </td><td>可以选择在之前添加加号或减号并且可以选择包含小数点.。10的指数表示可能使用en或En语法（n是整型，可选择加号或减号前缀）加在尾部。 </td><td>-0.12，1.2e-2 </td></tr>
+<tr>
+<td>STRING </td><td>字符串或者字符类型 </td><td>以下情况下字符串解释为字符类型：1.单引号中只有一个字符 2.'\a' '\n' '\r' '\t' '\v' '\b' '\f' 这几种转义字符 3.以反斜杠开头的8进制转义字符，如\002表示ASCⅡ码为2的字符。其余连续的字符解释为字符串（字符串不包含单引号） </td><td>'abc'表示字符串 '\n'、'\121'表示换行字符 </td></tr>
+<tr>
+<td>PARAMETER </td><td>引用过滤参数中的值 </td><td>格式是%n，n是小于100的自然数（包括0）。它引用第n+1个过滤参数。过滤参数只能是基本数据类型常量值，不能是 FIELDNAME。 </td><td>%1 </td></tr>
+</table>
+<h2><a class="anchor" id="publication"></a>
+发布数据</h2>
+<h3><a class="anchor" id="publisher"></a>
+发布者</h3>
+<p>　　用户通过域参与者创建发布者（ <a class="el" href="class_d_d_s_1_1_publisher.html" title="ZRDDS提供的发布者接口，应用创建发布者表示自身想向指定的域内提供数据； ">DDS::Publisher</a> ），表示用户想向指定的域中共享数据，发布者主要的功能描述参见<a href="#table-7">表7</a>，具体接口参见 <a class="el" href="class_d_d_s_1_1_publisher.html" title="ZRDDS提供的发布者接口，应用创建发布者表示自身想向指定的域内提供数据； ">DDS::Publisher</a> 接口说明。</p>
+<p><a class="anchor" id="table-7"></a> 表7. 发布者功能描述</p>
+<table class="doxtable">
+<tr>
+<th>功能 </th><th>接口  </th></tr>
+<tr>
+<td>实体功能 </td><td><a class="el" href="class_d_d_s_1_1_entity.html#acaf66ba087d9c1c5d716eda0756f2254" title="手动使能该实体，参见实体使能 。 ">DDS::Publisher::enable</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_publisher.html#a297490f10a23bbe0fabfb41eca151a90" title="设置发布者的监听器。 ">DDS::Publisher::set_listener</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_publisher.html#a0d9e52b633926c26f1e65071856e2dd8" title="获取发布者当前的监听器。 ">DDS::Publisher::get_listener</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_entity.html#aef72ffc167d867c1f3d2a8ef594b0011" title="获取该实体的唯一标识。 ">DDS::Publisher::get_instance_handle</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_entity.html#abfefe5840f713c729630757a57c494af" title="获取该实体从上一次获取任意状态后的状态变化。 ">DDS::Publisher::get_status_changes</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_entity.html#aa2bbb1f4eb6fcb40efeaee0a8ea56fad" title="返回该实体关联的状态条件。 ">DDS::Publisher::get_statuscondition</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_publisher.html#a94cde7b907be3fe99720db29b6cc610b" title="获取创建该发布者的域参与者。 ">DDS::Publisher::get_participant</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_publisher.html#acfee65074d21480fb3dd562f7fc40dc6" title="设置发布者QoS。 ">DDS::Publisher::set_qos</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_publisher.html#a06f49bf071037323608d18ad36c146ac" title="获取发布者QoS。 ">DDS::Publisher::get_qos</a> </td></tr>
+<tr>
+<td>作为数据写者的工厂 </td><td><a class="el" href="class_d_d_s_1_1_publisher.html#a04c18041cc57db814400926da3df4bdd" title="创建DataWriter。 ">DDS::Publisher::create_datawriter</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_publisher.html#a638462bd712d57d1ef855b924e50675a" title="删除一个数据写者。 ">DDS::Publisher::delete_datawriter</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_publisher.html#af6304ae08a670b90e4efd7dda2db1f11" title="根据主题名查找对应的数据写者。 ">DDS::Publisher::lookup_datawriter</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_publisher.html#af0631af8fba225cc6fa86319854a6ed8" title="删除Publisher所包含的所有DataWriter。 ">DDS::Publisher::delete_contained_entities</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_publisher.html#aeaf9fded08f6a8019434878da64944e8" title="设置数据写者的默认QoS。 ">DDS::Publisher::set_default_datawriter_qos</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_publisher.html#a72038edc95365090ef8b9e3ac829677e" title="获取由 set_default_datawriter_qos 设置的DataWriterQos。 ">DDS::Publisher::get_default_datawriter_qos</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_publisher.html#ae7c0e6c7401eacd6a1120ba6d5d72464" title="使用TopicQos中的对应项赋值DataWriterQos。 ">DDS::Publisher::copy_from_topic_qos</a> </td></tr>
+<tr>
+<td>数据发布控制 </td><td><a class="el" href="class_d_d_s_1_1_publisher.html#a3d5610aa3be55409bbfe74d8f0803fc9" title="开始进行“连续”的修改。 ">DDS::Publisher::begin_coherent_changes</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_publisher.html#ac82611bbf5352f5eab945948a61942cb" title="结束“连续”的修改，使接收端可以访问修改的值，必须在 begin_coherent_changes 调用之后调用。 ...">DDS::Publisher::end_coherent_changes</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_publisher.html#a1e6f6bae4f914d31b60f071c2866c568" title="阻塞调用该函数的线程直到该发布者创建的数据写者发送的所有数据都被接收端所响应或者超时。 ...">DDS::Publisher::wait_for_acknowledgments</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_publisher.html#aa840bee3ecee76a54e5142ac7ce3c2d6" title="挂起数据发布。 ">DDS::Publisher::suspend_publications</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_publisher.html#a49405891c5d0b6c37be81e4b9770690e" title="恢复数据发布，与 suspend_publications 配对使用。 ">DDS::Publisher::resume_publications</a> </td></tr>
+</table>
+<h3><a class="anchor" id="datawriter"></a>
+数据写者</h3>
+<p>　　应用程序通过创建发布者表明自身想要从指定的域中共享数据，共享的数据类型可以有多种，通过创建不同的数据写者向域内推送、共享不同类型的主题数据，数据写者主要的功能描述参见<a href="#table-8">表8</a>，数据写者提供强类型安全的接口，该接口由ZRDDS编译器根据IDL中定义的类型自动生成，其中类型无关的接口参见 <a class="el" href="class_d_d_s_1_1_data_writer.html" title="DDS标准中的数据读者接口。 ">DDS::DataWriter</a> 、类型相关的接口参见 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html" title="ZRDDS提供的数据写者模板类，用于提供强类型安全接口的数据写者接口。 ">DDS::ZRDDSDataWriter</a> 接口说明，典型的发布过程参见<a class="el" href="publication_example_8cpp-example.html">publication_example.cpp</a> 。</p>
+<p><a class="anchor" id="table-8"></a> 表8. 数据写者功能描述</p>
+<table class="doxtable">
+<tr>
+<th>功能 </th><th>接口  </th></tr>
+<tr>
+<td>实体功能 </td><td><a class="el" href="class_d_d_s_1_1_data_writer.html#ac1d29e33c90df0c2d47ffe07d29652f3" title="手动使能该数据写者。 ">DDS::DataWriter::enable</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_writer.html#a6ae9b965af60694767978893d9587637" title="设置数据写者监听器。 ">DDS::DataWriter::set_listener</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_writer.html#afe1b10dd861eb92cad2ebafdd6700d6f" title="获取当前数据写者的监听器。 ">DDS::DataWriter::get_listener</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_writer.html#a8e0294641c9eda8c1394fc9f983303a8" title="实现父类 DDS::Entity 的方法，获取该数据写者的唯一标识。 ">DDS::DataWriter::get_instance_handle</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_writer.html#aa2205c55a95b589c315f25081093f655" title="实现父类 DDS::Entity 的方法，获取该实体从上一次获取任意状态后的状态变化。 ">DDS::DataWriter::get_status_changes</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_writer.html#a9f44c2a1d6fd2d988ef1877b1ad50421" title="实现父类 DDS::Entity 的方法，返回该数据写者关联的状态条件。 ">DDS::DataWriter::get_statuscondition</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_writer.html#a9644030bd4276847eeab26d903014373" title="设置DataWriterQoS。 ">DDS::DataWriter::set_qos</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_writer.html#a0d4f22032e4b28438121b1ab440dd110" title="获取当前数据写者的QoS。 ">DDS::DataWriter::get_qos</a> </td></tr>
+<tr>
+<td>数据发送 </td><td><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a0be9bc0f81e02f48bc3a308bb27936cb" title="发布一个数据样本。 ">DDS::ZRDDSDataWriter::write</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a819bb9b8459256225e256d12c88a6c0a" title="发布一个数据样本（见 write ），并使用提供的时间戳覆盖默认的时间戳。 ">DDS::ZRDDSDataWriter::write_w_timestamp</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a5964b1cad39048aafa403c6a7a868a02" title="向指定对端发布一个数据样本。 ">DDS::ZRDDSDataWriter::write_w_dst</a> </td></tr>
+<tr>
+<td>数据实例管理 </td><td><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#ac5fa298e5e5e90f8679f76525ad6474d" title="向数据写者注册一个实例 ">DDS::ZRDDSDataWriter::register_instance</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#abb11443557add8ddee534a7c2dbee20a" title="向数据写者注册一个实例（见 register_instance ），并使用提供的时间戳覆盖默认的时间戳 ...">DDS::ZRDDSDataWriter::register_instance_w_timestamp</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a819774917b46200bef9f9a5317d67362" title="将已经注册的实例从数据写者中注销 ">DDS::ZRDDSDataWriter::unregister_instance</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a8f6f34a06d87339fc4805c91b24bfeae" title="将已经注册的实例从数据写者中注销（见 unregister_instance ），并使用提供的时间戳覆盖默认的时间戳 ...">DDS::ZRDDSDataWriter::unregister_instance_w_timestamp</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#aa1383c0e09f84327db7be273f3053cfc" title="销毁一个已经注册的实例。 ">DDS::ZRDDSDataWriter::dispose</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a3ab8f981cc3cebb80958a2da0cd387cc" title="销毁一个已经注册的实例（见 unregister_instance ），并使用提供的时间戳覆盖默认的时间戳。 ...">DDS::ZRDDSDataWriter::dispose_w_timestamp</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#abc25fe6d8b50d187bdf2a6777899a891" title="从实例句柄获取对应的样本值，只有声明为键域的数据域的值有效。 ">DDS::ZRDDSDataWriter::get_key_value</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a27efb4a25b878ed2cde60d688b2f713b" title="通过样本值查询实例句柄。 ">DDS::ZRDDSDataWriter::lookup_instance</a> </td></tr>
+<tr>
+<td>实体状态查询 </td><td><a class="el" href="class_d_d_s_1_1_data_writer.html#a89877a75ce56aa9aa3096bb9949f313f" title="获取数据写者关联的 DDS_LIVELINESS_LOST_STATUS 状态。 ">DDS::DataWriter::get_liveliness_lost_status</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_writer.html#aee22a2378fc759774d92ae4c2f73d194" title="获取数据写者关联的 DDS_OFFERED_DEADLINE_MISSED_STATUS 状态。 ">DDS::DataWriter::get_offered_deadline_missed_status</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_writer.html#adac5041d8209fd7d0425a54565dd8efd" title="获取数据写者关联的 DDS_OFFERED_INCOMPATIBLE_QOS_STATUS 状态。 ">DDS::DataWriter::get_offered_incompatible_qos_status</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_writer.html#aea4c7bf2b64c2eb52079d21afbbb5189" title="获取数据写者关联的 DDS_PUBLICATION_MATCHED_STATUS 状态。 ">DDS::DataWriter::get_publication_matched_status</a> </td></tr>
+<tr>
+<td>数据写者信息查询 </td><td><a class="el" href="class_d_d_s_1_1_data_writer.html#a96507fe2b11f28c8a9a9c3ee590bfac0" title="获取该数据写者所关联的主题。 ">DDS::DataWriter::get_topic</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_writer.html#a9d4e207a5f8434ca7703ca6ea49755f4" title="获取创建该DataWriter的Publisher。 ">DDS::DataWriter::get_publisher</a> </td></tr>
+<tr>
+<td>匹配对端信息查询 </td><td><a class="el" href="class_d_d_s_1_1_data_writer.html#a36fc2b9688ffae63297e4e6692dab6ce" title="获取已匹配且没有被忽略的订阅者句柄列表。 ">DDS::DataWriter::get_matched_subscriptions</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_writer.html#a8714e63f6fe4bec5c1297ae798456f80" title="获取指定的已匹配订阅者的详细信息。 ">DDS::DataWriter::get_matched_subscription_data</a> </td></tr>
+<tr>
+<td>存活性管理 </td><td><a class="el" href="class_d_d_s_1_1_data_writer.html#aad7ac9c68faece7958daa47696082cb2" title="声明自身的存活性 ">DDS::DataWriter::assert_liveliness</a> </td></tr>
+<tr>
+<td>其他 </td><td><a class="el" href="class_d_d_s_1_1_data_writer.html#a47a0191ce10efda400609987eda84edd" title="对可靠的数据写者调用此函数将导致调用者的阻塞，直到所有已发出的数据被应答或者等待超时。 ...">DDS::DataWriter::wait_for_acknowledgments</a> </td></tr>
+<tr>
+<td>^ </td><td>DDS::DataWriter::flush </td></tr>
+</table>
+<h2><a class="anchor" id="subscription"></a>
+订阅数据</h2>
+<h3><a class="anchor" id="subscriber"></a>
+订阅者</h3>
+<p>　　用户通过域参与者创建订阅者（ <a class="el" href="class_d_d_s_1_1_subscriber.html" title="ZRDDS提供的订阅者接口，应用创建订阅者表示自身想从指定的域内获取数据； ">DDS::Subscriber</a> ），表示用户想从指定的域内获取数据，订阅者主要的功能描述参见<a href="#table-9">表9</a>，具体接口参见 <a class="el" href="class_d_d_s_1_1_subscriber.html" title="ZRDDS提供的订阅者接口，应用创建订阅者表示自身想从指定的域内获取数据； ">DDS::Subscriber</a> 接口说明。</p>
+<p><a class="anchor" id="table-9"></a> 表9. 订阅者功能描述</p>
+<table class="doxtable">
+<tr>
+<th>功能 </th><th>接口  </th></tr>
+<tr>
+<td>实体功能 </td><td><a class="el" href="class_d_d_s_1_1_entity.html#acaf66ba087d9c1c5d716eda0756f2254" title="手动使能该实体，参见实体使能 。 ">DDS::Subscriber::enable</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_subscriber.html#a3de640ba91487ece064016bea8657221" title="设置该订阅者的监听器。 ">DDS::Subscriber::set_listener</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_subscriber.html#a376ab33099f8e7c6e01cf6200e9a6b1c" title="该方法获取通过 set_listener 方法或者创建时为订阅者设置的监听器对象。 ">DDS::Subscriber::get_listener</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_entity.html#aef72ffc167d867c1f3d2a8ef594b0011" title="获取该实体的唯一标识。 ">DDS::Subscriber::get_instance_handle</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_entity.html#abfefe5840f713c729630757a57c494af" title="获取该实体从上一次获取任意状态后的状态变化。 ">DDS::Subscriber::get_status_changes</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_entity.html#aa2bbb1f4eb6fcb40efeaee0a8ea56fad" title="返回该实体关联的状态条件。 ">DDS::Subscriber::get_statuscondition</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_subscriber.html#a8ff311f0dc9dad6d2f45fa07b16145b0" title="获得订阅者的父实体域参与者。 ">DDS::Subscriber::get_participant</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_subscriber.html#ab8caf22bd2a57f8f6892e70827ea4fb8" title="该方法设置为订阅者设置的QoS。 ">DDS::Subscriber::set_qos</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_subscriber.html#a75850b55f4f6cf9858f4990e908ff64c" title="获取该订阅者的QoS配置。 ">DDS::Subscriber::get_qos</a> </td></tr>
+<tr>
+<td>作为数据读者的工厂 </td><td><a class="el" href="class_d_d_s_1_1_subscriber.html#a0caa56d622a297f12f7dcffab4cba8c0" title="该方法在订阅者下创建一个数据读者子实体，并设置关联的主题、QoS以及监听器。 ">DDS::Subscriber::create_datareader</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_subscriber.html#a0d5cb8b2a57f114608bc0b242c19e4f2" title="删除指定的数据读者。 ">DDS::Subscriber::delete_datareader</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_subscriber.html#a7d1e5b9c489488a10463084d1a8679af" title="根据主题名查找数据读者。 ">DDS::Subscriber::lookup_datareader</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_subscriber.html#af44cace457c3f1ed69cf61fcb2be8582" title="该方法删除该订阅者创建的所有实体。 ">DDS::Subscriber::delete_contained_entities</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_subscriber.html#aa977cbbb7cfc17c6eb93c6cf81df72c2" title="该方法设置为数据读者保存的默认QoS配置。 ">DDS::Subscriber::set_default_datareader_qos</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_subscriber.html#a27a1725e71f7278aa51d24f93d0e7820" title="该方法获取为数据读者保存的默认QoS配置。 ">DDS::Subscriber::get_default_datareader_qos</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_subscriber.html#a9ce2907ae45f34fe7ff7649e0b531ed2" title="从主题QoS中构造相应的数据读者QoS。 ">DDS::Subscriber::copy_from_topic_qos</a> </td></tr>
+<tr>
+<td>数据获取方式 </td><td><a class="el" href="class_d_d_s_1_1_subscriber.html#a191019189d306ee7f2e8c7142453b4cb" title="数据读者端开启一致性访问。 ">DDS::Subscriber::begin_access</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_subscriber.html#af9b67ca80a09561c49e1d89a284509d4" title="与 begin_access 方法对应，表示数据访问结束。 ">DDS::Subscriber::end_access</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_subscriber.html#a16329c3ef6b28860b0c31337bb7b32ad" title="查找底层含有处于特定状态的数据样本的数据读者的结合。 ">DDS::Subscriber::get_datareaders</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_subscriber.html#a6d9f3d0c68a2559c6a5bc894ab7f77af" title="本方法将尝试调用所有处于 DDS_DATA_AVAILABLE_STATUS 状态的数据读者关联的监听器的 DDS::DataReaderListen...">DDS::Subscriber::notify_datareaders</a> </td></tr>
+</table>
+<h3><a class="anchor" id="datareader"></a>
+数据读者</h3>
+<p>　　应用程序通过创建订阅者表明自身想要从指定的域中获取数据，需要获取的数据类型可能有多种，通过创建不同的数据读者从域中订阅、获取不同类型的主题数据，数据读者的类型无关功能描述参见<a href="#table-10">表10</a>，数据读者提供强类型安全的接口，该接口由ZRDDS编译器根据IDL中定义的类型自动生成，其中类型无关的接口参见 <a class="el" href="class_d_d_s_1_1_data_reader.html" title="DDS标准中的数据读者接口。 ">DDS::DataReader</a> 、类型相关的接口参见 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html" title="ZRDDS提供的订阅者模板类，用于提供强类型安全接口的数据读者接口。 ">DDS::ZRDDSDataReader</a> 接口说明。</p>
+<p><a class="anchor" id="table-10"></a> 表10. 数据读者功能描述</p>
+<table class="doxtable">
+<tr>
+<th>功能 </th><th>接口  </th></tr>
+<tr>
+<td>实体功能 </td><td><a class="el" href="class_d_d_s_1_1_data_reader.html#ad09f8291b5df77c1f49fe51ada3de2c1" title="手动使能该数据读者，参见实体使能 。 ">DDS::DataReader::enable</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_reader.html#af9b94d768638ccc4474d2a9c1ea71dea" title="设置该数据读者的监听器。 ">DDS::DataReader::set_listener</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_reader.html#a505321652e93841615b298adaea0b72f" title="该方法获取通过 set_listener 方法或者创建时为数据读者设置的监听器对象。 ">DDS::DataReader::get_listener</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_reader.html#a469bbac37c3a4f72dfa10ece39914425" title="实现父类 DDS::Entity 的方法，获取该数据读者的唯一标识。 ">DDS::DataReader::get_instance_handle</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_reader.html#a58eb6ed739f1ce5893a82efcd5f8a4a6" title="实现父类 DDS::Entity 的方法，获取该实体从上一次获取任意状态后的状态变化。 ">DDS::DataReader::get_status_changes</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_reader.html#aae247ad237bc1cab69758649bd5a2946" title="实现父类 DDS::Entity 的方法，返回该数据读者关联的状态条件。 ">DDS::DataReader::get_statuscondition</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_reader.html#a1e7b58abb261ffc3d93c6a3d4ae113f1" title="该方法设置为数据读者设置的QoS。 ">DDS::DataReader::set_qos</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_reader.html#ae0759980154cae286a18f6831443685f" title="获取该数据读者的QoS配置。 ">DDS::DataReader::get_qos</a> </td></tr>
+<tr>
+<td>实体状态查询 </td><td><a class="el" href="class_d_d_s_1_1_data_reader.html#a134d3412c04ff5514b86ab68261e287d" title="获取该数据读者关联的 DDS_SAMPLE_LOST_STATUS 状态。 ">DDS::DataReader::get_sample_lost_status</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_reader.html#ab476309ca6c0c7d3618cf982acd95212" title="获取该数据读者关联的 DDS_SAMPLE_REJECTED_STATUS 状态。 ">DDS::DataReader::get_sample_rejected_status</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_reader.html#afc824330d6767ffcffcaf16fcd4cb2c2" title="获取该数据读者关联的 DDS_SUBSCRIPTION_MATCHED_STATUS 状态。 ">DDS::DataReader::get_subscription_matched_status</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_reader.html#acfcc4b8ab233a6bfb49192924da51b68" title="获取该数据读者关联的 DDS_LIVELINESS_CHANGED_STATUS 状态。 ">DDS::DataReader::get_liveliness_changed_status</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_reader.html#a6f892b590c1ddba4db7516da55487e7a" title="获取该数据读者关联的 DDS_REQUESTED_DEADLINE_MISSED_STATUS 状态。 ">DDS::DataReader::get_requested_deadline_missed_status</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_reader.html#adede3c48f36e24a4a146628e6ff11836" title="获取该数据读者关联的 DDS_REQUESTED_INCOMPATIBLE_QOS_STATUS 状态。 ">DDS::DataReader::get_requested_incompatible_qos_status</a> </td></tr>
+<tr>
+<td>数据读者信息查询 </td><td><a class="el" href="class_d_d_s_1_1_data_reader.html#a177d95ad635e96548c30d804f00de1c1" title="获取该数据读者所关联的主题。 ">DDS::DataReader::get_topicdescription</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_reader.html#af8d9cbefa0f43ce72ef7a690942ff0a2" title="获取该数据读者所属的订阅者对象。 ">DDS::DataReader::get_subscriber</a> </td></tr>
+<tr>
+<td>匹配对端信息查询 </td><td><a class="el" href="class_d_d_s_1_1_data_reader.html#a121e61d8e854cc8cbc0f88acad0d5ff9" title="查询已经匹配的远程数据写者的标识列表。 ">DDS::DataReader::get_matched_publications</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_reader.html#ae4516646db083a5032c5536ece5b3184" title="该方法查询指定标识的数据写者的内置数据。 ">DDS::DataReader::get_matched_publication_data</a> </td></tr>
+<tr>
+<td>读取状态管理 </td><td><a class="el" href="class_d_d_s_1_1_data_reader.html#afcb26d7099cdd91487bebe7863e4ab11" title="创建一个与该数据读者绑定的读取条件。 ">DDS::DataReader::create_readcondition</a> </td></tr>
+<tr>
+<td>^ </td><td>DDS::DataReader::create_querycondition </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_reader.html#addaecc54d66d8a08177f3c2b8e7eb40c" title="删除指定的读取条件。 ">DDS::DataReader::delete_readcondition</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_data_reader.html#a188ca826baa6bd58bb146f728b635050" title="删除该数据读者创建的所有读取条件(包括查询条件)，删除读取条件时，将自动从所有加入的等待集合中删除该条�...">DDS::DataReader::delete_contained_entities</a> </td></tr>
+<tr>
+<td>其他 </td><td><a class="el" href="class_d_d_s_1_1_data_reader.html#a19a82b2b35c05374e5da17b957737eb8" title="等待历史数据。 ">DDS::DataReader::wait_for_historical_data</a> </td></tr>
+</table>
+<h3><a class="anchor" id="read-take"></a>
+获取主题数据</h3>
+<p>　　当数据样本到达订阅端时，ZRDDS底层会根据主题匹配信息分发给不同的数据读者去处理，当完成处理（资源限制等QoS配置）时，数据读者将把该数据样本存储在底层的队列中，并通知用户，再等待用户通过接口来取出该数据样本，ZRDDS通知用户数据到达的方式有两种：异步监听方式(<a class="el" href="index.html#listener-introduction">监听器</a>)以及同步等待方式(<a class="el" href="index.html#waitset-introduction">条件-等待</a>)，用户通过数据读者的读取数据接口访问底层队列中的数据样本，这些接口的摘要信息参见<a href="#table-11">表11</a>，详细信息参见相应的接口说明。用户可以通过多种方式访问底层存储的队列数据：</p><ol type="1">
+<li>提供样本深拷贝以及零拷贝（仅提供数据样本在底层队列中的指针或者引用）两种方式；</li>
+<li>指定最大获取数量；</li>
+<li>访问处于指定状态的样本，样本状态由 <a class="el" href="group___core_base_struct.html#gadb6d36e7c796da27519b6bf7f8f187e5" title="该类型表示数据样本的被读取状态。 ">DDS_SampleStateKind</a> 、 <a class="el" href="group___core_base_struct.html#ga265b034e433c054c4bca5e553c561410" title="此枚举变量列举出了数据实例的视图状态，与 DDS_ViewStateMask 结合使用。 ">DDS_ViewStateKind</a> 、 <a class="el" href="group___core_base_struct.html#gaf2264cae1aa8cd66490debfdc5e0c360" title="此枚举变量列举出一系列的实例状态，与 DDS_InstanceStateMask 结合使用。 ">DDS_InstanceStateKind</a> 三个状态定义；</li>
+<li>按照数据实例访问，包括指定数据实例以及按数据实例顺序；</li>
+<li>按照样本的顺序依次访问；</li>
+<li>读取/取出两种访问方法，其中读取操作不从底层队列中删除，而取出操作则从底层维护的样本中删除；</li>
+</ol>
+<p><a class="anchor" id="table-11"></a> 表11. 数据读者提供的访问数据接口摘要</p>
+<table class="doxtable">
+<tr>
+<th>分类 </th><th>接口 </th><th>说明  </th></tr>
+<tr>
+<td>读取系列 </td><td><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a1bd13e9b34f1db91ed8e9a3e98723807" title="该接口从数据读者底层获取用户样本数据。 ">DDS::ZRDDSDataReader::read</a> </td><td>方式1 &amp; 方式2 &amp; 方式3 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#ae2e58b740ea89088965a12b991e905aa" title="该方法用于从通信中间件依次读取未读取过的样本。 ">DDS::ZRDDSDataReader::read_next_sample</a> </td><td>方式5 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#aa1f61c1f63e4ddcc21334484d16322db" title="读取指定数据实例中满足条件的数据样本集合。 ">DDS::ZRDDSDataReader::read_instance</a> </td><td>方式1 &amp; 方式2 &amp; 方式3 &amp; 方式4 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#aecc96ff523a0b99b79a78571a89a04d6" title="读取指定数据实例后面（不一定为紧邻的数据实例）数据实例中满足条件的数据样本集合。 ">DDS::ZRDDSDataReader::read_next_instance</a> </td><td>方式1 &amp; 方式2 &amp; 方式3 &amp; 方式4 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a4dce67f92202ee067732ec4214edf8d7" title="该接口从数据读者底层获取用户样本数据。 ">DDS::ZRDDSDataReader::read_w_condition</a> </td><td>同 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a1bd13e9b34f1db91ed8e9a3e98723807" title="该接口从数据读者底层获取用户样本数据。 ">DDS::ZRDDSDataReader::read</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a958fa1bdfedc36ce39650c530c53597d" title="读取指定数据实例后面（不一定为紧邻的数据实例）数据实例中满足条件的数据样本集合。 ">DDS::ZRDDSDataReader::read_next_instance_w_condition</a> </td><td>同 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#aecc96ff523a0b99b79a78571a89a04d6" title="读取指定数据实例后面（不一定为紧邻的数据实例）数据实例中满足条件的数据样本集合。 ">DDS::ZRDDSDataReader::read_next_instance</a> </td></tr>
+<tr>
+<td>取出系列 </td><td><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#aba5ad7bdc154e9afa6ff301805a19ee9" title="该接口从数据读者底层取出用户样本数据。 ">DDS::ZRDDSDataReader::take</a> </td><td>方式1 &amp; 方式2 &amp; 方式3 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#af5700e1ee0f812abc0dbcda9c2ad2fe3" title="该方法用于从通信中间件依次取出未读取过的样本。 ">DDS::ZRDDSDataReader::take_next_sample</a> </td><td>方式5 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#aa1b8c7516f7060fd96e32d3744c77af8" title="取出指定数据实例中满足条件的数据样本集合。 ">DDS::ZRDDSDataReader::take_instance</a> </td><td>方式1 &amp; 方式2 &amp; 方式3 &amp; 方式4 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a9d192f45f6e9582faed2ac667cbcd2fa" title="取出指定数据实例后面（不一定为紧邻的数据实例）数据实例中满足条件的数据样本集合。 ">DDS::ZRDDSDataReader::take_next_instance</a> </td><td>方式1 &amp; 方式2 &amp; 方式3 &amp; 方式4 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a6724c9784a29c0928adbae9b494a4e96" title="该接口从数据读者底层取出用户样本数据。 ">DDS::ZRDDSDataReader::take_w_condition</a> </td><td>同 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#aba5ad7bdc154e9afa6ff301805a19ee9" title="该接口从数据读者底层取出用户样本数据。 ">DDS::ZRDDSDataReader::take</a> </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a550bd2277018118772730f314b5292b8" title="取出指定数据实例后面（不一定为紧邻的数据实例）数据实例中满足条件的数据样本集合。 ">DDS::ZRDDSDataReader::take_next_instance_w_condition</a> </td><td>同 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a9d192f45f6e9582faed2ac667cbcd2fa" title="取出指定数据实例后面（不一定为紧邻的数据实例）数据实例中满足条件的数据样本集合。 ">DDS::ZRDDSDataReader::take_next_instance</a> </td></tr>
+<tr>
+<td>归还空间 </td><td><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#aa4a382c7d5081b94e85af6a403ccb6ba" title="该方法用于应用归还从数据读者租借的空间。 ">DDS::ZRDDSDataReader::return_loan</a> </td><td>配合实现零拷贝 </td></tr>
+</table>
+<h1><a class="anchor" id="DDSCompiler"></a>
+ZRDDS编译器</h1>
+<p>　　DDS编译器在DDS系统中有两个作用：</p><ul>
+<li>将平台无关的IDL文件转化为具体编程语言的数据类型及其支持接口，这些支持接口主要包括以下功能：<ul>
+<li>类型对象的生命周期管理（创建、销毁、拷贝）；</li>
+<li>序列化/反序列化；</li>
+<li>向底层注册类型；</li>
+</ul>
+</li>
+<li>生成强类型安全的发布/订阅接口，强类型安全是指用户通过参数为指定结构化的对象的接口与底层进行数据交互，而非使用透明的缓冲区。</li>
+</ul>
+<h2><a class="anchor" id="DDSCompiler-Syntax"></a>
+语法支持</h2>
+<p>　　ZRDDS使用IDL语言来描述数据类型，IDL即接口定义语言，用来描述软件组件接口的一种规范语言，它定义接口、数据类型，屏蔽通信双方对接口、数据类型的具体实现细节，为跨平台开发提供基础。由于ZRDDS为以数据为中心的通信中间件，定义系统中使用的数据类型时使用IDL语法中数据类型定义的子集。支持的类型参见<a href="#table-12">表12</a>。</p>
+<p><a class="anchor" id="table-12"></a> 表12. ZRDDS编译器支持的类型</p>
+<table class="doxtable">
+<tr>
+<th>类型 </th><th>说明  </th></tr>
+<tr>
+<td>octet </td><td>1字节无符号整型 </td></tr>
+<tr>
+<td>char </td><td>1字节整型 </td></tr>
+<tr>
+<td>boolean </td><td>true/false </td></tr>
+<tr>
+<td>short </td><td>2字节整型 </td></tr>
+<tr>
+<td>unsigned short</td><td>2字节无符号整型 </td></tr>
+<tr>
+<td>long </td><td>4字节整型 </td></tr>
+<tr>
+<td>unsigned long </td><td>4字节无符号整型 </td></tr>
+<tr>
+<td>float</td><td>4字节单精度浮点型 </td></tr>
+<tr>
+<td>long long </td><td>8字节长整型 </td></tr>
+<tr>
+<td>unsigned long long </td><td>8字节无符号长整型 </td></tr>
+<tr>
+<td>double </td><td>8字节双精度浮点型 </td></tr>
+<tr>
+<td>enum </td><td>4字节枚举类型 </td></tr>
+<tr>
+<td>string </td><td>字符串类型 </td></tr>
+<tr>
+<td>struct </td><td>复杂结构体类型，支持继承 </td></tr>
+<tr>
+<td>union </td><td>复杂联合类型 </td></tr>
+<tr>
+<td>数组 </td><td>以上类型的定长数组类型,支持多维数组 </td></tr>
+<tr>
+<td>sequence </td><td>以上类型（除数组）的变长数组类型 </td></tr>
+</table>
+<h3><a class="anchor" id="DDSCompiler-Syntax-Array"></a>
+数组</h3>
+<p>　　ZRDDS编译器支持定义数组类型的成员，其中数组的元素可以是任何已经定义的类型，支持多维数组，定义数组必须指定其规模，定义的语法如下：</p>
+<div class="fragment"><div class="line"><span class="keyword">struct </span>myDataType</div>
+<div class="line">{</div>
+<div class="line">    <span class="keywordtype">long</span> valueArr[100];</div>
+<div class="line">    sequence&lt;long&gt; seqLongArr[10];</div>
+<div class="line">};</div>
+</div><!-- fragment --><h3><a class="anchor" id="DDSCompiler-Syntax-Sequence"></a>
+sequence</h3>
+<p>　　由于数组只提供固定大小的规模，当数组有效内容不一定时，使用数组类型会浪费带宽，ZRDDS提供sequence类型来避免这一问题。sequence在用法上类似于数组，用户可以通过索引值来访问sequence中的元素，索引值也是从0开始的。但和数组不同的是，sequence可以没有大小的限制。事实上，sequence有两种“大小”， maximum和length。maximum指的是当前sequence能够容纳的最大元素数量，称为sequence的上界，length指的是当前sequence实际容纳的元素数量。sequence在使用时应注意先判断length的长度，避免发生越界。注意当length=0时，seq[0]是越界的。注意：当前不支持sequence嵌套、以及字符串类型的sequence，sequence中的空间可以动态调整，而数组的空间需要静态分配。这意味着使用sequence方法定义的数据更加灵活，并且不会占用额外的空间。</p>
+<p>　　编译器相关选项包括：</p><ul>
+<li>-enableUnbounded，表示允许无上界的sequence，无上界的sequence允许无限多元素；</li>
+<li>-sequenceBound，当未设置-enableUnbounded时，默认的上界。</li>
+</ul>
+<div class="fragment"><div class="line"><span class="comment">// 变量y是有界的，而变量z使用默认大小的界</span></div>
+<div class="line"><span class="keyword">struct </span><a class="code" href="struct_foo.html">Foo</a></div>
+<div class="line">{</div>
+<div class="line">    <span class="keywordtype">long</span> <a class="code" href="struct_foo.html#a6864364aac8516327f60918d392e1958">x</a>;</div>
+<div class="line">    sequence&lt;short, 4&gt; <a class="code" href="struct_foo.html#afdb8f51467c6025c888750a49ab93431">y</a>; <span class="comment">//@key</span></div>
+<div class="line">    sequence&lt;char&gt; z;</div>
+<div class="line">};</div>
+</div><!-- fragment --><p>　　sequence类型映射到C++语言包含一系列的支持方法，参见 <a class="el" href="group___core_seq_struct.html">核心接口序列相关数据类型</a> 。</p>
+<h3><a class="anchor" id="DDSCompiler-Syntax-String"></a>
+string</h3>
+<p>　　内置数据类型string定义了一组由char类型组成字符序列。string的用法与C++中的string用法大致相同，编译器相关选项包括，设置的最大长度不包含结束的null字符：</p><ul>
+<li>-enableUnbounded，表示允许string的长度可能为无限长；</li>
+<li>-stringBound，当未设置-enableUnbounded时，默认的最大长度。</li>
+</ul>
+<h3><a class="anchor" id="DDSCompiler-Syntax-struct"></a>
+struct</h3>
+<p>　　struct类型为包含若干成员的复合类型，用于表示用户业务中的数据结构，ZRDDS编译中的struct支持嵌套以及继承（如IDL中使用了继承特性，则生成的目标语言必须支持继承特性，注意，C接口不支持继承特性），示例如下：</p>
+<div class="fragment"><div class="line">@Nested</div>
+<div class="line"><span class="keyword">struct </span>A</div>
+<div class="line">{</div>
+<div class="line">    <span class="keywordtype">long</span> value; <span class="comment">//@key</span></div>
+<div class="line">};</div>
+<div class="line"><span class="keyword">struct </span>B</div>
+<div class="line">{</div>
+<div class="line">    A a;</div>
+<div class="line">};</div>
+<div class="line"><span class="keyword">struct </span>C : B</div>
+<div class="line">{</div>
+<div class="line">    A a1;</div>
+<div class="line">};</div>
+</div><!-- fragment --><h3><a class="anchor" id="DDSCompiler-Syntax-union"></a>
+union</h3>
+<p>　　union类型为联合类型，包括一个选择器类型以及若干case标识以及该case下的类型，其中选择器类型必须是整型（整型、枚举）示例如下：</p>
+<div class="fragment"><div class="line"><span class="keyword">enum</span> CommandKind </div>
+<div class="line">{</div>
+<div class="line">    LOG_LEVEL,</div>
+<div class="line">    LOGGER_LEVEL,</div>
+<div class="line">    LOGGER_PRINT_FORMAT</div>
+<div class="line">};</div>
+<div class="line"></div>
+<div class="line"><span class="keyword">union </span>Command switch(CommandKind) </div>
+<div class="line">{</div>
+<div class="line">    <span class="keywordflow">case</span> LOG_LEVEL:</div>
+<div class="line">    <span class="keywordflow">case</span> LOGGER_LEVEL:</div>
+<div class="line">        <span class="keywordtype">char</span> filterLevel[8];</div>
+<div class="line">    <span class="keywordflow">case</span> LOGGER_PRINT_FORMAT:</div>
+<div class="line">        <span class="keywordtype">long</span> <span class="keywordtype">long</span> printFormat;</div>
+<div class="line">};</div>
+</div><!-- fragment --><h2><a class="anchor" id="DDSCompiler-Annotions"></a>
+扩展标记</h2>
+<p>　　为支持DDS协议中数据实例的概念以及配置生成内容，ZRDDS编译器扩展了以下标注：</p><ul>
+<li>@key</li>
+<li>@Nested</li>
+</ul>
+<h3><a class="anchor" id="DDSCompiler-Annotions-key"></a>
+@key</h3>
+<p>　　键是区分同一个主题下的不同实例的标识。键可以看成是主题之上对数据的进一步的划分。在自定义数据类型时，可以选择自定义类型的一个或者多个数据成员作为键。一个数据类型的键通过在编写IDL文件时在数据成员后添加特殊注释的方式“//@key”实现，关于键的详细信息请参考 <a class="el" href="index.html#instance">键、实例、样本</a> ，注意：//@key标记后面不能再跟其他注释内容。</p>
+<h3><a class="anchor" id="DDSCompiler-Annotions-nest"></a>
+@Nested</h3>
+<p>　　Nested标注作用在数据类型上，表明该类型仅仅作为中间类型，不作为最后主题关联的数据类型，在类型声明第一行的前面添加@Nested实现。注意：@Nested标记后面不能再跟其他注释内容。</p>
+<h2><a class="anchor" id="DDSCompiler-XTypes"></a>
+可扩展数据类型</h2>
+<p>ZRDDS部分满足 DDS-XTypes 标准规范，通过IDL中为数据类型增加可扩展性需求标记可以实现系统数据类型的演进，DDS中的数据类型可以定义为三种可扩展性需求：</p>
+<ul>
+<li>FINAL_EXTENSIBILITY，该类型表示该类型禁止扩展，通信双方的数据结构必须一致，序列化与反序列化的方式为按照成员的顺序依次将成员的值进行CDR编码/解码，遇到报文不足或者多余的报文时，DDS将报序列化或者反序列化出错的日志；</li>
+<li>EXTENSIBLE_EXTENSIBILITY，默认类型，该类型表示该类型可进行尾部扩展（裁剪），即新的数据结构可在老的数据结构最后添加成员或者删除成员，序列化与反序列化的方式为按照成员的顺序依次将成员的值进行CDR编码/解码。<ul>
+<li>若报文内容比所需的成员内容长时，多余的内容将被忽略，且不报错；</li>
+<li>若报文内容不足以反序列化所有成员时，未反序列化到的成员将设置为初始值；</li>
+<li>参见示例<a class="el" href="_extensible_type_example_2_r_e_a_d_m_e_8_m_d-example.html">ExtensibleTypeExample/README.MD</a></li>
+</ul>
+</li>
+<li>MUTABLE_EXTENSIBILITY，该类型表示该类型可进行任意结构/数量的变化，配置该类型时，需在IDL文件中为每个成员设置唯一的ID标识，序列化采用扩展的CDR方式，将ID与内容一并序列化，在接收端反序列化时先反序列化ID，再根据本地ID所对应成员进行成员的反序列化，这种方式灵活但是序列化/反序列化的过程以及内容将变复杂。<ul>
+<li>ID的值默认从0开始依次递增，复杂结构嵌套时，计算ID的方式为将成员展开累积；</li>
+<li>使用在成员后面添加 <code>@ID (1)</code> 标注来设置ID值，设置ID值后，如后续的成员未设置，则从该ID值开始累积计数；</li>
+<li>参见示例<a class="el" href="_mutable_type_example_2_r_e_a_d_m_e_8_m_d-example.html">MutableTypeExample/README.MD</a></li>
+</ul>
+</li>
+</ul>
+<p>可扩展数据类型的示例参见如下：</p>
+<div class="fragment"><div class="line">@Extensibility(EXTENSIBLE_EXTENSIBILITY)</div>
+<div class="line">struct ExtensibleOldType</div>
+<div class="line">{</div>
+<div class="line">    <span class="keywordtype">long</span> x;</div>
+<div class="line">    <span class="keywordtype">long</span> y;</div>
+<div class="line">};</div>
+<div class="line"></div>
+<div class="line">@Extensibility(EXTENSIBLE_EXTENSIBILITY)</div>
+<div class="line">struct ExtensibleNewType</div>
+<div class="line">{</div>
+<div class="line">    <span class="keywordtype">long</span> x;</div>
+<div class="line">    <span class="keywordtype">long</span> y;</div>
+<div class="line">    <span class="keywordtype">long</span> z;</div>
+<div class="line">    <span class="keywordtype">float</span> angle;</div>
+<div class="line">};</div>
+<div class="line"></div>
+<div class="line">@Extensibility(MUTABLE_EXTENSIBILITY)</div>
+<div class="line">struct MutableOldType</div>
+<div class="line">{</div>
+<div class="line">    <span class="keywordtype">long</span> x;</div>
+<div class="line">    <span class="keywordtype">long</span> y;</div>
+<div class="line">};</div>
+<div class="line"></div>
+<div class="line">@Extensibility(MUTABLE_EXTENSIBILITY)</div>
+<div class="line">struct MutableNewType</div>
+<div class="line">{</div>
+<div class="line">    <span class="keywordtype">long</span> z; @ID (2)</div>
+<div class="line">    long x; @ID (0)</div>
+<div class="line">    <span class="keywordtype">float</span> angle; @ID (3)</div>
+<div class="line">    <span class="keywordtype">long</span> y; @ID (1)</div>
+<div class="line">};</div>
+</div><!-- fragment --><h2><a class="anchor" id="DDSCompiler-Usage"></a>
+zrddsgen用法</h2>
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;zrddsgen.exe -d &lt;directory&gt;</div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;             -i &lt;path&gt;</div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;             -l &lt;language&gt;</div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;             [-e]</div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;             [-p &lt;project&gt;]</div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;             [-java_package &lt;package_name&gt;]</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;             [-separate]</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;             [-m &lt;moodule_type&gt;]</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;             [-type_name_stype &lt;type_name_style&gt;]</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;             [-string_bound &lt;bound&gt;]</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;             [-sequence_bound &lt;bound&gt;]</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;             [-u] [-h]</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;             -d -output_dir &lt;directory&gt;：指定生成文件的输出目录，必须指定</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;             -i -input_idl &lt;path&gt;：指定输入的IDL文件，必须指定</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;             -l -language &lt;language&gt;：指定输出的编程语言，必须指定，目前支持C,C++,C#和java</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;             -e -example：生成发布订阅示例代码</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;             -p -project &lt;project&gt;：指定生成的示例工程的类型，目前支持C，C++工程Win32VS2008、Win32VS2010、Win32VS2012、Win32VS2013、Win32VS2015、Win32VS2012XP、Win32VS2013XP、Win32VS2015XP、Win64VS2010、Win64VS2012、Win64VS2013、Win64VS2015、LinuxEclipse</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;             -java_package :指定包名，仅在java语言中有效，将所有代码放在指定包下</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;             -separate：当指定此参数时，将把输入文件中各个类型的生成内容分离到不同的文件中</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;             -m -module_type &lt;module_type&gt;：指定module的处理方式，可选项包括&quot;prefix&quot;和&quot;namespace&quot;，分别表示module作为类型前缀和module作为命名空间（若支持），默认使用namespace，即作为命名空间</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;             -type_name_style &lt;type_name_style&gt;：指定类型名风格，可选项包括&quot;dds_standard&quot;和&quot;zr_style&quot;，分别表示内置类型名使用DDS标准风格或者臻融定义风格，默认使用zr_style</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;             -string_bound &lt;bound&gt;：指定默认的string的bound</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;             -sequence_bound &lt;bound&gt;：指定默认的sequence的bound</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;             -u -enable_unbounded：启用sequence和string的unbounded</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;             -h -help：打印帮助信息</div>
+</div><!-- fragment --><h1><a class="anchor" id="sugesstion"></a>
+问题反馈</h1>
+<p><a href="suggestion.html">点此填写问题反馈</a> </p>
+</div></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

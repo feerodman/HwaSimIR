@@ -1,0 +1,192 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: SampleInfo.h 源文件</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>类</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('_sample_info_8h_source.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">SampleInfo.h</div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#ifndef SampleInfo_h__</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#define SampleInfo_h__</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#include &quot;SampleStateKind.h&quot;</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#include &quot;ViewStateKind.h&quot;</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="preprocessor">#include &quot;InstanceStateKind.h&quot;</span></div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#include &quot;Duration_t.h&quot;</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="preprocessor">#include &quot;InstanceHandle_t.h&quot;</span></div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="preprocessor">#include &quot;ZRSequence.h&quot;</span></div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="preprocessor">#include &quot;SequenceNumber_t.h&quot;</span></div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;{</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;</div>
+<div class="line"><a name="l00033"></a><span class="lineno"><a class="line" href="struct_d_d_s___sample_info.html">   33</a></span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="struct_d_d_s___sample_info.html">DDS_SampleInfo</a></div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;{</div>
+<div class="line"><a name="l00036"></a><span class="lineno"><a class="line" href="struct_d_d_s___sample_info.html#adfe9c2c74b14f914e5b7da022b07cb86">   36</a></span>&#160;    <a class="code" href="group___core_base_struct.html#gadb6d36e7c796da27519b6bf7f8f187e5">DDS_SampleStateKind</a> <a class="code" href="struct_d_d_s___sample_info.html#adfe9c2c74b14f914e5b7da022b07cb86">sample_state</a>;</div>
+<div class="line"><a name="l00038"></a><span class="lineno"><a class="line" href="struct_d_d_s___sample_info.html#a99c0b7558c3ebcc94ee9d2b5b7129243">   38</a></span>&#160;    <a class="code" href="group___core_base_struct.html#ga265b034e433c054c4bca5e553c561410">DDS_ViewStateKind</a> <a class="code" href="struct_d_d_s___sample_info.html#a99c0b7558c3ebcc94ee9d2b5b7129243">view_state</a>;</div>
+<div class="line"><a name="l00040"></a><span class="lineno"><a class="line" href="struct_d_d_s___sample_info.html#af09b886ca0145a110b58440d455b7eae">   40</a></span>&#160;    <a class="code" href="group___core_base_struct.html#gaf2264cae1aa8cd66490debfdc5e0c360">DDS_InstanceStateKind</a> <a class="code" href="struct_d_d_s___sample_info.html#af09b886ca0145a110b58440d455b7eae">instance_state</a>;</div>
+<div class="line"><a name="l00042"></a><span class="lineno"><a class="line" href="struct_d_d_s___sample_info.html#acc4ed5600d68629600998f7e8e4265ea">   42</a></span>&#160;    <a class="code" href="struct_d_d_s___duration__t.html">DDS_Time_t</a> <a class="code" href="struct_d_d_s___sample_info.html#acc4ed5600d68629600998f7e8e4265ea">source_timestamp</a>;</div>
+<div class="line"><a name="l00044"></a><span class="lineno"><a class="line" href="struct_d_d_s___sample_info.html#aba37bc4b8cb5997395c102a0d1c766a3">   44</a></span>&#160;    <a class="code" href="struct_d_d_s___sequence_number__t.html">DDS_SequenceNumber_t</a> <a class="code" href="struct_d_d_s___sample_info.html#aba37bc4b8cb5997395c102a0d1c766a3">write_sequence_number</a>;</div>
+<div class="line"><a name="l00046"></a><span class="lineno"><a class="line" href="struct_d_d_s___sample_info.html#a38bca53647cd2be8c1dff9054126f360">   46</a></span>&#160;    <a class="code" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a> <a class="code" href="struct_d_d_s___sample_info.html#a38bca53647cd2be8c1dff9054126f360">instance_handle</a>;</div>
+<div class="line"><a name="l00048"></a><span class="lineno"><a class="line" href="struct_d_d_s___sample_info.html#a596e409a28afd612c83f2b4964ac4e76">   48</a></span>&#160;    <a class="code" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a> <a class="code" href="struct_d_d_s___sample_info.html#a596e409a28afd612c83f2b4964ac4e76">publication_handle</a>;</div>
+<div class="line"><a name="l00050"></a><span class="lineno"><a class="line" href="struct_d_d_s___sample_info.html#abc6fe22bb837d687cd580710add47584">   50</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> <a class="code" href="struct_d_d_s___sample_info.html#abc6fe22bb837d687cd580710add47584">disposed_generation_count</a>;</div>
+<div class="line"><a name="l00052"></a><span class="lineno"><a class="line" href="struct_d_d_s___sample_info.html#a992c54522986542b4f5e87e1ddda3108">   52</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> <a class="code" href="struct_d_d_s___sample_info.html#a992c54522986542b4f5e87e1ddda3108">no_writers_generation_count</a>;</div>
+<div class="line"><a name="l00056"></a><span class="lineno"><a class="line" href="struct_d_d_s___sample_info.html#a3f709e2c8be8fdfb96179f0869ecdc87">   56</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> <a class="code" href="struct_d_d_s___sample_info.html#a3f709e2c8be8fdfb96179f0869ecdc87">sample_rank</a>;</div>
+<div class="line"><a name="l00061"></a><span class="lineno"><a class="line" href="struct_d_d_s___sample_info.html#ae5489b5aa25582dfd91446552ef5c116">   61</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> <a class="code" href="struct_d_d_s___sample_info.html#ae5489b5aa25582dfd91446552ef5c116">generation_rank</a>;</div>
+<div class="line"><a name="l00066"></a><span class="lineno"><a class="line" href="struct_d_d_s___sample_info.html#add38443ae04a299c6f21ff8e8dc0e0a5">   66</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> <a class="code" href="struct_d_d_s___sample_info.html#add38443ae04a299c6f21ff8e8dc0e0a5">absolute_generation_rank</a>;</div>
+<div class="line"><a name="l00072"></a><span class="lineno"><a class="line" href="struct_d_d_s___sample_info.html#aa0c5177864ed1aeeb85544fee45904da">   72</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> <a class="code" href="struct_d_d_s___sample_info.html#aa0c5177864ed1aeeb85544fee45904da">valid_data</a>;</div>
+<div class="line"><a name="l00074"></a><span class="lineno"><a class="line" href="struct_d_d_s___sample_info.html#ad0ca29454780984e4f558fa3a637c02c">   74</a></span>&#160;    <span class="keywordtype">void</span> *<a class="code" href="struct_d_d_s___sample_info.html#ad0ca29454780984e4f558fa3a637c02c">recive_locator</a>;</div>
+<div class="line"><a name="l00076"></a><span class="lineno"><a class="line" href="struct_d_d_s___sample_info.html#a1aa4ab7fac3744b4fe761cd660c53f68">   76</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> <a class="code" href="struct_d_d_s___sample_info.html#a1aa4ab7fac3744b4fe761cd660c53f68">recive_order</a>;</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> is_batch_end;</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;}<a class="code" href="struct_d_d_s___sample_info.html">DDS_SampleInfo</a>;</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;</div>
+<div class="line"><a name="l00086"></a><span class="lineno"><a class="line" href="struct_d_d_s___sample_info_valid_member.html">   86</a></span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="struct_d_d_s___sample_info_valid_member.html">DDS_SampleInfoValidMember</a></div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;{</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> source_timestamp;</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> valid_data;</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> instance_handle;</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> instance_state;</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> sample_state;</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> view_state;</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;}<a class="code" href="struct_d_d_s___sample_info_valid_member.html">DDS_SampleInfoValidMember</a>;</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;DDS_SEQUENCE_CPP(<a class="code" href="struct_d_d_s___sample_info_seq.html">DDS_SampleInfoSeq</a>, <a class="code" href="struct_d_d_s___sample_info.html">DDS_SampleInfo</a>);</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;}</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* SampleInfo_h__*/</span><span class="preprocessor"></span></div>
+<div class="ttc" id="struct_d_d_s___sample_info_html_a99c0b7558c3ebcc94ee9d2b5b7129243"><div class="ttname"><a href="struct_d_d_s___sample_info.html#a99c0b7558c3ebcc94ee9d2b5b7129243">DDS_SampleInfo::view_state</a></div><div class="ttdeci">DDS_ViewStateKind view_state</div><div class="ttdoc">数据关联的视图状态。 </div><div class="ttdef"><b>Definition:</b> SampleInfo.h:38</div></div>
+<div class="ttc" id="struct_d_d_s___sample_info_html_a1aa4ab7fac3744b4fe761cd660c53f68"><div class="ttname"><a href="struct_d_d_s___sample_info.html#a1aa4ab7fac3744b4fe761cd660c53f68">DDS_SampleInfo::recive_order</a></div><div class="ttdeci">DDS_ULong recive_order</div><div class="ttdoc">接收队列号。 </div><div class="ttdef"><b>Definition:</b> SampleInfo.h:76</div></div>
+<div class="ttc" id="struct_d_d_s___sample_info_html_abc6fe22bb837d687cd580710add47584"><div class="ttname"><a href="struct_d_d_s___sample_info.html#abc6fe22bb837d687cd580710add47584">DDS_SampleInfo::disposed_generation_count</a></div><div class="ttdeci">DDS_ULong disposed_generation_count</div><div class="ttdoc">数据所属的数据实例状态从 DDS_NOT_ALIVE_DISPOSED_INSTANCE_STATE 变成 DDS_ALIVE_INSTANCE_STATE 的次数。...</div><div class="ttdef"><b>Definition:</b> SampleInfo.h:50</div></div>
+<div class="ttc" id="struct_d_d_s___sample_info_html_ae5489b5aa25582dfd91446552ef5c116"><div class="ttname"><a href="struct_d_d_s___sample_info.html#ae5489b5aa25582dfd91446552ef5c116">DDS_SampleInfo::generation_rank</a></div><div class="ttdeci">DDS_ULong generation_rank</div><div class="ttdoc">在 DataReader::read/take 系列方法返回的序列中的同一实例的数据中， 最新的数据（MRSIC）与此数据的代数（...</div><div class="ttdef"><b>Definition:</b> SampleInfo.h:61</div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga40aa7a1400d66542eba212ef019321bf"><div class="ttname"><a href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a></div><div class="ttdeci">ZR_BOOLEAN DDS_Boolean</div><div class="ttdoc">ZRDDS内置的true/false类型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:197</div></div>
+<div class="ttc" id="group___core_base_struct_html_gadb6d36e7c796da27519b6bf7f8f187e5"><div class="ttname"><a href="group___core_base_struct.html#gadb6d36e7c796da27519b6bf7f8f187e5">DDS_SampleStateKind</a></div><div class="ttdeci">DDS_SampleStateKind</div><div class="ttdoc">该类型表示数据样本的被读取状态。 </div><div class="ttdef"><b>Definition:</b> SampleStateKind.h:22</div></div>
+<div class="ttc" id="struct_d_d_s___sample_info_html_a596e409a28afd612c83f2b4964ac4e76"><div class="ttname"><a href="struct_d_d_s___sample_info.html#a596e409a28afd612c83f2b4964ac4e76">DDS_SampleInfo::publication_handle</a></div><div class="ttdeci">DDS_InstanceHandle_t publication_handle</div><div class="ttdoc">发送此数据的数据写者的唯一标识。 </div><div class="ttdef"><b>Definition:</b> SampleInfo.h:48</div></div>
+<div class="ttc" id="struct_d_d_s___sample_info_valid_member_html"><div class="ttname"><a href="struct_d_d_s___sample_info_valid_member.html">DDS_SampleInfoValidMember</a></div><div class="ttdoc">用于表示 DDS_SampleInfo 中的成员是否有效，用于XML接口中。 </div><div class="ttdef"><b>Definition:</b> SampleInfo.h:86</div></div>
+<div class="ttc" id="struct_d_d_s___duration__t_html"><div class="ttname"><a href="struct_d_d_s___duration__t.html">DDS_Duration_t</a></div><div class="ttdoc">用来表明一段时间段，协议规定至少有毫微秒的分辨率。 </div><div class="ttdef"><b>Definition:</b> Duration_t.h:40</div></div>
+<div class="ttc" id="struct_d_d_s___sequence_number__t_html"><div class="ttname"><a href="struct_d_d_s___sequence_number__t.html">DDS_SequenceNumber_t</a></div><div class="ttdoc">64比特的序列号，seq_num = high * (2^32) + low. </div><div class="ttdef"><b>Definition:</b> SequenceNumber_t.h:26</div></div>
+<div class="ttc" id="struct_d_d_s___sample_info_html_aba37bc4b8cb5997395c102a0d1c766a3"><div class="ttname"><a href="struct_d_d_s___sample_info.html#aba37bc4b8cb5997395c102a0d1c766a3">DDS_SampleInfo::write_sequence_number</a></div><div class="ttdeci">DDS_SequenceNumber_t write_sequence_number</div><div class="ttdoc">数据在发布端的序列号。 </div><div class="ttdef"><b>Definition:</b> SampleInfo.h:44</div></div>
+<div class="ttc" id="struct_d_d_s___sample_info_html_ad0ca29454780984e4f558fa3a637c02c"><div class="ttname"><a href="struct_d_d_s___sample_info.html#ad0ca29454780984e4f558fa3a637c02c">DDS_SampleInfo::recive_locator</a></div><div class="ttdeci">void * recive_locator</div><div class="ttdoc">数据所属Locator。 </div><div class="ttdef"><b>Definition:</b> SampleInfo.h:74</div></div>
+<div class="ttc" id="struct_d_d_s___sample_info_html_adfe9c2c74b14f914e5b7da022b07cb86"><div class="ttname"><a href="struct_d_d_s___sample_info.html#adfe9c2c74b14f914e5b7da022b07cb86">DDS_SampleInfo::sample_state</a></div><div class="ttdeci">DDS_SampleStateKind sample_state</div><div class="ttdoc">数据关联的样本状态。 </div><div class="ttdef"><b>Definition:</b> SampleInfo.h:36</div></div>
+<div class="ttc" id="struct_d_d_s___sample_info_html_a38bca53647cd2be8c1dff9054126f360"><div class="ttname"><a href="struct_d_d_s___sample_info.html#a38bca53647cd2be8c1dff9054126f360">DDS_SampleInfo::instance_handle</a></div><div class="ttdeci">DDS_InstanceHandle_t instance_handle</div><div class="ttdoc">数据所属的数据实例的唯一标识。 </div><div class="ttdef"><b>Definition:</b> SampleInfo.h:46</div></div>
+<div class="ttc" id="group___core_base_struct_html_ga265b034e433c054c4bca5e553c561410"><div class="ttname"><a href="group___core_base_struct.html#ga265b034e433c054c4bca5e553c561410">DDS_ViewStateKind</a></div><div class="ttdeci">DDS_ViewStateKind</div><div class="ttdoc">此枚举变量列举出了数据实例的视图状态，与 DDS_ViewStateMask 结合使用。 </div><div class="ttdef"><b>Definition:</b> ViewStateKind.h:21</div></div>
+<div class="ttc" id="struct_d_d_s___sample_info_seq_html"><div class="ttname"><a href="struct_d_d_s___sample_info_seq.html">DDS_SampleInfoSeq</a></div><div class="ttdoc">声明 DDS_SampleInfoSeq 的序列类型，参见 DDS_USER_SEQUENCE_CPP 。 </div></div>
+<div class="ttc" id="group___core_builtin_types_html_gab598f8f664dfec10ab367e753dc68419"><div class="ttname"><a href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a></div><div class="ttdeci">ZR_UINT32 DDS_ULong</div><div class="ttdoc">ZRDDS内置的4字节无符号整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:258</div></div>
+<div class="ttc" id="struct_d_d_s___sample_info_html_add38443ae04a299c6f21ff8e8dc0e0a5"><div class="ttname"><a href="struct_d_d_s___sample_info.html#add38443ae04a299c6f21ff8e8dc0e0a5">DDS_SampleInfo::absolute_generation_rank</a></div><div class="ttdeci">DDS_ULong absolute_generation_rank</div><div class="ttdoc">在同一实例的数据（不需要属于同一返回序列）中， 最新的数据（MRS）与此数据的代数（generation）差。 ...</div><div class="ttdef"><b>Definition:</b> SampleInfo.h:66</div></div>
+<div class="ttc" id="struct_d_d_s___sample_info_html"><div class="ttname"><a href="struct_d_d_s___sample_info.html">DDS_SampleInfo</a></div><div class="ttdoc">数据读者为每一个接收到的数据维护的样本信息。 </div><div class="ttdef"><b>Definition:</b> SampleInfo.h:33</div></div>
+<div class="ttc" id="struct_d_d_s___sample_info_html_a3f709e2c8be8fdfb96179f0869ecdc87"><div class="ttname"><a href="struct_d_d_s___sample_info.html#a3f709e2c8be8fdfb96179f0869ecdc87">DDS_SampleInfo::sample_rank</a></div><div class="ttdeci">DDS_ULong sample_rank</div><div class="ttdoc">在 DataReader::read/take 系列方法返回的序列中的同一实例的数据中，此数据后面的数据的个数。 ...</div><div class="ttdef"><b>Definition:</b> SampleInfo.h:56</div></div>
+<div class="ttc" id="struct_d_d_s___instance_handle__t_html"><div class="ttname"><a href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a></div><div class="ttdoc">用来表示一个实体或者一个数据实例。 </div><div class="ttdef"><b>Definition:</b> InstanceHandle_t.h:24</div></div>
+<div class="ttc" id="struct_d_d_s___sample_info_html_af09b886ca0145a110b58440d455b7eae"><div class="ttname"><a href="struct_d_d_s___sample_info.html#af09b886ca0145a110b58440d455b7eae">DDS_SampleInfo::instance_state</a></div><div class="ttdeci">DDS_InstanceStateKind instance_state</div><div class="ttdoc">数据关联的实例状态。 </div><div class="ttdef"><b>Definition:</b> SampleInfo.h:40</div></div>
+<div class="ttc" id="struct_d_d_s___sample_info_html_acc4ed5600d68629600998f7e8e4265ea"><div class="ttname"><a href="struct_d_d_s___sample_info.html#acc4ed5600d68629600998f7e8e4265ea">DDS_SampleInfo::source_timestamp</a></div><div class="ttdeci">DDS_Time_t source_timestamp</div><div class="ttdoc">数据的源时间戳。 </div><div class="ttdef"><b>Definition:</b> SampleInfo.h:42</div></div>
+<div class="ttc" id="struct_d_d_s___sample_info_html_a992c54522986542b4f5e87e1ddda3108"><div class="ttname"><a href="struct_d_d_s___sample_info.html#a992c54522986542b4f5e87e1ddda3108">DDS_SampleInfo::no_writers_generation_count</a></div><div class="ttdeci">DDS_ULong no_writers_generation_count</div><div class="ttdoc">数据所属的数据实例状态从 DDS_NOT_ALIVE_NO_WRITERS_INSTANCE_STATE 变成 DDS_ALIVE_INSTANCE_STATE 的次数...</div><div class="ttdef"><b>Definition:</b> SampleInfo.h:52</div></div>
+<div class="ttc" id="struct_d_d_s___sample_info_html_aa0c5177864ed1aeeb85544fee45904da"><div class="ttname"><a href="struct_d_d_s___sample_info.html#aa0c5177864ed1aeeb85544fee45904da">DDS_SampleInfo::valid_data</a></div><div class="ttdeci">DDS_Boolean valid_data</div><div class="ttdoc">此值为true表示为数据样本，即该样本信息对应的数据样本有效。 </div><div class="ttdef"><b>Definition:</b> SampleInfo.h:72</div></div>
+<div class="ttc" id="group___core_base_struct_html_gaf2264cae1aa8cd66490debfdc5e0c360"><div class="ttname"><a href="group___core_base_struct.html#gaf2264cae1aa8cd66490debfdc5e0c360">DDS_InstanceStateKind</a></div><div class="ttdeci">DDS_InstanceStateKind</div><div class="ttdoc">此枚举变量列举出一系列的实例状态，与 DDS_InstanceStateMask 结合使用。 </div><div class="ttdef"><b>Definition:</b> InstanceStateKind.h:20</div></div>
+</div><!-- fragment --></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="dir_0fc3f8f3ef96ce2d45d66d6e29832317.html">resources</a></li><li class="navelem"><a class="el" href="dir_cf9ceadfa18f25e608d16251156af657.html">zrdds</a></li><li class="navelem"><a class="el" href="dir_49213087373222e5c37cddb4e4d5f33e.html">src</a></li><li class="navelem"><a class="el" href="dir_53336e619d60bf3f94a9dfb5f5011ef0.html">ZRDDSCoreInterface</a></li><li class="navelem"><b>SampleInfo.h</b></li>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

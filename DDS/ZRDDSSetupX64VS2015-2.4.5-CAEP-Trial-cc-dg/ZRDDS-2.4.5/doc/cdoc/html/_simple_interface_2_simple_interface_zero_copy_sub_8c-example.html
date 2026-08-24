@@ -1,0 +1,210 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: SimpleInterface/SimpleInterfaceZeroCopySub.c</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>结构体</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('_simple_interface_2_simple_interface_zero_copy_sub_8c-example.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">SimpleInterface/SimpleInterfaceZeroCopySub.c</div>  </div>
+</div><!--header-->
+<div class="contents">
+<p>该程序展示了简化接口中SimpleInterfaceZeroCopySub的示例代码。</p>
+<div class="fragment"><div class="line"><span class="preprocessor">#include &quot;ZRDDSCSimpleInterface.h&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
+<div class="line"><span class="preprocessor">#include &lt;stdlib.h&gt;</span></div>
+<div class="line"><span class="preprocessor">#include &lt;string.h&gt;</span></div>
+<div class="line"></div>
+<div class="line"><span class="comment">/***</span></div>
+<div class="line"><span class="comment"> * @typedef struct ZRDDSDemoModules</span></div>
+<div class="line"><span class="comment"> *</span></div>
+<div class="line"><span class="comment"> * @brief   用于管理DDS通信实体。</span></div>
+<div class="line"><span class="comment"> */</span></div>
+<div class="line"></div>
+<div class="line"><span class="keyword">typedef</span> <span class="keyword">struct </span>ZRDDSDemoModules</div>
+<div class="line">{</div>
+<div class="line">    <span class="comment">/*** @brief   数据读者监听器。 */</span></div>
+<div class="line">    <a name="_a0"></a><a class="code" href="struct_d_d_s___data_reader_listener.html">DDS_DataReaderListener</a> m_listener;</div>
+<div class="line">    <span class="comment">/*** @brief   用于发送主题1数据。 */</span></div>
+<div class="line">    DDS_BytesDataWriter* m_airTrackDw;</div>
+<div class="line">}ZRDDSDemoModules;</div>
+<div class="line"></div>
+<div class="line"><span class="comment">/*** @brief   实体全局对象，也可以将该对象放在业务对象中。 */</span></div>
+<div class="line">ZRDDSDemoModules g_zrddsModule;</div>
+<div class="line"></div>
+<div class="line"><a name="a1"></a><a class="code" href="group___c_listener.html#ga2e9336107976cdbbd4f0003513df4639">DDS_SimpleDataReaderListener</a>(ZeroCopyBytesType, <a name="_a2"></a><a class="code" href="struct_d_d_s___zero_copy_bytes.html">DDS_ZeroCopyBytes</a>)(<a name="_a3"></a><a class="code" href="struct_d_d_s___data_reader.html">DDS_DataReader</a>* reader, <a class="code" href="struct_d_d_s___zero_copy_bytes.html">DDS_ZeroCopyBytes</a>* sample, <a name="_a4"></a><a class="code" href="struct_d_d_s___sample_info.html">DDS_SampleInfo</a>* info)</div>
+<div class="line">{</div>
+<div class="line">    <span class="comment">// 通过该语句获取收到的样本所属主题名称</span></div>
+<div class="line">    <span class="keyword">const</span> <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>* topicName = <a name="a5"></a><a class="code" href="group___c_topic.html#gac7e46324e991d1f61027ffc782920b8a">DDS_TopicDescription_get_name</a>(DataReaderImplGetTopicDescription(reader));</div>
+<div class="line">    <span class="comment">// TODO 在此填写业务处理，接收端sample.userBuffer为用户负载数据，sample.userLength为用户负载长度，无需考虑预留空间</span></div>
+<div class="line">    printf(<span class="stringliteral">&quot;received data(%s) length(%d) from topic(%s)\n&quot;</span>, sample-&gt;userBuffer, sample-&gt;userLength, topicName);</div>
+<div class="line">}</div>
+<div class="line"></div>
+<div class="line"><span class="keywordtype">int</span> ZRDDSDemoModulesInitial()</div>
+<div class="line">{</div>
+<div class="line">    <span class="comment">// 获取入口，并指明QoS配置</span></div>
+<div class="line">    <a name="_a6"></a><a class="code" href="struct_d_d_s___domain_participant_factory.html">DDS_DomainParticipantFactory</a>* factory = <a name="a7"></a><a class="code" href="group___simple_interface.html#gafba8345d351be9aa3a66773fac903983">DDS_Init</a>(NULL, <span class="stringliteral">&quot;rio_config&quot;</span>);</div>
+<div class="line">    <span class="keywordflow">if</span> (factory == NULL) { printf(<span class="stringliteral">&quot;DDS_Initialize failed.\n&quot;</span>); <span class="keywordflow">return</span> -1; }</div>
+<div class="line">    <span class="comment">// 初始化使用rio的域参与者</span></div>
+<div class="line">    <a name="_a8"></a><a class="code" href="struct_d_d_s___domain_participant.html">DDS_DomainParticipant</a>* rioDp = <a name="a9"></a><a class="code" href="group___simple_interface.html#ga6a10094a97e3c90e4958ba8d2c0b0f8a">DDS_CreateDP</a>(100, <span class="stringliteral">&quot;rio_dp&quot;</span>);</div>
+<div class="line">    <span class="keywordflow">if</span> (NULL == rioDp) { printf(<span class="stringliteral">&quot;DDS_CreateDP rio_dp failed.\n&quot;</span>); <span class="keywordflow">return</span> -3; }</div>
+<div class="line">    <span class="comment">// 创建零拷贝数据读者，并设置监听器</span></div>
+<div class="line">    memset(&amp;g_zrddsModule.m_listener, 0, <span class="keyword">sizeof</span>(g_zrddsModule.m_listener));</div>
+<div class="line">    g_zrddsModule.m_listener.on_data_available = ZeroCopyBytesType_on_data_available;</div>
+<div class="line">    <a class="code" href="struct_d_d_s___data_reader.html">DDS_DataReader</a>* seaTrackDr = <a name="a10"></a><a class="code" href="group___simple_interface.html#ga55b3bb36aa9d47849578622687b1b451">DDS_SubTopic</a>(</div>
+<div class="line">        rioDp, <span class="stringliteral">&quot;SeaTrack&quot;</span>, &amp;DDS_ZeroCopyBytesTypeSupport_instance, <span class="stringliteral">&quot;zerocopy&quot;</span>, &amp;g_zrddsModule.m_listener);</div>
+<div class="line">    <span class="keywordflow">if</span> (NULL == seaTrackDr) { printf(<span class="stringliteral">&quot;SeaTrackTopic_on_data_available failed.\n&quot;</span>); <span class="keywordflow">return</span> -5; }</div>
+<div class="line">    <span class="keywordflow">return</span> 0;</div>
+<div class="line">}</div>
+<div class="line"></div>
+<div class="line"><span class="preprocessor">#if defined(_VXWORKS) || defined(_REWORKS)</span></div>
+<div class="line"><span class="keywordtype">int</span> dds_sub()</div>
+<div class="line"><span class="preprocessor">#else</span></div>
+<div class="line"><span class="keywordtype">int</span> main()</div>
+<div class="line"><span class="preprocessor">#endif </span><span class="comment">/* defined  */</span><span class="preprocessor"></span></div>
+<div class="line">{</div>
+<div class="line">    <span class="keywordflow">if</span> (ZRDDSDemoModulesInitial() &lt; 0) { getchar(); <span class="keywordflow">return</span> -1; }</div>
+<div class="line">    <span class="comment">// 等待数据</span></div>
+<div class="line">    getchar();</div>
+<div class="line"><span class="preprocessor">#if defined(_VXWORKS) || defined(_REWORKS)</span></div>
+<div class="line">    <span class="keywordflow">while</span>(<span class="keyword">true</span>)</div>
+<div class="line">    {</div>
+<div class="line">        <a name="a11"></a><a class="code" href="group___core_utility_function.html#ga6d25dbbee8d153971007f695de2a85d6">ZRSleep</a>(1000);</div>
+<div class="line">    }</div>
+<div class="line"><span class="preprocessor">#endif</span></div>
+<div class="line">    <a name="a12"></a><a class="code" href="group___simple_interface.html#ga4333f00c24612efca8a9823c7e43c888">DDS_Finalize</a>();</div>
+<div class="line">}</div>
+<div class="line"></div>
+<div class="line"><span class="preprocessor">#if defined(_VXWORKS)</span></div>
+<div class="line"><span class="preprocessor">#include &lt;taskLib.h&gt;</span></div>
+<div class="line"><span class="preprocessor">#include &lt;sysLib.h&gt;</span></div>
+<div class="line"><span class="preprocessor">#include &lt;tickLib.h&gt;</span></div>
+<div class="line"><span class="preprocessor">#include &lt;time.h&gt;</span></div>
+<div class="line"><span class="keywordtype">int</span> start_dds_sub()</div>
+<div class="line">{    </div>
+<div class="line">    <span class="comment">// 初始化vxWorks平台的tick(计时)</span></div>
+<div class="line">    <span class="comment">//sysClkRateSet(1000);</span></div>
+<div class="line">    taskSpawn(<span class="stringliteral">&quot;dds_sub&quot;</span>, 128,</div>
+<div class="line">        VX_FP_TASK,</div>
+<div class="line">        256 * 1024,</div>
+<div class="line">        (FUNCPTR)dds_sub,</div>
+<div class="line">        0, 0, 0, 0, 0, 0, 0, 0, 0, 0);</div>
+<div class="line">    printf(<span class="stringliteral">&quot;taskSpawn\n&quot;</span>);</div>
+<div class="line">    <span class="keywordflow">return</span> 0;</div>
+<div class="line">}</div>
+<div class="line"></div>
+<div class="line"><span class="preprocessor">#elif defined(_REWORKS)</span></div>
+<div class="line"><span class="preprocessor">#include &lt;pthread.h&gt;</span></div>
+<div class="line"><span class="keywordtype">void</span> start_dds_sub()</div>
+<div class="line">{   </div>
+<div class="line">    pthread_t tid;</div>
+<div class="line">    pthread_create2(</div>
+<div class="line">        &amp;tid,</div>
+<div class="line">        <span class="stringliteral">&quot;dds_sub&quot;</span>,</div>
+<div class="line">        128,</div>
+<div class="line">        RE_FP_TASK,</div>
+<div class="line">        256 * 1024,</div>
+<div class="line">        dds_sub,</div>
+<div class="line">        NULL);</div>
+<div class="line">}</div>
+<div class="line"><span class="preprocessor">#endif</span></div>
+</div><!-- fragment --> </div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

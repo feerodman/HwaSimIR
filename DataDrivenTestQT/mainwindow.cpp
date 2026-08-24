@@ -649,7 +649,7 @@ void MainWindow::sendInitCommand()
     // 传感器参数（简化配置）
     cmd.trackingInit.enable = true;
     cmd.trackingInit.envTerrain = 0; // 戈壁
-    cmd.trackingInit.envSky = m_protocolEnvSky;
+    cmd.trackingInit.envSky = 5;
     cmd.trackingInit.envTemp = 25.0;
 	cmd.trackingInit.simMode = m_protocolSimMode;
 	cmd.trackingInit.videoFps = targetVideoFps();

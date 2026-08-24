@@ -1,0 +1,111 @@
+<zrdds_qos xmlns="http://www.omg.org/dds/">
+  <qos_library name="default_lib">
+    <qos_profile name="default_profile">
+      <participantfactory_qos name="default">
+        <property>
+          <value>
+            <element>
+              <name>sysctl.global.net.tcp_max_batch_num</name>
+              <value>32</value>
+            </element>
+            <element>
+              <name>sysctl.global.net.tcp_max_batch_len</name>
+              <value>30000000</value>
+            </element>
+          </value>
+        </property>
+	  </participantfactory_qos>
+      <participant_qos name="udp_dp">
+        <usertraffic_receive_addresses>
+          <addresses>
+            <element>udpv4://192.168.150.51//0</element>
+          </addresses>
+        </usertraffic_receive_addresses>
+      </participant_qos>
+      <participant_qos name="tcp_dp">
+        <usertraffic_receive_addresses>
+          <addresses>
+            <element>tcpv4://192.168.150.51//0</element>
+          </addresses>
+        </usertraffic_receive_addresses>
+        <receiver_thread_config>
+            <kind>THREAD_PER_PORT</kind>
+            <receive_buffer_length>104857600</receive_buffer_length>
+        </receiver_thread_config>
+      </participant_qos>
+      <publisher_qos name="default">
+        <asynchronous_publisher>
+            <asynchronous_concurrent_thread>4</asynchronous_concurrent_thread>
+        </asynchronous_publisher>
+      </publisher_qos>
+      <subscriber_qos name="default" />
+      <datawriter_qos name="reliable_no_delay">
+        <protocol>
+          <push_on_write>true</push_on_write>
+        </protocol>
+      </datawriter_qos>
+      <datawriter_qos name="cc_datawrtier_cc1">
+        <reliability>
+          <kind>BEST_EFFORT_RELIABILITY_QOS</kind>
+        </reliability>
+        <publish_mode>
+            <kind>DDS_SYNCHRONOUS_PUBLISH_MODE_QOS</kind>
+            <asynchronous_concurrent_thread>1</asynchronous_concurrent_thread>
+        </publish_mode>
+        <message_mode>
+          <without_inlineQos>true</without_inlineQos>
+        </message_mode>
+      </datawriter_qos>
+      <datawriter_qos name="cc_datawrtier_cc2">
+        <reliability>
+          <kind>BEST_EFFORT_RELIABILITY_QOS</kind>
+        </reliability>
+        <publish_mode>
+            <kind>DDS_SYNCHRONOUS_PUBLISH_MODE_QOS</kind>
+            <asynchronous_concurrent_thread>2</asynchronous_concurrent_thread>
+        </publish_mode>
+        <message_mode>
+          <without_inlineQos>true</without_inlineQos>
+        </message_mode>
+      </datawriter_qos>
+      <datawriter_qos name="cc_datawrtier_cc4">
+        <reliability>
+          <kind>BEST_EFFORT_RELIABILITY_QOS</kind>
+        </reliability>
+        <publish_mode>
+            <kind>DDS_ASYNCHRONOUS_PUBLISH_MODE_QOS</kind>
+            <asynchronous_concurrent_thread>4</asynchronous_concurrent_thread>
+        </publish_mode>
+        <message_mode>
+          <without_inlineQos>true</without_inlineQos>
+        </message_mode>
+      </datawriter_qos>
+      <datawriter_qos name="cc_datawrtier" base_name="default_lib::default_profile::cc_datawrtier_cc4">
+      </datawriter_qos>
+      <datareader_qos name="cc_datareader">
+        <reliability>
+          <kind>BEST_EFFORT_RELIABILITY_QOS</kind>
+        </reliability>
+      </datareader_qos>
+      <datawriter_qos name="cc_free_datawriter">
+        <reliability>
+          <kind>RELIABLE_RELIABILITY_QOS</kind>
+        </reliability>
+        <durability>
+          <kind>TRANSIENT_LOCAL_DURABILITY_QOS</kind>
+        </durability>
+      </datawriter_qos>
+      <datareader_qos name="cc_free_datareader">
+        <reliability>
+          <kind>RELIABLE_RELIABILITY_QOS</kind>
+        </reliability>
+        <history>
+          <depth>16</depth>
+        </history>
+        <durability>
+          <kind>TRANSIENT_LOCAL_DURABILITY_QOS</kind>
+        </durability>
+      </datareader_qos>
+    </qos_profile>
+  </qos_library>
+</zrdds_qos>

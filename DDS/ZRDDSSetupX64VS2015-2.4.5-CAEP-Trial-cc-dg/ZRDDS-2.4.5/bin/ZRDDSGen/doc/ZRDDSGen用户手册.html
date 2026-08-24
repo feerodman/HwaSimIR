@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>zrddsgen用户手册</title>
+  <style>
+    html {
+      line-height: 1.5;
+      font-family: Georgia, serif;
+      font-size: 20px;
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 1em;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, 'Lucida Console', Consolas, monospace;
+      font-size: 85%;
+      margin: 0;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <style type="text/css">
+  /*! normalize.css v2.1.3 | MIT License | git.io/normalize */
+
+  /* ==========================================================================
+     HTML5 display definitions
+     ========================================================================== */
+
+  /**
+   * Correct `block` display not defined in IE 8/9.
+   */
+
+  article,
+  aside,
+  details,
+  figcaption,
+  figure,
+  footer,
+  header,
+  hgroup,
+  main,
+  nav,
+  section,
+  summary {
+      display: block;
+  }
+
+  /**
+   * Correct `inline-block` display not defined in IE 8/9.
+   */
+
+  audio,
+  canvas,
+  video {
+      display: inline-block;
+  }
+
+  /**
+   * Prevent modern browsers from displaying `audio` without controls.
+   * Remove excess height in iOS 5 devices.
+   */
+
+  audio:not([controls]) {
+      display: none;
+      height: 0;
+  }
+
+  /**
+   * Address `[hidden]` styling not present in IE 8/9.
+   * Hide the `template` element in IE, Safari, and Firefox < 22.
+   */
+
+  [hidden],
+  template {
+      display: none;
+  }
+
+  /* ==========================================================================
+     Base
+     ========================================================================== */
+
+  /**
+   * 1. Set default font family to sans-serif.
+   * 2. Prevent iOS text size adjust after orientation change, without disabling
+   *    user zoom.
+   */
+
+  html {
+      font-family: sans-serif; /* 1 */
+      -ms-text-size-adjust: 100%; /* 2 */
+      -webkit-text-size-adjust: 100%; /* 2 */
+  }
+
+  /**
+   * Remove default margin.
+   */
+
+  body {
+      margin: 0;
+  }
+
+  /* ==========================================================================
+     Links
+     ========================================================================== */
+
+  /**
+   * Remove the gray background color from active links in IE 10.
+   */
+
+  a {
+      background: transparent;
+  }
+
+  /**
+   * Address `outline` inconsistency between Chrome and other browsers.
+   */
+
+  a:focus {
+      outline: thin dotted;
+  }
+
+  /**
+   * Improve readability when focused and also mouse hovered in all browsers.
+   */
+
+  a:active,
+  a:hover {
+      outline: 0;
+  }
+
+  /* ==========================================================================
+     Typography
+     ========================================================================== */
+
+  /**
+   * Address variable `h1` font-size and margin within `section` and `article`
+   * contexts in Firefox 4+, Safari 5, and Chrome.
+   */
+
+  h1 {
+      font-size: 2em;
+      margin: 0.67em 0;
+  }
+
+  /**
+   * Address styling not present in IE 8/9, Safari 5, and Chrome.
+   */
+
+  abbr[title] {
+      border-bottom: 1px dotted;
+  }
+
+  /**
+   * Address style set to `bolder` in Firefox 4+, Safari 5, and Chrome.
+   */
+
+  b,
+  strong {
+      font-weight: bold;
+  }
+
+  /**
+   * Address styling not present in Safari 5 and Chrome.
+   */
+
+  dfn {
+      font-style: italic;
+  }
+
+  /**
+   * Address differences between Firefox and other browsers.
+   */
+
+  hr {
+      -moz-box-sizing: content-box;
+      box-sizing: content-box;
+      height: 0;
+  }
+
+  /**
+   * Address styling not present in IE 8/9.
+   */
+
+  mark {
+      background: #ff0;
+      color: #000;
+  }
+
+  /**
+   * Correct font family set oddly in Safari 5 and Chrome.
+   */
+
+  code,
+  kbd,
+  pre,
+  samp {
+      font-family: monospace, serif;
+      font-size: 1em;
+  }
+
+  /**
+   * Improve readability of pre-formatted text in all browsers.
+   */
+
+  pre {
+      white-space: pre-wrap;
+  }
+
+  /**
+   * Set consistent quote types.
+   */
+
+  q {
+      quotes: "\201C" "\201D" "\2018" "\2019";
+  }
+
+  /**
+   * Address inconsistent and variable font size in all browsers.
+   */
+
+  small {
+      font-size: 80%;
+  }
+
+  /**
+   * Prevent `sub` and `sup` affecting `line-height` in all browsers.
+   */
+
+  sub,
+  sup {
+      font-size: 75%;
+      line-height: 0;
+      position: relative;
+      vertical-align: baseline;
+  }
+
+  sup {
+      top: -0.5em;
+  }
+
+  sub {
+      bottom: -0.25em;
+  }
+
+  /* ==========================================================================
+     Embedded content
+     ========================================================================== */
+
+  /**
+   * Remove border when inside `a` element in IE 8/9.
+   */
+
+  img {
+      border: 0;
+  }
+
+  /**
+   * Correct overflow displayed oddly in IE 9.
+   */
+
+  svg:not(:root) {
+      overflow: hidden;
+  }
+
+  /* ==========================================================================
+     Figures
+     ========================================================================== */
+
+  /**
+   * Address margin not present in IE 8/9 and Safari 5.
+   */
+
+  figure {
+      margin: 0;
+  }
+
+  /* ==========================================================================
+     Forms
+     ========================================================================== */
+
+  /**
+   * Define consistent border, margin, and padding.
+   */
+
+  fieldset {
+      border: 1px solid #c0c0c0;
+      margin: 0 2px;
+      padding: 0.35em 0.625em 0.75em;
+  }
+
+  /**
+   * 1. Correct `color` not being inherited in IE 8/9.
+   * 2. Remove padding so people aren't caught out if they zero out fieldsets.
+   */
+
+  legend {
+      border: 0; /* 1 */
+      padding: 0; /* 2 */
+  }
+
+  /**
+   * 1. Correct font family not being inherited in all browsers.
+   * 2. Correct font size not being inherited in all browsers.
+   * 3. Address margins set differently in Firefox 4+, Safari 5, and Chrome.
+   */
+
+  button,
+  input,
+  select,
+  textarea {
+      font-family: inherit; /* 1 */
+      font-size: 100%; /* 2 */
+      margin: 0; /* 3 */
+  }
+
+  /**
+   * Address Firefox 4+ setting `line-height` on `input` using `!important` in
+   * the UA stylesheet.
+   */
+
+  button,
+  input {
+      line-height: normal;
+  }
+
+  /**
+   * Address inconsistent `text-transform` inheritance for `button` and `select`.
+   * All other form control elements do not inherit `text-transform` values.
+   * Correct `button` style inheritance in Chrome, Safari 5+, and IE 8+.
+   * Correct `select` style inheritance in Firefox 4+ and Opera.
+   */
+
+  button,
+  select {
+      text-transform: none;
+  }
+
+  /**
+   * 1. Avoid the WebKit bug in Android 4.0.* where (2) destroys native `audio`
+   *    and `video` controls.
+   * 2. Correct inability to style clickable `input` types in iOS.
+   * 3. Improve usability and consistency of cursor style between image-type
+   *    `input` and others.
+   */
+
+  button,
+  html input[type="button"], /* 1 */
+  input[type="reset"],
+  input[type="submit"] {
+      -webkit-appearance: button; /* 2 */
+      cursor: pointer; /* 3 */
+  }
+
+  /**
+   * Re-set default cursor for disabled elements.
+   */
+
+  button[disabled],
+  html input[disabled] {
+      cursor: default;
+  }
+
+  /**
+   * 1. Address box sizing set to `content-box` in IE 8/9/10.
+   * 2. Remove excess padding in IE 8/9/10.
+   */
+
+  input[type="checkbox"],
+  input[type="radio"] {
+      box-sizing: border-box; /* 1 */
+      padding: 0; /* 2 */
+  }
+
+  /**
+   * 1. Address `appearance` set to `searchfield` in Safari 5 and Chrome.
+   * 2. Address `box-sizing` set to `border-box` in Safari 5 and Chrome
+   *    (include `-moz` to future-proof).
+   */
+
+  input[type="search"] {
+      -webkit-appearance: textfield; /* 1 */
+      -moz-box-sizing: content-box;
+      -webkit-box-sizing: content-box; /* 2 */
+      box-sizing: content-box;
+  }
+
+  /**
+   * Remove inner padding and search cancel button in Safari 5 and Chrome
+   * on OS X.
+   */
+
+  input[type="search"]::-webkit-search-cancel-button,
+  input[type="search"]::-webkit-search-decoration {
+      -webkit-appearance: none;
+  }
+
+  /**
+   * Remove inner padding and border in Firefox 4+.
+   */
+
+  button::-moz-focus-inner,
+  input::-moz-focus-inner {
+      border: 0;
+      padding: 0;
+  }
+
+  /**
+   * 1. Remove default vertical scrollbar in IE 8/9.
+   * 2. Improve readability and alignment in all browsers.
+   */
+
+  textarea {
+      overflow: auto; /* 1 */
+      vertical-align: top; /* 2 */
+  }
+
+  /* ==========================================================================
+     Tables
+     ========================================================================== */
+
+  /**
+   * Remove most spacing between table cells.
+   */
+
+  table {
+      border-collapse: collapse;
+      border-spacing: 0;
+  }
+
+  .go-top {
+  position: fixed;
+  bottom: 2em;
+  right: 2em;
+  text-decoration: none;
+  background-color: #E0E0E0;
+  font-size: 12px;
+  padding: 1em;
+  display: inline;
+  }
+
+  /* Github css */
+
+  html,body{        margin: auto;
+      padding-right: 1em;
+      padding-left: 1em;
+      max-width: 44em; color:black;}*:not('#mkdbuttons'){margin:0;padding:0}body{font:13.34px helvetica,arial,freesans,clean,sans-serif;-webkit-font-smoothing:subpixel-antialiased;line-height:1.4;padding:3px;background:#fff;border-radius:3px;-moz-border-radius:3px;-webkit-border-radius:3px}p{margin:1em 0}a{color:#4183c4;text-decoration:none}body{background-color:#fff;padding:30px;margin:15px;font-size:14px;line-height:1.6}body>*:first-child{margin-top:0!important}body>*:last-child{margin-bottom:0!important}@media screen{body{box-shadow:0 0 0 1px #cacaca,0 0 0 4px #eee}}h1,h2,h3,h4,h5,h6{margin:20px 0 10px;padding:0;font-weight:bold;-webkit-font-smoothing:subpixel-antialiased;cursor:text}h1{font-size:28px;color:#000}h2{font-size:24px;border-bottom:1px solid #ccc;color:#000}h3{font-size:18px;color:#333}h4{font-size:16px;color:#333}h5{font-size:14px;color:#333}h6{color:#777;font-size:14px}p,blockquote,table,pre{margin:15px 0}ul{padding-left:30px}ol{padding-left:30px}ol li ul:first-of-type{margin-top:0}hr{background:transparent url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAAECAYAAACtBE5DAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNSBNYWNpbnRvc2giIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6OENDRjNBN0E2NTZBMTFFMEI3QjRBODM4NzJDMjlGNDgiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6OENDRjNBN0I2NTZBMTFFMEI3QjRBODM4NzJDMjlGNDgiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo4Q0NGM0E3ODY1NkExMUUwQjdCNEE4Mzg3MkMyOUY0OCIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo4Q0NGM0E3OTY1NkExMUUwQjdCNEE4Mzg3MkMyOUY0OCIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PqqezsUAAAAfSURBVHjaYmRABcYwBiM2QSA4y4hNEKYDQxAEAAIMAHNGAzhkPOlYAAAAAElFTkSuQmCC) repeat-x 0 0;border:0 none;color:#ccc;height:4px;padding:0}body>h2:first-child{margin-top:0;padding-top:0}body>h1:first-child{margin-top:0;padding-top:0}body>h1:first-child+h2{margin-top:0;padding-top:0}body>h3:first-child,body>h4:first-child,body>h5:first-child,body>h6:first-child{margin-top:0;padding-top:0}a:first-child h1,a:first-child h2,a:first-child h3,a:first-child h4,a:first-child h5,a:first-child h6{margin-top:0;padding-top:0}h1+p,h2+p,h3+p,h4+p,h5+p,h6+p,ul li>:first-child,ol li>:first-child{margin-top:0}dl{padding:0}dl dt{font-size:14px;font-weight:bold;font-style:italic;padding:0;margin:15px 0 5px}dl dt:first-child{padding:0}dl dt>:first-child{margin-top:0}dl dt>:last-child{margin-bottom:0}dl dd{margin:0 0 15px;padding:0 15px}dl dd>:first-child{margin-top:0}dl dd>:last-child{margin-bottom:0}blockquote{border-left:4px solid #DDD;padding:0 15px;color:#777}blockquote>:first-child{margin-top:0}blockquote>:last-child{margin-bottom:0}table{border-collapse:collapse;border-spacing:0;font-size:100%;font:inherit}table th{font-weight:bold;border:1px solid #ccc;padding:6px 13px}table td{border:1px solid #ccc;padding:6px 13px}table tr{border-top:1px solid #ccc;background-color:#fff}table tr:nth-child(2n){background-color:#f8f8f8}img{max-width:100%}code,tt{margin:0 2px;padding:0 5px;white-space:nowrap;border:1px solid #eaeaea;background-color:#f8f8f8;border-radius:3px;font-family:Consolas,'Liberation Mono',Courier,monospace;font-size:12px;color:#333}pre>code{margin:0;padding:0;white-space:pre;border:0;background:transparent}.highlight pre{background-color:#f8f8f8;border:1px solid #ccc;font-size:13px;line-height:19px;overflow:auto;padding:6px 10px;border-radius:3px}pre{background-color:#f8f8f8;border:1px solid #ccc;font-size:13px;line-height:19px;overflow:auto;padding:6px 10px;border-radius:3px}pre code,pre tt{background-color:transparent;border:0}.poetry pre{font-family:Georgia,Garamond,serif!important;font-style:italic;font-size:110%!important;line-height:1.6em;display:block;margin-left:1em}.poetry pre code{font-family:Georgia,Garamond,serif!important;word-break:break-all;word-break:break-word;-webkit-hyphens:auto;-moz-hyphens:auto;hyphens:auto;white-space:pre-wrap}sup,sub,a.footnote{font-size:1.4ex;height:0;line-height:1;vertical-align:super;position:relative}sub{vertical-align:sub;top:-1px}@media print{body{background:#fff}img,pre,blockquote,table,figure{page-break-inside:avoid}body{background:#fff;border:0}code{background-color:#fff;color:#333!important;padding:0 .2em;border:1px solid #dedede}pre{background:#fff}pre code{background-color:white!important;overflow:visible}}@media screen{body.inverted{color:#eee!important;border-color:#555;box-shadow:none}.inverted body,.inverted hr .inverted p,.inverted td,.inverted li,.inverted h1,.inverted h2,.inverted h3,.inverted h4,.inverted h5,.inverted h6,.inverted th,.inverted .math,.inverted caption,.inverted dd,.inverted dt,.inverted blockquote{color:#eee!important;border-color:#555;box-shadow:none}.inverted td,.inverted th{background:#333}.inverted h2{border-color:#555}.inverted hr{border-color:#777;border-width:1px!important}::selection{background:rgba(157,193,200,0.5)}h1::selection{background-color:rgba(45,156,208,0.3)}h2::selection{background-color:rgba(90,182,224,0.3)}h3::selection,h4::selection,h5::selection,h6::selection,li::selection,ol::selection{background-color:rgba(133,201,232,0.3)}code::selection{background-color:rgba(0,0,0,0.7);color:#eee}code span::selection{background-color:rgba(0,0,0,0.7)!important;color:#eee!important}a::selection{background-color:rgba(255,230,102,0.2)}.inverted a::selection{background-color:rgba(255,230,102,0.6)}td::selection,th::selection,caption::selection{background-color:rgba(180,237,95,0.5)}.inverted{background:#0b2531;background:#252a2a}.inverted body{background:#252a2a}.inverted a{color:#acd1d5}}.highlight .c{color:#998;font-style:italic}.highlight .err{color:#a61717;background-color:#e3d2d2}.highlight .k,.highlight .o{font-weight:bold}.highlight .cm{color:#998;font-style:italic}.highlight .cp{color:#999;font-weight:bold}.highlight .c1{color:#998;font-style:italic}.highlight .cs{color:#999;font-weight:bold;font-style:italic}.highlight .gd{color:#000;background-color:#fdd}.highlight .gd .x{color:#000;background-color:#faa}.highlight .ge{font-style:italic}.highlight .gr{color:#a00}.highlight .gh{color:#999}.highlight .gi{color:#000;background-color:#dfd}.highlight .gi .x{color:#000;background-color:#afa}.highlight .go{color:#888}.highlight .gp{color:#555}.highlight .gs{font-weight:bold}.highlight .gu{color:#800080;font-weight:bold}.highlight .gt{color:#a00}.highlight .kc,.highlight .kd,.highlight .kn,.highlight .kp,.highlight .kr{font-weight:bold}.highlight .kt{color:#458;font-weight:bold}.highlight .m{color:#099}.highlight .s{color:#d14}.highlight .na{color:#008080}.highlight .nb{color:#0086b3}.highlight .nc{color:#458;font-weight:bold}.highlight .no{color:#008080}.highlight .ni{color:#800080}.highlight .ne,.highlight .nf{color:#900;font-weight:bold}.highlight .nn{color:#555}.highlight .nt{color:#000080}.highlight .nv{color:#008080}.highlight .ow{font-weight:bold}.highlight .w{color:#bbb}.highlight .mf,.highlight .mh,.highlight .mi,.highlight .mo{color:#099}.highlight .sb,.highlight .sc,.highlight .sd,.highlight .s2,.highlight .se,.highlight .sh,.highlight .si,.highlight .sx{color:#d14}.highlight .sr{color:#009926}.highlight .s1{color:#d14}.highlight .ss{color:#990073}.highlight .bp{color:#999}.highlight .vc,.highlight .vg,.highlight .vi{color:#008080}.highlight .il{color:#099}.highlight .gc{color:#999;background-color:#eaf2f5}.type-csharp .highlight .k,.type-csharp .highlight .kt{color:#00F}.type-csharp .highlight .nf{color:#000;font-weight:normal}.type-csharp .highlight .nc{color:#2b91af}.type-csharp .highlight .nn{color:#000}.type-csharp .highlight .s,.type-csharp .highlight .sc{color:#a31515}
+  </style>
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#zrddsgen使用手册">zrddsgen使用手册</a>
+<ul>
+<li><a href="#概述">概述</a></li>
+<li><a href="#用法">用法</a></li>
+<li><a href="#idl语言语法">IDL语言语法</a>
+<ul>
+<li><a href="#基础数据类型">基础数据类型</a></li>
+<li><a href="#string-sequence">String &amp; Sequence</a></li>
+<li><a href="#struct嵌套">struct嵌套</a></li>
+<li><a href="#union">union</a></li>
+<li><a href="#enmu">enmu</a></li>
+<li><a href="#typedef">typedef</a></li>
+<li><a href="#数组">数组</a></li>
+<li><a href="#注释及特殊标记">注释及特殊标记</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="zrddsgen使用手册">zrddsgen使用手册</h1>
+<h2 id="概述">概述</h2>
+<p>为了减少DDS用户在新建项目，配置环境所消耗的时间，DDS编译器（下文称为zrddsgen）只需要用户指定相应的IDL文件，然后根据用户在IDL文件中定义的数据类型来生成DDS工程需要的C++/C源代码以及相关IDE的工程文件。<br />
+为方便使用，zrddsgen提供模板文件template，此文件夹应与zrddsgen放置在同一目录下，默认若模板存在，将优先使用模板生成样例。用户可通过更改template文件夹下对应的函数模板生成指定样例。目录结构与文件含义如下：</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>目录</th>
+<th>文件</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Standard</td>
+<td>-</td>
+<td>标准模板目录</td>
+</tr>
+<tr class="even">
+<td>^</td>
+<td>c</td>
+<td>c语言模板</td>
+</tr>
+<tr class="odd">
+<td>^</td>
+<td>c++</td>
+<td>c++模板</td>
+</tr>
+<tr class="even">
+<td>^</td>
+<td>java</td>
+<td>java模板</td>
+</tr>
+<tr class="odd">
+<td>Extension</td>
+<td>-</td>
+<td>扩展接口模板目录（目录结构与Standard相同）</td>
+</tr>
+<tr class="even">
+<td>Simplify</td>
+<td>-</td>
+<td>简化接口模板目录（目录结构与Standard相同）</td>
+</tr>
+<tr class="odd">
+<td>Makefile</td>
+<td>-</td>
+<td>Linux样例的默认Makefile文件</td>
+</tr>
+<tr class="even">
+<td>template.mak</td>
+<td>-</td>
+<td>Linux样例的默认.mak文件</td>
+</tr>
+<tr class="odd">
+<td>ZRDDS_QOS_PROFILES.xml</td>
+<td>-</td>
+<td>扩展接口与简化接口的配置文件（可自行更改）</td>
+</tr>
+</tbody>
+</table>
+<p>模板中特殊字符一般以”$
+$“进行包裹，其含义如下：（Makefile与template.mak不建议更改，此处不具体介绍其中特殊字符）</p>
+<table>
+<thead>
+<tr class="header">
+<th>字符名</th>
+<th>说明</th>
+<th>位置</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span
+class="math inline"><em>f</em><em>i</em><em>l</em><em>e</em><em>N</em><em>a</em><em>m</em><em>e</em></span></td>
+<td>idl名称</td>
+<td>pub与sub模板文件</td>
+</tr>
+<tr class="even">
+<td><span
+class="math inline"><em>e</em><em>x</em><em>a</em><em>m</em><em>p</em><em>l</em><em>e</em><em>N</em><em>a</em><em>m</em><em>e</em></span></td>
+<td>最终结构体名称</td>
+<td>pub与sub模板文件</td>
+</tr>
+</tbody>
+</table>
+<p>若template文件夹丢失或想要恢复默认模板，则可删除文件，重建目录templatec++,java同理），使用zrddsgen编译器重新生成任意idl，模板文件则会重写。<br />
+若不采用模板文件，采用zrddsgen默认方式生成模板样例，请将template删除或移至其他路径。</p>
+<h2 id="用法">用法</h2>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">zrddsgen</span> <span class="at">-input_idl</span> <span class="op">&lt;</span> path <span class="op">&gt;</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-output_dir</span> <span class="op">&lt;</span> directory <span class="op">&gt;</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-language</span> <span class="op">&lt;</span> language <span class="op">&gt;</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>         <span class="ex">[-example</span> <span class="op">&lt;</span> example_type <span class="op">&gt;</span>]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>         <span class="ex">[-project</span> <span class="op">&lt;</span> project <span class="op">&gt;</span>]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>         <span class="ex">[-java_package</span> <span class="op">&lt;</span>package_name<span class="op">&gt;</span>]</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>         <span class="ex">[-type_name_style</span> <span class="op">&lt;</span>type_name_style<span class="op">&gt;</span>]</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>         <span class="ex">[-string_bound</span> <span class="op">&lt;</span> bound <span class="op">&gt;</span>]</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>         <span class="ex">[-sequence_bound</span> <span class="op">&lt;</span> bound <span class="op">&gt;</span>]</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>         <span class="ex">[-enable_unbounded]</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>         <span class="ex">[-help]</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-input_idl</span> <span class="kw">|</span><span class="ex">-i</span>         指定输入的IDL文件的路径，支持相对路径，文件扩展名必须为.idl。此参数无默认值，必须给定。</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-output_dir</span><span class="kw">|</span><span class="ex">-d</span>         指定生成文件的输出目录,必须给定。</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-language</span>  <span class="kw">|</span><span class="ex">-l</span>         指定使用的语言类型，目前支持C,C++,C#和java，此参数无默认值，必须给定。</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-example</span>   <span class="kw">|</span><span class="ex">-e</span>         指定输出的模板类型，目前支持normal，xml-ex，xml-sim。此参数默认不使用</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>                                <span class="ex">normal：标准接口模板</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>                                <span class="ex">xml-ex：Qos配置扩展接口模板</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>                                <span class="ex">xml-sim：Qos配置简化接口模板</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-project</span>   <span class="kw">|</span><span class="ex">-p</span>         为生成的代码产生相应的工程配置文件，目前支持</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>                                <span class="ex">Win32VS2008、Win32VS2010、Win32VS2012、Win32VS2013、</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>                                <span class="ex">Win32VS2015、Win32VS2012XP、Win32VS2013XP、Win32VS2015XP、Win64VS2010、</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>                                <span class="ex">Win64VS2012、Win64VS2013、Win64VS2015、LinuxEclipse、LinuxMakefile。</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>                                <span class="ex">此参数默认不使用。</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>                                <span class="ex">Win32VS2008：生成Win32下的VS2008的解决方案及项目文件。</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>                                <span class="ex">Win32VS2010：生成Win32下的VS2010的解决方案及项目文件。</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>                                <span class="ex">Win32VS2012：生成Win32下的VS2010的解决方案及项目文件。</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>                                <span class="ex">Win32VS2013：生成Win32下的VS2013的解决方案及项目文件。</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>                                <span class="ex">Win32VS2015：生成Win32下的VS2015的解决方案及项目文件。</span></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>                                <span class="ex">Win32VS2012XP：生成Winxp下的VS2012的解决方案及项目文件。</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>                                <span class="ex">Win32VS2013XP：生成Winxp下的VS2013的解决方案及项目文件。</span></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>                                <span class="ex">Win32VS2015XP：生成Winxp下的VS2015的解决方案及项目文件。</span></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>                                <span class="ex">Win64VS2010：生成Win64下的VS2010的解决方案及项目文件。</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>                                <span class="ex">Win64VS2012：生成Win64下的VS2012的解决方案及项目文件。</span></span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>                                <span class="ex">Win64VS2013：生成Win64下的VS2013的解决方案及项目文件。</span></span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>                                <span class="ex">Win64VS2015：生成Win64下的VS2015的解决方案及项目文件。</span></span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>                                <span class="ex">LinuxMakefile：生成Linux下的带有Makefile的项目文件。</span></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>                               <span class="ex">（编译命令如下：make</span> <span class="at">-f</span> pubMakefile 编译pubMakefile 默认为Debug版本</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>                                             <span class="fu">make</span> <span class="at">-f</span> subMakefile 编译subMakefile 默认为Debug版本</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>                                             <span class="fu">make</span> <span class="at">-f</span> pubMakefile CONFIG=DEBUG   编译Debug版本</span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>                                             <span class="fu">make</span> <span class="at">-f</span> pubMakefile CONFIG=RELEASE 编译Release版本<span class="er">)</span></span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-java_package</span>          指定包名，仅在java语言中有效。此参数默认不启用</span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-type_name_style</span>       指定类型名风格。可选项包括dds_standard和zr_style。</span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>                                <span class="ex">分别表示内置类型名使用DDS标准风格或者臻融定义风格，默认使用DDS标准风格</span></span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-string_bound</span>          为string指定的默认bound。默认为255。</span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-sequence_bound</span>        为sequence指定的默认bound。默认为255。</span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-enable_unbounded</span><span class="kw">|</span><span class="ex">-u</span>   启用sequence和string的unbounded。</span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>         <span class="ex">-help</span><span class="kw">|</span><span class="ex">-h</span>               打印帮助文档。</span></code></pre></div>
+<h2 id="idl语言语法">IDL语言语法</h2>
+<p>在使用zrddsgen前，你需要编写相应的IDL文件来描述你的数据类型。比如：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> myDataType</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">long</span> value<span class="op">;</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="op">};</span></span></code></pre></div>
+<p>IDL的主要用途在于定义数据类型，它的语法和C语言中定义struct的语法基本一致，都是通过struct等关键字来定义数据类型名字，大括号中可以定义数据类型有哪些成员以及成员是否为关键字，大括号末尾以分号作为定义的结束。</p>
+<h3 id="基础数据类型">基础数据类型</h3>
+<p>基础数据类型可以直接作为struct成员的数据类型，目前支持的基础数据类型列表如下：</p>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: center;">类型</th>
+<th style="text-align: center;">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;">octet</td>
+<td style="text-align: center;">1字节无符号整型</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">char</td>
+<td style="text-align: center;">1字节整型</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">boolean</td>
+<td style="text-align: center;">true/false</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">short</td>
+<td style="text-align: center;">2字节整型</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">unsigned short</td>
+<td style="text-align: center;">2字节无符号整型</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">long</td>
+<td style="text-align: center;">4字节整型</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">unsigned long</td>
+<td style="text-align: center;">4字节无符号整型</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">float</td>
+<td style="text-align: center;">4字节单精度浮点型</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">long long</td>
+<td style="text-align: center;">8字节长整型</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">unsigned long long</td>
+<td style="text-align: center;">8字节无符号长整型</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">double</td>
+<td style="text-align: center;">8字节双精度浮点型</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">enum</td>
+<td style="text-align: center;">4字节枚举类型</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">string</td>
+<td style="text-align: center;">字符串类型</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">struct</td>
+<td style="text-align: center;">复杂结构体类型，支持继承</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">union</td>
+<td style="text-align: center;">复杂联合类型</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">数组</td>
+<td style="text-align: center;">以上类型的定长数组类型</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">sequence</td>
+<td style="text-align: center;">以上类型（除数组）的变长数组类型</td>
+</tr>
+</tbody>
+</table>
+<h3 id="string-sequence">String &amp; Sequence</h3>
+<p>除了基础数据类型外，IDL中还有string以及sequence两个类型，它们的用法如下：</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> SequenceAndString </span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    string defaultBoundStr<span class="op">;</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    string<span class="op">&lt;</span><span class="dv">100</span><span class="op">&gt;</span> bound100Str<span class="op">;</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    sequence<span class="op">&lt;</span><span class="dt">long</span><span class="op">&gt;</span> defaultLongSequence<span class="op">;</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    sequence<span class="op">&lt;</span><span class="dt">short</span><span class="op">,</span> <span class="dv">100</span><span class="op">&gt;</span> bound100ShortSequence<span class="op">;</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="op">};</span></span></code></pre></div>
+<p>如例子中所示，sequence和string都有一个大小的上界，你可以在IDL中自行指定上界，如果不指定的话则会使用默认值，默认值可以使用zrddsgen提供的参数（-string_bound和-sequence_bound）来进行设置。
+Sequence是对类型数组的一个简单封装，提供了一些基本的操作方法，具体可见OMG对于Sequence的介绍。</p>
+<h3 id="struct嵌套">struct嵌套</h3>
+<p>IDL支持将先前使用struct定义的一个类型作为另一个struct的成员的数据类型，如下：</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> A</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">long</span> value<span class="op">;</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="op">};</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> B</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    A a<span class="op">;</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="op">};</span></span></code></pre></div>
+<h3 id="union">union</h3>
+<p>IDL支持定义复杂联合类型union，用法如下:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">union</span> A <span class="cf">switch</span><span class="op">(</span><span class="dt">long</span><span class="op">)</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> <span class="dv">1</span><span class="op">:</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> <span class="dv">2</span><span class="op">:</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>        <span class="dt">long</span> value<span class="op">;</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> <span class="dv">3</span><span class="op">:</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>        string<span class="op">&lt;</span><span class="dv">100</span><span class="op">&gt;</span> bound100Str<span class="op">;</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>union类型同样支持嵌套使用，用法同struct</p>
+<h3 id="enmu">enmu</h3>
+<p>IDL中的enmu定义方式如下：</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">enum</span> TestEnum</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    DOMAIN_TEST<span class="op">,</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    INNER_PROCESS_OTO_TEST<span class="op">,</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    INTER_PROCESS_OTO_TEST<span class="op">,</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    INTER_NODE_OTO_TEST<span class="op">,</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    INNER_PROCESS_OTM_TEST<span class="op">,</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    INTER_PROCESS_OTM_TEST<span class="op">,</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    INTER_NODE_OTM_TEST<span class="op">,</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    INNER_PROCESS_MTM_TEST<span class="op">,</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    INTER_PROCESS_MTM_TEST<span class="op">,</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    INTER_NODE_MTM_TEST<span class="op">,</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    UNKNOWM_TEST</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="op">};</span></span></code></pre></div>
+<h3 id="typedef">typedef</h3>
+<p>IDL中的typedef的语法与C++中的基本相同，一般用于简化一个复杂的类型名，如sequence或者一个类型数组，如下：</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">typedef</span> sequence<span class="op">&lt;</span><span class="dt">long</span><span class="op">,</span> <span class="dv">100</span><span class="op">&gt;</span> SeqLong100<span class="op">;</span> <span class="co">// 简化sequence</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">typedef</span> <span class="dt">long</span> LongArr<span class="op">[</span><span class="dv">10</span><span class="op">];</span> <span class="co">// 定义一个类型数组</span></span></code></pre></div>
+<p>Java语言不支持对基础数据类型进行typedef且若idl文件中typedef类型处于最外层，则需将其置于包内（可通过在外层添加module或编译时指定java_package实现。<br />
+Java语言不支持typedef数组类型。</p>
+<h3 id="数组">数组</h3>
+<p>IDL支持定义成员变量时给定相关的数组维度，如下：</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> myDataType</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">long</span> valueArr<span class="op">[</span><span class="dv">100</span><span class="op">];</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    sequence<span class="op">&lt;</span><span class="dt">long</span><span class="op">&gt;</span> seqLongArr<span class="op">[</span><span class="dv">10</span><span class="op">];</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="op">};</span></span></code></pre></div>
+<p>数组可以是任何先前提及的类型。</p>
+<h3 id="注释及特殊标记">注释及特殊标记</h3>
+<p>IDL中使用<code>//</code>作为单行注释，比如上文提及的typedef中示例。
+为了在IDL中增加ZRDDS所使用的一些概念，我们在IDL中增加了一些扩展标记。
+目前支持的扩展标记列表如下：</p>
+<p>以下扩展标记使用于struct、union（标记于struct或union之前，使用时不需要添加//,
+前三种为DDS数据类型可扩展性需求）</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">扩展标记</th>
+<th style="text-align: left;">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><span class="citation"
+data-cites="Extensibility">@Extensibility</span>(EXTENSIBLE_EXTENSIBILITY)</td>
+<td
+style="text-align: left;">默认类型，该类型表示该类型可进行尾部扩展（裁剪），即新的数据结构可在老的数据结构最后添加成员或者删除成员，序列化与反序列化的方式为按照成员的顺序依次将成员的值进行CDR编码/解码:
+<br>若报文内容比所需的成员内容长时，多余的内容将被忽略，且不报错；<br>若报文内容不足以反序列化所有成员时，未反序列化到的成员将设置为初始值</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><span class="citation"
+data-cites="Extensibility">@Extensibility</span>(MUTABLE_EXTENSIBILITY)</td>
+<td
+style="text-align: left;">该类型表示该类型可进行任意结构/数量的变化，配置该类型时，需在IDL文件中为每个成员设置唯一的ID标识，序列化采用扩展的CDR方式，将ID与内容一并序列化，在接收端反序列化时先反序列化ID，再根据本地ID所对应成员进行成员的反序列化，这种方式灵活但是序列化/反序列化的过程以及内容将变复杂。<br>ID的值默认从0开始依次递增，复杂结构嵌套时，计算ID的方式为将成员展开累积；<br>使用在成员后面添加
+<code>@ID (1)</code>
+标注来设置ID值，设置ID值后，如后续的成员未设置，则从该ID值开始累积计数</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><span class="citation"
+data-cites="Extensibility">@Extensibility</span>(FINAL_EXTENSIBILITY)</td>
+<td
+style="text-align: left;">该类型表示该类型禁止扩展，通信双方的数据结构必须一致，序列化与反序列化的方式为按照成员的顺序依次将成员的值进行CDR编码/解码，遇到报文不足或者多余的报文时，DDS将报序列化或者反序列化出错的日志；</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><span class="citation"
+data-cites="Nested">@Nested</span></td>
+<td
+style="text-align: left;">指定为中间值，不为此结构生成TypeSupport和相关的数据写者和数据读者，常用于嵌套结构中</td>
+</tr>
+</tbody>
+</table>
+<p>可扩展数据类型的示例参见如下：</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>@Extensibility<span class="op">(</span>EXTENSIBLE_EXTENSIBILITY<span class="op">)</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> ExtensibleOldType</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">long</span> x<span class="op">;</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">long</span> y<span class="op">;</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="op">};</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>@Extensibility<span class="op">(</span>EXTENSIBLE_EXTENSIBILITY<span class="op">)</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> ExtensibleNewType</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    <span class="dt">long</span> x<span class="op">;</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    <span class="dt">long</span> y<span class="op">;</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    <span class="dt">long</span> z<span class="op">;</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>    <span class="dt">float</span> angle<span class="op">;</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="op">};</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>@Extensibility<span class="op">(</span>MUTABLE_EXTENSIBILITY<span class="op">)</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> MutableOldType</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>    <span class="dt">long</span> x<span class="op">;</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>    <span class="dt">long</span> y<span class="op">;</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a><span class="op">};</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>@Extensibility<span class="op">(</span>MUTABLE_EXTENSIBILITY<span class="op">)</span></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> MutableNewType</span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>    <span class="dt">long</span> z<span class="op">;</span> @ID <span class="op">(</span><span class="dv">2</span><span class="op">)</span></span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>    <span class="dt">long</span> x<span class="op">;</span> @ID <span class="op">(</span><span class="dv">0</span><span class="op">)</span></span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>    <span class="dt">float</span> angle<span class="op">;</span> @ID <span class="op">(</span><span class="dv">3</span><span class="op">)</span></span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>    <span class="dt">long</span> y<span class="op">;</span> @ID <span class="op">(</span><span class="dv">1</span><span class="op">)</span></span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a><span class="op">};</span></span></code></pre></div>
+<p>以下扩展标记使用于结构成员（标记于成员之后，使用时需要添加//）</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">扩展标记</th>
+<th style="text-align: left;">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><span class="citation"
+data-cites="key">@key</span></td>
+<td style="text-align: left;">指定关键字(也可以使用@Key，不需要//)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><span class="citation"
+data-cites="shared">@shared</span></td>
+<td style="text-align: left;">指定为指针数据类型</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><span class="citation"
+data-cites="spare">@spare</span></td>
+<td
+style="text-align: left;">指定为稀疏数据类型，在传输中，若此类型传输值与上次相同，则不进行重复传输，序列化时会比较数据成员值，只能在Extensibility(MUTABLE_EXTENSIBILITY)时使用，并且ZRDDS中需要开放此功能</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><span class="citation"
+data-cites="ID">@ID</span></td>
+<td
+style="text-align: left;">指定成员序号，通常与@Extensibility(MUTABLE_EXTENSIBILITY)合用</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><span class="citation"
+data-cites="bitwidth">@bitwidth</span></td>
+<td
+style="text-align: left;">指定成员位域，使用方式为@bitwidth(x),x为位域数据长度</td>
+</tr>
+</tbody>
+</table>
+<p>示例</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode c"><code class="sourceCode c"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>@Extensibility<span class="op">(</span>MUTABLE_EXTENSIBILITY<span class="op">)</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> A</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">long</span> thisIsKey<span class="op">;</span> <span class="co">//@key</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">long</span> thisIsNotKey<span class="op">;</span> <span class="co">// @ID(3)</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    sequence<span class="op">&lt;</span><span class="dt">char</span><span class="op">&gt;</span> charSeq<span class="op">;</span><span class="co">//@shared</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="op">};</span></span></code></pre></div>
+<p>注意事项：</p>
+<ol type="1">
+<li>稀疏数据功能只能在用户指定输出的编程语言为C++时使用。<br />
+</li>
+<li>稀疏数据类型只有在Extensibility为MUTABLE_EXTENSIBILITY才能生效<br />
+</li>
+<li>稀疏数据类型需要与 MUTABLE_EXTENSIBILITY类型结合使用</li>
+<li>位域功能只能在用户指定输出的编程语言为C或C++时使用。<br />
+</li>
+<li>位域功能只支持char、octet、long、unsigned
+long类型的数据使用，当其它数据类型使用位域功能时，将编译失败并打
+印“InvalidMemberTypeError”。<br />
+</li>
+<li>位域数据需要定义在所有其他数据类型之前（因为idl中声明的顺序与生成的C++/C语言中的成员顺序一致，从位域的使用目的来看，希望用户把位域声明在前面）。<br />
+</li>
+<li>位域类型的长度不能超过原始数据的最大长度，char和octet不能大于8，unsigned
+long
+和long不能超过32，否则将编译失败并打印“InvalidBitWidthError”。<br />
+</li>
+<li>位域类型不支持数组和sequence类型，否则编译失败并打印Unsupported
+bitWidth type。<br />
+</li>
+<li>位域不能声明为key，否则报错“InvalidKeyMemberTypeError”。</li>
+</ol>
+</body>
+</html>

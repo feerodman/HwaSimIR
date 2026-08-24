@@ -18,6 +18,8 @@
 #include "frameBufferProperties.h"
 #include "internalName.h"
 #include "perspectiveLens.h"
+#include "cullFaceAttrib.h"
+#include "pta_uchar.h"
 #include <chrono>
 #include <algorithm>
 #include <array>
@@ -98,7 +100,8 @@ GraphicsOutput* MakeStage6OffscreenOutput(
 	int width,
 	int height,
 	GraphicsStateGuardian* sharedGsg,
-	GraphicsOutput* host)
+	GraphicsOutput* host,
+	bool bindAllPlanes)
 {
 	if (framework == nullptr)
 	{
@@ -126,15 +129,18 @@ GraphicsOutput* MakeStage6OffscreenOutput(
 	props.set_title(name);
 	props.set_open(true);
 
+	const int outputFlags = GraphicsPipe::BF_refuse_window |
+		(bindAllPlanes
+			? GraphicsPipe::BF_can_bind_every
+			: (GraphicsPipe::BF_fb_props_optional | GraphicsPipe::BF_can_bind_color));
+
 	return engine->make_output(
 		pipe,
 		name,
 		sort,
 		fbProps,
 		props,
-		GraphicsPipe::BF_refuse_window |
-		GraphicsPipe::BF_fb_props_optional |
-		GraphicsPipe::BF_can_bind_color,
+		outputFlags,
 		sharedGsg,
 		host);
 }
@@ -381,6 +387,62 @@ PT(PandaNode) CreateStage7CloudWorldGridNode(double requestedWorldSizeM, double 
 	geom->add_primitive(triangles);
 	std::ostringstream nodeName;
 	nodeName << "Stage7_CloudWorldSlice_" << sliceIndex;
+	PT(GeomNode) node = new GeomNode(nodeName.str());
+	node->add_geom(geom);
+	return node;
+}
+
+PT(PandaNode) CreateStage7CloudVolumeProxyNode(int poolIndex)
+{
+	const int slices = 18;
+	const int stacks = 10;
+	const double pi = 3.14159265358979323846;
+	std::ostringstream dataName;
+	dataName << "Stage7CloudVolumeData_" << poolIndex;
+	PT(GeomVertexData) data = new GeomVertexData(
+		dataName.str(),
+		GeomVertexFormat::get_v3n3t2(),
+		Geom::UH_static);
+	GeomVertexWriter vertex(data, "vertex");
+	GeomVertexWriter normal(data, "normal");
+	GeomVertexWriter texcoord(data, "texcoord");
+	for (int stack = 0; stack <= stacks; ++stack)
+	{
+		const double latitude = -0.5 * pi + pi * static_cast<double>(stack) / static_cast<double>(stacks);
+		const double ring = std::cos(latitude);
+		const double z = std::sin(latitude);
+		for (int slice = 0; slice <= slices; ++slice)
+		{
+			const double longitude = 2.0 * pi * static_cast<double>(slice) / static_cast<double>(slices);
+			const float x = static_cast<float>(ring * std::cos(longitude));
+			const float y = static_cast<float>(ring * std::sin(longitude));
+			const float zz = static_cast<float>(z);
+			vertex.add_data3f(x, y, zz);
+			normal.add_data3f(x, y, zz);
+			texcoord.add_data2f(
+				static_cast<float>(slice) / static_cast<float>(slices),
+				static_cast<float>(stack) / static_cast<float>(stacks));
+		}
+	}
+	PT(GeomTriangles) triangles = new GeomTriangles(Geom::UH_static);
+	const int rowSize = slices + 1;
+	for (int stack = 0; stack < stacks; ++stack)
+	{
+		for (int slice = 0; slice < slices; ++slice)
+		{
+			const int a = stack * rowSize + slice;
+			const int b = a + 1;
+			const int c = (stack + 1) * rowSize + slice;
+			const int d = c + 1;
+			triangles->add_vertices(a, b, c);
+			triangles->add_vertices(b, d, c);
+		}
+	}
+	triangles->close_primitive();
+	PT(Geom) geom = new Geom(data);
+	geom->add_primitive(triangles);
+	std::ostringstream nodeName;
+	nodeName << "Stage7_CloudVolume_" << poolIndex;
 	PT(GeomNode) node = new GeomNode(nodeName.str());
 	node->add_geom(geom);
 	return node;
@@ -694,7 +756,11 @@ HwaSimIR::CloudRenderMode ParseStage7CloudRenderMode(const std::string& value)
 	}
 	if (lower == "volumetric3d" || lower == "volumetric_3d" || lower == "3d")
 	{
-		return HwaSimIR::CloudRenderMode::Volumetric3D;
+		return HwaSimIR::CloudRenderMode::StreamedWorld3D;
+	}
+	if (lower == "streamedworld3d" || lower == "streamed_world_3d" || lower == "streamed3d")
+	{
+		return HwaSimIR::CloudRenderMode::StreamedWorld3D;
 	}
 	return HwaSimIR::CloudRenderMode::Layered2_5D;
 }
@@ -704,6 +770,7 @@ const char* Stage7CloudRenderModeName(HwaSimIR::CloudRenderMode mode)
 	switch (mode)
 	{
 	case HwaSimIR::CloudRenderMode::World2D: return "World2D";
+	case HwaSimIR::CloudRenderMode::StreamedWorld3D: return "StreamedWorld3D";
 	case HwaSimIR::CloudRenderMode::Volumetric3D: return "Volumetric3D";
 	case HwaSimIR::CloudRenderMode::Layered2_5D:
 	default: return "Layered2_5D";
@@ -2428,10 +2495,14 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 	const bool headlessMode = IsHeadlessOffscreenMode();
 	std::string finalPostprocessReason;
 	const bool finalPostprocessNoop = IsStage6FinalPostprocessNoop(&finalPostprocessReason);
+	const bool volumetricCompositeRequired = m_stage7VolumeCloudEnabled &&
+		(m_stage7CloudRenderMode == CloudRenderMode::StreamedWorld3D ||
+		 m_stage7CloudRenderMode == CloudRenderMode::Volumetric3D);
 	const bool directFinal =
 		headlessMode &&
 		m_headlessFastDirectFinal &&
-		finalPostprocessNoop;
+		finalPostprocessNoop &&
+		!volumetricCompositeRequired;
 	const std::string plannedRenderPath = directFinal ? "direct_final" : "dual_pass";
 
 	if (headlessMode && m_cameraNode.is_empty())
@@ -2551,6 +2622,7 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 		{
 			ApplyStage6FinalPostprocessInputs();
 		}
+		SetupStage7VolumetricComposite(reason);
 		LogStage6FinalPipeline(reason);
 		SetupAnnotationOverlayRegion(reason);
 		return;
@@ -2576,6 +2648,8 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 		m_stage6FinalCard = NodePath();
 	}
 	m_stage6RawSceneTex = nullptr;
+	m_stage7SceneDepthTex = nullptr;
+	m_stage7VolumeRegion = nullptr;
 
 	if (m_renderTex != nullptr)
 	{
@@ -2584,14 +2658,15 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 
 	if (directFinal)
 	{
-		m_stage6FinalSensorBuffer = MakeStage6OffscreenOutput(
+			m_stage6FinalSensorBuffer = MakeStage6OffscreenOutput(
 			m_pFramework,
 			"Stage6FinalSensorBuffer",
 			100,
 			safeWidth,
 			safeHeight,
 			nullptr,
-			nullptr);
+			nullptr,
+			false);
 		if (m_stage6FinalSensorBuffer == nullptr)
 		{
 			m_stage6FinalPipelineReady = false;
@@ -2631,6 +2706,7 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 		m_stage6FinalWidth = safeWidth;
 		m_stage6FinalHeight = safeHeight;
 		m_stage6FinalPipelineReady = true;
+		SetupStage7VolumetricComposite(reason);
 		LogStage6FinalPipeline(reason);
 		SetupAnnotationOverlayRegion(reason);
 		return;
@@ -2638,6 +2714,22 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 
 	m_stage6RawSceneTex = new Texture("Stage6RawSceneTex");
 	m_stage6RawSceneTex->setup_2d_texture(safeWidth, safeHeight, Texture::T_unsigned_byte, Texture::F_rgb);
+	// eglGraphicsPipe on the RK3588 g6p0 X11 stack cannot create an
+	// all-bitplane texture buffer without an existing host/GSG.  Create the
+	// ordinary final color buffer first and use it as the host only for the
+	// volumetric path; the established Layered2_5D path keeps its old order.
+	if (IsHeadlessOffscreenMode() && volumetricCompositeRequired)
+	{
+		m_stage6FinalSensorBuffer = MakeStage6OffscreenOutput(
+			m_pFramework,
+			"Stage6FinalSensorBuffer",
+			100,
+			safeWidth,
+			safeHeight,
+			nullptr,
+			nullptr,
+			false);
+	}
 	if (IsVisibleWindowMode())
 	{
 		m_stage6RawSceneBuffer = m_pGraphicsWindow->make_texture_buffer("Stage6RawSceneBuffer", safeWidth, safeHeight, m_stage6RawSceneTex, false);
@@ -2651,8 +2743,9 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 			-10,
 			safeWidth,
 			safeHeight,
-			nullptr,
-			nullptr);
+			m_stage6FinalSensorBuffer != nullptr ? m_stage6FinalSensorBuffer->get_gsg() : nullptr,
+			m_stage6FinalSensorBuffer,
+			volumetricCompositeRequired);
 		if (m_stage6RawSceneBuffer != nullptr)
 		{
 			m_stage6RawSceneBuffer->add_render_texture(m_stage6RawSceneTex, GraphicsOutput::RTM_copy_texture);
@@ -2702,14 +2795,18 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 
 	if (IsHeadlessOffscreenMode())
 	{
-		m_stage6FinalSensorBuffer = MakeStage6OffscreenOutput(
-			m_pFramework,
-			"Stage6FinalSensorBuffer",
-			100,
-			safeWidth,
-			safeHeight,
-			m_stage6RawSceneBuffer != nullptr ? m_stage6RawSceneBuffer->get_gsg() : nullptr,
-			m_stage6RawSceneBuffer);
+		if (m_stage6FinalSensorBuffer == nullptr)
+		{
+			m_stage6FinalSensorBuffer = MakeStage6OffscreenOutput(
+				m_pFramework,
+				"Stage6FinalSensorBuffer",
+				100,
+				safeWidth,
+				safeHeight,
+				m_stage6RawSceneBuffer != nullptr ? m_stage6RawSceneBuffer->get_gsg() : nullptr,
+				m_stage6RawSceneBuffer,
+				false);
+		}
 		if (m_stage6FinalSensorBuffer == nullptr)
 		{
 			m_stage6FinalPipelineReady = false;
@@ -2763,6 +2860,7 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 	m_stage6FinalHeight = safeHeight;
 	m_stage6FinalPipelineReady = true;
 	ApplyStage6FinalPostprocessInputs();
+	SetupStage7VolumetricComposite(reason);
 	LogStage6FinalPipeline(reason);
 	SetupAnnotationOverlayRegion(reason);
 }
@@ -3826,6 +3924,19 @@ void HwaSimIR::InitStage7WeatherScene()
 	}
 	m_cloudNodes.clear();
 	m_stage7PrecipitationNodes.clear();
+	for (size_t i = 0; i < m_stage7CloudVolumePool.size(); ++i)
+	{
+		if (!m_stage7CloudVolumePool[i].node.is_empty())
+		{
+			m_stage7CloudVolumePool[i].node.remove_node();
+		}
+	}
+	m_stage7CloudVolumePool.clear();
+	m_stage7VolumeDensityTextures.clear();
+	m_stage7VolumeShader = nullptr;
+	m_stage7VolumeLastAnimationTime = -1.0;
+	m_stage7VolumeActiveCount = 0;
+	m_stage7VolumeVisibleCount = 0;
 	m_stage7WeatherTextureCacheKey.clear();
 	m_stage7CachedCloudTexturePath.clear();
 	m_stage7CachedRainTexturePath.clear();
@@ -3873,16 +3984,6 @@ void HwaSimIR::InitStage7CloudRenderer()
 	{
 		return;
 	}
-	if (m_stage7CloudRenderMode == CloudRenderMode::Volumetric3D)
-	{
-		std::cout << "[WeatherCloudRenderer][WARN]"
-			<< " requestedMode=Volumetric3D"
-			<< " activeMode=disabled"
-			<< " reason=reserved_for_future_no_raymarch_in_W1"
-			<< std::endl;
-		return;
-	}
-
 	const int sliceCount = m_stage7CloudRenderMode == CloudRenderMode::World2D
 		? 1
 		: std::max(2, std::min(3, m_stage7CloudLayerCount));
@@ -3949,6 +4050,583 @@ void HwaSimIR::InitStage7CloudRenderer()
 		<< " gridOrigin=" << m_stage7CloudGridOriginX << "," << m_stage7CloudGridOriginY
 		<< " depthTest=1 depthWrite=0 worldUv=1 cameraAttached=0"
 		<< std::endl;
+
+	if ((m_stage7CloudRenderMode == CloudRenderMode::StreamedWorld3D ||
+		m_stage7CloudRenderMode == CloudRenderMode::Volumetric3D) &&
+		m_stage7VolumeCloudEnabled)
+	{
+		InitStage7VolumetricCloudRenderer();
+	}
+}
+
+void HwaSimIR::SetupStage7VolumetricComposite(const char* reason)
+{
+	const bool enabled = m_stage7VolumeCloudEnabled &&
+		(m_stage7CloudRenderMode == CloudRenderMode::StreamedWorld3D ||
+		 m_stage7CloudRenderMode == CloudRenderMode::Volumetric3D);
+	if (!enabled || m_stage6RawSceneBuffer == nullptr || m_stage6PresentationOutput == nullptr)
+	{
+		if (m_stage7VolumeRegion != nullptr)
+		{
+			m_stage7VolumeRegion->set_active(false);
+		}
+		return;
+	}
+	if (m_stage7SceneDepthTex == nullptr)
+	{
+		m_stage7SceneDepthTex = new Texture("Stage7OpaqueSceneDepthTex");
+		// Leave storage and the concrete depth format to Panda/GSG.  Manually
+		// preallocating an unsigned depth texture is accepted by desktop GL but
+		// causes the RK3588 g6p0 GLES driver to report GL_INVALID_ENUM followed
+		// by a copy failure.  This is Panda's documented depth RTT path.
+		m_stage6RawSceneBuffer->add_render_texture(
+			m_stage7SceneDepthTex,
+			GraphicsOutput::RTM_bind_or_copy,
+			GraphicsOutput::RTP_depth);
+	}
+	if (m_stage7VolumeRoot.is_empty() && !m_renderRoot.is_empty())
+	{
+		m_stage7VolumeRoot = m_renderRoot.attach_new_node("Stage7VolumeRoot");
+	}
+	const BitMask32 volumeMask = BitMask32::bit(29);
+	if (!m_stage7VolumeRoot.is_empty())
+	{
+		m_stage7VolumeRoot.hide(~volumeMask);
+		m_stage7VolumeRoot.show(volumeMask);
+	}
+	if (m_stage6RawSceneRegion != nullptr)
+	{
+		NodePath rawCameraPath = m_stage6RawSceneRegion->get_camera();
+		if (!rawCameraPath.is_empty() && !rawCameraPath.node()->is_of_type(Camera::get_class_type()))
+		{
+			rawCameraPath = rawCameraPath.find("**/+Camera");
+		}
+		if (!rawCameraPath.is_empty() && rawCameraPath.node()->is_of_type(Camera::get_class_type()))
+		{
+			DCAST(Camera, rawCameraPath.node())->set_camera_mask(~volumeMask);
+		}
+	}
+	if (m_stage7VolumeCameraNode.is_empty() && !m_renderRoot.is_empty())
+	{
+		PT(Camera) volumeCamera = new Camera("Stage7VolumeCamera");
+		volumeCamera->set_lens(m_cameraLens);
+		volumeCamera->set_scene(m_stage7VolumeRoot);
+		volumeCamera->set_camera_mask(volumeMask);
+		m_stage7VolumeCameraNode = m_renderRoot.attach_new_node(volumeCamera);
+	}
+	else if (!m_stage7VolumeCameraNode.is_empty() && m_stage7VolumeCameraNode.node()->is_of_type(Camera::get_class_type()))
+	{
+		DCAST(Camera, m_stage7VolumeCameraNode.node())->set_lens(m_cameraLens);
+	}
+	if (!m_stage7VolumeCameraNode.is_empty() && !m_cameraNode.is_empty())
+	{
+		m_stage7VolumeCameraNode.set_transform(m_renderRoot, m_cameraNode.get_transform(m_renderRoot));
+	}
+	if (m_stage7VolumeRegion == nullptr)
+	{
+		m_stage7VolumeRegion = m_stage6PresentationOutput->make_display_region(0.0f, 1.0f, 0.0f, 1.0f);
+	}
+	m_stage7VolumeRegion->set_camera(m_stage7VolumeCameraNode);
+	m_stage7VolumeRegion->set_sort(150);
+	m_stage7VolumeRegion->set_clear_color_active(false);
+	m_stage7VolumeRegion->set_clear_depth_active(true);
+	// An empty extra display region still costs a measurable amount on Mali.
+	// Activate it only while at least one pooled proxy is actually visible.
+	m_stage7VolumeRegion->set_active(m_stage7VolumeVisibleCount > 0);
+	for (size_t i = 0; i < m_stage7CloudVolumePool.size(); ++i)
+	{
+		if (!m_stage7CloudVolumePool[i].node.is_empty())
+		{
+			m_stage7CloudVolumePool[i].node.set_shader_input("u_scene_depth_texture", m_stage7SceneDepthTex);
+			m_stage7CloudVolumePool[i].node.set_shader_input("u_use_scene_depth", LVecBase2i(1, 0));
+		}
+	}
+	std::cout << "[World3DCloudDepthComposite]"
+		<< " enabled=1 opaqueDepthTexture=Stage7OpaqueSceneDepthTex"
+		<< " gpuDepthRead=1 cpuDepthReadback=0"
+		<< " rawSceneExcludesVolume=1 sort=150"
+		<< " reason=" << (reason != nullptr ? reason : "unknown")
+		<< std::endl;
+}
+
+void HwaSimIR::InitStage7VolumetricCloudShader()
+{
+	if (m_stage7VolumeShader)
+	{
+		return;
+	}
+#if defined(_WIN32)
+	const std::string version = "#version 130\n";
+#else
+	const std::string version = "#version 300 es\nprecision highp float;\nprecision highp sampler3D;\n";
+#endif
+	const std::string vertexShader = version + R"(
+uniform mat4 p3d_ModelViewProjectionMatrix;
+in vec4 p3d_Vertex;
+out vec3 v_local_pos;
+void main() {
+    v_local_pos = p3d_Vertex.xyz;
+    gl_Position = p3d_ModelViewProjectionMatrix * p3d_Vertex;
+}
+)";
+	const std::string fragmentShader = version + R"(
+uniform sampler3D u_density_texture;
+uniform sampler2D u_scene_depth_texture;
+uniform mat4 p3d_ModelViewProjectionMatrix;
+uniform vec3 u_camera_local;
+uniform vec3 u_noise_offset;
+uniform float u_density_scale;
+uniform float u_optical_depth;
+uniform float u_cloud_gray;
+uniform float u_spawn_fade;
+uniform int u_ray_steps;
+uniform int u_camera_inside;
+uniform int u_use_scene_depth;
+in vec3 v_local_pos;
+out vec4 fragColor;
+
+void main() {
+    if (u_camera_inside == 0 && !gl_FrontFacing) discard;
+    if (u_camera_inside == 1 && gl_FrontFacing) discard;
+    vec3 rayOrigin = u_camera_local;
+    vec3 rayDirection = normalize(v_local_pos - rayOrigin);
+    float b = dot(rayOrigin, rayDirection);
+    float c = dot(rayOrigin, rayOrigin) - 1.0;
+    float discriminant = b * b - c;
+    if (discriminant <= 0.0) discard;
+    float rootD = sqrt(discriminant);
+    float entryT = max(0.0, -b - rootD);
+    float exitT = -b + rootD;
+    if (exitT <= entryT) discard;
+
+    int stepCount = clamp(u_ray_steps, 2, 16);
+    float stepLength = (exitT - entryT) / float(stepCount);
+    vec3 samplePoint = rayOrigin + rayDirection * (entryT + 0.5 * stepLength);
+    float transmittance = 1.0;
+    for (int i = 0; i < 16; ++i) {
+        if (i >= stepCount || transmittance < 0.03) break;
+        if (u_use_scene_depth == 1) {
+            vec2 screenUv = gl_FragCoord.xy / vec2(textureSize(u_scene_depth_texture, 0));
+            float opaqueDepth = texture(u_scene_depth_texture, screenUv).r;
+            vec4 sampleClip = p3d_ModelViewProjectionMatrix * vec4(samplePoint, 1.0);
+            float sampleDepth = sampleClip.z / max(0.00001, sampleClip.w) * 0.5 + 0.5;
+            if (sampleDepth >= opaqueDepth - 0.00001) break;
+        }
+        float ellipsoidEdge = clamp(1.0 - dot(samplePoint, samplePoint), 0.0, 1.0);
+        vec3 densityUv = fract(samplePoint * 0.5 + 0.5 + u_noise_offset);
+        float shape = texture(u_density_texture, densityUv).r;
+        float density = shape * smoothstep(0.0, 0.30, ellipsoidEdge) * u_density_scale * u_spawn_fade;
+        transmittance *= exp(-max(0.0, u_optical_depth) * density * stepLength);
+        samplePoint += rayDirection * stepLength;
+    }
+    float alpha = clamp(1.0 - transmittance, 0.0, 0.96);
+    if (alpha < 0.002) discard;
+    fragColor = vec4(vec3(clamp(u_cloud_gray, 0.0, 1.0)), alpha);
+}
+)";
+	m_stage7VolumeShader = Shader::make(Shader::SL_GLSL, vertexShader, fragmentShader);
+	if (!m_stage7VolumeShader)
+	{
+		std::cout << "[World3DCloud][ERROR] shader_compile_failed" << std::endl;
+	}
+}
+
+void HwaSimIR::InitStage7VolumetricCloudRenderer()
+{
+	SetupStage7VolumetricComposite("cloud-renderer-init");
+	InitStage7VolumetricCloudShader();
+	if (!m_stage7VolumeShader || m_renderRoot.is_empty())
+	{
+		return;
+	}
+
+	const int size = m_stage7VolumeDensityTextureSize;
+	const int voxelCount = size * size * size;
+	m_stage7VolumeDensityTextures.clear();
+	for (int templateIndex = 0; templateIndex < m_stage7VolumeDensityTemplateCount; ++templateIndex)
+	{
+		std::ostringstream textureName;
+		textureName << "Stage7CloudDensity3D_" << templateIndex;
+		PT(Texture) texture = new Texture(textureName.str());
+		texture->setup_3d_texture(size, size, size, Texture::T_unsigned_byte, Texture::F_red);
+		PTA_uchar voxels = PTA_uchar::empty_array(voxelCount);
+		const double phase = 0.73 + static_cast<double>(templateIndex) * 1.91;
+		for (int z = 0; z < size; ++z)
+		{
+			for (int y = 0; y < size; ++y)
+			{
+				for (int x = 0; x < size; ++x)
+				{
+					const double px = (static_cast<double>(x) + 0.5) / size * 2.0 - 1.0;
+					const double py = (static_cast<double>(y) + 0.5) / size * 2.0 - 1.0;
+					const double pz = (static_cast<double>(z) + 0.5) / size * 2.0 - 1.0;
+					const double low = 0.50 + 0.24 * std::sin(px * 3.1 + phase) * std::cos(py * 2.7 - phase * 0.4)
+						+ 0.16 * std::sin((px + py + pz) * 5.3 + phase * 2.0);
+					const double detail = 0.12 * std::sin(px * 11.0 + py * 7.0 + phase)
+						* std::cos(pz * 9.0 - px * 4.0 + phase * 0.7);
+					const double cavity = 0.18 * std::max(0.0,
+						std::sin(px * 6.0 - phase) * std::sin(py * 5.0 + phase) * std::cos(pz * 4.0));
+					const double radius2 = px * px + py * py + pz * pz;
+					const double edge = std::max(0.0, std::min(1.0, (1.08 - radius2) / 0.38));
+					const double density = std::max(0.0, std::min(1.0, (low + detail - cavity - 0.28) * 1.55 * edge));
+					voxels[(z * size + y) * size + x] = static_cast<unsigned char>(density * 255.0 + 0.5);
+				}
+			}
+		}
+		texture->set_ram_image(voxels);
+		texture->set_wrap_u(SamplerState::WM_repeat);
+		texture->set_wrap_v(SamplerState::WM_repeat);
+		texture->set_wrap_w(SamplerState::WM_repeat);
+		texture->set_minfilter(SamplerState::FT_linear);
+		texture->set_magfilter(SamplerState::FT_linear);
+		m_stage7VolumeDensityTextures.push_back(texture);
+		std::cout << "[World3DCloudDensityLoaded]"
+			<< " template=" << templateIndex
+			<< " size=" << size << "x" << size << "x" << size
+			<< " format=R8 shared=1"
+			<< std::endl;
+	}
+
+	m_stage7CloudVolumePool.clear();
+	m_stage7CloudVolumePool.resize(static_cast<size_t>(m_stage7VolumeConfig.maxActiveVolumes));
+	for (size_t i = 0; i < m_stage7CloudVolumePool.size(); ++i)
+	{
+		Stage7CloudVolumeRuntime& volume = m_stage7CloudVolumePool[i];
+		NodePath volumeParent = m_stage7VolumeRoot.is_empty() ? m_renderRoot : m_stage7VolumeRoot;
+		volume.node = volumeParent.attach_new_node(CreateStage7CloudVolumeProxyNode(static_cast<int>(i)));
+		volume.node.set_shader(m_stage7VolumeShader, 1);
+		volume.node.set_transparency(TransparencyAttrib::M_alpha);
+		volume.node.set_depth_test(true);
+		volume.node.set_depth_write(false);
+		volume.node.set_two_sided(true);
+		volume.node.set_bin("transparent", 40);
+		volume.node.set_shader_input("u_camera_local", LVecBase3f(0.0f, 0.0f, 0.0f));
+		volume.node.set_shader_input("u_noise_offset", LVecBase3f(0.0f, 0.0f, 0.0f));
+		volume.node.set_shader_input("u_density_scale", LVecBase2f(0.0f, 0.0f));
+		volume.node.set_shader_input("u_optical_depth", LVecBase2f(0.0f, 0.0f));
+		volume.node.set_shader_input("u_cloud_gray", LVecBase2f(0.5f, 0.0f));
+		volume.node.set_shader_input("u_spawn_fade", LVecBase2f(0.0f, 0.0f));
+		volume.node.set_shader_input("u_ray_steps", LVecBase2i(m_stage7VolumeRaymarchStepsFar, 0));
+		volume.node.set_shader_input("u_camera_inside", LVecBase2i(0, 0));
+		volume.node.set_shader_input("u_use_scene_depth", LVecBase2i(m_stage7SceneDepthTex != nullptr ? 1 : 0, 0));
+		if (m_stage7SceneDepthTex != nullptr)
+		{
+			volume.node.set_shader_input("u_scene_depth_texture", m_stage7SceneDepthTex);
+		}
+		if (!m_stage7VolumeDensityTextures.empty())
+		{
+			volume.node.set_shader_input("u_density_texture", m_stage7VolumeDensityTextures[0]);
+		}
+		volume.node.hide();
+	}
+	std::cout << "[World3DCloudRenderer]"
+		<< " placement=StreamedWorld"
+		<< " parent=m_renderRoot"
+		<< " streamingCenter=TrackedTarget"
+		<< " poolSize=" << m_stage7CloudVolumePool.size()
+		<< " densityTemplates=" << m_stage7VolumeDensityTextures.size()
+		<< " proxy=ellipsoid raymarch=local_xyz depthTest=1 depthWrite=0"
+		<< std::endl;
+}
+
+bool HwaSimIR::GetStage7StreamingCenter(LPoint3f& center, std::string& targetKey) const
+{
+	for (size_t i = 0; i < m_targetPlatformList.size(); ++i)
+	{
+		const TargetPlatformData& target = m_targetPlatformList[i];
+		if (WeaponTargetKeyMatches(m_realTimeSceneData.weaponState, target) && !target.nodePath.is_empty())
+		{
+			center = target.nodePath.get_pos(m_renderRoot);
+			targetKey = H4TargetRuntimeKey(target);
+			return true;
+		}
+	}
+	return false;
+}
+
+void HwaSimIR::UpdateStage7VolumetricClouds(const IRStage7WeatherState& weatherState, double currentTime, bool stateChanged)
+{
+	(void)currentTime;
+	if (!m_stage7VolumeCloudEnabled || m_stage7CloudVolumePool.empty())
+	{
+		return;
+	}
+	LPoint3f streamingCenter(0.0f, 0.0f, 0.0f);
+	std::string targetKey;
+	const bool centerReady = GetStage7StreamingCenter(streamingCenter, targetKey);
+	const bool weatherAllowsCloud = centerReady && weatherState.cloudEnable &&
+		weatherState.volumeCloudProbability > 0.0;
+	std::vector<IRWorldCloudDescriptor> desired;
+	if (weatherAllowsCloud)
+	{
+		desired = m_stage7VolumeStreaming.queryCandidates(
+			streamingCenter[0], streamingCenter[1], m_stage7GroundReferenceZ,
+			weatherState.weatherName,
+			weatherState.volumeCloudProbability > 0.0 ? weatherState.volumeCloudProbability : m_stage7VolumeFallbackProbability,
+			weatherState.volumeCloudDensityScale,
+			static_cast<int>(m_stage7VolumeDensityTextures.size()));
+		if (desired.size() > static_cast<size_t>(m_stage7VolumeConfig.maxActiveVolumes))
+		{
+			desired.resize(static_cast<size_t>(m_stage7VolumeConfig.maxActiveVolumes));
+		}
+	}
+
+	std::map<std::uint64_t, size_t> activeById;
+	for (size_t i = 0; i < m_stage7CloudVolumePool.size(); ++i)
+	{
+		if (m_stage7CloudVolumePool[i].active)
+		{
+			activeById[m_stage7CloudVolumePool[i].descriptor.cloudId] = i;
+		}
+	}
+	std::unordered_set<std::uint64_t> desiredIds;
+	for (size_t i = 0; i < desired.size(); ++i)
+	{
+		desiredIds.insert(desired[i].cloudId);
+		std::map<std::uint64_t, size_t>::const_iterator active = activeById.find(desired[i].cloudId);
+		if (active != activeById.end())
+		{
+			Stage7CloudVolumeRuntime& volume = m_stage7CloudVolumePool[active->second];
+			volume.descriptor.centerDistanceM = desired[i].centerDistanceM;
+			volume.pendingDeactivate = false;
+			continue;
+		}
+		for (size_t poolIndex = 0; poolIndex < m_stage7CloudVolumePool.size(); ++poolIndex)
+		{
+			Stage7CloudVolumeRuntime& volume = m_stage7CloudVolumePool[poolIndex];
+			if (volume.active)
+			{
+				continue;
+			}
+			volume.active = true;
+			volume.visibleWanted = false;
+			volume.pendingDeactivate = false;
+			volume.fade = 0.0;
+			volume.fadeTarget = 0.0;
+			volume.descriptor = desired[i];
+			volume.node.set_pos(
+				static_cast<float>(desired[i].worldX),
+				static_cast<float>(desired[i].worldY),
+				static_cast<float>(desired[i].worldZ));
+			volume.node.set_scale(
+				static_cast<float>(desired[i].radiusX),
+				static_cast<float>(desired[i].radiusY),
+				static_cast<float>(desired[i].radiusZ));
+			volume.node.set_hpr(static_cast<float>(desired[i].rotationDeg), 0.0f, 0.0f);
+			if (!m_stage7VolumeDensityTextures.empty())
+			{
+				const int textureIndex = std::max(0, std::min(
+					static_cast<int>(m_stage7VolumeDensityTextures.size()) - 1,
+					desired[i].densityTemplate));
+				volume.node.set_shader_input("u_density_texture", m_stage7VolumeDensityTextures[textureIndex]);
+			}
+			volume.node.set_shader_input("u_noise_offset", LVecBase3f(
+				static_cast<float>(desired[i].noiseOffsetX),
+				static_cast<float>(desired[i].noiseOffsetY),
+				static_cast<float>(desired[i].noiseOffsetZ)));
+			std::cout << "[World3DCloudCell]"
+				<< " action=activate"
+				<< " cell=" << desired[i].cellX << "," << desired[i].cellY
+				<< " cloudId=" << IRWorldCloudStreaming::cloudIdText(desired[i].cloudId)
+				<< " seed=" << desired[i].seed
+				<< " position=" << desired[i].worldX << "," << desired[i].worldY << "," << desired[i].worldZ
+				<< " radius=" << desired[i].radiusX << "," << desired[i].radiusY << "," << desired[i].radiusZ
+				<< " density=" << desired[i].density
+				<< " template=" << desired[i].densityTemplate
+				<< " active=1 targetKey=" << targetKey
+				<< std::endl;
+			break;
+		}
+	}
+
+	for (size_t i = 0; i < m_stage7CloudVolumePool.size(); ++i)
+	{
+		Stage7CloudVolumeRuntime& volume = m_stage7CloudVolumePool[i];
+		if (!volume.active || desiredIds.find(volume.descriptor.cloudId) != desiredIds.end())
+		{
+			continue;
+		}
+		const double dx = volume.descriptor.worldX - streamingCenter[0];
+		const double dy = volume.descriptor.worldY - streamingCenter[1];
+		const double distance = centerReady ? std::sqrt(dx * dx + dy * dy) : m_stage7VolumeConfig.deactivationRadiusM + 1.0;
+		if (!weatherAllowsCloud || distance >= m_stage7VolumeConfig.deactivationRadiusM)
+		{
+			volume.pendingDeactivate = true;
+			volume.fadeTarget = 0.0;
+		}
+	}
+
+	const LPoint3f cameraWorld = m_cameraNode.is_empty() ? LPoint3f(0.0f, 0.0f, 0.0f) : m_cameraNode.get_pos(m_renderRoot);
+	std::vector<size_t> visibleOrder;
+	for (size_t i = 0; i < m_stage7CloudVolumePool.size(); ++i)
+	{
+		Stage7CloudVolumeRuntime& volume = m_stage7CloudVolumePool[i];
+		volume.visibleWanted = false;
+		if (!volume.active || volume.pendingDeactivate)
+		{
+			continue;
+		}
+		const LPoint3f cloudWorld(
+			static_cast<float>(volume.descriptor.worldX),
+			static_cast<float>(volume.descriptor.worldY),
+			static_cast<float>(volume.descriptor.worldZ));
+		const LVector3f cameraDelta = cloudWorld - cameraWorld;
+		volume.cameraDistanceM = cameraDelta.length();
+		bool inFrustum = true;
+		if (m_stage7VolumeFrustumCull && m_cameraLens != nullptr && !m_cameraNode.is_empty())
+		{
+			const LPoint3f cameraPoint = m_cameraNode.get_relative_point(m_renderRoot, cloudWorld);
+			LPoint2f filmPoint;
+			inFrustum = m_cameraLens->project(cameraPoint, filmPoint) &&
+				std::abs(filmPoint[0]) <= 1.35f && std::abs(filmPoint[1]) <= 1.35f;
+		}
+		if (inFrustum)
+		{
+			visibleOrder.push_back(i);
+		}
+	}
+	std::sort(visibleOrder.begin(), visibleOrder.end(), [this](size_t left, size_t right) {
+		return m_stage7CloudVolumePool[left].cameraDistanceM < m_stage7CloudVolumePool[right].cameraDistanceM;
+	});
+	if (visibleOrder.size() > static_cast<size_t>(m_stage7VolumeConfig.maxVisibleVolumes))
+	{
+		visibleOrder.resize(static_cast<size_t>(m_stage7VolumeConfig.maxVisibleVolumes));
+	}
+	for (size_t order = 0; order < visibleOrder.size(); ++order)
+	{
+		Stage7CloudVolumeRuntime& volume = m_stage7CloudVolumePool[visibleOrder[order]];
+		volume.visibleWanted = true;
+		const double edgeFade = std::max(0.0, std::min(1.0,
+			(m_stage7VolumeConfig.streamingRadiusM - volume.descriptor.centerDistanceM) /
+			m_stage7VolumeConfig.fadeDistanceM));
+		volume.fadeTarget = edgeFade;
+		int steps = m_stage7VolumeRaymarchStepsNear;
+		if (m_stage7VolumeDistanceLod)
+		{
+			if (volume.cameraDistanceM > m_stage7VolumeConfig.streamingRadiusM * 0.72)
+			{
+				steps = m_stage7VolumeRaymarchStepsFar;
+			}
+			else if (volume.cameraDistanceM > m_stage7VolumeConfig.streamingRadiusM * 0.38)
+			{
+				steps = m_stage7VolumeRaymarchStepsMedium;
+			}
+		}
+		if (m_stage7VolumeScreenSizeLod)
+		{
+			const double projectedRatio = std::max(volume.descriptor.radiusX, volume.descriptor.radiusY) /
+				std::max(1.0, volume.cameraDistanceM);
+			if (projectedRatio < 0.08) steps = std::min(steps, m_stage7VolumeRaymarchStepsFar);
+			else if (projectedRatio < 0.18) steps = std::min(steps, m_stage7VolumeRaymarchStepsMedium);
+		}
+		volume.raySteps = steps;
+		volume.node.set_shader_input("u_ray_steps", LVecBase2i(steps, 0));
+		volume.node.set_shader_input("u_density_scale", LVecBase2f(static_cast<float>(volume.descriptor.density), 0.0f));
+		volume.node.set_shader_input("u_optical_depth", LVecBase2f(static_cast<float>(
+			weatherState.cloudOpticalDepth * weatherState.cloudOpacity * m_stage7CloudOpticalDepthScale), 0.0f));
+		const IRBand band = IRBandFromProtocol(std::max(0, std::min(4, m_sensorParam.trackerSensorBand)));
+		const double cloudGray = IRWeatherEffects::cloudEmissionGray(
+			band,
+			weatherState.cloudTemperatureK + volume.descriptor.temperatureOffsetK,
+			weatherState.cloudBackgroundGray,
+			weatherState.skyDiffuseScale);
+		volume.node.set_shader_input("u_cloud_gray", LVecBase2f(static_cast<float>(cloudGray), 0.0f));
+	}
+
+	m_stage7VolumeActiveCount = 0;
+	m_stage7VolumeVisibleCount = static_cast<int>(visibleOrder.size());
+	double rayStepSum = 0.0;
+	for (size_t i = 0; i < m_stage7CloudVolumePool.size(); ++i)
+	{
+		if (m_stage7CloudVolumePool[i].active) ++m_stage7VolumeActiveCount;
+		if (m_stage7CloudVolumePool[i].visibleWanted) rayStepSum += m_stage7CloudVolumePool[i].raySteps;
+	}
+	m_stage7VolumeAverageRaySteps = m_stage7VolumeVisibleCount > 0 ? rayStepSum / m_stage7VolumeVisibleCount : 0.0;
+	if (m_stage7VolumeRegion != nullptr)
+	{
+		m_stage7VolumeRegion->set_active(m_stage7VolumeVisibleCount > 0);
+	}
+	const float hybridScale = m_stage7VolumeVisibleCount > 0 ? 0.72f : 1.0f;
+	for (size_t i = 0; i < m_cloudNodes.size(); ++i)
+	{
+		SetShaderInputCached(m_cloudNodes[i], "u_cloud_hybrid_scale", LVecBase2f(hybridScale, 0.0f));
+	}
+	++m_stage7VolumeLogCounter;
+	if (stateChanged || m_stage7VolumeLogCounter <= 3 || (m_stage7VolumeLogCounter % 120) == 0)
+	{
+		std::cout << "[World3DCloudStreaming]"
+			<< " centerReady=" << (centerReady ? "1" : "0")
+			<< " targetKey=" << (targetKey.empty() ? "none" : targetKey)
+			<< " center=" << streamingCenter[0] << "," << streamingCenter[1] << "," << streamingCenter[2]
+			<< " profile=" << weatherState.weatherName
+			<< " probability=" << weatherState.volumeCloudProbability
+			<< " activeCloudVolumes=" << m_stage7VolumeActiveCount
+			<< " visibleCloudVolumes=" << m_stage7VolumeVisibleCount
+			<< " averageRaySteps=" << m_stage7VolumeAverageRaySteps
+			<< " placement=world_grid parent=m_renderRoot"
+			<< std::endl;
+	}
+}
+
+void HwaSimIR::UpdateStage7VolumetricCloudAnimation(double currentTime)
+{
+	if (!m_stage7VolumeCloudEnabled || m_stage7CloudVolumePool.empty())
+	{
+		return;
+	}
+	const double dt = m_stage7VolumeLastAnimationTime >= 0.0
+		? std::max(0.0, std::min(0.25, currentTime - m_stage7VolumeLastAnimationTime))
+		: 0.0;
+	m_stage7VolumeLastAnimationTime = currentTime;
+	if (!m_stage7VolumeCameraNode.is_empty() && !m_cameraNode.is_empty())
+	{
+		m_stage7VolumeCameraNode.set_transform(m_renderRoot, m_cameraNode.get_transform(m_renderRoot));
+	}
+	const LPoint3f cameraWorld = m_cameraNode.is_empty() ? LPoint3f(0.0f, 0.0f, 0.0f) : m_cameraNode.get_pos(m_renderRoot);
+	for (size_t i = 0; i < m_stage7CloudVolumePool.size(); ++i)
+	{
+		Stage7CloudVolumeRuntime& volume = m_stage7CloudVolumePool[i];
+		if (!volume.active)
+		{
+			continue;
+		}
+		const double fadeRate = volume.fadeTarget > volume.fade ? 1.4 : 1.8;
+		if (volume.fade < volume.fadeTarget)
+		{
+			volume.fade = std::min(volume.fadeTarget, volume.fade + dt * fadeRate);
+		}
+		else if (volume.fade > volume.fadeTarget)
+		{
+			volume.fade = std::max(volume.fadeTarget, volume.fade - dt * fadeRate);
+		}
+		if (volume.pendingDeactivate && volume.fade <= 0.001)
+		{
+			std::cout << "[World3DCloudCell]"
+				<< " action=deactivate"
+				<< " cell=" << volume.descriptor.cellX << "," << volume.descriptor.cellY
+				<< " cloudId=" << IRWorldCloudStreaming::cloudIdText(volume.descriptor.cloudId)
+				<< " seed=" << volume.descriptor.seed
+				<< " position=" << volume.descriptor.worldX << "," << volume.descriptor.worldY << "," << volume.descriptor.worldZ
+				<< " active=0"
+				<< std::endl;
+			volume.node.hide();
+			const NodePath pooledNode = volume.node;
+			volume = Stage7CloudVolumeRuntime();
+			// 对象池节点不能随业务状态重置而销毁，恢复原 NodePath。
+			volume.node = pooledNode;
+			continue;
+		}
+		if (!volume.visibleWanted || volume.fade <= 0.001)
+		{
+			volume.node.hide();
+			continue;
+		}
+		volume.node.show();
+		volume.node.set_shader_input("u_spawn_fade", LVecBase2f(static_cast<float>(volume.fade), 0.0f));
+		const LPoint3f cameraLocal = volume.node.get_relative_point(m_renderRoot, cameraWorld);
+		volume.node.set_shader_input("u_camera_local", LVecBase3f(cameraLocal[0], cameraLocal[1], cameraLocal[2]));
+		volume.node.set_shader_input("u_camera_inside", LVecBase2i(cameraLocal.length_squared() < 1.0f ? 1 : 0, 0));
+	}
 }
 
 int HwaSimIR::RefreshStage7WeatherTextureCache(const IRStage7WeatherState& weatherState)
@@ -4060,6 +4738,7 @@ void HwaSimIR::UpdateStage7WeatherNodes(const IRStage7WeatherState& weatherState
 	const int textureLoadCountThisFrame = RefreshStage7WeatherTextureCache(weatherState);
 	const auto updateStart = std::chrono::high_resolution_clock::now();
 	UpdateStage7CloudWorldGrid(weatherState, currentTime, stateChanged);
+	UpdateStage7VolumetricClouds(weatherState, currentTime, stateChanged);
 
 	const bool precipitationVisible = weatherState.precipitationType != IRStage7PrecipitationType::None &&
 		weatherState.precipitationDensity > 0.01 &&
@@ -4133,7 +4812,7 @@ void HwaSimIR::UpdateStage7CloudWorldGrid(const IRStage7WeatherState& weatherSta
 	const float windSpeedUv = static_cast<float>(
 		weatherState.windV * m_stage7CloudUvSpeedScale / tileSizeM);
 	const double cloudTopM = m_stage7GroundReferenceZ + m_stage7CloudBaseAltitudeM +
-		(m_stage7CloudRenderMode == CloudRenderMode::Layered2_5D ? m_stage7CloudThicknessM : 0.0);
+		(m_stage7CloudRenderMode == CloudRenderMode::World2D ? 0.0 : m_stage7CloudThicknessM);
 	const double transitionM = std::max(50.0, m_stage7CloudThicknessM * 0.25);
 	const double belowDistance = (m_stage7GroundReferenceZ + m_stage7CloudBaseAltitudeM) - cameraPos[2];
 	const double aboveDistance = cameraPos[2] - cloudTopM;
@@ -4243,6 +4922,7 @@ void HwaSimIR::UpdateStage7CloudAnimationTime(double currentTime)
 			SetShaderInputCached(m_cloudNodes[i], "u_time", LVecBase2f(static_cast<float>(currentTime), 0.0f));
 		}
 	}
+	UpdateStage7VolumetricCloudAnimation(currentTime);
 }
 
 void HwaSimIR::LogStage7Perf(const IRStage7WeatherState& weatherState, int weatherNodeCount, int cloudNodeCount, int precipitationNodeCount, int textureLoadCountThisFrame, double updateWeatherNodesMs, double totalWeatherMs)
@@ -4254,7 +4934,9 @@ void HwaSimIR::LogStage7Perf(const IRStage7WeatherState& weatherState, int weath
 		<< ":" << textureLoadCountThisFrame
 		<< ":" << m_stage7PrecipitationMode
 		<< ":" << IRWeatherEffects::precipitationCode(weatherState.precipitationType)
-		<< ":" << static_cast<int>(weatherState.precipitationDensity * 1000.0);
+		<< ":" << static_cast<int>(weatherState.precipitationDensity * 1000.0)
+		<< ":" << m_stage7VolumeActiveCount
+		<< ":" << m_stage7VolumeVisibleCount;
 	const std::string stateKey = state.str();
 	++m_stage7PerfLogCounter;
 	const bool shouldLog = textureLoadCountThisFrame > 0 ||
@@ -4273,6 +4955,9 @@ void HwaSimIR::LogStage7Perf(const IRStage7WeatherState& weatherState, int weath
 		<< " updateWeatherNodesMs=" << updateWeatherNodesMs
 		<< " weatherUpdateMs=" << totalWeatherMs
 		<< " totalWeatherMs=" << totalWeatherMs
+		<< " activeCloudVolumes=" << m_stage7VolumeActiveCount
+		<< " visibleCloudVolumes=" << m_stage7VolumeVisibleCount
+		<< " averageRaySteps=" << m_stage7VolumeAverageRaySteps
 		<< " precipitationMode=" << m_stage7PrecipitationModeName
 		<< std::endl;
 	if (textureLoadCountThisFrame > 0)
@@ -4766,7 +5451,10 @@ void HwaSimIR::UpdateStage7SkyHorizon(const IRRuntimeEnvironment& environment, c
 	{
 		std::string stage6PlannerReason;
 		const bool noOp = IsStage6FinalPostprocessNoop(&stage6PlannerReason);
-		const bool directFinal = m_headlessFastDirectFinal && noOp;
+		const bool volumeCompositeRequired = m_stage7VolumeCloudEnabled &&
+			(m_stage7CloudRenderMode == CloudRenderMode::StreamedWorld3D ||
+			 m_stage7CloudRenderMode == CloudRenderMode::Volumetric3D);
+		const bool directFinal = m_headlessFastDirectFinal && noOp && !volumeCompositeRequired;
 		const std::string plannedPath = directFinal ? "direct_final" : "dual_pass";
 		if (plannedPath != m_stage6RenderPath)
 		{
@@ -9022,6 +9710,54 @@ void HwaSimIR::InitInfraredSimulation()
 	m_stage7CloudEdgeSoftness = std::max(0.02, std::min(0.50, m_stage7CloudEdgeSoftness));
 	m_stage7CloudDetailScale = std::max(1.0, std::min(12.0, m_stage7CloudDetailScale));
 	m_stage7CloudDetailStrength = std::max(0.0, std::min(1.0, m_stage7CloudDetailStrength));
+	m_stage7VolumeCloudEnabled = m_runtimeConfig.getBool(
+		"Stage7VolumetricCloud", "Enable", "Stage7VolumetricCloudEnable", false);
+	m_stage7VolumeStreamingCenter = m_runtimeConfig.getString(
+		"Stage7VolumetricCloud", "StreamingCenter", "Stage7VolumetricCloudStreamingCenter", "TrackedTarget");
+	m_stage7VolumeConfig.cellSizeM = m_runtimeConfig.getDouble(
+		"Stage7VolumetricCloud", "CellSizeM", "Stage7VolumetricCloudCellSizeM", 2500.0);
+	m_stage7VolumeConfig.streamingRadiusM = m_runtimeConfig.getDouble(
+		"Stage7VolumetricCloud", "StreamingRadiusM", "Stage7VolumetricCloudStreamingRadiusM", 6000.0);
+	m_stage7VolumeConfig.deactivationRadiusM = m_runtimeConfig.getDouble(
+		"Stage7VolumetricCloud", "DeactivationRadiusM", "Stage7VolumetricCloudDeactivationRadiusM", 7500.0);
+	m_stage7VolumeConfig.maxActiveVolumes = m_runtimeConfig.getInt(
+		"Stage7VolumetricCloud", "MaxActiveVolumes", "Stage7VolumetricCloudMaxActiveVolumes", 8);
+	m_stage7VolumeConfig.maxVisibleVolumes = m_runtimeConfig.getInt(
+		"Stage7VolumetricCloud", "MaxVisibleVolumes", "Stage7VolumetricCloudMaxVisibleVolumes", 4);
+	m_stage7VolumeConfig.minCloudAltitudeM = m_runtimeConfig.getDouble(
+		"Stage7VolumetricCloud", "MinCloudAltitudeM", "Stage7VolumetricCloudMinCloudAltitudeM", 2200.0);
+	m_stage7VolumeConfig.maxCloudAltitudeM = m_runtimeConfig.getDouble(
+		"Stage7VolumetricCloud", "MaxCloudAltitudeM", "Stage7VolumetricCloudMaxCloudAltitudeM", 4200.0);
+	m_stage7VolumeConfig.minRadiusXYM = m_runtimeConfig.getDouble(
+		"Stage7VolumetricCloud", "MinRadiusXYM", "Stage7VolumetricCloudMinRadiusXYM", 350.0);
+	m_stage7VolumeConfig.maxRadiusXYM = m_runtimeConfig.getDouble(
+		"Stage7VolumetricCloud", "MaxRadiusXYM", "Stage7VolumetricCloudMaxRadiusXYM", 1000.0);
+	m_stage7VolumeConfig.minRadiusZM = m_runtimeConfig.getDouble(
+		"Stage7VolumetricCloud", "MinRadiusZM", "Stage7VolumetricCloudMinRadiusZM", 180.0);
+	m_stage7VolumeConfig.maxRadiusZM = m_runtimeConfig.getDouble(
+		"Stage7VolumetricCloud", "MaxRadiusZM", "Stage7VolumetricCloudMaxRadiusZM", 500.0);
+	m_stage7VolumeConfig.weatherSeed = static_cast<std::uint64_t>(std::max(0,
+		m_runtimeConfig.getInt("Stage7VolumetricCloud", "WeatherSeed", "Stage7VolumetricCloudWeatherSeed", 12345)));
+	m_stage7VolumeConfig.fadeDistanceM = m_runtimeConfig.getDouble(
+		"Stage7VolumetricCloud", "FadeDistanceM", "Stage7VolumetricCloudFadeDistanceM", 800.0);
+	m_stage7VolumeFallbackProbability = std::max(0.0, std::min(1.0, m_runtimeConfig.getDouble(
+		"Stage7VolumetricCloud", "CloudProbability", "Stage7VolumetricCloudProbability", 0.35)));
+	m_stage7VolumeDensityTextureSize = std::max(16, std::min(64, m_runtimeConfig.getInt(
+		"Stage7VolumetricCloud", "DensityTextureSize", "Stage7VolumetricCloudDensityTextureSize", 32)));
+	m_stage7VolumeRaymarchStepsNear = std::max(2, std::min(16, m_runtimeConfig.getInt(
+		"Stage7VolumetricCloud", "RaymarchStepsNear", "Stage7VolumetricCloudRaymarchStepsNear", 10)));
+	m_stage7VolumeRaymarchStepsMedium = std::max(2, std::min(m_stage7VolumeRaymarchStepsNear, m_runtimeConfig.getInt(
+		"Stage7VolumetricCloud", "RaymarchStepsMedium", "Stage7VolumetricCloudRaymarchStepsMedium", 7)));
+	m_stage7VolumeRaymarchStepsFar = std::max(2, std::min(m_stage7VolumeRaymarchStepsMedium, m_runtimeConfig.getInt(
+		"Stage7VolumetricCloud", "RaymarchStepsFar", "Stage7VolumetricCloudRaymarchStepsFar", 4)));
+	m_stage7VolumeDistanceLod = m_runtimeConfig.getBool(
+		"Stage7VolumetricCloud", "EnableDistanceLod", "Stage7VolumetricCloudEnableDistanceLod", true);
+	m_stage7VolumeScreenSizeLod = m_runtimeConfig.getBool(
+		"Stage7VolumetricCloud", "EnableScreenSizeLod", "Stage7VolumetricCloudEnableScreenSizeLod", true);
+	m_stage7VolumeFrustumCull = m_runtimeConfig.getBool(
+		"Stage7VolumetricCloud", "EnableFrustumCull", "Stage7VolumetricCloudEnableFrustumCull", true);
+	m_stage7VolumeStreaming.setConfig(m_stage7VolumeConfig);
+	m_stage7VolumeConfig = m_stage7VolumeStreaming.config();
 	m_stage7PrecipitationMaxParticles = std::max(0, std::min(512, m_runtimeConfig.getInt("Stage7Weather", "PrecipitationMaxParticles", "Stage7PrecipitationMaxParticles", 0, &stage7PrecipParticlesSource)));
 	m_stage7UseWeatherUdpInput = m_runtimeConfig.getBool("Stage7Weather", "UseWeatherUdpInput", "Stage7UseWeatherUdpInput", true, &stage7UdpSource);
 	m_stage5PlumeOptions.enableEnginePlume = m_runtimeConfig.getBool("Stage5Plume", "EnableEnginePlume", "EnableEnginePlume", true, &plumeEnableSource);
@@ -9335,6 +10071,26 @@ void HwaSimIR::InitInfraredSimulation()
 		<< "/" << stage7CloudEdgeSoftnessSource << "/" << stage7CloudDetailScaleSource << "/" << stage7CloudDetailStrengthSource
 		<< "/" << stage7PrecipParticlesSource << "/" << stage7UdpSource
 		<< std::endl;
+	std::cout << "[Stage7 VolumetricCloudConfig]"
+		<< " enable=" << (m_stage7VolumeCloudEnabled ? "1" : "0")
+		<< " mode=" << m_stage7CloudRenderModeName
+		<< " streamingCenter=" << m_stage7VolumeStreamingCenter
+		<< " cellSizeM=" << m_stage7VolumeConfig.cellSizeM
+		<< " streamingRadiusM=" << m_stage7VolumeConfig.streamingRadiusM
+		<< " deactivationRadiusM=" << m_stage7VolumeConfig.deactivationRadiusM
+		<< " maxActive=" << m_stage7VolumeConfig.maxActiveVolumes
+		<< " maxVisible=" << m_stage7VolumeConfig.maxVisibleVolumes
+		<< " altitudeM=" << m_stage7VolumeConfig.minCloudAltitudeM << "-" << m_stage7VolumeConfig.maxCloudAltitudeM
+		<< " radiusXYM=" << m_stage7VolumeConfig.minRadiusXYM << "-" << m_stage7VolumeConfig.maxRadiusXYM
+		<< " radiusZM=" << m_stage7VolumeConfig.minRadiusZM << "-" << m_stage7VolumeConfig.maxRadiusZM
+		<< " weatherSeed=" << m_stage7VolumeConfig.weatherSeed
+		<< " densityTextureSize=" << m_stage7VolumeDensityTextureSize
+		<< " raySteps=" << m_stage7VolumeRaymarchStepsNear << "/" << m_stage7VolumeRaymarchStepsMedium << "/" << m_stage7VolumeRaymarchStepsFar
+		<< " fadeDistanceM=" << m_stage7VolumeConfig.fadeDistanceM
+		<< " distanceLod=" << (m_stage7VolumeDistanceLod ? "1" : "0")
+		<< " screenSizeLod=" << (m_stage7VolumeScreenSizeLod ? "1" : "0")
+		<< " frustumCull=" << (m_stage7VolumeFrustumCull ? "1" : "0")
+		<< std::endl;
 	{
 		std::ostringstream sourceSummary;
 		sourceSummary
@@ -9646,6 +10402,7 @@ void HwaSimIR::InitInfraredShader() {
     uniform vec2 u_cloud_inside_factor;
     uniform vec2 u_cloud_uv_offset;
     uniform float u_cloud_layer_weight;
+    uniform float u_cloud_hybrid_scale;
     uniform float u_stage7_fog_density;
     uniform float u_stage7_fog_gray;
     uniform int u_stage7_precipitation_type; // 0 none, 1 rain, 2 snow
@@ -9806,6 +10563,7 @@ void HwaSimIR::InitInfraredShader() {
             float extinction = max(0.0, u_stage7_cloud_optical_depth)
                              * clamp(u_stage7_cloud_opacity, 0.0, 1.0)
                              * clamp(u_cloud_layer_weight, 0.0, 1.0)
+                             * clamp(u_cloud_hybrid_scale, 0.0, 1.0)
                              * cloud_mask;
             float tau_cloud = exp(-extinction);
             float cloud_intensity = clamp(u_stage7_cloud_gray, 0.0, 1.0);
@@ -10111,6 +10869,7 @@ void HwaSimIR::ApplyInfraredShader(NodePath& node, bool isBackground) {
 	node.set_shader_input("u_cloud_inside_factor", LVecBase2f(0.0f, 0.0f));
 	node.set_shader_input("u_cloud_uv_offset", LVecBase2f(0.0f, 0.0f));
 	node.set_shader_input("u_cloud_layer_weight", LVecBase2f(1.0f, 0.0f));
+	node.set_shader_input("u_cloud_hybrid_scale", LVecBase2f(1.0f, 0.0f));
 	node.set_shader_input("u_stage7_fog_density", LVecBase2f(0.0f, 0.0f));
 	node.set_shader_input("u_stage7_fog_gray", LVecBase2f(0.45f, 0.0f));
 	node.set_shader_input("u_stage7_precipitation_type", LVecBase2i(0, 0));

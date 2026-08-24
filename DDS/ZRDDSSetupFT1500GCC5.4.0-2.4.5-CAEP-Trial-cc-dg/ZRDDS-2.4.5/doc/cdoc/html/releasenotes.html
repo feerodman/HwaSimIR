@@ -1,0 +1,355 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: ZRDDS版本记录</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li class="current"><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>结构体</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('releasenotes.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">ZRDDS版本记录 </div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><h3>ZRDDSv2.2.5</h3>
+<h4>安装包</h4>
+<ul>
+<li>在安装包lujing/example目录添加了更多的示例程序，包括典型的工程配置。</li>
+<li>添加了64位2008安装包的支持</li>
+<li>添加了Linux中Java安装包的支持</li>
+</ul>
+<h4>ZRDDS开发库</h4>
+<h6>beta-15</h6>
+<ul>
+<li>添加了MPORT中用户负载长度大于子窗长度时报错的逻辑</li>
+<li>处理当读写指针在循环缓冲区中间导致两段的空间均不足以存储下当前负载（在极端情况下可能无法发送子窗一半大小的数据）时重置循环缓冲区解决这个场景的逻辑</li>
+<li>增加了CPP层Publisher创建data_writer是使能失败的错误处理；</li>
+<li>修复了BEST-EFFORT情况下，缓存的分片数据未删除，导致丢包情况下订阅端内存泄漏的BUG</li>
+<li>添加了缓存上一包分片信息优化查找逻辑</li>
+<li>修复了收到新的远程Data(p)时，向远端回复自身的Data(p)信息时，仅向第一个地址发送，导致远端的DP需要等待本地DP周期性组播发送Data(p)才能发现本DP，造成自动发现变慢的问题。</li>
+<li>修复了return_loan中read_condition触发状态在移除样本之前导致，read_condition会多次调用的bug</li>
+<li>修复了可能的重复not_alive状态通知</li>
+<li>修复了MPORT中租借子窗时，未设置租借子窗的忙位，导致多条连接映射到同一个子窗，造成数据覆盖</li>
+<li>移除了链接的存活性标志，在读取读写指针失败时，认为该数据发送成功</li>
+<li>修复了在Linux中处理完等待的未覆盖导致多连接时打开共享内存号失败，导致通信异常的bug</li>
+</ul>
+<h6>beta-12</h6>
+<ul>
+<li>修复了在创建已满足ReadCondition时，未正确设置触发状态导致使用waitset不能得到通知的bug</li>
+<li>修复了将状态数据当作普通样本数据减少未读取数量数量导致当前未读取样本数量不正确导致ReadCondition不正确的bug</li>
+<li>Reader端为BEST-EFFORT时，不发送ACKNACK</li>
+<li>增加了针对VxWorks系统的共享内存实现以及配置共享内存地址的功能</li>
+<li>增加DataWriter删除已反馈样本的逻辑，在样本不再需要时会尝试删除样本</li>
+<li>DataWriter增加定期发送非Final Heartbeat的逻辑</li>
+<li>添加TCP_NODELAY参数支持</li>
+<li>修正DataWriterQos.writer_data_lifecycle.autopurge_unregistered_instance_delay未有效设置的问题</li>
+<li>添加了FT6678的REWORKS适配</li>
+<li>修复了当DataWriter端以Gap反馈负反馈时，未正确重置最大反馈样本序列号导致DataReader端抑制负反馈导致通信过程不正常的bug</li>
+<li>修复了DataWriter端没有对端时，将已发送的数据样本当成反馈样本，导致需要持久化的DataReader接收不到历史数据的bug</li>
+<li>添加Sequence中拷贝后申请内存的标志位，减少内存泄漏</li>
+<li>修复了DP分发数据给DataReader时，链表末尾未置空，导致指定对端发送时，会将数据分发给不是目的数据读者</li>
+<li>修正组播地址判定不正确的问题</li>
+<li>修正样本空间满时无法正常删除DataWriter的问题</li>
+<li>修正Dispose后未正常关闭Deadline事件的问题</li>
+<li>修正DataReader可能因未收到Writer心跳导致WaitForHistoricalData接口无法正常等待历史数据的问题</li>
+<li>添加了使用TCP尝试connect的方式测试远程地址是否可用，并将其排序的功能</li>
+<li>修正DataWriterQos.receive_addresses和DataReaderQos.receive_addresses未做可变性检查的问题</li>
+<li>修正使用时间过滤时DataReader可能因实例中样本计数不正确导致崩溃的问题</li>
+<li>修正注销和销毁实例时发送时间戳不正确的问题</li>
+<li>修正DataWriter启用持久化且没有Reader存在时无法正确替换样本的问题</li>
+<li>修正开启分布式日志时DomainParticipantFactory无法销毁的问题</li>
+<li>修正发送分片时可能崩溃的问题</li>
+<li>将自动发现策略的兼容性规则修改为participant_liveliness_assert_period &lt; participant_liveliness_lease_duration</li>
+<li>添加了DDS_QosPolicyCountSeq的C++映射QosPolicyCountSeq类型</li>
+<li>在初始化内置发现数据时，将其中的QoS初始化为DDS协议规定的默认值，兼容某些厂商不在data(w)或者data(r)中携带QoS设置信息</li>
+<li>添加了同步方式使用MPORT的RapidIO实现，添加了定制宏_ZRDDS_MPORT_SRIO</li>
+<li>在Data(p)中添加了DDS的版本信息</li>
+<li>修正DataWriter报文统计信息未正确填写的问题</li>
+<li>修正同一个DomainParticipant下存在多个Reader时只会将数据提交到其中两个Reader的问题</li>
+<li>更改DataWriterQos.protocol.rtps_reliable_writer.fastheartbeat_period默认值，由原来的无穷更改为1秒</li>
+<li>修正TCP接收线程在删除时可能因互锁导致无法结束的问题</li>
+<li>修复WaitSetAttachCondition未检查参数是否为空值的问题</li>
+<li>修正WaitsetGetContitions接口中未正确设置传出序列长度的问题</li>
+<li>修正DataReaderImplWaitForHistoricalData无法退出的问题</li>
+<li>修正message_staticstics_info_config未检查可变性的问题</li>
+<li>修复了Linux中ZRSemaphoreTryTake实现错误的bug</li>
+<li>添加了Linux下的DPDK-ans的实现，定制宏_ZRDDS_INCLUDE_DPDK_ANS</li>
+<li>将报文统计QoS修改为可变</li>
+<li>修正DataWriter在设置持久化后可能在特定情况下失效的问题</li>
+<li>移除DataReader中处理Batch数据时的多余步骤</li>
+<li>修正了未处理DataBatch子消息长度为0的特殊情况的问题</li>
+<li>修正在启用Batch时可能有部分数据未发送的问题</li>
+<li>添加了内置数据类型的裁剪宏_ZRDDS_INCLUDE_BUILTIN_TYPES</li>
+<li>添加了PSInterface简化接口的裁剪宏_ZRDDS_INCLUDE_PSINTERFACE</li>
+<li>添加了分布式日志的定制宏_ZRDDS_INCLUDE_DIST_LOG</li>
+<li>修复了未正确填充分片数据的时间戳导致数据读者端不能够正确获取需要分片样本的时间戳的问题</li>
+<li>修复了delete_topic引用数与关联实体数检查顺序不对导致不能通过delete_topic删除已关联实体的通过find_topic的增加的引用问题</li>
+<li>修复了基于contentfilterTopic的reader接受数据时处理字符串最后一个字符错误的bug</li>
+<li>修正ContentFilteredTopic在过滤字符串类型时提取的内容不正确导致过滤结果错误的问题</li>
+<li>修正DataWriter样本队列满且用户使用多线程发送产生阻塞时，未正确解除阻塞的问题</li>
+<li>修改DataWriter对空实例的判定方式，原有的判定是只判断当前实例中是否包含样本，现改为实例记录是否发送过样本，即若实例发送过样本，即使当前实例中不包含样本也不会判定为空实例</li>
+<li>共享内存初始化延后至真正需要使用时</li>
+<li>修复PublisherQos.disable_asynchronous_batch与DataWriterQos.batch一致性检查错误的问题，当PublisherQos.disable_asynchronous_batch设置为true时，batch允许开启，但是不允许将DataWriterQos.batch.max_flush_delay设置为DURATION_INFINITE以外的值</li>
+<li>修正零拷贝类型样本发布时未正确填写时间戳的问题</li>
+<li>修正启用Batch的DataWriter发送Dispose消息时会崩溃的问题</li>
+<li>修复了处理DataBatch时，没有根据样本长度跳过负载导致反序列化失败的问题。</li>
+<li>Coherent的InlineQos的sequence没有正确设置</li>
+<li>修复了read/take接口返回NO_DATA时，只设置了sampleSeq的长度，没有设置sampleinfo的长度导致无法循环读取的问题</li>
+<li>修复了使用read/take接口时，提供空间但长度设置为0时，底层使用get_reference接口获取sampleInfo时空指针异常的bug</li>
+<li>修复了ZRSequence.cpp在低版本编译器中的编译错误</li>
+<li>增加了WaitSetDetachCondition的参数有效性判断</li>
+<li>修复了在Win64位情况下使用ZR_INT32存储线程句柄返回值可能越界的风险</li>
+<li>修复了在删除某个Writer后，样本中的m_ownerWriter成员未置空导致在readOrTake时访问异常的问题</li>
+<li>修复了几处返回值判断不正确的问题</li>
+<li>添加了对licence文件的进程访问限制，修复了多进程进行License验证时可能导致License文件错误的问题</li>
+<li>添加了DDS的版本打印信息</li>
+<li>添加了DDS收到不同版本的警告信息</li>
+<li>修复当Reader端节点存在多个IP地址且有地址不可达时，数据可能无法发送的问题</li>
+</ul>
+<h5>Java</h5>
+<h6>beta-15</h6>
+<ul>
+<li>修复了利用函数AttachCurrentThread将将底层线程绑定到JVM，属性为非守护线程，而Java中主线程需要等到所有的非守护线程退出才退出，导致DDS-Java程序不能正常退出的问题，使用AttachCurrentThreadDaemon注册为守护线程</li>
+<li>修复了在Java接口在创建DataWriter过程中回调时参数为NULL的BUG</li>
+<li>修复了发送大包数据后，再发送小包数据时发序列化失败的bug</li>
+</ul>
+<h6>beta-12</h6>
+<ul>
+<li>给DDS实体添加了as_entity函数</li>
+<li>修复了创建超出域范围域参与者是崩溃的BUG</li>
+<li>修复了创建空主题名的主题时崩溃的BUG</li>
+<li>修复了序列化中文字符串可能出现的bug</li>
+<li>添加了DDS_DataWriterMessageModeQosPolicy的enable_raw_transfer成员</li>
+<li>添加java接口中序列化函数put_boolean的实现</li>
+<li>修复了DataWriterQos.writer_resource_limits.replace_empty_instances 和DataWriterQos.writer_resource_limits.autoregister_instances数据类型和C++接口中不一致的bug</li>
+<li>添加了unregister_type接口；添加了WaitSet的attach_condition和detach_condition的传入参数检测</li>
+<li>为Sequence添加了clear函数</li>
+<li>修复了ZeroCopyByte类型序列化和反序列化错误的bug</li>
+<li>修复了带String的内置类型获取字符串长度错误的bug</li>
+<li>ByteSeq中to_array函数参数类型错误的bug</li>
+<li>修复了String.getBytes未指定字符集导致传输中文可能的异常</li>
+<li>由于String的不可变性，将内置的String使用StringBuilder代替</li>
+<li>修复了内置数据TypeSupport的部分实现错误</li>
+<li>修复了java接口中未对基础数据类型Seq进行初始化操作的bug</li>
+<li>修复了基本数据类型sequence反序列化效率低下导致Java接收性能差的BUG</li>
+<li>修复了java接口序列化基本数据类型成员时内存泄露的bug</li>
+</ul>
+<h6>CSharp</h6>
+<h6>beta-15</h6>
+<ul>
+<li>修复开验证情况下DomainParticipantFactory::getInstance时不为null的问题</li>
+</ul>
+<h6>beta-12</h6>
+<ul>
+<li>删除了原有的ZRDDS_CSharp_Generic命名空间</li>
+<li>将原有CSharp中的模板ZRDDSDataReader、ZRDDSDataWriter、GenericSequence实现下沉至CLI级别</li>
+<li>删除了接口中不需要的引用</li>
+<li>将原有的gc_transform重载方法修改为不能的函数名称，对于类型X(DDS_X)，提供两个方法gc_transform_from_x(const X^ src, DDS_X&amp; dst)以及gc_transform_to_x(X^dst, const DDS_X&amp; src)</li>
+<li>将所有的基础数据类型统一为实现DeepCopy以及Clone两个接口，移除了不必要的构造函数/构造函数/终结函数，在声明时创建对象</li>
+<li>实现了ComapreTo接口的类型如下：<ul>
+<li>Duration_t</li>
+<li>InstanceHandle_t</li>
+<li>Property_t</li>
+<li>BinaryProperty_t</li>
+<li>SampleInfo</li>
+<li>SequenceNumber_t</li>
+</ul>
+</li>
+<li>使用pin_ptr代替了原有序列化时的拷贝，提升序列化与反序列化的性能</li>
+<li>移除了原有的BuiltinTopicKey_t类型</li>
+<li>增加了实体的实现类，将接口与实现剥离，包括Publisher、Subscriber、DomainParticipantFactory、DomainParticipant、Topic、Condition等。</li>
+<li>增加了部分类型的终结函数；</li>
+<li>补全了遗漏的GCHanlde.Free以及GCHandle::FreeHG，可能造成内存泄漏的问题</li>
+</ul>
+<h4>ZRDDS文档</h4>
+<h6>beta-15</h6>
+<ul>
+<li>更新了用户手册中关于零拷贝的内容；</li>
+<li>更新了用户手册中关于RapidIO配置的内容；</li>
+<li>更新了用户手册中关于raw模式的内容；</li>
+</ul>
+<h6>beta-12</h6>
+<ul>
+<li>修复了的BatchQosPolicy的文档错误</li>
+<li>修复了DiscoveryConfigQosPolicy的文档错误</li>
+<li>修复了DDS_DataWriterProtocolQosPolicy文档错误</li>
+<li>添加了DDS_UserDataQosPolicy文档</li>
+<li>添加了DDS_ReceiverThreadConfigQosPolicy文档</li>
+<li>修复了DDS_TransportConfigQosPolicy文档错误</li>
+<li>修复了DDS_RapidIOControllerQosPolicy文档</li>
+<li>修复了DDS_DomainParticipantQos.rtps_message_little_endian文档</li>
+<li>添加了DDS_RtpsReliableWriterProtocol.fastheartbeat_period文档</li>
+<li>修复了DDS_DataWriterMessageModeQosPolicy.enable_raw_transfer文档</li>
+<li>修正DDS_DataWriterResourceLimits.initial_concurrent_blocking_threads有效性取值文档说明不正确的问题</li>
+<li>补充BatchQos和AsynchronousPublisherQos兼容性说明</li>
+</ul>
+<h4>ZRDDS编译器</h4>
+<h5>添加功能</h5>
+<ul>
+<li>添加了对CSharp语言编译的支持；</li>
+<li>为CSharp添加了example代码生成</li>
+<li>添加编译选项 -type_name_style 指定内置类型名风格</li>
+<li>添加对module转换成namespace的支持</li>
+</ul>
+<h5>修复问题</h5>
+<ul>
+<li>修正module_type参数默认值与描述不一致的问题</li>
+<li>修正C++生成typedef类型时名称不正确的问题</li>
+<li>修改生成C语言代码的文件扩展名</li>
+<li>修复了java获取string中含中文时，获取长度错误的bug</li>
+<li>更改编译器默认参数值，内置数据类型默认使用DDS风格，即包含DDS_前缀的风格（例如DDS_Long）</li>
+<li>修复了使用sequence&lt;string&gt;时对应DDS类型名错误的bug</li>
+<li>修正PrintData函数打印信息错误的问题</li>
+<li>修改了java中sequence类型的创建和拷贝函数，将CharSeq修改为ByteSeq</li>
+<li>修复了java接口的print_data函数</li>
+<li>修复C语言在使用嵌套typedef时，生成的反序列化函数临时变量不完整的问题</li>
+<li>修复了C++中括号打印的问题</li>
+<li>修复了生成Java基本数据类型的反序列化代码时使用循环每个元素导致接收效率低下的问题</li>
+</ul>
+<h3>ZRDDSv2.2.4</h3>
+<ul>
+<li>修复了Windows安装包在环境变量Path长度大于1024的情况下安装会破坏Path环境变量的问题</li>
+</ul>
+<h3>ZRDDSv2.2.3</h3>
+<h4>ZRDDS开发库</h4>
+<ul>
+<li>修正内置基本数据类型序列中包含多余定义导致性能受到影响的问题</li>
+<li>修正数据读者在设置Qos时未将DP互斥锁锁定导致可能存在不一致的问题</li>
+<li>修正Waitset打开了DDS命名空间的问题</li>
+<li>修复了XML接口中使用ZRDynamicDataGetUInt32获取枚举值失败，改为使用ZRDynamicDataGetEnum</li>
+<li>修复了设置PublisherQos未获取DP资源锁的问题</li>
+<li>ZRDynamicData初始化相关的问题</li>
+<li>修正在DP配置组播地址时DataWriter的信息无法被远端正确处理的问题</li>
+<li>修正使用组播地址配置DataWriter和DataReader时发现消息长度计算错误的问题</li>
+<li>修复了当readerQos.resource_limites.max_samples &gt; max_samples_per_instance情况下，max_sample_per_instance达到限制时，由于构造的ack要求反馈，导致hb-ack风暴的bug，负反馈时检测本机是否处于空间不足的状态，当回收空间时，主动发送ack以获取需要重传的数据</li>
+<li>修复了节点存在多个MAC地址时，Licence验证出现问题的bug</li>
+<li>添加了Linux安装包</li>
+</ul>
+<h4>ZRDDS文档</h4>
+<ul>
+<li>添加了常见问题页以及部分常见问题及其解释</li>
+<li>更新了编译器文档</li>
+</ul>
+<h4>ZRDDS编译器</h4>
+<ul>
+<li>修正-example参数状态设置错误的问题</li>
+<li>修正Java生成代码中sequence&lt;char&gt;类型名字错误的问题</li>
+<li>添加Java示例代码生成功能</li>
+<li>添加VS2012工程生成的支持</li>
+<li>添加VS2012、VS2013、VS2015 WinXP工程生成的支持</li>
+<li>修正生成包含typedef string的C代码时会使使用者崩溃的问题</li>
+<li>修正生成C语言包含Union的代码时注释内容不正确的问题</li>
+<li>修正无法生成LinuxEclipse工程的问题</li>
+<li>修正计算样本最大长度不正确的问题</li>
+</ul>
+<h3>ZRDDSv2.2.2</h3>
+<h4>ZRDDS开发库</h4>
+<ul>
+<li>添加了生成二维码注册信息的功能，方便内外网隔离的环境注册ZRDDS。</li>
+<li>在帮助文档中添加了ZRDDS版本记录以及ZRDDS常见问题页面。</li>
+<li>修复了程序中存在多条使用共享内存收发数据的数据读者/数据写者时，接收端程序崩溃的问题；</li>
+<li>修复了存在多条共享内存连接时，移除共享内存连接后程序崩溃的问题。</li>
+</ul>
+<h4>ZRDDS编译器</h4>
+<ul>
+<li>新增生成VS2015工程的功能</li>
+<li>新增生成64位VS工程的功能 </li>
+</ul>
+</div></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

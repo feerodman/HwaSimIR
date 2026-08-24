@@ -1,0 +1,20 @@
+var searchData=
+[
+  ['sample_5fcount',['sample_count',['../struct_d_d_s___link_quality_evaluation_info.html#aee8fb2a9a47d83a3d031f6f9d5ac80c8',1,'DDS_LinkQualityEvaluationInfo']]],
+  ['sample_5frank',['sample_rank',['../struct_d_d_s___sample_info.html#a3f709e2c8be8fdfb96179f0869ecdc87',1,'DDS_SampleInfo']]],
+  ['sample_5fsize',['sample_size',['../struct_d_d_s___link_quality_evaluation_info.html#aed0aecac7047fa36ef33cacf7ed8b337',1,'DDS_LinkQualityEvaluationInfo']]],
+  ['sample_5fstate',['sample_state',['../struct_d_d_s___sample_info.html#adfe9c2c74b14f914e5b7da022b07cb86',1,'DDS_SampleInfo']]],
+  ['sec',['sec',['../struct_d_d_s___duration__t.html#a657203cce563e66c0114daed408ccc3c',1,'DDS_Duration_t']]],
+  ['security_5finfo',['security_info',['../struct_d_d_s___participant_builtin_topic_data.html#acc1d9cb1b9eaa5f48657c5b55d654b9f',1,'DDS_ParticipantBuiltinTopicData::security_info()'],['../struct_d_d_s___publication_builtin_topic_data.html#ac1ab599589665dc60de3950acce0de59',1,'DDS_PublicationBuiltinTopicData::security_info()'],['../struct_d_d_s___subscription_builtin_topic_data.html#a54afd28e1b6a9f95478c0250938b6158',1,'DDS_SubscriptionBuiltinTopicData::security_info()']]],
+  ['security_5fplugins',['security_plugins',['../struct_d_d_s___security_plugin_qos_policy.html#a021ed003982a00775e0cd2a73674987a',1,'DDS_SecurityPluginQosPolicy']]],
+  ['send_5faddresses',['send_addresses',['../struct_d_d_s___data_writer_qos.html#ab939e8df6a2311f91e0b1721423ae0d5',1,'DDS_DataWriterQos']]],
+  ['send_5flocators',['send_locators',['../struct_d_d_s___publication_send_status.html#a8d8d63cd750852ab9dd7543ee664af4f',1,'DDS_PublicationSendStatus']]],
+  ['send_5fperiod',['send_period',['../struct_d_d_s___msg_statistics_info_qos_policy.html#aa241a0e8e84ea9f19def4b74700a91e1',1,'DDS_MsgStatisticsInfoQosPolicy']]],
+  ['service_5fcleanup_5fdelay',['service_cleanup_delay',['../struct_d_d_s___durability_service_qos_policy.html#a9efdb54c29f0102e6a1b4dc55cd0a6c8',1,'DDS_DurabilityServiceQosPolicy']]],
+  ['size',['size',['../struct_d_d_s___property_list.html#ac2c578a4699090e2ddddfd19e03439fa',1,'DDS_PropertyList']]],
+  ['source_5ftimestamp',['source_timestamp',['../struct_d_d_s___sample_info.html#acc4ed5600d68629600998f7e8e4265ea',1,'DDS_SampleInfo']]],
+  ['source_5ftimestamp_5fresolution',['source_timestamp_resolution',['../struct_d_d_s___batch_qos_policy.html#ab8eb965b94f0a379b584806358585996',1,'DDS_BatchQosPolicy']]],
+  ['start_5fseq',['start_seq',['../struct_d_d_s___sample_lost_status.html#ac06813a522fcd5621df03782541e2a9e',1,'DDS_SampleLostStatus']]],
+  ['subscriber_5fqos_5fdefault',['SUBSCRIBER_QOS_DEFAULT',['../group___cpp_core_struct.html#gae9f82bcf052958ffc3aefd9034130889',1,'DDS']]],
+  ['subscription_5fhandle',['subscription_handle',['../struct_d_d_s___publication_send_status.html#a34974fb40a90373560c02c6ebcb84473',1,'DDS_PublicationSendStatus']]]
+];

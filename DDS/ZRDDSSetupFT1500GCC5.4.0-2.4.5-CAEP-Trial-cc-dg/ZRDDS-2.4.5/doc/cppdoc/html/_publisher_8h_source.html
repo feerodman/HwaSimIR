@@ -1,0 +1,280 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: Publisher.h 源文件</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>类</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('_publisher_8h_source.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">Publisher.h</div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#ifndef Publisher_h__</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#define Publisher_h__</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#include &quot;DomainEntity.h&quot;</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#include &quot;ZRSequence.h&quot;</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="preprocessor">#include &quot;ZRBuiltinTypes.h&quot;</span></div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#include &quot;ZRDDSCppWrapper.h&quot;</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="keyword">struct </span>PublisherImpl;</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespace_d_d_s.html">DDS</a> {</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="keyword">class </span>DataWriter;</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="keyword">class </span>Topic;</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="keyword">class </span>DataWriterListener;</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="keyword">class </span>PublisherListener;</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="keyword">class </span>DomainParticipant;</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="keyword">class </span>TypeSupport;</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;</div>
+<div class="line"><a name="l00039"></a><span class="lineno"><a class="line" href="class_d_d_s_1_1_publisher.html">   39</a></span>&#160;<span class="keyword">class </span><a class="code" href="class_d_d_s_1_1_publisher.html">Publisher</a> : <span class="keyword">public</span> <a class="code" href="class_d_d_s_1_1_domain_entity.html">DomainEntity</a></div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;{</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="preprocessor">#ifdef _ZRXMLINTERFACE</span></div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="preprocessor">#ifdef _ZRXMLENTITYINTERFACE</span></div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="class_d_d_s_1_1_data_writer.html">DataWriter</a>* lookup_datawriter_by_name(</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        <span class="keyword">const</span> <a class="code" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a>* name) = 0;</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> lookup_named_datawriters(</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        <span class="keyword">const</span> <a class="code" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a>* pattern, <a class="code" href="struct_d_d_s___string_seq.html">StringSeq</a>&amp; writer_names) = 0;</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="class_d_d_s_1_1_data_writer.html">DataWriter</a>* create_datawriter_from_xml_string(</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        <span class="keyword">const</span> <a class="code" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a>* xml_content) = 0;</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;<span class="preprocessor">#endif // _ZRXMLENTITYINTERFACE</span></div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;<span class="preprocessor">#ifdef _ZRXMLQOSINTERFACE</span></div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_publisher.html#a9fa826e5947e935aab51298077a72cf7">set_default_datawriter_qos_with_profile</a>(</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;        <span class="keyword">const</span> <a class="code" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a>* library_name,</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;        <span class="keyword">const</span> <a class="code" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a>* profile_name,</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;        <span class="keyword">const</span> <a class="code" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a>* qos_name) = 0;</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_publisher.html#a0c013342bb00604551deb8833c4a7fc5">set_qos_with_profile</a>(</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;        <span class="keyword">const</span> <a class="code" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a>* library_name,</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;        <span class="keyword">const</span> <a class="code" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a>* profile_name,</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;        <span class="keyword">const</span> <a class="code" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a>* qos_name) = 0;</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="class_d_d_s_1_1_data_writer.html">DataWriter</a>* <a class="code" href="class_d_d_s_1_1_publisher.html#a9789cf2c9f0fd6d9c2abe4df91455e8b">create_datawriter_with_qos_profile</a>(</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;        <a class="code" href="class_d_d_s_1_1_topic.html">Topic</a> *topic,</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;        <span class="keyword">const</span> <a class="code" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a>* library_name,</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;        <span class="keyword">const</span> <a class="code" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a>* profile_name,</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;        <span class="keyword">const</span> <a class="code" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a>* qos_name,</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;        <a class="code" href="class_d_d_s_1_1_data_writer_listener.html">DataWriterListener</a> *dw_listener,</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;        <a class="code" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> mask) = 0;</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="class_d_d_s_1_1_data_writer.html">DataWriter</a>* <a class="code" href="class_d_d_s_1_1_publisher.html#ae5bb51444857767eaf2ce62bdde0c8b4">create_datawriter_with_topic_and_qos_profile</a>(</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;        <span class="keyword">const</span> <a class="code" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a>* topicName,</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;        <a class="code" href="class_d_d_s_1_1_type_support.html">TypeSupport</a>* typeSupport,</div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;        <span class="keyword">const</span> <a class="code" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a>* library_name,</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;        <span class="keyword">const</span> <a class="code" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a>* profile_name,</div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;        <span class="keyword">const</span> <a class="code" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a>* qos_name,</div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;        <a class="code" href="class_d_d_s_1_1_data_writer_listener.html">DataWriterListener</a> *dw_listener,</div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;        <a class="code" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> mask) = 0;</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;</div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;<span class="preprocessor">#endif // _ZRXMLQOSINTERFACE</span></div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;<span class="preprocessor">#endif // _ZRXMLINTERFACE</span></div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;</div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="class_d_d_s_1_1_data_writer.html">DataWriter</a>* <a class="code" href="class_d_d_s_1_1_publisher.html#a04c18041cc57db814400926da3df4bdd">create_datawriter</a>(</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;        <a class="code" href="class_d_d_s_1_1_topic.html">Topic</a> *the_topic,</div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;        <span class="keyword">const</span> <a class="code" href="struct_d_d_s___data_writer_qos.html">DataWriterQos</a> &amp;qoslist,</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;        <a class="code" href="class_d_d_s_1_1_data_writer_listener.html">DataWriterListener</a> *a_listener,</div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;        <span class="keyword">const</span> <a class="code" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> &amp;mask) = 0;</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;</div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_publisher.html#a638462bd712d57d1ef855b924e50675a">delete_datawriter</a>(<a class="code" href="class_d_d_s_1_1_data_writer.html">DataWriter</a> *a_writer) = 0;</div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;</div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="class_d_d_s_1_1_data_writer.html">DataWriter</a>* <a class="code" href="class_d_d_s_1_1_publisher.html#af6304ae08a670b90e4efd7dda2db1f11">lookup_datawriter</a>(</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;        <span class="keyword">const</span> <a class="code" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a>* topic_name) = 0;</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_publisher.html#aa840bee3ecee76a54e5142ac7ce3c2d6">suspend_publications</a>() = 0;</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_publisher.html#a49405891c5d0b6c37be81e4b9770690e">resume_publications</a>() = 0;</div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;<span class="preprocessor">#ifdef _ZRDDS_INCLUDE_PRESENTATION_QOS</span></div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;</div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_publisher.html#a3d5610aa3be55409bbfe74d8f0803fc9">begin_coherent_changes</a>() = 0;</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;</div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_publisher.html#ac82611bbf5352f5eab945948a61942cb">end_coherent_changes</a>() = 0;</div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;</div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;<span class="preprocessor">#endif //_ZRDDS_INCLUDE_PRESENTATION_QOS</span></div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;</div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_publisher.html#a1e6f6bae4f914d31b60f071c2866c568">wait_for_acknowledgments</a>(<span class="keyword">const</span> <a class="code" href="struct_d_d_s___duration__t.html">Duration_t</a> &amp;max_wait) = 0;</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;</div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="class_d_d_s_1_1_domain_participant.html">DomainParticipant</a>* <a class="code" href="class_d_d_s_1_1_publisher.html#a94cde7b907be3fe99720db29b6cc610b">get_participant</a>() = 0;</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_publisher.html#af0631af8fba225cc6fa86319854a6ed8">delete_contained_entities</a>() = 0;</div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;</div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_publisher.html#aeaf9fded08f6a8019434878da64944e8">set_default_datawriter_qos</a>(<span class="keyword">const</span> <a class="code" href="struct_d_d_s___data_writer_qos.html">DataWriterQos</a> &amp;qoslist) = 0;</div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;</div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_publisher.html#a72038edc95365090ef8b9e3ac829677e">get_default_datawriter_qos</a>(<a class="code" href="struct_d_d_s___data_writer_qos.html">DataWriterQos</a> &amp;qoslist) = 0;</div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;</div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_publisher.html#ae7c0e6c7401eacd6a1120ba6d5d72464">copy_from_topic_qos</a>(</div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;        <a class="code" href="struct_d_d_s___data_writer_qos.html">DataWriterQos</a> &amp;a_datawriter_qos, </div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;        <span class="keyword">const</span> <a class="code" href="struct_d_d_s___topic_qos.html">TopicQos</a> &amp;a_topic_qos) = 0;</div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;</div>
+<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_publisher.html#acfee65074d21480fb3dd562f7fc40dc6">set_qos</a>(<span class="keyword">const</span> <a class="code" href="struct_d_d_s___publisher_qos.html">PublisherQos</a> &amp;qoslist) = 0;</div>
+<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;</div>
+<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_publisher.html#a06f49bf071037323608d18ad36c146ac">get_qos</a>(<a class="code" href="struct_d_d_s___publisher_qos.html">PublisherQos</a> &amp;qoslist) = 0;</div>
+<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;</div>
+<div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_publisher.html#a297490f10a23bbe0fabfb41eca151a90">set_listener</a>(</div>
+<div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160;        <a class="code" href="class_d_d_s_1_1_publisher_listener.html">PublisherListener</a> *a_listener, </div>
+<div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160;        <span class="keyword">const</span> <a class="code" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> &amp;mask) = 0;</div>
+<div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160;</div>
+<div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="class_d_d_s_1_1_publisher_listener.html">PublisherListener</a>* <a class="code" href="class_d_d_s_1_1_publisher.html#a0d9e52b633926c26f1e65071856e2dd8">get_listener</a>() = 0;</div>
+<div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;</div>
+<div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160;<span class="keyword">protected</span>:</div>
+<div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160;    <span class="keyword">virtual</span> ~<a class="code" href="class_d_d_s_1_1_publisher.html">Publisher</a>() {}</div>
+<div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160;};</div>
+<div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160;</div>
+<div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160;<span class="keyword">typedef</span> <a class="code" href="class_d_d_s_1_1_publisher.html">Publisher</a>* <a class="code" href="class_d_d_s_1_1_publisher.html">PublisherPtr</a>;</div>
+<div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;<span class="comment">// 声明PublisherSeq类</span></div>
+<div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;DDS_SEQUENCE_CPP(PublisherSeq, PublisherPtr);</div>
+<div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160;</div>
+<div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160;} <span class="comment">// namespace DDS</span></div>
+<div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160;</div>
+<div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160;<span class="preprocessor">#endif // Publisher_h__</span></div>
+<div class="ttc" id="class_d_d_s_1_1_publisher_html_a9fa826e5947e935aab51298077a72cf7"><div class="ttname"><a href="class_d_d_s_1_1_publisher.html#a9fa826e5947e935aab51298077a72cf7">DDS::Publisher::set_default_datawriter_qos_with_profile</a></div><div class="ttdeci">virtual ReturnCode_t set_default_datawriter_qos_with_profile(const Char *library_name, const Char *profile_name, const Char *qos_name)=0</div><div class="ttdoc">从QoS仓库中获取数据写者QoS并将其设为默认数据写者QoS </div></div>
+<div class="ttc" id="class_d_d_s_1_1_domain_entity_html"><div class="ttname"><a href="class_d_d_s_1_1_domain_entity.html">DDS::DomainEntity</a></div><div class="ttdoc">该类是所有域参与者子实体的父类，没有实际意义，仅仅根据协议定义。 </div><div class="ttdef"><b>Definition:</b> DomainEntity.h:23</div></div>
+<div class="ttc" id="struct_d_d_s___publisher_qos_html"><div class="ttname"><a href="struct_d_d_s___publisher_qos.html">DDS_PublisherQos</a></div><div class="ttdoc">发布者QoS配置 </div><div class="ttdef"><b>Definition:</b> PublisherQos.h:24</div></div>
+<div class="ttc" id="class_d_d_s_1_1_publisher_html"><div class="ttname"><a href="class_d_d_s_1_1_publisher.html">DDS::Publisher</a></div><div class="ttdoc">ZRDDS提供的发布者接口，应用创建发布者表示自身想向指定的域内提供数据； </div><div class="ttdef"><b>Definition:</b> Publisher.h:39</div></div>
+<div class="ttc" id="class_d_d_s_1_1_data_writer_listener_html"><div class="ttname"><a href="class_d_d_s_1_1_data_writer_listener.html">DDS::DataWriterListener</a></div><div class="ttdoc">该类作为数据写者监听器的父类。 </div><div class="ttdef"><b>Definition:</b> DataWriterListener.h:25</div></div>
+<div class="ttc" id="class_d_d_s_1_1_data_writer_html"><div class="ttname"><a href="class_d_d_s_1_1_data_writer.html">DDS::DataWriter</a></div><div class="ttdoc">DDS标准中的数据读者接口。 </div><div class="ttdef"><b>Definition:</b> DataWriter.h:34</div></div>
+<div class="ttc" id="struct_d_d_s___topic_qos_html"><div class="ttname"><a href="struct_d_d_s___topic_qos.html">DDS_TopicQos</a></div><div class="ttdoc">主题实体的QoS配置。 </div><div class="ttdef"><b>Definition:</b> TopicQos.h:37</div></div>
+<div class="ttc" id="struct_d_d_s___string_seq_html"><div class="ttname"><a href="struct_d_d_s___string_seq.html">DDS_StringSeq</a></div><div class="ttdoc">声明内置数据类型 DDS_Char* 的序列，参见核心接口序列相关数据类型 。 </div></div>
+<div class="ttc" id="class_d_d_s_1_1_domain_participant_html"><div class="ttname"><a href="class_d_d_s_1_1_domain_participant.html">DDS::DomainParticipant</a></div><div class="ttdoc">该类抽象域参与者实体。 </div><div class="ttdef"><b>Definition:</b> DomainParticipant.h:40</div></div>
+<div class="ttc" id="struct_d_d_s___data_writer_qos_html"><div class="ttname"><a href="struct_d_d_s___data_writer_qos.html">DDS_DataWriterQos</a></div><div class="ttdoc">定义数据写者的QoS </div><div class="ttdef"><b>Definition:</b> DataWriterQos.h:42</div></div>
+<div class="ttc" id="class_d_d_s_1_1_publisher_html_acfee65074d21480fb3dd562f7fc40dc6"><div class="ttname"><a href="class_d_d_s_1_1_publisher.html#acfee65074d21480fb3dd562f7fc40dc6">DDS::Publisher::set_qos</a></div><div class="ttdeci">virtual ReturnCode_t set_qos(const PublisherQos &amp;qoslist)=0</div><div class="ttdoc">设置发布者QoS。 </div></div>
+<div class="ttc" id="class_d_d_s_1_1_publisher_html_ae7c0e6c7401eacd6a1120ba6d5d72464"><div class="ttname"><a href="class_d_d_s_1_1_publisher.html#ae7c0e6c7401eacd6a1120ba6d5d72464">DDS::Publisher::copy_from_topic_qos</a></div><div class="ttdeci">virtual ReturnCode_t copy_from_topic_qos(DataWriterQos &amp;a_datawriter_qos, const TopicQos &amp;a_topic_qos)=0</div><div class="ttdoc">使用TopicQos中的对应项赋值DataWriterQos。 </div></div>
+<div class="ttc" id="class_d_d_s_1_1_publisher_html_a3d5610aa3be55409bbfe74d8f0803fc9"><div class="ttname"><a href="class_d_d_s_1_1_publisher.html#a3d5610aa3be55409bbfe74d8f0803fc9">DDS::Publisher::begin_coherent_changes</a></div><div class="ttdeci">virtual ReturnCode_t begin_coherent_changes()=0</div><div class="ttdoc">开始进行“连续”的修改。 </div></div>
+<div class="ttc" id="struct_d_d_s___duration__t_html"><div class="ttname"><a href="struct_d_d_s___duration__t.html">DDS_Duration_t</a></div><div class="ttdoc">用来表明一段时间段，协议规定至少有毫微秒的分辨率。 </div><div class="ttdef"><b>Definition:</b> Duration_t.h:40</div></div>
+<div class="ttc" id="class_d_d_s_1_1_publisher_html_a9789cf2c9f0fd6d9c2abe4df91455e8b"><div class="ttname"><a href="class_d_d_s_1_1_publisher.html#a9789cf2c9f0fd6d9c2abe4df91455e8b">DDS::Publisher::create_datawriter_with_qos_profile</a></div><div class="ttdeci">virtual DataWriter * create_datawriter_with_qos_profile(Topic *topic, const Char *library_name, const Char *profile_name, const Char *qos_name, DataWriterListener *dw_listener, StatusKindMask mask)=0</div><div class="ttdoc">从QoS仓库中获取数据写者QoS并用其创建数据写者 </div></div>
+<div class="ttc" id="class_d_d_s_1_1_publisher_html_aa840bee3ecee76a54e5142ac7ce3c2d6"><div class="ttname"><a href="class_d_d_s_1_1_publisher.html#aa840bee3ecee76a54e5142ac7ce3c2d6">DDS::Publisher::suspend_publications</a></div><div class="ttdeci">virtual ReturnCode_t suspend_publications()=0</div><div class="ttdoc">挂起数据发布。 </div></div>
+<div class="ttc" id="class_d_d_s_1_1_publisher_html_ac82611bbf5352f5eab945948a61942cb"><div class="ttname"><a href="class_d_d_s_1_1_publisher.html#ac82611bbf5352f5eab945948a61942cb">DDS::Publisher::end_coherent_changes</a></div><div class="ttdeci">virtual ReturnCode_t end_coherent_changes()=0</div><div class="ttdoc">结束“连续”的修改，使接收端可以访问修改的值，必须在 begin_coherent_changes 调用之后调用。 ...</div></div>
+<div class="ttc" id="class_d_d_s_1_1_publisher_html_a49405891c5d0b6c37be81e4b9770690e"><div class="ttname"><a href="class_d_d_s_1_1_publisher.html#a49405891c5d0b6c37be81e4b9770690e">DDS::Publisher::resume_publications</a></div><div class="ttdeci">virtual ReturnCode_t resume_publications()=0</div><div class="ttdoc">恢复数据发布，与 suspend_publications 配对使用。 </div></div>
+<div class="ttc" id="class_d_d_s_1_1_topic_html"><div class="ttname"><a href="class_d_d_s_1_1_topic.html">DDS::Topic</a></div><div class="ttdoc">主题是发布订阅模型中数据基本的抽象。 </div><div class="ttdef"><b>Definition:</b> Topic.h:50</div></div>
+<div class="ttc" id="class_d_d_s_1_1_publisher_html_ae5bb51444857767eaf2ce62bdde0c8b4"><div class="ttname"><a href="class_d_d_s_1_1_publisher.html#ae5bb51444857767eaf2ce62bdde0c8b4">DDS::Publisher::create_datawriter_with_topic_and_qos_profile</a></div><div class="ttdeci">virtual DataWriter * create_datawriter_with_topic_and_qos_profile(const Char *topicName, TypeSupport *typeSupport, const Char *library_name, const Char *profile_name, const Char *qos_name, DataWriterListener *dw_listener, StatusKindMask mask)=0</div><div class="ttdoc">创建指定主题名称的数据写者，当主题名称关联的主题未创建时，将自动创建， 否则将利用已经创建的主题创建数...</div></div>
+<div class="ttc" id="class_d_d_s_1_1_publisher_html_af6304ae08a670b90e4efd7dda2db1f11"><div class="ttname"><a href="class_d_d_s_1_1_publisher.html#af6304ae08a670b90e4efd7dda2db1f11">DDS::Publisher::lookup_datawriter</a></div><div class="ttdeci">virtual DataWriter * lookup_datawriter(const Char *topic_name)=0</div><div class="ttdoc">根据主题名查找对应的数据写者。 </div></div>
+<div class="ttc" id="class_d_d_s_1_1_publisher_listener_html"><div class="ttname"><a href="class_d_d_s_1_1_publisher_listener.html">DDS::PublisherListener</a></div><div class="ttdoc">作为发布者监听器的父类。 </div><div class="ttdef"><b>Definition:</b> PublisherListener.h:22</div></div>
+<div class="ttc" id="group___cpp_core_struct_html_ga60402b2ec7acab8228cd7ffddcff7fb3"><div class="ttname"><a href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">DDS::Char</a></div><div class="ttdeci">DDS_Char Char</div><div class="ttdoc">ZRDDS内置的1字节整型。 </div><div class="ttdef"><b>Definition:</b> ZRDDSCppWrapper.h:141</div></div>
+<div class="ttc" id="class_d_d_s_1_1_publisher_html_aeaf9fded08f6a8019434878da64944e8"><div class="ttname"><a href="class_d_d_s_1_1_publisher.html#aeaf9fded08f6a8019434878da64944e8">DDS::Publisher::set_default_datawriter_qos</a></div><div class="ttdeci">virtual ReturnCode_t set_default_datawriter_qos(const DataWriterQos &amp;qoslist)=0</div><div class="ttdoc">设置数据写者的默认QoS。 </div></div>
+<div class="ttc" id="class_d_d_s_1_1_publisher_html_a638462bd712d57d1ef855b924e50675a"><div class="ttname"><a href="class_d_d_s_1_1_publisher.html#a638462bd712d57d1ef855b924e50675a">DDS::Publisher::delete_datawriter</a></div><div class="ttdeci">virtual ReturnCode_t delete_datawriter(DataWriter *a_writer)=0</div><div class="ttdoc">删除一个数据写者。 </div></div>
+<div class="ttc" id="namespace_d_d_s_html"><div class="ttname"><a href="namespace_d_d_s.html">DDS</a></div><div class="ttdef"><b>Definition:</b> BuiltinDataDataReader.h:13</div></div>
+<div class="ttc" id="class_d_d_s_1_1_publisher_html_a04c18041cc57db814400926da3df4bdd"><div class="ttname"><a href="class_d_d_s_1_1_publisher.html#a04c18041cc57db814400926da3df4bdd">DDS::Publisher::create_datawriter</a></div><div class="ttdeci">virtual DataWriter * create_datawriter(Topic *the_topic, const DataWriterQos &amp;qoslist, DataWriterListener *a_listener, const StatusKindMask &amp;mask)=0</div><div class="ttdoc">创建DataWriter。 </div></div>
+<div class="ttc" id="class_d_d_s_1_1_publisher_html_a06f49bf071037323608d18ad36c146ac"><div class="ttname"><a href="class_d_d_s_1_1_publisher.html#a06f49bf071037323608d18ad36c146ac">DDS::Publisher::get_qos</a></div><div class="ttdeci">virtual ReturnCode_t get_qos(PublisherQos &amp;qoslist)=0</div><div class="ttdoc">获取发布者QoS。 </div></div>
+<div class="ttc" id="class_d_d_s_1_1_publisher_html_a0d9e52b633926c26f1e65071856e2dd8"><div class="ttname"><a href="class_d_d_s_1_1_publisher.html#a0d9e52b633926c26f1e65071856e2dd8">DDS::Publisher::get_listener</a></div><div class="ttdeci">virtual PublisherListener * get_listener()=0</div><div class="ttdoc">获取发布者当前的监听器。 </div></div>
+<div class="ttc" id="class_d_d_s_1_1_publisher_html_a94cde7b907be3fe99720db29b6cc610b"><div class="ttname"><a href="class_d_d_s_1_1_publisher.html#a94cde7b907be3fe99720db29b6cc610b">DDS::Publisher::get_participant</a></div><div class="ttdeci">virtual DomainParticipant * get_participant()=0</div><div class="ttdoc">获取创建该发布者的域参与者。 </div></div>
+<div class="ttc" id="class_d_d_s_1_1_publisher_html_af0631af8fba225cc6fa86319854a6ed8"><div class="ttname"><a href="class_d_d_s_1_1_publisher.html#af0631af8fba225cc6fa86319854a6ed8">DDS::Publisher::delete_contained_entities</a></div><div class="ttdeci">virtual ReturnCode_t delete_contained_entities()=0</div><div class="ttdoc">删除Publisher所包含的所有DataWriter。 </div></div>
+<div class="ttc" id="class_d_d_s_1_1_publisher_html_a0c013342bb00604551deb8833c4a7fc5"><div class="ttname"><a href="class_d_d_s_1_1_publisher.html#a0c013342bb00604551deb8833c4a7fc5">DDS::Publisher::set_qos_with_profile</a></div><div class="ttdeci">virtual ReturnCode_t set_qos_with_profile(const Char *library_name, const Char *profile_name, const Char *qos_name)=0</div><div class="ttdoc">从QoS仓库中获取发布者QoS并将其设置到发布者中 </div></div>
+<div class="ttc" id="group___cpp_core_struct_html_ga8542fec7ab88de317610a49f93f69233"><div class="ttname"><a href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">DDS::StatusKindMask</a></div><div class="ttdeci">DDS_StatusKindMask StatusKindMask</div><div class="ttdoc">映射核心数据 DDS_StatusKindMask 结构为C++接口。 </div><div class="ttdef"><b>Definition:</b> ZRDDSCppWrapper.h:2091</div></div>
+<div class="ttc" id="class_d_d_s_1_1_publisher_html_a72038edc95365090ef8b9e3ac829677e"><div class="ttname"><a href="class_d_d_s_1_1_publisher.html#a72038edc95365090ef8b9e3ac829677e">DDS::Publisher::get_default_datawriter_qos</a></div><div class="ttdeci">virtual ReturnCode_t get_default_datawriter_qos(DataWriterQos &amp;qoslist)=0</div><div class="ttdoc">获取由 set_default_datawriter_qos 设置的DataWriterQos。 </div></div>
+<div class="ttc" id="class_d_d_s_1_1_publisher_html_a297490f10a23bbe0fabfb41eca151a90"><div class="ttname"><a href="class_d_d_s_1_1_publisher.html#a297490f10a23bbe0fabfb41eca151a90">DDS::Publisher::set_listener</a></div><div class="ttdeci">virtual ReturnCode_t set_listener(PublisherListener *a_listener, const StatusKindMask &amp;mask)=0</div><div class="ttdoc">设置发布者的监听器。 </div></div>
+<div class="ttc" id="class_d_d_s_1_1_publisher_html_a1e6f6bae4f914d31b60f071c2866c568"><div class="ttname"><a href="class_d_d_s_1_1_publisher.html#a1e6f6bae4f914d31b60f071c2866c568">DDS::Publisher::wait_for_acknowledgments</a></div><div class="ttdeci">virtual ReturnCode_t wait_for_acknowledgments(const Duration_t &amp;max_wait)=0</div><div class="ttdoc">阻塞调用该函数的线程直到该发布者创建的数据写者发送的所有数据都被接收端所响应或者超时。 ...</div></div>
+<div class="ttc" id="group___core_base_struct_html_ga73f148aaf96b5f6f9fc630b7cfeb0c91"><div class="ttname"><a href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a></div><div class="ttdeci">DDS_ReturnCode_t</div><div class="ttdoc">ZRDDS接口的返回值类型。 </div><div class="ttdef"><b>Definition:</b> ReturnCode_t.h:18</div></div>
+<div class="ttc" id="class_d_d_s_1_1_type_support_html"><div class="ttname"><a href="class_d_d_s_1_1_type_support.html">DDS::TypeSupport</a></div><div class="ttdoc">类型支持接口，用于向ZRDDS注册用户自定义数据类型。 </div><div class="ttdef"><b>Definition:</b> TypeSupport.h:33</div></div>
+</div><!-- fragment --></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="dir_0fc3f8f3ef96ce2d45d66d6e29832317.html">resources</a></li><li class="navelem"><a class="el" href="dir_cf9ceadfa18f25e608d16251156af657.html">zrdds</a></li><li class="navelem"><a class="el" href="dir_49213087373222e5c37cddb4e4d5f33e.html">src</a></li><li class="navelem"><a class="el" href="dir_e5f368d85bc0ec88e5ed7b816b1951ba.html">CPlusPlusInterface</a></li><li class="navelem"><b>Publisher.h</b></li>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

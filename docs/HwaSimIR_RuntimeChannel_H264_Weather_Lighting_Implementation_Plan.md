@@ -2209,3 +2209,76 @@ DataDrivenTestQT 只增加测试 CLI 对既有字段和 `1.txt` 的控制，并�
 - 当前是大尺度世界平面/切片，不包含真实体积内部散射、云影、自遮挡和云顶/云底独立温度场；透明排序仍采用 Panda 常规 back-to-front，不引入 OIT。
 - 下一阶段可定义为 W1.5/W3 `Volumetric3D Cloud`：低分辨率 3D noise、weather volume、adaptive raymarch、temporal reprojection、cloud shadow 与分层温度。W1 未实现任何生产 raymarch 代码。
 - W2 的雨、雪、雾仍未实施。
+
+### 2026-08-24 / W1.5 Streamed World-Space Volumetric Clouds 实施记录
+
+#### 范围与世界网格架构
+
+- 实施基线为 `main@d7b1b8750b9c023710c7b040a717b375eb30486a`；未 commit、未 push、未修改 `.idea`，未实施雨、雪、雾、天气照明，也未改变 CommonData、UDP、Packet v3、Stage3～Stage6 红外目标物理、800×800 或标注语义。
+- 新增 `StreamedWorld3D` 模式；`Volumetric3D` 继续作为兼容 renderer 名称，但 placement/lifecycle 同样使用 `StreamedWorld`。W1 的 `World2D/Layered2_5D` 仍承担远场云，3D 云只负责目标附近的近中距离体积感。
+- 跟踪目标仅作为 streaming center。按完整协议键 `targetType + targetPlatID + targetID` 解析目标位置，目标节点不作为云父节点；所有云体代理均挂在 `m_renderRoot/Stage7VolumeRoot`。目标移动只改变附近哪些固定 world cell 被加载，不改变 descriptor 的世界位置。
+- 新增独立的 `IRWorldCloudStreaming`：`floor(worldXY/CellSizeM)` 得到 cell，随后对 `cellX/cellY/WeatherSeed/weatherProfile` 做稳定 64 位 hash。该 seed 决定 hasCloud、世界位置、高度、非均匀半径、密度、共享模板、温度偏移、旋转和 noise offset；运行中不调用逐帧 `rand()`。
+- `StreamingRadiusM=6000`、`DeactivationRadiusM=7500` 形成 1500 m 滞回区；固定 8 节点对象池负责 activate/fade/deactivate/reuse，不按 cell 创建销毁 NodePath。边界 fade 调制 density/optical depth，非白色 alpha 硬切。
+- 内置 `--w15-cloud-model-check` 和 `tools/w15_world_cloud_model_check.ps1` 验证同一 cell 在卸载/重载后 descriptor 完全一致；实测 result=PASS、candidateCount=17、hysteresis=1500 m。
+
+#### 3D 密度、raymarch 与红外积分
+
+- 初始化时一次生成并缓存 4 个共享 `32×32×32 R8` density template。低频 shape、detail noise、cavity 与 ellipsoid edge falloff 共同形成内部空洞和柔边；cloudId 只选择模板并改变 scale/rotation/noise offset，不逐云、逐帧生成 3D texture。
+- 每个 active 云体使用非均匀 ellipsoid proxy，fragment 先做 ray-volume intersection，只在 proxy 内 raymarch；Near/Medium/Far 默认 `10/7/4` steps，按距离与投影尺寸降级，`T<0.03` 时提前终止，没有 fullscreen volumetric pass。
+- opaque raw scene 先写 GPU depth，体积云合成再采样该 depth，把积分终点限制在场景表面之前；没有 GPU→CPU depth readback。RK3588 g6p0 的 `eglGraphicsPipe` 只有在已有 host/GSG 时才能创建 `BF_can_bind_every` raw FBO，因此 Headless+3D 路径先创建普通 final color host，再创建共享 GSG 的 raw color+depth 输出。短探针确认 `rawBufferReady=1/finalBufferReady=1` 且无 `GL_INVALID_*`。
+- 每段积分使用 `T *= exp(-sigma*density*stepLength)`；最终 alpha 为 `1-T`，云辐射灰度复用 W1 的 `IRWeatherEffects::cloudEmissionGray` 与现有 Planck/band 映射。`cloudTemperatureK + descriptor.temperatureOffsetK` 决定 MWIR/LWIR 云自身辐射，不改变目标温度。
+- 3D 可见时远场 Layered2_5D contribution 调到 0.72，避免同一区域过度叠加；3D 不可见时恢复 1.0。
+
+#### 修改文件
+
+```text
+HwaSim_IR/HwaSim_IR/IR/IRWorldCloudStreaming.h
+HwaSim_IR/HwaSim_IR/IR/IRWorldCloudStreaming.cpp
+HwaSim_IR/HwaSim_IR/HwaSimIR.h
+HwaSim_IR/HwaSim_IR/HwaSimIR.cpp
+HwaSim_IR/HwaSim_IR/IR/IRWeatherEffects.h
+HwaSim_IR/HwaSim_IR/IR/IRWeatherEffects.cpp
+HwaSim_IR/HwaSim_IR/main.cpp
+HwaSim_IR/HwaSim_IR/CMakeLists.txt
+HwaSim_IR/HwaSim_IR/HwaSim_IR.vcxproj
+HwaSim_IR/HwaSim_IR/HwaSim_IR.vcxproj.filters
+HwaSim_IR/Bin/Config/HwaSimIRRuntime.ini
+HwaSim_IR/Bin/Config/Weather/weather_profiles.json
+tools/w15_world_cloud_model_check.ps1
+tools/w15_streamed_cloud_windows_smoke.ps1
+tools/w15_streamed_cloud_rk3588_acceptance.ps1
+docs/HwaSimIR_RuntimeChannel_H264_Weather_Lighting_Implementation_Plan.md
+```
+
+`weather_profiles.json` 只增加各天气的 `volumeCloudProbability/volumeCloudDensityScale`；Clear 为 0，Cloudy/Overcast 分别为 0.35/0.65。最终业务概率与密度不硬编码在 renderer 中。
+
+#### Windows 构建、运行与成像
+
+- 三个 Windows Release 构建 PASS。SHA-256：HwaSim_IR `FF2F54A98C0D26B23FE09ED91699822689F7E553DF16E2F3AFFB883C67CBBE6B`；DataDrivenTestQT `4455559C26D33663B2BB9B7C8198A6BE2E6D15FB6D588D3AD44E178E533C0F43`；VideoDisplay `4D6A0B3873BCF20DA72A9B736C4E27FA6D48E40AC215356DB4B5CBBDF08A4B46`。
+- 45 秒 MWIR 往返多 cell 闭环 PASS：`logs/w15-streamed-cloud-windows-20260824-141348`。共 36 次 activate，12 个 cloudId 在 deactivate 后按原 ID/seed/position 重新 activate；renderer、4 个共享 density template、目标 streaming center、GPU depth、可见云、FFmpeg H.264 编解码、Packet v3 和无 fallback 全部通过。
+- 离线空间检查在同一日志中得到目标到活动 ellipsoid 的最小归一化距离 0.831（小于 1），证明轨迹实际进入云体；depth texture 把目标表面之后的积分截断。往返录像与远离/接近/穿越/离开抽帧保存在 `logs/w15-streamed-cloud-windows-20260824-141348/frames`。
+- MWIR 240 K / 260 K 使用相同 seed、轨迹、H.264 和 Packet v3，仅修改测试 profile 副本：两组分别见 `logs/w15-streamed-cloud-windows-20260824-141810` 与 `141923`。日志的 `cloudGray` 从 `0.271327` 增到 `0.339889`；对照图为 `logs/w15-mwir-temperature-ab-20260824/mwir_240K_vs_260K.png`，证明 3D 云亮度响应云温而非 PNG RGB。
+- W1 原有 Layered2_5D 板端基线本轮继续 PASS。最新 Windows World2D smoke 的 Clear/Overcast、世界空间、H.264/Packet v3 均通过；Cloudy 自动切换因工作区中用户未提交的 DataDrivenTestQT 修改把 init `envSky` 固定为 5 而无法形成有效 Cloudy case，该失败不归因于 W1/W1.5 renderer，且没有覆盖这项用户修改。
+
+#### RK3588 实机与性能
+
+- VM 生产 MPP API 检查和完整 Release 交叉构建 PASS；最终 ELF 为 AArch64，`NEEDED librockchip_mpp.so.1`，部署二进制 SHA-256 为 `6c0a3e24883dfeea1ded0c0313298bf8f6ff87fc0b64f85000ffc9e20d8cb55c`。
+- 板端全过程无 default route，只保留 `192.168.1.0/24`；使用最小 Xorg `:0`、HeadlessOffscreen、`GL_VENDOR=ARM`、`GL_RENDERER=Mali-LODX`、`hardwareGpu=1`、MPP H.264、Packet v3 `flags=0x7`。
+- 100 µrad/pixel 正式四组矩阵（5 秒预热、30 秒统计）见 `logs/w15-streamed-cloud-rk3588-20260824-130715`：
+
+| 组别 | render FPS | output FPS | display FPS | render ms | weather ms | readback ms | preprocess ms | MPP ms | CPU |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Layered2_5D only | 57.185 | 57.186 | 57.764 | 16.944 | 0.046 | 1.734 | 8.059 | 2.005 | 141.8% |
+| StreamedWorld3D MaxVisible=1 | 60.003 | 60.002 | 60.555 | 16.050 | 0.264 | 1.769 | 8.070 | 2.048 | 139.9% |
+| StreamedWorld3D MaxVisible=2 | 59.972 | 59.970 | 60.505 | 16.122 | 0.267 | 1.784 | 8.084 | 2.052 | 143.6% |
+| StreamedWorld3D MaxVisible=4 | 60.022 | 60.021 | 60.556 | 16.034 | 0.281 | 1.764 | 8.051 | 2.072 | 139.9% |
+
+- 修正后的四次往返轨迹 MaxVisible=1 复测见 `logs/w15-streamed-cloud-rk3588-20260824-142356`：`output/display=59.907/60.435 FPS`、render 16.013 ms、28 次 activate/20 次 deactivate、8 个 cloudId 重载 identity PASS、queue 最大 1、sourceSeqLag 最大 1、dropped=0。
+- 1000 µrad/pixel 宽视场补测见 `logs/w15-streamed-cloud-rk3588-20260824-142846`：MaxVisible 1/2/4 的 output 为 `59.861/60.005/60.005 FPS`，display 为 `60.424/60.572/60.537 FPS`，三组均有 8 个 deterministic cloud reactivation。实际轨迹和随机分布同屏仍最多命中 1 个云体，因此 MaxVisible=2/4 的配置与生命周期已测试，但“同时 2/4 个 proxy 产生 fragment”的最坏 GPU 上限没有被本场景饱和，不能据此虚构 4 云体满屏成本。
+- 所有 3D 正式组均有 `[H264EncodeSuccess] backend=mpp`、Windows `[H264DecodeSuccess] backend=ffmpeg`、Packet v3、CodecFallback=0、output queue=0、dropped=0。个别 Layered/MaxVisible=1 轮出现一次 `sourceSeqLagMax=2`，未持续增长；最终 MaxVisible=2/4 与往返 MaxVisible=1 为 1。
+
+#### 结论与已知限制
+
+- W1.5 的 world-grid streaming、deterministic seed、滞回、对象池、共享 3D density、局部 raymarch、GPU scene-depth 截断、W1 红外辐射复用及距离/屏幕 LOD 均已闭环。推荐 RK3588 默认 `MaxVisibleVolumes=1～2`。
+- 当前透明合成是单次吸收/云自身辐射近似，没有多次散射、云影、temporal reprojection 或天气 volume；这些属于后续增强，不在本轮扩展。
+- streaming 轨迹快速跨 cell 时低频 weather/streaming CPU 平均约 0.26～0.37 ms；W1 Layered2_5D 本身仍约 0.046 ms。若后续要求 3D streaming CPU 也严格低于 0.2 ms，应先减少 10 Hz 查询中的 descriptor 重算/日志，而不是降低 800×800、红外质量或 H.264 功能。

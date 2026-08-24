@@ -1,0 +1,291 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: TCP多核传输（&gt;=v2.4.0）</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li class="current"><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>结构体</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('md_resources_docs_online_c_required_tcp_concurrent.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">TCP多核传输（&gt;=v2.4.0） </div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><p>ZRDDS提供TCP多核传输功能，支持用户为读者或写者指定所使用的核，实现绑核传输，当用户为某一个读者或写者配置了多个核时，该实体将会创建同样数量的线程，并一一绑定用户所指定的核，进行多核并发传输，此特性可极大提高ZRDDS在TCP传输模式下性能。当前此特性只支持C、C++版本。</p>
+<h2>掩码值说明</h2>
+<p>在绑核时，需要指定所绑核掩码值的十进制数值，掩码值、需指定的十进制值、与对应CPU序号关系如下：</p>
+<table class="doxtable">
+<tr>
+<th>CPU序号 </th><th>对应掩码值 </th><th>掩码值对应十进制  </th></tr>
+<tr>
+<td>0 </td><td>0x00000001 </td><td>1 </td></tr>
+<tr>
+<td>1 </td><td>0x00000010 </td><td>2 </td></tr>
+<tr>
+<td>2 </td><td>0x00000100 </td><td>4 </td></tr>
+<tr>
+<td>3 </td><td>0x00001000 </td><td>8 </td></tr>
+<tr>
+<td>... </td><td>... </td><td>... </td></tr>
+</table>
+<p>默认情况下，需要通过设置上述掩码对应的十进制值进行绑核。除去此种方式外，ZRDDS为用户提供sysctl.global.use_cpu_id配置项，当设置此配置项为true时，支持直接使用CPU序号代替掩码。 注意：当CPU数量超过32时，必须使用sysctl.global.use_cpu_id进行配置。</p>
+<h2>配置说明</h2>
+<h3>发送端配置说明</h3>
+<p>发送端主要有如下配置：</p>
+<table class="doxtable">
+<tr>
+<th>所属实体 </th><th>配置项 </th><th>含义 </th><th>默认值  </th></tr>
+<tr>
+<td>dpf </td><td>sysctl.global.net.tcp_send_batch_len </td><td>小包并包发送，指定并包发送长度 </td><td>0 </td></tr>
+<tr>
+<td>dp </td><td>sysctl.global.use_cpu_id </td><td>使用cpu序号代替掩码 </td><td>false </td></tr>
+<tr>
+<td>^ </td><td>usertraffic_receive_addresses </td><td>使用TCP多核传输时，地址头需使用tcpv4_cc </td><td>N/A </td></tr>
+<tr>
+<td>dw </td><td>sysctl.dw.asynchronous_send_thread_max_flush_delay&lt;td&gt;使用TCP多核传输并开启小包并包发送时，自动发送周期 </td><td>{0,100000000} </td></tr>
+<tr>
+<td>^ </td><td>sysctl.dw.asynchronous_send_thread_affinity_masks </td><td>使用TCP多核传输时，发送端绑核掩码。可通过设置多次来绑多个核 </td><td>N/A </td></tr>
+</table>
+<ul>
+<li><p class="startli">sysctl.global.net.tcp_send_batch_len</p>
+<p class="startli">默认值为0，表示不启用小包并包发送，即不考虑用户此次要发送的包的大小，直接发送。 当设置了指定值，例如设置值为N，表明当用户要发送的包大小积攒到N时，再统一发送。 例如用户第i（i从1开始）次发送的数据大小为n<sub>i</sub>当n<sub>1</sub> + n<sub>2</sub> + ... + n<sub>k</sub> &gt; N时，发送n<sub>1</sub>到n<sub>k-1</sub>包，否则将第k次发送数据暂存不进行发送。 以具体数值为例： 设置sysctl.global.net.tcp_send_batch_len值为8388608（8M）</p>
+<p class="startli">用户第一次发送数据大小为5M，此时要发送数据未到达指定发送大小8M，则此包将暂存下来，此次并不进行发送。</p>
+<p class="startli">用户第二次的发送数据大小为4M，此时要发送数据大小为5M+4M &gt; 8M，由于最大发送数据量为8M，而此时累计数据量为9M，因此并不能一次将两包全部发送，此时只发送第一包大小为5M的数据，暂存第二包大小为4M的数据。</p>
+<p class="startli">用户第三次的发送数据大小为4M，此时要发送的数据大小为4M+4M = 8M，由于最大发送数据量为8M，而此时累计数据量刚好为8M，因此可一次将两包全部发送，此时暂存数据大小为0。</p>
+</li>
+<li><p class="startli">sysctl.global.use_cpu_id</p>
+<p class="startli">默认为false，表示不开启此功能，此时需要使用CPU掩码值的十进制指定要绑定的CPU。 当配置了sysctl.global.use_cpu_id可配置项时，可直接使用序号值代替掩码值，例如： 当用户指定使用CPU0时，可直接填入数值0； 当用户指定使用CPU1时，可直接填入数值1； … … 注意：当CPU数量超过32时，必须使用sysctl.global.use_cpu_id进行配置。</p>
+</li>
+<li><p class="startli">usertraffic_receive_addresses</p>
+<p class="startli">用户数据使用的地址监听列表，设置方式可参照ZRDDS用户手册10.30。</p>
+</li>
+<li><p class="startli">sysctl.dw.asynchronous_send_thread_max_flush_delay</p>
+<p class="startli">用于设置使用TCP多核传输并开启小包并包发送时的自动发送周期。默认值为100ms，当不配置sysctl.global.net.tcp_send_batch_len时，此配置项无效。此配置项用于应对用户数据未达到sysctl.global.net.tcp_send_batch_len所设置的值，且无新数据发送时，之前积压的数据无法及时发送的情况。设置sysctl.dw.asynchronous_send_thread_max_flush_delay为T，则表明每隔时间T，就将未发送的用户数据全部发送，不论积压数据是否达到sysctl.global.net.tcp_send_batch_len所设置的值。</p>
+</li>
+<li><p class="startli">sysctl.dw.asynchronous_send_thread_affinity_masks</p>
+<p class="startli">使用TCP多核传输时，发送端绑核掩码。可通过设置多次来绑多个核。例如在配置文件中设置4次sysctl.dw.asynchronous_send_thread_affinity_masks，且值分别为0,1,2,3（此处以开启sysctl.global.use_cpu_id为例）。则在发送过程中，ZRDDS将创建4个发送线程，并分别绑定CPU0，CPU1，CPU2，CPU3进行数据发送。即设置n次sysctl.dw.asynchronous_send_thread_affinity_masks，ZRDDS会为用户创建n个发送线程，分别绑定sysctl.dw.asynchronous_send_thread_affinity_masks所设置的值。</p>
+</li>
+</ul>
+<h3>接收端配置说明</h3>
+<p>接收端主要有如下配置：</p>
+<table class="doxtable">
+<tr>
+<th>所属实体 </th><th>配置项 </th><th>含义 </th><th>默认值  </th></tr>
+<tr>
+<td>dp </td><td>sysctl.global.use_cpu_id </td><td>使用cpu序号代替掩码 </td><td>false </td></tr>
+<tr>
+<td>^ </td><td>usertraffic_receive_addresses </td><td>使用TCP多核传输时，地址头需使用tcpv4_cc </td><td>N/A </td></tr>
+<tr>
+<td>^ </td><td>tcp_receive_thread_affinity_masks </td><td>使用TCP模式传输时，接收端绑核掩码。可通过设置多次来设置多个可绑核 </td><td>N/A </td></tr>
+</table>
+<ul>
+<li><p class="startli">sysctl.global.use_cpu_id</p>
+<p class="startli">与发送端配置说明中一致。</p>
+</li>
+<li><p class="startli">usertraffic_receive_addresses</p>
+<p class="startli">与发送端配置说明中一致</p>
+</li>
+<li><p class="startli">tcp_receive_thread_affinity_masks</p>
+<p class="startli">与发送端sysctl.dw.asynchronous_send_thread_affinity_masks配置相似，不同之处为此处为接收线程绑核且tcp_receive_thread_affinity_masks仅指定接收端可绑哪些核，接收线程数量不取决于此配置项的设置次数，仅取决于与之匹配的发送端线程数量。</p>
+</li>
+</ul>
+<h2>配置示例</h2>
+<h3>发送端配置示例</h3>
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;&lt;<span class="keywordtype">zrdds_qos</span> <span class="keyword">xmlns</span>=<span class="stringliteral">&quot;http://www.omg.org/dds/&quot;</span>&gt;</div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;  &lt;<span class="keywordtype">qos_library</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;default_lib&quot;</span>&gt;</div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;    &lt;<span class="keywordtype">qos_profile</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;default_profile&quot;</span>&gt;</div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;      &lt;<span class="keywordtype">participantfactory_qos</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;default&quot;</span>&gt;</div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;        &lt;<span class="keywordtype">property</span>&gt;</div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;          &lt;<span class="keywordtype">value</span>&gt;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;            &lt;<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;              &lt;<span class="keywordtype">name</span>&gt;<span class="keyword">sysctl.global.net.tcp_send_batch_len</span>&lt;/<span class="keywordtype">name</span>&gt;</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;              &lt;<span class="keywordtype">value</span>&gt;8388608&lt;/<span class="keywordtype">value</span>&gt;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;            &lt;/<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;            &lt;<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;              &lt;<span class="keywordtype">name</span>&gt;<span class="keyword">sysctl.global.use_cpu_id</span>&lt;/<span class="keywordtype">name</span>&gt;</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;              &lt;<span class="keywordtype">value</span>&gt;<span class="keyword">true</span>&lt;/<span class="keywordtype">value</span>&gt;</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;            &lt;/<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;          &lt;/<span class="keywordtype">value</span>&gt;</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;        &lt;/<span class="keywordtype">property</span>&gt;</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;   &lt;/<span class="keywordtype">participantfactory_qos</span>&gt;</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;      &lt;<span class="keywordtype">participant_qos</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;tcp_dp_mult&quot;</span>&gt;</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;        &lt;<span class="keywordtype">usertraffic_receive_addresses</span>&gt;</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;          &lt;<span class="keywordtype">addresses</span>&gt;</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;            &lt;<span class="keywordtype">element</span>&gt;<span class="keyword">tcpv4_cc:</span>//<span class="keyword">default</span>//0&lt;/<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;          &lt;/<span class="keywordtype">addresses</span>&gt;</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;        &lt;/<span class="keywordtype">usertraffic_receive_addresses</span>&gt;</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;      &lt;/<span class="keywordtype">participant_qos</span>&gt;      </div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;      &lt;<span class="keywordtype">datawriter_qos</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;tcp_datawriter_mult_0&quot;</span>&gt;</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;        &lt;<span class="keywordtype">reliability</span>&gt;</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;          &lt;<span class="keywordtype">kind</span>&gt;<span class="keyword">BEST_EFFORT_RELIABILITY_QOS</span>&lt;/<span class="keywordtype">kind</span>&gt;</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;        &lt;/<span class="keywordtype">reliability</span>&gt;</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;        &lt;<span class="keywordtype">message_mode</span>&gt;</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;        &lt;<span class="keywordtype">without_timestamp</span>&gt;<span class="keyword">true</span>&lt;/<span class="keywordtype">without_timestamp</span>&gt;</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;          &lt;<span class="keywordtype">without_inlineQos</span>&gt;<span class="keyword">true</span>&lt;/<span class="keywordtype">without_inlineQos</span>&gt;</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        &lt;/<span class="keywordtype">message_mode</span>&gt;</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        &lt;<span class="keywordtype">property</span>&gt;</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;            &lt;<span class="keywordtype">value</span>&gt;</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;              &lt;<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;                &lt;<span class="keywordtype">name</span>&gt;<span class="keyword">sysctl.dw.asynchronous_send_thread_max_flush_delay</span>&lt;/<span class="keywordtype">name</span>&gt;</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;                &lt;<span class="keywordtype">value</span>&gt;{0,200000000}&lt;/<span class="keywordtype">value</span>&gt;</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;              &lt;/<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;              &lt;<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;                  &lt;<span class="keywordtype">name</span>&gt;<span class="keyword">sysctl.dw.asynchronous_send_thread_affinity_masks</span>&lt;/<span class="keywordtype">name</span>&gt;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;                  &lt;<span class="keywordtype">value</span>&gt;0&lt;/<span class="keywordtype">value</span>&gt;</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;              &lt;/<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;              &lt;<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;                  &lt;<span class="keywordtype">name</span>&gt;<span class="keyword">sysctl.dw.asynchronous_send_thread_affinity_masks</span>&lt;/<span class="keywordtype">name</span>&gt;</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;                  &lt;<span class="keywordtype">value</span>&gt;1&lt;/<span class="keywordtype">value</span>&gt;</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;              &lt;/<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;              &lt;<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;                  &lt;<span class="keywordtype">name</span>&gt;<span class="keyword">sysctl.dw.asynchronous_send_thread_affinity_masks</span>&lt;/<span class="keywordtype">name</span>&gt;</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;                  &lt;<span class="keywordtype">value</span>&gt;2&lt;/<span class="keywordtype">value</span>&gt;</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;              &lt;/<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;              &lt;<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;                  &lt;<span class="keywordtype">name</span>&gt;<span class="keyword">sysctl.dw.asynchronous_send_thread_affinity_masks</span>&lt;/<span class="keywordtype">name</span>&gt;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;                  &lt;<span class="keywordtype">value</span>&gt;3&lt;/<span class="keywordtype">value</span>&gt;</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;              &lt;/<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;          &lt;/<span class="keywordtype">value</span>&gt;</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        &lt;/<span class="keywordtype">property</span>&gt;</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;      &lt;/<span class="keywordtype">datawriter_qos</span>&gt;</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    &lt;/<span class="keywordtype">qos_profile</span>&gt;</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;  &lt;/<span class="keywordtype">qos_library</span>&gt;</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;&lt;/<span class="keywordtype">zrdds_qos</span>&gt;</div>
+</div><!-- fragment --><h3>接收端配置示例</h3>
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;&lt;<span class="keywordtype">zrdds_qos</span> <span class="keyword">xmlns</span>=<span class="stringliteral">&quot;http://www.omg.org/dds/&quot;</span>&gt;</div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;  &lt;<span class="keywordtype">qos_library</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;default_lib&quot;</span>&gt;</div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;    &lt;<span class="keywordtype">qos_profile</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;default_profile&quot;</span>&gt;</div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;      &lt;<span class="keywordtype">participantfactory_qos</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;default&quot;</span>/&gt;</div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;      &lt;<span class="keywordtype">participant_qos</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;tcp_dp_mult&quot;</span>&gt;</div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;        &lt;<span class="keywordtype">usertraffic_receive_addresses</span>&gt;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;          &lt;<span class="keywordtype">addresses</span>&gt;</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;            &lt;<span class="keywordtype">element</span>&gt;<span class="keyword">tcpv4_cc:</span>//<span class="keyword">default</span>//0&lt;/<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;          &lt;/<span class="keywordtype">addresses</span>&gt;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;        &lt;/<span class="keywordtype">usertraffic_receive_addresses</span>&gt;</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;        &lt;<span class="keywordtype">receiver_thread_config</span>&gt;</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;          &lt;<span class="keywordtype">kind</span>&gt;<span class="keyword">THREAD_PER_KIND</span>&lt;/<span class="keywordtype">kind</span>&gt;</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;          &lt;<span class="keywordtype">use_select</span>&gt;<span class="keyword">false</span>&lt;/<span class="keywordtype">use_select</span>&gt;</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;          &lt;<span class="keywordtype">receive_buffer_length</span>&gt;20971520&lt;/<span class="keywordtype">receive_buffer_length</span>&gt;</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;        &lt;/<span class="keywordtype">receiver_thread_config</span>&gt;</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;        &lt;<span class="keywordtype">thread_core_affinity</span>&gt;</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;          &lt;<span class="keywordtype">user_data_receive_thread_affinity_mask</span>&gt;2&lt;/<span class="keywordtype">user_data_receive_thread_affinity_mask</span>&gt;</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;          &lt;<span class="keywordtype">tcp_receive_thread_affinity_masks</span>&gt;</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;            &lt;<span class="keywordtype">element</span>&gt;0&lt;/<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;            &lt;<span class="keywordtype">element</span>&gt;1&lt;/<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;            &lt;<span class="keywordtype">element</span>&gt;2&lt;/<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;            &lt;<span class="keywordtype">element</span>&gt;3&lt;/<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;          &lt;/<span class="keywordtype">tcp_receive_thread_affinity_masks</span>&gt;</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;        &lt;/<span class="keywordtype">thread_core_affinity</span>&gt;</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;      &lt;/<span class="keywordtype">participant_qos</span>&gt;      </div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;      &lt;<span class="keywordtype">datareader_qos</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;best-effort&quot;</span>&gt;</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;        &lt;<span class="keywordtype">reliability</span>&gt;</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;          &lt;<span class="keywordtype">kind</span>&gt;<span class="keyword">BEST_EFFORT_RELIABILITY_QOS</span>&lt;/<span class="keywordtype">kind</span>&gt;</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;        &lt;/<span class="keywordtype">reliability</span>&gt;</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;      &lt;/<span class="keywordtype">datareader_qos</span>&gt;</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    &lt;/<span class="keywordtype">qos_profile</span>&gt;</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;  &lt;/<span class="keywordtype">qos_library</span>&gt;</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;&lt;/<span class="keywordtype">zrdds_qos</span>&gt;</div>
+</div><!-- fragment --><p>具体示例如下：</p>
+<ul>
+<li>QoS配置文件示例参见 <a class="el" href="_t_c_p_concurrent_transmission_2_z_r_d_d_s__q_o_s__p_r_o_f_i_l_e_s_8xml-example.html">TCPConcurrentTransmission/ZRDDS_QOS_PROFILES.xml</a></li>
+<li>发送端代码参见 <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_bytes_type_pub_8c-example.html">TCPConcurrentTransmission/SimpleInterfaceBytesTypePub.c</a> 或<a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_zero_copy_pub_8c-example.html">TCPConcurrentTransmission/SimpleInterfaceZeroCopyPub.c</a>(零拷贝数据类型)</li>
+<li>接收端代码参见 <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_bytes_type_sub_8c-example.html">TCPConcurrentTransmission/SimpleInterfaceBytesTypeSub.c</a> 或<a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_zero_copy_sub_8c-example.html">TCPConcurrentTransmission/SimpleInterfaceZeroCopySub.c</a>(零拷贝数据类型) </li>
+</ul>
+</div></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

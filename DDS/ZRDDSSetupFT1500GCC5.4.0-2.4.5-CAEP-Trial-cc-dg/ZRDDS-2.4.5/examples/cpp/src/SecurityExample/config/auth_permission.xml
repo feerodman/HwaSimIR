@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dds>
+    <permissions>
+        <!-- 设置app1的权限，默认允许所有主题发布订阅。 -->
+        <grant name="app1">
+            <subject_name>C=CN,ST=JS,O=ZR,CN=app1</subject_name>
+            <validity>
+                <not_before>2020-10-19T10:54:00</not_before>
+                <not_after>2022-10-19T10:54:00</not_after>
+            </validity>
+            <default>ALLOW</default>
+        </grant>
+        <!-- 设置app2的权限，默认允许所有主题发布订阅。 -->
+        <grant name="app2">
+            <subject_name>C=CN,ST=JS,O=ZR,CN=app2</subject_name>
+            <validity>
+                <not_before>2020-10-19T10:54:00</not_before>
+                <not_after>2022-10-19T10:54:00</not_after>
+            </validity>
+            <default>ALLOW</default>
+        </grant>
+    </permissions>
+</dds>

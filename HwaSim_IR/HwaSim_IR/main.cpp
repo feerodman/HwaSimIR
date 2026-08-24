@@ -1,7 +1,9 @@
 #include "HwaSimIR.h"
 
 #include <cstdlib>
+#include <cmath>
 #include <iostream>
+#include <map>
 #include <string>
 
 namespace
@@ -50,16 +52,90 @@ bool IsValidChannel(const std::string& channel)
 {
 	return channel == "precise" || channel == "coarse";
 }
+
+bool SameCloudDescriptor(const IRWorldCloudDescriptor& a, const IRWorldCloudDescriptor& b)
+{
+	return a.cloudId == b.cloudId && a.seed == b.seed &&
+		a.cellX == b.cellX && a.cellY == b.cellY &&
+		std::abs(a.worldX - b.worldX) < 1.0e-9 &&
+		std::abs(a.worldY - b.worldY) < 1.0e-9 &&
+		std::abs(a.worldZ - b.worldZ) < 1.0e-9 &&
+		std::abs(a.radiusX - b.radiusX) < 1.0e-9 &&
+		std::abs(a.radiusY - b.radiusY) < 1.0e-9 &&
+		std::abs(a.radiusZ - b.radiusZ) < 1.0e-9 &&
+		std::abs(a.density - b.density) < 1.0e-9 &&
+		a.densityTemplate == b.densityTemplate;
+}
+
+int RunW15CloudModelCheck()
+{
+	IRWorldCloudStreamingConfig config;
+	config.weatherSeed = 12345;
+	IRWorldCloudStreaming streaming;
+	streaming.setConfig(config);
+
+	const IRWorldCloudDescriptor first = streaming.descriptorForCell(
+		7, -3, 100.0, "Cloudy", 1.0, 0.88, 4);
+	const IRWorldCloudDescriptor second = streaming.descriptorForCell(
+		7, -3, 100.0, "Cloudy", 1.0, 0.88, 4);
+	if (!SameCloudDescriptor(first, second))
+	{
+		std::cerr << "[World3DCloudModelCheck] result=FAIL reason=deterministic_descriptor" << std::endl;
+		return 1;
+	}
+
+	const std::vector<IRWorldCloudDescriptor> initial = streaming.queryCandidates(
+		0.0, 0.0, 0.0, "Cloudy", 1.0, 0.88, 4);
+	(void)streaming.queryCandidates(50000.0, 50000.0, 0.0, "Cloudy", 1.0, 0.88, 4);
+	const std::vector<IRWorldCloudDescriptor> returned = streaming.queryCandidates(
+		0.0, 0.0, 0.0, "Cloudy", 1.0, 0.88, 4);
+	std::map<std::uint64_t, IRWorldCloudDescriptor> returnedById;
+	for (size_t i = 0; i < returned.size(); ++i)
+	{
+		returnedById[returned[i].cloudId] = returned[i];
+	}
+	for (size_t i = 0; i < initial.size(); ++i)
+	{
+		const std::map<std::uint64_t, IRWorldCloudDescriptor>::const_iterator found =
+			returnedById.find(initial[i].cloudId);
+		if (found == returnedById.end() || !SameCloudDescriptor(initial[i], found->second))
+		{
+			std::cerr << "[World3DCloudModelCheck] result=FAIL reason=unload_reload_identity" << std::endl;
+			return 2;
+		}
+	}
+	if (streaming.config().deactivationRadiusM <= streaming.config().streamingRadiusM)
+	{
+		std::cerr << "[World3DCloudModelCheck] result=FAIL reason=hysteresis_config" << std::endl;
+		return 3;
+	}
+
+	std::cout << "[World3DCloudModelCheck] result=PASS"
+		<< " deterministicDescriptor=1"
+		<< " unloadReloadIdentity=1"
+		<< " candidateCount=" << initial.size()
+		<< " hysteresisM="
+		<< (streaming.config().deactivationRadiusM - streaming.config().streamingRadiusM)
+		<< " sampleCloudId=" << IRWorldCloudStreaming::cloudIdText(first.cloudId)
+		<< std::endl;
+	return 0;
+}
 }
 
 // Application entry point.
 int main(int argc, char *argv[]) {
 	std::string cliChannel;
 	std::string cliNetworkConfig;
+	bool w15CloudModelCheck = false;
 	int frameworkArgc = 1;
 	for (int i = 1; i < argc; ++i)
 	{
 		const std::string argument = argv[i] ? argv[i] : "";
+		if (argument == "--w15-cloud-model-check")
+		{
+			w15CloudModelCheck = true;
+			continue;
+		}
 		if (argument == "--channel" || argument.compare(0, 10, "--channel=") == 0)
 		{
 			if (!ReadOptionValue(argc, argv, i, "--channel", cliChannel))
@@ -79,6 +155,10 @@ int main(int argc, char *argv[]) {
 		argv[frameworkArgc++] = argv[i];
 	}
 	argv[frameworkArgc] = nullptr;
+	if (w15CloudModelCheck)
+	{
+		return RunW15CloudModelCheck();
+	}
 
 	if (!cliChannel.empty() && !IsValidChannel(cliChannel))
 	{

@@ -1,0 +1,174 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: SetBuiltinListenerExample.cpp</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>类</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('_set_builtin_listener_example_8cpp-example.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">SetBuiltinListenerExample.cpp</div>  </div>
+</div><!--header-->
+<div class="contents">
+<p>该用例展示了如何设置内置数据读者的监听器示例。</p>
+<div class="fragment"><div class="line"><span class="preprocessor">#include &lt;assert.h&gt;</span></div>
+<div class="line"></div>
+<div class="line"><span class="preprocessor">#include &quot;DomainParticipantFactory.h&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &quot;DomainParticipant.h&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &quot;Topic.h&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &quot;DataReader.h&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &quot;DataReaderListener.h&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &quot;BuiltinDataDataReader.h&quot;</span></div>
+<div class="line"><span class="keyword">using namespace </span><a class="code" href="namespace_d_d_s.html">DDS</a>;</div>
+<div class="line"><span class="comment">// 内置DataReader的Listener的监听器</span></div>
+<div class="line"><span class="keyword">class </span>BuiltinListener : <span class="keyword">public</span> <a name="_a0"></a><a class="code" href="class_d_d_s_1_1_data_reader_listener.html">DataReaderListener</a></div>
+<div class="line">{</div>
+<div class="line"><span class="keyword">public</span>:</div>
+<div class="line">    <span class="keyword">virtual</span> <span class="keywordtype">void</span> on_data_available(<a name="_a1"></a><a class="code" href="class_d_d_s_1_1_data_reader.html">DataReader</a> *the_reader)</div>
+<div class="line">    {</div>
+<div class="line">        <span class="comment">//底层回调的方法</span></div>
+<div class="line">    }</div>
+<div class="line"></div>
+<div class="line">};</div>
+<div class="line"></div>
+<div class="line"><span class="keywordtype">int</span> setupBuiltinDataReaderListener()</div>
+<div class="line">{</div>
+<div class="line">    <span class="comment">// 设置DomainParticipantFactory的实体工厂QoS为false</span></div>
+<div class="line">    <a name="_a2"></a><a class="code" href="struct_d_d_s___domain_participant_factory_qos.html">DomainParticipantFactoryQos</a> dpfQos;</div>
+<div class="line">    <a name="a3"></a><a class="code" href="group___cpp_domain.html#ga880940ef2eeeac2320d322023363f612">TheParticipantFactory</a>-&gt;get_qos(dpfQos);</div>
+<div class="line">    dpfQos.<a name="a4"></a><a class="code" href="struct_d_d_s___domain_participant_factory_qos.html#acb0ababc40acf8cb938584e93f7a40b2">entity_factory</a>.<a name="a5"></a><a class="code" href="struct_d_d_s___entity_factory_qos_policy.html#a4b650acc47f1a51eefd90a072d6a70f6">autoenable_created_entities</a> = <span class="keyword">false</span>;</div>
+<div class="line">    <a class="code" href="group___cpp_domain.html#ga880940ef2eeeac2320d322023363f612">TheParticipantFactory</a>-&gt;set_qos(dpfQos);</div>
+<div class="line">    <span class="comment">// 创建Participant，此时创建的Participant为未使能状态</span></div>
+<div class="line">    <a name="_a6"></a><a class="code" href="class_d_d_s_1_1_domain_participant.html">DomainParticipant</a>* participant = <a class="code" href="group___cpp_domain.html#ga880940ef2eeeac2320d322023363f612">TheParticipantFactory</a>-&gt;create_participant(150,</div>
+<div class="line">        <a name="a7"></a><a class="code" href="group___cpp_core_struct.html#ga0afba08599eeb3346e38686de062b03e">DOMAINPARTICIPANT_QOS_DEFAULT</a>,</div>
+<div class="line">        NULL, STATUS_MASK_ALL);</div>
+<div class="line">    <span class="keywordflow">if</span> (participant == NULL)</div>
+<div class="line">    {</div>
+<div class="line">        <span class="keywordflow">return</span> -1;</div>
+<div class="line">    }</div>
+<div class="line">    <span class="comment">// 获取内置的Subscriber</span></div>
+<div class="line">    <a name="_a8"></a><a class="code" href="class_d_d_s_1_1_subscriber.html">Subscriber</a>* builtinSub = participant-&gt;<a name="a9"></a><a class="code" href="class_d_d_s_1_1_domain_participant.html#a10633af7e8d0b9eb6fd9858325a2a1bc">get_builtin_subscriber</a>();</div>
+<div class="line">    <span class="comment">// 查找内置的ParticipantBuiltinTopicDataDataReader，并设置监听器</span></div>
+<div class="line">    <a name="_a10"></a><a class="code" href="class_d_d_s_1_1_participant_builtin_topic_data_data_reader.html">ParticipantBuiltinTopicDataDataReader</a>* participantDr = (<a class="code" href="class_d_d_s_1_1_participant_builtin_topic_data_data_reader.html">ParticipantBuiltinTopicDataDataReader</a>*)</div>
+<div class="line">        builtinSub-&gt;<a name="a11"></a><a class="code" href="class_d_d_s_1_1_subscriber.html#a7d1e5b9c489488a10463084d1a8679af">lookup_datareader</a>(<a name="a12"></a><a class="code" href="group___core_var.html#gae6cadf7ea392a8c2c96b42212811a565">BUILTIN_PARTICIPANT_TOPIC_NAME</a>);</div>
+<div class="line">    assert(participantDr != NULL);</div>
+<div class="line">    participantDr-&gt;set_listener(<span class="keyword">new</span> BuiltinListener,</div>
+<div class="line">        STATUS_MASK_ALL);</div>
+<div class="line">    <span class="comment">// 查找内置的PublicationBuiltinTopicDataDataReader，并设置监听器</span></div>
+<div class="line">    <a name="_a13"></a><a class="code" href="class_d_d_s_1_1_publication_builtin_topic_data_data_reader.html">PublicationBuiltinTopicDataDataReader</a>* publicationDr = (<a class="code" href="class_d_d_s_1_1_publication_builtin_topic_data_data_reader.html">PublicationBuiltinTopicDataDataReader</a>*)</div>
+<div class="line">        builtinSub-&gt;<a class="code" href="class_d_d_s_1_1_subscriber.html#a7d1e5b9c489488a10463084d1a8679af">lookup_datareader</a>(<a name="a14"></a><a class="code" href="group___core_var.html#gafa8f38fa5698700c4e50700305a5fdd5">BUILTIN_PUBLICATION_TOPIC_NAME</a>);</div>
+<div class="line">    assert(publicationDr != NULL);</div>
+<div class="line">    publicationDr-&gt;set_listener(<span class="keyword">new</span> BuiltinListener,</div>
+<div class="line">        STATUS_MASK_ALL);</div>
+<div class="line">    <span class="comment">// 查找内置的SubscriptionBuiltinTopicDataDataReader，并设置监听器</span></div>
+<div class="line">    <a name="_a15"></a><a class="code" href="class_d_d_s_1_1_subscription_builtin_topic_data_data_reader.html">SubscriptionBuiltinTopicDataDataReader</a>* subscriptionDr = (<a class="code" href="class_d_d_s_1_1_subscription_builtin_topic_data_data_reader.html">SubscriptionBuiltinTopicDataDataReader</a>*)</div>
+<div class="line">        builtinSub-&gt;<a class="code" href="class_d_d_s_1_1_subscriber.html#a7d1e5b9c489488a10463084d1a8679af">lookup_datareader</a>(<a name="a16"></a><a class="code" href="group___core_var.html#ga49d48d9dbdfab4ac84d8e805417f2c0c">BUILTIN_SUBSCRIPTION_TOPIC_NAME</a>);</div>
+<div class="line">    assert(subscriptionDr != NULL);</div>
+<div class="line">    subscriptionDr-&gt;set_listener(<span class="keyword">new</span> BuiltinListener,</div>
+<div class="line">        STATUS_MASK_ALL);</div>
+<div class="line">    <span class="comment">// 手动使能participant</span></div>
+<div class="line">    <span class="keywordflow">if</span> (RETCODE_OK != participant-&gt;<a name="a17"></a><a class="code" href="class_d_d_s_1_1_entity.html#acaf66ba087d9c1c5d716eda0756f2254">enable</a>())</div>
+<div class="line">    {</div>
+<div class="line">        <span class="keywordflow">return</span> -1;</div>
+<div class="line">    }</div>
+<div class="line">    <span class="keywordflow">return</span> 0;</div>
+<div class="line">}</div>
+</div><!-- fragment --> </div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

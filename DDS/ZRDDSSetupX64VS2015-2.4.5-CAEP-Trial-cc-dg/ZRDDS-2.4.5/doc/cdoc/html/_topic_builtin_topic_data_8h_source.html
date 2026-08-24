@@ -1,0 +1,248 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: TopicBuiltinTopicData.h 源文件</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>结构体</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('_topic_builtin_topic_data_8h_source.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">TopicBuiltinTopicData.h</div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#ifndef TopicBuiltinTopicData_h__</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#define TopicBuiltinTopicData_h__</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#include &quot;BuiltinTopicKey_t.h&quot;</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#include &quot;DurabilityQosPolicy.h&quot;</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="preprocessor">#include &quot;DurabilityServiceQosPolicy.h&quot;</span></div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#include &quot;DeadlineQosPolicy.h&quot;</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="preprocessor">#include &quot;LatencyBudgetQosPolicy.h&quot;</span></div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="preprocessor">#include &quot;LivelinessQosPolicy.h&quot;</span></div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="preprocessor">#include &quot;ReliabilityQosPolicy.h&quot;</span></div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="preprocessor">#include &quot;LifespanQosPolicy.h&quot;</span></div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="preprocessor">#include &quot;TransportPriorityQosPolicy.h&quot;</span></div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="preprocessor">#include &quot;OwnershipQosPolicy.h&quot;</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &quot;DestinationOrderQosPolicy.h&quot;</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &quot;UserDataQosPolicy.h&quot;</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &quot;TimeBasedFilterQosPolicy.h&quot;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &quot;PresentationQosPolicy.h&quot;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &quot;PartitionQosPolicy.h&quot;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &quot;TopicDataQosPolicy.h&quot;</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &quot;GroupDataQosPolicy.h&quot;</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &quot;ZRSequence.h&quot;</span></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &quot;ContentFilterProperty_t.h&quot;</span></div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &quot;TypeObject.h&quot;</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="preprocessor">#include &quot;ResourceLimitsQosPolicy.h&quot;</span></div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="preprocessor">#ifdef _ZRDDS_INCLUDE_TOPIC_BUILTIN_TOPIC_DATA</span></div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span></div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;{</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;</div>
+<div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="struct_d_d_s___topic_builtin_topic_data.html">   47</a></span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="struct_d_d_s___topic_builtin_topic_data.html">DDS_TopicBuiltinTopicData</a></div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;{</div>
+<div class="line"><a name="l00050"></a><span class="lineno"><a class="line" href="struct_d_d_s___topic_builtin_topic_data.html#a8e253bece5931d309816e4b378bbb2b6">   50</a></span>&#160;    <a class="code" href="group___core_base_struct.html#gaf0cc5d62632cda1735f44b806fe8a8e0">DDS_BuiltinTopicKey_t</a> <a class="code" href="struct_d_d_s___topic_builtin_topic_data.html#a8e253bece5931d309816e4b378bbb2b6">key</a>;</div>
+<div class="line"><a name="l00052"></a><span class="lineno"><a class="line" href="struct_d_d_s___topic_builtin_topic_data.html#aeb0b461c023c2973e0a4be1840bf2529">   52</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>* <a class="code" href="struct_d_d_s___topic_builtin_topic_data.html#aeb0b461c023c2973e0a4be1840bf2529">topic_name</a>;</div>
+<div class="line"><a name="l00054"></a><span class="lineno"><a class="line" href="struct_d_d_s___topic_builtin_topic_data.html#a201daf079cdcd74a19f23d120eee6129">   54</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>* <a class="code" href="struct_d_d_s___topic_builtin_topic_data.html#a201daf079cdcd74a19f23d120eee6129">type_name</a>;</div>
+<div class="line"><a name="l00056"></a><span class="lineno"><a class="line" href="struct_d_d_s___topic_builtin_topic_data.html#ae0308915c1021ea2ad36b65d3e21e5a1">   56</a></span>&#160;    <a class="code" href="struct_d_d_s___durability_qos_policy.html">DDS_DurabilityQosPolicy</a> <a class="code" href="struct_d_d_s___topic_builtin_topic_data.html#ae0308915c1021ea2ad36b65d3e21e5a1">durability</a>;</div>
+<div class="line"><a name="l00058"></a><span class="lineno"><a class="line" href="struct_d_d_s___topic_builtin_topic_data.html#aee18684376eb24cbda3246a927f1d92e">   58</a></span>&#160;    <a class="code" href="struct_d_d_s___durability_service_qos_policy.html">DDS_DurabilityServiceQosPolicy</a> <a class="code" href="struct_d_d_s___topic_builtin_topic_data.html#aee18684376eb24cbda3246a927f1d92e">durability_service</a>;</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="preprocessor">#ifdef _ZRDDS_INCLUDE_DEADLINE_QOS</span></div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;</div>
+<div class="line"><a name="l00061"></a><span class="lineno"><a class="line" href="struct_d_d_s___topic_builtin_topic_data.html#a53c928812e0048f09bde388f53ddcc25">   61</a></span>&#160;    <a class="code" href="struct_d_d_s___deadline_qos_policy.html">DDS_DeadlineQosPolicy</a> <a class="code" href="struct_d_d_s___topic_builtin_topic_data.html#a53c928812e0048f09bde388f53ddcc25">deadline</a>;</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* _ZRDDS_INCLUDE_DEADLINE_QOS */</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="preprocessor">#ifdef _ZRDDS_INCLUDE_LATENCY_BUDGET_QOS</span></div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;</div>
+<div class="line"><a name="l00065"></a><span class="lineno"><a class="line" href="struct_d_d_s___topic_builtin_topic_data.html#a9dd77679e29deab04e941f6f99a04a9e">   65</a></span>&#160;    <a class="code" href="struct_d_d_s___latency_budget_qos_policy.html">DDS_LatencyBudgetQosPolicy</a> <a class="code" href="struct_d_d_s___topic_builtin_topic_data.html#a9dd77679e29deab04e941f6f99a04a9e">latency_budget</a>;</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* _ZRDDS_INCLUDE_LATENCY_BUDGET_QOS */</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;<span class="preprocessor">#ifdef _ZRDDS_INCLUDE_LIVELINESS_QOS</span></div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;</div>
+<div class="line"><a name="l00069"></a><span class="lineno"><a class="line" href="struct_d_d_s___topic_builtin_topic_data.html#ac48de14d8e2bca78beaf8f3f8d3bf873">   69</a></span>&#160;    <a class="code" href="struct_d_d_s___liveliness_qos_policy.html">DDS_LivelinessQosPolicy</a> <a class="code" href="struct_d_d_s___topic_builtin_topic_data.html#ac48de14d8e2bca78beaf8f3f8d3bf873">liveliness</a>;</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* _ZRDDS_INCLUDE_LIVELINESS_QOS */</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <a class="code" href="struct_d_d_s___reliability_qos_policy.html">DDS_ReliabilityQosPolicy</a> reliability;</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="preprocessor">#ifdef _ZRDDS_INCLUDE_TRANSPORT_PRIORITY_QOS</span></div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;</div>
+<div class="line"><a name="l00074"></a><span class="lineno"><a class="line" href="struct_d_d_s___topic_builtin_topic_data.html#a3820a7154a4413a0eca491addc4d1735">   74</a></span>&#160;    <a class="code" href="struct_d_d_s___transport_priority_qos_policy.html">DDS_TransportPriorityQosPolicy</a> <a class="code" href="struct_d_d_s___topic_builtin_topic_data.html#a3820a7154a4413a0eca491addc4d1735">transport_priority</a>;</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/*_ZRDDS_INCLUDE_TRANSPORT_PRIORITY_QOS */</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;<span class="preprocessor">#ifdef _ZRDDS_INCLUDE_LIFESPAN_QOS</span></div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;</div>
+<div class="line"><a name="l00078"></a><span class="lineno"><a class="line" href="struct_d_d_s___topic_builtin_topic_data.html#a4a9cca6d68bf2ed76d1cff872f26f200">   78</a></span>&#160;    <a class="code" href="struct_d_d_s___lifespan_qos_policy.html">DDS_LifespanQosPolicy</a> <a class="code" href="struct_d_d_s___topic_builtin_topic_data.html#a4a9cca6d68bf2ed76d1cff872f26f200">lifespan</a>;</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* _ZRDDS_INCLUDE_LIFESPAN_QOS */</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;<span class="preprocessor">#ifdef _ZRDDS_INCLUDE_OWNERSHIP_QOS</span></div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;</div>
+<div class="line"><a name="l00082"></a><span class="lineno"><a class="line" href="struct_d_d_s___topic_builtin_topic_data.html#a1e8776a264715a6624600fccec7b8490">   82</a></span>&#160;    <a class="code" href="struct_d_d_s___ownership_qos_policy.html">DDS_OwnershipQosPolicy</a> <a class="code" href="struct_d_d_s___topic_builtin_topic_data.html#a1e8776a264715a6624600fccec7b8490">ownership</a>;</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* _ZRDDS_INCLUDE_OWNERSHIP_QOS */</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;<span class="preprocessor">#ifdef _ZRDDS_INCLUDE_DESTINATION_ORDER_QOS</span></div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;</div>
+<div class="line"><a name="l00086"></a><span class="lineno"><a class="line" href="struct_d_d_s___topic_builtin_topic_data.html#a8112ac279b80c3b346bea656c15ed442">   86</a></span>&#160;    <a class="code" href="struct_d_d_s___destination_order_qos_policy.html">DDS_DestinationOrderQosPolicy</a> <a class="code" href="struct_d_d_s___topic_builtin_topic_data.html#a8112ac279b80c3b346bea656c15ed442">destination_order</a>;</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* _ZRDDS_INCLUDE_DESTINATION_ORDER_QOS */</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;<span class="preprocessor">#ifdef _ZRDDS_INCLUDE_TOPIC_DATA_QOS</span></div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;</div>
+<div class="line"><a name="l00090"></a><span class="lineno"><a class="line" href="struct_d_d_s___topic_builtin_topic_data.html#a72e2bcb4ce8495d86ef96de10709136d">   90</a></span>&#160;    <a class="code" href="struct_d_d_s___topic_data_qos_policy.html">DDS_TopicDataQosPolicy</a> <a class="code" href="struct_d_d_s___topic_builtin_topic_data.html#a72e2bcb4ce8495d86ef96de10709136d">topic_data</a>;</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* _ZRDDS_INCLUDE_TOPIC_DATA_QOS */</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;</div>
+<div class="line"><a name="l00093"></a><span class="lineno"><a class="line" href="struct_d_d_s___topic_builtin_topic_data.html#a7c9fa6ea3e8359514e85f943bd61b5ce">   93</a></span>&#160;    <a class="code" href="struct_d_d_s___history_qos_policy.html">DDS_HistoryQosPolicy</a> <a class="code" href="struct_d_d_s___topic_builtin_topic_data.html#a7c9fa6ea3e8359514e85f943bd61b5ce">history</a>;</div>
+<div class="line"><a name="l00095"></a><span class="lineno"><a class="line" href="struct_d_d_s___topic_builtin_topic_data.html#aeaed5a59a05a903f128d113636fb7e71">   95</a></span>&#160;    <a class="code" href="struct_d_d_s___resource_limits_qos_policy.html">DDS_ResourceLimitsQosPolicy</a> <a class="code" href="struct_d_d_s___topic_builtin_topic_data.html#aeaed5a59a05a903f128d113636fb7e71">resource_limits</a>;</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;<span class="preprocessor">#ifdef _ZRDDS_INCLUDE_TYPE_OBJECT</span></div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;</div>
+<div class="line"><a name="l00098"></a><span class="lineno"><a class="line" href="struct_d_d_s___topic_builtin_topic_data.html#a7221ed4f54cc58fc4f41fda189b404bd">   98</a></span>&#160;    TypeObject* <a class="code" href="struct_d_d_s___topic_builtin_topic_data.html#a7221ed4f54cc58fc4f41fda189b404bd">type_object</a>;</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* _ZRDDS_INCLUDE_TYPE_OBJECT */</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;}<a class="code" href="struct_d_d_s___topic_builtin_topic_data.html">DDS_TopicBuiltinTopicData</a>;</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;DCPSDLL <span class="keyword">extern</span> <span class="keywordtype">void</span> DDS_TopicBuiltinTopicDataInitial(</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    <a class="code" href="struct_d_d_s___topic_builtin_topic_data.html">DDS_TopicBuiltinTopicData</a>* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;DCPSDLL <span class="keyword">extern</span> <span class="keywordtype">void</span> DDS_TopicBuiltinTopicDataDestroy(</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <a class="code" href="struct_d_d_s___topic_builtin_topic_data.html">DDS_TopicBuiltinTopicData</a>* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;DCPSDLL <span class="keyword">extern</span> <a class="code" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> DDS_TopicBuiltinTopicDataCopy(</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    <a class="code" href="struct_d_d_s___topic_builtin_topic_data.html">DDS_TopicBuiltinTopicData</a>* dst, </div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___topic_builtin_topic_data.html">DDS_TopicBuiltinTopicData</a>* src);</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;<span class="comment">/* 定义sequence结构*/</span></div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;DDS_SEQUENCE_CPP(DDS_TopicBuiltinTopicDataSeq, <a class="code" href="struct_d_d_s___topic_builtin_topic_data.html">DDS_TopicBuiltinTopicData</a>);</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;}</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;<span class="preprocessor">#else</span></div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="struct_d_d_s___topic_builtin_topic_data.html">DDS_TopicBuiltinTopicData</a> <a class="code" href="struct_d_d_s___topic_builtin_topic_data.html">DDS_TopicBuiltinTopicData</a>;</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* _ZRDDS_INCLUDE_TOPIC_BUILTIN_TOPIC_DATA */</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* TopicBuiltinTopicData_h__ */</span><span class="preprocessor"></span></div>
+<div class="ttc" id="struct_d_d_s___lifespan_qos_policy_html"><div class="ttname"><a href="struct_d_d_s___lifespan_qos_policy.html">DDS_LifespanQosPolicy</a></div><div class="ttdoc">数据有效期配置。 </div><div class="ttdef"><b>Definition:</b> LifespanQosPolicy.h:34</div></div>
+<div class="ttc" id="struct_d_d_s___topic_builtin_topic_data_html_aeaed5a59a05a903f128d113636fb7e71"><div class="ttname"><a href="struct_d_d_s___topic_builtin_topic_data.html#aeaed5a59a05a903f128d113636fb7e71">DDS_TopicBuiltinTopicData::resource_limits</a></div><div class="ttdeci">DDS_ResourceLimitsQosPolicy resource_limits</div><div class="ttdoc">资源限制配置。 </div><div class="ttdef"><b>Definition:</b> TopicBuiltinTopicData.h:95</div></div>
+<div class="ttc" id="struct_d_d_s___resource_limits_qos_policy_html"><div class="ttname"><a href="struct_d_d_s___resource_limits_qos_policy.html">DDS_ResourceLimitsQosPolicy</a></div><div class="ttdoc">资源限制配置。 </div><div class="ttdef"><b>Definition:</b> ResourceLimitsQosPolicy.h:31</div></div>
+<div class="ttc" id="struct_d_d_s___topic_builtin_topic_data_html_a8112ac279b80c3b346bea656c15ed442"><div class="ttname"><a href="struct_d_d_s___topic_builtin_topic_data.html#a8112ac279b80c3b346bea656c15ed442">DDS_TopicBuiltinTopicData::destination_order</a></div><div class="ttdeci">DDS_DestinationOrderQosPolicy destination_order</div><div class="ttdoc">主题的样本顺序配置。 </div><div class="ttdef"><b>Definition:</b> TopicBuiltinTopicData.h:86</div></div>
+<div class="ttc" id="struct_d_d_s___ownership_qos_policy_html"><div class="ttname"><a href="struct_d_d_s___ownership_qos_policy.html">DDS_OwnershipQosPolicy</a></div><div class="ttdoc">数据实例所有权配置。 </div><div class="ttdef"><b>Definition:</b> OwnershipQosPolicy.h:71</div></div>
+<div class="ttc" id="struct_d_d_s___topic_builtin_topic_data_html_a72e2bcb4ce8495d86ef96de10709136d"><div class="ttname"><a href="struct_d_d_s___topic_builtin_topic_data.html#a72e2bcb4ce8495d86ef96de10709136d">DDS_TopicBuiltinTopicData::topic_data</a></div><div class="ttdeci">DDS_TopicDataQosPolicy topic_data</div><div class="ttdoc">主题关联的主题的携带数据配置。 </div><div class="ttdef"><b>Definition:</b> TopicBuiltinTopicData.h:90</div></div>
+<div class="ttc" id="struct_d_d_s___destination_order_qos_policy_html"><div class="ttname"><a href="struct_d_d_s___destination_order_qos_policy.html">DDS_DestinationOrderQosPolicy</a></div><div class="ttdoc">样本顺序配置。 </div><div class="ttdef"><b>Definition:</b> DestinationOrderQosPolicy.h:84</div></div>
+<div class="ttc" id="struct_d_d_s___history_qos_policy_html"><div class="ttname"><a href="struct_d_d_s___history_qos_policy.html">DDS_HistoryQosPolicy</a></div><div class="ttdoc">历史数据数据实例队列配置。 </div><div class="ttdef"><b>Definition:</b> HistoryQosPolicy.h:81</div></div>
+<div class="ttc" id="struct_d_d_s___reliability_qos_policy_html"><div class="ttname"><a href="struct_d_d_s___reliability_qos_policy.html">DDS_ReliabilityQosPolicy</a></div><div class="ttdoc">可靠性配置。 </div><div class="ttdef"><b>Definition:</b> ReliabilityQosPolicy.h:42</div></div>
+<div class="ttc" id="struct_d_d_s___topic_builtin_topic_data_html_aee18684376eb24cbda3246a927f1d92e"><div class="ttname"><a href="struct_d_d_s___topic_builtin_topic_data.html#aee18684376eb24cbda3246a927f1d92e">DDS_TopicBuiltinTopicData::durability_service</a></div><div class="ttdeci">DDS_DurabilityServiceQosPolicy durability_service</div><div class="ttdoc">持久化历史数据配置。 </div><div class="ttdef"><b>Definition:</b> TopicBuiltinTopicData.h:58</div></div>
+<div class="ttc" id="struct_d_d_s___topic_builtin_topic_data_html_a9dd77679e29deab04e941f6f99a04a9e"><div class="ttname"><a href="struct_d_d_s___topic_builtin_topic_data.html#a9dd77679e29deab04e941f6f99a04a9e">DDS_TopicBuiltinTopicData::latency_budget</a></div><div class="ttdeci">DDS_LatencyBudgetQosPolicy latency_budget</div><div class="ttdoc">主题的延时优化配置。 </div><div class="ttdef"><b>Definition:</b> TopicBuiltinTopicData.h:65</div></div>
+<div class="ttc" id="struct_d_d_s___topic_builtin_topic_data_html_a201daf079cdcd74a19f23d120eee6129"><div class="ttname"><a href="struct_d_d_s___topic_builtin_topic_data.html#a201daf079cdcd74a19f23d120eee6129">DDS_TopicBuiltinTopicData::type_name</a></div><div class="ttdeci">DDS_Char * type_name</div><div class="ttdoc">主题关联的数据类型的名称。 </div><div class="ttdef"><b>Definition:</b> TopicBuiltinTopicData.h:54</div></div>
+<div class="ttc" id="struct_d_d_s___latency_budget_qos_policy_html"><div class="ttname"><a href="struct_d_d_s___latency_budget_qos_policy.html">DDS_LatencyBudgetQosPolicy</a></div><div class="ttdoc">延时优化配置。 </div><div class="ttdef"><b>Definition:</b> LatencyBudgetQosPolicy.h:31</div></div>
+<div class="ttc" id="struct_d_d_s___topic_builtin_topic_data_html_aeb0b461c023c2973e0a4be1840bf2529"><div class="ttname"><a href="struct_d_d_s___topic_builtin_topic_data.html#aeb0b461c023c2973e0a4be1840bf2529">DDS_TopicBuiltinTopicData::topic_name</a></div><div class="ttdeci">DDS_Char * topic_name</div><div class="ttdoc">主题名称。 </div><div class="ttdef"><b>Definition:</b> TopicBuiltinTopicData.h:52</div></div>
+<div class="ttc" id="struct_d_d_s___durability_service_qos_policy_html"><div class="ttname"><a href="struct_d_d_s___durability_service_qos_policy.html">DDS_DurabilityServiceQosPolicy</a></div><div class="ttdoc">历史数据资源配置。 </div><div class="ttdef"><b>Definition:</b> DurabilityServiceQosPolicy.h:36</div></div>
+<div class="ttc" id="struct_d_d_s___topic_builtin_topic_data_html_a1e8776a264715a6624600fccec7b8490"><div class="ttname"><a href="struct_d_d_s___topic_builtin_topic_data.html#a1e8776a264715a6624600fccec7b8490">DDS_TopicBuiltinTopicData::ownership</a></div><div class="ttdeci">DDS_OwnershipQosPolicy ownership</div><div class="ttdoc">主题数据实例所有权配置。 </div><div class="ttdef"><b>Definition:</b> TopicBuiltinTopicData.h:82</div></div>
+<div class="ttc" id="struct_d_d_s___topic_builtin_topic_data_html_ae0308915c1021ea2ad36b65d3e21e5a1"><div class="ttname"><a href="struct_d_d_s___topic_builtin_topic_data.html#ae0308915c1021ea2ad36b65d3e21e5a1">DDS_TopicBuiltinTopicData::durability</a></div><div class="ttdeci">DDS_DurabilityQosPolicy durability</div><div class="ttdoc">持久化配置。 </div><div class="ttdef"><b>Definition:</b> TopicBuiltinTopicData.h:56</div></div>
+<div class="ttc" id="struct_d_d_s___liveliness_qos_policy_html"><div class="ttname"><a href="struct_d_d_s___liveliness_qos_policy.html">DDS_LivelinessQosPolicy</a></div><div class="ttdoc">数据写者存活性声明与判定配置。 </div><div class="ttdef"><b>Definition:</b> LivelinessQosPolicy.h:79</div></div>
+<div class="ttc" id="struct_d_d_s___topic_builtin_topic_data_html_a4a9cca6d68bf2ed76d1cff872f26f200"><div class="ttname"><a href="struct_d_d_s___topic_builtin_topic_data.html#a4a9cca6d68bf2ed76d1cff872f26f200">DDS_TopicBuiltinTopicData::lifespan</a></div><div class="ttdeci">DDS_LifespanQosPolicy lifespan</div><div class="ttdoc">主题数据有效期的配置。 </div><div class="ttdef"><b>Definition:</b> TopicBuiltinTopicData.h:78</div></div>
+<div class="ttc" id="struct_d_d_s___topic_builtin_topic_data_html"><div class="ttname"><a href="struct_d_d_s___topic_builtin_topic_data.html">DDS_TopicBuiltinTopicData</a></div><div class="ttdoc">该结构体用于存储发现的远程主题信息。 </div><div class="ttdef"><b>Definition:</b> TopicBuiltinTopicData.h:47</div></div>
+<div class="ttc" id="struct_d_d_s___durability_qos_policy_html"><div class="ttname"><a href="struct_d_d_s___durability_qos_policy.html">DDS_DurabilityQosPolicy</a></div><div class="ttdoc">实体数据持久化配置。 </div><div class="ttdef"><b>Definition:</b> DurabilityQosPolicy.h:84</div></div>
+<div class="ttc" id="struct_d_d_s___topic_builtin_topic_data_html_a7c9fa6ea3e8359514e85f943bd61b5ce"><div class="ttname"><a href="struct_d_d_s___topic_builtin_topic_data.html#a7c9fa6ea3e8359514e85f943bd61b5ce">DDS_TopicBuiltinTopicData::history</a></div><div class="ttdeci">DDS_HistoryQosPolicy history</div><div class="ttdoc">历史数据队列配置。 </div><div class="ttdef"><b>Definition:</b> TopicBuiltinTopicData.h:93</div></div>
+<div class="ttc" id="struct_d_d_s___transport_priority_qos_policy_html"><div class="ttname"><a href="struct_d_d_s___transport_priority_qos_policy.html">DDS_TransportPriorityQosPolicy</a></div><div class="ttdoc">传输优先级配置。 </div><div class="ttdef"><b>Definition:</b> TransportPriorityQosPolicy.h:27</div></div>
+<div class="ttc" id="struct_d_d_s___topic_builtin_topic_data_html_a53c928812e0048f09bde388f53ddcc25"><div class="ttname"><a href="struct_d_d_s___topic_builtin_topic_data.html#a53c928812e0048f09bde388f53ddcc25">DDS_TopicBuiltinTopicData::deadline</a></div><div class="ttdeci">DDS_DeadlineQosPolicy deadline</div><div class="ttdoc">主题的截止时间配置。 </div><div class="ttdef"><b>Definition:</b> TopicBuiltinTopicData.h:61</div></div>
+<div class="ttc" id="struct_d_d_s___topic_builtin_topic_data_html_a3820a7154a4413a0eca491addc4d1735"><div class="ttname"><a href="struct_d_d_s___topic_builtin_topic_data.html#a3820a7154a4413a0eca491addc4d1735">DDS_TopicBuiltinTopicData::transport_priority</a></div><div class="ttdeci">DDS_TransportPriorityQosPolicy transport_priority</div><div class="ttdoc">主题关联的传输优先级配置。 </div><div class="ttdef"><b>Definition:</b> TopicBuiltinTopicData.h:74</div></div>
+<div class="ttc" id="struct_d_d_s___topic_builtin_topic_data_html_a7221ed4f54cc58fc4f41fda189b404bd"><div class="ttname"><a href="struct_d_d_s___topic_builtin_topic_data.html#a7221ed4f54cc58fc4f41fda189b404bd">DDS_TopicBuiltinTopicData::type_object</a></div><div class="ttdeci">TypeObject * type_object</div><div class="ttdoc">主题关联主题关联的数据类型的描述。 </div><div class="ttdef"><b>Definition:</b> TopicBuiltinTopicData.h:98</div></div>
+<div class="ttc" id="struct_d_d_s___topic_builtin_topic_data_html_ac48de14d8e2bca78beaf8f3f8d3bf873"><div class="ttname"><a href="struct_d_d_s___topic_builtin_topic_data.html#ac48de14d8e2bca78beaf8f3f8d3bf873">DDS_TopicBuiltinTopicData::liveliness</a></div><div class="ttdeci">DDS_LivelinessQosPolicy liveliness</div><div class="ttdoc">主题的存活性配置。 </div><div class="ttdef"><b>Definition:</b> TopicBuiltinTopicData.h:69</div></div>
+<div class="ttc" id="struct_d_d_s___deadline_qos_policy_html"><div class="ttname"><a href="struct_d_d_s___deadline_qos_policy.html">DDS_DeadlineQosPolicy</a></div><div class="ttdoc">截止时间配置。 </div><div class="ttdef"><b>Definition:</b> DeadlineQosPolicy.h:34</div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga07e4e24db44e921d6b33e916c4442dab"><div class="ttname"><a href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a></div><div class="ttdeci">char DDS_Char</div><div class="ttdoc">ZRDDS内置的1字节整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:218</div></div>
+<div class="ttc" id="struct_d_d_s___topic_data_qos_policy_html"><div class="ttname"><a href="struct_d_d_s___topic_data_qos_policy.html">DDS_TopicDataQosPolicy</a></div><div class="ttdoc">主题携带数据配置。 </div><div class="ttdef"><b>Definition:</b> TopicDataQosPolicy.h:32</div></div>
+<div class="ttc" id="struct_d_d_s___topic_builtin_topic_data_html_a8e253bece5931d309816e4b378bbb2b6"><div class="ttname"><a href="struct_d_d_s___topic_builtin_topic_data.html#a8e253bece5931d309816e4b378bbb2b6">DDS_TopicBuiltinTopicData::key</a></div><div class="ttdeci">DDS_BuiltinTopicKey_t key</div><div class="ttdoc">主题的唯一标识。 </div><div class="ttdef"><b>Definition:</b> TopicBuiltinTopicData.h:50</div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga7ebc41ac14e48dd9ee0b7b83acec714c"><div class="ttname"><a href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a></div><div class="ttdeci">ZR_INT32 DDS_Long</div><div class="ttdoc">ZRDDS内置的4字节整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:248</div></div>
+<div class="ttc" id="group___core_base_struct_html_gaf0cc5d62632cda1735f44b806fe8a8e0"><div class="ttname"><a href="group___core_base_struct.html#gaf0cc5d62632cda1735f44b806fe8a8e0">DDS_BuiltinTopicKey_t</a></div><div class="ttdeci">DDS_ULong DDS_BuiltinTopicKey_t[4]</div><div class="ttdoc">在内置数据类型中唯一标识该内置数据代表的远程实体（域参与者、数据读者、数据写者），本质上与远程实体的�...</div><div class="ttdef"><b>Definition:</b> BuiltinTopicKey_t.h:21</div></div>
+</div><!-- fragment --></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="dir_0fc3f8f3ef96ce2d45d66d6e29832317.html">resources</a></li><li class="navelem"><a class="el" href="dir_cf9ceadfa18f25e608d16251156af657.html">zrdds</a></li><li class="navelem"><a class="el" href="dir_49213087373222e5c37cddb4e4d5f33e.html">src</a></li><li class="navelem"><a class="el" href="dir_53336e619d60bf3f94a9dfb5f5011ef0.html">ZRDDSCoreInterface</a></li><li class="navelem"><b>TopicBuiltinTopicData.h</b></li>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

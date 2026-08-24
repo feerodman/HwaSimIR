@@ -1,0 +1,746 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: DDS安全快速入门</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li class="current"><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>类</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('zrdds_security_xml.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">DDS安全快速入门 </div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><h1><a class="anchor" id="zrdds_security_xml_main"></a>
+DDS安全快速入门</h1>
+<p>DDS安全主要包括两部分内容：</p>
+<ul>
+<li>内置插件（身份验证、访问控制、数据加密）的使用；</li>
+<li>使用二次开发接口开发自定义的安全插件；</li>
+</ul>
+<h2><a class="anchor" id="zrdds_sec_builtin_plugin"></a>
+内置插件使用</h2>
+<h3><a class="anchor" id="sec_knowledge"></a>
+安全基础知识</h3>
+<ul>
+<li>OpenSSL 是一个安全套接字层密码库，囊括主要的密码算法、常用密钥、证书封装管理功能及实现ssl协议。OpenSSL整个软件包大概可以分成三个主要的功能部分：SSL协议库libssl、应用程序命令工具以及密码算法库libcrypto。</li>
+<li>.KEY 通常指私钥。</li>
+<li>.CSR 是 Certificate Signing Request 的缩写，即证书签名请求，这不是证书，只是包含申请证书的基本信息。生成证书时要把这个提交给权威的证书颁发机构，颁发机构审核通过之后，再根据这些申请信息生成相应的证书。</li>
+<li>.CRT 即 certificate的缩写，即证书。</li>
+<li>X.509 是一种证书格式。对X.509证书来说，认证者总是CA或由CA指定的人，一份X.509证书是一些标准字段的集合，这些字段包含有关用户或设备及其相应公钥的信息。</li>
+<li>X.509的证书文件，一般以.crt结尾，根据该文件的内容编码格式，可以分为以下二种格式：</li>
+<li>.PEM - Privacy Enhanced Mail，打开看文本格式，以"-----BEGIN…“开头，”-----END…"结尾，内容是 BASE64 编码。Apache 和 *NIX 服务器偏向于使用这种编码格式。</li>
+<li>.DER - Distinguished Encoding Rules，打开看是二进制格式，不可读。Java 和 Windows 服务器偏向于使用这种编码格式。</li>
+</ul>
+<h3><a class="anchor" id="zrdds_sec_builtin_plugin_intro"></a>
+内置安全插件功能介绍</h3>
+<ul>
+<li>身份验证插件，在域参与者匹配之前增加以下验证，用于增强系统的安全性：<ul>
+<li>远程域参与者提供的证书有效（能通过本地配置的CA的验证、不在吊销列表内、在有效期范围）</li>
+</ul>
+</li>
+<li>访问控制插件，通过配置文件配置应用允许/拒绝加入的域、发布/订阅主题、允许/拒绝加入分区等，详细参见权限配置文件；</li>
+<li>数据加密，通过配置文件配置应用数据的保护级别，主要包括：应用负载保护、RTPS子消息保护、RTPS消息保护，保护的类型包括：加密、签名等，详细参见管理配置文件。</li>
+</ul>
+<h3><a class="anchor" id="zrdds_sec_config_ca_and_cert"></a>
+配置CA以及签发证书</h3>
+<h4><a class="anchor" id="zrdds_sec_config_ca"></a>
+配置CA</h4>
+<ul>
+<li>切换到将要存储CA的目录，创建CA工作目录并进入，例如<code>cd ~ &amp;&amp; mkdir demoCA &amp;&amp; cd demoCA</code>，demoCA可替换为其他名称;</li>
+<li>拷贝openssl配置文件到demoCA目录，Windows为<code>Openssl安装目录/bin/openssl.cnf</code>，Linux上为<code>/etc/ssl/openssl.cnf</code>，修改并确认文件内容；</li>
+</ul>
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;dir             = .                     # Where everything is kept</div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;certs           = $dir/certs            # Where the issued certs are kept</div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;crl_dir         = $dir/crl              # Where the issued crl are kept</div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;database        = $dir/index.txt        # database index file.</div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;new_certs_dir   = $dir/newcerts         # default place for new certs.</div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;certificate     = $dir/cacert.pem       # The CA certificate</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;serial          = $dir/serial           # The current serial number</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;crlnumber       = $dir/crlnumber        # the current crl number</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;crl             = $dir/crl.pem          # The current CRL</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;private_key     = $dir/private/cakey.pem# The private key</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;RANDFILE        = $dir/private/.rand    # private random number file</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;default_days= 365                # how long to certify for</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;default_crl_days= 30             # how long before next CRL</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;default_md= md5                  # which message digest to use</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;preserve= no                     # keep passed DN ordering</div>
+</div><!-- fragment --><ul>
+<li>使用命令<code>mkdir ca &amp;&amp; mkdir user &amp;&amp; mkdir newcerts &amp;&amp; touch index.txt &amp;&amp; touch index.txt.attr &amp;&amp; touch serial &amp;&amp; echo 01 &gt;&gt; serial</code>创建CA所需文件或者目录结构；<ul>
+<li>ca目录存储ca的证书私钥等；</li>
+<li>user目录存储用户证书请求文件等；</li>
+<li>newcerts中存储为用户生成的证书；</li>
+</ul>
+</li>
+<li>创建私钥：<code>openssl genrsa -out ca/democa.key 2048</code><ul>
+<li>genrsa表示生成rsa算法生成密钥的子命令；</li>
+<li>[可选] -des3，为私钥文件设置密码，后续使用密钥时需要密码验证；</li>
+<li>-out指定生成的私钥文件名称；</li>
+<li>2048表示加密长度，建议2048</li>
+</ul>
+</li>
+<li>生成证书请求文件（CSR）：<code>openssl req -new -key ca/democa.key -subj "/C=CN/ST=JS/L=NJ/O=ZR/CN=demoCA" -out ca/democa.csr</code><ul>
+<li>req表示产生证书签发申请子命令；</li>
+<li>-new 新的证书申请；</li>
+<li>-signkey 签名密钥(key)文件，由第一步生成。</li>
+<li>-out 输出为 CSR 文件，这是一个请求文件。</li>
+<li>-subj 主体名称，包括以下信息：<ul>
+<li>C 国家</li>
+<li>ST 省份</li>
+<li>L 市</li>
+<li>O 机构</li>
+<li>OU 部门</li>
+<li>CN (Common Name) 一般是域名</li>
+<li>EmailAddress 邮箱</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>自签署证书（正常申请证书是你把上面生成的请求文件(.CSR)发送给可信机构(CA)，让可信机构根据你的请求去生成和签署证书，再给你发回来。这里是CA自签署。）：<code>openssl x509 -req -sha1 -in ca/democa.csr -signkey ca/democa.key -days 3650 -out ca/democa.pem</code><ul>
+<li>x509为签发X.509格式证书子命令；</li>
+<li>-req 证书输入请求；</li>
+<li>-days 证书有效天数；</li>
+<li>-in 输入文件，这里是上一步生成的请求文件(.CSR)；</li>
+<li>-signkey 签名密钥(key)文件，由第一步生成；</li>
+<li>-out 输出文件，生成证书文件(.pem)。</li>
+</ul>
+</li>
+</ul>
+<h4><a class="anchor" id="zrdds_sec_cert"></a>
+签发证书</h4>
+<p>为需要使用安全的应用签发证书。</p>
+<ul>
+<li>以下命令可以在需要申请证书的节点上运行：<ul>
+<li>创建私钥：<code>openssl genrsa -out user/app1.key 2048</code></li>
+<li>生成证书请求文件：<code>openssl req -new -key user/app1.key -subj "/C=CN/ST=JS/O=ZR/CN=app1" -out user/app1.csr</code><ul>
+<li>-subj标识证书的主体，后续在配置文件中会需要使用，**注意**：由于实现原因，ZRDDS内置插件主体名称不使用/L字段。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>在CA目录运行以下命令为app1颁发证书：<ul>
+<li>使用根证书签发应用的证书：<code>openssl ca -cert ./ca/democa.pem -keyfile ./ca/democa.key -config ./openssl.cnf -in user/app1.csr -out user/app1Cert.pem</code></li>
+</ul>
+</li>
+</ul>
+<h3><a class="anchor" id="zrdds_sec_config_file"></a>
+编写安全配置文件</h3>
+<h4><a class="anchor" id="zrdds_sec_config_persmission_file"></a>
+权限配置文件</h4>
+<p>权限配置文件主要用于描述本地的访问控制权限，格式为XML，其Schema说明如下：</p>
+<p>根节点标签名称为dds，类型为PermissionNode。</p>
+<table class="doxtable">
+<tr>
+<th>类型 </th><th>属性/子元素 </th><th>说明  </th></tr>
+<tr>
+<td>PermissionsNode </td><td>permissions </td><td>出现一次的子元素，类型为Permissions </td></tr>
+<tr>
+<td>Permissions </td><td>grant </td><td>出现一次及以上的子元素，类型为Grant </td></tr>
+<tr>
+<td>Grant </td><td>name </td><td>出现一次的属性，用于标识该规则 </td></tr>
+<tr>
+<td>^ </td><td>subject_name </td><td>出现一次的子元素，指定该条配置针对的对象，subject_name是申请证书的主体，通常每个应用或者每个域参与者唯一标识； </td></tr>
+<tr>
+<td>^ </td><td>validity </td><td>出现一次的子元素，类型为Validity，表明该配置的有效期范围，当前时间不在有效期范围内的规则将被忽略。 </td></tr>
+<tr>
+<td>^ </td><td>allow_rule </td><td>出现0到多次的子元素，类型为Rule，表示一组允许访问规则。 </td></tr>
+<tr>
+<td>^ </td><td>deny_rule </td><td>出现0到多次的子元素，类型为Rule，表示一组拒绝访问规则。 </td></tr>
+<tr>
+<td>^ </td><td>default </td><td>出现1次的子元素，类型为枚举字符串，DENY表示拒绝，ALLOW表示允许，表示未在allow_rule以及deny_rule中定义的域号、主题、分区等的默认行为。 </td></tr>
+<tr>
+<td>Validity </td><td>not_before </td><td>出现一次的子元素，用于指定开始时间，形式为YYYY-MM-DDThh:mm::ss。 </td></tr>
+<tr>
+<td>^ </td><td>not_after </td><td>出现一次的子元素，用于指定结束时间，格式与not_before相同。 </td></tr>
+<tr>
+<td>Rule </td><td>DomainIdSet </td><td>出现一次的子元素，用于表明规则中的域号集合。 </td></tr>
+<tr>
+<td>^ </td><td>publish </td><td>出现0到多次的子元素，类型为Criteria，用于描述发布相关的权限。 </td></tr>
+<tr>
+<td>^ </td><td>subscribe </td><td>出现0到多次的子元素，类型为Criteria，用于描述订阅相关的权限。 </td></tr>
+<tr>
+<td>^ </td><td>relay </td><td>出现0到多次的子元素，类型为Criteria，用于描述发布订阅双向相关的权限。 </td></tr>
+<tr>
+<td>DomainIdSet </td><td>id </td><td>出现0到多次的子元素，类型为DomainId，每个元素代表集合中的一个域号。 </td></tr>
+<tr>
+<td>^ </td><td>id_range </td><td>出现0到多次的子元素，类型为DomainIdRange，每个元素代表一个连续的域号区间。 </td></tr>
+<tr>
+<td>DomainIdRange </td><td>min </td><td>出现一次的子元素，代表区间下界。 </td></tr>
+<tr>
+<td>^ </td><td>max </td><td>出现一次的子元素，代表区间上界。 </td></tr>
+<tr>
+<td>DomainId </td><td>无 </td><td>非负整数表示域号。 </td></tr>
+<tr>
+<td>Criteria </td><td>topics </td><td>出现一次的子元素，类型为TopicExpressionList，用于指定主题列表，取决于上层规则，表示允许/拒绝该主题列表。 </td></tr>
+<tr>
+<td>^ </td><td>partitions </td><td>出现一次的子元素，类型为PartitionExpressionList，用于指定分区列表，取决于上层规则，表示允许/拒绝加入这些分区列表。 </td></tr>
+<tr>
+<td>TopicExpressionList </td><td>topic </td><td>出现1次到多次的子元素，类型为TopicExpression。 </td></tr>
+<tr>
+<td>TopicExpression </td><td>无 </td><td>主题名的表达式字符串，支持POSIX 1003.2-1992的正则表达式。 </td></tr>
+<tr>
+<td>PartitionExpressionList </td><td>partition </td><td>出现1次到多次的子元素，类型为PartitionExpression。 </td></tr>
+<tr>
+<td>PartitionExpression </td><td>无 </td><td>分区名的表达式字符串，支持POSIX 1003.2-1992的正则表达式。 </td></tr>
+</table>
+<p>该配置的schema格式如下：</p>
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;&lt;?<span class="keyword">xml</span> <span class="keyword">version</span>=<span class="stringliteral">&quot;1.0&quot;</span> <span class="keyword">encoding</span>=<span class="stringliteral">&quot;UTF-8&quot;</span>?&gt;</div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;&lt;<span class="keywordtype">xs:schema</span> <span class="keyword">xmlns:xs</span>=<span class="stringliteral">&quot;http://www.w3.org/2001/XMLSchema&quot;</span> <span class="keyword">elementFormDefault</span>=<span class="stringliteral">&quot;qualified&quot;</span> <span class="keyword">attributeFormDefault</span>=<span class="stringliteral">&quot;unqualified&quot;</span>&gt;</div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;    &lt;<span class="keywordtype">xs:element</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;dds&quot;</span> <span class="keyword">type</span>=<span class="stringliteral">&quot;PermissionsNode&quot;</span> /&gt;</div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;    &lt;<span class="keywordtype">xs:complexType</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;PermissionsNode&quot;</span>&gt;</div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;        &lt;<span class="keywordtype">xs:sequence</span> <span class="keyword">minOccurs</span>=<span class="stringliteral">&quot;1&quot;</span> <span class="keyword">maxOccurs</span>=<span class="stringliteral">&quot;1&quot;</span>&gt;</div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;            &lt;<span class="keywordtype">xs:element</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;permissions&quot;</span> <span class="keyword">type</span>=<span class="stringliteral">&quot;Permissions&quot;</span> /&gt;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;        &lt;/<span class="keywordtype">xs:sequence</span>&gt;</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;    &lt;/<span class="keywordtype">xs:complexType</span>&gt;</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;    &lt;<span class="keywordtype">xs:complexType</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;Permissions&quot;</span>&gt;</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;        &lt;<span class="keywordtype">xs:sequence</span> <span class="keyword">minOccurs</span>=<span class="stringliteral">&quot;1&quot;</span> <span class="keyword">maxOccurs</span>=<span class="stringliteral">&quot;unbounded&quot;</span>&gt;</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;            &lt;<span class="keywordtype">xs:element</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;grant&quot;</span> <span class="keyword">type</span>=<span class="stringliteral">&quot;Grant&quot;</span> /&gt;</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;        &lt;/<span class="keywordtype">xs:sequence</span>&gt;</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    &lt;/<span class="keywordtype">xs:complexType</span>&gt;</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    &lt;<span class="keywordtype">xs:complexType</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;Grant&quot;</span>&gt;</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;        &lt;<span class="keywordtype">xs:sequence</span> <span class="keyword">minOccurs</span>=<span class="stringliteral">&quot;1&quot;</span> <span class="keyword">maxOccurs</span>=<span class="stringliteral">&quot;1&quot;</span>&gt;</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;            &lt;<span class="keywordtype">xs:element</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;subject_name&quot;</span> <span class="keyword">type</span>=<span class="stringliteral">&quot;xs:string&quot;</span> /&gt;</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;            &lt;<span class="keywordtype">xs:element</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;validity&quot;</span> <span class="keyword">type</span>=<span class="stringliteral">&quot;Validity&quot;</span> /&gt;</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;            &lt;<span class="keywordtype">xs:sequence</span> <span class="keyword">minOccurs</span>=<span class="stringliteral">&quot;1&quot;</span> <span class="keyword">maxOccurs</span>=<span class="stringliteral">&quot;unbounded&quot;</span>&gt;</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;                &lt;<span class="keywordtype">xs:choice</span> <span class="keyword">minOccurs</span>=<span class="stringliteral">&quot;1&quot;</span> <span class="keyword">maxOccurs</span>=<span class="stringliteral">&quot;1&quot;</span>&gt;</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;                    &lt;<span class="keywordtype">xs:element</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;allow_rule&quot;</span> <span class="keyword">minOccurs</span>=<span class="stringliteral">&quot;0&quot;</span> <span class="keyword">type</span>=<span class="stringliteral">&quot;Rule&quot;</span> /&gt;</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;                    &lt;<span class="keywordtype">xs:element</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;deny_rule&quot;</span> <span class="keyword">minOccurs</span>=<span class="stringliteral">&quot;0&quot;</span> <span class="keyword">type</span>=<span class="stringliteral">&quot;Rule&quot;</span> /&gt;</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;                &lt;/<span class="keywordtype">xs:choice</span>&gt;</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;            &lt;/<span class="keywordtype">xs:sequence</span>&gt;</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;            &lt;<span class="keywordtype">xs:element</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;default&quot;</span> <span class="keyword">type</span>=<span class="stringliteral">&quot;DefaultAction&quot;</span> /&gt;</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;        &lt;/<span class="keywordtype">xs:sequence</span>&gt;</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;        &lt;<span class="keywordtype">xs:attribute</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;name&quot;</span> <span class="keyword">type</span>=<span class="stringliteral">&quot;xs:string&quot;</span> <span class="keyword">use</span>=<span class="stringliteral">&quot;required&quot;</span> /&gt;</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    &lt;/<span class="keywordtype">xs:complexType</span>&gt;</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    &lt;<span class="keywordtype">xs:complexType</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;Validity&quot;</span>&gt;</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        &lt;<span class="keywordtype">xs:sequence</span> <span class="keyword">minOccurs</span>=<span class="stringliteral">&quot;1&quot;</span> <span class="keyword">maxOccurs</span>=<span class="stringliteral">&quot;1&quot;</span>&gt;</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;            &lt;<span class="keywordtype">xs:element</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;not_before&quot;</span> <span class="keyword">type</span>=<span class="stringliteral">&quot;xs:dateTime&quot;</span> /&gt; </div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;            &lt;<span class="keywordtype">xs:element</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;not_after&quot;</span> <span class="keyword">type</span>=<span class="stringliteral">&quot;xs:dateTime&quot;</span> /&gt; </div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        &lt;/<span class="keywordtype">xs:sequence</span>&gt;</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    &lt;/<span class="keywordtype">xs:complexType</span>&gt;</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    &lt;<span class="keywordtype">xs:complexType</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;Rule&quot;</span>&gt;</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        &lt;<span class="keywordtype">xs:sequence</span> <span class="keyword">minOccurs</span>=<span class="stringliteral">&quot;1&quot;</span> <span class="keyword">maxOccurs</span>=<span class="stringliteral">&quot;1&quot;</span>&gt;</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;            </div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;            &lt;<span class="keywordtype">xs:element</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;domains&quot;</span> <span class="keyword">type</span>=<span class="stringliteral">&quot;DomainIdSet&quot;</span> /&gt;</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;            &lt;<span class="keywordtype">xs:sequence</span> <span class="keyword">minOccurs</span>=<span class="stringliteral">&quot;0&quot;</span> <span class="keyword">maxOccurs</span>=<span class="stringliteral">&quot;unbounded&quot;</span>&gt; </div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;                &lt;<span class="keywordtype">xs:element</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;publish&quot;</span> <span class="keyword">type</span>=<span class="stringliteral">&quot;Criteria&quot;</span> /&gt;</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;            &lt;/<span class="keywordtype">xs:sequence</span>&gt;</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;            &lt;<span class="keywordtype">xs:sequence</span> <span class="keyword">minOccurs</span>=<span class="stringliteral">&quot;0&quot;</span> <span class="keyword">maxOccurs</span>=<span class="stringliteral">&quot;unbounded&quot;</span>&gt;</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;                &lt;<span class="keywordtype">xs:element</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;subscribe&quot;</span> <span class="keyword">type</span>=<span class="stringliteral">&quot;Criteria&quot;</span> /&gt;</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;            &lt;/<span class="keywordtype">xs:sequence</span>&gt;</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;             &lt;<span class="keywordtype">xs:sequence</span> <span class="keyword">minOccurs</span>=<span class="stringliteral">&quot;0&quot;</span> <span class="keyword">maxOccurs</span>=<span class="stringliteral">&quot;unbounded&quot;</span>&gt;</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;                &lt;<span class="keywordtype">xs:element</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;relay&quot;</span> <span class="keyword">type</span>=<span class="stringliteral">&quot;Criteria&quot;</span> /&gt;</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;            &lt;/<span class="keywordtype">xs:sequence</span>&gt;</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        &lt;/<span class="keywordtype">xs:sequence</span>&gt;</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    &lt;/<span class="keywordtype">xs:complexType</span>&gt;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    </div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    &lt;<span class="keywordtype">xs:complexType</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;DomainIdSet&quot;</span>&gt;</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        &lt;<span class="keywordtype">xs:choice</span> <span class="keyword">minOccurs</span>=<span class="stringliteral">&quot;1&quot;</span> <span class="keyword">maxOccurs</span>=<span class="stringliteral">&quot;unbounded&quot;</span>&gt;</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;            &lt;<span class="keywordtype">xs:element</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;id&quot;</span> <span class="keyword">type</span>=<span class="stringliteral">&quot;DomainId&quot;</span> /&gt;</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;            &lt;<span class="keywordtype">xs:element</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;id_range&quot;</span> <span class="keyword">type</span>=<span class="stringliteral">&quot;DomainIdRange&quot;</span> /&gt;</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        &lt;/<span class="keywordtype">xs:choice</span>&gt;</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    &lt;/<span class="keywordtype">xs:complexType</span>&gt;</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    </div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    &lt;<span class="keywordtype">xs:simpleType</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;DomainId&quot;</span>&gt;</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        &lt;<span class="keywordtype">xs:restriction</span> <span class="keyword">base</span>=<span class="stringliteral">&quot;xs:nonNegativeInteger&quot;</span> /&gt;</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    &lt;/<span class="keywordtype">xs:simpleType</span>&gt;</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    </div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    &lt;<span class="keywordtype">xs:complexType</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;DomainIdRange&quot;</span>&gt;</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        &lt;<span class="keywordtype">xs:choice</span>&gt; </div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;            &lt;<span class="keywordtype">xs:sequence</span>&gt;</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;                &lt;<span class="keywordtype">xs:element</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;min&quot;</span> <span class="keyword">type</span>=<span class="stringliteral">&quot;DomainId&quot;</span> /&gt;</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;                &lt;<span class="keywordtype">xs:element</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;max&quot;</span> <span class="keyword">type</span>=<span class="stringliteral">&quot;DomainId&quot;</span> <span class="keyword">minOccurs</span>=<span class="stringliteral">&quot;0&quot;</span> /&gt;</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;            &lt;/<span class="keywordtype">xs:sequence</span>&gt;</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;            &lt;<span class="keywordtype">xs:element</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;max&quot;</span> <span class="keyword">type</span>=<span class="stringliteral">&quot;DomainId&quot;</span> /&gt;</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        &lt;/<span class="keywordtype">xs:choice</span>&gt;</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    &lt;/<span class="keywordtype">xs:complexType</span>&gt;</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    &lt;<span class="keywordtype">xs:complexType</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;Criteria&quot;</span>&gt;</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        </div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        &lt;<span class="keywordtype">xs:all</span> <span class="keyword">minOccurs</span>=<span class="stringliteral">&quot;1&quot;</span>&gt;</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            &lt;<span class="keywordtype">xs:element</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;topics&quot;</span> <span class="keyword">minOccurs</span>=<span class="stringliteral">&quot;0&quot;</span> <span class="keyword">type</span>=<span class="stringliteral">&quot;TopicExpressionList&quot;</span> /&gt;</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;            &lt;<span class="keywordtype">xs:element</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;partitions&quot;</span> <span class="keyword">minOccurs</span>=<span class="stringliteral">&quot;0&quot;</span>    <span class="keyword">type</span>=<span class="stringliteral">&quot;PartitionExpressionList&quot;</span> /&gt;</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;            &lt;<span class="keywordtype">xs:element</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;data_tags&quot;</span> <span class="keyword">minOccurs</span>=<span class="stringliteral">&quot;0&quot;</span> <span class="keyword">type</span>=<span class="stringliteral">&quot;DataTags&quot;</span> /&gt;</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        &lt;/<span class="keywordtype">xs:all</span>&gt;</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    &lt;/<span class="keywordtype">xs:complexType</span>&gt;</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    </div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    &lt;<span class="keywordtype">xs:complexType</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;TopicExpressionList&quot;</span>&gt;</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        &lt;<span class="keywordtype">xs:sequence</span> <span class="keyword">minOccurs</span>=<span class="stringliteral">&quot;1&quot;</span> <span class="keyword">maxOccurs</span>=<span class="stringliteral">&quot;unbounded&quot;</span>&gt;</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            &lt;<span class="keywordtype">xs:element</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;topic&quot;</span> <span class="keyword">type</span>=<span class="stringliteral">&quot;TopicExpression&quot;</span> /&gt;</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;        &lt;/<span class="keywordtype">xs:sequence</span>&gt;</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    &lt;/<span class="keywordtype">xs:complexType</span>&gt;</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    </div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    &lt;<span class="keywordtype">xs:complexType</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;PartitionExpressionList&quot;</span>&gt;</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;        &lt;<span class="keywordtype">xs:sequence</span> <span class="keyword">minOccurs</span>=<span class="stringliteral">&quot;1&quot;</span> <span class="keyword">maxOccurs</span>=<span class="stringliteral">&quot;unbounded&quot;</span>&gt;</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;            &lt;<span class="keywordtype">xs:element</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;partition&quot;</span> <span class="keyword">type</span>=<span class="stringliteral">&quot;PartitionExpression&quot;</span> /&gt;</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        &lt;/<span class="keywordtype">xs:sequence</span>&gt;</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    &lt;/<span class="keywordtype">xs:complexType</span>&gt;</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    &lt;<span class="keywordtype">xs:simpleType</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;TopicExpression&quot;</span>&gt;</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;        &lt;<span class="keywordtype">xs:restriction</span> <span class="keyword">base</span>=<span class="stringliteral">&quot;xs:string&quot;</span> /&gt;</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    &lt;/<span class="keywordtype">xs:simpleType</span>&gt;</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    &lt;<span class="keywordtype">xs:simpleType</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;PartitionExpression&quot;</span>&gt;</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;        &lt;<span class="keywordtype">xs:restriction</span> <span class="keyword">base</span>=<span class="stringliteral">&quot;xs:string&quot;</span> /&gt;</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    &lt;/<span class="keywordtype">xs:simpleType</span>&gt;</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    &lt;<span class="keywordtype">xs:complexType</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;DataTags&quot;</span>&gt;</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;        &lt;<span class="keywordtype">xs:sequence</span> <span class="keyword">minOccurs</span>=<span class="stringliteral">&quot;1&quot;</span> <span class="keyword">maxOccurs</span>=<span class="stringliteral">&quot;unbounded&quot;</span>&gt;</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;            &lt;<span class="keywordtype">xs:element</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;tag&quot;</span> <span class="keyword">type</span>=<span class="stringliteral">&quot;TagNameValuePair&quot;</span> /&gt;</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;        &lt;/<span class="keywordtype">xs:sequence</span>&gt;</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    &lt;/<span class="keywordtype">xs:complexType</span>&gt;</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    &lt;<span class="keywordtype">xs:complexType</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;TagNameValuePair&quot;</span>&gt;</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        &lt;<span class="keywordtype">xs:sequence</span> <span class="keyword">minOccurs</span>=<span class="stringliteral">&quot;1&quot;</span> <span class="keyword">maxOccurs</span>=<span class="stringliteral">&quot;unbounded&quot;</span>&gt;</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;            &lt;<span class="keywordtype">xs:element</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;name&quot;</span> <span class="keyword">type</span>=<span class="stringliteral">&quot;xs:string&quot;</span> /&gt;</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;            &lt;<span class="keywordtype">xs:element</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;value&quot;</span> <span class="keyword">type</span>=<span class="stringliteral">&quot;xs:string&quot;</span> /&gt;</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;        &lt;/<span class="keywordtype">xs:sequence</span>&gt;</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    &lt;/<span class="keywordtype">xs:complexType</span>&gt;</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    &lt;<span class="keywordtype">xs:simpleType</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;DefaultAction&quot;</span>&gt;</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;        &lt;<span class="keywordtype">xs:restriction</span> <span class="keyword">base</span>=<span class="stringliteral">&quot;xs:string&quot;</span>&gt;</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;            &lt;<span class="keywordtype">xs:enumeration</span> <span class="keyword">value</span>=<span class="stringliteral">&quot;ALLOW&quot;</span> /&gt;</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;            &lt;<span class="keywordtype">xs:enumeration</span> <span class="keyword">value</span>=<span class="stringliteral">&quot;DENY&quot;</span> /&gt;</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;        &lt;/<span class="keywordtype">xs:restriction</span>&gt;</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;    &lt;/<span class="keywordtype">xs:simpleType</span>&gt;</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;&lt;/<span class="keywordtype">xs:schema</span>&gt;</div>
+</div><!-- fragment --><p>示例XML如下：</p>
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;&lt;?<span class="keyword">xml</span> <span class="keyword">version</span>=<span class="stringliteral">&quot;1.0&quot;</span> <span class="keyword">encoding</span>=<span class="stringliteral">&quot;UTF-8&quot;</span>?&gt;</div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;&lt;<span class="keywordtype">dds</span>&gt;</div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;    &lt;<span class="keywordtype">permissions</span>&gt;</div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;        </div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;        &lt;<span class="keywordtype">grant</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;app1&quot;</span>&gt;</div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;            &lt;<span class="keywordtype">subject_name</span>&gt;<span class="keyword">C</span>=<span class="keyword">CN</span>,<span class="keyword">ST</span>=<span class="keyword">JS</span>,<span class="keyword">O</span>=<span class="keyword">ZR</span>,<span class="keyword">CN</span>=<span class="keyword">app1</span>&lt;/<span class="keywordtype">subject_name</span>&gt;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;            &lt;<span class="keywordtype">validity</span>&gt;</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;                &lt;<span class="keywordtype">not_before</span>&gt;2020-10-19<span class="keyword">T10:54:00</span>&lt;/<span class="keywordtype">not_before</span>&gt;</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;                &lt;<span class="keywordtype">not_after</span>&gt;2022-10-19<span class="keyword">T10:54:00</span>&lt;/<span class="keywordtype">not_after</span>&gt;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;            &lt;/<span class="keywordtype">validity</span>&gt;</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;            &lt;<span class="keywordtype">allow_rule</span>&gt;</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;                &lt;<span class="keywordtype">domains</span>&gt;</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;                    &lt;<span class="keywordtype">id</span>&gt;150&lt;/<span class="keywordtype">id</span>&gt;</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;                &lt;/<span class="keywordtype">domains</span>&gt;</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;                &lt;<span class="keywordtype">publish</span>&gt;</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;                    &lt;<span class="keywordtype">topics</span>&gt;</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;                        &lt;<span class="keywordtype">topic</span>&gt;<span class="keyword">ac_example</span>*&lt;/<span class="keywordtype">topic</span>&gt;</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;                    &lt;/<span class="keywordtype">topics</span>&gt;</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;                &lt;/<span class="keywordtype">publish</span>&gt;</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;            &lt;/<span class="keywordtype">allow_rule</span>&gt;</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;            &lt;<span class="keywordtype">default</span>&gt;<span class="keyword">DENY</span>&lt;/<span class="keywordtype">default</span>&gt;</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;        &lt;/<span class="keywordtype">grant</span>&gt;</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;        </div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;        &lt;<span class="keywordtype">grant</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;app2&quot;</span>&gt;</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;            &lt;<span class="keywordtype">subject_name</span>&gt;<span class="keyword">C</span>=<span class="keyword">CN</span>,<span class="keyword">ST</span>=<span class="keyword">JS</span>,<span class="keyword">O</span>=<span class="keyword">ZR</span>,<span class="keyword">CN</span>=<span class="keyword">app2</span>&lt;/<span class="keywordtype">subject_name</span>&gt;</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;            &lt;<span class="keywordtype">validity</span>&gt;</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;                &lt;<span class="keywordtype">not_before</span>&gt;2020-10-19<span class="keyword">T10:54:00</span>&lt;/<span class="keywordtype">not_before</span>&gt;</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;                &lt;<span class="keywordtype">not_after</span>&gt;2022-10-19<span class="keyword">T10:54:00</span>&lt;/<span class="keywordtype">not_after</span>&gt;</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;            &lt;/<span class="keywordtype">validity</span>&gt;</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;            &lt;<span class="keywordtype">allow_rule</span>&gt;</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;                &lt;<span class="keywordtype">domains</span>&gt;</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;                    &lt;<span class="keywordtype">id</span>&gt;150&lt;/<span class="keywordtype">id</span>&gt;</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;                &lt;/<span class="keywordtype">domains</span>&gt;</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;                &lt;<span class="keywordtype">subscribe</span>&gt;</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;                    &lt;<span class="keywordtype">topics</span>&gt;</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;                        &lt;<span class="keywordtype">topic</span>&gt;<span class="keyword">ac_example_1</span>&lt;/<span class="keywordtype">topic</span>&gt;</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;                    &lt;/<span class="keywordtype">topics</span>&gt;</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;                &lt;/<span class="keywordtype">subscribe</span>&gt;</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;            &lt;/<span class="keywordtype">allow_rule</span>&gt;</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;            &lt;<span class="keywordtype">default</span>&gt;<span class="keyword">DENY</span>&lt;/<span class="keywordtype">default</span>&gt;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        &lt;/<span class="keywordtype">grant</span>&gt;</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    &lt;/<span class="keywordtype">permissions</span>&gt;</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;&lt;/<span class="keywordtype">dds</span>&gt;</div>
+</div><!-- fragment --><h4><a class="anchor" id="zrdds_sec_config_goverance_file"></a>
+管理配置文件</h4>
+<p>管理配置文件用于描述如何处理与远程实体的发现以及数据加密配置，格式为XML，其Schema格式如下：</p>
+<p>根节点标签名称为dds，类型为DomainAccessRulesNode。</p>
+<table class="doxtable">
+<tr>
+<th>类型 </th><th>属性/子元素 </th><th>说明  </th></tr>
+<tr>
+<td>DomainAccessRulesNode</td><td>domain_access_rules </td><td>出现一次的子元素，类型为DomainAccessRules </td></tr>
+<tr>
+<td>DomainAccessRules </td><td>domain_rule </td><td>出现一次及以上的子元素，类型为DomainRule </td></tr>
+<tr>
+<td>DomainRule </td><td>domains </td><td>出现一次及以上的子元素，类型为DomainIdSet，用于描述该规则适用的域集合，该类型的描述参见权限配置文件描述。 </td></tr>
+<tr>
+<td>^ </td><td>allow_unauthenticated_participants </td><td>出现一次的子元素，表明是否允许匹配未授权的域参与者，true表示允许，false表示不允许。 </td></tr>
+<tr>
+<td>^ </td><td>enable_join_access_control </td><td>出现一次的子元素，表明在验证完成后，是否需要进一步检查远程域参与者的权限，true表示需要检查，false表示不需要检查。 </td></tr>
+<tr>
+<td>^ </td><td>discovery_protection_kind </td><td>出现一次的子元素，枚举类型表示内置发现信息的保护级别，ENCRYPT表示加密、SIGN表示签名、NONE表示不额外保护。 </td></tr>
+<tr>
+<td>^ </td><td>liveliness_protection_kind </td><td>出现一次的子元素，枚举类型表示内置心跳发现信息的保护级别，ENCRYPT表示加密、SIGN表示签名、NONE表示不额外保护。 </td></tr>
+<tr>
+<td>^ </td><td>rtps_protection_kind </td><td>出现一次的子元素，枚举类型表示RTPS整个消息的保护级别，ENCRYPT表示加密、SIGN表示签名、NONE表示不额外保护。 </td></tr>
+<tr>
+<td>^ </td><td>topic_access_rules </td><td>出现一次的子元素，类型为TopicAccessRules。 </td></tr>
+<tr>
+<td>TopicAccessRules </td><td>topic_rule </td><td>出现一次及以上的子元素，类型为TopicRule，每个元素针对一个或一组主题名的规则。 </td></tr>
+<tr>
+<td>TopicRule </td><td>topic_expression </td><td>出现一次的子元素，主题名的表达式字符串，支持POSIX 1003.2-1992的正则表达式。 </td></tr>
+<tr>
+<td>^ </td><td>enable_discovery_protection </td><td>针对该主题是否启动内置信息保护。 </td></tr>
+<tr>
+<td>^ </td><td>enable_read_access_control </td><td>出现一次的子元素，表示是否需要检查权限配置文件中的订阅权限配置。 </td></tr>
+<tr>
+<td>^ </td><td>enable_write_access_control </td><td>出现一次的子元素，表示是否需要检查权限配置文件中的发布权限配置。 </td></tr>
+<tr>
+<td>^ </td><td>metadata_protection_kind </td><td>出现一次的子元素，枚举类型表示主题相关RTPS子消息的保护级别，ENCRYPT表示加密、SIGN表示签名、NONE表示不额外保护。 </td></tr>
+<tr>
+<td>^ </td><td>data_protection_kind </td><td>出现一次的子元素，枚举类型表示主题负载数据保护级别，ENCRYPT表示加密、SIGN表示签名、NONE表示不额外保护。 </td></tr>
+</table>
+<p>管理配置文件的XSD如下：</p>
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;&lt;xs:schema xmlns:xs=&quot;http://www.w3.org/2001/XMLSchema&quot; elementFormDefault=&quot;qualified&quot;</div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;    attributeFormDefault=&quot;unqualified&quot;&gt;</div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;</div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;    &lt;xs:element name=&quot;dds&quot; type=&quot;DomainAccessRulesNode&quot;/&gt;</div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;    &lt;xs:complexType name=&quot;DomainAccessRulesNode&quot;&gt;</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;        &lt;xs:sequence minOccurs=&quot;1&quot; maxOccurs=&quot;1&quot;&gt;</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;            &lt;xs:element name=&quot;domain_access_rules&quot; type=&quot;DomainAccessRules&quot;/&gt;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;        &lt;/xs:sequence&gt;</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;    &lt;/xs:complexType&gt;</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    &lt;xs:complexType name=&quot;DomainAccessRules&quot;&gt;</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;        &lt;xs:sequence minOccurs=&quot;1&quot; maxOccurs=&quot;unbounded&quot;&gt;</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;            &lt;xs:element name=&quot;domain_rule&quot; type=&quot;DomainRule&quot;/&gt;</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;        &lt;/xs:sequence&gt;</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    &lt;/xs:complexType&gt;</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    &lt;xs:complexType name=&quot;DomainRule&quot;&gt;</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;        &lt;xs:sequence minOccurs=&quot;1&quot; maxOccurs=&quot;1&quot;&gt;</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;            </div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;            &lt;xs:element name=&quot;domains&quot; type=&quot;DomainIdSet&quot;/&gt;</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;            &lt;xs:element name=&quot;allow_unauthenticated_join&quot; type=&quot;xs:boolean&quot;/&gt;</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;            </div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;            &lt;xs:element name=&quot;enable_join_access_control&quot; type=&quot;xs:boolean&quot;/&gt;</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;            </div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;            &lt;xs:element name=&quot;discovery_protection_kind&quot; type=&quot;ProtectionKind&quot;/&gt;</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;            &lt;xs:element name=&quot;liveliness_protection_kind&quot; type=&quot;ProtectionKind&quot;/&gt;</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;            &lt;xs:element name=&quot;rtps_protection_kind&quot; type=&quot;ProtectionKind&quot;/&gt;</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;            &lt;xs:element name=&quot;topic_access_rules&quot; type=&quot;TopicAccessRules&quot;/&gt;</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;        &lt;/xs:sequence&gt;</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    &lt;/xs:complexType&gt;</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    </div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    &lt;xs:complexType name=&quot;DomainIdSet&quot;&gt;</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        &lt;xs:choice minOccurs=&quot;1&quot; maxOccurs=&quot;unbounded&quot;&gt;</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;            &lt;xs:element name=&quot;id&quot; type=&quot;DomainId&quot;/&gt;</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;            &lt;xs:element name=&quot;id_range&quot; type=&quot;DomainIdRange&quot;/&gt;</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        &lt;/xs:choice&gt;</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    &lt;/xs:complexType&gt;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    </div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    &lt;xs:simpleType name=&quot;DomainId&quot;&gt;</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        &lt;xs:restriction base=&quot;xs:nonNegativeInteger&quot;/&gt;</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    &lt;/xs:simpleType&gt;</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    </div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    &lt;xs:complexType name=&quot;DomainIdRange&quot;&gt;</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        </div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        &lt;xs:choice&gt;</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;            &lt;xs:sequence&gt;</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;                &lt;xs:element name=&quot;min&quot; type=&quot;DomainId&quot;/&gt;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;                &lt;xs:element name=&quot;max&quot; type=&quot;DomainId&quot; minOccurs=&quot;0&quot;/&gt;</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;            &lt;/xs:sequence&gt;</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;            &lt;xs:element name=&quot;max&quot; type=&quot;DomainId&quot;/&gt;</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        &lt;/xs:choice&gt;</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    &lt;/xs:complexType&gt;</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    &lt;xs:simpleType name=&quot;ProtectionKind&quot;&gt;</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        &lt;xs:restriction base=&quot;xs:string&quot;&gt;</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;            &lt;xs:enumeration value=&quot;ENCRYPT&quot;/&gt;</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;            &lt;xs:enumeration value=&quot;SIGN&quot;/&gt;</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;            &lt;xs:enumeration value=&quot;NONE&quot;/&gt;</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        &lt;/xs:restriction&gt;</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    &lt;/xs:simpleType&gt;</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    &lt;xs:complexType name=&quot;TopicAccessRules&quot;&gt;</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        &lt;xs:sequence minOccurs=&quot;1&quot; maxOccurs=&quot;unbounded&quot;&gt;</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;            &lt;xs:element name=&quot;topic_rule&quot; type=&quot;TopicRule&quot;/&gt;</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        &lt;/xs:sequence&gt;</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    &lt;/xs:complexType&gt;</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    &lt;xs:complexType name=&quot;TopicRule&quot;&gt;</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        &lt;xs:sequence minOccurs=&quot;1&quot; maxOccurs=&quot;1&quot;&gt;</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;            &lt;xs:element name=&quot;topic_expression&quot; type=&quot;TopicExpression&quot;/&gt;</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;            &lt;xs:element name=&quot;enable_discovery_protection&quot; type=&quot;xs:boolean&quot;/&gt;</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            </div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;            &lt;xs:element name=&quot;enable_read_access_control&quot; type=&quot;xs:boolean&quot;/&gt;</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;            </div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;            &lt;xs:element name=&quot;enable_write_access_control&quot; type=&quot;xs:boolean&quot;/&gt;</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            </div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;            &lt;xs:element name=&quot;metadata_protection_kind&quot; type=&quot;ProtectionKind&quot;/&gt;</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;            &lt;xs:element name=&quot;data_protection_kind&quot; type=&quot;ProtectionKind&quot;/&gt;</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        &lt;/xs:sequence&gt;</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    &lt;/xs:complexType&gt;</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    &lt;xs:simpleType name=&quot;TopicExpression&quot;&gt;</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        &lt;xs:restriction base=&quot;xs:string&quot;/&gt;</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    &lt;/xs:simpleType&gt;</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;&lt;/xs:schema&gt;</div>
+</div><!-- fragment --><p>管理配置文件的示例内容如下：</p>
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;&lt;?<span class="keyword">xml</span> <span class="keyword">version</span>=<span class="stringliteral">&quot;1.0&quot;</span> <span class="keyword">encoding</span>=<span class="stringliteral">&quot;UTF-8&quot;</span>?&gt;</div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;&lt;<span class="keywordtype">dds</span>&gt;</div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;    &lt;<span class="keywordtype">domain_access_rules</span>&gt;</div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;        &lt;<span class="keywordtype">domain_rule</span>&gt;</div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;            &lt;<span class="keywordtype">domains</span>&gt;</div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;                &lt;<span class="keywordtype">id</span>&gt;150&lt;/<span class="keywordtype">id</span>&gt;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;            &lt;/<span class="keywordtype">domains</span>&gt;</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;            &lt;<span class="keywordtype">allow_unauthenticated_participants</span>&gt;<span class="keyword">FALSE</span>&lt;/<span class="keywordtype">allow_unauthenticated_participants</span>&gt;</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;            &lt;<span class="keywordtype">enable_join_access_control</span>&gt;<span class="keyword">FALSE</span>&lt;/<span class="keywordtype">enable_join_access_control</span>&gt;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;            &lt;<span class="keywordtype">discovery_protection_kind</span>&gt;<span class="keyword">NONE</span>&lt;/<span class="keywordtype">discovery_protection_kind</span>&gt;</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;            &lt;<span class="keywordtype">liveliness_protection_kind</span>&gt;<span class="keyword">NONE</span>&lt;/<span class="keywordtype">liveliness_protection_kind</span>&gt;</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;            &lt;<span class="keywordtype">rtps_protection_kind</span>&gt;<span class="keyword">NONE</span>&lt;/<span class="keywordtype">rtps_protection_kind</span>&gt;</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;            &lt;<span class="keywordtype">topic_access_rules</span>&gt;</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;                </div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;                &lt;<span class="keywordtype">topic_rule</span>&gt;</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;                    &lt;<span class="keywordtype">topic_expression</span>&gt;*&lt;/<span class="keywordtype">topic_expression</span>&gt;</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;                    &lt;<span class="keywordtype">enable_discovery_protection</span>&gt;<span class="keyword">FALSE</span>&lt;/<span class="keywordtype">enable_discovery_protection</span>&gt;</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;                    &lt;<span class="keywordtype">enable_read_access_control</span>&gt;<span class="keyword">TRUE</span>&lt;/<span class="keywordtype">enable_read_access_control</span>&gt;</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;                    &lt;<span class="keywordtype">enable_write_access_control</span>&gt;<span class="keyword">TRUE</span>&lt;/<span class="keywordtype">enable_write_access_control</span>&gt;</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;                    &lt;<span class="keywordtype">metadata_protection_kind</span>&gt;<span class="keyword">NONE</span>&lt;/<span class="keywordtype">metadata_protection_kind</span>&gt;</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;                    &lt;<span class="keywordtype">data_protection_kind</span>&gt;<span class="keyword">NONE</span>&lt;/<span class="keywordtype">data_protection_kind</span>&gt;</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;                &lt;/<span class="keywordtype">topic_rule</span>&gt;</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;                &lt;<span class="keywordtype">topic_rule</span>&gt;</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;                    &lt;<span class="keywordtype">topic_expression</span>&gt;<span class="keyword">encry_example_1</span>&lt;/<span class="keywordtype">topic_expression</span>&gt;</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;                    &lt;<span class="keywordtype">enable_discovery_protection</span>&gt;<span class="keyword">FALSE</span>&lt;/<span class="keywordtype">enable_discovery_protection</span>&gt;</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;                    &lt;<span class="keywordtype">enable_read_access_control</span>&gt;<span class="keyword">FALSE</span>&lt;/<span class="keywordtype">enable_read_access_control</span>&gt;</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;                    &lt;<span class="keywordtype">enable_write_access_control</span>&gt;<span class="keyword">FALSE</span>&lt;/<span class="keywordtype">enable_write_access_control</span>&gt;</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;                    &lt;<span class="keywordtype">metadata_protection_kind</span>&gt;<span class="keyword">NONE</span>&lt;/<span class="keywordtype">metadata_protection_kind</span>&gt;</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;                    &lt;<span class="keywordtype">data_protection_kind</span>&gt;<span class="keyword">ENCRYPT</span>&lt;/<span class="keywordtype">data_protection_kind</span>&gt;</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;                &lt;/<span class="keywordtype">topic_rule</span>&gt;</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;                &lt;<span class="keywordtype">topic_rule</span>&gt;</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;                    &lt;<span class="keywordtype">topic_expression</span>&gt;<span class="keyword">encry_example_2</span>&lt;/<span class="keywordtype">topic_expression</span>&gt;</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;                    &lt;<span class="keywordtype">enable_discovery_protection</span>&gt;<span class="keyword">FALSE</span>&lt;/<span class="keywordtype">enable_discovery_protection</span>&gt;</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;                    &lt;<span class="keywordtype">enable_read_access_control</span>&gt;<span class="keyword">FALSE</span>&lt;/<span class="keywordtype">enable_read_access_control</span>&gt;</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;                    &lt;<span class="keywordtype">enable_write_access_control</span>&gt;<span class="keyword">FALSE</span>&lt;/<span class="keywordtype">enable_write_access_control</span>&gt;</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;                    &lt;<span class="keywordtype">metadata_protection_kind</span>&gt;<span class="keyword">NONE</span>&lt;/<span class="keywordtype">metadata_protection_kind</span>&gt;</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;                    &lt;<span class="keywordtype">data_protection_kind</span>&gt;<span class="keyword">NONE</span>&lt;/<span class="keywordtype">data_protection_kind</span>&gt;</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;                &lt;/<span class="keywordtype">topic_rule</span>&gt;</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;            &lt;/<span class="keywordtype">topic_access_rules</span>&gt;</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        &lt;/<span class="keywordtype">domain_rule</span>&gt;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    &lt;/<span class="keywordtype">domain_access_rules</span>&gt;</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;&lt;/<span class="keywordtype">dds</span>&gt;</div>
+</div><!-- fragment --><h4><a class="anchor" id="zrdds_sec_sign_config_file"></a>
+配置文件签名</h4>
+<p>为保证配置文件的不可篡改性，需使用CA对配置文件进行签名。</p>
+<ul>
+<li>签名权限配置文件为permission.xml： <code>openssl smime -sign -signer ca/democa.pem -inkey ca/democa.key -in permission.xml -out permission.smime</code><ul>
+<li>-sign表示签名；</li>
+<li>-signer表示用于签名的证书；</li>
+<li>-inkey表示与签名证书匹配的私钥；</li>
+<li>-in表示需要签名的文件路径；</li>
+<li>-out表示签名后的文件路径；</li>
+</ul>
+</li>
+<li>签名管理配置文件为governance.xml： <code>openssl smime -sign -signer ca/democa.pem -inkey ca/democa.key -in governance.xml -out governance.smime</code></li>
+</ul>
+<h3><a class="anchor" id="zrdds_sec_config_qos_and_load"></a>
+配置QoS并加载安全插件</h3>
+<p>安全插件表现形式为一个动态库，动态库必须提供获取/删除实例的函数。内置插件的信息如下，带d后缀的为Debug库，反之为Release库：</p>
+<table class="doxtable">
+<tr>
+<th>操作系统 </th><th>动态库名称 </th><th>入口（获取实例函数名） </th><th>出口（删除实例函数名）  </th></tr>
+<tr>
+<td>Windows </td><td>ZRDDSSecBuiltinPlugin[d].dll </td><td>BuiltinSecPluginGetInstance </td><td>BuiltinSecPluginFinalize </td></tr>
+<tr>
+<td>Linux </td><td>libZRDDSSecBuiltinPlugin[d].so </td><td>BuiltinSecPluginGetInstance </td><td>BuiltinSecPluginFinalize </td></tr>
+</table>
+<h3><a class="anchor" id="zrdds_sec_load_plugin"></a>
+加载接口</h3>
+<p>使用 <a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#abcafb1b11b576ba1dd3d9f174869c2e7" title="加载安全插件 ">DDS::DomainParticipantFactory::load_security_plugin</a> 函数加载安全插件；</p>
+<h3><a class="anchor" id="zrdds_sec_config_qos"></a>
+QoS配置</h3>
+<p>在使用安全插件时，通过 DomainparticipantQos.property对指定插件进行参数配置，内置插件配置项如下，其中属性的值支持两种形式，file前缀表示文件路径，data前缀表示文件内容：</p>
+<table class="doxtable">
+<tr>
+<th>配置键名称 </th><th>说明 </th><th>配置值（file示例） </th><th>配置值（data示例）  </th></tr>
+<tr>
+<td>dds.sec.auth.certificate_revocation_list </td><td>[可选]，由证书机构提供的失效证书列表。在列表中的证书即使未到有效期，也会被认为是非法证书。</td><td>file: client.crl </td><td>data:, --&mdash;BEGIN X509 CRL--&mdash;<br />
+MIIBazCB1QIBATANBgkqhki … dFo/Zs14keJ06Oug==<br />
+--&mdash;END X509 CRL--&mdash; </td></tr>
+<tr>
+<td>dds.sec.auth.identity_ca </td><td>用于身份验证的CA证书。</td><td><a href="file:ca.pem">file:ca.pem</a> </td><td>data:,--&mdash;BEGIN CERTIFICATE--&mdash;<br />
+MIIC3DCCAcQCCQCWE5x+Z … PhovK0mp2ohhRLYI0ZiyYQ==<br />
+--&mdash;END CERTIFICATE--&mdash; </td></tr>
+<tr>
+<td>dds.sec.auth.identity_certificate </td><td>标识自己身份的证书，由CA颁发。 </td><td><a href="file:app1Cert.pem">file:app1Cert.pem</a> </td><td>data:,--&mdash;BEGIN CERTIFICATE--&mdash;<br />
+MIIDjjCCAnYCCQDCEu9...6rmT87dhTo=<br />
+--&mdash;END CERTIFICATE--&mdash; </td></tr>
+<tr>
+<td>dds.sec.auth.private_key </td><td>与自身证书匹配的自身私钥。 </td><td><a href="file:app1.key">file:app1.key</a> </td><td>data:,--&mdash;BEGIN RSA PRIVATE KEY--&mdash;<br />
+MIIEpAIBAAKCAQEA3HIh...AOBaaqSV37XBUJg==<br />
+--&mdash;END RSA PRIVATE KEY--&mdash; </td></tr>
+<tr>
+<td>dds.sec.access.permissions_ca </td><td>用于访问控制的CA证书（可以与身份验证CA证书相同）。</td><td><a href="file:ca.pem">file:ca.pem</a> </td><td>略 </td></tr>
+<tr>
+<td>dds.sec.access.permissions </td><td>使用访问控制CA签名的许可配置文件 </td><td><a href="file:permission.smime">file:permission.smime</a> </td><td>略 </td></tr>
+<tr>
+<td>dds.sec.access.governance </td><td>使用访问控制CA签名的管理配置文件 </td><td><a href="file:governance.smime">file:governance.smime</a> </td><td>略 </td></tr>
+</table>
+<h2><a class="anchor" id="zrdds_sec_example_code"></a>
+内置插件代码示例</h2>
+<h3><a class="anchor" id="zrdds_sec_example_code_auth"></a>
+身份验证</h3>
+<p>auth_example_pub中的域参与者配置了身份验证，且不允许未授权的域参与者匹配，发布主题auth_example，auth_example_sub 中有两个域参与者，其中一个配置了证书、另一个未配置证书的普通域参与者，订阅相同的主题，可以看到接收端只能订阅到一份数据。</p>
+<table class="doxtable">
+<tr>
+<th>代码 </th><th>说明  </th></tr>
+<tr>
+<td><a class="el" href="_security_example_2auth_example_pub_8cpp-example.html">SecurityExample/auth_example_pub.cpp</a> </td><td>发送端代码 </td></tr>
+<tr>
+<td><a class="el" href="_security_example_2auth_example_sub_8cpp-example.html">SecurityExample/auth_example_sub.cpp</a> </td><td>接收端代码 </td></tr>
+<tr>
+<td><a class="el" href="_security_example_2config_2zrdds_security_qos_8xml-example.html">SecurityExample/config/zrdds_security_qos.xml</a> </td><td>使用的QoS配置文件，包含身份验证、访问控制、数据加密示例使用的所有配置。 </td></tr>
+<tr>
+<td><a class="el" href="_security_example_2config_2auth_governance_8xml-example.html">SecurityExample/config/auth_governance.xml</a> </td><td>管理配置文件 </td></tr>
+<tr>
+<td><a class="el" href="_security_example_2config_2auth_permission_8xml-example.html">SecurityExample/config/auth_permission.xml</a> </td><td>权限配置文件 </td></tr>
+</table>
+<h3><a class="anchor" id="zrdds_sec_example_ac"></a>
+访问控制</h3>
+<p>ac_example_pub中发布两个主题ac_example_1、ac_example_2，权值配置文件中配置允许发布ac_example_开头的主题，ac_example_sub中订阅两个主题，权限配置文件中配置仅允许订阅ac_example_1主题，可以看到只能成功创建ac_example_1的订阅。</p>
+<table class="doxtable">
+<tr>
+<th>代码 </th><th>说明  </th></tr>
+<tr>
+<td><a class="el" href="_security_example_2ac_example_pub_8cpp-example.html">SecurityExample/ac_example_pub.cpp</a> </td><td>发送端代码 </td></tr>
+<tr>
+<td><a class="el" href="_security_example_2ac_example_sub_8cpp-example.html">SecurityExample/ac_example_sub.cpp</a> </td><td>接收端代码 </td></tr>
+<tr>
+<td><a class="el" href="_security_example_2config_2zrdds_security_qos_8xml-example.html">SecurityExample/config/zrdds_security_qos.xml</a> </td><td>使用的QoS配置文件，包含身份验证、访问控制、数据加密示例使用的所有配置。 </td></tr>
+<tr>
+<td><a class="el" href="_security_example_2config_2ac_governance_8xml-example.html">SecurityExample/config/ac_governance.xml</a> </td><td>管理配置文件 </td></tr>
+<tr>
+<td><a class="el" href="_security_example_2config_2ac_permission_8xml-example.html">SecurityExample/config/ac_permission.xml</a> </td><td>权限配置文件 </td></tr>
+</table>
+<h3><a class="anchor" id="zrdds_sec_example_encry"></a>
+数据加密</h3>
+<p>encry_example_pub发布encry_example_1和encry_example_2主题，在管理配置文件中配置主题encry_example_1保护级别用户负载加密，encry_example_2保护级别为空，encry_example_sub订阅对应的两个主题，使用相同的管理配置，通过抓包可以看到encry_example_1主题数据通过密文传输，encry_example_2主题数据通过明文传输。</p>
+<table class="doxtable">
+<tr>
+<th>代码 </th><th>说明  </th></tr>
+<tr>
+<td><a class="el" href="_security_example_2encry_example_pub_8cpp-example.html">SecurityExample/encry_example_pub.cpp</a> </td><td>发送端代码 </td></tr>
+<tr>
+<td><a class="el" href="_security_example_2encry_example_sub_8cpp-example.html">SecurityExample/encry_example_sub.cpp</a> </td><td>接收端代码 </td></tr>
+<tr>
+<td><a class="el" href="_security_example_2config_2zrdds_security_qos_8xml-example.html">SecurityExample/config/zrdds_security_qos.xml</a> </td><td>使用的QoS配置文件，包含身份验证、访问控制、数据加密示例使用的所有配置。 </td></tr>
+<tr>
+<td><a class="el" href="_security_example_2config_2encry_governance_8xml-example.html">SecurityExample/config/encry_governance.xml</a> </td><td>管理配置文件 </td></tr>
+<tr>
+<td><a class="el" href="_security_example_2config_2encry_permission_8xml-example.html">SecurityExample/config/encry_permission.xml</a> </td><td>权限配置文件 </td></tr>
+</table>
+<h2><a class="anchor" id="zrdds_sec_develop_plugin"></a>
+二次开发接口</h2>
+<p>暂略。 </p>
+</div></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

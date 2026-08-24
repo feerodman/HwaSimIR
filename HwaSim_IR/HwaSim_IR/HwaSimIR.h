@@ -56,6 +56,7 @@
 #include "IR/IRSensorPostProcess.h"
 #include "IR/IRTemperatureModel.h"
 #include "IR/IRWeatherEffects.h"
+#include "IR/IRWorldCloudStreaming.h"
 #include "Annotation/AnnotationManager.h"
 
 #include "shader.h"             // 新增：着色器支持
@@ -96,10 +97,11 @@ public:
 		EveryN
 	};
 
-	// Stage7 云渲染入口。Volumetric3D 仅保留类型入口，本阶段不创建体积云实现。
+	// Stage7 云渲染入口。StreamedWorld3D 使用目标作为流式中心，但云体固定在世界网格中。
 	enum class CloudRenderMode {
 		World2D,
 		Layered2_5D,
+		StreamedWorld3D,
 		Volumetric3D
 	};
 
@@ -418,17 +420,21 @@ private:
 	std::string m_stage6LastFrameDiagState;
 	PT(Shader) m_stage6FinalPostShader;
 	PT(Texture) m_stage6RawSceneTex;
+	PT(Texture) m_stage7SceneDepthTex;
 	PT(GraphicsOutput) m_stage6RawSceneBuffer;
 	PT(GraphicsOutput) m_stage6FinalSensorBuffer;
 	PT(GraphicsOutput) m_stage6PresentationOutput;
 	PT(DisplayRegion) m_stage6RawSceneRegion;
 	PT(DisplayRegion) m_stage6FinalRegion;
 	PT(DisplayRegion) m_annotationRegion;
+	PT(DisplayRegion) m_stage7VolumeRegion;
 	NodePath m_stage6FinalRoot;
 	NodePath m_stage6FinalCameraNode;
 	NodePath m_stage6FinalCard;
 	NodePath m_annotationRoot;
 	NodePath m_annotationCameraNode;
+	NodePath m_stage7VolumeRoot;
+	NodePath m_stage7VolumeCameraNode;
 	bool m_stage6FinalPipelineReady = false;
 	std::string m_stage6RenderPath = "dual_pass";
 	std::string m_stage6FinalPostprocessNoopReason = "unknown";
@@ -495,6 +501,39 @@ private:
 	PT(Texture) m_stage7SnowTexture;
 	std::map<std::string, PT(Texture)> m_stage7WeatherTextureCache;
 	std::vector<NodePath> m_stage7PrecipitationNodes;
+	bool m_stage7VolumeCloudEnabled = false;
+	std::string m_stage7VolumeStreamingCenter = "TrackedTarget";
+	IRWorldCloudStreamingConfig m_stage7VolumeConfig;
+	IRWorldCloudStreaming m_stage7VolumeStreaming;
+	int m_stage7VolumeDensityTextureSize = 32;
+	int m_stage7VolumeDensityTemplateCount = 4;
+	double m_stage7VolumeFallbackProbability = 0.35;
+	int m_stage7VolumeRaymarchStepsNear = 10;
+	int m_stage7VolumeRaymarchStepsMedium = 7;
+	int m_stage7VolumeRaymarchStepsFar = 4;
+	bool m_stage7VolumeDistanceLod = true;
+	bool m_stage7VolumeScreenSizeLod = true;
+	bool m_stage7VolumeFrustumCull = true;
+	PT(Shader) m_stage7VolumeShader;
+	std::vector<PT(Texture)> m_stage7VolumeDensityTextures;
+	struct Stage7CloudVolumeRuntime
+	{
+		NodePath node;
+		IRWorldCloudDescriptor descriptor;
+		bool active = false;
+		bool visibleWanted = false;
+		bool pendingDeactivate = false;
+		double fade = 0.0;
+		double fadeTarget = 0.0;
+		double cameraDistanceM = 0.0;
+		int raySteps = 0;
+	};
+	std::vector<Stage7CloudVolumeRuntime> m_stage7CloudVolumePool;
+	double m_stage7VolumeLastAnimationTime = -1.0;
+	int m_stage7VolumeLogCounter = 0;
+	int m_stage7VolumeActiveCount = 0;
+	int m_stage7VolumeVisibleCount = 0;
+	double m_stage7VolumeAverageRaySteps = 0.0;
 
 	void InitInfraredShader();                              // 初始化着色器代码
 	void InitStage6FinalPostShader();
@@ -529,6 +568,12 @@ private:
 	void LogStage7SkyGround(const IRRuntimeEnvironment& environment, int envTerrain, int envSky, double skyGrayRaw, double groundGrayRaw, double skyGrayFinal, double groundGrayFinal, double farClipM, double groundReferenceZ, bool forceLog, const char* reason);
 	void InitStage7WeatherScene();
 	void InitStage7CloudRenderer();
+	void InitStage7VolumetricCloudRenderer();
+	void InitStage7VolumetricCloudShader();
+	void SetupStage7VolumetricComposite(const char* reason);
+	void UpdateStage7VolumetricClouds(const IRStage7WeatherState& weatherState, double currentTime, bool stateChanged);
+	bool GetStage7StreamingCenter(LPoint3f& center, std::string& targetKey) const;
+	void UpdateStage7VolumetricCloudAnimation(double currentTime);
 	void UpdateStage7CloudWorldGrid(const IRStage7WeatherState& weatherState, double currentTime, bool stateChanged);
 	IRStage7WeatherRuntimeInput BuildStage7WeatherInput() const;
 	IRStage7WeatherState EvaluateStage7WeatherState(const IRRuntimeEnvironment& environment) const;

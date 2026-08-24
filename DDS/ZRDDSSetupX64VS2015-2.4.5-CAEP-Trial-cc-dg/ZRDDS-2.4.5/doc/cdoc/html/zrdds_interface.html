@@ -1,0 +1,438 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: ZRDDS多种接口风格及开发流程</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li class="current"><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>结构体</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('zrdds_interface.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">ZRDDS多种接口风格及开发流程 </div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><h1><a class="anchor" id="zrdds_interface_std"></a>
+1. 标准协议接口</h1>
+<p>标准协议接口，即OMG DDS标准中所规定的接口。</p>
+<h2><a class="anchor" id="zrdds_interface_std_use"></a>
+1.1. 标准协议接口的使用</h2>
+<h3><a class="anchor" id="zrdds_interface_std_flow"></a>
+1.1.1. 流程</h3>
+<p><a href="#figure-1">图1</a>中，中间列给出了ZRDDS应用程序开发流程的简单示意，最左列、最右列分别给出了各个步骤所映射的DDS标准协议接口。用户可以按照此流程进行开发，使用标准协议接口编写出最简单的数据收发程序。</p>
+<p><a class="anchor" id="figure-1"></a> </p><div class="image">
+<img src="zrdds_interface_std_flow.png" alt="zrdds_interface_std_flow.png"/>
+<div class="caption">
+图1. 标准协议接口开发流程</div></div>
+<p> 注：图中订阅端采用的是<a href="index.html#listener-introduction">监听器</a>接收、处理到达数据。在实际的标准协议接口中，订阅端也可以采用<a href="index.html#waitset-introduction">条件-等待</a>模型来接收、处理数据。</p>
+<h3><a class="anchor" id="zrdds_interface_std_introduce"></a>
+1.1.2. 主要接口介绍</h3>
+<p><a href="#table-1">表1</a>列出了开发流程中所涉及的主要接口。</p>
+<p><a class="anchor" id="table-1"></a> 表1. 标准协议接口开发流程主要接口</p>
+<table class="doxtable">
+<tr>
+<th>接口名称 </th><th>说明  </th></tr>
+<tr>
+<td><a class="el" href="group___c_domain.html#gaa6d38b19e1439ca914ccaadcc7d28a09" title="获取域参与者单例对象。 ">DDS_DomainParticipantFactory_get_instance()</a> </td><td>初始化ZRDDS，并获取域参与者工厂。 </td></tr>
+<tr>
+<td><a class="el" href="group___c_domain.html#ga4271b297dbcde6fe3a2299079a77ea8c" title="创建一个新的域参与者实体，并设置QoS以及监听器，域参与者的创建表明应用程序打算加入domainId 指定的域中�...">DDS_DomainParticipantFactory_create_participant()</a> </td><td>创建域参与者，并配置域、QoS、监听器。 </td></tr>
+<tr>
+<td><a class="el" href="group___c_domain.html#ga029bb3b20eb0a6bfbec8e9a76556f507" title="该方法在域参与者下创建一个主题子实体，并设置域内唯一的名称、关联的数据类型、QoS以及监听器，用于抽象域...">DDS_DomainParticipant_create_topic()</a> </td><td>创建主题实体，并设置主题名称、关联的数据类型、QoS以及监听器。 </td></tr>
+<tr>
+<td><a class="el" href="group___c_domain.html#ga1541004345c0c8d147ff9b0570eaf158" title="该方法在域参与者下创建一个发布者子实体，并设置QoS以及监听器，表明应用想要向该域内发布数据。 ...">DDS_DomainParticipant_create_publisher()</a> </td><td>创建发布者实体，并设置QoS、监听器。 </td></tr>
+<tr>
+<td><a class="el" href="group___c_domain.html#gaec8205fcf276d0f7c338af4c216c566f" title="该方法在域参与者下创建一个订阅者子实体，并设置QoS以及监听器，表明应用想要向该域内订阅数据。 ...">DDS_DomainParticipant_create_subscriber()</a> </td><td>创建订阅者实体，并设置QoS、监听器。 </td></tr>
+<tr>
+<td><a class="el" href="group___c_publication.html#gafc2b3d12e755f65dcb12ce848c7c9298" title="创建DataWriter。 ">DDS_Publisher_create_datawriter()</a> </td><td>创建与指定主题关联的数据写者，并设置QoS、监听器。 </td></tr>
+<tr>
+<td><a class="el" href="group___c_subscription.html#ga41d017b34f28a1c2b5398b1bfdd3aa68" title="该方法在订阅者下创建一个数据读者子实体，并设置关联的主题、QoS以及监听器。 ">DDS_Subscriber_create_datareader()</a> </td><td>创建与指定主题关联的数据读者，并设置QoS、监听器。 </td></tr>
+<tr>
+<td><a class="el" href="group___c_publication.html#ga2a9dcad34148eaf1c1749afe03e8d62e" title="发布一个数据样本。 ">FooDataWriter_write()</a> </td><td>向DDS系统发布数据。 </td></tr>
+<tr>
+<td><a class="el" href="struct_d_d_s___data_reader_listener.html" title="数据读者监听器类型。 ">DDS_DataReaderListener</a> </td><td>数据读者监听器监听器，用户需要继承该监听器并重载on_data_available，实现数据的获取、处理逻辑。 </td></tr>
+<tr>
+<td><a class="el" href="group___c_subscription.html#gae77bac32f62ee5c82917b62968c1a223" title="该接口从数据读者底层获取用户样本数据。 ">FooDataReader_read()</a> </td><td>从数据读者底层获取用户样本数据。当数据到达并调用用户实现的on_data_available函数时，用户可通过该函数获取数据。 </td></tr>
+<tr>
+<td><a class="el" href="group___c_subscription.html#ga9ad73312885cc7d48d3a9664198b4eab" title="该接口从数据读者底层取出用户样本数据。 ">FooDataReader_take()</a> </td><td>从数据读者底层取出到达的样本数据。当数据到达并调用用户实现的on_data_available函数时，用户可通过该函数取出数据。 </td></tr>
+<tr>
+<td><a class="el" href="group___c_subscription.html#ga58610e7aab0bc97ccb6d857cad5aace0" title="该方法用于应用归还从数据读者租借的空间。 ">FooDataReader_return_loan()</a> </td><td>采用take函数取出数据后，需要调用该函数进行空间的归还。 </td></tr>
+<tr>
+<td><a class="el" href="group___c_domain.html#ga4799e428c8a39915598af9d3eae907ca" title="该方法删除域参与者创建的所有实体。 ">DDS_DomainParticipant_delete_contained_entities()</a> </td><td>删除域参与者创建的所有实体。 </td></tr>
+<tr>
+<td><a class="el" href="group___c_domain.html#gae7dba12f2597d39908d276657b000d08" title="该方法删除指定的域参与者。在调用该方法之前需要保证该域参与者的所有子实体都已经被删除。否则将会返回错�...">DDS_DomainParticipantFactory_delete_participant()</a> </td><td>删除指定的域参与者。在调用该方法之前需要保证该域参与者的所有子实体都已经被删除。 </td></tr>
+</table>
+<h2><a class="anchor" id="zrdds_interface_std_example"></a>
+1.2. 标准协议接口代码示例</h2>
+<p>此处仅列举较简单的一对一发布订阅的代码示例。如需要查看其他示例，参见<a href="examples.html">示例</a>。</p>
+<ul>
+<li>发布端 <a class="el" href="_data_receive_by_listener_2main_pub_8c-example.html">DataReceiveByListener/main_pub.c</a></li>
+<li>订阅端<ul>
+<li>采用监听器：<a class="el" href="_data_receive_by_listener_2main_sub_8c-example.html">DataReceiveByListener/main_sub.c</a></li>
+<li>采用条件-等待：<a class="el" href="_data_receive_by_wait_set_2main_sub_8c-example.html">DataReceiveByWaitSet/main_sub.c</a></li>
+</ul>
+</li>
+</ul>
+<h1><a class="anchor" id="zrdds_interface_extend"></a>
+2. 扩展接口</h1>
+<p>ZRDDS在保留扩展性以及兼容性的基础上，在标准协议接口之上进行了扩展，以减轻开发难度以及代码复杂度。</p>
+<p>相比于标准协议接口，扩展的接口提供以下功能：</p>
+<ul>
+<li><b>支持XML配置QoS</b> ，实现不修改程序也可以修改实体的QoS：<ul>
+<li>可指定QoS的XML配置文件路径加载至ZRDDS内部，形成QoS仓库；</li>
+<li>可使用QoS仓库中的QoS配置来创建/初始化各类实体，包括域参与者工厂、域参与者、数据写者及数据读者；</li>
+<li>可使用QoS仓库中的QoS配置初始化实体QoS；</li>
+<li>使用方式参见<a href="zrdds_qos_xml.html">XML配置实体QoS</a>。</li>
+</ul>
+</li>
+<li><b>简单的数据监听器 （SimpleDataReaderListener）</b> ，定义了简单处理逻辑的数据读者回调处理函数。当有数据到达时，用户可以直接在on_process_sample的回调参数中获取到数据，不需要用户手动调用take/read系列函数；</li>
+<li><b>实体创建逻辑精简化</b><ul>
+<li>创建域参与者时，ZRDDS内部会预先创建发布者、订阅者。</li>
+<li>在创建域参与者后，可跳过发布者、订阅者的动作，直接创建主题、数据写者、数据读者：<ul>
+<li>创建主题时，会先查找该主题是否已经创建。如果没有则自动创建，否则将使用已经创建的主题；</li>
+<li>使用预先创建好的发布者、订阅者来创建主题关联的数据写者、读者。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><b>实体回收逻辑精简化</b><ul>
+<li>为域参与者工厂添加了删除所有子实体的接口，简化资源回收逻辑。</li>
+</ul>
+</li>
+</ul>
+<h2><a class="anchor" id="zrdds_interface_extend_use"></a>
+2.1. 扩展接口的使用</h2>
+<h3><a class="anchor" id="zrdds_interface_extend_flow"></a>
+2.1.1. 流程</h3>
+<p>扩展接口的开发流程及其操作映射如下图所示：</p>
+<p><a class="anchor" id="figure-2"></a> </p><div class="image">
+<img src="extend_interface_flow2.png" alt="extend_interface_flow2.png"/>
+<div class="caption">
+图2. 扩展接口开发流程</div></div>
+ <h3><a class="anchor" id="zrdds_interface_extend_introduce"></a>
+2.1.2. 主要接口介绍</h3>
+<p><a href="#table-2">表2</a>列出了流程中所涉及的主要接口。</p>
+<p><a class="anchor" id="table-2"></a> 表2. 扩展接口开发流程主要接口 </p><table class="doxtable">
+<tr>
+<th>接口名称 </th><th>说明  </th></tr>
+<tr>
+<td><a class="el" href="group___c_domain.html#ga1e2f02303ae7d93033f3d1b6f2aa0599" title="以指定参数初始化DDS域参与者工厂。 ">DDS_DomainParticipantFactory_get_instance_w_profile()</a> </td><td>初始化ZRDDS，并获取域参与者工厂。 </td></tr>
+<tr>
+<td><a class="el" href="group___c_domain.html#gac5560310d84900ae395f39c9725da04c" title="从QoS仓库获取QoS配置并用其创建域参与者 ">DDS_DomainParticipantFactory_create_participant_with_qos_profile()</a> </td><td>创建域参与者，并配置域、QoS、监听器。 </td></tr>
+<tr>
+<td><a class="el" href="group___c_domain.html#ga640fc9da0ce0519144eae43c50d31cb0" title="利用自动创建的用户发布者，创建指定主题名称的数据写者，当主题名称关联的主题未创建时，将自动创建， 否则...">DDS_DomainParticipant_create_datawriter_with_topic_and_qos_profile()</a> </td><td>创建与指定主题名称、类型名称关联的数据写者，并设置QoS、监听器。 </td></tr>
+<tr>
+<td><a class="el" href="group___c_domain.html#gaa2984e6eabd63c5a13f3a0d28a8e8a19" title="利用自动创建的用户订阅者，创建指定主题名称的数据读者，当主题名称关联的主题未创建时，将自动创建，否则�...">DDS_DomainParticipant_create_datareader_with_topic_and_qos_profile()</a> </td><td>创建与指定主题名称、类型名称关联的数据读者，并设置QoS、监听器。 </td></tr>
+<tr>
+<td><a class="el" href="group___c_publication.html#ga2a9dcad34148eaf1c1749afe03e8d62e" title="发布一个数据样本。 ">FooDataWriter_write()</a> </td><td>向DDS系统发布数据，由于DDS的强类型安全，应转化为特定类型的数据写者调用write函数，如零拷贝的数据写者，应调用 DDS_ZeroCopyBytesDataWriter_write() 接口，非零拷贝（缓冲区类型） DDS_BytesDataWriter_write() 接口 。 </td></tr>
+<tr>
+<td><a class="el" href="group___c_listener.html#ga2e9336107976cdbbd4f0003513df4639" title="用于简化数据读者监听器中数据到达函数的代码复杂度，该宏将完成以下工作： ">DDS_SimpleDataReaderListener</a> </td><td>默认简单的数据到达监听器，用户继承该监听器并在 DDS_SimpleDataReaderListener_on_process_sample 中处理到达的样本； </td></tr>
+<tr>
+<td><a class="el" href="group___c_domain.html#gaad6b75fd0cbea8630032f8e1fbd59fdd" title="删除所有的域参与者及其子实体，该函数将尝试删除所有满足删除条件的子实体。 ">DDS_DomainParticipantFactory_delete_contained_entities()</a> </td><td>删除所有的实体。 </td></tr>
+<tr>
+<td><a class="el" href="group___c_domain.html#gaa3ba21be62d480201406dc363edd1d85" title="析构单例，该方法同样是线程不安全的，多个线程同时调用该函数，可能会出问题。 ">DDS_DomainParticipantFactory_finalize_instance()</a> </td><td>回收DDS中间件所有资源。 </td></tr>
+</table>
+<h2><a class="anchor" id="zrdds_interface_extend_example"></a>
+2.2. 扩展接口代码示例</h2>
+<p>示例中模拟了三个应用程序，其交互逻辑图如下，app1与app2通过UDP网络交互AirTrack主题，app1与app3之间通过RIO交互SeaTrack主题，均使用零拷贝数据类型。</p>
+<p><a class="anchor" id="figure-3"></a> </p><div class="image">
+<img src="example_extend.png" alt="example_extend.png"/>
+<div class="caption">
+图3. 示例通信场景图</div></div>
+<ul>
+<li>其中QoS配置文件示例参见 <a class="el" href="_extend_interface_2_z_r_d_d_s__q_o_s__p_r_o_f_i_l_e_s_8xml-example.html">ExtendInterface/ZRDDS_QOS_PROFILES.xml</a></li>
+<li>其中app1的代码参见 <a class="el" href="_extend_interface_2app1_8c-example.html">ExtendInterface/app1.c</a></li>
+<li>其中app2的代码参见 <a class="el" href="_extend_interface_2app2_8c-example.html">ExtendInterface/app2.c</a></li>
+<li>其中app3的代码参见 <a class="el" href="_extend_interface_2app3_8c-example.html">ExtendInterface/app3.c</a></li>
+</ul>
+<h2><a class="anchor" id="zrdds_interface_extend_list"></a>
+2.3. 扩展内容一览</h2>
+<p>本小节介绍了相较于标准协议接口所扩展的内容。详见<a href="#table-3">表3</a>。</p>
+<p><a class="anchor" id="table-3"></a> 表3. 扩展接口/内容一览表</p>
+<table class="doxtable">
+<tr>
+<th>所属扩展功能 </th><th>接口名称 </th><th>说明  </th></tr>
+<tr>
+<td>XML配置QoS </td><td><a class="el" href="struct_d_d_s___qos_profile_qos_policy.html" title="定义与Qos配置文件有关的配置项。 ">DDS_QosProfileQosPolicy</a> </td><td>域参与者工厂的QoS，定义与Qos配置文件有关的配置项。 </td></tr>
+<tr>
+<td>^</td><td><a class="el" href="group___c_domain.html#ga80300e8be16e836e3f7894b4dbe18678" title="根据QosProfileQosPolicy（有关QoS配置的配置）配置重新加载QoS配置到库中，在DomainParticipantFactory初始...">DDS_DomainParticipantFactory_reload_qos_profiles()</a> </td><td>根据QosProfileQosPolicy（有关QoS配置的配置）配置重新加载QoS配置到库中。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#gab78bafbe3b56d143e34c6f8b69b5220f" title="卸载所有的QoS配置 ">DDS_DomainParticipantFactory_unload_qos_profiles()</a> </td><td>卸载所有的QoS配置。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#ga65c7c3b644eb35f1b7aae1487a5d26a1" title="添加一个QoS库 ">DDS_DomainParticipantFactory_add_qos_library()</a> </td><td>添加一个QoS库。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#gaa599a13b52c95ff4e758d2adf9342482" title="从指定QoS库中移除一个QoS配置 ">DDS_DomainParticipantFactory_remove_qos_library()</a> </td><td>删除一个QoS库。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#ga66ae7984c811c13dede422c9f4070f9f" title="在指定QoS库中添加一个QoS配置 ">DDS_DomainParticipantFactory_add_qos_profile()</a> </td><td>在指定QoS库中添加一个QoS配置。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#ga576b63f284827a6f71eb48315dbb4f56" title="从指定QoS库中移除一个QoS配置 ">DDS_DomainParticipantFactory_remove_qos_profile()</a> </td><td>从指定QoS库中移除一个QoS配置。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#ga14458131186aefc5f58bbe0ce5a188b7" title="查找名称符合pattern限定的QoS库 ">DDS_DomainParticipantFactory_lookup_qos_libraries()</a> </td><td>查找名称符合pattern限定的QoS库。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#ga1257d22c0b2dd47a382f9b3a6639a2e1" title="在指定QoS库中查找名字符合pattern的QoS配置 ">DDS_DomainParticipantFactory_lookup_qos_profiles()</a> </td><td>在指定QoS库中查找名字符合pattern的QoS配置。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#ga1e2f02303ae7d93033f3d1b6f2aa0599" title="以指定参数初始化DDS域参与者工厂。 ">DDS_DomainParticipantFactory_get_instance_w_profile()</a> </td><td>初始化ZRDDS，并获取域参与者工厂。默认使用运行目录的 ZRDDS_QOS_PROFILES.xml文件中获取域参与者工厂的QoS。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#ga410bc7844d9f7c3ba0e4276acfe52b9c" title="从QoS仓库获取QoS配置并设置到域参与者工厂 ">DDS_DomainParticipantFactory_set_qos_with_profile()</a> </td><td>从QoS仓库获取QoS配置并设置到域参与者工厂。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#gae72e7dee146437e804a19129e6a0194c" title="从QoS仓库获取域参与者QoS并将其设为默认域参与者QoS ">DDS_DomainParticipantFactory_set_default_participant_qos_with_profile()</a> </td><td>从QoS仓库获取域参与者QoS并将其设为默认域参与者QoS。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#ga8f44c945ea885153c15b4557f854f63b" title="从QoS仓库获取域参与者工厂QoS的配置 ">DDS_DomainParticipantFactory_get_participant_factory_qos_from_profile()</a> </td><td>从QoS仓库获取域参与者工厂QoS的配置。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#ga41fcd5e96d353ee0a7ebd40dd4a75d98" title="从QoS仓库获取域参与者QoS的配置 ">DDS_DomainParticipantFactory_get_participant_qos_from_profile()</a> </td><td>从QoS仓库获取域参与者QoS的配置。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#gaba886003e56139501874aa856c938d84" title="从QoS仓库获取发布者QoS的配置 ">DDS_DomainParticipantFactory_get_publisher_qos_from_profile()</a> </td><td>从QoS仓库获取发布者QoS的配置。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#ga118a00ea363d2d56db4920dfa11eec5a" title="从QoS仓库获取订阅者QoS的配置 ">DDS_DomainParticipantFactory_get_subscriber_qos_from_profile()</a> </td><td>从QoS仓库获取订阅者QoS的配置。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#ga43361f51777cff009e410759bbaefc59" title="从QoS仓库获取主题QoS的配置 ">DDS_DomainParticipantFactory_get_topic_qos_from_profile()</a> </td><td>从QoS仓库获取主题QoS的配置。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#gabf02e4d6809ef40abdd93e0b198df852" title="从QoS仓库获取数据写者QoS的配置 ">DDS_DomainParticipantFactory_get_datawriter_qos_from_profile()</a> </td><td>从QoS仓库获取数据写者QoS的配置。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#gac914cb3380deb008f778dea81fbe1276" title="从QoS仓库获取数据读者QoS的配置 ">DDS_DomainParticipantFactory_get_datareader_qos_from_profile()</a> </td><td>从QoS仓库获取数据读者QoS的配置。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#gac5560310d84900ae395f39c9725da04c" title="从QoS仓库获取QoS配置并用其创建域参与者 ">DDS_DomainParticipantFactory_create_participant_with_qos_profile()</a> </td><td>从QoS仓库获取QoS配置并用其创建域参与者。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#ga2116c7f2a13c4c17d9c876e2ac702aa7" title="从QoS仓库获取QoS配置并设置到域参与者 ">DDS_DomainParticipant_set_qos_with_profile()</a> </td><td>从QoS仓库获取QoS配置并设置到域参与者。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#ga52c7e728ae0dbef01393fbbad60034a1" title="从QoS仓库获取主题QoS并将其设为默认主题Qos ">DDS_DomainParticipant_set_default_topic_qos_with_profile()</a> </td><td>从QoS仓库获取主题QoS并将其设为默认主题QoS。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#gaa6149addd8b743b998ef147526d9edd4" title="从QoS仓库获取发布者QoS并将其设为默认发布者Qos ">DDS_DomainParticipant_set_default_publisher_qos_with_profile()</a> </td><td>从QoS仓库获取发布者QoS并将其设为默认发布者QoS。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#gab0709e9f8a86ac022af08fc1988afa12" title="从QoS仓库获取订阅者QoS并将其设为默认订阅者Qos ">DDS_DomainParticipant_set_default_subscriber_qos_with_profile()</a> </td><td>从QoS仓库获取订阅者QoS并将其设为默认订阅者QoS。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#ga3a1c2006b822dfbad5cbeb8d0e05658d" title="从QoS仓库中获取发布者Qos并用其创建发布者。 ">DDS_DomainParticipant_create_publisher_with_qos_profile()</a> </td><td>从QoS仓库中获取发布者QoS并用其创建发布者。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#ga402155ed5c25e9e67b06b341625253d5" title="从QoS仓库中获取订阅者Qos并用其创建订阅者 ">DDS_DomainParticipant_create_subscriber_with_qos_profile()</a> </td><td>从QoS仓库中获取订阅者QoS并用其创建订阅者。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#gac6300bc5bd6e1095fdfb02c2b0d54365" title="从QoS仓库中获取主题Qos并用其创建主题。 ">DDS_DomainParticipant_create_topic_with_qos_profile()</a> </td><td>从QoS仓库中获取主题QoS并用其创建主题。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_publication.html#gac83892fe78400b62c2280308004e8263" title="从QoS仓库中获取数据写者QoS并将其设为默认数据写者QoS ">DDS_Publisher_set_default_datawriter_qos_with_profile()</a> </td><td>从QoS仓库中获取数据写者QoS并将其设为默认数据写者QoS。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_publication.html#ga09c11d2e9d7f1060ab1571d766b35c92" title="从QoS仓库中获取发布者QoS并将其设置到发布者中 ">DDS_Publisher_set_qos_with_profile()</a> </td><td>从QoS仓库中获取发布者QoS并将其设置到发布者中。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_publication.html#ga656f50f1518703f6576105a80366a6f8" title="从QoS仓库中获取数据写者Qos并用其创建数据写者 ">DDS_Publisher_create_datawriter_with_qos_profile()</a> </td><td>从QoS仓库中获取数据写者QoS并用其创建数据写者。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_subscription.html#ga70345002ea9f99c76029d0b090ce038b" title="从QoS仓库中获取数据读者QoS并将其设置为默认DataReaderQos ">DDS_Subscriber_set_default_datareader_qos_with_profile()</a> </td><td>从QoS仓库中获取数据读者QoS并将其设置为默认DataReaderQos。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_subscription.html#gaf1f7aea96243c459c5e19ecaa4834f04" title="从QoS仓库中获取订阅者QoS并将其设置到订阅者中 ">DDS_Subscriber_set_qos_with_profile()</a> </td><td>从QoS仓库中获取订阅者QoS并将其设置到订阅者中。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_subscription.html#ga906f9fe3831d0b439086228cfb422e13" title="从QoS仓库中获取数据读者QoS并用其创建数据读者 ">DDS_Subscriber_create_datareader_with_qos_profile()</a> </td><td>从QoS仓库中获取数据读者QoS并用其创建数据读者。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_topic.html#ga55097262e1b5fb527c42156304da79f8" title="从QoS仓库中获取主题QoS并将其设置到主题中 ">DDS_Topic_set_qos_with_profile()</a> </td><td>从QoS仓库中获取主题QoS并将其设置到主题中。 </td></tr>
+<tr>
+<td>实体创建逻辑精简化 </td><td><a class="el" href="group___c_domain.html#ga640fc9da0ce0519144eae43c50d31cb0" title="利用自动创建的用户发布者，创建指定主题名称的数据写者，当主题名称关联的主题未创建时，将自动创建， 否则...">DDS_DomainParticipant_create_datawriter_with_topic_and_qos_profile()</a> </td><td>创建指定主题、并使用QoS仓库中的数据写者QoS创建该主题的数据写者。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#gaa2984e6eabd63c5a13f3a0d28a8e8a19" title="利用自动创建的用户订阅者，创建指定主题名称的数据读者，当主题名称关联的主题未创建时，将自动创建，否则�...">DDS_DomainParticipant_create_datareader_with_topic_and_qos_profile()</a> </td><td>创建指定主题、并使用QoS仓库中的数据读者QoS创建该主题的数据读者。 </td></tr>
+<tr>
+<td>简单的数据监听器 </td><td><a class="el" href="group___c_listener.html#ga2e9336107976cdbbd4f0003513df4639" title="用于简化数据读者监听器中数据到达函数的代码复杂度，该宏将完成以下工作： ">DDS_SimpleDataReaderListener</a> </td><td>默认简单的数据到达监听器，用户继承该监听器并在 DDS_SimpleDataReaderListener&lt; T, TSeq, TDataReader &gt;::on_process_sample 中处理到达的样本。 </td></tr>
+<tr>
+<td>实体回收逻辑精简化 </td><td><a class="el" href="group___c_domain.html#gaad6b75fd0cbea8630032f8e1fbd59fdd" title="删除所有的域参与者及其子实体，该函数将尝试删除所有满足删除条件的子实体。 ">DDS_DomainParticipantFactory_delete_contained_entities()</a> </td><td>删除该程序创建的所有的实体。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#gaa3ba21be62d480201406dc363edd1d85" title="析构单例，该方法同样是线程不安全的，多个线程同时调用该函数，可能会出问题。 ">DDS_DomainParticipantFactory_finalize_instance()</a> </td><td>回收DDS中间件所有资源。 </td></tr>
+</table>
+<h1><a class="anchor" id="zrdds_interface_ddsif"></a>
+3. 简化接口</h1>
+<p>为进一步缩短应用程序开发周期，ZRDDS提供了更精简的发布订阅接口，即简化接口。简化接口具有如下特点：</p>
+<ul>
+<li><b>更低的入门成本</b> ：简化接口是对标准、扩展接口的进一步封装，可以最大程度地将DDS实体概念透明化，降低使用的学习成本。</li>
+<li><b>使用简单</b> ：初始化后，用户只需要围绕主题名称进行数据发布、订阅动作，即可实现数据交换。同时，支持使用XML配置QoS，进一步减少代码量，不需要修改程序即可修改QoS。使用方式参见<a href="zrdds_qos_xml.html">XML配置实体QoS</a>。</li>
+</ul>
+<p>简化接口虽然可以降低ZRDDS的上手难度，但是，我们仍然建议用户对实体及实体的QoS配置进行学习、调优，从而使软件适应不同的使用场景、资源使用等其他需求。</p>
+<h2><a class="anchor" id="zrdds_interface_ddsif_use"></a>
+3.1. 简化接口的使用</h2>
+<h3><a class="anchor" id="zrdds_interface_ddsif_flow"></a>
+3.1.1. 流程</h3>
+<p>简化接口的开发流程及其操作映射如下图所示：</p>
+<p><a class="anchor" id="figure-4"></a> </p><div class="image">
+<img src="simple_interface_flow.png" alt="simple_interface_flow.png"/>
+<div class="caption">
+图4. 简化接口开发流程</div></div>
+ <h3><a class="anchor" id="zrdds_interface_ddsif_introduce"></a>
+3.1.2. 主要接口介绍</h3>
+<p><a href="#table-4">表4</a>列出了流程中所涉及的主要接口。</p>
+<p><a class="anchor" id="table-4"></a> 表4. 简化接口开发流程主要接口</p>
+<table class="doxtable">
+<tr>
+<th>接口名称 </th><th>说明  </th></tr>
+<tr>
+<td><a class="el" href="group___simple_interface.html#gafba8345d351be9aa3a66773fac903983" title="以指定配置初始化DDS中间件，只在整个程序初始化时调用一次即可。 ">DDS_Init()</a> </td><td>初始化ZRDDS，并获取域参与者工厂。 </td></tr>
+<tr>
+<td><a class="el" href="group___simple_interface.html#ga6a10094a97e3c90e4958ba8d2c0b0f8a" title="DDS创建域参与者，并指明域号与QoS配置名称，同一个域号可能有多个域参与者， 需要为使用不同底层传输协议的...">DDS_CreateDP()</a> </td><td>创建域参与者，并配置域、QoS、监听器。 </td></tr>
+<tr>
+<td><a class="el" href="group___simple_interface.html#ga238c40f1cdc5183ed5936ed98156f96c" title="发布主题，指定域参与者、主题名、类型名、QoS配置名称以及监听器。 ">DDS_PubTopic()</a> </td><td>创建与指定主题名称、类型名称关联的数据写者，并设置QoS、监听器。 </td></tr>
+<tr>
+<td><a class="el" href="group___simple_interface.html#ga87309fb16abbb38ce56b8afeb80d586d" title="指明数据写者指针取消发布。 ">DDS_UnPubTopic()</a> </td><td>取消发布，通过指定精确的数据写者指针。 </td></tr>
+<tr>
+<td><a class="el" href="group___simple_interface.html#ga489ef056fd8c0a3391995b977503cd45" title="通过域以及主题名称取消发布，如果域内存在多个主题名相同的发布者将删除所有同名主题发布者。 该接口仅在指...">DDS_UnPubTopicWTopicName()</a> </td><td>取消发布，通过指定域以及主题名称。 </td></tr>
+<tr>
+<td><a class="el" href="group___simple_interface.html#ga55b3bb36aa9d47849578622687b1b451" title="订阅主题，指定域参与者、主题名、类型名以及QoS配置名称。 ">DDS_SubTopic()</a> </td><td>创建与指定主题名称、类型名称关联的数据读者，并设置QoS、监听器。 </td></tr>
+<tr>
+<td><a class="el" href="group___simple_interface.html#gaf15d2d59e610333dcb88d9ea5b0d4316" title="指明数据读者指针取消订阅。 ">DDS_UnSubTopic()</a> </td><td>取消订阅，通过指定精确的数据读者指针。 </td></tr>
+<tr>
+<td><a class="el" href="group___simple_interface.html#gad86fb2d359ff1524248b2b8043842160" title="通过域以及主题名称取消订阅，如果域内存在多个主题名相同的订阅将删除所有同名主题订阅。 该接口仅在指定域...">DDS_UnSubTopicWTopicName()</a> </td><td>取消发布，通过指定域以及主题名称。 </td></tr>
+<tr>
+<td><a class="el" href="group___c_publication.html#ga2a9dcad34148eaf1c1749afe03e8d62e" title="发布一个数据样本。 ">FooDataWriter_write()</a> </td><td>向DDS系统发布数据，由于DDS的强类型安全，应转化为特定类型的数据写者调用write函数，如零拷贝的数据写者，应调用 DDS_ZeroCopyBytesDataWriter_write() 接口，非零拷贝（缓冲区类型） DDS_BytesDataWriter_write() 接口 。 </td></tr>
+<tr>
+<td><a class="el" href="group___c_listener.html#ga2e9336107976cdbbd4f0003513df4639" title="用于简化数据读者监听器中数据到达函数的代码复杂度，该宏将完成以下工作： ">DDS_SimpleDataReaderListener</a> </td><td>默认简单的数据到达监听器，用户继承该监听器并在 DDS_SimapleDataReaderListener_on_process_sample 中处理到达的样本。 </td></tr>
+<tr>
+<td><a class="el" href="group___simple_interface.html#ga4333f00c24612efca8a9823c7e43c888" title="清理资源。 ">DDS_Finalize()</a> </td><td>回收DDS中间件所有资源。 </td></tr>
+</table>
+<p>以下为零拷贝相关的接口，关于零拷贝数据类型 <a class="el" href="struct_d_d_s___zero_copy_bytes.html" title="ZRDDS内置的零拷贝数据类型。 ">DDS_ZeroCopyBytes</a> ：</p>
+<table class="doxtable">
+<tr>
+<th>接口名称 </th><th>说明  </th></tr>
+<tr>
+<td><a class="el" href="group___simple_interface.html#ga7e3192fbf5dd3e7671f7b66210d58555" title="创建零拷贝对象，并按最大长度分配空间。 ">DDS_ZeroCopyBytesCreate()</a> </td><td>创建零拷贝对象并分配空间 </td></tr>
+<tr>
+<td><a class="el" href="group___simple_interface.html#ga9bf7f8e452a8251f17238494ed1a22a8" title="与 DDS_ZeroCopyBytesCreate 函数对应的回收零拷贝对象空间。 ">DDS_ZeroCopyBytesDestroy()</a> </td><td>回收零拷贝对象空间 </td></tr>
+<tr>
+<td><a class="el" href="group___simple_interface.html#gad921924f8b71416afd1ee131efa01774" title="向指定的域发送指定主题的零拷贝数据。使用该接口的前提： ">DDS_ZeroCopyBytesWrite()</a> </td><td>向指定域号以及主题上发布零拷贝数据 </td></tr>
+</table>
+<p>以下为非零拷贝（缓冲区类型）接口，非零拷贝（缓冲区类型） <a class="el" href="struct_d_d_s___bytes.html" title="为方便用户直接传输缓冲区数据类型，ZRDDS提供内置的缓冲区类型，该类型与字符串类型的主要区别为，允许内容...">DDS_Bytes</a> ： </p><table class="doxtable">
+<tr>
+<th>接口名称 </th><th>说明  </th></tr>
+<tr>
+<td><a class="el" href="group___simple_interface.html#ga565e3026e588da04f0da6dd0fd9e0f17" title="用户缓冲区包装成DDS_Bytes类型（非零拷贝缓冲区数据类型），该接口不分配空间，无需对应的回收函数。 ...">DDS_BytesWrapper()</a> </td><td>将用户缓冲区包装成DDS_Bytes类型，用于发送。 </td></tr>
+<tr>
+<td><a class="el" href="group___simple_interface.html#ga026a26eae62702e4e81e5b283c619c38" title="向指定的域发送指定主题的非零拷贝Bytes数据。使用该接口的前提： ">DDS_BytesWrite()</a> </td><td>与零拷贝发送类似，但发送的数据为非零拷贝的内置数据类型Bytes即缓冲区类型。 </td></tr>
+</table>
+<h2><a class="anchor" id="zrdds_interface_ddsif_example"></a>
+3.2. 简化接口代码示例</h2>
+<p>示例中模拟了两组收发场景，其各自交互逻辑图如下，第一组使用非零拷贝数据类型，其中SimpleInterfaceBytesTypePub与SimpleInterfaceBytesTypeSub通过UDP网络交互AirTrack主题，第二组使用零拷贝数据类型，其中SimpleInterfaceZeroCopyPub与SimpleInterfaceZeroCopySub之间通过RIO交互SeaTrack主题。</p>
+<p>完整代码、配置文件以及生成脚本参见安装目录的example/c/SimpleInterface，通过<code>./MakeAll.sh</code>命令生成例子程序， *将XML配置文件放到程序的运行目录*，再启动每组场景下的订阅程序与发送程序。如：启动第一组场景时，需依次启动SimpleInterfaceBytesTypeSub，SimpleInterfaceBytesTypePub，在此收发场景下可以看到SimpleInterfaceBytesTypeSub有周期性的输出；启动第二组场景时，需依次启动SimpleInterfaceZeroCopySub，SimpleInterfaceZeroCopyPub，在此场景下可以看到SimpleInterfaceZeroCopySub有周期性输出。</p>
+<p>场景1： <a class="anchor" id="figure-5"></a> </p><div class="image">
+<img src="example_simple_byteType.png" alt="example_simple_byteType.png"/>
+<div class="caption">
+图5. 非零拷贝数据类型示例通信场景图</div></div>
+<ul>
+<li>其中QoS配置文件示例参见 <a class="el" href="_simple_interface_2_z_r_d_d_s__q_o_s__p_r_o_f_i_l_e_s_8xml-example.html">SimpleInterface/ZRDDS_QOS_PROFILES.xml</a></li>
+<li>其中SimpleInterfaceBytesTypePub_c的代码参见 <a class="el" href="_simple_interface_2_simple_interface_bytes_type_pub_8c-example.html">SimpleInterface/SimpleInterfaceBytesTypePub.c</a></li>
+<li>其中SimpleInterfaceBytesTypeSub_c的代码参见 <a class="el" href="_simple_interface_2_simple_interface_bytes_type_sub_8c-example.html">SimpleInterface/SimpleInterfaceBytesTypeSub.c</a></li>
+</ul>
+<p>场景2： <a class="anchor" id="figure-6"></a> </p><div class="image">
+<img src="example_simple_zeroCopy.png" alt="example_simple_zeroCopy.png"/>
+<div class="caption">
+图6. 零拷贝数据类型示例通信场景图</div></div>
+<ul>
+<li>其中QoS配置文件示例参见 <a class="el" href="_simple_interface_2_z_r_d_d_s__q_o_s__p_r_o_f_i_l_e_s_8xml-example.html">SimpleInterface/ZRDDS_QOS_PROFILES.xml</a></li>
+<li>其中SimpleInterfaceZeroCopyPub_c的代码参见 <a class="el" href="_simple_interface_2_simple_interface_zero_copy_pub_8c-example.html">SimpleInterface/SimpleInterfaceZeroCopyPub.c</a></li>
+<li>其中SimpleInterfaceZeroCopySub_c的代码参见 <a class="el" href="_simple_interface_2_simple_interface_zero_copy_sub_8c-example.html">SimpleInterface/SimpleInterfaceZeroCopySub.c</a></li>
+</ul>
+<p>配置文件中典型配置及其使用场景如下表：</p>
+<p>表5. 配置文件中典型配置及其使用场景 </p><table class="doxtable">
+<tr>
+<th>配置 </th><th>含义 </th><th>说明  </th></tr>
+<tr>
+<td>rio_config </td><td>SRIO配置 </td><td>当应用需SRIO通信时，在 <a class="el" href="group___simple_interface.html#gafba8345d351be9aa3a66773fac903983" title="以指定配置初始化DDS中间件，只在整个程序初始化时调用一次即可。 ">DDS_Init()</a> 时需传入该配置 </td></tr>
+<tr>
+<td>non_rio </td><td>默认DDS配置 </td><td>当应用无需SRIO通信时，在 <a class="el" href="group___simple_interface.html#gafba8345d351be9aa3a66773fac903983" title="以指定配置初始化DDS中间件，只在整个程序初始化时调用一次即可。 ">DDS_Init()</a> 时传入该配置 </td></tr>
+<tr>
+<td>rio_dp </td><td>配置了SRIO通信地址的域参与者配置 </td><td>在使用 <a class="el" href="group___simple_interface.html#ga6a10094a97e3c90e4958ba8d2c0b0f8a" title="DDS创建域参与者，并指明域号与QoS配置名称，同一个域号可能有多个域参与者， 需要为使用不同底层传输协议的...">DDS_CreateDP()</a> 时传入以创建使用SRIO通信的域参与者 </td></tr>
+<tr>
+<td>udp_dp </td><td>配置了以默认地址的UDP通信方式的域参与者配置 </td><td>在使用 <a class="el" href="group___simple_interface.html#ga6a10094a97e3c90e4958ba8d2c0b0f8a" title="DDS创建域参与者，并指明域号与QoS配置名称，同一个域号可能有多个域参与者， 需要为使用不同底层传输协议的...">DDS_CreateDP()</a> 时传入以创建使用UDP通信的域参与者 </td></tr>
+<tr>
+<td>tcp_dp </td><td>配置了以默认地址的TCP通信方式的域参与者配置 </td><td>在使用 <a class="el" href="group___simple_interface.html#ga6a10094a97e3c90e4958ba8d2c0b0f8a" title="DDS创建域参与者，并指明域号与QoS配置名称，同一个域号可能有多个域参与者， 需要为使用不同底层传输协议的...">DDS_CreateDP()</a> 时传入以创建使用TCP通信的域参与者 </td></tr>
+<tr>
+<td>non_zerocopy_reliable </td><td>非零拷贝的可靠通信配置 </td><td>在使用 <a class="el" href="group___simple_interface.html#ga238c40f1cdc5183ed5936ed98156f96c" title="发布主题，指定域参与者、主题名、类型名、QoS配置名称以及监听器。 ">DDS_PubTopic()</a> / <a class="el" href="group___simple_interface.html#ga55b3bb36aa9d47849578622687b1b451" title="订阅主题，指定域参与者、主题名、类型名以及QoS配置名称。 ">DDS_SubTopic()</a> 时传入以创建非零拷贝的可靠发布者或者订阅者 </td></tr>
+<tr>
+<td>non_zerocopy_best_effort </td><td>非零拷贝的尽力而为通信配置 </td><td>在使用 <a class="el" href="group___simple_interface.html#ga55b3bb36aa9d47849578622687b1b451" title="订阅主题，指定域参与者、主题名、类型名以及QoS配置名称。 ">DDS_SubTopic()</a> 时传入以创建非零拷贝的尽力而为的订阅者（发布者可以是可靠的） </td></tr>
+<tr>
+<td>zerocopy </td><td>零拷贝的QoS配置 </td><td>在使用 <a class="el" href="group___simple_interface.html#ga238c40f1cdc5183ed5936ed98156f96c" title="发布主题，指定域参与者、主题名、类型名、QoS配置名称以及监听器。 ">DDS_PubTopic()</a> / <a class="el" href="group___simple_interface.html#ga55b3bb36aa9d47849578622687b1b451" title="订阅主题，指定域参与者、主题名、类型名以及QoS配置名称。 ">DDS_SubTopic()</a> 时传入以创建零拷贝的发布者或者订阅者 </td></tr>
+</table>
+</div></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

@@ -1,0 +1,319 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: ZRDDSDataWriter.h 源文件</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>类</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('_z_r_d_d_s_data_writer_8h_source.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">ZRDDSDataWriter.h</div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#ifndef ZRDDSDataWriter_h__</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#define ZRDDSDataWriter_h__</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#include &quot;DataWriter.h&quot;</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#include &lt;stdlib.h&gt;</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="keyword">struct </span>DataWriterImpl;</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespace_d_d_s.html">DDS</a> {</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00031"></a><span class="lineno"><a class="line" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html">   31</a></span>&#160;<span class="keyword">class </span><a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html">ZRDDSDataWriter</a> : <span class="keyword">public</span> <a class="code" href="class_d_d_s_1_1_data_writer.html">DataWriter</a></div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;{</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a> <a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#ac5fa298e5e5e90f8679f76525ad6474d">register_instance</a>(<span class="keyword">const</span> T&amp; data);</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a> <a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#abb11443557add8ddee534a7c2dbee20a">register_instance_w_timestamp</a>(</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <span class="keyword">const</span> T&amp; data,</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        <span class="keyword">const</span> <a class="code" href="struct_d_d_s___duration__t.html">Time_t</a>&amp; timestamp);</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a819774917b46200bef9f9a5317d67362">unregister_instance</a>(</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        <span class="keyword">const</span> T&amp; data,</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a>&amp; handle);</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a8f6f34a06d87339fc4805c91b24bfeae">unregister_instance_w_timestamp</a>(</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;        <span class="keyword">const</span> T&amp; data,</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;        <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a>&amp; handle,</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;        <span class="keyword">const</span> <a class="code" href="struct_d_d_s___duration__t.html">Time_t</a>&amp; timestamp);</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#abc25fe6d8b50d187bdf2a6777899a891">get_key_value</a>(</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;        T&amp; key_holder,</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;        <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a>&amp; handle);</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;    <a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a> <a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a27efb4a25b878ed2cde60d688b2f713b">lookup_instance</a>(<span class="keyword">const</span> T&amp; key_holder);</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;    <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a0be9bc0f81e02f48bc3a308bb27936cb">write</a>(<span class="keyword">const</span> T&amp; data, <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a>&amp; handle);</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;    <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a819bb9b8459256225e256d12c88a6c0a">write_w_timestamp</a>(</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;        <span class="keyword">const</span> T&amp; instance, </div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;        <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a>&amp; handle, </div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;        <span class="keyword">const</span> <a class="code" href="struct_d_d_s___duration__t.html">Time_t</a>&amp; timestamp);</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;    <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a5964b1cad39048aafa403c6a7a868a02">write_w_dst</a>(</div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;        <span class="keyword">const</span> T&amp; instance,</div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;        <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a>&amp; handle,</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;        <span class="keyword">const</span> <a class="code" href="struct_d_d_s___duration__t.html">Time_t</a>&amp; timestamp,</div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;        <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a>&amp; dst_handle);</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;    <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a5964b1cad39048aafa403c6a7a868a02">write_w_dst</a>(</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;        <span class="keyword">const</span> T&amp; instance,</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;        <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a>&amp; handle,</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;        <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a>&amp; dst_handle);</div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;</div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;    <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#aa1383c0e09f84327db7be273f3053cfc">dispose</a>(</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;        <span class="keyword">const</span> T&amp; instance, </div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;        <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a>&amp; handle);</div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;</div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a3ab8f981cc3cebb80958a2da0cd387cc">dispose_w_timestamp</a>(</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;        <span class="keyword">const</span> T&amp; instance, </div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;        <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a>&amp; handle, </div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;        <span class="keyword">const</span> <a class="code" href="struct_d_d_s___duration__t.html">Time_t</a>&amp; timestamp);</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;    <span class="keyword">static</span> <a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html">ZRDDSDataWriter</a>* createI(<a class="code" href="class_d_d_s_1_1_data_writer.html">DataWriter</a> *impl, <span class="keywordtype">void</span> *typesupport);</div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;    <span class="keyword">static</span> <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> destroyI(<a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html">ZRDDSDataWriter</a> *dw, <span class="keywordtype">void</span>* typesupport);</div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;<span class="keyword">protected</span>:</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;    <a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html">ZRDDSDataWriter</a>(<a class="code" href="class_d_d_s_1_1_data_writer.html">DataWriter</a> *impl);</div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;};</div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;</div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;<a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html">ZRDDSDataWriter&lt;T&gt;::ZRDDSDataWriter</a>(<a class="code" href="class_d_d_s_1_1_data_writer.html">DataWriter</a> *impl)</div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;    :<a class="code" href="class_d_d_s_1_1_data_writer.html">DataWriter</a>(impl)</div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;{</div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;</div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;}</div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;</div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;ZRDDSDataWriter&lt;T&gt;* ZRDDSDataWriter&lt;T&gt;::createI(DataWriter *impl, <span class="keywordtype">void</span> *typesupport)</div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;{</div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">new</span> ZRDDSDataWriter&lt;T&gt;(impl);</div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;}</div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;</div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;<a class="code" href="group___cpp_core_struct.html#gab75eff815bc736d0537a1f30aa94b5ce">ReturnCode_t</a> ZRDDSDataWriter&lt;T&gt;::destroyI(ZRDDSDataWriter *dw, <span class="keywordtype">void</span>* typesupport)</div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;{</div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;    <span class="keywordflow">if</span> (NULL != dw) <span class="keyword">delete</span> dw;</div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f">DDS_RETCODE_OK</a>;</div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;}</div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;</div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00310"></a><span class="lineno"><a class="line" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#ac5fa298e5e5e90f8679f76525ad6474d">  310</a></span>&#160;<a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a> <a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#ac5fa298e5e5e90f8679f76525ad6474d">ZRDDSDataWriter&lt;T&gt;::register_instance</a>(<span class="keyword">const</span> T&amp; data)</div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;{</div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;    <span class="keywordflow">return</span> m_impl-&gt;register_instance_untype(&amp;data, NULL);</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;}</div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;</div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00316"></a><span class="lineno"><a class="line" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#abb11443557add8ddee534a7c2dbee20a">  316</a></span>&#160;<a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a> <a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#abb11443557add8ddee534a7c2dbee20a">ZRDDSDataWriter&lt;T&gt;::register_instance_w_timestamp</a>(</div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;    <span class="keyword">const</span> T&amp; data,</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___duration__t.html">Time_t</a>&amp; timestamp)</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;{</div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;    <span class="keywordflow">return</span> m_impl-&gt;register_instance_untype(&amp;data, &amp;timestamp);</div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;}</div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;</div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00324"></a><span class="lineno"><a class="line" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a819774917b46200bef9f9a5317d67362">  324</a></span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a819774917b46200bef9f9a5317d67362">ZRDDSDataWriter&lt;T&gt;::unregister_instance</a>(</div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;    <span class="keyword">const</span> T&amp; data,</div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a>&amp; handle)</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;{</div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;    <span class="keywordflow">return</span> m_impl-&gt;unregister_instance_untype(&amp;data, handle, NULL);</div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;}</div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;</div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00332"></a><span class="lineno"><a class="line" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a8f6f34a06d87339fc4805c91b24bfeae">  332</a></span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a8f6f34a06d87339fc4805c91b24bfeae">ZRDDSDataWriter&lt;T&gt;::unregister_instance_w_timestamp</a>(</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;    <span class="keyword">const</span> T&amp; data,</div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a>&amp; handle,</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___duration__t.html">Time_t</a>&amp; timestamp)</div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;{</div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;    <span class="keywordflow">return</span> m_impl-&gt;unregister_instance_untype(&amp;data, handle, &amp;timestamp);</div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;}</div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00341"></a><span class="lineno"><a class="line" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#abc25fe6d8b50d187bdf2a6777899a891">  341</a></span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#abc25fe6d8b50d187bdf2a6777899a891">ZRDDSDataWriter&lt;T&gt;::get_key_value</a>(</div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;    T&amp; key_holder,</div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a>&amp; handle)</div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;{</div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;    <span class="keywordflow">return</span> m_impl-&gt;get_key_value_untype(&amp;key_holder, handle);</div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;}</div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;</div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00349"></a><span class="lineno"><a class="line" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a27efb4a25b878ed2cde60d688b2f713b">  349</a></span>&#160;<a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a> <a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a27efb4a25b878ed2cde60d688b2f713b">ZRDDSDataWriter&lt;T&gt;::lookup_instance</a>(<span class="keyword">const</span> T&amp; key_holder)</div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;{</div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;    <span class="keywordflow">return</span> m_impl-&gt;lookup_instance_untype(&amp;key_holder);</div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;}</div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;</div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00355"></a><span class="lineno"><a class="line" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a0be9bc0f81e02f48bc3a308bb27936cb">  355</a></span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a0be9bc0f81e02f48bc3a308bb27936cb">ZRDDSDataWriter&lt;T&gt;::write</a>(<span class="keyword">const</span> T&amp; data, <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a>&amp; handle)</div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;{</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;    <span class="keywordflow">return</span> m_impl-&gt;write_untype_w_dst(&amp;data, handle, NULL, NULL);</div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;}</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;</div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00361"></a><span class="lineno"><a class="line" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a819bb9b8459256225e256d12c88a6c0a">  361</a></span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a819bb9b8459256225e256d12c88a6c0a">ZRDDSDataWriter&lt;T&gt;::write_w_timestamp</a>(</div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;    <span class="keyword">const</span> T&amp; data,</div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a>&amp; handle,</div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___duration__t.html">Time_t</a>&amp; timestamp)</div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;{</div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;    <span class="keywordflow">return</span> m_impl-&gt;write_untype_w_dst(&amp;data, handle, &amp;timestamp, NULL);</div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;}</div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;</div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00370"></a><span class="lineno"><a class="line" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a5964b1cad39048aafa403c6a7a868a02">  370</a></span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a5964b1cad39048aafa403c6a7a868a02">DDS::ZRDDSDataWriter&lt;T&gt;::write_w_dst</a>(</div>
+<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;    <span class="keyword">const</span> T&amp; instance,</div>
+<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a>&amp; handle,</div>
+<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___duration__t.html">Time_t</a>&amp; timestamp,</div>
+<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a>&amp; dst_handle)</div>
+<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;{</div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;    <span class="keywordflow">return</span> m_impl-&gt;write_untype_w_dst(&amp;instance, handle, &amp;timestamp, &amp;dst_handle);</div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;}</div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;</div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00380"></a><span class="lineno"><a class="line" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#afcd89089ca6f57aa13f46a6223174bf1">  380</a></span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a5964b1cad39048aafa403c6a7a868a02">DDS::ZRDDSDataWriter&lt;T&gt;::write_w_dst</a>(</div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;    <span class="keyword">const</span> T&amp; instance,</div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a>&amp; handle,</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a>&amp; dst_handle)</div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;{</div>
+<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;    <span class="keywordflow">return</span> m_impl-&gt;write_untype_w_dst(&amp;instance, handle, NULL, &amp;dst_handle);</div>
+<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;}</div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;</div>
+<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00389"></a><span class="lineno"><a class="line" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#aa1383c0e09f84327db7be273f3053cfc">  389</a></span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#aa1383c0e09f84327db7be273f3053cfc">ZRDDSDataWriter&lt;T&gt;::dispose</a>(</div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;    <span class="keyword">const</span> T&amp; instance,</div>
+<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a>&amp; handle)</div>
+<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;{</div>
+<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;    <span class="keywordflow">return</span> m_impl-&gt;dispose_untype(&amp;instance, handle, NULL);</div>
+<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;}</div>
+<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;</div>
+<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00397"></a><span class="lineno"><a class="line" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a3ab8f981cc3cebb80958a2da0cd387cc">  397</a></span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a3ab8f981cc3cebb80958a2da0cd387cc">ZRDDSDataWriter&lt;T&gt;::dispose_w_timestamp</a>(</div>
+<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;    <span class="keyword">const</span> T&amp; instance,</div>
+<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">InstanceHandle_t</a>&amp; handle,</div>
+<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___duration__t.html">Time_t</a>&amp; timestamp)</div>
+<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;{</div>
+<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;    <span class="keywordflow">return</span> m_impl-&gt;dispose_untype(&amp;instance, handle, &amp;timestamp);</div>
+<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;}</div>
+<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;</div>
+<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;} <span class="comment">// namespace DDS</span></div>
+<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;</div>
+<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;<span class="preprocessor">#endif // ZRDDSDataWriter_h__</span></div>
+<div class="ttc" id="class_d_d_s_1_1_z_r_d_d_s_data_writer_html"><div class="ttname"><a href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html">DDS::ZRDDSDataWriter</a></div><div class="ttdoc">ZRDDS提供的数据写者模板类，用于提供强类型安全接口的数据写者接口。 </div><div class="ttdef"><b>Definition:</b> ZRDDSDataWriter.h:31</div></div>
+<div class="ttc" id="class_d_d_s_1_1_z_r_d_d_s_data_writer_html_a819774917b46200bef9f9a5317d67362"><div class="ttname"><a href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a819774917b46200bef9f9a5317d67362">DDS::ZRDDSDataWriter::unregister_instance</a></div><div class="ttdeci">ReturnCode_t unregister_instance(const T &amp;data, const InstanceHandle_t &amp;handle)</div><div class="ttdoc">将已经注册的实例从数据写者中注销 </div><div class="ttdef"><b>Definition:</b> ZRDDSDataWriter.h:324</div></div>
+<div class="ttc" id="class_d_d_s_1_1_z_r_d_d_s_data_writer_html_a819bb9b8459256225e256d12c88a6c0a"><div class="ttname"><a href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a819bb9b8459256225e256d12c88a6c0a">DDS::ZRDDSDataWriter::write_w_timestamp</a></div><div class="ttdeci">ReturnCode_t write_w_timestamp(const T &amp;instance, const InstanceHandle_t &amp;handle, const Time_t &amp;timestamp)</div><div class="ttdoc">发布一个数据样本（见 write ），并使用提供的时间戳覆盖默认的时间戳。 </div><div class="ttdef"><b>Definition:</b> ZRDDSDataWriter.h:361</div></div>
+<div class="ttc" id="class_d_d_s_1_1_data_writer_html"><div class="ttname"><a href="class_d_d_s_1_1_data_writer.html">DDS::DataWriter</a></div><div class="ttdoc">DDS标准中的数据读者接口。 </div><div class="ttdef"><b>Definition:</b> DataWriter.h:34</div></div>
+<div class="ttc" id="class_d_d_s_1_1_z_r_d_d_s_data_writer_html_ac5fa298e5e5e90f8679f76525ad6474d"><div class="ttname"><a href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#ac5fa298e5e5e90f8679f76525ad6474d">DDS::ZRDDSDataWriter::register_instance</a></div><div class="ttdeci">InstanceHandle_t register_instance(const T &amp;data)</div><div class="ttdoc">向数据写者注册一个实例 </div><div class="ttdef"><b>Definition:</b> ZRDDSDataWriter.h:310</div></div>
+<div class="ttc" id="struct_d_d_s___duration__t_html"><div class="ttname"><a href="struct_d_d_s___duration__t.html">DDS_Duration_t</a></div><div class="ttdoc">用来表明一段时间段，协议规定至少有毫微秒的分辨率。 </div><div class="ttdef"><b>Definition:</b> Duration_t.h:40</div></div>
+<div class="ttc" id="class_d_d_s_1_1_z_r_d_d_s_data_writer_html_abb11443557add8ddee534a7c2dbee20a"><div class="ttname"><a href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#abb11443557add8ddee534a7c2dbee20a">DDS::ZRDDSDataWriter::register_instance_w_timestamp</a></div><div class="ttdeci">InstanceHandle_t register_instance_w_timestamp(const T &amp;data, const Time_t &amp;timestamp)</div><div class="ttdoc">向数据写者注册一个实例（见 register_instance ），并使用提供的时间戳覆盖默认的时间戳 ...</div><div class="ttdef"><b>Definition:</b> ZRDDSDataWriter.h:316</div></div>
+<div class="ttc" id="class_d_d_s_1_1_z_r_d_d_s_data_writer_html_aa1383c0e09f84327db7be273f3053cfc"><div class="ttname"><a href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#aa1383c0e09f84327db7be273f3053cfc">DDS::ZRDDSDataWriter::dispose</a></div><div class="ttdeci">ReturnCode_t dispose(const T &amp;instance, const InstanceHandle_t &amp;handle)</div><div class="ttdoc">销毁一个已经注册的实例。 </div><div class="ttdef"><b>Definition:</b> ZRDDSDataWriter.h:389</div></div>
+<div class="ttc" id="class_d_d_s_1_1_z_r_d_d_s_data_writer_html_a27efb4a25b878ed2cde60d688b2f713b"><div class="ttname"><a href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a27efb4a25b878ed2cde60d688b2f713b">DDS::ZRDDSDataWriter::lookup_instance</a></div><div class="ttdeci">InstanceHandle_t lookup_instance(const T &amp;key_holder)</div><div class="ttdoc">通过样本值查询实例句柄。 </div><div class="ttdef"><b>Definition:</b> ZRDDSDataWriter.h:349</div></div>
+<div class="ttc" id="class_d_d_s_1_1_z_r_d_d_s_data_writer_html_a8f6f34a06d87339fc4805c91b24bfeae"><div class="ttname"><a href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a8f6f34a06d87339fc4805c91b24bfeae">DDS::ZRDDSDataWriter::unregister_instance_w_timestamp</a></div><div class="ttdeci">ReturnCode_t unregister_instance_w_timestamp(const T &amp;data, const InstanceHandle_t &amp;handle, const Time_t &amp;timestamp)</div><div class="ttdoc">将已经注册的实例从数据写者中注销（见 unregister_instance ），并使用提供的时间戳覆盖默认的时间戳 ...</div><div class="ttdef"><b>Definition:</b> ZRDDSDataWriter.h:332</div></div>
+<div class="ttc" id="group___cpp_core_struct_html_gab75eff815bc736d0537a1f30aa94b5ce"><div class="ttname"><a href="group___cpp_core_struct.html#gab75eff815bc736d0537a1f30aa94b5ce">DDS::ReturnCode_t</a></div><div class="ttdeci">DDS_ReturnCode_t ReturnCode_t</div><div class="ttdoc">映射核心数据 DDS_ReturnCode_t 结构为C++接口。 </div><div class="ttdef"><b>Definition:</b> ZRDDSCppWrapper.h:569</div></div>
+<div class="ttc" id="class_d_d_s_1_1_z_r_d_d_s_data_writer_html_abc25fe6d8b50d187bdf2a6777899a891"><div class="ttname"><a href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#abc25fe6d8b50d187bdf2a6777899a891">DDS::ZRDDSDataWriter::get_key_value</a></div><div class="ttdeci">ReturnCode_t get_key_value(T &amp;key_holder, const InstanceHandle_t &amp;handle)</div><div class="ttdoc">从实例句柄获取对应的样本值，只有声明为键域的数据域的值有效。 </div><div class="ttdef"><b>Definition:</b> ZRDDSDataWriter.h:341</div></div>
+<div class="ttc" id="namespace_d_d_s_html"><div class="ttname"><a href="namespace_d_d_s.html">DDS</a></div><div class="ttdef"><b>Definition:</b> BuiltinDataDataReader.h:13</div></div>
+<div class="ttc" id="group___core_base_struct_html_gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f"><div class="ttname"><a href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f">DDS_RETCODE_OK</a></div><div class="ttdoc">执行成功。 </div><div class="ttdef"><b>Definition:</b> ReturnCode_t.h:21</div></div>
+<div class="ttc" id="class_d_d_s_1_1_z_r_d_d_s_data_writer_html_a5964b1cad39048aafa403c6a7a868a02"><div class="ttname"><a href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a5964b1cad39048aafa403c6a7a868a02">DDS::ZRDDSDataWriter::write_w_dst</a></div><div class="ttdeci">ReturnCode_t write_w_dst(const T &amp;instance, const InstanceHandle_t &amp;handle, const Time_t &amp;timestamp, const InstanceHandle_t &amp;dst_handle)</div><div class="ttdoc">向指定对端发布一个数据样本。 </div><div class="ttdef"><b>Definition:</b> ZRDDSDataWriter.h:370</div></div>
+<div class="ttc" id="struct_d_d_s___instance_handle__t_html"><div class="ttname"><a href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a></div><div class="ttdoc">用来表示一个实体或者一个数据实例。 </div><div class="ttdef"><b>Definition:</b> InstanceHandle_t.h:24</div></div>
+<div class="ttc" id="class_d_d_s_1_1_z_r_d_d_s_data_writer_html_a3ab8f981cc3cebb80958a2da0cd387cc"><div class="ttname"><a href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a3ab8f981cc3cebb80958a2da0cd387cc">DDS::ZRDDSDataWriter::dispose_w_timestamp</a></div><div class="ttdeci">ReturnCode_t dispose_w_timestamp(const T &amp;instance, const InstanceHandle_t &amp;handle, const Time_t &amp;timestamp)</div><div class="ttdoc">销毁一个已经注册的实例（见 unregister_instance ），并使用提供的时间戳覆盖默认的时间戳。 ...</div><div class="ttdef"><b>Definition:</b> ZRDDSDataWriter.h:397</div></div>
+<div class="ttc" id="class_d_d_s_1_1_z_r_d_d_s_data_writer_html_a0be9bc0f81e02f48bc3a308bb27936cb"><div class="ttname"><a href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a0be9bc0f81e02f48bc3a308bb27936cb">DDS::ZRDDSDataWriter::write</a></div><div class="ttdeci">ReturnCode_t write(const T &amp;data, const InstanceHandle_t &amp;handle)</div><div class="ttdoc">发布一个数据样本。 </div><div class="ttdef"><b>Definition:</b> ZRDDSDataWriter.h:355</div></div>
+<div class="ttc" id="group___core_base_struct_html_ga73f148aaf96b5f6f9fc630b7cfeb0c91"><div class="ttname"><a href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a></div><div class="ttdeci">DDS_ReturnCode_t</div><div class="ttdoc">ZRDDS接口的返回值类型。 </div><div class="ttdef"><b>Definition:</b> ReturnCode_t.h:18</div></div>
+</div><!-- fragment --></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="dir_0fc3f8f3ef96ce2d45d66d6e29832317.html">resources</a></li><li class="navelem"><a class="el" href="dir_cf9ceadfa18f25e608d16251156af657.html">zrdds</a></li><li class="navelem"><a class="el" href="dir_49213087373222e5c37cddb4e4d5f33e.html">src</a></li><li class="navelem"><a class="el" href="dir_e5f368d85bc0ec88e5ed7b816b1951ba.html">CPlusPlusInterface</a></li><li class="navelem"><b>ZRDDSDataWriter.h</b></li>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

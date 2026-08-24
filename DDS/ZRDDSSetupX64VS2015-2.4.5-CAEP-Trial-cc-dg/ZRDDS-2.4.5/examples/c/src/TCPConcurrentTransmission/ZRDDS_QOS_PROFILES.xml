@@ -1,0 +1,112 @@
+<zrdds_qos xmlns="http://www.omg.org/dds/">
+  <qos_library name="default_lib">
+    <qos_profile name="default_profile">
+	  <participantfactory_qos name="tcp_mul_dpf">
+	    <property>
+          <value>
+			<!-- 设置分片大小为8M -->
+			<element>
+	          <name>sysctl.global.net.tcp_send_batch_len</name>
+	          <value>8388608</value>
+	        </element>
+			<!-- 设置使用序号代替掩码指定CPU -->
+            <element>
+              <name>sysctl.global.use_cpu_id</name>
+              <value>true</value>
+            </element>
+          </value>
+        </property>
+	  </participantfactory_qos>
+      <participant_qos name="tcp_dp">
+        <discovery_config>
+          <participant_liveliness_assert_period>
+            <sec>3</sec>
+            <nanosec>0</nanosec>
+          </participant_liveliness_assert_period>
+          <participant_liveliness_lease_duration>
+            <sec>10</sec>
+            <nanosec>0</nanosec>
+          </participant_liveliness_lease_duration>
+        </discovery_config>
+        <usertraffic_receive_addresses>
+          <addresses>
+            <element>tcpv4://default//0</element>
+          </addresses>
+        </usertraffic_receive_addresses>
+      </participant_qos>
+	  <participant_qos name="tcp_mul_dp">
+        <discovery_config>
+          <participant_liveliness_assert_period>
+            <sec>3</sec>
+            <nanosec>0</nanosec>
+          </participant_liveliness_assert_period>
+          <participant_liveliness_lease_duration>
+            <sec>10</sec>
+            <nanosec>0</nanosec>
+          </participant_liveliness_lease_duration>
+        </discovery_config>
+		<!-- 多核传输需使用tcpv4_cc模式 -->
+        <usertraffic_receive_addresses>
+          <addresses>
+            <element>tcpv4_cc://default//0</element>
+          </addresses>
+        </usertraffic_receive_addresses>
+		<!-- 指定THREAD_PER_KIND传输模式，为用户数据与内置数据创建单独线程 -->
+        <receiver_thread_config>
+          <kind>THREAD_PER_KIND</kind>
+		  <receive_buffer_length>20971520</receive_buffer_length>
+        </receiver_thread_config>
+        <thread_core_affinity>
+          <user_data_receive_thread_affinity_mask>1</user_data_receive_thread_affinity_mask>
+		  <!-- 指定接收端可绑核有CPU0-CPU3 -->
+          <tcp_receive_thread_affinity_masks>
+            <element>0</element>
+            <element>1</element>
+            <element>2</element>
+            <element>3</element>
+          </tcp_receive_thread_affinity_masks>
+        </thread_core_affinity>
+      </participant_qos>
+	  <datawriter_qos name="tcp_mul_dw">
+        <reliability>
+          <kind>BEST_EFFORT_RELIABILITY_QOS</kind>
+        </reliability>
+        <message_mode>
+		  <without_timestamp>true</without_timestamp>
+          <without_inlineQos>true</without_inlineQos>
+        </message_mode>
+        <property>
+          <value>
+		    <!-- 设置分片自动刷新时间为200ms -->
+		    <element>
+	           <name>sysctl.dw.asynchronous_send_thread_max_flush_delay</name>
+	           <value>{0,200000000}</value>
+	        </element>
+			<!-- 分别绑定CPU0-CPU3进行发送 -->
+            <element>
+                <name>sysctl.dw.asynchronous_send_thread_affinity_masks</name>
+                <value>0</value>
+              </element>
+            <element>
+                <name>sysctl.dw.asynchronous_send_thread_affinity_masks</name>
+                <value>1</value>
+              </element>
+            <element>
+                <name>sysctl.dw.asynchronous_send_thread_affinity_masks</name>
+                <value>2</value>
+              </element>
+            <element>
+                <name>sysctl.dw.asynchronous_send_thread_affinity_masks</name>
+                <value>3</value>
+            </element>
+          </value>
+        </property>
+      </datawriter_qos>
+      <datareader_qos name="tcp_mul_dr">
+	  	<reliability>
+          <kind>BEST_EFFORT_RELIABILITY_QOS</kind>
+        </reliability>
+      </datareader_qos>
+    </qos_profile>
+  </qos_library>
+</zrdds_qos>

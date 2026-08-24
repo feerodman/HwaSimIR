@@ -1,0 +1,415 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: FooDataReader.h 源文件</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>结构体</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('_foo_data_reader_8h_source.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">FooDataReader.h</div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#ifndef FooDataReader_h__</span></div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#define FooDataReader_h__</span></div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;</div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &quot;ReturnCode_t.h&quot;</span></div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &quot;SampleInfo.h&quot;</span></div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &quot;SampleStateMask.h&quot;</span></div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#include &quot;ViewStateMask.h&quot;</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#include &quot;InstanceStateMask.h&quot;</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="preprocessor">#include &quot;StatusKindMask.h&quot;</span></div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#include &quot;LivelinessChangedStatus.h&quot;</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#include &quot;RequestedIncompatibleQosStatus.h&quot;</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="preprocessor">#include &quot;RequestedDeadlineMissedStatus.h&quot;</span></div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#include &quot;PublicationBuiltinTopicData.h&quot;</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="preprocessor">#include &quot;SampleLostStatus.h&quot;</span></div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="preprocessor">#include &quot;SampleRejectedStatus.h&quot;</span></div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="preprocessor">#include &quot;SubscriptionMatchedStatus.h&quot;</span></div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="preprocessor">#include &quot;DataReaderListener.h&quot;</span></div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="preprocessor">#include &quot;DataReaderQos.h&quot;</span></div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="preprocessor">#include &quot;Condition.h&quot;</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &quot;DataReader.h&quot;</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;</div>
+<div class="line"><a name="l00030"></a><span class="lineno"><a class="line" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">   30</a></span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a> <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>;</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#gae77bac32f62ee5c82917b62968c1a223">FooDataReader_read</a>(</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <a class="code" href="struct_foo_seq.html">FooSeq</a>* dataValues,</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <a class="code" href="struct_d_d_s___sample_info_seq.html">DDS_SampleInfoSeq</a>* sampleInfos,</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> maxSamples,</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <a class="code" href="group___core_base_struct.html#gad190942b4a711766f423b9ca601d8a48">DDS_SampleStateMask</a> sampleMask,</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <a class="code" href="group___core_base_struct.html#ga7cb49e1fe3e060a90e04159969d8f7ea">DDS_ViewStateMask</a> viewMask,</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <a class="code" href="group___core_base_struct.html#ga21c130ceeaa8189638bb46c494b59574">DDS_InstanceStateMask</a> instanceMask);</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#ga9ad73312885cc7d48d3a9664198b4eab">FooDataReader_take</a>(</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    <a class="code" href="struct_foo_seq.html">FooSeq</a>* dataValues,</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    <a class="code" href="struct_d_d_s___sample_info_seq.html">DDS_SampleInfoSeq</a>* sampleInfos,</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> maxSamples,</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    <a class="code" href="group___core_base_struct.html#gad190942b4a711766f423b9ca601d8a48">DDS_SampleStateMask</a> sampleMask,</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    <a class="code" href="group___core_base_struct.html#ga7cb49e1fe3e060a90e04159969d8f7ea">DDS_ViewStateMask</a> viewMask,</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    <a class="code" href="group___core_base_struct.html#ga21c130ceeaa8189638bb46c494b59574">DDS_InstanceStateMask</a> instanceMask);</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#ga282306545be7ab6ed7710b8934a6db33">FooDataReader_read_next_sample</a>(</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;    <a class="code" href="struct_foo.html">Foo</a>* dataValue,</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;    <a class="code" href="struct_d_d_s___sample_info.html">DDS_SampleInfo</a>* sampleInfo);</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#ga197225b9281ebb42ae637de26b26522c">FooDataReader_take_next_sample</a>(</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;    <a class="code" href="struct_foo.html">Foo</a>* dataValue,</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;    <a class="code" href="struct_d_d_s___sample_info.html">DDS_SampleInfo</a>* sampleInfo);</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#ga178471ff55dae242ba857d9fd6550ddd">FooDataReader_read_instance</a>(</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;    <a class="code" href="struct_foo_seq.html">FooSeq</a>* dataValues,</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;    <a class="code" href="struct_d_d_s___sample_info_seq.html">DDS_SampleInfoSeq</a>* sampleInfos,</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> maxSamples,</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a>* handle,</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;    <a class="code" href="group___core_base_struct.html#gad190942b4a711766f423b9ca601d8a48">DDS_SampleStateMask</a> sampleMask,</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;    <a class="code" href="group___core_base_struct.html#ga7cb49e1fe3e060a90e04159969d8f7ea">DDS_ViewStateMask</a> viewMask,</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;    <a class="code" href="group___core_base_struct.html#ga21c130ceeaa8189638bb46c494b59574">DDS_InstanceStateMask</a> instanceMask);</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#ga0cf40cb3ead6b75afbe9c1abe65c422f">FooDataReader_take_instance</a>(</div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;    <a class="code" href="struct_foo_seq.html">FooSeq</a>* dataValues,</div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;    <a class="code" href="struct_d_d_s___sample_info_seq.html">DDS_SampleInfoSeq</a>* sampleInfos,</div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> maxSamples,</div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a>* handle,</div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;    <a class="code" href="group___core_base_struct.html#gad190942b4a711766f423b9ca601d8a48">DDS_SampleStateMask</a> sampleMask,</div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;    <a class="code" href="group___core_base_struct.html#ga7cb49e1fe3e060a90e04159969d8f7ea">DDS_ViewStateMask</a> viewMask,</div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;    <a class="code" href="group___core_base_struct.html#ga21c130ceeaa8189638bb46c494b59574">DDS_InstanceStateMask</a> instanceMask);</div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#ga4bbc596341048c60f540d34801b1029a">FooDataReader_read_next_instance</a>(</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;    <a class="code" href="struct_foo_seq.html">FooSeq</a>* dataValues,</div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;    <a class="code" href="struct_d_d_s___sample_info_seq.html">DDS_SampleInfoSeq</a>* sampleInfos,</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> maxSamples,</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a>* previousHandle,</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;    <a class="code" href="group___core_base_struct.html#gad190942b4a711766f423b9ca601d8a48">DDS_SampleStateMask</a> sampleMask,</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;    <a class="code" href="group___core_base_struct.html#ga7cb49e1fe3e060a90e04159969d8f7ea">DDS_ViewStateMask</a> viewMask,</div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;    <a class="code" href="group___core_base_struct.html#ga21c130ceeaa8189638bb46c494b59574">DDS_InstanceStateMask</a> instanceMask);</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;</div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#gaa1510beeb7e12f63df4cb05d8d0d4707">FooDataReader_take_next_instance</a>(</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;    <a class="code" href="struct_foo_seq.html">FooSeq</a>* dataValues,</div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;    <a class="code" href="struct_d_d_s___sample_info_seq.html">DDS_SampleInfoSeq</a>* sampleInfos,</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> maxSamples,</div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a>* previousHandle,</div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;    <a class="code" href="group___core_base_struct.html#gad190942b4a711766f423b9ca601d8a48">DDS_SampleStateMask</a> sampleMask,</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;    <a class="code" href="group___core_base_struct.html#ga7cb49e1fe3e060a90e04159969d8f7ea">DDS_ViewStateMask</a> viewMask,</div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;    <a class="code" href="group___core_base_struct.html#ga21c130ceeaa8189638bb46c494b59574">DDS_InstanceStateMask</a> instanceMask);</div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;</div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#ga58610e7aab0bc97ccb6d857cad5aace0">FooDataReader_return_loan</a>(</div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;    <a class="code" href="struct_foo_seq.html">FooSeq</a>* dataValues,</div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;    <a class="code" href="struct_d_d_s___sample_info_seq.html">DDS_SampleInfoSeq</a>* sampleInfos);</div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;</div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#ga536b048b868a3558ee72a9c9cfbbabd0">FooDataReader_get_key_value</a>(</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;    <a class="code" href="struct_foo.html">Foo</a>* keyHolder,</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a>* handle);</div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;</div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;<a class="code" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a> <a class="code" href="group___c_subscription.html#gac7d331bfbe20138cdae5b6cbf88b2f81">FooDataReader_lookup_instance</a>(</div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_foo.html">Foo</a>* instance);</div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;</div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;<span class="comment">/* 带condition方法的read/take */</span></div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;</div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#gaf50154a39ee0431ee3834a440a7460d8">FooDataReader_read_next_instance_w_condition</a>(</div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;    <a class="code" href="struct_foo_seq.html">FooSeq</a>* dataValues,</div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;    <a class="code" href="struct_d_d_s___sample_info_seq.html">DDS_SampleInfoSeq</a>* sampleInfos,</div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> maxSamples,</div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a>* previousHandle,</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;    <a class="code" href="struct_d_d_s___read_condition.html">DDS_ReadCondition</a>* condition);</div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;</div>
+<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#gabf43578005da06a9e0016526a1e72df1">FooDataReader_take_next_instance_w_condition</a>(</div>
+<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;    <a class="code" href="struct_foo_seq.html">FooSeq</a>* dataValues,</div>
+<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;    <a class="code" href="struct_d_d_s___sample_info_seq.html">DDS_SampleInfoSeq</a>* sampleInfos,</div>
+<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> maxSamples,</div>
+<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a>* previousHandle,</div>
+<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;    <a class="code" href="struct_d_d_s___read_condition.html">DDS_ReadCondition</a> *condition);</div>
+<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;</div>
+<div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#gac7e0af3fabae0a4e65a31cf33ec2423f">FooDataReader_read_w_condition</a>(</div>
+<div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00432"></a><span class="lineno">  432</span>&#160;    <a class="code" href="struct_foo_seq.html">FooSeq</a>* dataValues,</div>
+<div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160;    <a class="code" href="struct_d_d_s___sample_info_seq.html">DDS_SampleInfoSeq</a>* sampleInfos,</div>
+<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> maxSamples,</div>
+<div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160;    <a class="code" href="struct_d_d_s___read_condition.html">DDS_ReadCondition</a> *condition);</div>
+<div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160;</div>
+<div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#gaab645e83864360c050ccbca43e88e9b6">FooDataReader_take_w_condition</a>(</div>
+<div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00457"></a><span class="lineno">  457</span>&#160;    <a class="code" href="struct_foo_seq.html">FooSeq</a>* dataValues,</div>
+<div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;    <a class="code" href="struct_d_d_s___sample_info_seq.html">DDS_SampleInfoSeq</a>* sampleInfos,</div>
+<div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> maxSamples,</div>
+<div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160;    <a class="code" href="struct_d_d_s___read_condition.html">DDS_ReadCondition</a> *condition);</div>
+<div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160;</div>
+<div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160;<span class="comment">/* readcondition的声明周期关联方法 */</span></div>
+<div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160;</div>
+<div class="line"><a name="l00479"></a><span class="lineno">  479</span>&#160;<a class="code" href="struct_d_d_s___read_condition.html">DDS_ReadCondition</a>* <a class="code" href="group___c_subscription.html#ga973188a9ddfc1e95c89abb9e369504d7">FooDataReader_create_readcondition</a>(</div>
+<div class="line"><a name="l00480"></a><span class="lineno">  480</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00481"></a><span class="lineno">  481</span>&#160;    <a class="code" href="group___core_base_struct.html#gad190942b4a711766f423b9ca601d8a48">DDS_SampleStateMask</a> sampleMask,</div>
+<div class="line"><a name="l00482"></a><span class="lineno">  482</span>&#160;    <a class="code" href="group___core_base_struct.html#ga7cb49e1fe3e060a90e04159969d8f7ea">DDS_ViewStateMask</a> viewMask,</div>
+<div class="line"><a name="l00483"></a><span class="lineno">  483</span>&#160;    <a class="code" href="group___core_base_struct.html#ga21c130ceeaa8189638bb46c494b59574">DDS_InstanceStateMask</a> instanceMask);</div>
+<div class="line"><a name="l00484"></a><span class="lineno">  484</span>&#160;</div>
+<div class="line"><a name="l00504"></a><span class="lineno">  504</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#ga190b6d2964f029887535565f458afe94">FooDataReader_delete_readcondition</a>(</div>
+<div class="line"><a name="l00505"></a><span class="lineno">  505</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00506"></a><span class="lineno">  506</span>&#160;    <a class="code" href="struct_d_d_s___read_condition.html">DDS_ReadCondition</a>* condition);</div>
+<div class="line"><a name="l00507"></a><span class="lineno">  507</span>&#160;</div>
+<div class="line"><a name="l00520"></a><span class="lineno">  520</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#gae09e021bb05b99f6985885de0841b860">FooDataReader_delete_contained_entities</a>(<a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00521"></a><span class="lineno">  521</span>&#160;</div>
+<div class="line"><a name="l00522"></a><span class="lineno">  522</span>&#160;<span class="comment">/* queryCondition的生命周期方法 */</span></div>
+<div class="line"><a name="l00523"></a><span class="lineno">  523</span>&#160;</div>
+<div class="line"><a name="l00543"></a><span class="lineno">  543</span>&#160;<a class="code" href="struct_d_d_s___query_condition.html">DDS_QueryCondition</a>* <a class="code" href="group___c_subscription.html#ga20e067f8a9f63900c44d5ce17e880006">FooDataReader_create_querycondition</a>(</div>
+<div class="line"><a name="l00544"></a><span class="lineno">  544</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00545"></a><span class="lineno">  545</span>&#160;    <a class="code" href="group___core_base_struct.html#gad190942b4a711766f423b9ca601d8a48">DDS_SampleStateMask</a> sampleMask,</div>
+<div class="line"><a name="l00546"></a><span class="lineno">  546</span>&#160;    <a class="code" href="group___core_base_struct.html#ga7cb49e1fe3e060a90e04159969d8f7ea">DDS_ViewStateMask</a> viewMask,</div>
+<div class="line"><a name="l00547"></a><span class="lineno">  547</span>&#160;    <a class="code" href="group___core_base_struct.html#ga21c130ceeaa8189638bb46c494b59574">DDS_InstanceStateMask</a> instanceMask,</div>
+<div class="line"><a name="l00548"></a><span class="lineno">  548</span>&#160;    <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* queryExpression,</div>
+<div class="line"><a name="l00549"></a><span class="lineno">  549</span>&#160;    <span class="keyword">const</span> ZRStringSeq* queryParameters);</div>
+<div class="line"><a name="l00550"></a><span class="lineno">  550</span>&#160;</div>
+<div class="line"><a name="l00571"></a><span class="lineno">  571</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#ga084b9391bf4b36025d1ec7296ba23e0c">FooDataReader_set_qos</a>(</div>
+<div class="line"><a name="l00572"></a><span class="lineno">  572</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00573"></a><span class="lineno">  573</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___data_reader_qos.html">DDS_DataReaderQos</a>* qoslist);</div>
+<div class="line"><a name="l00574"></a><span class="lineno">  574</span>&#160;</div>
+<div class="line"><a name="l00590"></a><span class="lineno">  590</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#ga7c89b65e393853999b14b11451be6581">FooDataReader_get_qos</a>(</div>
+<div class="line"><a name="l00591"></a><span class="lineno">  591</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00592"></a><span class="lineno">  592</span>&#160;    <a class="code" href="struct_d_d_s___data_reader_qos.html">DDS_DataReaderQos</a>* qoslist);</div>
+<div class="line"><a name="l00593"></a><span class="lineno">  593</span>&#160;</div>
+<div class="line"><a name="l00610"></a><span class="lineno">  610</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#gac64e0974f06d8216179f258143cfa333">FooDataReader_set_listener</a>(</div>
+<div class="line"><a name="l00611"></a><span class="lineno">  611</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00612"></a><span class="lineno">  612</span>&#160;    <a class="code" href="struct_d_d_s___data_reader_listener.html">DDS_DataReaderListener</a> *listener,</div>
+<div class="line"><a name="l00613"></a><span class="lineno">  613</span>&#160;    <a class="code" href="group___core_status_struct.html#gad13adc9414bb231ac1bf3d872bee9c67">DDS_StatusKindMask</a> mask);</div>
+<div class="line"><a name="l00614"></a><span class="lineno">  614</span>&#160;</div>
+<div class="line"><a name="l00629"></a><span class="lineno">  629</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#gad010bdd811afcbfc2f5abd363c7cc70e">FooDataReader_enable</a>(<a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00630"></a><span class="lineno">  630</span>&#160;</div>
+<div class="line"><a name="l00643"></a><span class="lineno">  643</span>&#160;<a class="code" href="struct_d_d_s___entity.html">DDS_Entity</a>* <a class="code" href="group___c_subscription.html#gaceb69599f813800f477a76de3aee66b5">FooDataReader_as_entity</a>(<a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00644"></a><span class="lineno">  644</span>&#160;</div>
+<div class="line"><a name="l00659"></a><span class="lineno">  659</span>&#160;<a class="code" href="struct_d_d_s___data_reader_listener.html">DDS_DataReaderListener</a>* <a class="code" href="group___c_subscription.html#ga32f060d38abd412a8d8b6e2cdd4770c2">FooDataReader_get_listener</a>(<a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00660"></a><span class="lineno">  660</span>&#160;</div>
+<div class="line"><a name="l00674"></a><span class="lineno">  674</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#gad4d7d7bf2d5796c296d717da73409a69">FooDataReader_get_liveliness_changed_status</a>(</div>
+<div class="line"><a name="l00675"></a><span class="lineno">  675</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00676"></a><span class="lineno">  676</span>&#160;    <a class="code" href="struct_d_d_s___liveliness_changed_status.html">DDS_LivelinessChangedStatus</a>* status);</div>
+<div class="line"><a name="l00677"></a><span class="lineno">  677</span>&#160;</div>
+<div class="line"><a name="l00691"></a><span class="lineno">  691</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#gac4a6b9d16cba9cf41eeea971083e74b4">FooDataReader_get_requested_deadline_missed_status</a>(</div>
+<div class="line"><a name="l00692"></a><span class="lineno">  692</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00693"></a><span class="lineno">  693</span>&#160;    <a class="code" href="struct_d_d_s___requested_deadline_missed_status.html">DDS_RequestedDeadlineMissedStatus</a>* status);</div>
+<div class="line"><a name="l00694"></a><span class="lineno">  694</span>&#160;</div>
+<div class="line"><a name="l00708"></a><span class="lineno">  708</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#ga93620ee58c1633e33d32e373aa42912f">FooDataReader_get_subscription_matched_status</a>(</div>
+<div class="line"><a name="l00709"></a><span class="lineno">  709</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00710"></a><span class="lineno">  710</span>&#160;    <a class="code" href="struct_d_d_s___subscription_matched_status.html">DDS_SubscriptionMatchedStatus</a>* status);</div>
+<div class="line"><a name="l00711"></a><span class="lineno">  711</span>&#160;</div>
+<div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#gaae3a189f102ea7c113b35ed5ec97873c">FooDataReader_get_matched_publication_data</a>(</div>
+<div class="line"><a name="l00734"></a><span class="lineno">  734</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00735"></a><span class="lineno">  735</span>&#160;    <a class="code" href="struct_d_d_s___publication_builtin_topic_data.html">DDS_PublicationBuiltinTopicData</a>* publicationData,</div>
+<div class="line"><a name="l00736"></a><span class="lineno">  736</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a>* publicationHandle);</div>
+<div class="line"><a name="l00737"></a><span class="lineno">  737</span>&#160;</div>
+<div class="line"><a name="l00758"></a><span class="lineno">  758</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#gacd29d70011c33307bbee67c13630410a">FooDataReader_get_matched_publications</a>(</div>
+<div class="line"><a name="l00759"></a><span class="lineno">  759</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00760"></a><span class="lineno">  760</span>&#160;    <a class="code" href="struct_d_d_s___instance_handle_seq.html">DDS_InstanceHandleSeq</a>* publicationHandles);</div>
+<div class="line"><a name="l00761"></a><span class="lineno">  761</span>&#160;</div>
+<div class="line"><a name="l00775"></a><span class="lineno">  775</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#ga240a2cef757528a62330324da47f8ff6">FooDataReader_get_sample_lost_status</a>(</div>
+<div class="line"><a name="l00776"></a><span class="lineno">  776</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00777"></a><span class="lineno">  777</span>&#160;    <a class="code" href="struct_d_d_s___sample_lost_status.html">DDS_SampleLostStatus</a>* status);</div>
+<div class="line"><a name="l00778"></a><span class="lineno">  778</span>&#160;</div>
+<div class="line"><a name="l00792"></a><span class="lineno">  792</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#gad13a139f6781abdf7a9e5c61df465d29">FooDataReader_get_sample_rejected_status</a>(</div>
+<div class="line"><a name="l00793"></a><span class="lineno">  793</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00794"></a><span class="lineno">  794</span>&#160;    <a class="code" href="struct_d_d_s___sample_rejected_status.html">DDS_SampleRejectedStatus</a>* status);</div>
+<div class="line"><a name="l00795"></a><span class="lineno">  795</span>&#160;</div>
+<div class="line"><a name="l00808"></a><span class="lineno">  808</span>&#160;<a class="code" href="struct_d_d_s___subscriber.html">DDS_Subscriber</a>* <a class="code" href="group___c_subscription.html#ga4995789bc66b25f95d537e54bfceae0c">FooDataReader_get_subscriber</a>(<a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00809"></a><span class="lineno">  809</span>&#160;</div>
+<div class="line"><a name="l00824"></a><span class="lineno">  824</span>&#160;<a class="code" href="struct_d_d_s___topic_description.html">DDS_TopicDescription</a>* <a class="code" href="group___c_subscription.html#gaec041903e538e342f2ab16640e1961dd">FooDataReader_get_topicdescription</a>(<a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00825"></a><span class="lineno">  825</span>&#160;</div>
+<div class="line"><a name="l00839"></a><span class="lineno">  839</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#ga62ccbffff271f2d1b5b43a2a70c64c4e">FooDataReader_get_requested_incompatible_qos_status</a>(</div>
+<div class="line"><a name="l00840"></a><span class="lineno">  840</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00841"></a><span class="lineno">  841</span>&#160;    <a class="code" href="struct_d_d_s___requested_incompatible_qos_status.html">DDS_RequestedIncompatibleQosStatus</a>* status);</div>
+<div class="line"><a name="l00842"></a><span class="lineno">  842</span>&#160;</div>
+<div class="line"><a name="l00862"></a><span class="lineno">  862</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_subscription.html#gafd56a3179a2ee35d5e7778c4794bc038">FooDataReader_wait_for_historical_data</a>(</div>
+<div class="line"><a name="l00863"></a><span class="lineno">  863</span>&#160;    <a class="code" href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00864"></a><span class="lineno">  864</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___duration__t.html">DDS_Duration_t</a>* maxWait);</div>
+<div class="line"><a name="l00865"></a><span class="lineno">  865</span>&#160;</div>
+<div class="line"><a name="l00866"></a><span class="lineno">  866</span>&#160;</div>
+<div class="line"><a name="l00867"></a><span class="lineno">  867</span>&#160;<span class="preprocessor">#ifdef _ZRXMLINTERFACE</span></div>
+<div class="line"><a name="l00868"></a><span class="lineno">  868</span>&#160;<span class="preprocessor">#ifdef _ZRXMLQOSINTERFACE</span></div>
+<div class="line"><a name="l00869"></a><span class="lineno">  869</span>&#160;</div>
+<div class="line"><a name="l00888"></a><span class="lineno">  888</span>&#160;<a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_publication.html#ga1c0f4ccc7b349ca2a468423eaf360c6b">FooDataReader_set_qos_with_profile</a>(</div>
+<div class="line"><a name="l00889"></a><span class="lineno">  889</span>&#160;    <a class="code" href="struct_d_d_s___data_writer.html">DDS_DataWriter</a>* dw,</div>
+<div class="line"><a name="l00890"></a><span class="lineno">  890</span>&#160;    <span class="keyword">const</span> <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>* library_name,</div>
+<div class="line"><a name="l00891"></a><span class="lineno">  891</span>&#160;    <span class="keyword">const</span> <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>* profile_name,</div>
+<div class="line"><a name="l00892"></a><span class="lineno">  892</span>&#160;    <span class="keyword">const</span> <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>* qos_name);</div>
+<div class="line"><a name="l00893"></a><span class="lineno">  893</span>&#160;</div>
+<div class="line"><a name="l00894"></a><span class="lineno">  894</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* _ZRXMLQOSINTERFACE */</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00895"></a><span class="lineno">  895</span>&#160;</div>
+<div class="line"><a name="l00896"></a><span class="lineno">  896</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* _ZRXMLINTERFACE */</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00897"></a><span class="lineno">  897</span>&#160;<span class="preprocessor">#endif // FooDataReader_h__</span></div>
+<div class="ttc" id="struct_d_d_s___data_reader_qos_html"><div class="ttname"><a href="struct_d_d_s___data_reader_qos.html">DDS_DataReaderQos</a></div><div class="ttdoc">定义数据读者的QoS配置。 </div><div class="ttdef"><b>Definition:</b> DataReaderQos.h:36</div></div>
+<div class="ttc" id="group___c_subscription_html_ga58610e7aab0bc97ccb6d857cad5aace0"><div class="ttname"><a href="group___c_subscription.html#ga58610e7aab0bc97ccb6d857cad5aace0">FooDataReader_return_loan</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_return_loan(FooDataReader *self, FooSeq *dataValues, DDS_SampleInfoSeq *sampleInfos)</div><div class="ttdoc">该方法用于应用归还从数据读者租借的空间。 </div></div>
+<div class="ttc" id="group___c_subscription_html_ga084b9391bf4b36025d1ec7296ba23e0c"><div class="ttname"><a href="group___c_subscription.html#ga084b9391bf4b36025d1ec7296ba23e0c">FooDataReader_set_qos</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_set_qos(FooDataReader *self, const DDS_DataReaderQos *qoslist)</div><div class="ttdoc">该方法设置为数据读者设置的QoS。 </div></div>
+<div class="ttc" id="group___c_publication_html_ga1c0f4ccc7b349ca2a468423eaf360c6b"><div class="ttname"><a href="group___c_publication.html#ga1c0f4ccc7b349ca2a468423eaf360c6b">FooDataReader_set_qos_with_profile</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_set_qos_with_profile(DDS_DataWriter *dw, const DDS_Char *library_name, const DDS_Char *profile_name, const DDS_Char *qos_name)</div><div class="ttdoc">从QoS仓库中获取数据读者QoS并将其设置到数据读者中。. </div></div>
+<div class="ttc" id="group___c_subscription_html_ga4bbc596341048c60f540d34801b1029a"><div class="ttname"><a href="group___c_subscription.html#ga4bbc596341048c60f540d34801b1029a">FooDataReader_read_next_instance</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_read_next_instance(FooDataReader *self, FooSeq *dataValues, DDS_SampleInfoSeq *sampleInfos, DDS_Long maxSamples, const DDS_InstanceHandle_t *previousHandle, DDS_SampleStateMask sampleMask, DDS_ViewStateMask viewMask, DDS_InstanceStateMask instanceMask)</div><div class="ttdoc">读取指定数据实例后面（不一定为紧邻的数据实例）数据实例中满足条件的数据样本集合。 </div></div>
+<div class="ttc" id="group___core_base_struct_html_ga7cb49e1fe3e060a90e04159969d8f7ea"><div class="ttname"><a href="group___core_base_struct.html#ga7cb49e1fe3e060a90e04159969d8f7ea">DDS_ViewStateMask</a></div><div class="ttdeci">DDS_ULong DDS_ViewStateMask</div><div class="ttdoc">DDS_ViewStateKind 的掩码表示多个 DDS_ViewStateKind 的状态的集合。 </div><div class="ttdef"><b>Definition:</b> ViewStateMask.h:20</div></div>
+<div class="ttc" id="struct_foo_html"><div class="ttname"><a href="struct_foo.html">Foo</a></div><div class="ttdoc">IDL映射到C数据类型。 </div><div class="ttdef"><b>Definition:</b> Foo.h:194</div></div>
+<div class="ttc" id="group___c_subscription_html_gaec041903e538e342f2ab16640e1961dd"><div class="ttname"><a href="group___c_subscription.html#gaec041903e538e342f2ab16640e1961dd">FooDataReader_get_topicdescription</a></div><div class="ttdeci">DDS_TopicDescription * FooDataReader_get_topicdescription(FooDataReader *self)</div><div class="ttdoc">获取该数据读者所关联的主题。 </div></div>
+<div class="ttc" id="group___c_subscription_html_ga178471ff55dae242ba857d9fd6550ddd"><div class="ttname"><a href="group___c_subscription.html#ga178471ff55dae242ba857d9fd6550ddd">FooDataReader_read_instance</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_read_instance(FooDataReader *self, FooSeq *dataValues, DDS_SampleInfoSeq *sampleInfos, DDS_Long maxSamples, const DDS_InstanceHandle_t *handle, DDS_SampleStateMask sampleMask, DDS_ViewStateMask viewMask, DDS_InstanceStateMask instanceMask)</div><div class="ttdoc">读取指定数据实例中满足条件的数据样本集合。 </div></div>
+<div class="ttc" id="group___c_subscription_html_gae09e021bb05b99f6985885de0841b860"><div class="ttname"><a href="group___c_subscription.html#gae09e021bb05b99f6985885de0841b860">FooDataReader_delete_contained_entities</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_delete_contained_entities(FooDataReader *self)</div><div class="ttdoc">删除该数据读者创建的所有读取条件(包括查询条件)，删除读取条件时，将自动从所有加入的等待集合中删除该条�...</div></div>
+<div class="ttc" id="group___c_subscription_html_gacd29d70011c33307bbee67c13630410a"><div class="ttname"><a href="group___c_subscription.html#gacd29d70011c33307bbee67c13630410a">FooDataReader_get_matched_publications</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_get_matched_publications(FooDataReader *self, DDS_InstanceHandleSeq *publicationHandles)</div><div class="ttdoc">查询已经匹配的远程数据写者的标识列表。 </div></div>
+<div class="ttc" id="struct_d_d_s___sample_lost_status_html"><div class="ttname"><a href="struct_d_d_s___sample_lost_status.html">DDS_SampleLostStatus</a></div><div class="ttdoc">样本丢失状态。 </div><div class="ttdef"><b>Definition:</b> SampleLostStatus.h:33</div></div>
+<div class="ttc" id="group___core_status_struct_html_gad13adc9414bb231ac1bf3d872bee9c67"><div class="ttname"><a href="group___core_status_struct.html#gad13adc9414bb231ac1bf3d872bee9c67">DDS_StatusKindMask</a></div><div class="ttdeci">DDS_ULong DDS_StatusKindMask</div><div class="ttdoc">DDS_StatusKind 的掩码表示多个 DDS_StatusKind 的状态的集合。 </div><div class="ttdef"><b>Definition:</b> StatusKindMask.h:29</div></div>
+<div class="ttc" id="group___c_subscription_html_gaf50154a39ee0431ee3834a440a7460d8"><div class="ttname"><a href="group___c_subscription.html#gaf50154a39ee0431ee3834a440a7460d8">FooDataReader_read_next_instance_w_condition</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_read_next_instance_w_condition(FooDataReader *self, FooSeq *dataValues, DDS_SampleInfoSeq *sampleInfos, DDS_Long maxSamples, const DDS_InstanceHandle_t *previousHandle, DDS_ReadCondition *condition)</div><div class="ttdoc">读取指定数据实例后面（不一定为紧邻的数据实例）数据实例中满足条件的数据样本集合。 </div></div>
+<div class="ttc" id="group___c_subscription_html_gae77bac32f62ee5c82917b62968c1a223"><div class="ttname"><a href="group___c_subscription.html#gae77bac32f62ee5c82917b62968c1a223">FooDataReader_read</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_read(FooDataReader *self, FooSeq *dataValues, DDS_SampleInfoSeq *sampleInfos, DDS_Long maxSamples, DDS_SampleStateMask sampleMask, DDS_ViewStateMask viewMask, DDS_InstanceStateMask instanceMask)</div><div class="ttdoc">该接口从数据读者底层获取用户样本数据。 </div></div>
+<div class="ttc" id="struct_d_d_s___entity_html"><div class="ttname"><a href="struct_d_d_s___entity.html">DDS_Entity</a></div><div class="ttdoc">该类型用于表示所有实体（实体) 包括域参与者、主题、发布者、订阅者、数据读者、数据写者的“基类”。 ...</div></div>
+<div class="ttc" id="group___c_subscription_html_ga9ad73312885cc7d48d3a9664198b4eab"><div class="ttname"><a href="group___c_subscription.html#ga9ad73312885cc7d48d3a9664198b4eab">FooDataReader_take</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_take(FooDataReader *self, FooSeq *dataValues, DDS_SampleInfoSeq *sampleInfos, DDS_Long maxSamples, DDS_SampleStateMask sampleMask, DDS_ViewStateMask viewMask, DDS_InstanceStateMask instanceMask)</div><div class="ttdoc">该接口从数据读者底层取出用户样本数据。 </div></div>
+<div class="ttc" id="group___c_subscription_html_gac64e0974f06d8216179f258143cfa333"><div class="ttname"><a href="group___c_subscription.html#gac64e0974f06d8216179f258143cfa333">FooDataReader_set_listener</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_set_listener(FooDataReader *self, DDS_DataReaderListener *listener, DDS_StatusKindMask mask)</div><div class="ttdoc">设置该数据读者的监听器。 </div></div>
+<div class="ttc" id="group___c_subscription_html_ga197225b9281ebb42ae637de26b26522c"><div class="ttname"><a href="group___c_subscription.html#ga197225b9281ebb42ae637de26b26522c">FooDataReader_take_next_sample</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_take_next_sample(FooDataReader *self, Foo *dataValue, DDS_SampleInfo *sampleInfo)</div><div class="ttdoc">该方法用于从通信中间件依次取出未读取过的样本。 </div></div>
+<div class="ttc" id="group___c_subscription_html_ga4347f3bb34e7085cd6d50b669794d284"><div class="ttname"><a href="group___c_subscription.html#ga4347f3bb34e7085cd6d50b669794d284">FooDataReader</a></div><div class="ttdeci">struct FooDataReader FooDataReader</div><div class="ttdoc">该类型作为用户数据类型的数据读者。 </div><div class="ttdef"><b>Definition:</b> FooDataReader.h:30</div></div>
+<div class="ttc" id="group___c_subscription_html_gad010bdd811afcbfc2f5abd363c7cc70e"><div class="ttname"><a href="group___c_subscription.html#gad010bdd811afcbfc2f5abd363c7cc70e">FooDataReader_enable</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_enable(FooDataReader *self)</div><div class="ttdoc">手动使能该数据读者，参见实体使能 。 </div></div>
+<div class="ttc" id="group___c_subscription_html_gabf43578005da06a9e0016526a1e72df1"><div class="ttname"><a href="group___c_subscription.html#gabf43578005da06a9e0016526a1e72df1">FooDataReader_take_next_instance_w_condition</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_take_next_instance_w_condition(FooDataReader *self, FooSeq *dataValues, DDS_SampleInfoSeq *sampleInfos, DDS_Long maxSamples, const DDS_InstanceHandle_t *previousHandle, DDS_ReadCondition *condition)</div><div class="ttdoc">取出指定数据实例后面（不一定为紧邻的数据实例）数据实例中满足条件的数据样本集合。 </div></div>
+<div class="ttc" id="group___c_subscription_html_ga20e067f8a9f63900c44d5ce17e880006"><div class="ttname"><a href="group___c_subscription.html#ga20e067f8a9f63900c44d5ce17e880006">FooDataReader_create_querycondition</a></div><div class="ttdeci">DDS_QueryCondition * FooDataReader_create_querycondition(FooDataReader *self, DDS_SampleStateMask sampleMask, DDS_ViewStateMask viewMask, DDS_InstanceStateMask instanceMask, const ZR_INT8 *queryExpression, const ZRStringSeq *queryParameters)</div><div class="ttdoc">创建一个绑定到该订阅者上的查询条件。 </div></div>
+<div class="ttc" id="group___core_base_struct_html_gad190942b4a711766f423b9ca601d8a48"><div class="ttname"><a href="group___core_base_struct.html#gad190942b4a711766f423b9ca601d8a48">DDS_SampleStateMask</a></div><div class="ttdeci">DDS_ULong DDS_SampleStateMask</div><div class="ttdoc">DDS_SampleStateKind 的掩码表示多个 DDS_SampleStateKind 的状态。 </div><div class="ttdef"><b>Definition:</b> SampleStateMask.h:20</div></div>
+<div class="ttc" id="struct_d_d_s___duration__t_html"><div class="ttname"><a href="struct_d_d_s___duration__t.html">DDS_Duration_t</a></div><div class="ttdoc">用来表明一段时间段，协议规定至少有毫微秒的分辨率。 </div><div class="ttdef"><b>Definition:</b> Duration_t.h:40</div></div>
+<div class="ttc" id="group___c_subscription_html_gaceb69599f813800f477a76de3aee66b5"><div class="ttname"><a href="group___c_subscription.html#gaceb69599f813800f477a76de3aee66b5">FooDataReader_as_entity</a></div><div class="ttdeci">DDS_Entity * FooDataReader_as_entity(FooDataReader *self)</div><div class="ttdoc">将数据读者转化为“父类”实体对象。 </div></div>
+<div class="ttc" id="struct_d_d_s___data_writer_html"><div class="ttname"><a href="struct_d_d_s___data_writer.html">DDS_DataWriter</a></div><div class="ttdoc">表示ZRDDS中的数据写者。 </div></div>
+<div class="ttc" id="struct_d_d_s___subscription_matched_status_html"><div class="ttname"><a href="struct_d_d_s___subscription_matched_status.html">DDS_SubscriptionMatchedStatus</a></div><div class="ttdoc">数据读者端与数据写者的匹配状态。 </div><div class="ttdef"><b>Definition:</b> SubscriptionMatchedStatus.h:23</div></div>
+<div class="ttc" id="struct_d_d_s___read_condition_html"><div class="ttname"><a href="struct_d_d_s___read_condition.html">DDS_ReadCondition</a></div><div class="ttdoc">该类型用于表示ZRDDS中的读取条件条件-等待 。 </div></div>
+<div class="ttc" id="group___c_subscription_html_gaa1510beeb7e12f63df4cb05d8d0d4707"><div class="ttname"><a href="group___c_subscription.html#gaa1510beeb7e12f63df4cb05d8d0d4707">FooDataReader_take_next_instance</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_take_next_instance(FooDataReader *self, FooSeq *dataValues, DDS_SampleInfoSeq *sampleInfos, DDS_Long maxSamples, const DDS_InstanceHandle_t *previousHandle, DDS_SampleStateMask sampleMask, DDS_ViewStateMask viewMask, DDS_InstanceStateMask instanceMask)</div><div class="ttdoc">取出指定数据实例后面（不一定为紧邻的数据实例）数据实例中满足条件的数据样本集合。 </div></div>
+<div class="ttc" id="group___c_subscription_html_ga0cf40cb3ead6b75afbe9c1abe65c422f"><div class="ttname"><a href="group___c_subscription.html#ga0cf40cb3ead6b75afbe9c1abe65c422f">FooDataReader_take_instance</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_take_instance(FooDataReader *self, FooSeq *dataValues, DDS_SampleInfoSeq *sampleInfos, DDS_Long maxSamples, const DDS_InstanceHandle_t *handle, DDS_SampleStateMask sampleMask, DDS_ViewStateMask viewMask, DDS_InstanceStateMask instanceMask)</div><div class="ttdoc">取出指定数据实例中满足条件的数据样本集合。 </div></div>
+<div class="ttc" id="struct_d_d_s___requested_incompatible_qos_status_html"><div class="ttname"><a href="struct_d_d_s___requested_incompatible_qos_status.html">DDS_RequestedIncompatibleQosStatus</a></div><div class="ttdoc">数据读者端QoS不匹配状态。 </div><div class="ttdef"><b>Definition:</b> RequestedIncompatibleQosStatus.h:25</div></div>
+<div class="ttc" id="struct_d_d_s___requested_deadline_missed_status_html"><div class="ttname"><a href="struct_d_d_s___requested_deadline_missed_status.html">DDS_RequestedDeadlineMissedStatus</a></div><div class="ttdoc">数据读者端截止时间未满足状态。 </div><div class="ttdef"><b>Definition:</b> RequestedDeadlineMissedStatus.h:24</div></div>
+<div class="ttc" id="struct_d_d_s___publication_builtin_topic_data_html"><div class="ttname"><a href="struct_d_d_s___publication_builtin_topic_data.html">DDS_PublicationBuiltinTopicData</a></div><div class="ttdoc">该结构体用于存储远程数据写者的信息。 </div><div class="ttdef"><b>Definition:</b> PublicationBuiltinTopicData.h:47</div></div>
+<div class="ttc" id="group___c_subscription_html_gaab645e83864360c050ccbca43e88e9b6"><div class="ttname"><a href="group___c_subscription.html#gaab645e83864360c050ccbca43e88e9b6">FooDataReader_take_w_condition</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_take_w_condition(FooDataReader *self, FooSeq *dataValues, DDS_SampleInfoSeq *sampleInfos, DDS_Long maxSamples, DDS_ReadCondition *condition)</div><div class="ttdoc">该接口从数据读者底层取出用户样本数据。 </div></div>
+<div class="ttc" id="group___c_subscription_html_ga282306545be7ab6ed7710b8934a6db33"><div class="ttname"><a href="group___c_subscription.html#ga282306545be7ab6ed7710b8934a6db33">FooDataReader_read_next_sample</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_read_next_sample(FooDataReader *self, Foo *dataValue, DDS_SampleInfo *sampleInfo)</div><div class="ttdoc">该方法用于从通信中间件依次读取未读取过的样本。 </div></div>
+<div class="ttc" id="group___c_subscription_html_ga4995789bc66b25f95d537e54bfceae0c"><div class="ttname"><a href="group___c_subscription.html#ga4995789bc66b25f95d537e54bfceae0c">FooDataReader_get_subscriber</a></div><div class="ttdeci">DDS_Subscriber * FooDataReader_get_subscriber(FooDataReader *self)</div><div class="ttdoc">获取该数据读者所属的订阅者对象。 </div></div>
+<div class="ttc" id="group___c_subscription_html_gaae3a189f102ea7c113b35ed5ec97873c"><div class="ttname"><a href="group___c_subscription.html#gaae3a189f102ea7c113b35ed5ec97873c">FooDataReader_get_matched_publication_data</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_get_matched_publication_data(FooDataReader *self, DDS_PublicationBuiltinTopicData *publicationData, const DDS_InstanceHandle_t *publicationHandle)</div><div class="ttdoc">该方法查询指定标识的数据写者的内置数据。 </div></div>
+<div class="ttc" id="struct_d_d_s___query_condition_html"><div class="ttname"><a href="struct_d_d_s___query_condition.html">DDS_QueryCondition</a></div><div class="ttdoc">查询条件。 </div></div>
+<div class="ttc" id="struct_d_d_s___sample_info_seq_html"><div class="ttname"><a href="struct_d_d_s___sample_info_seq.html">DDS_SampleInfoSeq</a></div><div class="ttdoc">声明 DDS_SampleInfoSeq 的序列类型，参见 DDS_USER_SEQUENCE_CPP 。 </div></div>
+<div class="ttc" id="struct_d_d_s___sample_info_html"><div class="ttname"><a href="struct_d_d_s___sample_info.html">DDS_SampleInfo</a></div><div class="ttdoc">数据读者为每一个接收到的数据维护的样本信息。 </div><div class="ttdef"><b>Definition:</b> SampleInfo.h:33</div></div>
+<div class="ttc" id="group___c_subscription_html_gac7e0af3fabae0a4e65a31cf33ec2423f"><div class="ttname"><a href="group___c_subscription.html#gac7e0af3fabae0a4e65a31cf33ec2423f">FooDataReader_read_w_condition</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_read_w_condition(FooDataReader *self, FooSeq *dataValues, DDS_SampleInfoSeq *sampleInfos, DDS_Long maxSamples, DDS_ReadCondition *condition)</div><div class="ttdoc">该接口从数据读者底层获取用户样本数据。 </div></div>
+<div class="ttc" id="struct_foo_seq_html"><div class="ttname"><a href="struct_foo_seq.html">FooSeq</a></div><div class="ttdoc">使用 DDS_USER_SEQUENCE_C 以及 DDS_USER_SEQUENCE_CPP 定义类型序列的等效代码的结构体部分。 ...</div><div class="ttdef"><b>Definition:</b> FooSeq.h:15</div></div>
+<div class="ttc" id="struct_d_d_s___instance_handle__t_html"><div class="ttname"><a href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a></div><div class="ttdoc">用来表示一个实体或者一个数据实例。 </div><div class="ttdef"><b>Definition:</b> InstanceHandle_t.h:24</div></div>
+<div class="ttc" id="group___c_subscription_html_ga32f060d38abd412a8d8b6e2cdd4770c2"><div class="ttname"><a href="group___c_subscription.html#ga32f060d38abd412a8d8b6e2cdd4770c2">FooDataReader_get_listener</a></div><div class="ttdeci">DDS_DataReaderListener * FooDataReader_get_listener(FooDataReader *self)</div><div class="ttdoc">该方法获取通过 FooDataReader_set_listener 方法或者创建时为数据读者设置的监听器对象。 ...</div></div>
+<div class="ttc" id="struct_d_d_s___instance_handle_seq_html"><div class="ttname"><a href="struct_d_d_s___instance_handle_seq.html">DDS_InstanceHandleSeq</a></div><div class="ttdoc">声明 DDS_InstanceHandle_t 的序列类型，参见 DDS_USER_SEQUENCE_CPP 。 </div></div>
+<div class="ttc" id="group___c_subscription_html_ga973188a9ddfc1e95c89abb9e369504d7"><div class="ttname"><a href="group___c_subscription.html#ga973188a9ddfc1e95c89abb9e369504d7">FooDataReader_create_readcondition</a></div><div class="ttdeci">DDS_ReadCondition * FooDataReader_create_readcondition(FooDataReader *self, DDS_SampleStateMask sampleMask, DDS_ViewStateMask viewMask, DDS_InstanceStateMask instanceMask)</div><div class="ttdoc">创建一个与该数据读者绑定的读取条件。 </div></div>
+<div class="ttc" id="group___core_base_struct_html_ga21c130ceeaa8189638bb46c494b59574"><div class="ttname"><a href="group___core_base_struct.html#ga21c130ceeaa8189638bb46c494b59574">DDS_InstanceStateMask</a></div><div class="ttdeci">DDS_ULong DDS_InstanceStateMask</div><div class="ttdoc">DDS_InstanceStateKind 的掩码表示多个 DDS_InstanceStateKind 的状态。 </div><div class="ttdef"><b>Definition:</b> InstanceStateMask.h:19</div></div>
+<div class="ttc" id="group___c_subscription_html_ga240a2cef757528a62330324da47f8ff6"><div class="ttname"><a href="group___c_subscription.html#ga240a2cef757528a62330324da47f8ff6">FooDataReader_get_sample_lost_status</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_get_sample_lost_status(FooDataReader *self, DDS_SampleLostStatus *status)</div><div class="ttdoc">获取该数据读者关联的 DDS_SAMPLE_LOST_STATUS 状态。 </div></div>
+<div class="ttc" id="group___c_subscription_html_gac7d331bfbe20138cdae5b6cbf88b2f81"><div class="ttname"><a href="group___c_subscription.html#gac7d331bfbe20138cdae5b6cbf88b2f81">FooDataReader_lookup_instance</a></div><div class="ttdeci">DDS_InstanceHandle_t FooDataReader_lookup_instance(FooDataReader *self, const Foo *instance)</div><div class="ttdoc">通过数据实例键值查找相应的标识。 </div></div>
+<div class="ttc" id="group___c_subscription_html_ga536b048b868a3558ee72a9c9cfbbabd0"><div class="ttname"><a href="group___c_subscription.html#ga536b048b868a3558ee72a9c9cfbbabd0">FooDataReader_get_key_value</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_get_key_value(FooDataReader *self, Foo *keyHolder, const DDS_InstanceHandle_t *handle)</div><div class="ttdoc">通过数据实例的唯一标识获取数据实例的键值。 </div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga07e4e24db44e921d6b33e916c4442dab"><div class="ttname"><a href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a></div><div class="ttdeci">char DDS_Char</div><div class="ttdoc">ZRDDS内置的1字节整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:218</div></div>
+<div class="ttc" id="struct_d_d_s___liveliness_changed_status_html"><div class="ttname"><a href="struct_d_d_s___liveliness_changed_status.html">DDS_LivelinessChangedStatus</a></div><div class="ttdoc">数据写者存活性变化状态。 </div><div class="ttdef"><b>Definition:</b> LivelinessChangedStatus.h:33</div></div>
+<div class="ttc" id="group___c_subscription_html_gad13a139f6781abdf7a9e5c61df465d29"><div class="ttname"><a href="group___c_subscription.html#gad13a139f6781abdf7a9e5c61df465d29">FooDataReader_get_sample_rejected_status</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_get_sample_rejected_status(FooDataReader *self, DDS_SampleRejectedStatus *status)</div><div class="ttdoc">获取该数据读者关联的 DDS_SAMPLE_REJECTED_STATUS 状态。 </div></div>
+<div class="ttc" id="group___c_subscription_html_gafd56a3179a2ee35d5e7778c4794bc038"><div class="ttname"><a href="group___c_subscription.html#gafd56a3179a2ee35d5e7778c4794bc038">FooDataReader_wait_for_historical_data</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_wait_for_historical_data(FooDataReader *self, const DDS_Duration_t *maxWait)</div><div class="ttdoc">等待历史数据。 </div></div>
+<div class="ttc" id="group___c_subscription_html_gac4a6b9d16cba9cf41eeea971083e74b4"><div class="ttname"><a href="group___c_subscription.html#gac4a6b9d16cba9cf41eeea971083e74b4">FooDataReader_get_requested_deadline_missed_status</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_get_requested_deadline_missed_status(FooDataReader *self, DDS_RequestedDeadlineMissedStatus *status)</div><div class="ttdoc">获取该数据读者关联的 DDS_REQUESTED_DEADLINE_MISSED_STATUS 状态。 </div></div>
+<div class="ttc" id="group___c_subscription_html_ga62ccbffff271f2d1b5b43a2a70c64c4e"><div class="ttname"><a href="group___c_subscription.html#ga62ccbffff271f2d1b5b43a2a70c64c4e">FooDataReader_get_requested_incompatible_qos_status</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_get_requested_incompatible_qos_status(FooDataReader *self, DDS_RequestedIncompatibleQosStatus *status)</div><div class="ttdoc">获取该数据读者关联的 DDS_REQUESTED_INCOMPATIBLE_QOS_STATUS 状态。 </div></div>
+<div class="ttc" id="struct_d_d_s___topic_description_html"><div class="ttname"><a href="struct_d_d_s___topic_description.html">DDS_TopicDescription</a></div><div class="ttdoc">抽象主题的基本属性信息。 </div></div>
+<div class="ttc" id="struct_d_d_s___sample_rejected_status_html"><div class="ttname"><a href="struct_d_d_s___sample_rejected_status.html">DDS_SampleRejectedStatus</a></div><div class="ttdoc">数据样本被拒绝状态。 </div><div class="ttdef"><b>Definition:</b> SampleRejectedStatus.h:27</div></div>
+<div class="ttc" id="group___c_subscription_html_ga190b6d2964f029887535565f458afe94"><div class="ttname"><a href="group___c_subscription.html#ga190b6d2964f029887535565f458afe94">FooDataReader_delete_readcondition</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_delete_readcondition(FooDataReader *self, DDS_ReadCondition *condition)</div><div class="ttdoc">删除指定的读取条件。 </div></div>
+<div class="ttc" id="struct_d_d_s___data_reader_listener_html"><div class="ttname"><a href="struct_d_d_s___data_reader_listener.html">DDS_DataReaderListener</a></div><div class="ttdoc">数据读者监听器类型。 </div><div class="ttdef"><b>Definition:</b> DataReaderListener.h:145</div></div>
+<div class="ttc" id="group___core_base_struct_html_ga73f148aaf96b5f6f9fc630b7cfeb0c91"><div class="ttname"><a href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a></div><div class="ttdeci">DDS_ReturnCode_t</div><div class="ttdoc">ZRDDS接口的返回值类型。 </div><div class="ttdef"><b>Definition:</b> ReturnCode_t.h:18</div></div>
+<div class="ttc" id="group___core_base_struct_html_gacc550da50917f3aa72ed5229fed9bb41"><div class="ttname"><a href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a></div><div class="ttdeci">char ZR_INT8</div><div class="ttdoc">为屏蔽平台差异，定义在接口中使用的1个字节整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:51</div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga7ebc41ac14e48dd9ee0b7b83acec714c"><div class="ttname"><a href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a></div><div class="ttdeci">ZR_INT32 DDS_Long</div><div class="ttdoc">ZRDDS内置的4字节整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:248</div></div>
+<div class="ttc" id="group___c_subscription_html_ga93620ee58c1633e33d32e373aa42912f"><div class="ttname"><a href="group___c_subscription.html#ga93620ee58c1633e33d32e373aa42912f">FooDataReader_get_subscription_matched_status</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_get_subscription_matched_status(FooDataReader *self, DDS_SubscriptionMatchedStatus *status)</div><div class="ttdoc">获取该数据读者关联的 DDS_SUBSCRIPTION_MATCHED_STATUS 状态。 </div></div>
+<div class="ttc" id="group___c_subscription_html_ga7c89b65e393853999b14b11451be6581"><div class="ttname"><a href="group___c_subscription.html#ga7c89b65e393853999b14b11451be6581">FooDataReader_get_qos</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_get_qos(FooDataReader *self, DDS_DataReaderQos *qoslist)</div><div class="ttdoc">获取该数据读者的QoS配置。 </div></div>
+<div class="ttc" id="group___c_subscription_html_gad4d7d7bf2d5796c296d717da73409a69"><div class="ttname"><a href="group___c_subscription.html#gad4d7d7bf2d5796c296d717da73409a69">FooDataReader_get_liveliness_changed_status</a></div><div class="ttdeci">DDS_ReturnCode_t FooDataReader_get_liveliness_changed_status(FooDataReader *self, DDS_LivelinessChangedStatus *status)</div><div class="ttdoc">获取该数据读者关联的 DDS_LIVELINESS_CHANGED_STATUS 状态。 </div></div>
+<div class="ttc" id="struct_d_d_s___subscriber_html"><div class="ttname"><a href="struct_d_d_s___subscriber.html">DDS_Subscriber</a></div><div class="ttdoc">ZRDDS提供的订阅者接口，应用创建订阅者表示自身想从指定的域内获取数据； </div></div>
+</div><!-- fragment --></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="dir_0fc3f8f3ef96ce2d45d66d6e29832317.html">resources</a></li><li class="navelem"><a class="el" href="dir_8d0508a2668a1a7de6381bce3cc50b39.html">docs</a></li><li class="navelem"><a class="el" href="dir_b319e0f10c5e47b3004d5b6bbb105086.html">online</a></li><li class="navelem"><a class="el" href="dir_361c5bbb3fe1d27261e679da43494cc1.html">c</a></li><li class="navelem"><a class="el" href="dir_2d563cc801af5e93779d4064581db264.html">extra</a></li><li class="navelem"><b>FooDataReader.h</b></li>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

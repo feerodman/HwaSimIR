@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dds>
+    <domain_access_rules>
+        <domain_rule>
+        	<domains>
+        		<id>150</id>
+        	</domains>
+            <allow_unauthenticated_participants>FALSE</allow_unauthenticated_participants>
+            <enable_join_access_control>FALSE</enable_join_access_control>
+            <discovery_protection_kind>NONE</discovery_protection_kind>
+            <liveliness_protection_kind>NONE</liveliness_protection_kind>
+            <rtps_protection_kind>NONE</rtps_protection_kind>
+            <topic_access_rules>
+                <topic_rule>
+                    <topic_expression>encry_example_1</topic_expression>
+                    <enable_discovery_protection>FALSE</enable_discovery_protection>
+                    <enable_read_access_control>FALSE</enable_read_access_control>
+                    <enable_write_access_control>FALSE</enable_write_access_control>
+                    <metadata_protection_kind>NONE</metadata_protection_kind>
+                    <!-- 设置encry_example_1主题需要主题数据加密传输 -->
+                    <data_protection_kind>ENCRYPT</data_protection_kind>
+                </topic_rule>
+                <topic_rule>
+                    <topic_expression>encry_example_2</topic_expression>
+                    <enable_discovery_protection>FALSE</enable_discovery_protection>
+                    <enable_read_access_control>FALSE</enable_read_access_control>
+                    <enable_write_access_control>FALSE</enable_write_access_control>
+                    <metadata_protection_kind>NONE</metadata_protection_kind>
+                    <data_protection_kind>NONE</data_protection_kind>
+                </topic_rule>
+            </topic_access_rules>
+        </domain_rule>
+    </domain_access_rules>
+</dds>

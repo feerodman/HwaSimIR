@@ -24,6 +24,8 @@ struct IRStage7WeatherProfile
 	double cloudOpacity = 0.0;
 	double cloudTemperatureK = 255.0;
 	double cloudOpticalDepth = 1.0;
+	double volumeCloudProbability = 0.0;
+	double volumeCloudDensityScale = 1.0;
 	std::string cloudTexture = "cloud_few";
 	std::string cloudMaskChannel = "alpha";
 	bool fogEnable = false;
@@ -75,6 +77,8 @@ struct IRStage7WeatherState
 	double cloudGray = 0.5;
 	double cloudBackgroundGray = 0.5;
 	double cloudOpticalDepth = 0.0;
+	double volumeCloudProbability = 0.0;
+	double volumeCloudDensityScale = 1.0;
 	std::string cloudTextureKey = "cloud_few";
 	std::string cloudTexturePath;
 	std::string cloudMaskChannel = "alpha";

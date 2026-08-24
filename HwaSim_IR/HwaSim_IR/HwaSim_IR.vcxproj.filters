@@ -102,6 +102,9 @@
     <ClInclude Include="IR\IRWeatherEffects.h">
       <Filter>头文件\IR</Filter>
     </ClInclude>
+    <ClInclude Include="IR\IRWorldCloudStreaming.h">
+      <Filter>头文件\IR</Filter>
+    </ClInclude>
     <ClInclude Include="TcpCommThread.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -186,6 +189,9 @@
       <Filter>源文件\IR</Filter>
     </ClCompile>
     <ClCompile Include="IR\IRWeatherEffects.cpp">
+      <Filter>源文件\IR</Filter>
+    </ClCompile>
+    <ClCompile Include="IR\IRWorldCloudStreaming.cpp">
       <Filter>源文件\IR</Filter>
     </ClCompile>
     <ClCompile Include="UdpCommThread.cpp">

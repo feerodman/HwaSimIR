@@ -1,0 +1,1163 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: DDS::ZRDDSDataReader&lt; T, TSeq &gt; 模板类 参考</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li class="current"><a href="annotated.html"><span>类</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+  <div id="navrow2" class="tabs2">
+    <ul class="tablist">
+      <li><a href="annotated.html"><span>类列表</span></a></li>
+      <li><a href="classes.html"><span>类索引</span></a></li>
+      <li><a href="hierarchy.html"><span>类继承关系</span></a></li>
+      <li><a href="functions.html"><span>类成员</span></a></li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('class_d_d_s_1_1_z_r_d_d_s_data_reader.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public 成员函数</a> &#124;
+<a href="class_d_d_s_1_1_z_r_d_d_s_data_reader-members.html">所有成员列表</a>  </div>
+  <div class="headertitle">
+<div class="title">DDS::ZRDDSDataReader&lt; T, TSeq &gt; 模板类 参考<div class="ingroups"><a class="el" href="group___cpp_interface.html">C++用户接口</a> &raquo; <a class="el" href="group___cpp_subscription.html">订阅模块</a></div></div>  </div>
+</div><!--header-->
+<div class="contents">
+
+<p>ZRDDS提供的订阅者模板类，用于提供强类型安全接口的数据读者接口。  
+ <a href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#details">更多...</a></p>
+
+<p><code>#include &lt;<a class="el" href="_z_r_d_d_s_data_reader_8h_source.html">ZRDDSDataReader.h</a>&gt;</code></p>
+<div class="dynheader">
+类 DDS::ZRDDSDataReader&lt; T, TSeq &gt; 继承关系图:</div>
+<div class="dyncontent">
+ <div class="center">
+  <img src="class_d_d_s_1_1_z_r_d_d_s_data_reader.png" usemap="#DDS::ZRDDSDataReader&lt; T, TSeq &gt;_map" alt=""/>
+  <map id="DDS::ZRDDSDataReader&lt; T, TSeq &gt;_map" name="DDS::ZRDDSDataReader&lt; T, TSeq &gt;_map">
+<area href="class_d_d_s_1_1_data_reader.html" title="DDS标准中的数据读者接口。 " alt="DDS::DataReader" shape="rect" coords="0,112,222,136"/>
+<area href="class_d_d_s_1_1_domain_entity.html" title="该类是所有域参与者子实体的父类，没有实际意义，仅仅根据协议定义。 " alt="DDS::DomainEntity" shape="rect" coords="0,56,222,80"/>
+<area href="class_d_d_s_1_1_entity.html" title="实体（实体) 作为所有实体（包括域参与者、主题、发布者、订阅者、数据读者、数据写者）的基类，抽象实体的�..." alt="DDS::Entity" shape="rect" coords="0,0,222,24"/>
+</map>
+ </div></div>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
+Public 成员函数</h2></td></tr>
+<tr class="memitem:a1bd13e9b34f1db91ed8e9a3e98723807"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a1bd13e9b34f1db91ed8e9a3e98723807">read</a> (TSeq &amp;data_values, <a class="el" href="group___cpp_core_struct.html#gaae5f5bf83566034a5602b3e10bb5f778">SampleInfoSeq</a> &amp;sample_infos, <a class="el" href="group___cpp_core_struct.html#gaa15fb6e6dd1b21c7dee0c9ccf4fc3bbc">Long</a> max_samples, <a class="el" href="group___cpp_core_struct.html#ga617cca5c6231edc3a37b955a4aadfedc">SampleStateMask</a> sample_mask, <a class="el" href="group___cpp_core_struct.html#gaa308de003431a735f20d958a3adcda5b">ViewStateMask</a> view_mask, <a class="el" href="group___cpp_core_struct.html#ga542b4e45fcaacea98c14561dc3db0dab">InstanceStateMask</a> instance_mask)</td></tr>
+<tr class="memdesc:a1bd13e9b34f1db91ed8e9a3e98723807"><td class="mdescLeft">&#160;</td><td class="mdescRight">该接口从数据读者底层获取用户样本数据。  <a href="#a1bd13e9b34f1db91ed8e9a3e98723807">更多...</a><br /></td></tr>
+<tr class="separator:a1bd13e9b34f1db91ed8e9a3e98723807"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aba5ad7bdc154e9afa6ff301805a19ee9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#aba5ad7bdc154e9afa6ff301805a19ee9">take</a> (TSeq &amp;data_values, <a class="el" href="group___cpp_core_struct.html#gaae5f5bf83566034a5602b3e10bb5f778">SampleInfoSeq</a> &amp;sample_infos, <a class="el" href="group___cpp_core_struct.html#gaa15fb6e6dd1b21c7dee0c9ccf4fc3bbc">Long</a> max_samples, <a class="el" href="group___cpp_core_struct.html#ga617cca5c6231edc3a37b955a4aadfedc">SampleStateMask</a> sample_mask, <a class="el" href="group___cpp_core_struct.html#gaa308de003431a735f20d958a3adcda5b">ViewStateMask</a> view_mask, <a class="el" href="group___cpp_core_struct.html#ga542b4e45fcaacea98c14561dc3db0dab">InstanceStateMask</a> instance_mask)</td></tr>
+<tr class="memdesc:aba5ad7bdc154e9afa6ff301805a19ee9"><td class="mdescLeft">&#160;</td><td class="mdescRight">该接口从数据读者底层取出用户样本数据。  <a href="#aba5ad7bdc154e9afa6ff301805a19ee9">更多...</a><br /></td></tr>
+<tr class="separator:aba5ad7bdc154e9afa6ff301805a19ee9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae2e58b740ea89088965a12b991e905aa"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#ae2e58b740ea89088965a12b991e905aa">read_next_sample</a> (T &amp;data_value, <a class="el" href="group___cpp_core_struct.html#ga7836a2fa552fc2e4dc177df88a910eb6">SampleInfo</a> &amp;sample_info)</td></tr>
+<tr class="memdesc:ae2e58b740ea89088965a12b991e905aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法用于从通信中间件依次读取未读取过的样本。  <a href="#ae2e58b740ea89088965a12b991e905aa">更多...</a><br /></td></tr>
+<tr class="separator:ae2e58b740ea89088965a12b991e905aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af5700e1ee0f812abc0dbcda9c2ad2fe3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#af5700e1ee0f812abc0dbcda9c2ad2fe3">take_next_sample</a> (T &amp;data_value, <a class="el" href="group___cpp_core_struct.html#ga7836a2fa552fc2e4dc177df88a910eb6">SampleInfo</a> &amp;sample_info)</td></tr>
+<tr class="memdesc:af5700e1ee0f812abc0dbcda9c2ad2fe3"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法用于从通信中间件依次取出未读取过的样本。  <a href="#af5700e1ee0f812abc0dbcda9c2ad2fe3">更多...</a><br /></td></tr>
+<tr class="separator:af5700e1ee0f812abc0dbcda9c2ad2fe3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa1f61c1f63e4ddcc21334484d16322db"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#aa1f61c1f63e4ddcc21334484d16322db">read_instance</a> (TSeq &amp;data_values, <a class="el" href="group___cpp_core_struct.html#gaae5f5bf83566034a5602b3e10bb5f778">SampleInfoSeq</a> &amp;sample_infos, <a class="el" href="group___cpp_core_struct.html#gaa15fb6e6dd1b21c7dee0c9ccf4fc3bbc">Long</a> max_samples, const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;handle, <a class="el" href="group___cpp_core_struct.html#ga617cca5c6231edc3a37b955a4aadfedc">SampleStateMask</a> sample_mask, <a class="el" href="group___cpp_core_struct.html#gaa308de003431a735f20d958a3adcda5b">ViewStateMask</a> view_mask, <a class="el" href="group___cpp_core_struct.html#ga542b4e45fcaacea98c14561dc3db0dab">InstanceStateMask</a> instance_mask)</td></tr>
+<tr class="memdesc:aa1f61c1f63e4ddcc21334484d16322db"><td class="mdescLeft">&#160;</td><td class="mdescRight">读取指定数据实例中满足条件的数据样本集合。  <a href="#aa1f61c1f63e4ddcc21334484d16322db">更多...</a><br /></td></tr>
+<tr class="separator:aa1f61c1f63e4ddcc21334484d16322db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa1b8c7516f7060fd96e32d3744c77af8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#aa1b8c7516f7060fd96e32d3744c77af8">take_instance</a> (TSeq &amp;data_values, <a class="el" href="group___cpp_core_struct.html#gaae5f5bf83566034a5602b3e10bb5f778">SampleInfoSeq</a> &amp;sample_infos, <a class="el" href="group___cpp_core_struct.html#gaa15fb6e6dd1b21c7dee0c9ccf4fc3bbc">Long</a> max_samples, const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;handle, <a class="el" href="group___cpp_core_struct.html#ga617cca5c6231edc3a37b955a4aadfedc">SampleStateMask</a> sample_mask, <a class="el" href="group___cpp_core_struct.html#gaa308de003431a735f20d958a3adcda5b">ViewStateMask</a> view_mask, <a class="el" href="group___cpp_core_struct.html#ga542b4e45fcaacea98c14561dc3db0dab">InstanceStateMask</a> instance_mask)</td></tr>
+<tr class="memdesc:aa1b8c7516f7060fd96e32d3744c77af8"><td class="mdescLeft">&#160;</td><td class="mdescRight">取出指定数据实例中满足条件的数据样本集合。  <a href="#aa1b8c7516f7060fd96e32d3744c77af8">更多...</a><br /></td></tr>
+<tr class="separator:aa1b8c7516f7060fd96e32d3744c77af8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aecc96ff523a0b99b79a78571a89a04d6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#aecc96ff523a0b99b79a78571a89a04d6">read_next_instance</a> (TSeq &amp;data_values, <a class="el" href="group___cpp_core_struct.html#gaae5f5bf83566034a5602b3e10bb5f778">SampleInfoSeq</a> &amp;sample_infos, <a class="el" href="group___cpp_core_struct.html#gaa15fb6e6dd1b21c7dee0c9ccf4fc3bbc">Long</a> max_samples, const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;previous_handle, <a class="el" href="group___cpp_core_struct.html#ga617cca5c6231edc3a37b955a4aadfedc">SampleStateMask</a> sample_mask, <a class="el" href="group___cpp_core_struct.html#gaa308de003431a735f20d958a3adcda5b">ViewStateMask</a> view_mask, <a class="el" href="group___cpp_core_struct.html#ga542b4e45fcaacea98c14561dc3db0dab">InstanceStateMask</a> instance_mask)</td></tr>
+<tr class="memdesc:aecc96ff523a0b99b79a78571a89a04d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">读取指定数据实例后面（不一定为紧邻的数据实例）数据实例中满足条件的数据样本集合。  <a href="#aecc96ff523a0b99b79a78571a89a04d6">更多...</a><br /></td></tr>
+<tr class="separator:aecc96ff523a0b99b79a78571a89a04d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9d192f45f6e9582faed2ac667cbcd2fa"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a9d192f45f6e9582faed2ac667cbcd2fa">take_next_instance</a> (TSeq &amp;data_values, <a class="el" href="group___cpp_core_struct.html#gaae5f5bf83566034a5602b3e10bb5f778">SampleInfoSeq</a> &amp;sample_infos, <a class="el" href="group___cpp_core_struct.html#gaa15fb6e6dd1b21c7dee0c9ccf4fc3bbc">Long</a> max_samples, const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;previous_handle, <a class="el" href="group___cpp_core_struct.html#ga617cca5c6231edc3a37b955a4aadfedc">SampleStateMask</a> sample_mask, <a class="el" href="group___cpp_core_struct.html#gaa308de003431a735f20d958a3adcda5b">ViewStateMask</a> view_mask, <a class="el" href="group___cpp_core_struct.html#ga542b4e45fcaacea98c14561dc3db0dab">InstanceStateMask</a> instance_mask)</td></tr>
+<tr class="memdesc:a9d192f45f6e9582faed2ac667cbcd2fa"><td class="mdescLeft">&#160;</td><td class="mdescRight">取出指定数据实例后面（不一定为紧邻的数据实例）数据实例中满足条件的数据样本集合。  <a href="#a9d192f45f6e9582faed2ac667cbcd2fa">更多...</a><br /></td></tr>
+<tr class="separator:a9d192f45f6e9582faed2ac667cbcd2fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a958fa1bdfedc36ce39650c530c53597d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a958fa1bdfedc36ce39650c530c53597d">read_next_instance_w_condition</a> (TSeq &amp;data_values, <a class="el" href="group___cpp_core_struct.html#gaae5f5bf83566034a5602b3e10bb5f778">SampleInfoSeq</a> &amp;sample_infos, <a class="el" href="group___cpp_core_struct.html#gaa15fb6e6dd1b21c7dee0c9ccf4fc3bbc">Long</a> max_samples, const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;previous_handle, <a class="el" href="class_d_d_s_1_1_read_condition.html">ReadCondition</a> *condition)</td></tr>
+<tr class="memdesc:a958fa1bdfedc36ce39650c530c53597d"><td class="mdescLeft">&#160;</td><td class="mdescRight">读取指定数据实例后面（不一定为紧邻的数据实例）数据实例中满足条件的数据样本集合。  <a href="#a958fa1bdfedc36ce39650c530c53597d">更多...</a><br /></td></tr>
+<tr class="separator:a958fa1bdfedc36ce39650c530c53597d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a550bd2277018118772730f314b5292b8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a550bd2277018118772730f314b5292b8">take_next_instance_w_condition</a> (TSeq &amp;data_values, <a class="el" href="group___cpp_core_struct.html#gaae5f5bf83566034a5602b3e10bb5f778">SampleInfoSeq</a> &amp;sample_infos, <a class="el" href="group___cpp_core_struct.html#gaa15fb6e6dd1b21c7dee0c9ccf4fc3bbc">Long</a> max_samples, const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;previous_handle, <a class="el" href="class_d_d_s_1_1_read_condition.html">ReadCondition</a> *condition)</td></tr>
+<tr class="memdesc:a550bd2277018118772730f314b5292b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">取出指定数据实例后面（不一定为紧邻的数据实例）数据实例中满足条件的数据样本集合。  <a href="#a550bd2277018118772730f314b5292b8">更多...</a><br /></td></tr>
+<tr class="separator:a550bd2277018118772730f314b5292b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4dce67f92202ee067732ec4214edf8d7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a4dce67f92202ee067732ec4214edf8d7">read_w_condition</a> (TSeq &amp;data_values, <a class="el" href="group___cpp_core_struct.html#gaae5f5bf83566034a5602b3e10bb5f778">SampleInfoSeq</a> &amp;sample_infos, <a class="el" href="group___cpp_core_struct.html#gaa15fb6e6dd1b21c7dee0c9ccf4fc3bbc">Long</a> max_samples, <a class="el" href="class_d_d_s_1_1_read_condition.html">ReadCondition</a> *condition)</td></tr>
+<tr class="memdesc:a4dce67f92202ee067732ec4214edf8d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">该接口从数据读者底层获取用户样本数据。  <a href="#a4dce67f92202ee067732ec4214edf8d7">更多...</a><br /></td></tr>
+<tr class="separator:a4dce67f92202ee067732ec4214edf8d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6724c9784a29c0928adbae9b494a4e96"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a6724c9784a29c0928adbae9b494a4e96">take_w_condition</a> (TSeq &amp;data_values, <a class="el" href="group___cpp_core_struct.html#gaae5f5bf83566034a5602b3e10bb5f778">SampleInfoSeq</a> &amp;sample_infos, <a class="el" href="group___cpp_core_struct.html#gaa15fb6e6dd1b21c7dee0c9ccf4fc3bbc">Long</a> max_samples, <a class="el" href="class_d_d_s_1_1_read_condition.html">ReadCondition</a> *condition)</td></tr>
+<tr class="memdesc:a6724c9784a29c0928adbae9b494a4e96"><td class="mdescLeft">&#160;</td><td class="mdescRight">该接口从数据读者底层取出用户样本数据。  <a href="#a6724c9784a29c0928adbae9b494a4e96">更多...</a><br /></td></tr>
+<tr class="separator:a6724c9784a29c0928adbae9b494a4e96"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa4a382c7d5081b94e85af6a403ccb6ba"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#aa4a382c7d5081b94e85af6a403ccb6ba">return_loan</a> (TSeq &amp;data_values, <a class="el" href="group___cpp_core_struct.html#gaae5f5bf83566034a5602b3e10bb5f778">SampleInfoSeq</a> &amp;sample_infos)</td></tr>
+<tr class="memdesc:aa4a382c7d5081b94e85af6a403ccb6ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法用于应用归还从数据读者租借的空间。  <a href="#aa4a382c7d5081b94e85af6a403ccb6ba">更多...</a><br /></td></tr>
+<tr class="separator:aa4a382c7d5081b94e85af6a403ccb6ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a85e76ede5e7d20a24c6fb700c1c787c5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a85e76ede5e7d20a24c6fb700c1c787c5">get_key_value</a> (T &amp;key_holder, const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;handle)</td></tr>
+<tr class="memdesc:a85e76ede5e7d20a24c6fb700c1c787c5"><td class="mdescLeft">&#160;</td><td class="mdescRight">通过数据实例的唯一标识获取数据实例的键值。  <a href="#a85e76ede5e7d20a24c6fb700c1c787c5">更多...</a><br /></td></tr>
+<tr class="separator:a85e76ede5e7d20a24c6fb700c1c787c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a18ae6eb68ef44ac716e6ac2deca30f5a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a18ae6eb68ef44ac716e6ac2deca30f5a">lookup_instance</a> (T &amp;instance)</td></tr>
+<tr class="memdesc:a18ae6eb68ef44ac716e6ac2deca30f5a"><td class="mdescLeft">&#160;</td><td class="mdescRight">通过数据实例键值查找相应的标识。  <a href="#a18ae6eb68ef44ac716e6ac2deca30f5a">更多...</a><br /></td></tr>
+<tr class="separator:a18ae6eb68ef44ac716e6ac2deca30f5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_methods_class_d_d_s_1_1_data_reader"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_class_d_d_s_1_1_data_reader')"><img src="closed.png" alt="-"/>&#160;Public 成员函数 继承自 <a class="el" href="class_d_d_s_1_1_data_reader.html">DDS::DataReader</a></td></tr>
+<tr class="memitem:a832ffbf683f0b84cacc42c88ab2681b2 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_reader.html#a832ffbf683f0b84cacc42c88ab2681b2">set_qos_with_profile</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *profile_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_name)</td></tr>
+<tr class="memdesc:a832ffbf683f0b84cacc42c88ab2681b2 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="mdescLeft">&#160;</td><td class="mdescRight">从QoS仓库获取QoS配置并设置到数据读者  <a href="#a832ffbf683f0b84cacc42c88ab2681b2">更多...</a><br /></td></tr>
+<tr class="separator:a832ffbf683f0b84cacc42c88ab2681b2 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afcb26d7099cdd91487bebe7863e4ab11 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_read_condition.html">ReadCondition</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_reader.html#afcb26d7099cdd91487bebe7863e4ab11">create_readcondition</a> (const <a class="el" href="group___cpp_core_struct.html#ga617cca5c6231edc3a37b955a4aadfedc">SampleStateMask</a> &amp;sample_mask, const <a class="el" href="group___cpp_core_struct.html#gaa308de003431a735f20d958a3adcda5b">ViewStateMask</a> &amp;view_mask, const <a class="el" href="group___cpp_core_struct.html#ga542b4e45fcaacea98c14561dc3db0dab">InstanceStateMask</a> &amp;instance_mask)</td></tr>
+<tr class="memdesc:afcb26d7099cdd91487bebe7863e4ab11 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="mdescLeft">&#160;</td><td class="mdescRight">创建一个与该数据读者绑定的读取条件。  <a href="#afcb26d7099cdd91487bebe7863e4ab11">更多...</a><br /></td></tr>
+<tr class="separator:afcb26d7099cdd91487bebe7863e4ab11 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:addaecc54d66d8a08177f3c2b8e7eb40c inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_reader.html#addaecc54d66d8a08177f3c2b8e7eb40c">delete_readcondition</a> (<a class="el" href="class_d_d_s_1_1_read_condition.html">ReadCondition</a> *a_condition)</td></tr>
+<tr class="memdesc:addaecc54d66d8a08177f3c2b8e7eb40c inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="mdescLeft">&#160;</td><td class="mdescRight">删除指定的读取条件。  <a href="#addaecc54d66d8a08177f3c2b8e7eb40c">更多...</a><br /></td></tr>
+<tr class="separator:addaecc54d66d8a08177f3c2b8e7eb40c inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a188ca826baa6bd58bb146f728b635050 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_reader.html#a188ca826baa6bd58bb146f728b635050">delete_contained_entities</a> ()</td></tr>
+<tr class="memdesc:a188ca826baa6bd58bb146f728b635050 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="mdescLeft">&#160;</td><td class="mdescRight">删除该数据读者创建的所有读取条件(包括查询条件)，删除读取条件时，将自动从所有加入的等待集合中删除该条件。  <a href="#a188ca826baa6bd58bb146f728b635050">更多...</a><br /></td></tr>
+<tr class="separator:a188ca826baa6bd58bb146f728b635050 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a19a82b2b35c05374e5da17b957737eb8 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_reader.html#a19a82b2b35c05374e5da17b957737eb8">wait_for_historical_data</a> (const <a class="el" href="group___cpp_core_struct.html#gae56b310fa579905cdf4947b3455cbda3">Duration_t</a> &amp;max_wait)</td></tr>
+<tr class="memdesc:a19a82b2b35c05374e5da17b957737eb8 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="mdescLeft">&#160;</td><td class="mdescRight">等待历史数据。  <a href="#a19a82b2b35c05374e5da17b957737eb8">更多...</a><br /></td></tr>
+<tr class="separator:a19a82b2b35c05374e5da17b957737eb8 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acfcc4b8ab233a6bfb49192924da51b68 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_reader.html#acfcc4b8ab233a6bfb49192924da51b68">get_liveliness_changed_status</a> (<a class="el" href="group___cpp_core_struct.html#gae746e0a561b4147d2d1544a40a02e763">LivelinessChangedStatus</a> &amp;status)</td></tr>
+<tr class="memdesc:acfcc4b8ab233a6bfb49192924da51b68 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取该数据读者关联的 <a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fa267a5ad100a1e87c372752b6900a9965" title="数据写者存活性改变状态类型。 ">DDS_LIVELINESS_CHANGED_STATUS</a> 状态。  <a href="#acfcc4b8ab233a6bfb49192924da51b68">更多...</a><br /></td></tr>
+<tr class="separator:acfcc4b8ab233a6bfb49192924da51b68 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f892b590c1ddba4db7516da55487e7a inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_reader.html#a6f892b590c1ddba4db7516da55487e7a">get_requested_deadline_missed_status</a> (<a class="el" href="group___cpp_core_struct.html#ga40d9140fd29b941ff44f1103bdaded3e">RequestedDeadlineMissedStatus</a> &amp;status)</td></tr>
+<tr class="memdesc:a6f892b590c1ddba4db7516da55487e7a inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取该数据读者关联的 <a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fab4c627eaeae35f65790cc564208ca2e6" title="数据读者截止时间未满足状态类型。 ">DDS_REQUESTED_DEADLINE_MISSED_STATUS</a> 状态。  <a href="#a6f892b590c1ddba4db7516da55487e7a">更多...</a><br /></td></tr>
+<tr class="separator:a6f892b590c1ddba4db7516da55487e7a inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adede3c48f36e24a4a146628e6ff11836 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_reader.html#adede3c48f36e24a4a146628e6ff11836">get_requested_incompatible_qos_status</a> (<a class="el" href="group___cpp_core_struct.html#ga895cd48e560c115a6e43a1f66e4fa2d1">RequestedIncompatibleQosStatus</a> &amp;status)</td></tr>
+<tr class="memdesc:adede3c48f36e24a4a146628e6ff11836 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取该数据读者关联的 <a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fa126ff1b38cdfc905353cb2dac57b6796" title="数据读者端QoS不匹配状态类型。 ">DDS_REQUESTED_INCOMPATIBLE_QOS_STATUS</a> 状态。  <a href="#adede3c48f36e24a4a146628e6ff11836">更多...</a><br /></td></tr>
+<tr class="separator:adede3c48f36e24a4a146628e6ff11836 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a134d3412c04ff5514b86ab68261e287d inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_reader.html#a134d3412c04ff5514b86ab68261e287d">get_sample_lost_status</a> (<a class="el" href="group___cpp_core_struct.html#ga0b3937f95fdfa2195e7f8999e51be78f">SampleLostStatus</a> &amp;status)</td></tr>
+<tr class="memdesc:a134d3412c04ff5514b86ab68261e287d inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取该数据读者关联的 <a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fa0114c506e39a7fef5a42587556fc812f" title="数据样本丢失状态类型。 ">DDS_SAMPLE_LOST_STATUS</a> 状态。  <a href="#a134d3412c04ff5514b86ab68261e287d">更多...</a><br /></td></tr>
+<tr class="separator:a134d3412c04ff5514b86ab68261e287d inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab476309ca6c0c7d3618cf982acd95212 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_reader.html#ab476309ca6c0c7d3618cf982acd95212">get_sample_rejected_status</a> (<a class="el" href="group___cpp_core_struct.html#ga85571a700a8a1949d3f8b242ce1694b9">SampleRejectedStatus</a> &amp;status)</td></tr>
+<tr class="memdesc:ab476309ca6c0c7d3618cf982acd95212 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取该数据读者关联的 <a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fa9e9d4b8dec6fa48c37aa32aa51ad2dd0" title="数据样本拒绝状态类型。 ">DDS_SAMPLE_REJECTED_STATUS</a> 状态。  <a href="#ab476309ca6c0c7d3618cf982acd95212">更多...</a><br /></td></tr>
+<tr class="separator:ab476309ca6c0c7d3618cf982acd95212 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afc824330d6767ffcffcaf16fcd4cb2c2 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_reader.html#afc824330d6767ffcffcaf16fcd4cb2c2">get_subscription_matched_status</a> (<a class="el" href="group___cpp_core_struct.html#ga75b692c663c70dbdbc5c3f217333c987">SubscriptionMatchedStatus</a> &amp;status)</td></tr>
+<tr class="memdesc:afc824330d6767ffcffcaf16fcd4cb2c2 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取该数据读者关联的 <a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26faceedf0fda6d695b4fabd8ac0af807bb1" title="数据读者匹配状态类型。 ">DDS_SUBSCRIPTION_MATCHED_STATUS</a> 状态。  <a href="#afc824330d6767ffcffcaf16fcd4cb2c2">更多...</a><br /></td></tr>
+<tr class="separator:afc824330d6767ffcffcaf16fcd4cb2c2 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a177d95ad635e96548c30d804f00de1c1 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_topic_description.html">TopicDescription</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_reader.html#a177d95ad635e96548c30d804f00de1c1">get_topicdescription</a> ()</td></tr>
+<tr class="memdesc:a177d95ad635e96548c30d804f00de1c1 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取该数据读者所关联的主题。  <a href="#a177d95ad635e96548c30d804f00de1c1">更多...</a><br /></td></tr>
+<tr class="separator:a177d95ad635e96548c30d804f00de1c1 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af8d9cbefa0f43ce72ef7a690942ff0a2 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_subscriber.html">Subscriber</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_reader.html#af8d9cbefa0f43ce72ef7a690942ff0a2">get_subscriber</a> ()</td></tr>
+<tr class="memdesc:af8d9cbefa0f43ce72ef7a690942ff0a2 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取该数据读者所属的订阅者对象。  <a href="#af8d9cbefa0f43ce72ef7a690942ff0a2">更多...</a><br /></td></tr>
+<tr class="separator:af8d9cbefa0f43ce72ef7a690942ff0a2 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae4516646db083a5032c5536ece5b3184 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_reader.html#ae4516646db083a5032c5536ece5b3184">get_matched_publication_data</a> (<a class="el" href="group___cpp_core_struct.html#ga05510393483c1307a9da0263eb9f51a2">PublicationBuiltinTopicData</a> &amp;publication_data, const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;publication_handle)</td></tr>
+<tr class="memdesc:ae4516646db083a5032c5536ece5b3184 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法查询指定标识的数据写者的内置数据。  <a href="#ae4516646db083a5032c5536ece5b3184">更多...</a><br /></td></tr>
+<tr class="separator:ae4516646db083a5032c5536ece5b3184 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a121e61d8e854cc8cbc0f88acad0d5ff9 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_reader.html#a121e61d8e854cc8cbc0f88acad0d5ff9">get_matched_publications</a> (<a class="el" href="group___cpp_core_struct.html#ga38e54e14a30a16bf8dfb07668c3b3fae">InstanceHandleSeq</a> &amp;publication_handles)</td></tr>
+<tr class="memdesc:a121e61d8e854cc8cbc0f88acad0d5ff9 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="mdescLeft">&#160;</td><td class="mdescRight">查询已经匹配的远程数据写者的标识列表。  <a href="#a121e61d8e854cc8cbc0f88acad0d5ff9">更多...</a><br /></td></tr>
+<tr class="separator:a121e61d8e854cc8cbc0f88acad0d5ff9 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1e7b58abb261ffc3d93c6a3d4ae113f1 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_reader.html#a1e7b58abb261ffc3d93c6a3d4ae113f1">set_qos</a> (const <a class="el" href="group___cpp_core_struct.html#gad83aa7a026df24ee5f13b43a754fc972">DataReaderQos</a> &amp;qoslist)</td></tr>
+<tr class="memdesc:a1e7b58abb261ffc3d93c6a3d4ae113f1 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法设置为数据读者设置的QoS。  <a href="#a1e7b58abb261ffc3d93c6a3d4ae113f1">更多...</a><br /></td></tr>
+<tr class="separator:a1e7b58abb261ffc3d93c6a3d4ae113f1 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae0759980154cae286a18f6831443685f inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_reader.html#ae0759980154cae286a18f6831443685f">get_qos</a> (<a class="el" href="group___cpp_core_struct.html#gad83aa7a026df24ee5f13b43a754fc972">DataReaderQos</a> &amp;qoslist)</td></tr>
+<tr class="memdesc:ae0759980154cae286a18f6831443685f inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取该数据读者的QoS配置。  <a href="#ae0759980154cae286a18f6831443685f">更多...</a><br /></td></tr>
+<tr class="separator:ae0759980154cae286a18f6831443685f inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af9b94d768638ccc4474d2a9c1ea71dea inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_reader.html#af9b94d768638ccc4474d2a9c1ea71dea">set_listener</a> (<a class="el" href="class_d_d_s_1_1_data_reader_listener.html">DataReaderListener</a> *a_listener, const <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> &amp;mask)</td></tr>
+<tr class="memdesc:af9b94d768638ccc4474d2a9c1ea71dea inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="mdescLeft">&#160;</td><td class="mdescRight">设置该数据读者的监听器。  <a href="#af9b94d768638ccc4474d2a9c1ea71dea">更多...</a><br /></td></tr>
+<tr class="separator:af9b94d768638ccc4474d2a9c1ea71dea inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a505321652e93841615b298adaea0b72f inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_data_reader_listener.html">DataReaderListener</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_reader.html#a505321652e93841615b298adaea0b72f">get_listener</a> ()</td></tr>
+<tr class="memdesc:a505321652e93841615b298adaea0b72f inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法获取通过 <a class="el" href="class_d_d_s_1_1_data_reader.html#af9b94d768638ccc4474d2a9c1ea71dea" title="设置该数据读者的监听器。 ">set_listener</a> 方法或者创建时为数据读者设置的监听器对象。  <a href="#a505321652e93841615b298adaea0b72f">更多...</a><br /></td></tr>
+<tr class="separator:a505321652e93841615b298adaea0b72f inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aae247ad237bc1cab69758649bd5a2946 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_status_condition.html">StatusCondition</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_reader.html#aae247ad237bc1cab69758649bd5a2946">get_statuscondition</a> ()</td></tr>
+<tr class="memdesc:aae247ad237bc1cab69758649bd5a2946 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="mdescLeft">&#160;</td><td class="mdescRight">实现父类 <a class="el" href="class_d_d_s_1_1_entity.html" title="实体（实体) 作为所有实体（包括域参与者、主题、发布者、订阅者、数据读者、数据写者）的基类，抽象实体的�...">DDS::Entity</a> 的方法，返回该数据读者关联的状态条件。  <a href="#aae247ad237bc1cab69758649bd5a2946">更多...</a><br /></td></tr>
+<tr class="separator:aae247ad237bc1cab69758649bd5a2946 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a58eb6ed739f1ce5893a82efcd5f8a4a6 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_reader.html#a58eb6ed739f1ce5893a82efcd5f8a4a6">get_status_changes</a> ()</td></tr>
+<tr class="memdesc:a58eb6ed739f1ce5893a82efcd5f8a4a6 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="mdescLeft">&#160;</td><td class="mdescRight">实现父类 <a class="el" href="class_d_d_s_1_1_entity.html" title="实体（实体) 作为所有实体（包括域参与者、主题、发布者、订阅者、数据读者、数据写者）的基类，抽象实体的�...">DDS::Entity</a> 的方法，获取该实体从上一次获取任意状态后的状态变化。  <a href="#a58eb6ed739f1ce5893a82efcd5f8a4a6">更多...</a><br /></td></tr>
+<tr class="separator:a58eb6ed739f1ce5893a82efcd5f8a4a6 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a469bbac37c3a4f72dfa10ece39914425 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_reader.html#a469bbac37c3a4f72dfa10ece39914425">get_instance_handle</a> ()</td></tr>
+<tr class="memdesc:a469bbac37c3a4f72dfa10ece39914425 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="mdescLeft">&#160;</td><td class="mdescRight">实现父类 <a class="el" href="class_d_d_s_1_1_entity.html" title="实体（实体) 作为所有实体（包括域参与者、主题、发布者、订阅者、数据读者、数据写者）的基类，抽象实体的�...">DDS::Entity</a> 的方法，获取该数据读者的唯一标识。  <a href="#a469bbac37c3a4f72dfa10ece39914425">更多...</a><br /></td></tr>
+<tr class="separator:a469bbac37c3a4f72dfa10ece39914425 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad09f8291b5df77c1f49fe51ada3de2c1 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_reader.html#ad09f8291b5df77c1f49fe51ada3de2c1">enable</a> ()</td></tr>
+<tr class="memdesc:ad09f8291b5df77c1f49fe51ada3de2c1 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="mdescLeft">&#160;</td><td class="mdescRight">手动使能该数据读者，参见<a class="el" href="index.html#entity-enable">实体使能</a> 。  <a href="#ad09f8291b5df77c1f49fe51ada3de2c1">更多...</a><br /></td></tr>
+<tr class="separator:ad09f8291b5df77c1f49fe51ada3de2c1 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3b005d7f9a0b6acbc40b616d730098a1 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_reader.html#a3b005d7f9a0b6acbc40b616d730098a1">get_data_instance</a> (<a class="el" href="group___cpp_core_struct.html#ga38e54e14a30a16bf8dfb07668c3b3fae">InstanceHandleSeq</a> &amp;data_seq, <a class="el" href="group___cpp_core_struct.html#ga617cca5c6231edc3a37b955a4aadfedc">SampleStateMask</a> sampleMask, <a class="el" href="group___cpp_core_struct.html#gaa308de003431a735f20d958a3adcda5b">ViewStateMask</a> viewMask, <a class="el" href="group___cpp_core_struct.html#ga542b4e45fcaacea98c14561dc3db0dab">InstanceStateMask</a> instanceMask)</td></tr>
+<tr class="memdesc:a3b005d7f9a0b6acbc40b616d730098a1 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="mdescLeft">&#160;</td><td class="mdescRight">查询满足条件的数据实例标识。  <a href="#a3b005d7f9a0b6acbc40b616d730098a1">更多...</a><br /></td></tr>
+<tr class="separator:a3b005d7f9a0b6acbc40b616d730098a1 inherit pub_methods_class_d_d_s_1_1_data_reader"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock"><h3>template&lt;typename T, typename TSeq&gt;<br />
+class DDS::ZRDDSDataReader&lt; T, TSeq &gt;</h3>
+
+<p>ZRDDS提供的订阅者模板类，用于提供强类型安全接口的数据读者接口。 </p>
+<dl class="tparams"><dt>模板参数</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">T</td><td>用户定义数据类型，例如： <a class="el" href="struct_foo.html" title="IDL映射到C++数据类型。 ">Foo</a> </td></tr>
+    <tr><td class="paramname">TSeq</td><td>用户定义数据类型序列，例如： <a class="el" href="struct_foo_seq.html" title="使用 DDS_USER_SEQUENCE_C 以及 DDS_USER_SEQUENCE_CPP 定义类型序列的等效代码的结构体部分。 ...">FooSeq</a></td></tr>
+  </table>
+  </dd>
+</dl>
+<p>模板参数T为用户定义数据类型，TSeq用户定义数据类型序列，本模板仅定义数据读者中与主题关联的数据类型相关的接口， 其余与类型无关的接口直接使用父类 <a class="el" href="class_d_d_s_1_1_data_reader.html" title="DDS标准中的数据读者接口。 ">DDS::DataReader</a> 的即可。 </p>
+<dl><dt><b>示例: </b></dt><dd><a class="el" href="_extend_interface_2app1_8cpp-example.html#_a1">ExtendInterface/app1.cpp</a> , 以及 <a class="el" href="_extend_interface_2app2_8cpp-example.html#_a1">ExtendInterface/app2.cpp</a>.</dd>
+</dl></div><h2 class="groupheader">成员函数说明</h2>
+<a class="anchor" id="a85e76ede5e7d20a24c6fb700c1c787c5"></a>
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , typename TSeq &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html">DDS::ZRDDSDataReader</a>&lt; T, TSeq &gt;::get_key_value </td>
+          <td>(</td>
+          <td class="paramtype">T &amp;&#160;</td>
+          <td class="paramname"><em>key_holder</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>handle</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>通过数据实例的唯一标识获取数据实例的键值。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">key_holder</td><td>出口参数，用于保存数据实例的键值，注意本函数仅仅填充键成员。。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">handle</td><td>传入的唯一标识。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :表示底层没有指定的数据实例信息。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a18ae6eb68ef44ac716e6ac2deca30f5a"></a>
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , typename TSeq &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html">DDS::ZRDDSDataReader</a>&lt; T, TSeq &gt;::lookup_instance </td>
+          <td>(</td>
+          <td class="paramtype">T &amp;&#160;</td>
+          <td class="paramname"><em>instance</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>通过数据实例键值查找相应的标识。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">instance</td><td>代表数据实例的数据样本；</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li>有效的标识 （ <a class="el" href="struct_d_d_s___instance_handle__t.html#a9055451ebfe6bf7c4f5893445347d4ca" title="该成员为true时表示value值有效，否则该DDS_InstanceHandle_t无效。 ">DDS_InstanceHandle_t::valid</a> ） 表示获取成功；</li>
+<li><a class="el" href="group___core_var.html#ga9c4dcdd857c325221ab74b89b23cf8c3" title="表示无效的 DDS_InstanceHandle_t 。 ">DDS_HANDLE_NIL_NATIVE</a> :表示底层没有指定数据实例的信息，或者关联的数据类型未定义键值； </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a1bd13e9b34f1db91ed8e9a3e98723807"></a>
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , typename TSeq &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html">DDS::ZRDDSDataReader</a>&lt; T, TSeq &gt;::read </td>
+          <td>(</td>
+          <td class="paramtype">TSeq &amp;&#160;</td>
+          <td class="paramname"><em>data_values</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gaae5f5bf83566034a5602b3e10bb5f778">SampleInfoSeq</a> &amp;&#160;</td>
+          <td class="paramname"><em>sample_infos</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gaa15fb6e6dd1b21c7dee0c9ccf4fc3bbc">Long</a>&#160;</td>
+          <td class="paramname"><em>max_samples</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga617cca5c6231edc3a37b955a4aadfedc">SampleStateMask</a>&#160;</td>
+          <td class="paramname"><em>sample_mask</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gaa308de003431a735f20d958a3adcda5b">ViewStateMask</a>&#160;</td>
+          <td class="paramname"><em>view_mask</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga542b4e45fcaacea98c14561dc3db0dab">InstanceStateMask</a>&#160;</td>
+          <td class="paramname"><em>instance_mask</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>该接口从数据读者底层获取用户样本数据。 </p>
+<p>该方法返回的样本顺序参见 <a class="el" href="struct_d_d_s___presentation_qos_policy.html" title="数据展示配置。 ">DDS_PresentationQosPolicy</a> 。 <em>data_values</em> 以及 <em>sample_infos</em> 两个 序列必须具有相同的 长度（ <a class="el" href="struct_foo_seq.html#a26062905a9af686517ef84444dfeed35" title="获取序列当前的长度。 ">FooSeq::length</a> 下简称len）、最大长度（ <a class="el" href="struct_foo_seq.html#a76635279ecac90b9272532cee6302b15" title="获取序列的最大长度。 ">FooSeq::maximum</a> 下简称max_len）、 是否拥有空间（ <a class="el" href="struct_foo_seq.html#a958de43c71030d44b40fe7adee2e58cb" title="查询当前序列的空间是否为从外部租借的。 ">FooSeq::has_ownership</a> 下简称own） 三个属性，否则将返回 <a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a3a638871d5b4174c32c8d2880f1f6770" title="调用操作的前置条件未满足。 ">DDS_RETCODE_PRECONDITION_NOT_MET</a> 错误。 当该函数返回成功时，<em>data_values</em> 以及 <em>sample_infos</em> 的这三个属性也相同，且下标相同的样本以及样本 信息相对应。</p>
+<p>当 max_len == 0，则表明用户没有提供样本空间，该方法将以“租借”（零拷贝，返回数据的指针）的方式填充 <em>data_values</em> 以及 <em>sample_infos</em> ，即own属性设置成false，len设置为获取到的样本数量， 当用户使用完返回的数据样本时应该调用 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#aa4a382c7d5081b94e85af6a403ccb6ba" title="该方法用于应用归还从数据读者租借的空间。 ">return_loan</a> 方法归还这些空间；</p>
+<p>当 max_len &gt; 0 &amp;&amp; own == true 时，则表明用户提供了样本空间，该方法将底层存储的数据样本以及 对应的样本信息拷贝到提供的空间中，len表示拷贝的样本个数，max_len保持不变，这些数据样本序列无需归还， 但为了统一用户的使用习惯，调用 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#aa4a382c7d5081b94e85af6a403ccb6ba" title="该方法用于应用归还从数据读者租借的空间。 ">return_loan</a> 亦可，底层会忽略本次调用。 当 <em>max_samples</em> &lt;= max_len 时，该方法至多获取 <em>max_samples</em> 个样本， 当 <em>max_samples</em> &gt; max_len 时，该方法将返回 <a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a3a638871d5b4174c32c8d2880f1f6770" title="调用操作的前置条件未满足。 ">DDS_RETCODE_PRECONDITION_NOT_MET</a> 错误。</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">data_values</td><td>输入输出参数，保存从数据读者中读取的样本序列结果； </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">sample_infos</td><td>输入输出参数，保存从数据读者中读取的样本信息序列结果； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">max_samples</td><td>指明本次操作最多从底层读取的样本个数； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">sample_mask</td><td>指定目标数据样本的访问状态集合的掩码； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">view_mask</td><td>指定目标数据样本的视图状态集合的掩码； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">instance_mask</td><td>指定目标数据样本的所属实例的实例状态集合的掩码；</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示取出数据成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a3a638871d5b4174c32c8d2880f1f6770" title="调用操作的前置条件未满足。 ">DDS_RETCODE_PRECONDITION_NOT_MET</a> :参数中存在错误；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91aa8e69444ae8a8efa65bde05556818669" title="在读数据的时候，没有有效的数据。 ">DDS_RETCODE_NO_DATA</a> :表示当前没有满足条件的数据；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未知错误导致的读取错误。</li>
+</ul>
+</dd></dl>
+<dl class="section note"><dt>注解</dt><dd>- 使用<a class="el" href="index.html#read-take">获取主题数据</a> 系列函数时，应判断返回值是否成功，否则容易造成程序异常；<ul>
+<li>在使用参数返回的数据时，应检查相应的 <a class="el" href="struct_d_d_s___sample_info.html#aa0c5177864ed1aeeb85544fee45904da" title="此值为true表示为数据样本，即该样本信息对应的数据样本有效。 ">DDS_SampleInfo::valid_data</a> 是否有效； </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="aa1f61c1f63e4ddcc21334484d16322db"></a>
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , typename TSeq &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html">DDS::ZRDDSDataReader</a>&lt; T, TSeq &gt;::read_instance </td>
+          <td>(</td>
+          <td class="paramtype">TSeq &amp;&#160;</td>
+          <td class="paramname"><em>data_values</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gaae5f5bf83566034a5602b3e10bb5f778">SampleInfoSeq</a> &amp;&#160;</td>
+          <td class="paramname"><em>sample_infos</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gaa15fb6e6dd1b21c7dee0c9ccf4fc3bbc">Long</a>&#160;</td>
+          <td class="paramname"><em>max_samples</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga617cca5c6231edc3a37b955a4aadfedc">SampleStateMask</a>&#160;</td>
+          <td class="paramname"><em>sample_mask</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gaa308de003431a735f20d958a3adcda5b">ViewStateMask</a>&#160;</td>
+          <td class="paramname"><em>view_mask</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga542b4e45fcaacea98c14561dc3db0dab">InstanceStateMask</a>&#160;</td>
+          <td class="paramname"><em>instance_mask</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>读取指定数据实例中满足条件的数据样本集合。 </p>
+<p>该方法在 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a1bd13e9b34f1db91ed8e9a3e98723807" title="该接口从数据读者底层获取用户样本数据。 ">read</a> 接口基础上再加上指定数据实例的要求。</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">data_values</td><td>输入输出参数，保存从数据读者中读取的样本序列结果； </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">sample_infos</td><td>输入输出参数，保存从数据读者中读取的样本信息序列结果； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">max_samples</td><td>指明本次操作最多从底层读取的样本个数； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">handle</td><td>指明目标数据实例的标识。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">sample_mask</td><td>指定目标数据样本的访问状态集合的掩码； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">view_mask</td><td>指定目标数据样本的视图状态集合的掩码； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">instance_mask</td><td>指定目标数据样本的所属实例的实例状态集合的掩码；</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>参见 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a1bd13e9b34f1db91ed8e9a3e98723807" title="该接口从数据读者底层获取用户样本数据。 ">read</a> 方法，此外当底层没有 <em>handle</em> 标识的数据实例信息时将返回 <a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> 。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="aecc96ff523a0b99b79a78571a89a04d6"></a>
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , typename TSeq &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html">DDS::ZRDDSDataReader</a>&lt; T, TSeq &gt;::read_next_instance </td>
+          <td>(</td>
+          <td class="paramtype">TSeq &amp;&#160;</td>
+          <td class="paramname"><em>data_values</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gaae5f5bf83566034a5602b3e10bb5f778">SampleInfoSeq</a> &amp;&#160;</td>
+          <td class="paramname"><em>sample_infos</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gaa15fb6e6dd1b21c7dee0c9ccf4fc3bbc">Long</a>&#160;</td>
+          <td class="paramname"><em>max_samples</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>previous_handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga617cca5c6231edc3a37b955a4aadfedc">SampleStateMask</a>&#160;</td>
+          <td class="paramname"><em>sample_mask</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gaa308de003431a735f20d958a3adcda5b">ViewStateMask</a>&#160;</td>
+          <td class="paramname"><em>view_mask</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga542b4e45fcaacea98c14561dc3db0dab">InstanceStateMask</a>&#160;</td>
+          <td class="paramname"><em>instance_mask</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>读取指定数据实例后面（不一定为紧邻的数据实例）数据实例中满足条件的数据样本集合。 </p>
+<p>数据实例的顺序定义如下：</p><ul>
+<li>传入 <a class="el" href="group___core_var.html#ga9c4dcdd857c325221ab74b89b23cf8c3" title="表示无效的 DDS_InstanceHandle_t 。 ">DDS_HANDLE_NIL_NATIVE</a> 特殊值，则从最小的数据实例开始查找。</li>
+<li>按照数据样本创建的时间顺序，即数据样本收到第一个数据样本的顺序。</li>
+</ul>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">data_values</td><td>输入输出参数，保存从数据读者中读取的样本序列结果； </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">sample_infos</td><td>输入输出参数，保存从数据读者中读取的样本信息序列结果； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">max_samples</td><td>指明本次操作最多从底层读取的样本个数； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">previous_handle</td><td>指明当前的数据实例标识。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">sample_mask</td><td>指定目标数据样本的访问状态集合的掩码； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">view_mask</td><td>指定目标数据样本的视图状态集合的掩码； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">instance_mask</td><td>指定目标数据样本的所属实例的实例状态集合的掩码；</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>参见 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a1bd13e9b34f1db91ed8e9a3e98723807" title="该接口从数据读者底层获取用户样本数据。 ">read</a> 方法。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a958fa1bdfedc36ce39650c530c53597d"></a>
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , typename TSeq &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html">DDS::ZRDDSDataReader</a>&lt; T, TSeq &gt;::read_next_instance_w_condition </td>
+          <td>(</td>
+          <td class="paramtype">TSeq &amp;&#160;</td>
+          <td class="paramname"><em>data_values</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gaae5f5bf83566034a5602b3e10bb5f778">SampleInfoSeq</a> &amp;&#160;</td>
+          <td class="paramname"><em>sample_infos</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gaa15fb6e6dd1b21c7dee0c9ccf4fc3bbc">Long</a>&#160;</td>
+          <td class="paramname"><em>max_samples</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>previous_handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_read_condition.html">ReadCondition</a> *&#160;</td>
+          <td class="paramname"><em>condition</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>读取指定数据实例后面（不一定为紧邻的数据实例）数据实例中满足条件的数据样本集合。 </p>
+<p>该方法与 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#aecc96ff523a0b99b79a78571a89a04d6" title="读取指定数据实例后面（不一定为紧邻的数据实例）数据实例中满足条件的数据样本集合。 ">read_next_instance</a> 功能完全相同，该方法使用 <a class="el" href="class_d_d_s_1_1_read_condition.html" title="该类抽象ZRDDS中的读取条件条件-等待 。 ">DDS::ReadCondition</a> 代替分开写的三个状态。</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">data_values</td><td>输入输出参数，保存从数据读者中读取的样本序列结果； </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">sample_infos</td><td>输入输出参数，保存从数据读者中读取的样本信息序列结果； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">max_samples</td><td>指明本次操作最多从底层读取的样本个数； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">previous_handle</td><td>指明当前的数据实例标识。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">condition</td><td>指明目标状态。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>参见 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a1bd13e9b34f1db91ed8e9a3e98723807" title="该接口从数据读者底层获取用户样本数据。 ">read</a> 方法，当传入的 <em>condition</em> 无效是，返回 <a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a3a638871d5b4174c32c8d2880f1f6770" title="调用操作的前置条件未满足。 ">DDS_RETCODE_PRECONDITION_NOT_MET</a> 。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ae2e58b740ea89088965a12b991e905aa"></a>
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , typename TSeq &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html">DDS::ZRDDSDataReader</a>&lt; T, TSeq &gt;::read_next_sample </td>
+          <td>(</td>
+          <td class="paramtype">T &amp;&#160;</td>
+          <td class="paramname"><em>data_value</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga7836a2fa552fc2e4dc177df88a910eb6">SampleInfo</a> &amp;&#160;</td>
+          <td class="paramname"><em>sample_info</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>该方法用于从通信中间件依次读取未读取过的样本。 </p>
+<p>该方法由用户提供样本空间，将从底层的数据样本拷贝到参数提供的空间中，无需调用 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#aa4a382c7d5081b94e85af6a403ccb6ba" title="该方法用于应用归还从数据读者租借的空间。 ">return_loan</a> 方法。 样本的顺序由 <a class="el" href="struct_d_d_s___presentation_qos_policy.html" title="数据展示配置。 ">DDS_PresentationQosPolicy</a> 确定。</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">data_value</td><td>输入输出参数，保存从数据读者中读取的样本结果； </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">sample_info</td><td>输入输出参数，保存从数据读者中读取的样本信息结果；</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示取出数据成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91aa8e69444ae8a8efa65bde05556818669" title="在读数据的时候，没有有效的数据。 ">DDS_RETCODE_NO_DATA</a> :表示当前没有满足条件的数据；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未知错误导致的读取错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a4dce67f92202ee067732ec4214edf8d7"></a>
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , typename TSeq &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html">DDS::ZRDDSDataReader</a>&lt; T, TSeq &gt;::read_w_condition </td>
+          <td>(</td>
+          <td class="paramtype">TSeq &amp;&#160;</td>
+          <td class="paramname"><em>data_values</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gaae5f5bf83566034a5602b3e10bb5f778">SampleInfoSeq</a> &amp;&#160;</td>
+          <td class="paramname"><em>sample_infos</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gaa15fb6e6dd1b21c7dee0c9ccf4fc3bbc">Long</a>&#160;</td>
+          <td class="paramname"><em>max_samples</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_read_condition.html">ReadCondition</a> *&#160;</td>
+          <td class="paramname"><em>condition</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>该接口从数据读者底层获取用户样本数据。 </p>
+<p>该方法与 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a1bd13e9b34f1db91ed8e9a3e98723807" title="该接口从数据读者底层获取用户样本数据。 ">read</a> 功能完全相同，该方法使用 <a class="el" href="class_d_d_s_1_1_read_condition.html" title="该类抽象ZRDDS中的读取条件条件-等待 。 ">DDS::ReadCondition</a> 代替分开写的三个状态。</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">data_values</td><td>输入输出参数，保存从数据读者中读取的样本序列结果； </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">sample_infos</td><td>输入输出参数，保存从数据读者中读取的样本信息序列结果； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">max_samples</td><td>指明本次操作最多从底层读取的样本个数； </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">condition</td><td>指明目标状态。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>参见 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a1bd13e9b34f1db91ed8e9a3e98723807" title="该接口从数据读者底层获取用户样本数据。 ">read</a> 方法，当传入的 <em>condition</em> 无效是，返回 <a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a3a638871d5b4174c32c8d2880f1f6770" title="调用操作的前置条件未满足。 ">DDS_RETCODE_PRECONDITION_NOT_MET</a> 。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="aa4a382c7d5081b94e85af6a403ccb6ba"></a>
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , typename TSeq &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html">DDS::ZRDDSDataReader</a>&lt; T, TSeq &gt;::return_loan </td>
+          <td>(</td>
+          <td class="paramtype">TSeq &amp;&#160;</td>
+          <td class="paramname"><em>data_values</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gaae5f5bf83566034a5602b3e10bb5f778">SampleInfoSeq</a> &amp;&#160;</td>
+          <td class="paramname"><em>sample_infos</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>该方法用于应用归还从数据读者租借的空间。 </p>
+<p>为了简化应用的使用，数据读者提供参数有效性检查，参数无效返回 <a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a3a638871d5b4174c32c8d2880f1f6770" title="调用操作的前置条件未满足。 ">DDS_RETCODE_PRECONDITION_NOT_MET</a> 当归还成功后，序列的最大长度以及长度属性设置为0，拥有空间设置为true。检查的有效性包括：</p><ul>
+<li>传入的样本序列是否为通信中间件租借出去的，如果是，则进行归还操作，否则直接忽略；</li>
+<li>传入的样本序列是否完整以及样本信息以及样本是否一一对应；</li>
+<li>传入的样本序列是否属于该数据读者，如果是，则继续归还；</li>
+</ul>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">data_values</td><td>从 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a1bd13e9b34f1db91ed8e9a3e98723807" title="该接口从数据读者底层获取用户样本数据。 ">read</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#aba5ad7bdc154e9afa6ff301805a19ee9" title="该接口从数据读者底层取出用户样本数据。 ">take</a> 系列方法中返回的参数。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">sample_infos</td><td>从 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a1bd13e9b34f1db91ed8e9a3e98723807" title="该接口从数据读者底层获取用户样本数据。 ">read</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#aba5ad7bdc154e9afa6ff301805a19ee9" title="该接口从数据读者底层取出用户样本数据。 ">take</a> 系统方法中返回的参数。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a3a638871d5b4174c32c8d2880f1f6770" title="调用操作的前置条件未满足。 ">DDS_RETCODE_PRECONDITION_NOT_MET</a> :表示传入的参数不满足条件。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="aba5ad7bdc154e9afa6ff301805a19ee9"></a>
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , typename TSeq &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html">DDS::ZRDDSDataReader</a>&lt; T, TSeq &gt;::take </td>
+          <td>(</td>
+          <td class="paramtype">TSeq &amp;&#160;</td>
+          <td class="paramname"><em>data_values</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gaae5f5bf83566034a5602b3e10bb5f778">SampleInfoSeq</a> &amp;&#160;</td>
+          <td class="paramname"><em>sample_infos</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gaa15fb6e6dd1b21c7dee0c9ccf4fc3bbc">Long</a>&#160;</td>
+          <td class="paramname"><em>max_samples</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga617cca5c6231edc3a37b955a4aadfedc">SampleStateMask</a>&#160;</td>
+          <td class="paramname"><em>sample_mask</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gaa308de003431a735f20d958a3adcda5b">ViewStateMask</a>&#160;</td>
+          <td class="paramname"><em>view_mask</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga542b4e45fcaacea98c14561dc3db0dab">InstanceStateMask</a>&#160;</td>
+          <td class="paramname"><em>instance_mask</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>该接口从数据读者底层取出用户样本数据。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">data_values</td><td>输入输出参数，保存从数据读者中读取的样本序列结果； </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">sample_infos</td><td>输入输出参数，保存从数据读者中读取的样本信息序列结果； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">max_samples</td><td>指明本次操作最多从底层读取的样本个数； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">sample_mask</td><td>指定目标数据样本的访问状态集合的掩码； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">view_mask</td><td>指定目标数据样本的视图状态集合的掩码； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">instance_mask</td><td>指定目标数据样本的所属实例的实例状态集合的掩码；</td></tr>
+  </table>
+  </dd>
+</dl>
+<p>该方法与 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a1bd13e9b34f1db91ed8e9a3e98723807" title="该接口从数据读者底层获取用户样本数据。 ">read</a> 方式类似，区别在于本方法会将获取到的数据样本从底层队列中移除，移除的时机如下：</p><ul>
+<li>当采用零拷贝的方式获取时，在调用 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#aa4a382c7d5081b94e85af6a403ccb6ba" title="该方法用于应用归还从数据读者租借的空间。 ">return_loan</a> 后移除；</li>
+<li>如果用户提供存储空间即采用拷贝的方式获取时，在本方法已经移除；</li>
+</ul>
+<dl class="section return"><dt>返回</dt><dd>参见 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a1bd13e9b34f1db91ed8e9a3e98723807" title="该接口从数据读者底层获取用户样本数据。 ">read</a> 方法。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="aa1b8c7516f7060fd96e32d3744c77af8"></a>
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , typename TSeq &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html">DDS::ZRDDSDataReader</a>&lt; T, TSeq &gt;::take_instance </td>
+          <td>(</td>
+          <td class="paramtype">TSeq &amp;&#160;</td>
+          <td class="paramname"><em>data_values</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gaae5f5bf83566034a5602b3e10bb5f778">SampleInfoSeq</a> &amp;&#160;</td>
+          <td class="paramname"><em>sample_infos</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gaa15fb6e6dd1b21c7dee0c9ccf4fc3bbc">Long</a>&#160;</td>
+          <td class="paramname"><em>max_samples</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga617cca5c6231edc3a37b955a4aadfedc">SampleStateMask</a>&#160;</td>
+          <td class="paramname"><em>sample_mask</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gaa308de003431a735f20d958a3adcda5b">ViewStateMask</a>&#160;</td>
+          <td class="paramname"><em>view_mask</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga542b4e45fcaacea98c14561dc3db0dab">InstanceStateMask</a>&#160;</td>
+          <td class="paramname"><em>instance_mask</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>取出指定数据实例中满足条件的数据样本集合。 </p>
+<p>该方法在 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#aba5ad7bdc154e9afa6ff301805a19ee9" title="该接口从数据读者底层取出用户样本数据。 ">take</a> 接口基础上再加上指定数据实例的要求。</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">data_values</td><td>输入输出参数，保存从数据读者中读取的样本序列结果； </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">sample_infos</td><td>输入输出参数，保存从数据读者中读取的样本信息序列结果； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">max_samples</td><td>指明本次操作最多从底层读取的样本个数； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">handle</td><td>指明目标数据实例的标识。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">sample_mask</td><td>指定目标数据样本的访问状态集合的掩码； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">view_mask</td><td>指定目标数据样本的视图状态集合的掩码； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">instance_mask</td><td>指定目标数据样本的所属实例的实例状态集合的掩码；</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>参见 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a1bd13e9b34f1db91ed8e9a3e98723807" title="该接口从数据读者底层获取用户样本数据。 ">read</a> 方法，此外当底层没有 <em>handle</em> 标识的数据实例信息时将返回 <a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> 。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a9d192f45f6e9582faed2ac667cbcd2fa"></a>
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , typename TSeq &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html">DDS::ZRDDSDataReader</a>&lt; T, TSeq &gt;::take_next_instance </td>
+          <td>(</td>
+          <td class="paramtype">TSeq &amp;&#160;</td>
+          <td class="paramname"><em>data_values</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gaae5f5bf83566034a5602b3e10bb5f778">SampleInfoSeq</a> &amp;&#160;</td>
+          <td class="paramname"><em>sample_infos</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gaa15fb6e6dd1b21c7dee0c9ccf4fc3bbc">Long</a>&#160;</td>
+          <td class="paramname"><em>max_samples</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>previous_handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga617cca5c6231edc3a37b955a4aadfedc">SampleStateMask</a>&#160;</td>
+          <td class="paramname"><em>sample_mask</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gaa308de003431a735f20d958a3adcda5b">ViewStateMask</a>&#160;</td>
+          <td class="paramname"><em>view_mask</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga542b4e45fcaacea98c14561dc3db0dab">InstanceStateMask</a>&#160;</td>
+          <td class="paramname"><em>instance_mask</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>取出指定数据实例后面（不一定为紧邻的数据实例）数据实例中满足条件的数据样本集合。 </p>
+<p>数据实例的顺序定义如下：</p><ul>
+<li>传入 <a class="el" href="group___core_var.html#ga9c4dcdd857c325221ab74b89b23cf8c3" title="表示无效的 DDS_InstanceHandle_t 。 ">DDS_HANDLE_NIL_NATIVE</a> 特殊值，则从最小的数据实例开始查找。</li>
+<li>按照数据样本创建的时间顺序，即数据样本收到第一个数据样本的顺序。</li>
+</ul>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">data_values</td><td>输入输出参数，保存从数据读者中读取的样本序列结果； </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">sample_infos</td><td>输入输出参数，保存从数据读者中读取的样本信息序列结果； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">max_samples</td><td>指明本次操作最多从底层读取的样本个数； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">previous_handle</td><td>指明当前的数据实例标识。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">sample_mask</td><td>指定目标数据样本的访问状态集合的掩码； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">view_mask</td><td>指定目标数据样本的视图状态集合的掩码； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">instance_mask</td><td>指定目标数据样本的所属实例的实例状态集合的掩码；</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>参见 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a1bd13e9b34f1db91ed8e9a3e98723807" title="该接口从数据读者底层获取用户样本数据。 ">read</a> 方法。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a550bd2277018118772730f314b5292b8"></a>
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , typename TSeq &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html">DDS::ZRDDSDataReader</a>&lt; T, TSeq &gt;::take_next_instance_w_condition </td>
+          <td>(</td>
+          <td class="paramtype">TSeq &amp;&#160;</td>
+          <td class="paramname"><em>data_values</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gaae5f5bf83566034a5602b3e10bb5f778">SampleInfoSeq</a> &amp;&#160;</td>
+          <td class="paramname"><em>sample_infos</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gaa15fb6e6dd1b21c7dee0c9ccf4fc3bbc">Long</a>&#160;</td>
+          <td class="paramname"><em>max_samples</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>previous_handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_read_condition.html">ReadCondition</a> *&#160;</td>
+          <td class="paramname"><em>condition</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>取出指定数据实例后面（不一定为紧邻的数据实例）数据实例中满足条件的数据样本集合。 </p>
+<p>该方法与 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a9d192f45f6e9582faed2ac667cbcd2fa" title="取出指定数据实例后面（不一定为紧邻的数据实例）数据实例中满足条件的数据样本集合。 ">take_next_instance</a> 功能完全相同，该方法使用 <a class="el" href="class_d_d_s_1_1_read_condition.html" title="该类抽象ZRDDS中的读取条件条件-等待 。 ">DDS::ReadCondition</a> 代替分开写的三个状态。</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">data_values</td><td>输入输出参数，保存从数据读者中读取的样本序列结果； </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">sample_infos</td><td>输入输出参数，保存从数据读者中读取的样本信息序列结果； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">max_samples</td><td>指明本次操作最多从底层读取的样本个数； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">previous_handle</td><td>指明当前的数据实例标识。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">condition</td><td>指明目标状态。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>参见 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a1bd13e9b34f1db91ed8e9a3e98723807" title="该接口从数据读者底层获取用户样本数据。 ">read</a> 方法，当传入的 <em>condition</em> 无效是，返回 <a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a3a638871d5b4174c32c8d2880f1f6770" title="调用操作的前置条件未满足。 ">DDS_RETCODE_PRECONDITION_NOT_MET</a> 。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="af5700e1ee0f812abc0dbcda9c2ad2fe3"></a>
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , typename TSeq &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html">DDS::ZRDDSDataReader</a>&lt; T, TSeq &gt;::take_next_sample </td>
+          <td>(</td>
+          <td class="paramtype">T &amp;&#160;</td>
+          <td class="paramname"><em>data_value</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga7836a2fa552fc2e4dc177df88a910eb6">SampleInfo</a> &amp;&#160;</td>
+          <td class="paramname"><em>sample_info</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>该方法用于从通信中间件依次取出未读取过的样本。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">data_value</td><td>输入输出参数，保存从数据读者中读取的样本结果； </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">sample_info</td><td>输入输出参数，保存从数据读者中读取的样本信息结果；</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示取出数据成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91aa8e69444ae8a8efa65bde05556818669" title="在读数据的时候，没有有效的数据。 ">DDS_RETCODE_NO_DATA</a> :表示当前没有满足条件的数据；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未知错误导致的读取错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a6724c9784a29c0928adbae9b494a4e96"></a>
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , typename TSeq &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html">DDS::ZRDDSDataReader</a>&lt; T, TSeq &gt;::take_w_condition </td>
+          <td>(</td>
+          <td class="paramtype">TSeq &amp;&#160;</td>
+          <td class="paramname"><em>data_values</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gaae5f5bf83566034a5602b3e10bb5f778">SampleInfoSeq</a> &amp;&#160;</td>
+          <td class="paramname"><em>sample_infos</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gaa15fb6e6dd1b21c7dee0c9ccf4fc3bbc">Long</a>&#160;</td>
+          <td class="paramname"><em>max_samples</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_read_condition.html">ReadCondition</a> *&#160;</td>
+          <td class="paramname"><em>condition</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>该接口从数据读者底层取出用户样本数据。 </p>
+<p>该方法与 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#aba5ad7bdc154e9afa6ff301805a19ee9" title="该接口从数据读者底层取出用户样本数据。 ">take</a> 功能完全相同，该方法使用 <a class="el" href="class_d_d_s_1_1_read_condition.html" title="该类抽象ZRDDS中的读取条件条件-等待 。 ">DDS::ReadCondition</a> 代替分开写的三个状态。</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">data_values</td><td>输入输出参数，保存从数据读者中读取的样本序列结果； </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">sample_infos</td><td>输入输出参数，保存从数据读者中读取的样本信息序列结果； </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">max_samples</td><td>指明本次操作最多从底层读取的样本个数； </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">condition</td><td>指明目标状态。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>参见 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html#a1bd13e9b34f1db91ed8e9a3e98723807" title="该接口从数据读者底层获取用户样本数据。 ">read</a> 方法，当传入的 <em>condition</em> 无效是，返回 <a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a3a638871d5b4174c32c8d2880f1f6770" title="调用操作的前置条件未满足。 ">DDS_RETCODE_PRECONDITION_NOT_MET</a> 。 </dd></dl>
+
+</div>
+</div>
+<hr/>该类的文档由以下文件生成:<ul>
+<li><a class="el" href="_z_r_d_d_s_data_reader_8h_source.html">ZRDDSDataReader.h</a></li>
+</ul>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><b>DDS</b></li><li class="navelem"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html">ZRDDSDataReader</a></li>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

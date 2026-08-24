@@ -97,7 +97,7 @@ private:
 	int m_protocolVideoFps = 60;
 	int m_protocolEnvSky = 0;
 	int m_protocolSensorBand = 2;
-	double m_protocolSensorPixelAngleUrad = 2.5;
+    double m_protocolSensorPixelAngleUrad = 25;
 
 	// UI Components
 	QGroupBox *m_configGroup;

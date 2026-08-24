@@ -1,0 +1,204 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: QualityEvaluationQosPolicy.h 源文件</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>结构体</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('_quality_evaluation_qos_policy_8h_source.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">QualityEvaluationQosPolicy.h</div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#ifndef QualityEvaluationQosPolicy_h__</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#define QualityEvaluationQosPolicy_h__</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#include &quot;OsResource.h&quot;</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#include &quot;Duration_t.h&quot;</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="preprocessor">#include &quot;InstanceHandle_t.h&quot;</span></div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#include &quot;ZRBuiltinTypes.h&quot;</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="keyword">typedef</span> <span class="keyword">enum</span> <a class="code" href="struct_d_d_s___r_t_p_s___m_e_s_s_a_g_e___k_i_n_d.html">DDS_RTPS_MESSAGE_KIND</a></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;{</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    RTPS_MSG_ACKNACK = 0,</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    RTPS_MSG_NACK,</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    RTPS_MSG_GAP,</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    RTPS_MSG_INFO_TS,</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    RTPS_MSG_HEARTBEAT,</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    RTPS_MSG_INFO_SRC,</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    RTPS_MSG_INFO_REPLY_IP4,</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    RTPS_MSG_INFO_DST,</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    RTPS_MSG_INFO_REPLY,</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    RTPS_MSG_NACK_FRAG,</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    RTPS_MSG_HEARTBEAT_FRAG,</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    RTPS_MSG_DATA,</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    RTPS_MSG_RESEND_DATA,</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    RTPS_MSG_DATA_FRAG,</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    RTPS_MSG_RESEND_DATA_FRAG,</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    RTPS_MSG_ACKNACK_BATCH,</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    RTPS_MSG_DATA_BATCH,</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    RTPS_MSG_RESEND_DATA_BATCH,</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    RTPS_MSG_HEARTBEAT_BATCH,</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    RTPS_MSG_UNKNOWN_SUBMSGKIND,</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    RTPS_MSG_UNKNOWN_WRITER_DATA,</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    RTPS_MSG_DUPLICATE_DATA,</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    RTPS_MSG_MAX_SAMPLES_LIMITS_DATA,</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    RTPS_MSG_MAX_INSTANCES_LIMITS_DATA,</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    RTPS_MSG_MAX_SAMPLES_PER_INSTANCE_LIMITS_DATA,</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    RTPS_MSG_FILTERED_DATA,</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    RTPS_MSG_EARLY_TS_DATA,</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    RTPS_DELIVERED_DATA,</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    RTPS_MSG_NO_OWNERSHIP_DATA,</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    RTPS_MSG_INVALID</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;}<a class="code" href="struct_d_d_s___r_t_p_s___m_e_s_s_a_g_e___k_i_n_d.html">DDS_RTPS_MESSAGE_KIND</a>;</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="preprocessor">#ifdef _ZRDDS_INCLUDE_QUALITY_EVALUATION</span></div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="preprocessor">#define DDS_QUALITY_EVAL_LATENCY_RESERVED_NUM 16</span></div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;</div>
+<div class="line"><a name="l00069"></a><span class="lineno"><a class="line" href="struct_d_d_s___link_quality_evaluation_info.html">   69</a></span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="struct_d_d_s___link_quality_evaluation_info.html">DDS_LinkQualityEvaluationInfo</a></div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;{</div>
+<div class="line"><a name="l00072"></a><span class="lineno"><a class="line" href="struct_d_d_s___link_quality_evaluation_info.html#a07b5afd35423b0380716eab8e0ae90b4">   72</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> <a class="code" href="struct_d_d_s___link_quality_evaluation_info.html#a07b5afd35423b0380716eab8e0ae90b4">version</a>;</div>
+<div class="line"><a name="l00074"></a><span class="lineno"><a class="line" href="struct_d_d_s___link_quality_evaluation_info.html#a7cc1cf623e506e7b74ef8739cf8b6732">   74</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#gacfea17333fbcbbb9b97d6af81179dc2b">DDS_Octet</a> <a class="code" href="struct_d_d_s___link_quality_evaluation_info.html#a7cc1cf623e506e7b74ef8739cf8b6732">writer_id</a>[16];</div>
+<div class="line"><a name="l00076"></a><span class="lineno"><a class="line" href="struct_d_d_s___link_quality_evaluation_info.html#a896253b4e9b08f35a4e39365eb6bfdfd">   76</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#gacfea17333fbcbbb9b97d6af81179dc2b">DDS_Octet</a> <a class="code" href="struct_d_d_s___link_quality_evaluation_info.html#a896253b4e9b08f35a4e39365eb6bfdfd">reader_id</a>[16];</div>
+<div class="line"><a name="l00078"></a><span class="lineno"><a class="line" href="struct_d_d_s___link_quality_evaluation_info.html#a2f8d7ff49199246c104dad4104c3f622">   78</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#ga4032c6d83163558f1f0eab63080a1b9b">DDS_ULongLong</a> <a class="code" href="struct_d_d_s___link_quality_evaluation_info.html#a2f8d7ff49199246c104dad4104c3f622">rtps_smsg_recv_count</a>[30];</div>
+<div class="line"><a name="l00080"></a><span class="lineno"><a class="line" href="struct_d_d_s___link_quality_evaluation_info.html#ad2fe24bf7032a3327040f6c51bf85d3e">   80</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#ga4032c6d83163558f1f0eab63080a1b9b">DDS_ULongLong</a> <a class="code" href="struct_d_d_s___link_quality_evaluation_info.html#ad2fe24bf7032a3327040f6c51bf85d3e">sample_count</a>;</div>
+<div class="line"><a name="l00082"></a><span class="lineno"><a class="line" href="struct_d_d_s___link_quality_evaluation_info.html#abc599fda62c80109e0b6298687736312">   82</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#ga4032c6d83163558f1f0eab63080a1b9b">DDS_ULongLong</a> <a class="code" href="struct_d_d_s___link_quality_evaluation_info.html#abc599fda62c80109e0b6298687736312">sample_size</a>;</div>
+<div class="line"><a name="l00089"></a><span class="lineno"><a class="line" href="struct_d_d_s___link_quality_evaluation_info.html#a2dad364120ac8fa4bedacce82778dd8e">   89</a></span>&#160;    <a class="code" href="struct_d_d_s___long_seq.html">DDS_LongSeq</a> <a class="code" href="struct_d_d_s___link_quality_evaluation_info.html#a2dad364120ac8fa4bedacce82778dd8e">latency_infos</a>;</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;}<a class="code" href="struct_d_d_s___link_quality_evaluation_info.html">DDS_LinkQualityEvaluationInfo</a>;</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;</div>
+<div class="line"><a name="l00102"></a><span class="lineno"><a class="line" href="struct_d_d_s___quality_evaluation_qos_policy.html">  102</a></span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="struct_d_d_s___quality_evaluation_qos_policy.html">DDS_QualityEvaluationQosPolicy</a></div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;{</div>
+<div class="line"><a name="l00105"></a><span class="lineno"><a class="line" href="struct_d_d_s___quality_evaluation_qos_policy.html#afb42ea745bc631983e25a895ca4d2215">  105</a></span>&#160;    <a class="code" href="struct_d_d_s___duration__t.html">DDS_Duration_t</a> <a class="code" href="struct_d_d_s___quality_evaluation_qos_policy.html#afb42ea745bc631983e25a895ca4d2215">period</a>;</div>
+<div class="line"><a name="l00107"></a><span class="lineno"><a class="line" href="struct_d_d_s___quality_evaluation_qos_policy.html#af25313cff49096b1d779bf4441f56947">  107</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> <a class="code" href="struct_d_d_s___quality_evaluation_qos_policy.html#af25313cff49096b1d779bf4441f56947">batch</a>;</div>
+<div class="line"><a name="l00109"></a><span class="lineno"><a class="line" href="struct_d_d_s___quality_evaluation_qos_policy.html#a9338350fb72d5cc692e028f7b97167ca">  109</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> <a class="code" href="struct_d_d_s___quality_evaluation_qos_policy.html#a9338350fb72d5cc692e028f7b97167ca">adjust_time</a>;</div>
+<div class="line"><a name="l00111"></a><span class="lineno"><a class="line" href="struct_d_d_s___quality_evaluation_qos_policy.html#a8a1da2c35218ed0ad88714c8a6a70165">  111</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> <a class="code" href="struct_d_d_s___quality_evaluation_qos_policy.html#a8a1da2c35218ed0ad88714c8a6a70165">initial_samples</a>;</div>
+<div class="line"><a name="l00113"></a><span class="lineno"><a class="line" href="struct_d_d_s___quality_evaluation_qos_policy.html#aeb731ba024fbc449c33ff82440d156ed">  113</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> <a class="code" href="struct_d_d_s___quality_evaluation_qos_policy.html#aeb731ba024fbc449c33ff82440d156ed">max_samples</a>;</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;}<a class="code" href="struct_d_d_s___quality_evaluation_qos_policy.html">DDS_QualityEvaluationQosPolicy</a>;</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* _ZRDDS_INCLUDE_QUALITY_EVALUATION */</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* QualityEvaluationQosPolicy_h__*/</span><span class="preprocessor"></span></div>
+<div class="ttc" id="struct_d_d_s___link_quality_evaluation_info_html"><div class="ttname"><a href="struct_d_d_s___link_quality_evaluation_info.html">DDS_LinkQualityEvaluationInfo</a></div><div class="ttdoc">定义通信质量评估内置主题关联的数据类型，为支持扩展，该类型为 MUTABLE 类型。 </div><div class="ttdef"><b>Definition:</b> QualityEvaluationQosPolicy.h:69</div></div>
+<div class="ttc" id="struct_d_d_s___quality_evaluation_qos_policy_html_af25313cff49096b1d779bf4441f56947"><div class="ttname"><a href="struct_d_d_s___quality_evaluation_qos_policy.html#af25313cff49096b1d779bf4441f56947">DDS_QualityEvaluationQosPolicy::batch</a></div><div class="ttdeci">DDS_Long batch</div><div class="ttdoc">合并发送的个数，默认为-1表示将所有连接数据合并发送。 </div><div class="ttdef"><b>Definition:</b> QualityEvaluationQosPolicy.h:107</div></div>
+<div class="ttc" id="struct_d_d_s___r_t_p_s___m_e_s_s_a_g_e___k_i_n_d_html"><div class="ttname"><a href="struct_d_d_s___r_t_p_s___m_e_s_s_a_g_e___k_i_n_d.html">DDS_RTPS_MESSAGE_KIND</a></div><div class="ttdoc">RTPS报文统计中的子消息类型。 </div></div>
+<div class="ttc" id="struct_d_d_s___link_quality_evaluation_info_html_a2f8d7ff49199246c104dad4104c3f622"><div class="ttname"><a href="struct_d_d_s___link_quality_evaluation_info.html#a2f8d7ff49199246c104dad4104c3f622">DDS_LinkQualityEvaluationInfo::rtps_smsg_recv_count</a></div><div class="ttdeci">DDS_ULongLong rtps_smsg_recv_count[30]</div><div class="ttdoc">该连接发送的rtps子消息累积统计。 </div><div class="ttdef"><b>Definition:</b> QualityEvaluationQosPolicy.h:78</div></div>
+<div class="ttc" id="struct_d_d_s___quality_evaluation_qos_policy_html"><div class="ttname"><a href="struct_d_d_s___quality_evaluation_qos_policy.html">DDS_QualityEvaluationQosPolicy</a></div><div class="ttdoc">定义通信质量评估QoS测试。 </div><div class="ttdef"><b>Definition:</b> QualityEvaluationQosPolicy.h:102</div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga40aa7a1400d66542eba212ef019321bf"><div class="ttname"><a href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a></div><div class="ttdeci">ZR_BOOLEAN DDS_Boolean</div><div class="ttdoc">ZRDDS内置的true/false类型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:197</div></div>
+<div class="ttc" id="group___core_builtin_types_html_gacfea17333fbcbbb9b97d6af81179dc2b"><div class="ttname"><a href="group___core_builtin_types.html#gacfea17333fbcbbb9b97d6af81179dc2b">DDS_Octet</a></div><div class="ttdeci">unsigned char DDS_Octet</div><div class="ttdoc">ZRDDS内置的1字节无符号整型 </div><div class="ttdef"><b>Definition:</b> OsResource.h:208</div></div>
+<div class="ttc" id="struct_d_d_s___duration__t_html"><div class="ttname"><a href="struct_d_d_s___duration__t.html">DDS_Duration_t</a></div><div class="ttdoc">用来表明一段时间段，协议规定至少有毫微秒的分辨率。 </div><div class="ttdef"><b>Definition:</b> Duration_t.h:40</div></div>
+<div class="ttc" id="struct_d_d_s___link_quality_evaluation_info_html_a896253b4e9b08f35a4e39365eb6bfdfd"><div class="ttname"><a href="struct_d_d_s___link_quality_evaluation_info.html#a896253b4e9b08f35a4e39365eb6bfdfd">DDS_LinkQualityEvaluationInfo::reader_id</a></div><div class="ttdeci">DDS_Octet reader_id[16]</div><div class="ttdoc">连接的接收端，通常为数据读者的唯一标识。 </div><div class="ttdef"><b>Definition:</b> QualityEvaluationQosPolicy.h:76</div></div>
+<div class="ttc" id="struct_d_d_s___quality_evaluation_qos_policy_html_aeb731ba024fbc449c33ff82440d156ed"><div class="ttname"><a href="struct_d_d_s___quality_evaluation_qos_policy.html#aeb731ba024fbc449c33ff82440d156ed">DDS_QualityEvaluationQosPolicy::max_samples</a></div><div class="ttdeci">DDS_ULong max_samples</div><div class="ttdoc">统计周期内，统计的最大样本个数，默认为1024。 </div><div class="ttdef"><b>Definition:</b> QualityEvaluationQosPolicy.h:113</div></div>
+<div class="ttc" id="struct_d_d_s___link_quality_evaluation_info_html_a7cc1cf623e506e7b74ef8739cf8b6732"><div class="ttname"><a href="struct_d_d_s___link_quality_evaluation_info.html#a7cc1cf623e506e7b74ef8739cf8b6732">DDS_LinkQualityEvaluationInfo::writer_id</a></div><div class="ttdeci">DDS_Octet writer_id[16]</div><div class="ttdoc">连接的发送端，通常为数据写者的唯一标识。 </div><div class="ttdef"><b>Definition:</b> QualityEvaluationQosPolicy.h:74</div></div>
+<div class="ttc" id="struct_d_d_s___quality_evaluation_qos_policy_html_a8a1da2c35218ed0ad88714c8a6a70165"><div class="ttname"><a href="struct_d_d_s___quality_evaluation_qos_policy.html#a8a1da2c35218ed0ad88714c8a6a70165">DDS_QualityEvaluationQosPolicy::initial_samples</a></div><div class="ttdeci">DDS_ULong initial_samples</div><div class="ttdoc">DDS_QualityEvaluationInfo::latency_infos 预分配的长度，避免在接收数据时动态分配空间，默认为1024。 ...</div><div class="ttdef"><b>Definition:</b> QualityEvaluationQosPolicy.h:111</div></div>
+<div class="ttc" id="struct_d_d_s___link_quality_evaluation_info_html_abc599fda62c80109e0b6298687736312"><div class="ttname"><a href="struct_d_d_s___link_quality_evaluation_info.html#abc599fda62c80109e0b6298687736312">DDS_LinkQualityEvaluationInfo::sample_size</a></div><div class="ttdeci">DDS_ULongLong sample_size</div><div class="ttdoc">该连接传输的样本累积大小，单位为字节。 </div><div class="ttdef"><b>Definition:</b> QualityEvaluationQosPolicy.h:82</div></div>
+<div class="ttc" id="struct_d_d_s___link_quality_evaluation_info_html_ad2fe24bf7032a3327040f6c51bf85d3e"><div class="ttname"><a href="struct_d_d_s___link_quality_evaluation_info.html#ad2fe24bf7032a3327040f6c51bf85d3e">DDS_LinkQualityEvaluationInfo::sample_count</a></div><div class="ttdeci">DDS_ULongLong sample_count</div><div class="ttdoc">该连接传输的样本个数累积统计。 </div><div class="ttdef"><b>Definition:</b> QualityEvaluationQosPolicy.h:80</div></div>
+<div class="ttc" id="struct_d_d_s___long_seq_html"><div class="ttname"><a href="struct_d_d_s___long_seq.html">DDS_LongSeq</a></div><div class="ttdoc">声明内置数据类型 DDS_Long 的序列，参见核心接口序列相关数据类型 。 </div></div>
+<div class="ttc" id="struct_d_d_s___quality_evaluation_qos_policy_html_afb42ea745bc631983e25a895ca4d2215"><div class="ttname"><a href="struct_d_d_s___quality_evaluation_qos_policy.html#afb42ea745bc631983e25a895ca4d2215">DDS_QualityEvaluationQosPolicy::period</a></div><div class="ttdeci">DDS_Duration_t period</div><div class="ttdoc">统计信息发布周期，默认为 DDS_DURATION_INFINITE_SEC 表示不开启统计。 </div><div class="ttdef"><b>Definition:</b> QualityEvaluationQosPolicy.h:105</div></div>
+<div class="ttc" id="group___core_builtin_types_html_gab598f8f664dfec10ab367e753dc68419"><div class="ttname"><a href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a></div><div class="ttdeci">ZR_UINT32 DDS_ULong</div><div class="ttdoc">ZRDDS内置的4字节无符号整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:258</div></div>
+<div class="ttc" id="struct_d_d_s___link_quality_evaluation_info_html_a07b5afd35423b0380716eab8e0ae90b4"><div class="ttname"><a href="struct_d_d_s___link_quality_evaluation_info.html#a07b5afd35423b0380716eab8e0ae90b4">DDS_LinkQualityEvaluationInfo::version</a></div><div class="ttdeci">DDS_ULong version</div><div class="ttdoc">结构版本信息。 </div><div class="ttdef"><b>Definition:</b> QualityEvaluationQosPolicy.h:72</div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga4032c6d83163558f1f0eab63080a1b9b"><div class="ttname"><a href="group___core_builtin_types.html#ga4032c6d83163558f1f0eab63080a1b9b">DDS_ULongLong</a></div><div class="ttdeci">ZR_UINT64 DDS_ULongLong</div><div class="ttdoc">ZRDDS内置的8字节无符号长整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:278</div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga7ebc41ac14e48dd9ee0b7b83acec714c"><div class="ttname"><a href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a></div><div class="ttdeci">ZR_INT32 DDS_Long</div><div class="ttdoc">ZRDDS内置的4字节整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:248</div></div>
+<div class="ttc" id="struct_d_d_s___quality_evaluation_qos_policy_html_a9338350fb72d5cc692e028f7b97167ca"><div class="ttname"><a href="struct_d_d_s___quality_evaluation_qos_policy.html#a9338350fb72d5cc692e028f7b97167ca">DDS_QualityEvaluationQosPolicy::adjust_time</a></div><div class="ttdeci">DDS_Boolean adjust_time</div><div class="ttdoc">是否采用内置的NTP对时调整时延。 </div><div class="ttdef"><b>Definition:</b> QualityEvaluationQosPolicy.h:109</div></div>
+<div class="ttc" id="struct_d_d_s___link_quality_evaluation_info_html_a2dad364120ac8fa4bedacce82778dd8e"><div class="ttname"><a href="struct_d_d_s___link_quality_evaluation_info.html#a2dad364120ac8fa4bedacce82778dd8e">DDS_LinkQualityEvaluationInfo::latency_infos</a></div><div class="ttdeci">DDS_LongSeq latency_infos</div><div class="ttdoc">从上一次发布评估数据后延迟统计信息，单位为us。 </div><div class="ttdef"><b>Definition:</b> QualityEvaluationQosPolicy.h:89</div></div>
+</div><!-- fragment --></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="dir_0fc3f8f3ef96ce2d45d66d6e29832317.html">resources</a></li><li class="navelem"><a class="el" href="dir_cf9ceadfa18f25e608d16251156af657.html">zrdds</a></li><li class="navelem"><a class="el" href="dir_49213087373222e5c37cddb4e4d5f33e.html">src</a></li><li class="navelem"><a class="el" href="dir_53336e619d60bf3f94a9dfb5f5011ef0.html">ZRDDSCoreInterface</a></li><li class="navelem"><b>QualityEvaluationQosPolicy.h</b></li>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

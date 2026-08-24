@@ -1,0 +1,2603 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: DDS::DomainParticipant类 参考</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li class="current"><a href="annotated.html"><span>类</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+  <div id="navrow2" class="tabs2">
+    <ul class="tablist">
+      <li><a href="annotated.html"><span>类列表</span></a></li>
+      <li><a href="classes.html"><span>类索引</span></a></li>
+      <li><a href="hierarchy.html"><span>类继承关系</span></a></li>
+      <li><a href="functions.html"><span>类成员</span></a></li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('class_d_d_s_1_1_domain_participant.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public 成员函数</a> &#124;
+<a href="#pro-methods">Protected 成员函数</a> &#124;
+<a href="class_d_d_s_1_1_domain_participant-members.html">所有成员列表</a>  </div>
+  <div class="headertitle">
+<div class="title">DDS::DomainParticipant类 参考<span class="mlabels"><span class="mlabel">abstract</span></span><div class="ingroups"><a class="el" href="group___cpp_interface.html">C++用户接口</a> &raquo; <a class="el" href="group___cpp_domain.html">域模块</a></div></div>  </div>
+</div><!--header-->
+<div class="contents">
+
+<p>该类抽象域参与者实体。  
+ <a href="class_d_d_s_1_1_domain_participant.html#details">更多...</a></p>
+
+<p><code>#include &lt;<a class="el" href="_domain_participant_8h_source.html">DomainParticipant.h</a>&gt;</code></p>
+<div class="dynheader">
+类 DDS::DomainParticipant 继承关系图:</div>
+<div class="dyncontent">
+ <div class="center">
+  <img src="class_d_d_s_1_1_domain_participant.png" usemap="#DDS::DomainParticipant_map" alt=""/>
+  <map id="DDS::DomainParticipant_map" name="DDS::DomainParticipant_map">
+<area href="class_d_d_s_1_1_entity.html" title="实体（实体) 作为所有实体（包括域参与者、主题、发布者、订阅者、数据读者、数据写者）的基类，抽象实体的�..." alt="DDS::Entity" shape="rect" coords="0,0,146,24"/>
+</map>
+ </div></div>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
+Public 成员函数</h2></td></tr>
+<tr class="memitem:a35b6952d663cd2fc38206322c601a563"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a35b6952d663cd2fc38206322c601a563">set_qos_with_profile</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *profile_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_name)=0</td></tr>
+<tr class="memdesc:a35b6952d663cd2fc38206322c601a563"><td class="mdescLeft">&#160;</td><td class="mdescRight">从QoS仓库获取QoS配置并设置到域参与者  <a href="#a35b6952d663cd2fc38206322c601a563">更多...</a><br /></td></tr>
+<tr class="separator:a35b6952d663cd2fc38206322c601a563"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae83a0a512b481f449af2816b3efada8a"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#ae83a0a512b481f449af2816b3efada8a">set_default_topic_qos_with_profile</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *profile_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_name)=0</td></tr>
+<tr class="memdesc:ae83a0a512b481f449af2816b3efada8a"><td class="mdescLeft">&#160;</td><td class="mdescRight">从QoS仓库获取主题QoS并将其设为默认主题QoS  <a href="#ae83a0a512b481f449af2816b3efada8a">更多...</a><br /></td></tr>
+<tr class="separator:ae83a0a512b481f449af2816b3efada8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9fd31ea8ef860b1685a1e89412edbe17"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a9fd31ea8ef860b1685a1e89412edbe17">set_default_publisher_qos_with_profile</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *profile_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_name)=0</td></tr>
+<tr class="memdesc:a9fd31ea8ef860b1685a1e89412edbe17"><td class="mdescLeft">&#160;</td><td class="mdescRight">从QoS仓库获取发布者QoS并将其设为默认发布者QoS  <a href="#a9fd31ea8ef860b1685a1e89412edbe17">更多...</a><br /></td></tr>
+<tr class="separator:a9fd31ea8ef860b1685a1e89412edbe17"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4a19f00fe721e01330436064b3f4737c"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a4a19f00fe721e01330436064b3f4737c">set_default_subscriber_qos_with_profile</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *profile_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_name)=0</td></tr>
+<tr class="memdesc:a4a19f00fe721e01330436064b3f4737c"><td class="mdescLeft">&#160;</td><td class="mdescRight">从QoS仓库获取订阅者QoS并将其设为默认订阅者QoS  <a href="#a4a19f00fe721e01330436064b3f4737c">更多...</a><br /></td></tr>
+<tr class="separator:a4a19f00fe721e01330436064b3f4737c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa69c5bd9671e148b9dad2d1f5c3cf907"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_publisher.html">Publisher</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#aa69c5bd9671e148b9dad2d1f5c3cf907">create_publisher_with_qos_profile</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *profile_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_name, <a class="el" href="class_d_d_s_1_1_publisher_listener.html">PublisherListener</a> *listener, <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> mask)=0</td></tr>
+<tr class="memdesc:aa69c5bd9671e148b9dad2d1f5c3cf907"><td class="mdescLeft">&#160;</td><td class="mdescRight">从QoS仓库中获取发布者QoS并用其创建发布者。  <a href="#aa69c5bd9671e148b9dad2d1f5c3cf907">更多...</a><br /></td></tr>
+<tr class="separator:aa69c5bd9671e148b9dad2d1f5c3cf907"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a15a40e7d2d360e2e8072c382ae7da9ff"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_subscriber.html">Subscriber</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a15a40e7d2d360e2e8072c382ae7da9ff">create_subscriber_with_qos_profile</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *profile_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_name, <a class="el" href="class_d_d_s_1_1_subscriber_listener.html">SubscriberListener</a> *listener, <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> mask)=0</td></tr>
+<tr class="memdesc:a15a40e7d2d360e2e8072c382ae7da9ff"><td class="mdescLeft">&#160;</td><td class="mdescRight">从QoS仓库中获取订阅者QoS并用其创建订阅者  <a href="#a15a40e7d2d360e2e8072c382ae7da9ff">更多...</a><br /></td></tr>
+<tr class="separator:a15a40e7d2d360e2e8072c382ae7da9ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a933c7a00e7de34be4cf3c6c653a742e8"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_topic.html">Topic</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a933c7a00e7de34be4cf3c6c653a742e8">create_topic_with_qos_profile</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *topic_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *type_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *profile_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_name, <a class="el" href="class_d_d_s_1_1_topic_listener.html">TopicListener</a> *listener, <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> mask)=0</td></tr>
+<tr class="memdesc:a933c7a00e7de34be4cf3c6c653a742e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">从QoS仓库中获取主题QoS并用其创建主题。  <a href="#a933c7a00e7de34be4cf3c6c653a742e8">更多...</a><br /></td></tr>
+<tr class="separator:a933c7a00e7de34be4cf3c6c653a742e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a43ed65bf93db1ee4a693f0f26195cf00"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_data_writer.html">DataWriter</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a43ed65bf93db1ee4a693f0f26195cf00">create_datawriter_with_topic_and_qos_profile</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *topicName, <a class="el" href="class_d_d_s_1_1_type_support.html">TypeSupport</a> *typeSupport, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *profile_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_name, <a class="el" href="class_d_d_s_1_1_data_writer_listener.html">DataWriterListener</a> *dw_listener, <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> mask)=0</td></tr>
+<tr class="memdesc:a43ed65bf93db1ee4a693f0f26195cf00"><td class="mdescLeft">&#160;</td><td class="mdescRight">利用自动创建的用户发布者，创建指定主题名称的数据写者，当主题名称关联的主题未创建时，将自动创建， 否则将利用已经创建的主题创建数据写者，调用该函数等价于 <a class="el" href="class_d_d_s_1_1_domain_participant.html#a7ddcc1016c002683ba05a183cbbb0825" title="为简化用户操作，域参与者创建时将使用默认QoS自动创建用户使用的发布者，该接口为获取该自动创建的发布者。...">get_auto_created_publisher()</a>-&gt;create_datawriter_with_topic_and_qos_profile 。  <a href="#a43ed65bf93db1ee4a693f0f26195cf00">更多...</a><br /></td></tr>
+<tr class="separator:a43ed65bf93db1ee4a693f0f26195cf00"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adcdd7457c51cc5161e861f7b387e0665"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_data_reader.html">DataReader</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#adcdd7457c51cc5161e861f7b387e0665">create_datareader_with_topic_and_qos_profile</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *topicName, <a class="el" href="class_d_d_s_1_1_type_support.html">TypeSupport</a> *typeSupport, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *profile_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_name, <a class="el" href="class_d_d_s_1_1_data_reader_listener.html">DataReaderListener</a> *dr_listener, <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> mask)=0</td></tr>
+<tr class="memdesc:adcdd7457c51cc5161e861f7b387e0665"><td class="mdescLeft">&#160;</td><td class="mdescRight">利用自动创建的用户订阅者，创建指定主题名称的数据读者，当主题名称关联的主题未创建时， 将自动创建，否则将利用已经创建的主题创建数据读者。调用该函数等价于 <a class="el" href="class_d_d_s_1_1_domain_participant.html#ae6f288ce0de606aa2cab23aac4ea3f42" title="为简化用户操作，域参与者创建时将使用默认QoS自动创建用户使用的订阅者，该接口为获取该自动创建的订阅者，...">get_auto_created_subscriber()</a>-&gt;create_datareader_with_topic_and_qos_profile 。  <a href="#adcdd7457c51cc5161e861f7b387e0665">更多...</a><br /></td></tr>
+<tr class="separator:adcdd7457c51cc5161e861f7b387e0665"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7ddcc1016c002683ba05a183cbbb0825"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_publisher.html">Publisher</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a7ddcc1016c002683ba05a183cbbb0825">get_auto_created_publisher</a> ()=0</td></tr>
+<tr class="memdesc:a7ddcc1016c002683ba05a183cbbb0825"><td class="mdescLeft">&#160;</td><td class="mdescRight">为简化用户操作，域参与者创建时将使用默认QoS自动创建用户使用的发布者，该接口为获取该自动创建的发布者。  <a href="#a7ddcc1016c002683ba05a183cbbb0825">更多...</a><br /></td></tr>
+<tr class="separator:a7ddcc1016c002683ba05a183cbbb0825"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae6f288ce0de606aa2cab23aac4ea3f42"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_subscriber.html">Subscriber</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#ae6f288ce0de606aa2cab23aac4ea3f42">get_auto_created_subscriber</a> ()=0</td></tr>
+<tr class="memdesc:ae6f288ce0de606aa2cab23aac4ea3f42"><td class="mdescLeft">&#160;</td><td class="mdescRight">为简化用户操作，域参与者创建时将使用默认QoS自动创建用户使用的订阅者，该接口为获取该自动创建的订阅者， 自动创建的订阅者与内置订阅者不同，内置订阅者用于管理内置的Reader实体，用于发现过程。  <a href="#ae6f288ce0de606aa2cab23aac4ea3f42">更多...</a><br /></td></tr>
+<tr class="separator:ae6f288ce0de606aa2cab23aac4ea3f42"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a10633af7e8d0b9eb6fd9858325a2a1bc"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_subscriber.html">Subscriber</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a10633af7e8d0b9eb6fd9858325a2a1bc">get_builtin_subscriber</a> ()=0</td></tr>
+<tr class="memdesc:a10633af7e8d0b9eb6fd9858325a2a1bc"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取用户实体发现的内置订阅者。  <a href="#a10633af7e8d0b9eb6fd9858325a2a1bc">更多...</a><br /></td></tr>
+<tr class="separator:a10633af7e8d0b9eb6fd9858325a2a1bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afeec1e8edb5d976efc49c6cd6f417a7b"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#afeec1e8edb5d976efc49c6cd6f417a7b">get_discovered_participants</a> (<a class="el" href="group___cpp_core_struct.html#ga38e54e14a30a16bf8dfb07668c3b3fae">InstanceHandleSeq</a> &amp;discoved_handleList)=0</td></tr>
+<tr class="memdesc:afeec1e8edb5d976efc49c6cd6f417a7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取该域参与者发现的远程（逻辑上，也有可能在同一个节点，甚至在同一个应用程序中）域参与者的标识列表。  <a href="#afeec1e8edb5d976efc49c6cd6f417a7b">更多...</a><br /></td></tr>
+<tr class="separator:afeec1e8edb5d976efc49c6cd6f417a7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5c92d69e0bb58784176aabc6a1e6b3e9"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a5c92d69e0bb58784176aabc6a1e6b3e9">get_discovered_participant_data</a> (<a class="el" href="group___cpp_core_struct.html#gadebd634b994418903df498fd4df8e013">ParticipantBuiltinTopicData</a> &amp;a_pd, const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;a_handle)=0</td></tr>
+<tr class="memdesc:a5c92d69e0bb58784176aabc6a1e6b3e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法查询指定标识的域参与者的详细信息。  <a href="#a5c92d69e0bb58784176aabc6a1e6b3e9">更多...</a><br /></td></tr>
+<tr class="separator:a5c92d69e0bb58784176aabc6a1e6b3e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af62946b2db366aecc63d12ed7c4b6213"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___cpp_core_struct.html#ga7c395f878d56b544140dc610c3bd83c8">DomainId_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#af62946b2db366aecc63d12ed7c4b6213">get_domain_id</a> ()=0</td></tr>
+<tr class="memdesc:af62946b2db366aecc63d12ed7c4b6213"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取该域参与者所属的域。  <a href="#af62946b2db366aecc63d12ed7c4b6213">更多...</a><br /></td></tr>
+<tr class="separator:af62946b2db366aecc63d12ed7c4b6213"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac17be2747991d6b44f1aa0e4afc6a147"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_domain_participant_listener.html">DomainParticipantListener</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#ac17be2747991d6b44f1aa0e4afc6a147">get_listener</a> ()=0</td></tr>
+<tr class="memdesc:ac17be2747991d6b44f1aa0e4afc6a147"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法获取通过 <a class="el" href="class_d_d_s_1_1_domain_participant.html#a41c2e7b6734872dd8e84a3809fb50909" title="设置该域参与者的监听器。 ">set_listener</a> 方法或者创建时为域参与者设置的监听器对象。  <a href="#ac17be2747991d6b44f1aa0e4afc6a147">更多...</a><br /></td></tr>
+<tr class="separator:ac17be2747991d6b44f1aa0e4afc6a147"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac62fcb5d263c29a611b1338bfca437e9"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#ac62fcb5d263c29a611b1338bfca437e9">get_qos</a> (<a class="el" href="group___cpp_core_struct.html#ga16f667f9768aae75a20bb5ac372b00b7">DomainParticipantQos</a> &amp;qoslist)=0</td></tr>
+<tr class="memdesc:ac62fcb5d263c29a611b1338bfca437e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取该域参与者的QoS配置。  <a href="#ac62fcb5d263c29a611b1338bfca437e9">更多...</a><br /></td></tr>
+<tr class="separator:ac62fcb5d263c29a611b1338bfca437e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a629ea11108b478ea281c0f94519e83da"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a629ea11108b478ea281c0f94519e83da">ignore_participant</a> (const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;handle)=0</td></tr>
+<tr class="memdesc:a629ea11108b478ea281c0f94519e83da"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法用于忽略指定的域参与者，即如同未发现该域参与者，忽略该域参与者下的所有订阅、发布信息。  <a href="#a629ea11108b478ea281c0f94519e83da">更多...</a><br /></td></tr>
+<tr class="separator:a629ea11108b478ea281c0f94519e83da"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a41c2e7b6734872dd8e84a3809fb50909"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a41c2e7b6734872dd8e84a3809fb50909">set_listener</a> (<a class="el" href="class_d_d_s_1_1_domain_participant_listener.html">DomainParticipantListener</a> *a_listener, const <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> &amp;mask)=0</td></tr>
+<tr class="memdesc:a41c2e7b6734872dd8e84a3809fb50909"><td class="mdescLeft">&#160;</td><td class="mdescRight">设置该域参与者的监听器。  <a href="#a41c2e7b6734872dd8e84a3809fb50909">更多...</a><br /></td></tr>
+<tr class="separator:a41c2e7b6734872dd8e84a3809fb50909"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad96580db7408206e23e520ed092155f2"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#ad96580db7408206e23e520ed092155f2">set_qos</a> (const <a class="el" href="group___cpp_core_struct.html#ga16f667f9768aae75a20bb5ac372b00b7">DomainParticipantQos</a> &amp;qoslist)=0</td></tr>
+<tr class="memdesc:ad96580db7408206e23e520ed092155f2"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法设置为域参与者设置的QoS。  <a href="#ad96580db7408206e23e520ed092155f2">更多...</a><br /></td></tr>
+<tr class="separator:ad96580db7408206e23e520ed092155f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a503f98f2792e078113ffd193a3df3890"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_publisher.html">Publisher</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a503f98f2792e078113ffd193a3df3890">create_publisher</a> (const <a class="el" href="group___cpp_core_struct.html#ga31118461559792596bffbd78d90d5bb1">PublisherQos</a> &amp;qoslist, <a class="el" href="class_d_d_s_1_1_publisher_listener.html">PublisherListener</a> *a_listener, const <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> &amp;mask)=0</td></tr>
+<tr class="memdesc:a503f98f2792e078113ffd193a3df3890"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法在域参与者下创建一个发布者子实体，并设置QoS以及监听器，表明应用想要向该域内发布数据。  <a href="#a503f98f2792e078113ffd193a3df3890">更多...</a><br /></td></tr>
+<tr class="separator:a503f98f2792e078113ffd193a3df3890"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acc06433bdaa3f81aeaab869f7a0517ef"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#acc06433bdaa3f81aeaab869f7a0517ef">delete_publisher</a> (<a class="el" href="class_d_d_s_1_1_publisher.html">Publisher</a> *a_pub)=0</td></tr>
+<tr class="memdesc:acc06433bdaa3f81aeaab869f7a0517ef"><td class="mdescLeft">&#160;</td><td class="mdescRight">删除指定的发布者实体。  <a href="#acc06433bdaa3f81aeaab869f7a0517ef">更多...</a><br /></td></tr>
+<tr class="separator:acc06433bdaa3f81aeaab869f7a0517ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7127e3dd7a90bb5e4d5839f4954cf29c"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a7127e3dd7a90bb5e4d5839f4954cf29c">get_publishers</a> (PublisherSeq &amp;publisherList)=0</td></tr>
+<tr class="memdesc:a7127e3dd7a90bb5e4d5839f4954cf29c"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取当前未被删除的由该域参与者创建的发布者列表。  <a href="#a7127e3dd7a90bb5e4d5839f4954cf29c">更多...</a><br /></td></tr>
+<tr class="separator:a7127e3dd7a90bb5e4d5839f4954cf29c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a55e5c42616e3f268655fe4cae88dc21c"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_subscriber.html">Subscriber</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a55e5c42616e3f268655fe4cae88dc21c">create_subscriber</a> (const <a class="el" href="group___cpp_core_struct.html#ga520dd7eb30d45597c5166df1ad347d26">SubscriberQos</a> &amp;qoslist, <a class="el" href="class_d_d_s_1_1_subscriber_listener.html">SubscriberListener</a> *a_listener, const <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> &amp;mask)=0</td></tr>
+<tr class="memdesc:a55e5c42616e3f268655fe4cae88dc21c"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法在域参与者下创建一个订阅者子实体，并设置QoS以及监听器，表明应用想要向该域内订阅数据。  <a href="#a55e5c42616e3f268655fe4cae88dc21c">更多...</a><br /></td></tr>
+<tr class="separator:a55e5c42616e3f268655fe4cae88dc21c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a54343328a1bdd04cd7f73e2427cc93e3"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a54343328a1bdd04cd7f73e2427cc93e3">delete_subscriber</a> (<a class="el" href="class_d_d_s_1_1_subscriber.html">Subscriber</a> *a_sub)=0</td></tr>
+<tr class="memdesc:a54343328a1bdd04cd7f73e2427cc93e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">删除指定的订阅者实体。  <a href="#a54343328a1bdd04cd7f73e2427cc93e3">更多...</a><br /></td></tr>
+<tr class="separator:a54343328a1bdd04cd7f73e2427cc93e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5e5337f33081b4fd63a837647d9a5e38"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a5e5337f33081b4fd63a837647d9a5e38">get_subscribers</a> (<a class="el" href="struct_subscriber_seq.html">SubscriberSeq</a> &amp;subscriberList)=0</td></tr>
+<tr class="memdesc:a5e5337f33081b4fd63a837647d9a5e38"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取当前未被删除的由该域参与者创建的订阅者列表。  <a href="#a5e5337f33081b4fd63a837647d9a5e38">更多...</a><br /></td></tr>
+<tr class="separator:a5e5337f33081b4fd63a837647d9a5e38"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2d6170dace4cc2744d4f5faef8f9158c"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_topic.html">Topic</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a2d6170dace4cc2744d4f5faef8f9158c">create_topic</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *topic_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *type_name, const <a class="el" href="group___cpp_core_struct.html#ga0144c9733462be0674d60638a514b47b">TopicQos</a> &amp;qoslist, <a class="el" href="class_d_d_s_1_1_topic_listener.html">TopicListener</a> *a_listener, const <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> &amp;mask)=0</td></tr>
+<tr class="memdesc:a2d6170dace4cc2744d4f5faef8f9158c"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法在域参与者下创建一个主题子实体，并设置域内唯一的名称、关联的数据类型、QoS以及监听器，用于抽象域内的数据。  <a href="#a2d6170dace4cc2744d4f5faef8f9158c">更多...</a><br /></td></tr>
+<tr class="separator:a2d6170dace4cc2744d4f5faef8f9158c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7e95a8e1e13eefcf1227b6cb7fef2c80"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_topic.html">Topic</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a7e95a8e1e13eefcf1227b6cb7fef2c80">create_topic_w_type_support</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *topic_name, <a class="el" href="class_d_d_s_1_1_type_support.html">TypeSupport</a> *type_support, const <a class="el" href="group___cpp_core_struct.html#ga0144c9733462be0674d60638a514b47b">TopicQos</a> &amp;qoslist, <a class="el" href="class_d_d_s_1_1_topic_listener.html">TopicListener</a> *a_listener, const <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> &amp;mask)=0</td></tr>
+<tr class="memdesc:a7e95a8e1e13eefcf1227b6cb7fef2c80"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法与 create_topic 相同，在创建主题之前将会以默认的类型名自动注册关联的类型。  <a href="#a7e95a8e1e13eefcf1227b6cb7fef2c80">更多...</a><br /></td></tr>
+<tr class="separator:a7e95a8e1e13eefcf1227b6cb7fef2c80"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4df7bb7228ba33a1dc5e1b0f791f569e"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a4df7bb7228ba33a1dc5e1b0f791f569e">delete_topic</a> (<a class="el" href="class_d_d_s_1_1_topic.html">Topic</a> *a_topic)=0</td></tr>
+<tr class="memdesc:a4df7bb7228ba33a1dc5e1b0f791f569e"><td class="mdescLeft">&#160;</td><td class="mdescRight">删除指定主题。  <a href="#a4df7bb7228ba33a1dc5e1b0f791f569e">更多...</a><br /></td></tr>
+<tr class="separator:a4df7bb7228ba33a1dc5e1b0f791f569e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa275e302c62f1b273519527e065b55e9"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_topic.html">Topic</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#aa275e302c62f1b273519527e065b55e9">find_topic</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *topic_name, const <a class="el" href="group___cpp_core_struct.html#gae56b310fa579905cdf4947b3455cbda3">Duration_t</a> &amp;timeout)=0</td></tr>
+<tr class="memdesc:aa275e302c62f1b273519527e065b55e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">根据主题名字阻塞查找本地主题。  <a href="#aa275e302c62f1b273519527e065b55e9">更多...</a><br /></td></tr>
+<tr class="separator:aa275e302c62f1b273519527e065b55e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aca632dde942406763a8d952125e638f8"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_topic_description.html">TopicDescription</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#aca632dde942406763a8d952125e638f8">lookup_topicdescription</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *name)=0</td></tr>
+<tr class="memdesc:aca632dde942406763a8d952125e638f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">根据主题名字查找本地创建的主题，包括主题以及基于内容过滤的主题。  <a href="#aca632dde942406763a8d952125e638f8">更多...</a><br /></td></tr>
+<tr class="separator:aca632dde942406763a8d952125e638f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae1851ff1f0eea6dedd5dd43c1a705ca5"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#ae1851ff1f0eea6dedd5dd43c1a705ca5">ignore_topic</a> (const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;handle)=0</td></tr>
+<tr class="memdesc:ae1851ff1f0eea6dedd5dd43c1a705ca5"><td class="mdescLeft">&#160;</td><td class="mdescRight">忽略指定标识表示的主题关联的所有订阅/发布。  <a href="#ae1851ff1f0eea6dedd5dd43c1a705ca5">更多...</a><br /></td></tr>
+<tr class="separator:ae1851ff1f0eea6dedd5dd43c1a705ca5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6fb334726006116892d0dc26e653e1e4"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a6fb334726006116892d0dc26e653e1e4">ignore_publication</a> (const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;handle)=0</td></tr>
+<tr class="memdesc:a6fb334726006116892d0dc26e653e1e4"><td class="mdescLeft">&#160;</td><td class="mdescRight">忽略指定数据写者，即不与本地数据读者匹配。  <a href="#a6fb334726006116892d0dc26e653e1e4">更多...</a><br /></td></tr>
+<tr class="separator:a6fb334726006116892d0dc26e653e1e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac40720008db275eac6f6376d6c1640c7"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#ac40720008db275eac6f6376d6c1640c7">ignore_subscription</a> (const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;handle)=0</td></tr>
+<tr class="memdesc:ac40720008db275eac6f6376d6c1640c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">忽略指定数据读者，即不与本地数据写者匹配。  <a href="#ac40720008db275eac6f6376d6c1640c7">更多...</a><br /></td></tr>
+<tr class="separator:ac40720008db275eac6f6376d6c1640c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad9e649762791146a566e2ed34f575127"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#ad9e649762791146a566e2ed34f575127">delete_contained_entities</a> ()=0</td></tr>
+<tr class="memdesc:ad9e649762791146a566e2ed34f575127"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法删除域参与者创建的所有实体。  <a href="#ad9e649762791146a566e2ed34f575127">更多...</a><br /></td></tr>
+<tr class="separator:ad9e649762791146a566e2ed34f575127"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a93daae62585e1865877eb2e420a39a05"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a93daae62585e1865877eb2e420a39a05">contains_entity</a> (const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;a_handle)=0</td></tr>
+<tr class="memdesc:a93daae62585e1865877eb2e420a39a05"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法用于测试实体是否是域参与者的子实体。  <a href="#a93daae62585e1865877eb2e420a39a05">更多...</a><br /></td></tr>
+<tr class="separator:a93daae62585e1865877eb2e420a39a05"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a511e19745a36beb7a7f90969f57459fe"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a511e19745a36beb7a7f90969f57459fe">set_default_subscriber_qos</a> (const <a class="el" href="group___cpp_core_struct.html#ga520dd7eb30d45597c5166df1ad347d26">SubscriberQos</a> &amp;qoslist)=0</td></tr>
+<tr class="memdesc:a511e19745a36beb7a7f90969f57459fe"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法设置为订阅者保存的默认QoS配置。  <a href="#a511e19745a36beb7a7f90969f57459fe">更多...</a><br /></td></tr>
+<tr class="separator:a511e19745a36beb7a7f90969f57459fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4b27eb09fa4384a203d89c3814c8a30d"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a4b27eb09fa4384a203d89c3814c8a30d">set_default_publisher_qos</a> (const <a class="el" href="group___cpp_core_struct.html#ga31118461559792596bffbd78d90d5bb1">PublisherQos</a> &amp;qoslist)=0</td></tr>
+<tr class="memdesc:a4b27eb09fa4384a203d89c3814c8a30d"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法设置为发布者保存的默认QoS配置。  <a href="#a4b27eb09fa4384a203d89c3814c8a30d">更多...</a><br /></td></tr>
+<tr class="separator:a4b27eb09fa4384a203d89c3814c8a30d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade8b90f7ffda88f5311afea0c06065f4"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#ade8b90f7ffda88f5311afea0c06065f4">set_default_topic_qos</a> (const <a class="el" href="group___cpp_core_struct.html#ga0144c9733462be0674d60638a514b47b">TopicQos</a> &amp;qoslist)=0</td></tr>
+<tr class="memdesc:ade8b90f7ffda88f5311afea0c06065f4"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法设置为主题保存的默认QoS配置。  <a href="#ade8b90f7ffda88f5311afea0c06065f4">更多...</a><br /></td></tr>
+<tr class="separator:ade8b90f7ffda88f5311afea0c06065f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a196a6ace12de00e7b7234206677d739f"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a196a6ace12de00e7b7234206677d739f">get_default_subscriber_qos</a> (<a class="el" href="group___cpp_core_struct.html#ga520dd7eb30d45597c5166df1ad347d26">SubscriberQos</a> &amp;qoslist)=0</td></tr>
+<tr class="memdesc:a196a6ace12de00e7b7234206677d739f"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法获取为订阅者保存的默认QoS配置。  <a href="#a196a6ace12de00e7b7234206677d739f">更多...</a><br /></td></tr>
+<tr class="separator:a196a6ace12de00e7b7234206677d739f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f92920f7567d0b8d6fb217df15a27df"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a6f92920f7567d0b8d6fb217df15a27df">get_default_publisher_qos</a> (<a class="el" href="group___cpp_core_struct.html#ga31118461559792596bffbd78d90d5bb1">PublisherQos</a> &amp;qoslist)=0</td></tr>
+<tr class="memdesc:a6f92920f7567d0b8d6fb217df15a27df"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法获取为发布者保存的默认QoS配置。  <a href="#a6f92920f7567d0b8d6fb217df15a27df">更多...</a><br /></td></tr>
+<tr class="separator:a6f92920f7567d0b8d6fb217df15a27df"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acfd3e52b2fb2b0a0a4db4d4dc7f6902a"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#acfd3e52b2fb2b0a0a4db4d4dc7f6902a">get_default_topic_qos</a> (<a class="el" href="group___cpp_core_struct.html#ga0144c9733462be0674d60638a514b47b">TopicQos</a> &amp;qoslist)=0</td></tr>
+<tr class="memdesc:acfd3e52b2fb2b0a0a4db4d4dc7f6902a"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法获取为主题保存的默认QoS配置。  <a href="#acfd3e52b2fb2b0a0a4db4d4dc7f6902a">更多...</a><br /></td></tr>
+<tr class="separator:acfd3e52b2fb2b0a0a4db4d4dc7f6902a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3d001ed1b8fb5390a4860d4af8ba769f"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_content_filtered_topic.html">ContentFilteredTopic</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a3d001ed1b8fb5390a4860d4af8ba769f">create_contentfilteredtopic</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *name, const <a class="el" href="class_d_d_s_1_1_topic.html">Topic</a> *related_topic, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *filter_exp, const <a class="el" href="group___cpp_core_struct.html#ga17edac9ffccff75d0705a8365f8a438d">StringSeq</a> &amp;exp_para)=0</td></tr>
+<tr class="memdesc:a3d001ed1b8fb5390a4860d4af8ba769f"><td class="mdescLeft">&#160;</td><td class="mdescRight">创建基于内容过滤的主题。  <a href="#a3d001ed1b8fb5390a4860d4af8ba769f">更多...</a><br /></td></tr>
+<tr class="separator:a3d001ed1b8fb5390a4860d4af8ba769f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7f96e8395c5f0d5966d0b894d0de4161"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a7f96e8395c5f0d5966d0b894d0de4161">delete_contentfilteredtopic</a> (<a class="el" href="class_d_d_s_1_1_content_filtered_topic.html">ContentFilteredTopic</a> *a_topic)=0</td></tr>
+<tr class="memdesc:a7f96e8395c5f0d5966d0b894d0de4161"><td class="mdescLeft">&#160;</td><td class="mdescRight">删除指定基于内容过滤的主题。  <a href="#a7f96e8395c5f0d5966d0b894d0de4161">更多...</a><br /></td></tr>
+<tr class="separator:a7f96e8395c5f0d5966d0b894d0de4161"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4eafa5eb1f106594307423016dc721a1"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_multi_topic.html">MultiTopic</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a4eafa5eb1f106594307423016dc721a1">create_multitopic</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *type_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *sub_exp, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> **exp_para)=0</td></tr>
+<tr class="memdesc:a4eafa5eb1f106594307423016dc721a1"><td class="mdescLeft">&#160;</td><td class="mdescRight">创建合并主题。  <a href="#a4eafa5eb1f106594307423016dc721a1">更多...</a><br /></td></tr>
+<tr class="separator:a4eafa5eb1f106594307423016dc721a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a11bba49a77f33512aed965e20424be7a"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a11bba49a77f33512aed965e20424be7a">delete_multitopic</a> (<a class="el" href="class_d_d_s_1_1_multi_topic.html">MultiTopic</a> *a_topic)=0</td></tr>
+<tr class="memdesc:a11bba49a77f33512aed965e20424be7a"><td class="mdescLeft">&#160;</td><td class="mdescRight">删除合并主题。  <a href="#a11bba49a77f33512aed965e20424be7a">更多...</a><br /></td></tr>
+<tr class="separator:a11bba49a77f33512aed965e20424be7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abeeb872fdc23861e8635a7ec36dbef66"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#abeeb872fdc23861e8635a7ec36dbef66">get_discovered_topics</a> (<a class="el" href="group___cpp_core_struct.html#ga38e54e14a30a16bf8dfb07668c3b3fae">InstanceHandleSeq</a> &amp;discoved_handleList)=0</td></tr>
+<tr class="memdesc:abeeb872fdc23861e8635a7ec36dbef66"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取已经被发现且没有被忽略的其他主题的标识。  <a href="#abeeb872fdc23861e8635a7ec36dbef66">更多...</a><br /></td></tr>
+<tr class="separator:abeeb872fdc23861e8635a7ec36dbef66"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aca525f7d01b718cd5236fb20648ed8c2"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#aca525f7d01b718cd5236fb20648ed8c2">get_current_time</a> (<a class="el" href="group___cpp_core_struct.html#ga48575f104487f1d51cfc068792218ea4">Time_t</a> &amp;cur_time)=0</td></tr>
+<tr class="memdesc:aca525f7d01b718cd5236fb20648ed8c2"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取ZRDDS内部使用的时间系统的当前时间戳。  <a href="#aca525f7d01b718cd5236fb20648ed8c2">更多...</a><br /></td></tr>
+<tr class="separator:aca525f7d01b718cd5236fb20648ed8c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5ec759f822576d388501c689e20d01f1"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a5ec759f822576d388501c689e20d01f1">assert_liveliness</a> ()=0</td></tr>
+<tr class="memdesc:a5ec759f822576d388501c689e20d01f1"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法用于手动声明域参与者的存活性，当存活性策略设置为 <a class="el" href="group___core_qos_struct.html#gga3ea638553fd66356c38071040de062e5a5519eb00b713987173ff0858e7e3c1f0" title="通过域参与者手动管理存活性声明。 ">DDS_MANUAL_BY_PARTICIPANT_LIVELINESS_QOS</a> 时有用。  <a href="#a5ec759f822576d388501c689e20d01f1">更多...</a><br /></td></tr>
+<tr class="separator:a5ec759f822576d388501c689e20d01f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_methods_class_d_d_s_1_1_entity"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_class_d_d_s_1_1_entity')"><img src="closed.png" alt="-"/>&#160;Public 成员函数 继承自 <a class="el" href="class_d_d_s_1_1_entity.html">DDS::Entity</a></td></tr>
+<tr class="memitem:aa2bbb1f4eb6fcb40efeaee0a8ea56fad inherit pub_methods_class_d_d_s_1_1_entity"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_status_condition.html">StatusCondition</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_entity.html#aa2bbb1f4eb6fcb40efeaee0a8ea56fad">get_statuscondition</a> ()=0</td></tr>
+<tr class="memdesc:aa2bbb1f4eb6fcb40efeaee0a8ea56fad inherit pub_methods_class_d_d_s_1_1_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">返回该实体关联的状态条件。  <a href="#aa2bbb1f4eb6fcb40efeaee0a8ea56fad">更多...</a><br /></td></tr>
+<tr class="separator:aa2bbb1f4eb6fcb40efeaee0a8ea56fad inherit pub_methods_class_d_d_s_1_1_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abfefe5840f713c729630757a57c494af inherit pub_methods_class_d_d_s_1_1_entity"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_entity.html#abfefe5840f713c729630757a57c494af">get_status_changes</a> ()=0</td></tr>
+<tr class="memdesc:abfefe5840f713c729630757a57c494af inherit pub_methods_class_d_d_s_1_1_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取该实体从上一次获取任意状态后的状态变化。  <a href="#abfefe5840f713c729630757a57c494af">更多...</a><br /></td></tr>
+<tr class="separator:abfefe5840f713c729630757a57c494af inherit pub_methods_class_d_d_s_1_1_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acaf66ba087d9c1c5d716eda0756f2254 inherit pub_methods_class_d_d_s_1_1_entity"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_entity.html#acaf66ba087d9c1c5d716eda0756f2254">enable</a> ()=0</td></tr>
+<tr class="memdesc:acaf66ba087d9c1c5d716eda0756f2254 inherit pub_methods_class_d_d_s_1_1_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">手动使能该实体，参见<a class="el" href="index.html#entity-enable">实体使能</a> 。  <a href="#acaf66ba087d9c1c5d716eda0756f2254">更多...</a><br /></td></tr>
+<tr class="separator:acaf66ba087d9c1c5d716eda0756f2254 inherit pub_methods_class_d_d_s_1_1_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aef72ffc167d867c1f3d2a8ef594b0011 inherit pub_methods_class_d_d_s_1_1_entity"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_entity.html#aef72ffc167d867c1f3d2a8ef594b0011">get_instance_handle</a> ()=0</td></tr>
+<tr class="memdesc:aef72ffc167d867c1f3d2a8ef594b0011 inherit pub_methods_class_d_d_s_1_1_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取该实体的唯一标识。  <a href="#aef72ffc167d867c1f3d2a8ef594b0011">更多...</a><br /></td></tr>
+<tr class="separator:aef72ffc167d867c1f3d2a8ef594b0011 inherit pub_methods_class_d_d_s_1_1_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
+Protected 成员函数</h2></td></tr>
+<tr class="memitem:a2de283fc832b004d73a0854d254fff9d"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a2de283fc832b004d73a0854d254fff9d"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant.html#a2de283fc832b004d73a0854d254fff9d">DomainParticipant</a> ()</td></tr>
+<tr class="memdesc:a2de283fc832b004d73a0854d254fff9d"><td class="mdescLeft">&#160;</td><td class="mdescRight">工厂模式创建实体，私有的构造函数禁止用户自己创建。 <br /></td></tr>
+<tr class="separator:a2de283fc832b004d73a0854d254fff9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock"><p>该类抽象域参与者实体。 </p>
+<p>域参与者主要提供以下接口功能：</p><ul>
+<li>实体功能；</li>
+<li>作为其他实体工厂；<ul>
+<li>作为发布者实体工厂；</li>
+<li>作为订阅者实体工厂；</li>
+<li>作为主题实体工厂；</li>
+</ul>
+</li>
+<li>内置实体管理；</li>
+<li>通信管理；</li>
+<li>域信息查询；</li>
+<li>存活性管理； </li>
+</ul>
+<dl><dt><b>示例: </b></dt><dd><a class="el" href="_extend_interface_2app1_8cpp-example.html#_a0">ExtendInterface/app1.cpp</a>, <a class="el" href="_extend_interface_2app2_8cpp-example.html#_a0">ExtendInterface/app2.cpp</a>, <a class="el" href="_extend_interface_2app3_8cpp-example.html#_a0">ExtendInterface/app3.cpp</a>, <a class="el" href="_security_example_2ac_example_pub_8cpp-example.html#_a3">SecurityExample/ac_example_pub.cpp</a>, <a class="el" href="_security_example_2ac_example_sub_8cpp-example.html#_a10">SecurityExample/ac_example_sub.cpp</a>, <a class="el" href="_security_example_2auth_example_pub_8cpp-example.html#_a3">SecurityExample/auth_example_pub.cpp</a>, <a class="el" href="_security_example_2auth_example_sub_8cpp-example.html#_a10">SecurityExample/auth_example_sub.cpp</a>, <a class="el" href="_security_example_2encry_example_pub_8cpp-example.html#_a3">SecurityExample/encry_example_pub.cpp</a>, <a class="el" href="_security_example_2encry_example_sub_8cpp-example.html#_a10">SecurityExample/encry_example_sub.cpp</a>, <a class="el" href="_set_builtin_listener_example_8cpp-example.html#_a6">SetBuiltinListenerExample.cpp</a>, <a class="el" href="_simple_interface_2_simple_interface_bytes_type_pub_8cpp-example.html#_a4">SimpleInterface/SimpleInterfaceBytesTypePub.cpp</a>, <a class="el" href="_simple_interface_2_simple_interface_bytes_type_sub_8cpp-example.html#_a10">SimpleInterface/SimpleInterfaceBytesTypeSub.cpp</a>, <a class="el" href="_simple_interface_2_simple_interface_zero_copy_pub_8cpp-example.html#_a3">SimpleInterface/SimpleInterfaceZeroCopyPub.cpp</a>, <a class="el" href="_simple_interface_2_simple_interface_zero_copy_sub_8cpp-example.html#_a12">SimpleInterface/SimpleInterfaceZeroCopySub.cpp</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_bytes_type_pub_8cpp-example.html#_a4">TCPConcurrentTransmission/SimpleInterfaceBytesTypePub.cpp</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_bytes_type_sub_8cpp-example.html#_a10">TCPConcurrentTransmission/SimpleInterfaceBytesTypeSub.cpp</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_zero_copy_pub_8cpp-example.html#_a3">TCPConcurrentTransmission/SimpleInterfaceZeroCopyPub.cpp</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_zero_copy_sub_8cpp-example.html#_a12">TCPConcurrentTransmission/SimpleInterfaceZeroCopySub.cpp</a>, <a class="el" href="_u_d_p_large_package_zero_copy_2_simple_interface_bytes_type_pub_8cpp-example.html#_a4">UDPLargePackageZeroCopy/SimpleInterfaceBytesTypePub.cpp</a> , 以及 <a class="el" href="_u_d_p_large_package_zero_copy_2_simple_interface_bytes_type_sub_8cpp-example.html#_a9">UDPLargePackageZeroCopy/SimpleInterfaceBytesTypeSub.cpp</a>.</dd>
+</dl></div><h2 class="groupheader">成员函数说明</h2>
+<a class="anchor" id="a5ec759f822576d388501c689e20d01f1"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::assert_liveliness </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>该方法用于手动声明域参与者的存活性，当存活性策略设置为 <a class="el" href="group___core_qos_struct.html#gga3ea638553fd66356c38071040de062e5a5519eb00b713987173ff0858e7e3c1f0" title="通过域参与者手动管理存活性声明。 ">DDS_MANUAL_BY_PARTICIPANT_LIVELINESS_QOS</a> 时有用。 </p>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示声明存活性成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a2e310a02f1ef7b8a7e5b5f5029b154f9" title="实体未使能，不能进行该操作。 ">DDS_RETCODE_NOT_ENABLED</a> :表示本域参与者未使能。</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :内部未归类错误，详细参见日志。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a93daae62585e1865877eb2e420a39a05"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool DDS::DomainParticipant::contains_entity </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>a_handle</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>该方法用于测试实体是否是域参与者的子实体。 </p>
+<p>该方法会递归测试，即可测试的实体包括发布者、订阅者、主题、数据读者、数据写者。</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">a_handle</td><td>需要测试的实体标识。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>true表示属于该域参与者的子实体，false表示不属于。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a3d001ed1b8fb5390a4860d4af8ba769f"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_d_d_s_1_1_content_filtered_topic.html">ContentFilteredTopic</a> * DDS::DomainParticipant::create_contentfilteredtopic </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="class_d_d_s_1_1_topic.html">Topic</a> *&#160;</td>
+          <td class="paramname"><em>related_topic</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>filter_exp</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga17edac9ffccff75d0705a8365f8a438d">StringSeq</a> &amp;&#160;</td>
+          <td class="paramname"><em>exp_para</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>创建基于内容过滤的主题。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">name</td><td>基于内容过滤的主题名称，该主题名称不会通过内置数据传递到远程，仅在本地使用，name 应该保证本域参与者内唯一（包括普通主题的名称）。 </td></tr>
+    <tr><td class="paramname">related_topic</td><td>关联的基本主题。 </td></tr>
+    <tr><td class="paramname">filter_exp</td><td>过滤表达式，语法规则参见 <a class="el" href="index.html#expression-grammer">语法规则</a> 。 </td></tr>
+    <tr><td class="paramname">exp_para</td><td>过滤参数，与过滤表达式配合使用。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>非NULL表示创建成功，NULL表示创建失败，失败的原因可能为：<ul>
+<li>本地已存在同名的主题；</li>
+<li>关联的基础主题不存在；</li>
+<li>过滤表达式或者过滤参数不合法；</li>
+<li>分配内存失败。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="adcdd7457c51cc5161e861f7b387e0665"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_d_d_s_1_1_data_reader.html">DataReader</a> * DDS::DomainParticipant::create_datareader_with_topic_and_qos_profile </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>topicName</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_type_support.html">TypeSupport</a> *&#160;</td>
+          <td class="paramname"><em>typeSupport</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>profile_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_data_reader_listener.html">DataReaderListener</a> *&#160;</td>
+          <td class="paramname"><em>dr_listener</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a>&#160;</td>
+          <td class="paramname"><em>mask</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>利用自动创建的用户订阅者，创建指定主题名称的数据读者，当主题名称关联的主题未创建时， 将自动创建，否则将利用已经创建的主题创建数据读者。调用该函数等价于 <a class="el" href="class_d_d_s_1_1_domain_participant.html#ae6f288ce0de606aa2cab23aac4ea3f42" title="为简化用户操作，域参与者创建时将使用默认QoS自动创建用户使用的订阅者，该接口为获取该自动创建的订阅者，...">get_auto_created_subscriber()</a>-&gt;create_datareader_with_topic_and_qos_profile 。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir"></td><td class="paramname">topicName</td><td>数据读者关联的主题名称。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">typeSupport</td><td>数据读者关联的数据类型的类型支持单例，例如零拷贝类型： ZeroCopyBytesTypeSupport::get_instance() 。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">library_name</td><td>QoS库的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">profile_name</td><td>QoS配置的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">qos_name</td><td>QoS的名字，允许为NULL，将转换为default字符串。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">dr_listener</td><td>数据读者的监听器。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">mask</td><td>监听器掩码。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>NULL表示失败，否则返回数据读者指针。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a43ed65bf93db1ee4a693f0f26195cf00"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_d_d_s_1_1_data_writer.html">DataWriter</a> * DDS::DomainParticipant::create_datawriter_with_topic_and_qos_profile </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>topicName</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_type_support.html">TypeSupport</a> *&#160;</td>
+          <td class="paramname"><em>typeSupport</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>profile_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_data_writer_listener.html">DataWriterListener</a> *&#160;</td>
+          <td class="paramname"><em>dw_listener</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a>&#160;</td>
+          <td class="paramname"><em>mask</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>利用自动创建的用户发布者，创建指定主题名称的数据写者，当主题名称关联的主题未创建时，将自动创建， 否则将利用已经创建的主题创建数据写者，调用该函数等价于 <a class="el" href="class_d_d_s_1_1_domain_participant.html#a7ddcc1016c002683ba05a183cbbb0825" title="为简化用户操作，域参与者创建时将使用默认QoS自动创建用户使用的发布者，该接口为获取该自动创建的发布者。...">get_auto_created_publisher()</a>-&gt;create_datawriter_with_topic_and_qos_profile 。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir"></td><td class="paramname">topicName</td><td>数据写者关联的主题名称。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">typeSupport</td><td>数据写者关联的数据类型的类型支持单例，例如零拷贝类型： ZeroCopyBytesTypeSupport::get_instance() 。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">library_name</td><td>QoS库的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">profile_name</td><td>QoS配置的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">qos_name</td><td>QoS的名字，允许为NULL，将转换为default字符串。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">dw_listener</td><td>数据写者的监听器。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">mask</td><td>监听器掩码。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>NULL表示失败，否则返回数据写者指针。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a4eafa5eb1f106594307423016dc721a1"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_d_d_s_1_1_multi_topic.html">MultiTopic</a> * DDS::DomainParticipant::create_multitopic </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>type_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>sub_exp</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> **&#160;</td>
+          <td class="paramname"><em>exp_para</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>创建合并主题。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">name</td><td>主题名称。 </td></tr>
+    <tr><td class="paramname">type_name</td><td>类型名称。 </td></tr>
+    <tr><td class="paramname">sub_exp</td><td>订阅表达式。 </td></tr>
+    <tr><td class="paramname">exp_para</td><td>表示式参数。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前总是返回NULL。</dd></dl>
+<dl class="section warning"><dt>警告</dt><dd>当前未实现 <a class="el" href="class_d_d_s_1_1_multi_topic.html" title="合并接收多个主题。 ">DDS::MultiTopic</a> 。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a503f98f2792e078113ffd193a3df3890"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_d_d_s_1_1_publisher.html">Publisher</a> * DDS::DomainParticipant::create_publisher </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga31118461559792596bffbd78d90d5bb1">PublisherQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qoslist</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_publisher_listener.html">PublisherListener</a> *&#160;</td>
+          <td class="paramname"><em>a_listener</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> &amp;&#160;</td>
+          <td class="paramname"><em>mask</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>该方法在域参与者下创建一个发布者子实体，并设置QoS以及监听器，表明应用想要向该域内发布数据。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir"></td><td class="paramname">qoslist</td><td>表示为该发布者设置的QoS，::PUBLISHER_QOS_DEFAULT 表明使用该域参与者中保存的默认的QoS。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">a_listener</td><td>为该发布者设置的监听器。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">mask</td><td>设置应用程序感兴趣的状态，只有应用程序感兴趣的状态发生变化时，才会通知应用程序。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>创建成功指向创建成功的发布者实体对象，否则返回NULL，失败的原因可能为：<ul>
+<li>分配空间失败或者初始化资源失败，具体的错误信息参见日志；</li>
+<li><em>qoslist</em> 含有无效值或者含有不一致的QoS。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="aa69c5bd9671e148b9dad2d1f5c3cf907"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_d_d_s_1_1_publisher.html">Publisher</a> * DDS::DomainParticipant::create_publisher_with_qos_profile </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>profile_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_publisher_listener.html">PublisherListener</a> *&#160;</td>
+          <td class="paramname"><em>listener</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a>&#160;</td>
+          <td class="paramname"><em>mask</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>从QoS仓库中获取发布者QoS并用其创建发布者。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir"></td><td class="paramname">library_name</td><td>QoS库的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">profile_name</td><td>QoS配置的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">qos_name</td><td>QoS的名字，允许为NULL，将转换为default字符串。 </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">listener</td><td>为该发布者设置的监听器。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">mask</td><td>设置应用程序感兴趣的状态，只有应用程序感兴趣的状态发生变化时，才会通知应用程序。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>创建成功指向创建成功的发布者实体对象，否则返回NULL，失败的原因可能为：<ul>
+<li>分配空间失败或者初始化资源失败，具体的错误信息参见日志；</li>
+<li>未找到指定的QoS等。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a55e5c42616e3f268655fe4cae88dc21c"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_d_d_s_1_1_subscriber.html">Subscriber</a> * DDS::DomainParticipant::create_subscriber </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga520dd7eb30d45597c5166df1ad347d26">SubscriberQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qoslist</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_subscriber_listener.html">SubscriberListener</a> *&#160;</td>
+          <td class="paramname"><em>a_listener</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> &amp;&#160;</td>
+          <td class="paramname"><em>mask</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>该方法在域参与者下创建一个订阅者子实体，并设置QoS以及监听器，表明应用想要向该域内订阅数据。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir"></td><td class="paramname">qoslist</td><td>表示为该订阅者设置的QoS，::SUBSCRIBER_QOS_DEFAULT 表明使用该域参与者中保存的默认的QoS。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">a_listener</td><td>为该订阅者设置的监听器。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">mask</td><td>设置应用程序感兴趣的状态，只有应用程序感兴趣的状态发生变化时，才会通知应用程序。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>创建成功指向创建成功的订阅者实体对象，否则返回NULL，失败的原因可能为：<ul>
+<li>分配空间失败或者初始化资源失败，具体的错误信息参见日志；</li>
+<li><em>qoslist</em> 含有无效值或者含有不一致的QoS。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a15a40e7d2d360e2e8072c382ae7da9ff"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_d_d_s_1_1_subscriber.html">Subscriber</a> * DDS::DomainParticipant::create_subscriber_with_qos_profile </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>profile_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_subscriber_listener.html">SubscriberListener</a> *&#160;</td>
+          <td class="paramname"><em>listener</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a>&#160;</td>
+          <td class="paramname"><em>mask</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>从QoS仓库中获取订阅者QoS并用其创建订阅者 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir"></td><td class="paramname">library_name</td><td>QoS库的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">profile_name</td><td>QoS配置的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">qos_name</td><td>QoS的名字，允许为NULL，将转换为default字符串。 </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">listener</td><td>为该订阅者设置的监听器。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">mask</td><td>设置应用程序感兴趣的状态，只有应用程序感兴趣的状态发生变化时，才会通知应用程序。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>创建成功指向创建成功的订阅者实体对象，否则返回NULL，失败的原因可能为：<ul>
+<li>分配空间失败或者初始化资源失败，具体的错误信息参见日志；</li>
+<li>未找到指定的QoS等。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a2d6170dace4cc2744d4f5faef8f9158c"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_d_d_s_1_1_topic.html">Topic</a> * DDS::DomainParticipant::create_topic </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>topic_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>type_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga0144c9733462be0674d60638a514b47b">TopicQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qoslist</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_topic_listener.html">TopicListener</a> *&#160;</td>
+          <td class="paramname"><em>a_listener</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> &amp;&#160;</td>
+          <td class="paramname"><em>mask</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>该方法在域参与者下创建一个主题子实体，并设置域内唯一的名称、关联的数据类型、QoS以及监听器，用于抽象域内的数据。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir"></td><td class="paramname">topic_name</td><td>新创建的主题的名称，保证本域参与者者内唯一。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">type_name</td><td>新创建的主题关联的类型的名称，该类型名称必须是向该域参与者注册的类型名称（ 注意区分注册的名称以及类型本身的名称），注册的方法为使用编译器生成的支持接口 DDS::FooTypeSupport::get_instance().register_type 。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">qoslist</td><td>新创建的主题的QoS配置。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">a_listener</td><td>主题消息回调接口。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">mask</td><td>回调消息类型掩码。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>创建成功则指向创建成功的主题对象，否则返回NULL，原因可能如下：<ul>
+<li>分配空间失败；</li>
+<li>传入的参数非法（ <em>topic_name</em> == NULL <em>type_name</em> == NULL）；</li>
+<li>传入的QoS含有无效值或者QoS中含有不一致的配置；</li>
+<li>传入的参数未注册；</li>
+<li>该域参与者中已有相同主题名的主题；</li>
+<li>未归类错误，详细参见日志； </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a7e95a8e1e13eefcf1227b6cb7fef2c80"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_d_d_s_1_1_topic.html">Topic</a> * DDS::DomainParticipant::create_topic_w_type_support </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>topic_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_type_support.html">TypeSupport</a> *&#160;</td>
+          <td class="paramname"><em>type_support</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga0144c9733462be0674d60638a514b47b">TopicQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qoslist</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_topic_listener.html">TopicListener</a> *&#160;</td>
+          <td class="paramname"><em>a_listener</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> &amp;&#160;</td>
+          <td class="paramname"><em>mask</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>该方法与 create_topic 相同，在创建主题之前将会以默认的类型名自动注册关联的类型。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir"></td><td class="paramname">topic_name</td><td>新创建的主题的名称，保证本域参与者者内唯一。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">type_support</td><td>新创建的主题关联的数据类型的类型支持单例，例如零拷贝类型： ZeroCopyBytesTypeSupport::get_instance() 。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">qoslist</td><td>新创建的主题的QoS配置。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">a_listener</td><td>主题消息回调接口。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">mask</td><td>回调消息类型掩码。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>创建成功则指向创建成功的主题对象，否则返回NULL，原因可能如下：<ul>
+<li>分配空间失败；</li>
+<li>传入的参数非法（ <em>topic_name</em> == NULL <em>type_support</em> == NULL）；</li>
+<li>传入的QoS含有无效值或者QoS中含有不一致的配置；</li>
+<li>传入的参数未注册；</li>
+<li>该域参与者中已有相同主题名的主题；</li>
+<li>未归类错误，详细参见日志； </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a933c7a00e7de34be4cf3c6c653a742e8"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_d_d_s_1_1_topic.html">Topic</a> * DDS::DomainParticipant::create_topic_with_qos_profile </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>topic_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>type_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>profile_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_topic_listener.html">TopicListener</a> *&#160;</td>
+          <td class="paramname"><em>listener</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a>&#160;</td>
+          <td class="paramname"><em>mask</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>从QoS仓库中获取主题QoS并用其创建主题。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir"></td><td class="paramname">topic_name</td><td>主题的名称。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">type_name</td><td>关联的类型名称。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">library_name</td><td>QoS库的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">profile_name</td><td>QoS配置的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">qos_name</td><td>QoS的名字，允许为NULL，将转换为default字符串。 </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">listener</td><td>为该主题设置的监听器。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">mask</td><td>设置应用程序感兴趣的状态，只有应用程序感兴趣的状态发生变化时，才会通知应用程序。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>创建成功指向创建成功的主题实体对象，否则返回NULL，失败的原因可能为：<ul>
+<li>分配空间失败或者初始化资源失败，具体的错误信息参见日志；</li>
+<li>未找到指定的QoS等。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ad9e649762791146a566e2ed34f575127"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::delete_contained_entities </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>该方法删除域参与者创建的所有实体。 </p>
+<p>包括发布者、订阅者、主题、基于内容过滤的主题。并且对子实体进行递归调用 delete_contained_entities 方法，最终的删除的实体包括数据写者、数据读者、读取条件等，删除的实体不包括内置实体。 该方法采取尽力而为的策略删除，即满足删除条件的实体进行删除，如果有不满足删除条件的实体，则返回特定的错误码。</p>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示删除成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a3a638871d5b4174c32c8d2880f1f6770" title="调用操作的前置条件未满足。 ">DDS_RETCODE_PRECONDITION_NOT_MET</a> :表示有部分实体不满足删除条件，仅删除部分实体；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未归类错误，详细参见日志； </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a7f96e8395c5f0d5966d0b894d0de4161"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::delete_contentfilteredtopic </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_content_filtered_topic.html">ContentFilteredTopic</a> *&#160;</td>
+          <td class="paramname"><em>a_topic</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>删除指定基于内容过滤的主题。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">a_topic</td><td>指明目标。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> ：删除成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> ：参数无效或者不是由该域参与者创建；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a3a638871d5b4174c32c8d2880f1f6770" title="调用操作的前置条件未满足。 ">DDS_RETCODE_PRECONDITION_NOT_MET</a> ：不满足删除的条件，还有与该主题关联的数据读者尚未删除；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> ：删除错误，详细参见日志； </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a11bba49a77f33512aed965e20424be7a"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::delete_multitopic </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_multi_topic.html">MultiTopic</a> *&#160;</td>
+          <td class="paramname"><em>a_topic</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>删除合并主题。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">a_topic</td><td>指明目标。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前总是返回 <a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> 。</dd></dl>
+<dl class="section warning"><dt>警告</dt><dd>当前未实现 <a class="el" href="class_d_d_s_1_1_multi_topic.html" title="合并接收多个主题。 ">DDS::MultiTopic</a> 。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="acc06433bdaa3f81aeaab869f7a0517ef"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::delete_publisher </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_publisher.html">Publisher</a> *&#160;</td>
+          <td class="paramname"><em>a_pub</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>删除指定的发布者实体。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">a_pub</td><td>指定的发布者。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :表示传入的参数无效，即无效的发布者指针；<ul>
+<li>有效的发布者指针，但是不属于该域参与者创建出来的。</li>
+</ul>
+</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a3a638871d5b4174c32c8d2880f1f6770" title="调用操作的前置条件未满足。 ">DDS_RETCODE_PRECONDITION_NOT_MET</a> :<ul>
+<li>表示该发布者不满足删除条件，及还有子实体数据写者未删除；</li>
+<li>传入的发布者不由该域参与者创建。</li>
+</ul>
+</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> ：表示删除成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> ：未归类的错误，详细信息参见日志。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a54343328a1bdd04cd7f73e2427cc93e3"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::delete_subscriber </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_subscriber.html">Subscriber</a> *&#160;</td>
+          <td class="paramname"><em>a_sub</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>删除指定的订阅者实体。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">a_sub</td><td>指定的订阅者。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :表示传入的参数无效，即无效的发布者指针；<ul>
+<li>有效的订阅者指针，但是不属于该域参与者创建出来的。</li>
+</ul>
+</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a3a638871d5b4174c32c8d2880f1f6770" title="调用操作的前置条件未满足。 ">DDS_RETCODE_PRECONDITION_NOT_MET</a> :<ul>
+<li>表示该订阅者不满足删除条件，及还有子实体数据读者未删除；</li>
+<li>传入的订阅者不由该域参与者创建。</li>
+</ul>
+</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> ：表示删除成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> ：未归类的错误，详细信息参见日志。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a4df7bb7228ba33a1dc5e1b0f791f569e"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::delete_topic </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_topic.html">Topic</a> *&#160;</td>
+          <td class="paramname"><em>a_topic</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>删除指定主题。 </p>
+<p>在调用该方法之前需要保证与主题关联的所有子实体（数据写者、数据读者、基于内过滤的主题）都已经被删除， 此外该主题的引用次数为0次，用户通过 <a class="el" href="class_d_d_s_1_1_domain_participant.html#aa275e302c62f1b273519527e065b55e9" title="根据主题名字阻塞查找本地主题。 ">find_topic</a> 方法会增加主题的引用次数。 如果不满足上述条件将会返回错误 <a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a3a638871d5b4174c32c8d2880f1f6770" title="调用操作的前置条件未满足。 ">DDS_RETCODE_PRECONDITION_NOT_MET</a> 。</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">a_topic</td><td>指定的主题对象。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示删除成功。</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :<em>a_topic</em> 不是有效的主题对象；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a3a638871d5b4174c32c8d2880f1f6770" title="调用操作的前置条件未满足。 ">DDS_RETCODE_PRECONDITION_NOT_MET</a><ul>
+<li>表示指定主题不是由该域参与者创建的；</li>
+<li>不满足删除条件； </li>
+</ul>
+</li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="aa275e302c62f1b273519527e065b55e9"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_d_d_s_1_1_topic.html">Topic</a> * DDS::DomainParticipant::find_topic </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>topic_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gae56b310fa579905cdf4947b3455cbda3">Duration_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>timeout</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>根据主题名字阻塞查找本地主题。 </p>
+<p>若满足条件的主题已经存在，则直接返回，否则等待，直到超时或者满足条件的主题被创建，注意查找成功时， 将增加查找成功的主题的引用数，应调用 <a class="el" href="class_d_d_s_1_1_domain_participant.html#a4df7bb7228ba33a1dc5e1b0f791f569e" title="删除指定主题。 ">delete_topic</a> 删除引用数。</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">topic_name</td><td>主题名称。 </td></tr>
+    <tr><td class="paramname">timeout</td><td>最长等待时间。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值：<ul>
+<li>NULL表示查找失败，指定的时间内没有满足条件的主题。</li>
+<li>非NULL表示查找到的满足条件的指针对象。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a7ddcc1016c002683ba05a183cbbb0825"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_d_d_s_1_1_publisher.html">Publisher</a> * DDS::DomainParticipant::get_auto_created_publisher </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>为简化用户操作，域参与者创建时将使用默认QoS自动创建用户使用的发布者，该接口为获取该自动创建的发布者。 </p>
+<dl class="section return"><dt>返回</dt><dd>成功返回自动创建的发布者指针，失败返回NULL。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ae6f288ce0de606aa2cab23aac4ea3f42"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_d_d_s_1_1_subscriber.html">Subscriber</a> * DDS::DomainParticipant::get_auto_created_subscriber </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>为简化用户操作，域参与者创建时将使用默认QoS自动创建用户使用的订阅者，该接口为获取该自动创建的订阅者， 自动创建的订阅者与内置订阅者不同，内置订阅者用于管理内置的Reader实体，用于发现过程。 </p>
+<dl class="section return"><dt>返回</dt><dd>成功返回自动创建的订阅者指针，失败返回NULL。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a10633af7e8d0b9eb6fd9858325a2a1bc"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_d_d_s_1_1_subscriber.html">Subscriber</a> * DDS::DomainParticipant::get_builtin_subscriber </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>获取用户实体发现的内置订阅者。 </p>
+<p>内置实体是指负责DDS中间件内部数据交互（发现信息、存活性信息）的主题、数据写者以及数据读者。 为了能够获取“发现信息”，域参与者提供访问内部订阅者的接口，用户再通过该内置订阅者的功能获取想要的发现信息， 内置实体由域参与者自动创建，并通过该接口配合 <a class="el" href="class_d_d_s_1_1_subscriber.html#a7d1e5b9c489488a10463084d1a8679af" title="根据主题名查找数据读者。 ">DDS::Subscriber::lookup_datareader</a> 接口获取内置的 数据读者，使用内置的数据读者除了其生命周期与用户自定义数据读者不同之外，其他操作与用户自定义数据读者一致。 提供给用户使用的内置数据读者及其关联的主题名称及其关联的数据类型参见下表： </p><table class="doxtable">
+<tr>
+<th>内置数据读者 </th><th>主题名称 </th><th>数据类型  </th></tr>
+<tr>
+<td><a class="el" href="class_d_d_s_1_1_participant_builtin_topic_data_data_reader.html" title="声明内置数据类型 DDS::ParticipantBuiltinTopicData 关联的数据读者 ">DDS::ParticipantBuiltinTopicDataDataReader</a> </td><td>#BUILTIN_PARTICIPANT_TOPIC_NAME </td><td><a class="el" href="struct_d_d_s___participant_builtin_topic_data.html" title="用于抽象给用户呈现的远端域参与者信息。 ">DDS_ParticipantBuiltinTopicData</a> </td></tr>
+<tr>
+<td><a class="el" href="class_d_d_s_1_1_publication_builtin_topic_data_data_reader.html" title="声明内置数据类型 DDS::PublicationBuiltinTopicData 关联的数据读者 ">DDS::PublicationBuiltinTopicDataDataReader</a> </td><td>#BUILTIN_PUBLICATION_TOPIC_NAME </td><td><a class="el" href="struct_d_d_s___publication_builtin_topic_data.html" title="该结构体用于存储远程数据写者的信息。 ">DDS_PublicationBuiltinTopicData</a> </td></tr>
+<tr>
+<td><a class="el" href="class_d_d_s_1_1_subscription_builtin_topic_data_data_reader.html" title="声明内置数据类型 DDS::SubscriptionBuiltinTopicData 关联的数据读者 ">DDS::SubscriptionBuiltinTopicDataDataReader</a> </td><td>#BUILTIN_SUBSCRIPTION_TOPIC_NAME </td><td><a class="el" href="struct_d_d_s___subscription_builtin_topic_data.html" title="该结构体用于存储远程数据写者的信息。 ">DDS_SubscriptionBuiltinTopicData</a> </td></tr>
+</table>
+<p>获取到的内置实体不应该删除，否则造成系统异常，具体使用的例子参见 <a class="el" href="_set_builtin_listener_example_8cpp-example.html">SetBuiltinListenerExample.cpp</a> 。</p>
+<dl class="section return"><dt>返回</dt><dd>内置订阅者的指针，ZRDDS的实现中，只要域参与者未被删除，那么返回值一定有效。 </dd></dl>
+<dl><dt><b>示例: </b></dt><dd><a class="el" href="_set_builtin_listener_example_8cpp-example.html#a9">SetBuiltinListenerExample.cpp</a>.</dd>
+</dl>
+</div>
+</div>
+<a class="anchor" id="aca525f7d01b718cd5236fb20648ed8c2"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::get_current_time </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga48575f104487f1d51cfc068792218ea4">Time_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>cur_time</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>获取ZRDDS内部使用的时间系统的当前时间戳。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">cur_time</td><td>出口参数，当前的时间戳。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前总是返回 <a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> 。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a6f92920f7567d0b8d6fb217df15a27df"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::get_default_publisher_qos </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga31118461559792596bffbd78d90d5bb1">PublisherQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qoslist</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>该方法获取为发布者保存的默认QoS配置。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">qoslist</td><td>出口参数表示获取的结果.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前的返回值类型：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示设置成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示失败，例如复制QoS时发生错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a196a6ace12de00e7b7234206677d739f"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::get_default_subscriber_qos </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga520dd7eb30d45597c5166df1ad347d26">SubscriberQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qoslist</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>该方法获取为订阅者保存的默认QoS配置。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">qoslist</td><td>出口参数表示获取的结果.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前的返回值类型：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示设置成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示失败，例如复制QoS时发生错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="acfd3e52b2fb2b0a0a4db4d4dc7f6902a"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::get_default_topic_qos </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga0144c9733462be0674d60638a514b47b">TopicQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qoslist</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>该方法获取为主题保存的默认QoS配置。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">qoslist</td><td>出口参数表示获取的结果.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前的返回值类型：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示设置成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示失败，例如复制QoS时发生错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a5c92d69e0bb58784176aabc6a1e6b3e9"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::get_discovered_participant_data </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gadebd634b994418903df498fd4df8e013">ParticipantBuiltinTopicData</a> &amp;&#160;</td>
+          <td class="paramname"><em>a_pd</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>a_handle</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>该方法查询指定标识的域参与者的详细信息。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">a_pd</td><td>出口参数，用于存储获取到的详细信息。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">a_handle</td><td>指明域参与者的唯一标识，该标识可以从以下几个地方获取：<ul>
+<li><a class="el" href="class_d_d_s_1_1_domain_participant.html#afeec1e8edb5d976efc49c6cd6f417a7b" title="获取该域参与者发现的远程（逻辑上，也有可能在同一个节点，甚至在同一个应用程序中）域参与者的标识列表。 ...">get_discovered_participants</a></li>
+<li>内置数据读者中读取出来的内置数据样本中的 DDS_ParticipantBuiltinTopicData::_key 或者 <a class="el" href="struct_d_d_s___sample_info.html#a38bca53647cd2be8c1dff9054126f360" title="数据所属的数据实例的唯一标识。 ">DDS_SampleInfo::instance_handle</a></li>
+<li>远程域参与者的 <a class="el" href="class_d_d_s_1_1_entity.html#aef72ffc167d867c1f3d2a8ef594b0011" title="获取该实体的唯一标识。 ">get_instance_handle</a> 方法的结果；</li>
+</ul>
+</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>- <a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示出口参数中的详细信息有效，即获取成功；<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a2e310a02f1ef7b8a7e5b5f5029b154f9" title="实体未使能，不能进行该操作。 ">DDS_RETCODE_NOT_ENABLED</a> :该域参与者未使能；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a3a638871d5b4174c32c8d2880f1f6770" title="调用操作的前置条件未满足。 ">DDS_RETCODE_PRECONDITION_NOT_MET</a> :提供的标识无效；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示获取失败，例如拷贝内置数据失败；</li>
+</ul>
+</dd></dl>
+<dl class="section see"><dt>参见</dt><dd><a class="el" href="class_d_d_s_1_1_domain_participant.html#afeec1e8edb5d976efc49c6cd6f417a7b" title="获取该域参与者发现的远程（逻辑上，也有可能在同一个节点，甚至在同一个应用程序中）域参与者的标识列表。 ...">get_discovered_participants</a> </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="afeec1e8edb5d976efc49c6cd6f417a7b"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::get_discovered_participants </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga38e54e14a30a16bf8dfb07668c3b3fae">InstanceHandleSeq</a> &amp;&#160;</td>
+          <td class="paramname"><em>discoved_handleList</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>获取该域参与者发现的远程（逻辑上，也有可能在同一个节点，甚至在同一个应用程序中）域参与者的标识列表。 </p>
+<p>在ZRDDS中，当域参与者使能后，会通过发现协议自动感知同一个域下的域参与者，并与之交换当前实体的信息， 以建立发布/订阅关系。域参与者发现远程域参与者的条件包括：</p><ul>
+<li>两者在同一个域内；</li>
+<li>未调用 <a class="el" href="class_d_d_s_1_1_domain_participant.html#a629ea11108b478ea281c0f94519e83da" title="该方法用于忽略指定的域参与者，即如同未发现该域参与者，忽略该域参与者下的所有订阅、发布信息。 ...">ignore_participant</a> 手动忽略远程域参与者；</li>
+</ul>
+<p>用户可以通过两种方式获取当前域参与者已经发现的其他域参与者信息：</p><ul>
+<li>同步方式，用户在需要该信息时按如下步骤获取：<ul>
+<li>用户调用本接口获取发现的域参与者标识；</li>
+<li>调用 <a class="el" href="class_d_d_s_1_1_domain_participant.html#a5c92d69e0bb58784176aabc6a1e6b3e9" title="该方法查询指定标识的域参与者的详细信息。 ">get_discovered_participant_data</a> 通过上一步中获取的标识查看远程域参与者的详细信息；</li>
+</ul>
+</li>
+<li>异步回调方式<ul>
+<li>通过设置内置数据读者（ <a class="el" href="class_d_d_s_1_1_participant_builtin_topic_data_data_reader.html" title="声明内置数据类型 DDS::ParticipantBuiltinTopicData 关联的数据读者 ">DDS::ParticipantBuiltinTopicDataDataReader</a> ）的监听器。</li>
+<li>在监听器中获取发现远程域参与者的详细信息； 同步方式优点在于比较简单，缺点在于不同及时的获取最新的状态，或者说想要获取及时的状态的代价较高（ 通过高频率的轮询）。 异步回调方式，使用相对复杂，但能够及时的获取最新的发现状态。</li>
+</ul>
+</li>
+</ul>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">discoved_handleList</td><td>出口参数，用于存储已发现的域参与者标识，当用户提供的空间不足时， 底层将尝试对序列进行扩容。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示获取成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a2e310a02f1ef7b8a7e5b5f5029b154f9" title="实体未使能，不能进行该操作。 ">DDS_RETCODE_NOT_ENABLED</a> :当前域参与者未使能；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :获取失败，扩容失败；</li>
+</ul>
+</dd></dl>
+<dl class="section see"><dt>参见</dt><dd><a class="el" href="class_d_d_s_1_1_domain_participant.html#a5c92d69e0bb58784176aabc6a1e6b3e9" title="该方法查询指定标识的域参与者的详细信息。 ">get_discovered_participant_data</a> </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="abeeb872fdc23861e8635a7ec36dbef66"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::get_discovered_topics </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga38e54e14a30a16bf8dfb07668c3b3fae">InstanceHandleSeq</a> &amp;&#160;</td>
+          <td class="paramname"><em>discoved_handleList</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>获取已经被发现且没有被忽略的其他主题的标识。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">discoved_handleList</td><td>获取的结果列表。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前总是返回 <a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a9d40db847e4603f57ce3ff0abbd662e7" title="不支持操作。 ">DDS_RETCODE_UNSUPPORTED</a> 。</dd></dl>
+<dl class="section warning"><dt>警告</dt><dd>当前未实现。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="af62946b2db366aecc63d12ed7c4b6213"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___cpp_core_struct.html#ga7c395f878d56b544140dc610c3bd83c8">DomainId_t</a> DDS::DomainParticipant::get_domain_id </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>获取该域参与者所属的域。 </p>
+<dl class="section return"><dt>返回</dt><dd>域参与者所属域值。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ac17be2747991d6b44f1aa0e4afc6a147"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_d_d_s_1_1_domain_participant_listener.html">DomainParticipantListener</a> * DDS::DomainParticipant::get_listener </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>该方法获取通过 <a class="el" href="class_d_d_s_1_1_domain_participant.html#a41c2e7b6734872dd8e84a3809fb50909" title="设置该域参与者的监听器。 ">set_listener</a> 方法或者创建时为域参与者设置的监听器对象。 </p>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值：<ul>
+<li>NULL表示未设置监听器；</li>
+<li>非空表示应用通过 <a class="el" href="class_d_d_s_1_1_domain_participant.html#a41c2e7b6734872dd8e84a3809fb50909" title="设置该域参与者的监听器。 ">set_listener</a> 或者在创建时设置的监听器对象。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a7127e3dd7a90bb5e4d5839f4954cf29c"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::get_publishers </td>
+          <td>(</td>
+          <td class="paramtype">PublisherSeq &amp;&#160;</td>
+          <td class="paramname"><em>publisherList</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>获取当前未被删除的由该域参与者创建的发布者列表。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">publisherList</td><td>出口参数，用于填充发布者实体对象。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :出口参数有效，表示获取成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a35b4c98bf40ced0114572156c7f41893" title="资源不够。 ">DDS_RETCODE_OUT_OF_RESOURCES</a> ：表示用户提供的空间不足且扩容失败； </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ac62fcb5d263c29a611b1338bfca437e9"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::get_qos </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga16f667f9768aae75a20bb5ac372b00b7">DomainParticipantQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qoslist</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>获取该域参与者的QoS配置。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">qoslist</td><td>出口参数，用于保存域参与者的QoS配置。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示获取成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示失败，原因可能为复制QoS时发生错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a5e5337f33081b4fd63a837647d9a5e38"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::get_subscribers </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_subscriber_seq.html">SubscriberSeq</a> &amp;&#160;</td>
+          <td class="paramname"><em>subscriberList</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>获取当前未被删除的由该域参与者创建的订阅者列表。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">subscriberList</td><td>出口参数，用于填充订阅者实体对象。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :出口参数有效，表示获取成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a35b4c98bf40ced0114572156c7f41893" title="资源不够。 ">DDS_RETCODE_OUT_OF_RESOURCES</a> ：表示用户提供的空间不足且扩容失败； </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a629ea11108b478ea281c0f94519e83da"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::ignore_participant </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>handle</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>该方法用于忽略指定的域参与者，即如同未发现该域参与者，忽略该域参与者下的所有订阅、发布信息。 </p>
+<p>通信管理功能的常见使用场景为访问控制，即通过域参与者详细信息判断该域参与者或者数据写者、数据读者是否具备 相应的权限（例如：域参与者携带的数据是否满足要求），如果已经发现了指定域参与者，则将解开与该域参与者的匹配。</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">handle</td><td>用户标识远端的域参与者，来源参见 <a class="el" href="class_d_d_s_1_1_domain_participant.html#a5c92d69e0bb58784176aabc6a1e6b3e9" title="该方法查询指定标识的域参与者的详细信息。 ">get_discovered_participant_data</a> 。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>是否忽略成功。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a6fb334726006116892d0dc26e653e1e4"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::ignore_publication </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>handle</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>忽略指定数据写者，即不与本地数据读者匹配。 </p>
+<p>忽略发布是对于本地的数据读者来说的，在该方法被调用之后，该域参与者下的所有数据读者均不会收到来自该数据写者的数据， 通常的做法是，调用 <a class="el" href="class_d_d_s_1_1_data_reader.html#a121e61d8e854cc8cbc0f88acad0d5ff9" title="查询已经匹配的远程数据写者的标识列表。 ">DDS::DataReader::get_matched_publications</a> 来获取已经配对的远程数据写者的 唯一标识或者通过内置监听器获取远端数据写者的唯一标识，再调用该函数来设置忽略。</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">handle</td><td>标识需要被忽略的数据写者。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示忽略成功，包括<em>handle</em> 指定的数据写者不存在的情况；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :<em>handle</em> 不是有效的数据写者标识。</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a2e310a02f1ef7b8a7e5b5f5029b154f9" title="实体未使能，不能进行该操作。 ">DDS_RETCODE_NOT_ENABLED</a> :表示本域参与者未使能。</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :未归类错误，详细参见日志信息。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ac40720008db275eac6f6376d6c1640c7"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::ignore_subscription </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>handle</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>忽略指定数据读者，即不与本地数据写者匹配。 </p>
+<p>忽略订阅是对于本地的数据写者来说的，在该方法被调用之后，该域参与者下的所有数据写者均不会向该数据读者发送数据， 通常的做法是，调用 <a class="el" href="class_d_d_s_1_1_data_writer.html#a36fc2b9688ffae63297e4e6692dab6ce" title="获取已匹配且没有被忽略的订阅者句柄列表。 ">DDS::DataWriter::get_matched_subscriptions</a> 来获取已经配对的远程数据读者的 唯一标识或者通过内置监听器获取远端数据读者的唯一标识，再调用该函数来设置忽略。</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">handle</td><td>标识需要被忽略的数据读者。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示忽略成功，包括<em>handle</em> 指定的数据读者不存在的情况；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :<em>handle</em> 不是有效的数据读者标识。</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a2e310a02f1ef7b8a7e5b5f5029b154f9" title="实体未使能，不能进行该操作。 ">DDS_RETCODE_NOT_ENABLED</a> :表示本域参与者未使能。</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :未归类错误，详细参见日志信息。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ae1851ff1f0eea6dedd5dd43c1a705ca5"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::ignore_topic </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>handle</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>忽略指定标识表示的主题关联的所有订阅/发布。 </p>
+<p>对象是数据读者以及数据写者，忽略所有对该主题的订阅或者发布的匹配，如果已经匹配了则断开被忽略的数据写者以及数据读者匹配。</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">handle</td><td>标识指定的主题。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a2e310a02f1ef7b8a7e5b5f5029b154f9" title="实体未使能，不能进行该操作。 ">DDS_RETCODE_NOT_ENABLED</a> :表示未使能。</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示忽略错误。</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示忽略成功。</li>
+</ul>
+</dd></dl>
+<dl class="section warning"><dt>警告</dt><dd>ZRDDS当前未实现该接口。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="aca632dde942406763a8d952125e638f8"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_d_d_s_1_1_topic_description.html">TopicDescription</a> * DDS::DomainParticipant::lookup_topicdescription </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>name</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>根据主题名字查找本地创建的主题，包括主题以及基于内容过滤的主题。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">name</td><td>指明需要查找的主题名称。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值：<ul>
+<li>NULL表示查找失败，本地尚未创建指定主题名的主题。</li>
+<li>非NULL表示查找到的满足条件的父类指针。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a4b27eb09fa4384a203d89c3814c8a30d"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::set_default_publisher_qos </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga31118461559792596bffbd78d90d5bb1">PublisherQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qoslist</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>该方法设置为发布者保存的默认QoS配置。 </p>
+<p>默认的QoS在创建新的订阅者时指定QoS参数为 DDS::PUBLISHER_QOS_DEFAULT 时使用的QoS配置， 使用特殊的值 DDS::PUBLISHER_QOS_DEFAULT 发布者QoS中的各个配置的设置为默认值。</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">qoslist</td><td>指明QoS配置。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示设置成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :表示<em>qoslist为空，或者<em>qoslist</em> 具有无效值；</em> </li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac62550b4d2270c012813c14da6aa33a1" title="不一致的Qos。 ">DDS_RETCODE_INCONSISTENT</a> :表示<em>qoslist</em> 中具有不相容的配置；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示失败，例如复制QoS时发生错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a9fd31ea8ef860b1685a1e89412edbe17"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::set_default_publisher_qos_with_profile </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>profile_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_name</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>从QoS仓库获取发布者QoS并将其设为默认发布者QoS </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">library_name</td><td>QoS库的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramname">profile_name</td><td>QoS配置的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramname">qos_name</td><td>QoS的名字，允许为NULL，将转换为default字符串。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示设置成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未知错误导致的设置错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a511e19745a36beb7a7f90969f57459fe"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::set_default_subscriber_qos </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga520dd7eb30d45597c5166df1ad347d26">SubscriberQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qoslist</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>该方法设置为订阅者保存的默认QoS配置。 </p>
+<p>默认的QoS在创建新的订阅者时指定QoS参数为 DDS::SUBSCRIBER_QOS_DEFAULT 时使用的QoS配置， 使用特殊的值 DDS::SUBSCRIBER_QOS_DEFAULT 订阅者QoS中的各个配置的设置为默认值。</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">qoslist</td><td>指明QoS配置。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示设置成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :表示<em>qoslist为空，或者<em>qoslist</em> 具有无效值；</em> </li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac62550b4d2270c012813c14da6aa33a1" title="不一致的Qos。 ">DDS_RETCODE_INCONSISTENT</a> :表示<em>qoslist</em> 中具有不相容的配置；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示失败，例如复制QoS时发生错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a4a19f00fe721e01330436064b3f4737c"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::set_default_subscriber_qos_with_profile </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>profile_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_name</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>从QoS仓库获取订阅者QoS并将其设为默认订阅者QoS </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">library_name</td><td>QoS库的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramname">profile_name</td><td>QoS配置的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramname">qos_name</td><td>QoS的名字，允许为NULL，将转换为default字符串。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示设置成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未知错误导致的设置错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ade8b90f7ffda88f5311afea0c06065f4"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::set_default_topic_qos </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga0144c9733462be0674d60638a514b47b">TopicQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qoslist</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>该方法设置为主题保存的默认QoS配置。 </p>
+<p>默认的QoS在创建新的主题时指定QoS参数为 DDS::TOPIC_QOS_DEFAULT 时使用的QoS配置， 使用特殊的值 DDS::TOPIC_QOS_DEFAULT 主题QoS中的各个配置的设置为默认值。</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">qoslist</td><td>指明QoS配置。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示设置成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :表示<em>qoslist为空，或者<em>qoslist</em> 具有无效值；</em> </li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac62550b4d2270c012813c14da6aa33a1" title="不一致的Qos。 ">DDS_RETCODE_INCONSISTENT</a> :表示<em>qoslist</em> 中具有不相容的配置；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示失败，例如复制QoS时发生错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ae83a0a512b481f449af2816b3efada8a"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::set_default_topic_qos_with_profile </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>profile_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_name</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>从QoS仓库获取主题QoS并将其设为默认主题QoS </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">library_name</td><td>QoS库的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramname">profile_name</td><td>QoS配置的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramname">qos_name</td><td>QoS的名字，允许为NULL，将转换为default字符串。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示设置成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未知错误导致的设置错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a41c2e7b6734872dd8e84a3809fb50909"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::set_listener </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_domain_participant_listener.html">DomainParticipantListener</a> *&#160;</td>
+          <td class="paramname"><em>a_listener</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> &amp;&#160;</td>
+          <td class="paramname"><em>mask</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>设置该域参与者的监听器。 </p>
+<p>本方法将覆盖原有监听器，如果设置空对象表示清除原先设置的监听器。</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">a_listener</td><td>为该域参与者设置的监听器对象。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">mask</td><td>设置应用程序感兴趣的状态，只有应用程序感兴趣的状态发生变化时，才会通知应用程序。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前总是返回 <a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> 表示设置成功。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ad96580db7408206e23e520ed092155f2"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::set_qos </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga16f667f9768aae75a20bb5ac372b00b7">DomainParticipantQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qoslist</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>该方法设置为域参与者设置的QoS。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">qoslist</td><td>表示用户想要设置的QoS配置。</td></tr>
+  </table>
+  </dd>
+</dl>
+<p>可以使用特殊值 DDS::DOMAINPARTICIPANT_QOS_DEFAULT 表示使用存储在域参与者工厂中的QoS配置。</p>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示获取成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :表示 <em>qoslist</em> 含有无效的QoS配置；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac62550b4d2270c012813c14da6aa33a1" title="不一致的Qos。 ">DDS_RETCODE_INCONSISTENT</a> :表示 <em>qoslist</em> 含有不兼容的QoS配置；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a6e50f4433cf3e47737f4d317d0a4a707" title="试图修改使能后不能修改的Qos。 ">DDS_RETCODE_IMMUTABLE_POLICY</a> :表示用户尝试修改使能后不可变的QoS配置；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未归类的错误，错误详细信息输出在日志中； </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a35b6952d663cd2fc38206322c601a563"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipant::set_qos_with_profile </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>profile_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_name</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>从QoS仓库获取QoS配置并设置到域参与者 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">library_name</td><td>QoS库的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramname">profile_name</td><td>QoS配置的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramname">qos_name</td><td>QoS的名字，允许为NULL，将转换为default字符串。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示设置成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未知错误导致的设置错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<hr/>该类的文档由以下文件生成:<ul>
+<li><a class="el" href="_domain_participant_8h_source.html">DomainParticipant.h</a></li>
+</ul>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><b>DDS</b></li><li class="navelem"><a class="el" href="class_d_d_s_1_1_domain_participant.html">DomainParticipant</a></li>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

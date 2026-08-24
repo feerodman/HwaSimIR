@@ -1,0 +1,356 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: XML配置实体QoS</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li class="current"><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>结构体</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('zrdds_qos_xml.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">XML配置实体QoS </div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><p>一般情况下，用户通过DDS标准接口对实体QoS进行配置，如各个实体的get/set qos函数。标准接口使用简洁、直观，但是，当用户需要改变实体的QoS时，则需要修改代码并编译。为了避免这种情况，ZRDDS提供了QoS配置文件，用户可以将XML配置文件中预先配置好的QoS应用到实体上。如此一来，当用户需要变更QoS时，不再需要对程序进行重新编码，修改QoS XML文件即可。</p>
+<h1><a class="anchor" id="zrdds_qos_xml_flow"></a>
+XML配置QoS步骤</h1>
+<p>使用XML配置实体QoS分为以下步骤：</p>
+<ul>
+<li>编写QoS配置文件；</li>
+<li>加载QoS配置文件：ZRDDS将在创建域参与者工厂时，将配置的QoS文件中的QoS加载到ZRDDS内部形成QoS仓库；</li>
+<li>在QoS相关接口中引用QoS仓库中的实体QoS进行相关配置。</li>
+</ul>
+<h2><a class="anchor" id="zrdds_qos_xml_create"></a>
+编写QoS配置文件</h2>
+<p>ZRDDS提供在线QoS配置文件生成工具辅助用户编写QoS配置文件，<a href="dds_qos_editor.html">工具地址</a>（建议使用火狐浏览器）。</p>
+<p>ZRDDS使用XML文件来表达QoS内容。为增加QoS配置的灵活性，引入以下概念。</p>
+<table class="doxtable">
+<tr>
+<th>概念 </th><th>根节点 </th><th>说明  </th></tr>
+<tr>
+<td>实体QoS </td><td>&lt;participantfactory_qos&gt; &lt;participant_qos&gt; &lt;publisher_qos&gt; &lt;subscriber_qos&gt; &lt;topic_qos&gt; &lt;datawriter_qos&gt; &lt;datareader_qos&gt; </td><td>表示各类实体的QoS配置，为配置的最小单元。 </td></tr>
+<tr>
+<td>QoS配置（QoSProfile） </td><td>&lt;qos_profile&gt; </td><td>多个实体QoS组成一个QoS配置； </td></tr>
+<tr>
+<td>QoS库（QoSLibrary）</td><td>&lt;qos_library&gt; </td><td>多个QoS配置组成一个库。 </td></tr>
+</table>
+<p>配置文件重要配置项如下表：</p>
+<table class="doxtable">
+<tr>
+<th>类型 </th><th>属性/子元素 </th><th>说明  </th></tr>
+<tr>
+<td>qosLibraryList </td><td>qos_library </td><td>可出现0到无限次的子元素，类型为qosLibrary。 </td></tr>
+<tr>
+<td>qosLibrary </td><td>name </td><td>可选属性，用于在DDS系统中唯一标识该QoS库，默认为"default". </td></tr>
+<tr>
+<td>^ </td><td>qos_profile </td><td>可出现0到无限次的子元素，类型为qosProfile，表示该QoS库中包含的QoS配置信息，一个QoS库中可以包含多个name属性相同的QoS配置，含义为后出现的自动继承前面出现的QoS配置。 </td></tr>
+<tr>
+<td>qosProfileList </td><td>qos_profile </td><td>可出现0到无限次的子元素，类型为qosProfile。 </td></tr>
+<tr>
+<td>qosProfile </td><td>name </td><td>可选属性，用于在DDS库中唯一标识该QoS配置，默认为"default"。一个QoS配置中允许包含多个name属性相同的同类实体QoS配置，含义为后出现的自动继承前面出现的实体配置。 </td></tr>
+<tr>
+<td>^ </td><td>base_name </td><td>可选属性，引用其他QoS配置的name属性，作为该QoS配置的父配置，即本QoS配置继承于父配置，继承的含义为覆盖父配置中的QoS值，引用的父配置必须在该QoS配置之前定义，当需要引用其他QoS库中的QoS配置时，需要使用完整路径，例如：需要引用library2中的profile1，则写成"library2::profile1",而当引用同一个QoS库中的QoS配置时，QoS库的名称可以省略，写成“profile1”即可，如果相同QoS配置(相同name属性)设置不同的base_name，则取后一次继承的结果。 </td></tr>
+<tr>
+<td>^ </td><td>participantfactory_qos </td><td>可出现0到无限个的子元素，类型为participantfactoryQos，定义该QoS配置下包含的域参与者工厂QoS配置。 </td></tr>
+<tr>
+<td>^ </td><td>participant_qos </td><td>可出现0到无限个的子元素，类型为participantQos，定义该QoS配置下包含的域参与者QoS配置。 </td></tr>
+<tr>
+<td>^ </td><td>topic_qos </td><td>可出现0到无限个的子元素，类型为topicQos，定义该QoS配置下包含的主题QoS配置。 </td></tr>
+<tr>
+<td>^ </td><td>publisher_qos </td><td>可出现0到无限个的子元素，类型为publisherQos，定义该QoS配置下包含的发布者QoS配置。 </td></tr>
+<tr>
+<td>^ </td><td>subscriber_qos </td><td>可出现0到无限个的子元素，类型为subscriberQos，定义该QoS配置下包含的订阅者QoS配置。 </td></tr>
+<tr>
+<td>^ </td><td>datawriter_qos </td><td>可出现0到无限个的子元素，类型为datawriterQos，定义该QoS配置下包含的数据写者QoS配置。 </td></tr>
+<tr>
+<td>^ </td><td>datareader_qos </td><td>可出现0到无限个的子元素，类型为datareaderQos，定义该QoS配置下包含的数据读者QoS配置。 </td></tr>
+<tr>
+<td>participantfactoryQos </td><td>name </td><td>可选属性，用于在QoS配置中唯一标识该域参与者工厂QoS配置，默认为"default"。 </td></tr>
+<tr>
+<td>^ </td><td>base_name </td><td>可选属性，引用其他域参与者工厂QoS配置，作为该QoS配置的父配置，即本QoS配置继承于父配置，继承的含义为覆盖父配置中的QoS值，引用的父配置必须在该QoS配置之前定义，例如：需要引用name属性为library2的QoS库下的name属性为profile1的QoS配置中的name属性为factory1的域参与者工厂QoS配置，如果本QoS配置在library2 QoS库之外，则必须使用完整的引用路径"library2::profile1::factory1"，如果本QoS配置在library2 QoS库之内，profile1 QoS配置之外，则可以省略QoS库的前缀为"profile1::factory1"，如果本QoS配置在"library2::profile1"中，则可以省略QoS配置前缀为:"factory1"即可，这种引用方式同样适用于participantQos、publisherQos、subscriberQos、topicQos、datawriterQos、datareaderQos。 </td></tr>
+<tr>
+<td>participantQos </td><td>name </td><td>可选属性，用于在QoS配置中唯一标识该域参与者QoS配置，默认为"default"。 </td></tr>
+<tr>
+<td>^ </td><td>base_name </td><td>可选属性，引用其他域参与者QoS配置，作为该QoS配置的父配置，详细参见participantfactoryQos.base_name的描述。 </td></tr>
+<tr>
+<td>topicQos </td><td>name </td><td>可选属性，用于在QoS配置中唯一标识该主题QoS配置，默认为"default"。 </td></tr>
+<tr>
+<td>^ </td><td>base_name </td><td>可选属性，引用其他主题QoS配置，作为该QoS配置的父配置，详细参见participantfactoryQos.base_name的描述。 </td></tr>
+<tr>
+<td>publisherQos </td><td>name </td><td>可选属性，用于在QoS配置中唯一标识该发布者QoS配置，默认为"default"。 </td></tr>
+<tr>
+<td>^ </td><td>base_name </td><td>可选属性，引用其他发布者QoS配置，作为该QoS配置的父配置，详细参见participantfactoryQos.base_name的描述。 </td></tr>
+<tr>
+<td>subscriberQos </td><td>name </td><td>可选属性，用于在QoS配置中唯一标识该订阅者QoS配置，默认为"default"。 </td></tr>
+<tr>
+<td>^ </td><td>base_name </td><td>可选属性，引用其他订阅者QoS配置，作为该QoS配置的父配置，详细参见participantfactoryQos.base_name的描述。 </td></tr>
+<tr>
+<td>datawriterQos </td><td>name </td><td>可选属性，用于在QoS配置中唯一标识该数据写者QoS配置，默认为"default"。 </td></tr>
+<tr>
+<td>^ </td><td>base_name </td><td>可选属性，引用其他数据写者QoS配置，作为该QoS配置的父配置，详细参见participantfactoryQos.base_name的描述。 </td></tr>
+<tr>
+<td>datareaderQos </td><td>name </td><td>可选属性，用于在QoS配置中唯一标识该数据读者QoS配置，默认为"default"。 </td></tr>
+<tr>
+<td>^ </td><td>base_name </td><td>可选属性，引用其他数据读者QoS配置，作为该QoS配置的父配置，详细参见participantfactoryQos.base_name的描述。 </td></tr>
+</table>
+<p>实体QoS的XML格式为以对应QoS结构成员名称为子元素名称递归，基本数据类型为叶节点，值作为叶节点的文本。叶节点格式如下表所示：</p>
+<table class="doxtable">
+<tr>
+<th>类型名称 </th><th>说明  </th></tr>
+<tr>
+<td>DDS_Boolean </td><td>布尔值true/false </td></tr>
+<tr>
+<td>DDS_Octet </td><td>8位无符号字符类型 </td></tr>
+<tr>
+<td>DDS_Char </td><td>8位有符号字符类型，支持10进制以及0x开头的16进制数 </td></tr>
+<tr>
+<td>DDS_Short </td><td>16位有符号定点数，支持10进制以及0x开头的16进制数 </td></tr>
+<tr>
+<td>DDS_UShort </td><td>16位无符号定点数，支持10进制以及0x开头的16进制数 </td></tr>
+<tr>
+<td>DDS_Long </td><td>32位有符号定点数，支持10进制以及0x开头的16进制数 </td></tr>
+<tr>
+<td>DDS_ULong </td><td>32位无符号定点数，支持10进制以及0x开头的16进制数 </td></tr>
+<tr>
+<td>DDS_LongLong </td><td>64位有符号定点数，支持10进制以及0x开头的16进制数 </td></tr>
+<tr>
+<td>DDS_ULongLong </td><td>64位无符号定点数，支持10进制以及0x开头的16进制数 </td></tr>
+<tr>
+<td>DDS_Float </td><td>32位浮点数，7位有效数字 </td></tr>
+<tr>
+<td>DDS_Double </td><td>64位浮点数，15位有效数字 </td></tr>
+<tr>
+<td>DDS_String </td><td>字符串类型 </td></tr>
+<tr>
+<td><a class="el" href="struct_d_d_s___char_seq.html" title="声明内置数据类型 DDS_Char 的序列，参见核心接口序列相关数据类型 。 ">DDS_CharSeq</a> </td><td>当存在sequenceMaxLength可选属性时，结构为多个element子元素，element值为DDS_Char类型，当不存在sequenceMaxLength时，为字符串类型。 </td></tr>
+<tr>
+<td><a class="el" href="struct_d_d_s___string_seq.html" title="声明内置数据类型 DDS_Char* 的序列，参见核心接口序列相关数据类型 。 ">DDS_StringSeq</a> </td><td>以element为子元素，每个element代表一个sequence成员。 </td></tr>
+</table>
+<h2><a class="anchor" id="zrdds_qos_xml_interface_manager"></a>
+管理ZRDDS内部QoS仓库</h2>
+<p>通过以下接口管理ZRDDS中的QoS仓库。</p>
+<table class="doxtable">
+<tr>
+<th>接口 </th><th>说明  </th></tr>
+<tr>
+<td><a class="el" href="struct_d_d_s___qos_profile_qos_policy.html" title="定义与Qos配置文件有关的配置项。 ">DDS_QosProfileQosPolicy</a> </td><td>域参与者工厂的QoS，定义与Qos配置文件有关的配置项。 </td></tr>
+<tr>
+<td><a class="el" href="group___c_domain.html#ga80300e8be16e836e3f7894b4dbe18678" title="根据QosProfileQosPolicy（有关QoS配置的配置）配置重新加载QoS配置到库中，在DomainParticipantFactory初始...">DDS_DomainParticipantFactory_reload_qos_profiles</a> </td><td>根据QosProfileQosPolicy（有关QoS配置的配置）配置重新加载QoS配置到库中。 </td></tr>
+<tr>
+<td><a class="el" href="group___c_domain.html#gab78bafbe3b56d143e34c6f8b69b5220f" title="卸载所有的QoS配置 ">DDS_DomainParticipantFactory_unload_qos_profiles</a> </td><td>卸载所有的QoS配置。 </td></tr>
+<tr>
+<td><a class="el" href="group___c_domain.html#ga65c7c3b644eb35f1b7aae1487a5d26a1" title="添加一个QoS库 ">DDS_DomainParticipantFactory_add_qos_library</a> </td><td>添加一个QoS库。 </td></tr>
+<tr>
+<td><a class="el" href="group___c_domain.html#gaa599a13b52c95ff4e758d2adf9342482" title="从指定QoS库中移除一个QoS配置 ">DDS_DomainParticipantFactory_remove_qos_library</a> </td><td>删除一个QoS库。 </td></tr>
+<tr>
+<td><a class="el" href="group___c_domain.html#ga66ae7984c811c13dede422c9f4070f9f" title="在指定QoS库中添加一个QoS配置 ">DDS_DomainParticipantFactory_add_qos_profile</a> </td><td>在指定QoS库中添加一个QoS配置。 </td></tr>
+<tr>
+<td><a class="el" href="group___c_domain.html#ga576b63f284827a6f71eb48315dbb4f56" title="从指定QoS库中移除一个QoS配置 ">DDS_DomainParticipantFactory_remove_qos_profile</a> </td><td>从指定QoS库中移除一个QoS配置。 </td></tr>
+</table>
+<h2><a class="anchor" id="zrdds_qos_xml_interface_set"></a>
+QoS设置相关接口</h2>
+<table class="doxtable">
+<tr>
+<th>实体 </th><th>接口 </th><th>说明  </th></tr>
+<tr>
+<td>数据读者 </td><td><a class="el" href="group___c_publication.html#ga1c0f4ccc7b349ca2a468423eaf360c6b" title="从QoS仓库中获取数据读者QoS并将其设置到数据读者中。. ">FooDataReader_set_qos_with_profile</a> </td><td>从QoS仓库获取QoS配置并设置到数据读者。 </td></tr>
+<tr>
+<td>数据写者 </td><td><a class="el" href="group___c_publication.html#ga76990e9dc847c46a3161ab0c63f2b22e" title="从QoS仓库中获取数据写者QoS并将其设置到数据写者中。 ">FooDataWriter_set_qos_with_profile</a> </td><td>从QoS仓库获取QoS配置并设置到数据写者。 </td></tr>
+<tr>
+<td>域参与者 </td><td><a class="el" href="group___c_domain.html#ga2116c7f2a13c4c17d9c876e2ac702aa7" title="从QoS仓库获取QoS配置并设置到域参与者 ">DDS_DomainParticipant_set_qos_with_profile</a> </td><td>从QoS仓库获取QoS配置并设置到域参与者。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#ga52c7e728ae0dbef01393fbbad60034a1" title="从QoS仓库获取主题QoS并将其设为默认主题Qos ">DDS_DomainParticipant_set_default_topic_qos_with_profile</a> </td><td>从QoS仓库获取主题QoS并将其设为默认主题QoS。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#gaa6149addd8b743b998ef147526d9edd4" title="从QoS仓库获取发布者QoS并将其设为默认发布者Qos ">DDS_DomainParticipant_set_default_publisher_qos_with_profile</a> </td><td>从QoS仓库获取发布者QoS并将其设为默认发布者QoS。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#gab0709e9f8a86ac022af08fc1988afa12" title="从QoS仓库获取订阅者QoS并将其设为默认订阅者Qos ">DDS_DomainParticipant_set_default_subscriber_qos_with_profile</a> </td><td>从QoS仓库获取订阅者QoS并将其设为默认订阅者QoS。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#ga3a1c2006b822dfbad5cbeb8d0e05658d" title="从QoS仓库中获取发布者Qos并用其创建发布者。 ">DDS_DomainParticipant_create_publisher_with_qos_profile</a> </td><td>从QoS仓库中获取发布者QoS并用其创建发布者。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#ga402155ed5c25e9e67b06b341625253d5" title="从QoS仓库中获取订阅者Qos并用其创建订阅者 ">DDS_DomainParticipant_create_subscriber_with_qos_profile</a> </td><td>从QoS仓库中获取订阅者QoS并用其创建订阅者。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#gac6300bc5bd6e1095fdfb02c2b0d54365" title="从QoS仓库中获取主题Qos并用其创建主题。 ">DDS_DomainParticipant_create_topic_with_qos_profile</a> </td><td>从QoS仓库中获取主题QoS并用其创建主题。 </td></tr>
+<tr>
+<td>域参与者工厂 </td><td><a class="el" href="group___c_domain.html#ga410bc7844d9f7c3ba0e4276acfe52b9c" title="从QoS仓库获取QoS配置并设置到域参与者工厂 ">DDS_DomainParticipantFactory_set_qos_with_profile</a> </td><td>从QoS仓库获取QoS配置并设置到域参与者工厂。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#gae72e7dee146437e804a19129e6a0194c" title="从QoS仓库获取域参与者QoS并将其设为默认域参与者QoS ">DDS_DomainParticipantFactory_set_default_participant_qos_with_profile</a> </td><td>从QoS仓库获取域参与者QoS并将其设为默认域参与者QoS。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#ga8f44c945ea885153c15b4557f854f63b" title="从QoS仓库获取域参与者工厂QoS的配置 ">DDS_DomainParticipantFactory_get_participant_factory_qos_from_profile</a> </td><td>从QoS仓库获取域参与者工厂QoS的配置。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#ga41fcd5e96d353ee0a7ebd40dd4a75d98" title="从QoS仓库获取域参与者QoS的配置 ">DDS_DomainParticipantFactory_get_participant_qos_from_profile</a> </td><td>从QoS仓库获取域参与者QoS的配置。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#gaba886003e56139501874aa856c938d84" title="从QoS仓库获取发布者QoS的配置 ">DDS_DomainParticipantFactory_get_publisher_qos_from_profile</a> </td><td>从QoS仓库获取发布者QoS的配置。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#ga118a00ea363d2d56db4920dfa11eec5a" title="从QoS仓库获取订阅者QoS的配置 ">DDS_DomainParticipantFactory_get_subscriber_qos_from_profile</a> </td><td>从QoS仓库获取订阅者QoS的配置。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#ga43361f51777cff009e410759bbaefc59" title="从QoS仓库获取主题QoS的配置 ">DDS_DomainParticipantFactory_get_topic_qos_from_profile</a> </td><td>从QoS仓库获取主题QoS的配置。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#gabf02e4d6809ef40abdd93e0b198df852" title="从QoS仓库获取数据写者QoS的配置 ">DDS_DomainParticipantFactory_get_datawriter_qos_from_profile</a> </td><td>从QoS仓库获取数据写者QoS的配置。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#gac914cb3380deb008f778dea81fbe1276" title="从QoS仓库获取数据读者QoS的配置 ">DDS_DomainParticipantFactory_get_datareader_qos_from_profile</a> </td><td>从QoS仓库获取数据读者QoS的配置。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#gac5560310d84900ae395f39c9725da04c" title="从QoS仓库获取QoS配置并用其创建域参与者 ">DDS_DomainParticipantFactory_create_participant_with_qos_profile</a> </td><td>从QoS仓库获取QoS配置并用其创建域参与者。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#ga14458131186aefc5f58bbe0ce5a188b7" title="查找名称符合pattern限定的QoS库 ">DDS_DomainParticipantFactory_lookup_qos_libraries</a> </td><td>查找名称符合pattern限定的QoS库。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_domain.html#ga1257d22c0b2dd47a382f9b3a6639a2e1" title="在指定QoS库中查找名字符合pattern的QoS配置 ">DDS_DomainParticipantFactory_lookup_qos_profiles</a> </td><td>在指定QoS库中查找名字符合pattern的QoS配置。 </td></tr>
+<tr>
+<td>发布者 </td><td><a class="el" href="group___c_publication.html#gac83892fe78400b62c2280308004e8263" title="从QoS仓库中获取数据写者QoS并将其设为默认数据写者QoS ">DDS_Publisher_set_default_datawriter_qos_with_profile</a> </td><td>从QoS仓库中获取数据写者QoS并将其设为默认数据写者QoS。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_publication.html#ga09c11d2e9d7f1060ab1571d766b35c92" title="从QoS仓库中获取发布者QoS并将其设置到发布者中 ">DDS_Publisher_set_qos_with_profile</a> </td><td>从QoS仓库中获取发布者QoS并将其设置到发布者中。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_publication.html#ga656f50f1518703f6576105a80366a6f8" title="从QoS仓库中获取数据写者Qos并用其创建数据写者 ">DDS_Publisher_create_datawriter_with_qos_profile</a> </td><td>从QoS仓库中获取数据写者QoS并用其创建数据写者。 </td></tr>
+<tr>
+<td>订阅者 </td><td><a class="el" href="group___c_subscription.html#ga70345002ea9f99c76029d0b090ce038b" title="从QoS仓库中获取数据读者QoS并将其设置为默认DataReaderQos ">DDS_Subscriber_set_default_datareader_qos_with_profile</a> </td><td>从QoS仓库中获取数据读者QoS并将其设置为默认DataReaderQos。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_subscription.html#gaf1f7aea96243c459c5e19ecaa4834f04" title="从QoS仓库中获取订阅者QoS并将其设置到订阅者中 ">DDS_Subscriber_set_qos_with_profile</a> </td><td>从QoS仓库中获取订阅者QoS并将其设置到订阅者中。 </td></tr>
+<tr>
+<td>^ </td><td><a class="el" href="group___c_subscription.html#ga906f9fe3831d0b439086228cfb422e13" title="从QoS仓库中获取数据读者QoS并用其创建数据读者 ">DDS_Subscriber_create_datareader_with_qos_profile</a> </td><td>从QoS仓库中获取数据读者QoS并用其创建数据读者。 </td></tr>
+<tr>
+<td>主题 </td><td><a class="el" href="group___c_topic.html#ga55097262e1b5fb527c42156304da79f8" title="从QoS仓库中获取主题QoS并将其设置到主题中 ">DDS_Topic_set_qos_with_profile</a> </td><td>从QoS仓库中获取主题QoS并将其设置到主题中 </td></tr>
+</table>
+<h2><a class="anchor" id="zrdds_qos_xml_example"></a>
+XML示例</h2>
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;&lt;<span class="keywordtype">zrdds_qos</span>&gt;</div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;    &lt;<span class="keywordtype">qos_library</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;lib1&quot;</span>&gt;</div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;        &lt;<span class="keywordtype">qos_profile</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;profile1&quot;</span>&gt;</div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;        &lt;/<span class="keywordtype">qos_profile</span>&gt;</div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;    &lt;/<span class="keywordtype">qos_library</span>&gt;</div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;    &lt;<span class="keywordtype">qos_library</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;lib2&quot;</span>&gt;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;        &lt;<span class="keywordtype">qos_profile</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;profile2&quot;</span> <span class="keyword">base_name</span>=<span class="stringliteral">&quot;lib1::profile1&quot;</span>&gt;</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;            &lt;<span class="keywordtype">participantfactory_qos</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;ExampleDpFQos&quot;</span>&gt;</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;                &lt;<span class="keywordtype">entity_factory</span>&gt;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;                    &lt;<span class="keywordtype">autoenable_created_entities</span>&gt;<span class="keyword">false</span>&lt;/<span class="keywordtype">autoenable_created_entities</span>&gt;</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;                &lt;/<span class="keywordtype">entity_factory</span>&gt;</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;            &lt;/<span class="keywordtype">participantfactory_qos</span>&gt;</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;            &lt;<span class="keywordtype">participant_qos</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;ExampleDpQos&quot;</span>&gt;</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;                &lt;<span class="keywordtype">usertraffic_receive_addresses</span>&gt;</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;                    &lt;<span class="keywordtype">addresses</span> <span class="keyword">sequenceMaxLength</span>=<span class="stringliteral">&quot;1&quot;</span>&gt;</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;                        &lt;<span class="keywordtype">element</span>&gt;<span class="keyword">tcpv4:</span>//<span class="keyword">default</span>//0&lt;/<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;                    &lt;/<span class="keywordtype">addresses</span>&gt;</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;                &lt;/<span class="keywordtype">usertraffic_receive_addresses</span>&gt;</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;            &lt;/<span class="keywordtype">participant_qos</span>&gt;</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;            &lt;<span class="keywordtype">datawriter_qos</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;ExampleDwQos&quot;</span>&gt;</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;                &lt;<span class="keywordtype">user_data</span>&gt; </div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;                    &lt;<span class="keywordtype">value</span>&gt;<span class="keyword">DefaultExampleDWQos</span>&lt;/<span class="keywordtype">value</span>&gt;</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;                &lt;/<span class="keywordtype">user_data</span>&gt;</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;                &lt;<span class="keywordtype">history</span>&gt;</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;                    &lt;<span class="keywordtype">kind</span>&gt;<span class="keyword">KEEP_ALL_HISTORY_QOS</span>&lt;/<span class="keywordtype">kind</span>&gt;</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;                &lt;/<span class="keywordtype">history</span>&gt;</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;                &lt;<span class="keywordtype">reliability</span>&gt;</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;                    &lt;<span class="keywordtype">kind</span>&gt;<span class="keyword">RELIABLE_RELIABILITY_QOS</span>&lt;/<span class="keywordtype">kind</span>&gt;</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;                &lt;/<span class="keywordtype">reliability</span>&gt;</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;            &lt;/<span class="keywordtype">datawriter_qos</span>&gt;</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;            &lt;<span class="keywordtype">datareader_qos</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;ExampleDrQos&quot;</span>&gt;</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;                &lt;<span class="keywordtype">user_data</span> <span class="keyword">sequenceMaxLength</span>=<span class="stringliteral">&quot;2&quot;</span>&gt; </div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;                    &lt;<span class="keywordtype">value</span>&gt;41&lt;/<span class="keywordtype">value</span>&gt;</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;                    &lt;<span class="keywordtype">value</span>&gt;42&lt;/<span class="keywordtype">value</span>&gt;</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;                &lt;/<span class="keywordtype">user_data</span>&gt;</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;                &lt;<span class="keywordtype">history</span>&gt;</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;                    &lt;<span class="keywordtype">kind</span>&gt;<span class="keyword">KEEP_ALL_HISTORY_QOS</span>&lt;/<span class="keywordtype">kind</span>&gt;</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;                &lt;/<span class="keywordtype">history</span>&gt;</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;                &lt;<span class="keywordtype">reliability</span>&gt;</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;                    &lt;<span class="keywordtype">kind</span>&gt;<span class="keyword">RELIABLE_RELIABILITY_QOS</span>&lt;/<span class="keywordtype">kind</span>&gt;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;                &lt;/<span class="keywordtype">reliability</span>&gt;</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;            &lt;/<span class="keywordtype">datareader_qos</span>&gt;</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        &lt;/<span class="keywordtype">qos_profile</span>&gt;</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    &lt;/<span class="keywordtype">qos_library</span>&gt;</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;&lt;/<span class="keywordtype">zrdds_qos</span>&gt;</div>
+</div><!-- fragment --> </div></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

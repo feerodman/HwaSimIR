@@ -1,0 +1,6 @@
+struct ShapeTypeSequence
+{
+    sequence<long> x; //@key
+    sequence<double> y;
+    sequence<char> z;
+};
