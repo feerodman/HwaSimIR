@@ -1,0 +1,32 @@
+cmake_minimum_required(VERSION 3.10)
+project(HwaSimIRVideoReceiverDemo LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(ZRDDS_ROOT "$ENV{ZRDDS_HOME}" CACHE PATH "ZRDDS 2.4.5 root")
+
+find_path(ZRDDS_CPP_INCLUDE ZRDDSCppSimpleInterface.h HINTS
+    "${ZRDDS_ROOT}/include/CPlusPlusInterface" NO_DEFAULT_PATH)
+find_path(ZRDDS_CORE_INCLUDE ZRDDSCommon.h HINTS
+    "${ZRDDS_ROOT}/include/ZRDDSCoreInterface" NO_DEFAULT_PATH)
+if(WIN32)
+    find_library(ZRDDS_CPP_LIBRARY NAMES ZRDDSCpp_VS2015 HINTS "${ZRDDS_ROOT}/lib" NO_DEFAULT_PATH)
+else()
+    find_library(ZRDDS_CPP_LIBRARY NAMES ZRDDSCpp HINTS "${ZRDDS_ROOT}/lib" NO_DEFAULT_PATH)
+endif()
+
+if(NOT ZRDDS_CPP_INCLUDE OR NOT ZRDDS_CORE_INCLUDE OR NOT ZRDDS_CPP_LIBRARY)
+    message(FATAL_ERROR "ZRDDS C++ SDK not found under ZRDDS_ROOT=${ZRDDS_ROOT}")
+endif()
+
+add_executable(HwaSimIRVideoReceiverDemo main.cpp)
+target_compile_definitions(HwaSimIRVideoReceiverDemo PRIVATE _ZRDDSCPPINTERFACE)
+if(WIN32)
+    target_compile_definitions(HwaSimIRVideoReceiverDemo PRIVATE _ZRDDSDLLIMPORT)
+endif()
+target_include_directories(HwaSimIRVideoReceiverDemo PRIVATE ${ZRDDS_CPP_INCLUDE} ${ZRDDS_CORE_INCLUDE})
+target_link_libraries(HwaSimIRVideoReceiverDemo PRIVATE ${ZRDDS_CPP_LIBRARY})
+if(UNIX)
+    target_link_libraries(HwaSimIRVideoReceiverDemo PRIVATE pthread dl)
+    set_target_properties(HwaSimIRVideoReceiverDemo PROPERTIES BUILD_RPATH "${ZRDDS_ROOT}/lib")
+endif()

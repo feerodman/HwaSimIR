@@ -75,6 +75,11 @@
     <FFmpegLibraryDir Condition="'$(FFmpegEnabled)' == 'true'">$(FFMPEG_ROOT)\lib;</FFmpegLibraryDir>
     <FFmpegDefinitions Condition="'$(FFmpegEnabled)' == 'true'">HWASIM_HAS_FFMPEG=1;</FFmpegDefinitions>
     <FFmpegLibraries Condition="'$(FFmpegEnabled)' == 'true'">avcodec.lib;avutil.lib;swscale.lib;</FFmpegLibraries>
+    <ZrddsEnabled Condition="'$(ZRDDS_HOME)' != '' and Exists('$(ZRDDS_HOME)\include\CPlusPlusInterface\ZRDDSCppSimpleInterface.h') and Exists('$(ZRDDS_HOME)\lib\ZRDDSCpp_VS2015.lib')">true</ZrddsEnabled>
+    <ZrddsIncludeDirs Condition="'$(ZrddsEnabled)' == 'true'">$(ZRDDS_HOME)\include\CPlusPlusInterface;$(ZRDDS_HOME)\include\ZRDDSCoreInterface;</ZrddsIncludeDirs>
+    <ZrddsLibraryDir Condition="'$(ZrddsEnabled)' == 'true'">$(ZRDDS_HOME)\lib;</ZrddsLibraryDir>
+    <ZrddsDefinitions Condition="'$(ZrddsEnabled)' == 'true'">_ZRDDSCPPINTERFACE;_ZRDDSDLLIMPORT;HWASIMIR_HAS_ZRDDS=1;</ZrddsDefinitions>
+    <ZrddsLibraries Condition="'$(ZrddsEnabled)' == 'true'">ZRDDSCpp_VS2015.lib;</ZrddsLibraries>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
@@ -140,19 +145,25 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>$(FFmpegDefinitions)NDEBUG;_CONSOLE;GEOGRAPHICLIB_SHARED_LIB=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>$(FFmpegDefinitions)$(ZrddsDefinitions)NDEBUG;_CONSOLE;GEOGRAPHICLIB_SHARED_LIB=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(FFmpegIncludeDir).\opencv2-440;.\CoordinateConverter;.\Eigen;.\Common;$(PANDA3D_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(FFmpegIncludeDir)$(ZrddsIncludeDirs).\opencv2-440;.\CoordinateConverter;.\Eigen;.\Common;$(PANDA3D_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(FFmpegLibraryDir).\opencv2-440\opencv_x64\vc14\lib;$(PANDA3D_DIR)\lib;.\CoordinateConverter;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>$(FFmpegLibraries)WS2_32.lib;libp3framework.lib;libpanda.lib;libpandaexpress.lib;libp3dtool.lib;libp3dtoolconfig.lib;libp3direct.lib;opencv_world440.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(FFmpegLibraryDir)$(ZrddsLibraryDir).\opencv2-440\opencv_x64\vc14\lib;$(PANDA3D_DIR)\lib;.\CoordinateConverter;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(FFmpegLibraries)$(ZrddsLibraries)WS2_32.lib;libp3framework.lib;libpanda.lib;libpandaexpress.lib;libp3dtool.lib;libp3dtoolconfig.lib;libp3direct.lib;opencv_world440.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
+  <ItemGroup Condition="'$(ZrddsEnabled)' == 'true'">
+    <ZrddsRuntimeDll Include="$(ZRDDS_HOME)\lib\ZRDDSCpp_VS2015.dll" />
+  </ItemGroup>
+  <Target Name="CopyZrddsRuntime" AfterTargets="Build" Condition="'$(ZrddsEnabled)' == 'true'">
+    <Copy SourceFiles="@(ZrddsRuntimeDll)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
   </ItemGroup>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zrdds_qos xmlns="http://www.omg.org/dds/">
+  <qos_library name="default_lib">
+    <qos_profile name="default_profile">
+      <participantfactory_qos name="hwasimir_factory" />
+      <participant_qos name="hwasimir_tcp">
+        <discovery_config>
+          <participant_liveliness_assert_period><sec>3</sec><nanosec>0</nanosec></participant_liveliness_assert_period>
+          <participant_liveliness_lease_duration><sec>10</sec><nanosec>0</nanosec></participant_liveliness_lease_duration>
+        </discovery_config>
+        <usertraffic_receive_addresses>
+          <addresses><element>tcpv4://default//0</element></addresses>
+        </usertraffic_receive_addresses>
+      </participant_qos>
+      <datawriter_qos name="hwasimir_reliable_writer">
+        <reliability><kind>RELIABLE_RELIABILITY_QOS</kind></reliability>
+        <history><kind>KEEP_ALL_HISTORY_QOS</kind></history>
+        <resource_limits>
+          <max_samples>4096</max_samples>
+          <max_samples_per_instance>4096</max_samples_per_instance>
+        </resource_limits>
+      </datawriter_qos>
+      <datareader_qos name="hwasimir_reliable_reader">
+        <reliability><kind>RELIABLE_RELIABILITY_QOS</kind></reliability>
+        <history><kind>KEEP_ALL_HISTORY_QOS</kind></history>
+        <resource_limits>
+          <max_samples>4096</max_samples>
+          <max_samples_per_instance>4096</max_samples_per_instance>
+        </resource_limits>
+      </datareader_qos>
+    </qos_profile>
+  </qos_library>
+</zrdds_qos>

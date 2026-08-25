@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|x64"><Configuration>Release</Configuration><Platform>x64</Platform></ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{06CFF07A-84C7-4E9F-91E0-1CF27717FC7C}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>HwaSimIRVideoReceiverDemo</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType><UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset><WholeProgramOptimization>true</WholeProgramOptimization><CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup Label="UserMacros"><ZRDDSRoot>$(ZRDDS_HOME)</ZRDDSRoot></PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(MSBuildProjectDirectory)\x64\Release\</OutDir><IntDir>$(MSBuildProjectDirectory)\x64\Release\obj\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel><Optimization>MaxSpeed</Optimization><RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PreprocessorDefinitions>_ZRDDSCPPINTERFACE;_ZRDDSDLLIMPORT;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ZRDDSRoot)\include\CPlusPlusInterface;$(ZRDDSRoot)\include\ZRDDSCoreInterface;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem><GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(ZRDDSRoot)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>ZRDDSCpp_VS2015.lib;Ws2_32.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup><ClCompile Include="main.cpp" /></ItemGroup>
+  <Target Name="ValidateZRDDS" BeforeTargets="ClCompile" Condition="!Exists('$(ZRDDSRoot)\include\CPlusPlusInterface\ZRDDSCppSimpleInterface.h') or !Exists('$(ZRDDSRoot)\lib\ZRDDSCpp_VS2015.lib')">
+    <Error Text="ZRDDS_HOME does not point to a complete ZRDDS 2.4.5 VS2015 SDK: $(ZRDDSRoot)" />
+  </Target>
+  <Target Name="CopyZRDDSRuntime" AfterTargets="Build"><Copy SourceFiles="$(ZRDDSRoot)\lib\ZRDDSCpp_VS2015.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" /></Target>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>
