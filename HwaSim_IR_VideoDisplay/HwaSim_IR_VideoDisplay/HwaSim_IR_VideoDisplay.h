@@ -6,6 +6,7 @@
 #include <QVector>
 #include "AsyncVideoRecorder.h"
 #include "TcpServerWorker.h"
+#include "DdsVideoReceiverWorker.h"
 #include "ui_HwaSim_IR_VideoDisplay.h"
 
 class HwaSim_IR_VideoDisplay : public QWidget
@@ -16,8 +17,16 @@ public:
     HwaSim_IR_VideoDisplay(
         const QString& networkConfigPath = QString(),
         const QString& channel = QString(),
-        int platID = -1,
-        int sensorID = -1,
+		int platID = -1,
+		int sensorID = -1,
+		const QString& receiveTransport = QString(),
+		const QString& ddsTopic = QString(),
+		const QString& ddsCodec = QString(),
+		const QString& ddsQos = QString(),
+		int ddsDomain = -1,
+		int ddsWidth = -1,
+		int ddsHeight = -1,
+		int ddsFps = -1,
         QWidget *parent = nullptr);
     ~HwaSim_IR_VideoDisplay();
 
@@ -56,9 +65,12 @@ private:
     QString targetStateName(int state);
     void resetVideoPerfStats();
     bool flushRecorder(const char* reason);
+	quint64 receivedFrameCount() const;
 
     QThread* m_workerThread = nullptr;
     TcpServerWorker* m_worker = nullptr;
+	DdsVideoReceiverWorker* m_ddsWorker = nullptr;
+	QString m_receiveTransport = QStringLiteral("tcp");
     AsyncVideoRecorder* m_recorder = nullptr;
     bool m_saveMP4Requested = false;
     QString m_networkConfigPath;

@@ -32,7 +32,8 @@ option(HWASIMIR_ENABLE_RKMPP "Enable Rockchip MPP H.264 encoder (Linux aarch64 o
 set(RKMPP_ROOT "$ENV{RKMPP_ROOT}" CACHE PATH "RK3588 MPP sysroot root")
 option(HWASIMIR_ENABLE_FFMPEG "Enable optional FFmpeg/libavcodec encoder" ON)
 set(FFMPEG_ROOT "$ENV{FFMPEG_ROOT}" CACHE PATH "Optional FFmpeg/libavcodec root")
-option(HWASIMIR_ENABLE_ZRDDS "Enable ZRDDS C++ build integration (runtime DDS video remains D2 scope)" OFF)
+option(HWASIMIR_ENABLE_AVFORMAT "Enable local MP4 AVFormat mux backend" ON)
+option(HWASIMIR_ENABLE_ZRDDS "Enable ZRDDS C++ video publisher integration" OFF)
 set(ZRDDS_ROOT "$ENV{ZRDDS_HOME}" CACHE PATH "ZRDDS target SDK root")
 
 if (HWASIMIR_ENABLE_FFMPEG)
@@ -44,6 +45,17 @@ if (HWASIMIR_ENABLE_FFMPEG)
             HINTS ${FFMPEG_ROOT}/lib ${FFMPEG_ROOT}/lib/aarch64-linux-gnu)
     find_library(FFMPEG_SWSCALE_LIBRARY swscale
             HINTS ${FFMPEG_ROOT}/lib ${FFMPEG_ROOT}/lib/aarch64-linux-gnu)
+endif()
+
+if (HWASIMIR_ENABLE_AVFORMAT)
+    find_path(AVFORMAT_INCLUDE_DIR libavformat/avformat.h
+            HINTS ${FFMPEG_ROOT}/include /usr/include/aarch64-linux-gnu)
+    find_library(AVFORMAT_LIBRARY avformat
+            HINTS ${FFMPEG_ROOT}/lib /usr/lib/aarch64-linux-gnu)
+    find_library(AVFORMAT_AVCODEC_LIBRARY avcodec
+            HINTS ${FFMPEG_ROOT}/lib /usr/lib/aarch64-linux-gnu)
+    find_library(AVFORMAT_AVUTIL_LIBRARY avutil
+            HINTS ${FFMPEG_ROOT}/lib /usr/lib/aarch64-linux-gnu)
 endif()
 
 if (HWASIMIR_ENABLE_RKMPP)
@@ -159,6 +171,8 @@ add_executable(HwaSim_IR
         UdpCommThread_Linux.cpp
         Video/H264FfmpegEncoder.cpp
         Video/JpegFrameEncoder.cpp
+        Video/DdsVideoPublisher.cpp
+        Video/LocalMp4Recorder.cpp
 )
 
 if (HWASIMIR_ENABLE_RKMPP)
@@ -180,11 +194,22 @@ else()
     message(STATUS "RK MPP encoder disabled (HWASIMIR_ENABLE_RKMPP=OFF)")
 endif()
 
+if (HWASIMIR_ENABLE_AVFORMAT AND AVFORMAT_INCLUDE_DIR AND AVFORMAT_LIBRARY AND
+        AVFORMAT_AVCODEC_LIBRARY AND AVFORMAT_AVUTIL_LIBRARY)
+    target_compile_definitions(HwaSim_IR PRIVATE HWASIMIR_HAS_AVFORMAT=1)
+    target_include_directories(HwaSim_IR PRIVATE ${AVFORMAT_INCLUDE_DIR})
+    target_link_libraries(HwaSim_IR PRIVATE ${AVFORMAT_LIBRARY}
+            ${AVFORMAT_AVCODEC_LIBRARY} ${AVFORMAT_AVUTIL_LIBRARY})
+    message(STATUS "Local MP4 backend: shared_h264_remux (AVFormat)")
+elseif (HWASIMIR_ENABLE_AVFORMAT)
+    message(STATUS "Local MP4 backend: opencv_reencode (AVFormat unavailable)")
+endif()
+
 if (HWASIMIR_ENABLE_ZRDDS)
     target_compile_definitions(HwaSim_IR PRIVATE _ZRDDSCPPINTERFACE HWASIMIR_HAS_ZRDDS=1)
     target_include_directories(HwaSim_IR PRIVATE ${ZRDDS_CPP_INCLUDE_DIR} ${ZRDDS_CORE_INCLUDE_DIR})
     target_link_libraries(HwaSim_IR PRIVATE ${ZRDDS_CPP_LIBRARY})
-    message(STATUS "ZRDDS C++ build integration enabled (D1 skeleton only)")
+    message(STATUS "ZRDDS C++ video publisher integration enabled")
     message(STATUS "ZRDDS_ROOT = ${ZRDDS_ROOT}")
     message(STATUS "ZRDDS_CPP_HEADER = ${ZRDDS_CPP_HEADER}")
     message(STATUS "ZRDDS_CPP_LIBRARY = ${ZRDDS_CPP_LIBRARY}")
@@ -222,6 +247,6 @@ target_link_libraries(HwaSim_IR PRIVATE
 )
 
 set_target_properties(HwaSim_IR PROPERTIES
-        INSTALL_RPATH "${PANDA3D_ROOT}/lib"
+		INSTALL_RPATH "${PANDA3D_ROOT}/lib;${ZRDDS_ROOT}/lib;${RKMPP_ROOT}/usr/lib/aarch64-linux-gnu"
         BUILD_WITH_INSTALL_RPATH ON
 )

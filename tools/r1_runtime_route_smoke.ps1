@@ -20,6 +20,18 @@ foreach ($required in @($hwaExe, $gxx, (Join-Path $root "tools\r1_protocol_sende
 }
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 
+# Windows environment-variable lookup is case-insensitive, but some Codex/IDE
+# launch environments expose both PATH and Path.  Start-Process rejects that
+# duplicate dictionary, so normalize it before launching the regression apps.
+$processEnvironment = [Environment]::GetEnvironmentVariables("Process")
+$pathEntries = @($processEnvironment.GetEnumerator() | Where-Object { $_.Key -imatch '^path$' })
+if ($pathEntries.Count -gt 1) {
+    $pathValue = ($pathEntries | Where-Object { $_.Key -ceq "Path" } | Select-Object -First 1).Value
+    if ([string]::IsNullOrEmpty($pathValue)) { $pathValue = $pathEntries[0].Value }
+    [Environment]::SetEnvironmentVariable("PATH", $null, "Process")
+    [Environment]::SetEnvironmentVariable("Path", [string]$pathValue, "Process")
+}
+
 & $gxx -std=c++11 -O2 -I $root (Join-Path $root "tools\r1_protocol_sender.cpp") -lws2_32 -o $senderExe
 if ($LASTEXITCODE -ne 0) {
     throw "r1_protocol_sender build failed: $LASTEXITCODE"

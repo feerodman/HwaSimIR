@@ -21,6 +21,8 @@
 #include "Annotation/AnnotationTypes.h"
 #include "IR/IRPerfStats.h"
 #include "Video/VideoEncoder.h"
+#include "Video/DdsVideoPublisher.h"
+#include "Video/LocalMp4Recorder.h"
 
 class HwaSimIR;
 // TCP通信线程类
@@ -68,7 +70,12 @@ public:
 		bool sendAnnotation,
 		bool sendRealtimeData,
 		bool forwardInitControl);
+	void configureDdsVideo(const DdsVideoPublisherConfig& config);
+	void configureLocalRecording(const LocalMp4RecorderConfig& config);
 	void setH264Requested(bool enabled, int videoFps = 60);
+	void setLocalRecordingProtocolEnabled(bool enabled);
+	bool startOutputRound(int round);
+	bool stopOutputRound(const char* reason);
 	void resetFrameCounters();
 	// 转发 UDP 收到的控制命令，触发接收端开始/停止/复位逻辑。
 	bool sendControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd);
@@ -115,7 +122,12 @@ private:
 		const RawVideoFrame& rawFrame,
 		EncodedVideoFrame& encodedFrame,
 		std::string& requestedCodec,
-		std::string& requestedBackend);
+		std::string& requestedBackend,
+		const std::string& forcedCodec = "auto",
+		bool allowJpegFallback = true);
+	std::string resolvedDdsCodec() const;
+	std::string resolvedDdsTopic(const std::string& codec) const;
+	bool tcpWantsH264() const;
 	void requestEncoderKeyFrame(const char* reason);
 
 	// 负责连接与断开的函数
@@ -195,4 +207,17 @@ private:
 	std::atomic<bool> m_encoderKeyFrameRequested{ true };
 	std::atomic<unsigned long long> m_tcpPacketCounter{ 0 };
 	std::int64_t m_lastTcpPerfLogNs = 0;
+	DdsVideoPublisherConfig m_ddsConfig;
+	LocalMp4RecorderConfig m_recordingConfig;
+	std::unique_ptr<DdsVideoPublisher> m_ddsPublisher;
+	std::unique_ptr<LocalMp4Recorder> m_localRecorder;
+	std::atomic<bool> m_ddsEnabled{ false };
+	std::atomic<bool> m_outputRoundActive{ false };
+	std::vector<std::uint8_t> m_ddsRawBuffer;
+	std::atomic<unsigned long long> m_h264EncodeCounter{ 0 };
+	std::atomic<unsigned long long> m_jpegEncodeCounter{ 0 };
+	std::atomic<unsigned long long> m_ddsFrameCounter{ 0 };
+	std::atomic<unsigned long long> m_recordFrameCounter{ 0 };
+	std::atomic<unsigned long long> m_videoOutputFrameCounter{ 0 };
+	std::int64_t m_lastVideoOutputPerfLogNs = 0;
 };

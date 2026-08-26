@@ -79,6 +79,8 @@ logs/
 *.p12
 id_rsa*
 id_ed25519*
+zrddslicence.lic
+*.ddslog
 
 # OS/editor noise
 Thumbs.db

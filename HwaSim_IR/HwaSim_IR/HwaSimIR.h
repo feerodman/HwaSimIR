@@ -291,6 +291,8 @@ private:
 	bool m_tcpSendAnnotation = true;
 	bool m_tcpSendRealtimeData = true;
 	bool m_tcpForwardInitControl = true;
+	DdsVideoPublisherConfig m_ddsVideoConfig;
+	LocalMp4RecorderConfig m_localRecordingConfig;
 	std::uint64_t m_lastIrUpdateSourceSeq = 0;
 	std::uint64_t m_irBreakdownUpdateCounter = 0;
 	double m_stage7LastFullUpdateTime = -1.0;
@@ -647,6 +649,7 @@ private:
 	bool InitUdpThread();
 	// 初始化UDP通讯线程
 	bool InitTcpThread();
+	void LoadD2VideoOutputConfig();
 	void LoadNetworkConfig();
 	void LoadRenderBackendConfig();
 	bool IsVisibleWindowMode() const;

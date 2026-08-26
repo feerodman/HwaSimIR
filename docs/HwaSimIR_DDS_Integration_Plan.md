@@ -430,3 +430,101 @@ Open items before D2 are recorded in
 `logs/dds-d1-20260825-181131/summary.txt`: runtime package/banner version
 mismatch, vendor-supported reliable writer shutdown semantics, CAEP trial
 licence mutation/concurrency, and explicit board service environment setup.
+
+## 15. D2 execution record (2026-08-26)
+
+D2 was executed against baseline
+`a361ae051279fa0e389a554a0cd791db6e35d2da` (`DDS集成D1阶段_20260826_0030`).
+No commit or push was made.
+
+### Integrated components and data flow
+
+- `Video/DdsVideoPublisher`: one process-lifetime `DDSIF::Init`, Participant and
+  no-drop writer worker; one queued vector is written verbatim as one
+  `DDS::Bytes` Sample.
+- `Video/LocalMp4Recorder`: strict `LocalRecording.Enable && saveMP4En` gate,
+  no-drop worker, lazy file creation on the first IDR, one file per round, and
+  flush/close on STOP, RESET, next INIT, and process shutdown.
+- `TcpCommThread` remains the existing video-output worker. It now builds a
+  per-frame product plan and shares one H264 encode among TCP, DDS, and local
+  MP4. DDS Raw is prepared from the existing final BGR readback and does not
+  trigger a second Panda capture.
+- `DdsVideoReceiverWorker` runs outside the Qt GUI thread and feeds the existing
+  decoder/display path. DDS mode is explicitly video-only (`packetVersion=0`,
+  no annotation, no realtime data).
+
+TCP connection state no longer gates DDS or local recording. Upstream async
+latest-overwrite is retained only when DDS and effective recording are both
+disabled. When either independent output requires no-drop semantics, the
+upstream and component queues block for space instead of clearing or replacing
+old frames.
+
+### Final configuration and QoS
+
+`HwaSimIRRuntime.ini` now contains the production `[DdsVideo]` and
+`[LocalRecording]` sections with 120-frame blocking queues. `Codec=auto` uses
+only `trackerSensorParam.h264En`; the TCP codec cannot change DDS auto
+selection. Topics are the six precise/coarse H264, RawGray8, and RawBGR24 names
+specified in `docs/DDS_HwaSimIR_ICD.md`.
+
+The D1 QoS remains unchanged: `tcpv4`, RELIABLE writer/reader, KEEP_ALL writer
+history, and bounded resource limits. No BEST_EFFORT profile, UDP large-package
+zero-copy, IDL, ACK topic, or custom video header was added.
+
+### Windows functional results
+
+- DDS-only H264 full round: 120 sent / 120 received, 9,764 bytes, 61.047
+  Samples/s, writer/reader/drop errors all zero. Sender/receiver SHA256:
+  `9629D4C5DC21B55F81A6DD95BD8AA88A3A714CFA415780FF2EA4D639B3EA7E1F`.
+- DDS RawGray8 full round: 61/61, 39,040,000 bytes, every Sample exactly
+  640,000 bytes, 60.582 Samples/s, errors/drop zero. SHA256:
+  `C82A6F723D166F4FB2E03D72ED253ACA54879C7A415D7B4B67B87E623253B7A5`.
+- DDS RawBGR24: 10/10, every Sample 1,920,000 bytes; VideoDisplay RGB conversion
+  and orientation were inspected. Sender/receiver hash matched.
+- DDS VideoDisplay decoded H264 continuously (about 60.2 FPS) and displayed
+  RawGray8 and RawBGR24 without waiting for realtime/annotation data.
+- TCP-only Packet v3 retained video, annotation, and realtime flags. R1 route,
+  Packet v3, TCP reconnect, and reset/init IDR regressions passed.
+- TCP+DDS H264 ran simultaneously; both consumers received continuous video and
+  `[VideoOutputProducts]` recorded `h264EncodeCount=1`, `tcpH264=1`, and
+  `ddsH264=1` for the same frame.
+
+The H264, Gray8, and BGR24 test-only sender audit files matched customer
+receiver output byte-for-byte. Audit output is disabled by default and is not
+part of the production wire contract.
+
+### Local MP4 results
+
+The four gate combinations produced 0, 0, 0, and 1 MP4 respectively. The
+enabled Windows case used `shared_h264_remux`, wrote 121/121 frames with zero
+drops, and passed ffprobe/decode at 800x800, 60 FPS, 2.016667 seconds. Two
+start/stop rounds plus a reset case produced three separate valid MP4 files;
+each recorder session closed with inputFrames equal to writtenFrames and zero
+drops.
+
+### RK3588 short functional loop
+
+An isolated native AArch64 build on the board passed and linked the target
+`librockchip_mpp.so.1`, `libZRDDSCpp.so`, and `libavformat.so.58` libraries.
+The production checkout binary was not overwritten.
+
+- MPP+DDS H264: audit window 120/120, 10,219 bytes, errors/drop zero; SHA256
+  `1A6ED98AB6A84E5B1277207E2624FBBE8A8B1424F7434440C148F9B2CEAF5617`;
+  Windows FFmpeg decode passed.
+- DDS RawGray8: audit window 10/10, 6,400,000 bytes, 640,000 bytes/Sample,
+  errors/drop zero; SHA256
+  `56E3CC9FBDFEDF1AB4F67FDE0EF1B9CD4ED01CC8CE7444B7F478C238EFB22C88`.
+- Local MP4: `shared_h264_remux`, 70/70 frames, zero drops, 800x800 at 60 FPS,
+  1.166667 seconds; ffprobe and decode passed after copying to Windows.
+- TCP+DDS simultaneous: DDS audit window 30/30 with matching SHA256; TCP Packet
+  v3 H264 plus annotation/realtime decoded concurrently; one shared MPP H264
+  encode was recorded.
+
+The installed directory is labelled ZRDDS 2.4.5 while the actual runtime banner
+remains `2.4.4-r6873577`; D2 uses only APIs verified during D1. On 2026-08-26 the
+Debian VM endpoint recovered and the documented `Release-aarch64-rk3588-ssh`
+profile was rerun through its command-line equivalent. CMake Reload passed,
+`HwaSim_IR` built 32/32 with exit code zero, and the result was verified as an
+ELF64 AArch64 binary linked to `librockchip_mpp.so.1`, `libZRDDSCpp.so`, and
+`libavformat.so.58`. The CLion Reload/Build gate is therefore PASS. Full
+performance/soak remains D3 scope.

@@ -1186,6 +1186,7 @@ HwaSimIR::HwaSimIR(int argc, char** argv, const HwaSimIRLaunchOptions& launchOpt
 	,m_isAddPlatform(false), m_isSimRunning(false), m_currentRound(0), m_isCameraAttached(false), m_isInitTargetPlatID(false), m_stage0DisplayFrameCount(0){
 	m_launchOptions = launchOptions;
 	m_runtimeConfig.loadFromCandidates(BuildRuntimeConfigCandidatePaths());
+	LoadD2VideoOutputConfig();
 	LoadRenderControlConfig();
 	LoadRenderBackendConfig();
 	m_annotationOverlayInSensorImage = m_runtimeConfig.getBool(
@@ -7575,6 +7576,54 @@ bool HwaSimIR::InitUdpThread() {
 	return true;
 }
 
+void HwaSimIR::LoadD2VideoOutputConfig()
+{
+	m_ddsVideoConfig.enabled = m_runtimeConfig.getBool("DdsVideo", "Enable", "HwaSimIRDdsVideoEnable", false, 0);
+	m_ddsVideoConfig.codec = ToLowerAscii(m_runtimeConfig.getString("DdsVideo", "Codec", "HwaSimIRDdsVideoCodec", "auto", 0));
+	m_ddsVideoConfig.rawPixelFormat = ToLowerAscii(m_runtimeConfig.getString(
+		"DdsVideo", "RawPixelFormat", "HwaSimIRDdsVideoRawPixelFormat", "gray8", 0));
+	m_ddsVideoConfig.domainId = m_runtimeConfig.getInt("DdsVideo", "DomainId", "HwaSimIRDdsVideoDomainId", 150, 0);
+	m_ddsVideoConfig.qosFile = m_runtimeConfig.getString(
+		"DdsVideo", "QosFile", "HwaSimIRDdsVideoQosFile", "Config/DDS/ZRDDS_QOS_PROFILES.xml", 0);
+	m_ddsVideoConfig.topicH264Precise = m_runtimeConfig.getString("DdsVideo", "TopicH264Precise", "HwaSimIRDdsTopicH264Precise", "HwaSimIR.Video.precise.H264", 0);
+	m_ddsVideoConfig.topicRawGray8Precise = m_runtimeConfig.getString("DdsVideo", "TopicRawGray8Precise", "HwaSimIRDdsTopicRawGray8Precise", "HwaSimIR.Video.precise.RawGray8", 0);
+	m_ddsVideoConfig.topicRawBgr24Precise = m_runtimeConfig.getString("DdsVideo", "TopicRawBgr24Precise", "HwaSimIRDdsTopicRawBgr24Precise", "HwaSimIR.Video.precise.RawBGR24", 0);
+	m_ddsVideoConfig.topicH264Coarse = m_runtimeConfig.getString("DdsVideo", "TopicH264Coarse", "HwaSimIRDdsTopicH264Coarse", "HwaSimIR.Video.coarse.H264", 0);
+	m_ddsVideoConfig.topicRawGray8Coarse = m_runtimeConfig.getString("DdsVideo", "TopicRawGray8Coarse", "HwaSimIRDdsTopicRawGray8Coarse", "HwaSimIR.Video.coarse.RawGray8", 0);
+	m_ddsVideoConfig.topicRawBgr24Coarse = m_runtimeConfig.getString("DdsVideo", "TopicRawBgr24Coarse", "HwaSimIRDdsTopicRawBgr24Coarse", "HwaSimIR.Video.coarse.RawBGR24", 0);
+	m_ddsVideoConfig.queueMaxFrames = static_cast<std::size_t>((std::max)(1,
+		m_runtimeConfig.getInt("DdsVideo", "QueueMaxFrames", "HwaSimIRDdsQueueMaxFrames", 120, 0)));
+	m_ddsVideoConfig.blockWhenQueueFull = m_runtimeConfig.getBool("DdsVideo", "BlockWhenQueueFull", "HwaSimIRDdsBlockWhenQueueFull", true, 0);
+	m_ddsVideoConfig.ackTimeoutSec = (std::max)(1, m_runtimeConfig.getInt("DdsVideo", "AckTimeoutSec", "HwaSimIRDdsAckTimeoutSec", 60, 0));
+	m_ddsVideoConfig.shutdownDrainMs = (std::max)(0, m_runtimeConfig.getInt("DdsVideo", "ShutdownDrainMs", "HwaSimIRDdsShutdownDrainMs", 5000, 0));
+	m_ddsVideoConfig.enablePerfLog = m_runtimeConfig.getBool("DdsVideo", "EnablePerfLog", "HwaSimIRDdsEnablePerfLog", true, 0);
+	m_ddsVideoConfig.auditPath = m_runtimeConfig.getString("DdsVideo", "AuditPath", "HwaSimIRDdsAuditPath", "", 0);
+	m_ddsVideoConfig.auditMaxSamples = static_cast<std::uint64_t>((std::max)(0,
+		m_runtimeConfig.getInt("DdsVideo", "AuditMaxSamples", "HwaSimIRDdsAuditMaxSamples", 0, 0)));
+
+	m_localRecordingConfig.enabled = m_runtimeConfig.getBool("LocalRecording", "Enable", "HwaSimIRLocalRecordingEnable", false, 0);
+	m_localRecordingConfig.outputDirectory = m_runtimeConfig.getString("LocalRecording", "OutputDirectory", "HwaSimIRLocalRecordingOutputDirectory", "/home/linaro/HwaSimIR_Record", 0);
+	m_localRecordingConfig.container = ToLowerAscii(m_runtimeConfig.getString("LocalRecording", "Container", "HwaSimIRLocalRecordingContainer", "mp4", 0));
+	m_localRecordingConfig.filePrefix = m_runtimeConfig.getString("LocalRecording", "FilePrefix", "HwaSimIRLocalRecordingFilePrefix", "HwaSimIR", 0);
+	m_localRecordingConfig.encoder = ToLowerAscii(m_runtimeConfig.getString("LocalRecording", "Encoder", "HwaSimIRLocalRecordingEncoder", "auto", 0));
+	m_localRecordingConfig.bitrateKbps = (std::max)(100, m_runtimeConfig.getInt("LocalRecording", "BitrateKbps", "HwaSimIRLocalRecordingBitrateKbps", 4000, 0));
+	m_localRecordingConfig.gopFrames = (std::max)(1, m_runtimeConfig.getInt("LocalRecording", "GopFrames", "HwaSimIRLocalRecordingGopFrames", 30, 0));
+	m_localRecordingConfig.queueMaxFrames = static_cast<std::size_t>((std::max)(1,
+		m_runtimeConfig.getInt("LocalRecording", "QueueMaxFrames", "HwaSimIRLocalRecordingQueueMaxFrames", 120, 0)));
+	m_localRecordingConfig.blockWhenQueueFull = m_runtimeConfig.getBool("LocalRecording", "BlockWhenQueueFull", "HwaSimIRLocalRecordingBlockWhenQueueFull", true, 0);
+	m_localRecordingConfig.flushTimeoutMs = (std::max)(100, m_runtimeConfig.getInt("LocalRecording", "FlushTimeoutMs", "HwaSimIRLocalRecordingFlushTimeoutMs", 10000, 0));
+	m_localRecordingConfig.enablePerfLog = m_runtimeConfig.getBool("LocalRecording", "EnablePerfLog", "HwaSimIRLocalRecordingEnablePerfLog", true, 0);
+
+	if (!m_ddsVideoConfig.blockWhenQueueFull && m_ddsVideoConfig.enabled)
+		std::cerr << "[DdsVideo][FATAL] BlockWhenQueueFull=false is forbidden for D2 reliable video" << std::endl;
+	if (!m_localRecordingConfig.blockWhenQueueFull && m_localRecordingConfig.enabled)
+		std::cerr << "[LocalRecording][FATAL] BlockWhenQueueFull=false is forbidden for no-drop recording" << std::endl;
+	std::cout << "[D2VideoOutputConfig] ddsEnable=" << (m_ddsVideoConfig.enabled ? 1 : 0)
+		<< " ddsCodec=" << m_ddsVideoConfig.codec << " ddsDomain=" << m_ddsVideoConfig.domainId
+		<< " localRecordingConfigEnable=" << (m_localRecordingConfig.enabled ? 1 : 0)
+		<< " outputDirectory=" << m_localRecordingConfig.outputDirectory << std::endl;
+}
+
 bool HwaSimIR::InitTcpThread()
 {
 	std::cout << "[Stage0] TCP video baseline server=" << m_tcpServerIp << ":" << m_tcpServerPort
@@ -7602,6 +7651,8 @@ bool HwaSimIR::InitTcpThread()
 		m_tcpSendAnnotation,
 		m_tcpSendRealtimeData,
 		m_tcpForwardInitControl);
+	m_pTcpThread->configureDdsVideo(m_ddsVideoConfig);
+	m_pTcpThread->configureLocalRecording(m_localRecordingConfig);
 	if (!m_pTcpThread->start()) {
 		std::cerr << "TCP线程启动失败！" << std::endl;
 		delete m_pTcpThread;
@@ -7676,6 +7727,7 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 	switch (cmd.simCommand) {
 	case 1: // 复位
 		std::cout << "执行复位逻辑..." << std::endl;
+		if (m_pTcpThread) m_pTcpThread->stopOutputRound("reset");
 		m_stage0DisplayFrameCount = 0;
 		m_udpSequence = 0;
 		m_inputQueueBackpressureLogCount = 0;
@@ -7783,6 +7835,7 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		// Stage2B：同步转发开始控制命令，触发显示端开始录制和创建保存目录。
 		if (m_pTcpThread) {
 			m_pTcpThread->resetFrameCounters();
+			m_pTcpThread->startOutputRound(m_currentRound);
 			m_pTcpThread->sendControlCmd(cmd);
 			m_pTcpThread->resetInitCompleted();
 			std::cout << "TCP线程初始化标志已重置，回合重新开始" << std::endl;
@@ -7796,6 +7849,7 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		m_isSimRunning.store(false);
 		// Stage2B：同步转发停止控制命令，触发显示端 flush 并关闭视频/数据/标注文件。
 		if (m_pTcpThread) {
+			m_pTcpThread->stopOutputRound("stop");
 			m_pTcpThread->sendControlCmd(cmd);
 		}
 	
@@ -7905,7 +7959,9 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 	ApplyStage6FinalPostprocessInputs();
 	if (m_pTcpThread)
 	{
+		m_pTcpThread->stopOutputRound("next_init");
 		m_h264EnFromInit = sensor.h264En;
+		m_pTcpThread->setLocalRecordingProtocolEnabled(sensor.saveMP4En);
 		m_pTcpThread->setH264Requested(sensor.h264En, targetVideoFps);
 	}
 	LogEffectiveRuntimeConfig(

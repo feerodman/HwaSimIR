@@ -111,6 +111,8 @@
     <ClInclude Include="Video\VideoEncoder.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="Video\DdsVideoPublisher.h"><Filter>头文件</Filter></ClInclude>
+    <ClInclude Include="Video\LocalMp4Recorder.h"><Filter>头文件</Filter></ClInclude>
     <ClInclude Include="GeoTransform.h">
       <Filter>头文件\CoordinateConverter</Filter>
     </ClInclude>
@@ -206,6 +208,8 @@
     <ClCompile Include="Video\JpegFrameEncoder.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Video\DdsVideoPublisher.cpp"><Filter>源文件</Filter></ClCompile>
+    <ClCompile Include="Video\LocalMp4Recorder.cpp"><Filter>源文件</Filter></ClCompile>
     <ClCompile Include="GeoTransform.cpp">
       <Filter>源文件\CoordinateConverter</Filter>
     </ClCompile>

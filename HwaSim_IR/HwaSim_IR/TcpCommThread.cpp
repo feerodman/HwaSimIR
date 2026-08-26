@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cstring>
 #include <algorithm>
+#include <cctype>
 #include <chrono>
 #include <cmath>
 #include <iomanip>
@@ -84,6 +85,14 @@ std::uint8_t CodecIdForPayload(const std::string& payloadCodec)
 	}
 	return HwaSimTcpVideoV3::CodecNone;
 }
+
+std::string LowerAscii(std::string value)
+{
+	std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) {
+		return static_cast<char>(std::tolower(c));
+	});
+	return value;
+}
 }
 
 TcpCommThread::TcpCommThread(HwaSimIR* hwaSimIR, const std::string& serverIp, uint16_t serverPort,
@@ -92,6 +101,8 @@ TcpCommThread::TcpCommThread(HwaSimIR* hwaSimIR, const std::string& serverIp, ui
 	m_tcpSocket(INVALID_SOCKET), m_bIsRunning(false), m_bIsConnected(false), m_serverIp(serverIp), m_serverPort(serverPort) {
 	m_jpegEncoder.reset(new JpegFrameEncoder());
 	m_h264Encoder.reset(new H264FfmpegEncoder());
+	m_ddsPublisher.reset(new DdsVideoPublisher());
+	m_localRecorder.reset(new LocalMp4Recorder());
 	// 初始化服务器地址
 	memset(&m_serverAddr, 0, sizeof(m_serverAddr));
 	m_serverAddr.sin_family = AF_INET;
@@ -106,6 +117,12 @@ TcpCommThread::~TcpCommThread() {
 
 bool TcpCommThread::start() {
 	if (m_bIsRunning) return true;
+	if ((m_ddsConfig.enabled && !m_ddsConfig.blockWhenQueueFull) ||
+		(m_recordingConfig.enabled && !m_recordingConfig.blockWhenQueueFull))
+	{
+		std::cerr << "[VideoOutput][FATAL] no-drop output requires BlockWhenQueueFull=true" << std::endl;
+		return false;
+	}
 
 	// 【修改】只初始化 WSA，不在这里 connect。如果没连上，也不妨碍线程启动
 	if (WSAStartup(MAKEWORD(2, 2), &m_wsaData) != 0) {
@@ -116,6 +133,13 @@ bool TcpCommThread::start() {
 	// 启动发送线程
 	m_bIsRunning = true;
 	m_bIsConnected = false;
+	std::string outputError;
+	if (!m_ddsPublisher->start(m_ddsConfig, outputError))
+	{
+		std::cerr << "[DdsVideo][FATAL] startup failed reason=" << outputError << std::endl;
+		m_bIsRunning = false;
+		return false;
+	}
 	m_sendThread = std::thread(&TcpCommThread::sendFrameThreadFunc, this);
 
 	//std::cout << "TCP通讯线程启动成功，连接服务器：" << m_serverIp << ":" << m_serverPort << std::endl;
@@ -132,8 +156,61 @@ void TcpCommThread::stop() {
 	if (m_sendThread.joinable()) {
 		m_sendThread.join();
 	}
+	std::string outputError;
+	if (m_localRecorder) m_localRecorder->stopAndFlush("process_stop", outputError);
+	if (m_localRecorder) m_localRecorder->shutdown();
+	if (m_ddsPublisher) m_ddsPublisher->shutdown();
 	disconnectFromServer();
 	std::cout << "TCP通讯线程已停止" << std::endl;
+}
+
+void TcpCommThread::configureDdsVideo(const DdsVideoPublisherConfig& config)
+{
+	m_ddsConfig = config;
+	m_ddsEnabled.store(config.enabled);
+}
+
+void TcpCommThread::configureLocalRecording(const LocalMp4RecorderConfig& config)
+{
+	m_recordingConfig = config;
+	if (m_localRecorder) m_localRecorder->configure(config, m_channel);
+}
+
+void TcpCommThread::setLocalRecordingProtocolEnabled(bool enabled)
+{
+	if (m_localRecorder) m_localRecorder->setProtocolEnabled(enabled);
+}
+
+bool TcpCommThread::startOutputRound(int round)
+{
+	m_outputRoundActive.store(true);
+	requestEncoderKeyFrame("round_start");
+	if (!m_localRecorder || !m_localRecorder->effectiveEnabled()) return true;
+	std::string error;
+	if (!m_localRecorder->startPending(round, 0, 0, m_videoFps.load(), error))
+	{
+		std::cerr << "[LocalRecording][ERROR] start failed reason=" << error << std::endl;
+		return false;
+	}
+	return true;
+}
+
+bool TcpCommThread::stopOutputRound(const char* reason)
+{
+	m_outputRoundActive.store(false);
+	bool ok = true;
+	std::string error;
+	if (m_localRecorder && !m_localRecorder->stopAndFlush(reason, error))
+	{
+		std::cerr << "[LocalRecording][ERROR] flush failed reason=" << error << std::endl;
+		ok = false;
+	}
+	if (m_ddsPublisher && !m_ddsPublisher->endRound(error))
+	{
+		std::cerr << "[DdsVideo][ERROR] round drain failed reason=" << error << std::endl;
+		ok = false;
+	}
+	return ok;
 }
 
 void TcpCommThread::configureOutput(
@@ -212,6 +289,51 @@ void TcpCommThread::setH264Requested(bool enabled, int videoFps)
 		<< " platformAutoOrder=ffmpeg,jpeg"
 		<< " videoFps=" << m_videoFps.load()
 		<< std::endl;
+	if (m_ddsPublisher && m_ddsPublisher->enabled())
+	{
+		const std::string codec = resolvedDdsCodec();
+		const std::string topic = resolvedDdsTopic(codec);
+		bool changed = false;
+		std::string error;
+		if (!m_ddsPublisher->configureTopic(topic, &changed, error))
+		{
+			std::cerr << "[DdsVideo][FATAL] configureTopic failed codec=" << codec
+				<< " topic=" << topic << " reason=" << error << std::endl;
+		}
+		else if (changed && codec == "h264")
+		{
+			requestEncoderKeyFrame("dds_writer_created");
+		}
+	}
+}
+
+std::string TcpCommThread::resolvedDdsCodec() const
+{
+	std::string codec = LowerAscii(m_ddsConfig.codec);
+	if (codec.empty() || codec == "auto")
+	{
+		if (m_h264Requested.load()) return "h264";
+		const std::string format = LowerAscii(m_ddsConfig.rawPixelFormat);
+		return (format == "bgr24" || format == "raw_bgr24") ? "raw_bgr24" : "raw_gray8";
+	}
+	if (codec == "gray8") return "raw_gray8";
+	if (codec == "bgr24") return "raw_bgr24";
+	return codec;
+}
+
+std::string TcpCommThread::resolvedDdsTopic(const std::string& codec) const
+{
+	const bool coarse = LowerAscii(m_channel) == "coarse";
+	if (codec == "h264") return coarse ? m_ddsConfig.topicH264Coarse : m_ddsConfig.topicH264Precise;
+	if (codec == "raw_bgr24") return coarse ? m_ddsConfig.topicRawBgr24Coarse : m_ddsConfig.topicRawBgr24Precise;
+	return coarse ? m_ddsConfig.topicRawGray8Coarse : m_ddsConfig.topicRawGray8Precise;
+}
+
+bool TcpCommThread::tcpWantsH264() const
+{
+	std::lock_guard<std::mutex> lock(m_codecMtx);
+	return m_h264Requested.load() && m_codecConfig != "jpeg" &&
+		m_h264EncoderConfig != "jpeg";
 }
 
 void TcpCommThread::requestEncoderKeyFrame(const char* reason)
@@ -227,7 +349,9 @@ bool TcpCommThread::encodeFrame(
 	const RawVideoFrame& rawFrame,
 	EncodedVideoFrame& encodedFrame,
 	std::string& requestedCodec,
-	std::string& requestedBackend)
+	std::string& requestedBackend,
+	const std::string& forcedCodec,
+	bool allowJpegFallback)
 {
 	std::string codecConfig;
 	std::string encoderConfig;
@@ -257,10 +381,9 @@ bool TcpCommThread::encodeFrame(
 	config.lowLatency = m_h264LowLatency.load();
 	config.forceKeyFrameOnStart = m_h264ForceKeyFrameOnStart.load();
 
-	const bool h264Requested =
-		m_h264Requested.load() &&
-		codecConfig != "jpeg" &&
-		encoderConfig != "jpeg";
+	const bool h264Requested = forcedCodec == "h264" ||
+		(forcedCodec != "jpeg" && m_h264Requested.load() &&
+			codecConfig != "jpeg" && encoderConfig != "jpeg");
 	requestedCodec = h264Requested ? "h264" : "jpeg";
 	requestedBackend = h264Requested
 		? (encoderConfig.empty() ? "auto" : encoderConfig)
@@ -336,7 +459,7 @@ bool TcpCommThread::encodeFrame(
 		}
 	}
 
-	if (h264Requested && !m_h264FallbackToJpeg.load())
+	if (h264Requested && (!allowJpegFallback || !m_h264FallbackToJpeg.load()))
 	{
 		if (fallbackReason != m_lastCodecFallbackReason)
 		{
@@ -393,6 +516,7 @@ void TcpCommThread::resetFrameCounters()
 		std::lock_guard<std::mutex> lock(m_frameMtx);
 		m_frameQueue.clear();
 		m_tcpPacketCounter.store(0);
+		m_videoOutputFrameCounter.store(0);
 		m_lastTcpPerfLogNs = 0;
 	}
 	m_encoderResetRequested.store(true);
@@ -414,7 +538,39 @@ bool TcpCommThread::connectToServer() {
 	m_tcpSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (m_tcpSocket == INVALID_SOCKET) return false;
 
-	if (connect(m_tcpSocket, (sockaddr*)&m_serverAddr, sizeof(m_serverAddr)) == SOCKET_ERROR) {
+	u_long nonBlocking = 1;
+	ioctlsocket(m_tcpSocket, FIONBIO, &nonBlocking);
+	const int connectResult = connect(m_tcpSocket, (sockaddr*)&m_serverAddr, sizeof(m_serverAddr));
+	if (connectResult == SOCKET_ERROR) {
+		const int connectError = WSAGetLastError();
+		if (connectError != WSAEWOULDBLOCK && connectError != WSAEINPROGRESS && connectError != WSAEINVAL)
+		{
+			closesocket(m_tcpSocket);
+			m_tcpSocket = INVALID_SOCKET;
+			return false;
+		}
+		fd_set writeSet;
+		FD_ZERO(&writeSet);
+		FD_SET(m_tcpSocket, &writeSet);
+		timeval timeout = { 0, 20000 };
+		if (select(0, nullptr, &writeSet, nullptr, &timeout) <= 0)
+		{
+			closesocket(m_tcpSocket);
+			m_tcpSocket = INVALID_SOCKET;
+			return false;
+		}
+		int socketError = 0;
+		int socketErrorLength = sizeof(socketError);
+		if (getsockopt(m_tcpSocket, SOL_SOCKET, SO_ERROR,
+			reinterpret_cast<char*>(&socketError), &socketErrorLength) == SOCKET_ERROR || socketError != 0)
+		{
+			closesocket(m_tcpSocket);
+			m_tcpSocket = INVALID_SOCKET;
+			return false;
+		}
+	}
+	nonBlocking = 0;
+	if (ioctlsocket(m_tcpSocket, FIONBIO, &nonBlocking) == SOCKET_ERROR) {
 		closesocket(m_tcpSocket);
 		m_tcpSocket = INVALID_SOCKET;
 		return false;
@@ -757,19 +913,26 @@ std::string TcpCommThread::buildAnnotationJson(
 void TcpCommThread::sendFrameThreadFunc() {
 	std::cout << "TCP发送后台线程已启动..." << std::endl;
 	EncodedVideoFrame encodedFrame;
+	EncodedVideoFrame h264Frame;
+	EncodedVideoFrame jpegFrame;
+	auto nextTcpConnectAttempt = std::chrono::steady_clock::now();
 
 	while (m_bIsRunning) {
-		if (!m_bIsConnected) {
+		const bool independentOutput = m_ddsEnabled.load() ||
+			(m_localRecorder && m_localRecorder->effectiveEnabled());
+		if (!m_bIsConnected && std::chrono::steady_clock::now() >= nextTcpConnectAttempt) {
+			nextTcpConnectAttempt = std::chrono::steady_clock::now() + std::chrono::seconds(1);
 			if (connectToServer()) {
 				m_bIsConnected = true;
 				requestEncoderKeyFrame("tcp_connected");
 				std::cout << "TCP成功连接到服务器：" << m_serverIp << ":" << m_serverPort << std::endl;
 			}
-			else {
+			else if (!independentOutput) {
 				std::this_thread::sleep_for(std::chrono::seconds(1));
 				continue;
 			}
 		}
+		if (!m_bIsConnected && !independentOutput) continue;
 
 		PendingFrame frame;
 		int queueDepth = 0;
@@ -807,7 +970,7 @@ void TcpCommThread::sendFrameThreadFunc() {
 		const bool includeVideo = packetVersion == 2 || m_sendVideo.load();
 		const bool includeAnnotation = packetVersion == 2 || m_sendAnnotation.load();
 		const bool includeRealtime = packetVersion == 2 || m_sendRealtimeData.load();
-		if (!includeVideo && !includeAnnotation && !includeRealtime)
+		if (!includeVideo && !includeAnnotation && !includeRealtime && !independentOutput)
 		{
 			if (!m_allPayloadDisabledWarned.exchange(true))
 			{
@@ -822,12 +985,12 @@ void TcpCommThread::sendFrameThreadFunc() {
 			}
 			continue;
 		}
-		if (includeVideo && frame.pixels.empty())
+		if ((includeVideo || independentOutput) && frame.pixels.empty())
 		{
 			continue;
 		}
 
-		const std::uint64_t nextOutputOrdinal = m_tcpPacketCounter.load() + 1;
+		const std::uint64_t productOrdinal = ++m_videoOutputFrameCounter;
 		RawVideoFrame rawFrame;
 		rawFrame.data = frame.pixels.data();
 		rawFrame.width = frame.width;
@@ -838,18 +1001,163 @@ void TcpCommThread::sendFrameThreadFunc() {
 		rawFrame.flipVertical = m_flipVertical.load();
 		rawFrame.ptsMs = frame.telemetry.udpReceiveTimeNs > 0
 			? frame.telemetry.udpReceiveTimeNs / 1000000LL
-			: static_cast<std::int64_t>(nextOutputOrdinal * 1000ULL / std::max(1, m_videoFps.load()));
+			: static_cast<std::int64_t>(productOrdinal * 1000ULL / std::max(1, m_videoFps.load()));
 
-		std::string requestedCodec = "none";
-		std::string requestedBackend = "none";
-		encodedFrame.clearForReuse();
-		encodedFrame.ptsMs = rawFrame.ptsMs;
-		if (includeVideo &&
-			!encodeFrame(rawFrame, encodedFrame, requestedCodec, requestedBackend))
+		const bool tcpH264 = includeVideo && tcpWantsH264();
+		// DDS video belongs to an active simulation round.  Keep the middleware and
+		// writer alive between rounds, but STOP/RESET must not produce idle samples.
+		const bool ddsRoundActive = m_ddsEnabled.load() && m_outputRoundActive.load();
+		const std::string ddsCodec = ddsRoundActive ? resolvedDdsCodec() : "none";
+		const bool ddsH264 = ddsCodec == "h264";
+		const bool ddsRaw = ddsCodec == "raw_gray8" || ddsCodec == "raw_bgr24";
+		const bool recording = m_outputRoundActive.load() && m_localRecorder &&
+			m_localRecorder->effectiveEnabled();
+		const bool needH264 = tcpH264 || ddsH264 || (recording && m_localRecorder->wantsH264());
+		bool needJpeg = includeVideo && !tcpH264;
+		if (ddsRoundActive)
 		{
-			continue;
+			if (!ddsH264 && !ddsRaw)
+			{
+				std::cerr << "[DdsVideo][FATAL] unsupported codec=" << ddsCodec << std::endl;
+				continue;
+			}
+			bool topicChanged = false;
+			std::string topicError;
+			const std::string topic = resolvedDdsTopic(ddsCodec);
+			if (!m_ddsPublisher->configureTopic(topic, &topicChanged, topicError))
+			{
+				std::cerr << "[DdsVideo][FATAL] configureTopic failed topic=" << topic
+					<< " reason=" << topicError << std::endl;
+				continue;
+			}
+			if (topicChanged && ddsH264) requestEncoderKeyFrame("dds_topic_changed");
 		}
 
+		std::string h264RequestedCodec = "none";
+		std::string h264RequestedBackend = "none";
+		std::string jpegRequestedCodec = "none";
+		std::string jpegRequestedBackend = "none";
+		h264Frame.clearForReuse();
+		jpegFrame.clearForReuse();
+		bool h264Ok = false;
+		if (needH264)
+		{
+			h264Frame.ptsMs = rawFrame.ptsMs;
+			h264Ok = encodeFrame(rawFrame, h264Frame, h264RequestedCodec,
+				h264RequestedBackend, "h264", false);
+			if (h264Ok) ++m_h264EncodeCounter;
+			else if (ddsH264)
+			{
+				std::cerr << "[DdsVideo][FATAL] codec=h264 publishSkipped=1 reason=h264_encode_failed"
+					<< std::endl;
+			}
+		}
+		if (tcpH264 && !h264Ok && m_h264FallbackToJpeg.load()) needJpeg = true;
+		bool jpegOk = false;
+		if (needJpeg)
+		{
+			jpegFrame.ptsMs = rawFrame.ptsMs;
+			jpegOk = encodeFrame(rawFrame, jpegFrame, jpegRequestedCodec,
+				jpegRequestedBackend, "jpeg", true);
+			if (jpegOk) ++m_jpegEncodeCounter;
+		}
+
+		std::string ddsError;
+		double ddsBackpressureMs = 0.0;
+		if (ddsH264 && h264Ok)
+		{
+			if (!m_ddsPublisher->publishBytes(h264Frame.payload.data(), h264Frame.payload.size(),
+				&ddsBackpressureMs, ddsError))
+			{
+				std::cerr << "[DdsVideo][FATAL] codec=h264 publishSkipped=1 reason=" << ddsError << std::endl;
+			}
+			else ++m_ddsFrameCounter;
+		}
+		else if (ddsRaw)
+		{
+			const auto prepBegin = std::chrono::steady_clock::now();
+			const bool gray = ddsCodec == "raw_gray8";
+			const std::size_t rowBytes = static_cast<std::size_t>(frame.width) * (gray ? 1u : 3u);
+			m_ddsRawBuffer.resize(rowBytes * static_cast<std::size_t>(frame.height));
+			for (int y = 0; y < frame.height; ++y)
+			{
+				const int srcY = rawFrame.flipVertical ? (frame.height - 1 - y) : y;
+				const std::uint8_t* src = frame.pixels.data() +
+					static_cast<std::size_t>(srcY) * static_cast<std::size_t>(frame.width) * 3u;
+				std::uint8_t* dst = m_ddsRawBuffer.data() + static_cast<std::size_t>(y) * rowBytes;
+				if (!gray) std::memcpy(dst, src, rowBytes);
+				else for (int x = 0; x < frame.width; ++x)
+				{
+					const unsigned int b = src[x * 3 + 0];
+					const unsigned int g = src[x * 3 + 1];
+					const unsigned int r = src[x * 3 + 2];
+					dst[x] = static_cast<std::uint8_t>((29u * b + 150u * g + 77u * r + 128u) >> 8);
+				}
+			}
+			const double prepMs = std::chrono::duration<double, std::milli>(
+				std::chrono::steady_clock::now() - prepBegin).count();
+			if (productOrdinal <= 3 || (productOrdinal % 120) == 0)
+				std::cout << "[DdsRawPrep] format=" << (gray ? "gray8" : "bgr24")
+					<< " width=" << frame.width << " height=" << frame.height
+					<< " bytes=" << m_ddsRawBuffer.size() << " prepMs=" << prepMs << std::endl;
+			if (!m_ddsPublisher->publishBytes(m_ddsRawBuffer.data(), m_ddsRawBuffer.size(),
+				&ddsBackpressureMs, ddsError))
+				std::cerr << "[DdsVideo][FATAL] codec=" << ddsCodec << " publishSkipped=1 reason="
+					<< ddsError << std::endl;
+			else ++m_ddsFrameCounter;
+		}
+
+		if (recording)
+		{
+			std::string recordError;
+			double recordBackpressureMs = 0.0;
+			bool recordOk = false;
+			if (m_localRecorder->wantsH264() && h264Ok)
+				recordOk = m_localRecorder->enqueueH264(h264Frame.payload.data(), h264Frame.payload.size(),
+					h264Frame.keyFrame, frame.width, frame.height, &recordBackpressureMs, recordError);
+			else if (!m_localRecorder->wantsH264())
+				recordOk = m_localRecorder->enqueueRawBgr24(frame.pixels.data(), frame.width, frame.height,
+					rawFrame.flipVertical, &recordBackpressureMs, recordError);
+			else recordError = "shared H264 encode failed";
+			if (!recordOk) std::cerr << "[LocalRecording][ERROR] reason=" << recordError << std::endl;
+			else ++m_recordFrameCounter;
+		}
+
+		encodedFrame.clearForReuse();
+		std::string requestedCodec = "none";
+		std::string requestedBackend = "none";
+		if (includeVideo)
+		{
+			if (tcpH264 && h264Ok)
+			{
+				encodedFrame = h264Frame;
+				requestedCodec = h264RequestedCodec;
+				requestedBackend = h264RequestedBackend;
+			}
+			else if (jpegOk)
+			{
+				encodedFrame = jpegFrame;
+				requestedCodec = tcpH264 ? "h264" : jpegRequestedCodec;
+				requestedBackend = tcpH264 ? h264RequestedBackend : jpegRequestedBackend;
+				if (tcpH264) encodedFrame.fallbackReason = "h264_encode_failed";
+			}
+			else if (m_bIsConnected) continue;
+		}
+		if (productOrdinal <= 3 || (productOrdinal % 120) == 0)
+		{
+			std::cout << "[VideoOutputProducts] frame=" << productOrdinal
+				<< " needH264=" << (needH264 ? 1 : 0)
+				<< " h264EncodeCount=" << (h264Ok ? 1 : 0)
+				<< " needJpeg=" << (needJpeg ? 1 : 0)
+				<< " jpegEncodeCount=" << (jpegOk ? 1 : 0)
+				<< " tcpH264=" << (tcpH264 && h264Ok ? 1 : 0)
+				<< " ddsH264=" << (ddsH264 && h264Ok ? 1 : 0)
+				<< " ddsRaw=" << (ddsRaw ? 1 : 0)
+				<< " localRecordH264=" << (recording && m_localRecorder->wantsH264() && h264Ok ? 1 : 0)
+				<< std::endl;
+		}
+
+		if (!m_bIsConnected) continue;
 		const std::uint64_t outputOrdinal = ++m_tcpPacketCounter;
 		const std::int64_t tcpSendTimeNs = IRPerfStats::wallTimeNs();
 		const std::string annotationJson = includeAnnotation
@@ -1035,7 +1343,9 @@ IRFrameEnqueueResult TcpCommThread::updateFrame(
 
 	const auto waitBegin = std::chrono::steady_clock::now();
 	std::unique_lock<std::mutex> lock(m_frameMtx);
-	if (m_syncMode.load())
+	const bool recordingNoDrop = m_localRecorder && m_localRecorder->effectiveEnabled();
+	const bool noDropOutputRequired = m_ddsEnabled.load() || recordingNoDrop;
+	if (m_syncMode.load() || noDropOutputRequired)
 	{
 		result.queueWasFull = m_frameQueue.size() >= kMaxFrameQueue;
 		m_queueSpaceCv.wait(lock, [this] {
@@ -1053,12 +1363,21 @@ IRFrameEnqueueResult TcpCommThread::updateFrame(
 	}
 	result.queueWaitMs = std::chrono::duration<double, std::milli>(
 		std::chrono::steady_clock::now() - waitBegin).count();
+	if (result.queueWaitMs > 1.0 && noDropOutputRequired)
+	{
+		std::cout << "[OutputBackpressure] queueDepth=" << m_frameQueue.size()
+			<< " waitMs=" << result.queueWaitMs
+			<< " ddsEnabled=" << (m_ddsEnabled.load() ? 1 : 0)
+			<< " recordingEnabled=" << (recordingNoDrop ? 1 : 0) << std::endl;
+	}
 
 	const auto copyBegin = std::chrono::steady_clock::now();
 	PendingFrame frame;
 	const bool copyVideo =
 		m_packetVersion.load() == 2 ||
-		m_sendVideo.load();
+		m_sendVideo.load() ||
+		m_ddsEnabled.load() ||
+		recordingNoDrop;
 	if (copyVideo)
 	{
 		const size_t size = static_cast<size_t>(width) * static_cast<size_t>(height) * 3u;

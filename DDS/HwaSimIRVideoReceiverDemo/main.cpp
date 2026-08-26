@@ -27,13 +27,15 @@ struct Options {
     std::string output = "received.h264";
     std::uint64_t frames = 0;
     int timeoutSec = 120;
+    int idleExitMs = 0;
 };
 
 void PrintUsage() {
     std::cout
         << "Usage: HwaSimIRVideoReceiverDemo --domain N --topic NAME\n"
         << "  --codec h264|raw_gray8|raw_bgr24 --width N --height N\n"
-        << "  --qos FILE --output FILE --frames N [--timeout-sec N]\n";
+        << "  --qos FILE --output FILE --frames N [--timeout-sec N]\n"
+        << "  --frames 0 --idle-exit-ms N  (drain until idle after first Sample)\n";
 }
 
 std::uint64_t ParseUnsigned(const char* text, const char* option) {
@@ -66,10 +68,13 @@ Options ParseOptions(int argc, char** argv) {
         else if (arg == "--output") options.output = value;
         else if (arg == "--frames") options.frames = ParseUnsigned(value, "--frames");
         else if (arg == "--timeout-sec") options.timeoutSec = static_cast<int>(ParseUnsigned(value, "--timeout-sec"));
+        else if (arg == "--idle-exit-ms") options.idleExitMs = static_cast<int>(ParseUnsigned(value, "--idle-exit-ms"));
         else throw std::runtime_error("unknown option: " + arg);
     }
     if (options.domain < 0 || options.domain > 232) throw std::runtime_error("--domain must be 0..232");
-    if (options.frames == 0) throw std::runtime_error("--frames must be greater than zero");
+    if (options.frames == 0 && options.idleExitMs <= 0) {
+        throw std::runtime_error("--frames 0 requires --idle-exit-ms greater than zero");
+    }
     if (options.codec != "h264" && options.codec != "raw_gray8" && options.codec != "raw_bgr24") {
         throw std::runtime_error("unsupported --codec");
     }
@@ -113,11 +118,21 @@ public:
                 std::cerr << "output_write_error sample=" << receivedSamples_ << "\n";
             }
         }
-        if (receivedSamples_ >= options_.frames) condition_.notify_all();
+        if (options_.frames == 0 || receivedSamples_ >= options_.frames) condition_.notify_all();
     }
 
     bool Wait() {
         std::unique_lock<std::mutex> lock(mutex_);
+        if (options_.frames == 0) {
+            if (!condition_.wait_for(lock, std::chrono::seconds(options_.timeoutSec), [this]() {
+                    return started_;
+                })) return false;
+            for (;;) {
+                const std::uint64_t observed = receivedSamples_;
+                if (!condition_.wait_for(lock, std::chrono::milliseconds(options_.idleExitMs),
+                        [this, observed]() { return receivedSamples_ != observed; })) return true;
+            }
+        }
         return condition_.wait_for(lock, std::chrono::seconds(options_.timeoutSec), [this]() {
             return receivedSamples_ >= options_.frames;
         });
@@ -144,7 +159,8 @@ public:
                   << " elapsedSec=" << seconds
                   << " ddsErrors=" << ddsErrors_
                   << " timedOut=" << (timedOut ? 1 : 0) << "\n";
-        return (!timedOut && receivedSamples_ == options_.frames && ddsErrors_ == 0) ? 0 : 8;
+        const bool countOk = options_.frames == 0 ? receivedSamples_ > 0 : receivedSamples_ == options_.frames;
+        return (!timedOut && countOk && ddsErrors_ == 0) ? 0 : 8;
     }
 
 private:
@@ -203,7 +219,8 @@ int main(int argc, char** argv) {
         }
 
         std::cout << "receiverReady=1 domain=" << options.domain << " topic=" << options.topic
-                  << " codec=" << options.codec << " frames=" << options.frames << "\n";
+                  << " codec=" << options.codec << " frames=" << options.frames
+                  << " idleExitMs=" << options.idleExitMs << "\n";
         const bool complete = listener.Wait();
         const ReturnCode_t finalizeResult = DDSIF::Finalize();
         if (finalizeResult != RETCODE_OK) {

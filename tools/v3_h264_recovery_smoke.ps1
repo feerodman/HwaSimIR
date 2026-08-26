@@ -1,7 +1,9 @@
 param(
     [string]$FFmpegRoot = $env:FFMPEG_ROOT,
     [switch]$SkipFallback,
-    [switch]$SkipMp4Validation
+    [switch]$SkipMp4Validation,
+    [ValidateRange(26, 120)]
+    [int]$AutoSeconds = 26
 )
 
 $ErrorActionPreference = "Stop"
@@ -145,6 +147,7 @@ $videoA = $null
 $videoB = $null
 $hwa = $null
 $stim = $null
+$recoveryStim = $null
 $fallbackVideo = $null
 $fallbackHwa = $null
 $fallbackStim = $null
@@ -156,6 +159,7 @@ $mp4Frames = 0
 
 try {
     $env:QT_FORCE_STDERR_LOGGING = "1"
+    $env:H264Encoder = "ffmpeg"
     $videoA = Start-LoggedProcess "video-before-reconnect" $videoExe @(
         "--network-config=$videoConfig", "--channel=precise", "--plat-id=1001", "--sensor-id=2") $videoWork
     Start-Sleep -Seconds 2
@@ -164,7 +168,7 @@ try {
     $stim = Start-LoggedProcess "stim-recovery" $stimExe @(
         "--network-config=$stimConfig", "--channel=precise", "--plat-id=1001", "--sensor-id=2",
         "--sim-mode=2", "--video-fps=60", "--phase1d-h264=1", "--save-mp4=1",
-        "--phase1b-auto-seconds=26") $stimWork
+        "--phase1b-auto-seconds=$AutoSeconds") $stimWork
 
     Start-Sleep -Seconds 12
     Stop-LoggedProcess $videoA
@@ -174,6 +178,13 @@ try {
         "--network-config=$videoConfig", "--channel=precise", "--plat-id=1001", "--sensor-id=2") $videoWork
     Start-Sleep -Seconds 4
 
+    # The original stimulus may remain alive after it has stopped producing
+    # frames.  Release its UDP port and start a fresh, bounded producer after
+    # the explicit reset/init/start sequence so the reconnect assertion always
+    # observes post-reconfiguration H.264 frames.
+    Stop-LoggedProcess $stim
+    $stim = $null
+
     Invoke-Sender @("--type=control", "--port=$udpPort", "--plat-id=1001", "--command=1")
     Start-Sleep -Seconds 1
     Invoke-Sender @("--type=init", "--port=$udpPort", "--plat-id=1001", "--sensor-id=2",
@@ -181,7 +192,13 @@ try {
     Start-Sleep -Seconds 1
     Invoke-Sender @("--type=control", "--port=$udpPort", "--plat-id=1001", "--command=2")
 
-    if (-not $stim.Process.WaitForExit(25000)) { throw "Recovery stimulus timeout" }
+    $recoveryStim = Start-LoggedProcess "stim-after-reconnect" $stimExe @(
+        "--network-config=$stimConfig", "--channel=precise", "--plat-id=1001", "--sensor-id=2",
+        "--sim-mode=2", "--video-fps=60", "--phase1d-h264=1", "--save-mp4=1",
+        "--phase1b-auto-seconds=10") $stimWork
+    if (-not $recoveryStim.Process.WaitForExit(30000)) {
+        throw "Recovery stimulus timeout after 30000ms"
+    }
     Start-Sleep -Seconds 5
     Stop-LoggedProcess $hwa
     $hwa = $null
@@ -250,7 +267,7 @@ try {
     }
 }
 finally {
-    foreach ($entry in @($fallbackStim, $fallbackHwa, $fallbackVideo, $stim, $hwa, $videoB, $videoA)) {
+    foreach ($entry in @($fallbackStim, $fallbackHwa, $fallbackVideo, $recoveryStim, $stim, $hwa, $videoB, $videoA)) {
         Stop-LoggedProcess $entry
     }
     $env:QT_FORCE_STDERR_LOGGING = $oldQtLog

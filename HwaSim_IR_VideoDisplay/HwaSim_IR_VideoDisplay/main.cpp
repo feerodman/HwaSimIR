@@ -16,6 +16,8 @@ int main(int argc, char *argv[])
     QString channel;
     int platID = -1;
     int sensorID = -1;
+	QString receiveTransport, ddsTopic, ddsCodec, ddsQos;
+	int ddsDomain = -1, ddsWidth = -1, ddsHeight = -1, ddsFps = -1;
     const QStringList arguments = app.arguments();
     for (int argumentIndex = 0; argumentIndex < arguments.size(); ++argumentIndex)
     {
@@ -48,6 +50,26 @@ int main(int argc, char *argv[])
         {
             sensorID = argument.mid(sensorPrefix.size()).toInt();
         }
+		auto stringOption = [&](const QString& name, QString& target) {
+			const QString prefix = name + QStringLiteral("=");
+			if (argument.startsWith(prefix)) { target = argument.mid(prefix.size()); return true; }
+			if (argument == name && argumentIndex + 1 < arguments.size()) { target = arguments.at(++argumentIndex); return true; }
+			return false;
+		};
+		auto intOption = [&](const QString& name, int& target) {
+			QString value;
+			if (!stringOption(name, value)) return false;
+			target = value.toInt();
+			return true;
+		};
+		if (stringOption(QStringLiteral("--receive-transport"), receiveTransport)) continue;
+		if (stringOption(QStringLiteral("--dds-topic"), ddsTopic)) continue;
+		if (stringOption(QStringLiteral("--dds-codec"), ddsCodec)) continue;
+		if (stringOption(QStringLiteral("--dds-qos"), ddsQos)) continue;
+		if (intOption(QStringLiteral("--dds-domain"), ddsDomain)) continue;
+		if (intOption(QStringLiteral("--dds-width"), ddsWidth)) continue;
+		if (intOption(QStringLiteral("--dds-height"), ddsHeight)) continue;
+		if (intOption(QStringLiteral("--dds-fps"), ddsFps)) continue;
     }
     qInfo().noquote()
         << QStringLiteral("[ProtocolLayout] component=HwaSim_IR_VideoDisplay channel=%1 platID=%2 sensorID=%3 pid=%4 ControlP2cX1ObjTrackingCmd=%5 InitP2cObjectTrackingCmd=%6 DisplayC2cObjTrackingData=%7 InitAckC2pObjectTrackingCmd=%8")
@@ -59,7 +81,8 @@ int main(int argc, char *argv[])
             .arg(sizeof(BYHWICD::InitP2cObjectTrackingCmd))
             .arg(sizeof(BYHWICD::DisplayC2cObjTrackingData))
             .arg(sizeof(BYHWICD::InitAckC2pObjectTrackingCmd));
-    HwaSim_IR_VideoDisplay window(networkConfigPath, channel, platID, sensorID);
+    HwaSim_IR_VideoDisplay window(networkConfigPath, channel, platID, sensorID,
+		receiveTransport, ddsTopic, ddsCodec, ddsQos, ddsDomain, ddsWidth, ddsHeight, ddsFps);
     window.show();
     return app.exec();
 }

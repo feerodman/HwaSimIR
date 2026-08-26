@@ -33,6 +33,14 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
     const QString& channel,
     int platID,
     int sensorID,
+	const QString& receiveTransport,
+	const QString& ddsTopic,
+	const QString& ddsCodec,
+	const QString& ddsQos,
+	int ddsDomain,
+	int ddsWidth,
+	int ddsHeight,
+	int ddsFps,
     QWidget *parent)
     : QWidget(parent),
       m_networkConfigPath(networkConfigPath.trimmed()),
@@ -51,6 +59,15 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
         m_networkConfigPath = QFileInfo(m_networkConfigPath).absoluteFilePath();
     }
     QSettings instanceSettings(m_networkConfigPath, QSettings::IniFormat);
+	m_receiveTransport = receiveTransport.trimmed().toLower();
+	if (m_receiveTransport.isEmpty())
+		m_receiveTransport = instanceSettings.value(QStringLiteral("VideoInput/Transport"),
+			QStringLiteral("tcp")).toString().trimmed().toLower();
+	if (m_receiveTransport != QStringLiteral("tcp") && m_receiveTransport != QStringLiteral("dds"))
+	{
+		qCritical().noquote() << QStringLiteral("[VideoInput][FATAL] invalid Transport=%1").arg(m_receiveTransport);
+		m_receiveTransport = QStringLiteral("tcp");
+	}
     if (m_channel.isEmpty())
     {
         m_channel = instanceSettings.value(
@@ -94,21 +111,50 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
 
 	InitQss();
 
-    // worker 线程...
+    // Network worker always runs outside the GUI thread. TCP and DDS share dataReceived.
     m_workerThread = new QThread(this);
-    m_worker = new TcpServerWorker(m_networkConfigPath, m_channel, m_platID, m_sensorID);
-    m_worker->moveToThread(m_workerThread);
-
-    // 收到图像信号 → 更新显示
-    connect(m_worker, &TcpServerWorker::dataReceived, this, &HwaSim_IR_VideoDisplay::imageReceivedSlot);
-    // 收到初始化
-    connect(m_worker, &TcpServerWorker::initCommandReceived, this, &HwaSim_IR_VideoDisplay::initCommandReceivedSlot);
-    // 收到控制命令
-    connect(m_worker, &TcpServerWorker::controlCmdReceived, this, &HwaSim_IR_VideoDisplay::controlCmdReceivedSlot);
-    // 线程结束时自动删除 worker
-    connect(m_workerThread, &QThread::finished, m_worker, &QObject::deleteLater);
-    // 线程启动时执行 doWork
-    connect(m_workerThread, &QThread::started, m_worker, &TcpServerWorker::doWork);
+	if (m_receiveTransport == QStringLiteral("dds"))
+	{
+		DdsVideoReceiverConfig config;
+		config.domainId = instanceSettings.value(QStringLiteral("DdsVideo/DomainId"), 150).toInt();
+		config.qosFile = instanceSettings.value(QStringLiteral("DdsVideo/QosFile"),
+			QStringLiteral("Config/DDS/ZRDDS_QOS_PROFILES.xml")).toString();
+		config.topic = instanceSettings.value(QStringLiteral("DdsVideo/Topic"),
+			QStringLiteral("HwaSimIR.Video.precise.H264")).toString();
+		config.codec = instanceSettings.value(QStringLiteral("DdsVideo/Codec"), QStringLiteral("h264")).toString();
+		config.width = instanceSettings.value(QStringLiteral("DdsVideo/Width"), 800).toInt();
+		config.height = instanceSettings.value(QStringLiteral("DdsVideo/Height"), 800).toInt();
+		config.fps = instanceSettings.value(QStringLiteral("DdsVideo/Fps"), 60).toInt();
+		if (!ddsTopic.trimmed().isEmpty()) config.topic = ddsTopic.trimmed();
+		if (!ddsCodec.trimmed().isEmpty()) config.codec = ddsCodec.trimmed().toLower();
+		if (!ddsQos.trimmed().isEmpty()) config.qosFile = ddsQos.trimmed();
+		if (ddsDomain >= 0) config.domainId = ddsDomain;
+		if (ddsWidth > 0) config.width = ddsWidth;
+		if (ddsHeight > 0) config.height = ddsHeight;
+		if (ddsFps > 0) config.fps = ddsFps;
+		if (QFileInfo(config.qosFile).isRelative())
+			config.qosFile = QDir(QCoreApplication::applicationDirPath()).filePath(config.qosFile);
+		m_ddsWorker = new DdsVideoReceiverWorker(config);
+		m_ddsWorker->moveToThread(m_workerThread);
+		connect(m_ddsWorker, &DdsVideoReceiverWorker::dataReceived,
+			this, &HwaSim_IR_VideoDisplay::imageReceivedSlot);
+		connect(m_workerThread, &QThread::finished, m_ddsWorker, &QObject::deleteLater);
+		connect(m_workerThread, &QThread::started, m_ddsWorker, &DdsVideoReceiverWorker::doWork);
+		ui.dockWidget_dataShow->setWindowTitle(QStringLiteral("数据显示 - DDS video-only"));
+		qInfo().noquote() << QStringLiteral("[VideoInput] Transport=dds topic=%1 codec=%2 domain=%3")
+			.arg(config.topic).arg(config.codec).arg(config.domainId);
+	}
+	else
+	{
+		m_worker = new TcpServerWorker(m_networkConfigPath, m_channel, m_platID, m_sensorID);
+		m_worker->moveToThread(m_workerThread);
+		connect(m_worker, &TcpServerWorker::dataReceived, this, &HwaSim_IR_VideoDisplay::imageReceivedSlot);
+		connect(m_worker, &TcpServerWorker::initCommandReceived, this, &HwaSim_IR_VideoDisplay::initCommandReceivedSlot);
+		connect(m_worker, &TcpServerWorker::controlCmdReceived, this, &HwaSim_IR_VideoDisplay::controlCmdReceivedSlot);
+		connect(m_workerThread, &QThread::finished, m_worker, &QObject::deleteLater);
+		connect(m_workerThread, &QThread::started, m_worker, &TcpServerWorker::doWork);
+		qInfo().noquote() << QStringLiteral("[VideoInput] Transport=tcp");
+	}
     m_workerThread->start();
 
     QSettings recorderSettings(m_networkConfigPath, QSettings::IniFormat);
@@ -134,7 +180,8 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
 HwaSim_IR_VideoDisplay::~HwaSim_IR_VideoDisplay()
 {
     // 先停止工作线程，确保不再有信号投递到主线程
-    m_worker->stop();
+	if (m_worker) m_worker->stop();
+	if (m_ddsWorker) m_ddsWorker->stop();
     m_workerThread->quit();
     m_workerThread->wait();
     CloseStorage();
@@ -349,7 +396,7 @@ void HwaSim_IR_VideoDisplay::resetVideoPerfStats()
     m_videoPerfIntervalFrames = 0;
     m_lastFrameSeq = 0;
     m_frameSeqDiscontinuities = 0;
-    m_receivedFrameBaseline = m_worker ? m_worker->receivedFrameCount() : 0;
+    m_receivedFrameBaseline = receivedFrameCount();
     m_lastReceivedFrameCount = m_receivedFrameBaseline;
     m_intervalSourceSeqContinuous = true;
     m_videoPerfReceiveStartNs = 0;
@@ -363,6 +410,13 @@ void HwaSim_IR_VideoDisplay::resetVideoPerfStats()
     m_latencyMsMax = 0.0;
     m_latencySamples = 0;
     m_latencyIntervalSamples.clear();
+}
+
+quint64 HwaSim_IR_VideoDisplay::receivedFrameCount() const
+{
+	if (m_ddsWorker) return m_ddsWorker->receivedFrameCount();
+	if (m_worker) return m_worker->receivedFrameCount();
+	return m_videoPerfFrames;
 }
 
 // ==================== 图像帧接收槽 ====================
@@ -413,7 +467,17 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
     quint64 frameSeq = packetFrameSeq;
     qint64 udpReceiveTimeNs = 0;
     qint64 tcpSendTimeNs = 0;
-    if (packetVersion == 3)
+    if (packetVersion == 0)
+	{
+		m_decodeCodec = codecId == 2 ? QStringLiteral("h264_annexb")
+			: (imageFormat == QStringLiteral("grayscale") ? QStringLiteral("raw_gray8")
+				: QStringLiteral("raw_bgr24"));
+		m_activeCodec = m_decodeCodec;
+		m_requestedCodec = m_decodeCodec;
+		m_h264Requested = codecId == 2;
+		if (m_h264Requested && keyFrame) m_h264KeyFrameSeen = true;
+	}
+    else if (packetVersion == 3)
     {
         m_decodeCodec = codecId == 2
             ? QStringLiteral("h264_annexb")
@@ -551,7 +615,7 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
         const double displayElapsedSec = qMax(
             0.001,
             static_cast<double>(shownTimeNs - m_videoPerfDisplayStartNs) / 1.0e9);
-        const quint64 receivedFrameCount = m_worker ? m_worker->receivedFrameCount() : m_videoPerfFrames;
+        const quint64 receivedFrameCount = this->receivedFrameCount();
         const quint64 receivedIntervalFrames = receivedFrameCount >= m_lastReceivedFrameCount
             ? receivedFrameCount - m_lastReceivedFrameCount
             : 0;

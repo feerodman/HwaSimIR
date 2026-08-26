@@ -89,6 +89,9 @@ Required or commonly used options:
 - `--qos FILE`: ZRDDS QoS XML.
 - `--output FILE`: byte-exact output file.
 - `--frames N`: stop after exactly N valid Samples.
+- `--frames 0 --idle-exit-ms N`: accept an unknown-length HwaSim_IR round and
+  stop after `N` milliseconds of inactivity following the first Sample. This
+  mode is useful for proving that the sender queue fully drained at STOP.
 - `--timeout-sec N`: inactivity/acceptance timeout.
 
 The final line reports `receivedSamples`, `receivedBytes`,
@@ -106,3 +109,42 @@ installed ZRDDS 2.4.4 runtime returns immediately from
 `wait_for_acknowledgments` while the final large tcpv4 Sample may still be in
 flight.
 
+## Connecting to a real HwaSim_IR D2 publisher
+
+The customer does not need an IDL file, `CommonData.h`, or any HwaSim_IR
+library. The only shared contract is ZRDDS plus Domain/Topic/QoS/codec and, for
+Raw, the agreed geometry.
+
+Start HwaSim_IR from its normal `HwaSim_IR/Bin` working directory. Enable
+`[DdsVideo]` in `Config/HwaSimIRRuntime.ini` or use the corresponding
+`HwaSimIR...` environment overrides. Do not change the working directory to
+the ZRDDS installation: HwaSim_IR must retain access to its normal `Config`,
+`Shader`, `Model`, `Texture`, and `Weather` assets.
+
+Receive a complete precise H.264 round and stop after the sender becomes idle:
+
+```powershell
+$receiver = 'D:\HwaSimIR\DDS\HwaSimIRVideoReceiverDemo\x64\Release\HwaSimIRVideoReceiverDemo.exe'
+& $receiver `
+  --domain 150 `
+  --topic HwaSimIR.Video.precise.H264 `
+  --codec h264 `
+  --qos D:\HwaSimIR\DDS\HwaSimIRVideoReceiverDemo\Config\ZRDDS_QOS_PROFILES.xml `
+  --output D:\Temp\received.h264 `
+  --frames 0 --idle-exit-ms 2000 --timeout-sec 90
+```
+
+Receive a complete 800x800 precise Gray8 round:
+
+```powershell
+& $receiver `
+  --domain 150 `
+  --topic HwaSimIR.Video.precise.RawGray8 `
+  --codec raw_gray8 --width 800 --height 800 `
+  --qos D:\HwaSimIR\DDS\HwaSimIRVideoReceiverDemo\Config\ZRDDS_QOS_PROFILES.xml `
+  --output D:\Temp\received.gray8 `
+  --frames 0 --idle-exit-ms 2000 --timeout-sec 90
+```
+
+For coarse video, replace `precise` with `coarse` in the selected topic. The
+receiver writes every Sample payload verbatim and never adds a file header.

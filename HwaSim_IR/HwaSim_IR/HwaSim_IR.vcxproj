@@ -73,8 +73,8 @@
     <FFmpegEnabled Condition="'$(FFMPEG_ROOT)' != '' and Exists('$(FFMPEG_ROOT)\include\libavcodec\avcodec.h') and Exists('$(FFMPEG_ROOT)\lib\avcodec.lib')">true</FFmpegEnabled>
     <FFmpegIncludeDir Condition="'$(FFmpegEnabled)' == 'true'">$(FFMPEG_ROOT)\include;</FFmpegIncludeDir>
     <FFmpegLibraryDir Condition="'$(FFmpegEnabled)' == 'true'">$(FFMPEG_ROOT)\lib;</FFmpegLibraryDir>
-    <FFmpegDefinitions Condition="'$(FFmpegEnabled)' == 'true'">HWASIM_HAS_FFMPEG=1;</FFmpegDefinitions>
-    <FFmpegLibraries Condition="'$(FFmpegEnabled)' == 'true'">avcodec.lib;avutil.lib;swscale.lib;</FFmpegLibraries>
+    <FFmpegDefinitions Condition="'$(FFmpegEnabled)' == 'true'">HWASIM_HAS_FFMPEG=1;HWASIMIR_HAS_AVFORMAT=1;</FFmpegDefinitions>
+    <FFmpegLibraries Condition="'$(FFmpegEnabled)' == 'true'">avformat.lib;avcodec.lib;avutil.lib;swscale.lib;</FFmpegLibraries>
     <ZrddsEnabled Condition="'$(ZRDDS_HOME)' != '' and Exists('$(ZRDDS_HOME)\include\CPlusPlusInterface\ZRDDSCppSimpleInterface.h') and Exists('$(ZRDDS_HOME)\lib\ZRDDSCpp_VS2015.lib')">true</ZrddsEnabled>
     <ZrddsIncludeDirs Condition="'$(ZrddsEnabled)' == 'true'">$(ZRDDS_HOME)\include\CPlusPlusInterface;$(ZRDDS_HOME)\include\ZRDDSCoreInterface;</ZrddsIncludeDirs>
     <ZrddsLibraryDir Condition="'$(ZrddsEnabled)' == 'true'">$(ZRDDS_HOME)\lib;</ZrddsLibraryDir>
@@ -160,9 +160,15 @@
   </ItemDefinitionGroup>
   <ItemGroup Condition="'$(ZrddsEnabled)' == 'true'">
     <ZrddsRuntimeDll Include="$(ZRDDS_HOME)\lib\ZRDDSCpp_VS2015.dll" />
+    <ZrddsLicence Include="$(ZRDDS_HOME)\zrddslicence.lic" />
   </ItemGroup>
   <Target Name="CopyZrddsRuntime" AfterTargets="Build" Condition="'$(ZrddsEnabled)' == 'true'">
     <Copy SourceFiles="@(ZrddsRuntimeDll)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(ZrddsLicence)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+    <Exec Command="attrib -R &quot;$(OutDir)zrddslicence.lic&quot;" />
+    <Copy SourceFiles="@(ZrddsRuntimeDll)" DestinationFolder="$(ProjectDir)..\Bin" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(ZrddsLicence)" DestinationFolder="$(ProjectDir)..\Bin" SkipUnchangedFiles="true" />
+    <Exec Command="attrib -R &quot;$(ProjectDir)..\Bin\zrddslicence.lic&quot;" />
   </Target>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -201,6 +207,8 @@
     <ClInclude Include="TcpCommThread.h" />
     <ClInclude Include="UdpCommThread.h" />
     <ClInclude Include="Video\VideoEncoder.h" />
+    <ClInclude Include="Video\DdsVideoPublisher.h" />
+    <ClInclude Include="Video\LocalMp4Recorder.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Annotation\AnnotationConfig.cpp" />
@@ -237,6 +245,8 @@
     <ClCompile Include="UdpCommThread.cpp" />
     <ClCompile Include="Video\H264FfmpegEncoder.cpp" />
     <ClCompile Include="Video\JpegFrameEncoder.cpp" />
+    <ClCompile Include="Video\DdsVideoPublisher.cpp" />
+    <ClCompile Include="Video\LocalMp4Recorder.cpp" />
   </ItemGroup>
   <ItemGroup Condition="'$(FFmpegEnabled)' == 'true'">
     <FFmpegRuntimeDll Include="$(FFMPEG_ROOT)\bin\*.dll" />
