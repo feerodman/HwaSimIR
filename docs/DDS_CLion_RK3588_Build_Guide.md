@@ -136,3 +136,27 @@ ELF64 AArch64，并依赖 `librockchip_mpp.so.1`、`libZRDDSCpp.so` 和
 `libavformat.so.58`。原始 Reload、Build、CMakeCache 和 ELF 验证记录保存在
 `logs/dds-d2-20260826-004813/d2_clion_build_evidence.tgz`；首次 VM 不可达记录仍保留
 在同目录 `vm_clion.txt` 中。
+
+## 2026-08-27 D3 复核
+
+D3 在 VM `192.168.203.128:22` 再次使用同一个
+`Release-aarch64-rk3588-ssh` Profile 完成命令行等价的 CMake Reload 和
+`HwaSim_IR` Build，不需要控制鼠标或启动 CLion GUI。C、C++ 编译器仍分别为
+`/usr/bin/aarch64-linux-gnu-gcc` 和
+`/usr/bin/aarch64-linux-gnu-g++`，工程远端路径仍为
+`/home/linaro/userdata/HwaSimIR`。
+
+D3 产物重新确认是 ELF64 AArch64，并链接：
+
+```text
+librockchip_mpp.so.1
+libZRDDSCpp.so
+libavformat.so.58
+libavcodec.so.58
+libavutil.so.56
+```
+
+如果手动 Reload 后找不到上述库，不要关闭 ZRDDS/MPP 选项绕过错误；应检查
+Profile 是否选错、`ZRDDS_ROOT`/`RKMPP_ROOT` 是否被改动，以及 VM sysroot 的软链接
+是否完整。D3 自动验收可用 `tools/dds_d3_acceptance.ps1` 重跑构建与证据解析；远端
+无人值守模式使用 `-SshKey`，脚本不会保存密码。

@@ -80,3 +80,47 @@ shutdown additionally use `wait_for_acknowledgments` plus a bounded drain. The
 installed runtime's acknowledgement call is not used as the sole proof of
 delivery; endpoint Sample counts are authoritative.
 
+## D3 production qualification
+
+The RK3588 production direction was qualified with the same wire contract:
+
+- precise DDS H264: 689 sent / 689 received;
+- precise TCP plus DDS H264: 716 / 716;
+- precise TCP plus DDS plus local MP4: 684 / 684;
+- RawGray8 800x800: 622 / 622, exactly 640,000 bytes per Sample;
+- RawBGR24 800x800: reliable maximum observed 28.180 Samples/s, exactly
+  1,920,000 bytes per Sample;
+- dual precise/coarse H264: 377 / 377 and 372 / 372;
+- 20 independent START/STOP rounds: exact sender/receiver counts in all rounds.
+
+All listed normal-consumer cases used tcpv4, RELIABLE, KEEP_ALL and reported
+zero application drops and zero writer/reader errors. The production renderer
+baseline was below 59 FPS, so these figures qualify delivery correctness, not a
+60 FPS renderer guarantee.
+
+### Slow consumer limitation
+
+The customer demo offers test-only `--sample-delay-ms` and
+`--sample-delay-samples` options. They default to zero and do not change normal
+operation. A 100 ms/sample H264 test drained exactly (436/436). A deliberately
+severe callback-blocking test (1,000 ms for the first 50 callbacks) did not:
+749 Samples were accepted by the writer while only 328 reached the reader
+before the receiver exit window. This is a retained D3 failure and vendor issue,
+not a permitted delivery mode. Customer callbacks should copy the Bytes data
+immediately and move expensive processing to an owned-buffer worker; endpoint
+counts remain mandatory.
+
+## Vendor/runtime notes
+
+1. The installation path is labelled 2.4.5 while the runtime banner is
+   `2.4.4-r6873577`.
+2. `wait_for_acknowledgments()` may return before the receiving application has
+   drained the last Samples. Bounded drain plus sender/receiver counts are
+   required.
+3. The CAEP Trial runtime modifies its licence copy. Every running instance
+   must use a writable copy; concurrent processes should not share one mutable
+   trial-licence file.
+
+These notes do not change the video payload. No Control, Init, Realtime,
+InitAck, annotation, metadata, custom header, or additional IDL is part of this
+ICD.

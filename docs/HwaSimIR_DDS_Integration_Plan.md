@@ -528,3 +528,91 @@ profile was rerun through its command-line equivalent. CMake Reload passed,
 ELF64 AArch64 binary linked to `librockchip_mpp.so.1`, `libZRDDSCpp.so`, and
 `libavformat.so.58`. The CLion Reload/Build gate is therefore PASS. Full
 performance/soak remains D3 scope.
+
+## 16. D3 execution record (2026-08-27)
+
+D3 was executed against baseline
+`b46458b781e9943667305a4e7341c7f3acd8789d`
+(`DDS集成D2阶段_20260826_2301`). No commit or push was made. The unrelated
+untracked future Control/Init architecture plan was preserved and no DDS
+Control, Init, Realtime, InitAck, annotation, metadata, custom header, or IDL
+was added.
+
+### Code and automation changes
+
+- `DdsVideoPublisher::endRound` now emits explicit application queue-drain,
+  ACK-call, bounded-drain, and total-drain timings. The existing bounded drain
+  remains; ACK success is not treated as endpoint delivery proof.
+- The customer Receiver Demo adds test-only `--sample-delay-ms` and
+  `--sample-delay-samples`; both default to zero. The callback copies/owns the
+  Sample before the artificial delay.
+- `tools/dds_d3_acceptance.ps1` records baseline/build/deploy/evidence gates,
+  reuses `codex_rk3588_pipeline.ps1` for the established Windows-to-VM-to-board
+  path, parses exact sender/receiver counts, and summarizes `/proc`/NIC resource
+  TSV files. It never embeds passwords or licence contents.
+- Customer field debug, field checklist, performance report, ICD, CLion guide,
+  and Receiver README were updated.
+
+### Production reliability results
+
+- precise DDS H264 only: 689/689.
+- precise TCP + DDS H264: 716/716, TCP Packet v3 decoded concurrently.
+- precise TCP + DDS H264 + local MP4: 684/684; MP4 684/684, zero drop.
+- Sync H264: 623/623; Async DDS output overwrite remained zero.
+- Multi-reader: customer Demo received 492/492 while VideoDisplay received and
+  decoded the same Writer continuously.
+- Twenty START/STOP rounds: 20/20 exact sender/receiver count matches.
+- RawGray8: 622/622 at exactly 640,000 bytes/Sample, 12.878 Samples/s.
+- RawBGR24: 618/618 at target 30 and 640/640 at target 45, exactly 1,920,000
+  bytes/Sample. Maximum observed reliable rate was 28.180 Samples/s.
+- Dual DDS H264: precise 377/377 and coarse 372/372 after using a 25-second
+  receiver idle window.
+- Dual maximum load (TCP + DDS + record): precise 261/261 and coarse 222/222;
+  both local MP4 streams had inputFrames equal to writtenFrames and zero drop.
+
+All normal-consumer cases used tcpv4 + RELIABLE + KEEP_ALL with zero writer,
+reader, and application-drop errors. H264 remained one encode per frame and
+the recorder backend remained `shared_h264_remux`.
+
+### Performance and retained failure
+
+The production renderer baseline was below 59 FPS and varied materially across
+the A/B sequence. DDS H264 write average remained about 0.09--0.16 ms and the
+application queue maximum was one, but D3 does not claim a precise `<1 FPS`
+transport delta from non-comparable renderer intervals. RawGray8 was reliable
+at 12.878 Samples/s in this production scene; RawBGR24's maximum observed
+reliable rate was 28.180 Samples/s. No frame dropping, resolution reduction, or
+quality reduction was used to raise those numbers.
+
+A deliberately severe slow callback test (`1000 ms` for the first 50 Samples)
+ended with 749 writer Samples versus 328 reader Samples inside the acceptance
+window, even though the writer reported zero error/drop and ACK returned
+quickly. This is retained as a **FAIL** for the D3 slow-reader backpressure gate
+and as a vendor/runtime issue. A lighter 100 ms/sample test drained 436/436.
+
+### Local recording and resources
+
+The 60-second wall-clock soak produced 684/684 shared-H264-remux frames, an
+800x800 H264 MP4 at 60/1 with 11.4 seconds of media time, and passed ffprobe plus
+full decode. Five further START/STOP rounds produced five independent valid MP4
+files, all with exact input/written counts and zero drops. After one-time
+Panda/MPP initialization, thread/fd counts stabilized; the apparent initial fd
+increase was traced to MPP dmabufs/devices, loaded model files and existing
+sockets, not a per-round recorder leak.
+
+Per-second resource monitoring captured CPU, VmRSS/VmHWM, Threads, fd count,
+`/proc/<pid>/io`, and NIC Tx/Rx. Normal DDS application queues did not grow
+without bound. Detailed measurements and the exact PASS/FAIL table are in
+`docs/DDS_Video_D3_Performance_Report.md`; customer commands and fault isolation
+are in `docs/DDS_Customer_Video_Debug_Guide.md` and
+`docs/DDS_Field_Debug_Checklist.md`.
+
+### Known vendor issues after D3
+
+1. SDK path label 2.4.5 versus runtime banner `2.4.4-r6873577`.
+2. `wait_for_acknowledgments()` does not prove that the receiving application
+   has drained the final Samples.
+3. CAEP Trial runtime modifies a writable licence copy.
+4. Severe callback blocking did not produce observable application-writer
+   backpressure before a large middleware tail accumulated; vendor guidance is
+   required.

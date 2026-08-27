@@ -12,6 +12,7 @@
 #include <mutex>
 #include <stdexcept>
 #include <string>
+#include <thread>
 
 using namespace DDS;
 
@@ -28,6 +29,8 @@ struct Options {
     std::uint64_t frames = 0;
     int timeoutSec = 120;
     int idleExitMs = 0;
+    int sampleDelayMs = 0;
+    std::uint64_t sampleDelaySamples = 0;
 };
 
 void PrintUsage() {
@@ -35,7 +38,9 @@ void PrintUsage() {
         << "Usage: HwaSimIRVideoReceiverDemo --domain N --topic NAME\n"
         << "  --codec h264|raw_gray8|raw_bgr24 --width N --height N\n"
         << "  --qos FILE --output FILE --frames N [--timeout-sec N]\n"
-        << "  --frames 0 --idle-exit-ms N  (drain until idle after first Sample)\n";
+        << "  --frames 0 --idle-exit-ms N  (drain until idle after first Sample)\n"
+        << "  [--sample-delay-ms N] [--sample-delay-samples N]\n"
+        << "    test-only slow-consumer delay; sample count 0 means all Samples\n";
 }
 
 std::uint64_t ParseUnsigned(const char* text, const char* option) {
@@ -69,6 +74,14 @@ Options ParseOptions(int argc, char** argv) {
         else if (arg == "--frames") options.frames = ParseUnsigned(value, "--frames");
         else if (arg == "--timeout-sec") options.timeoutSec = static_cast<int>(ParseUnsigned(value, "--timeout-sec"));
         else if (arg == "--idle-exit-ms") options.idleExitMs = static_cast<int>(ParseUnsigned(value, "--idle-exit-ms"));
+        else if (arg == "--sample-delay-ms") {
+            const std::uint64_t delay = ParseUnsigned(value, "--sample-delay-ms");
+            if (delay > 60000) throw std::runtime_error("--sample-delay-ms must be 0..60000");
+            options.sampleDelayMs = static_cast<int>(delay);
+        }
+        else if (arg == "--sample-delay-samples") {
+            options.sampleDelaySamples = ParseUnsigned(value, "--sample-delay-samples");
+        }
         else throw std::runtime_error("unknown option: " + arg);
     }
     if (options.domain < 0 || options.domain > 232) throw std::runtime_error("--domain must be 0..232");
@@ -92,7 +105,7 @@ public:
     virtual void on_process_sample(DataReader*, const Bytes& sample, const SampleInfo&) {
         const char* data = reinterpret_cast<const char*>(sample.value.get_contiguous_buffer());
         const std::uint64_t bytes = static_cast<std::uint64_t>(sample.value.length());
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::unique_lock<std::mutex> lock(mutex_);
         if (!started_) {
             started_ = true;
             first_ = std::chrono::steady_clock::now();
@@ -119,6 +132,12 @@ public:
             }
         }
         if (options_.frames == 0 || receivedSamples_ >= options_.frames) condition_.notify_all();
+        const std::uint64_t sampleNumber = receivedSamples_;
+        lock.unlock();
+        if (options_.sampleDelayMs > 0 &&
+            (options_.sampleDelaySamples == 0 || sampleNumber <= options_.sampleDelaySamples)) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(options_.sampleDelayMs));
+        }
     }
 
     bool Wait() {
@@ -157,6 +176,8 @@ public:
                   << " sampleBytesMax=" << maxBytes_
                   << " receiveFps=" << fps
                   << " elapsedSec=" << seconds
+                  << " sampleDelayMs=" << options_.sampleDelayMs
+                  << " sampleDelaySamples=" << options_.sampleDelaySamples
                   << " ddsErrors=" << ddsErrors_
                   << " timedOut=" << (timedOut ? 1 : 0) << "\n";
         const bool countOk = options_.frames == 0 ? receivedSamples_ > 0 : receivedSamples_ == options_.frames;
@@ -220,7 +241,9 @@ int main(int argc, char** argv) {
 
         std::cout << "receiverReady=1 domain=" << options.domain << " topic=" << options.topic
                   << " codec=" << options.codec << " frames=" << options.frames
-                  << " idleExitMs=" << options.idleExitMs << "\n";
+                  << " idleExitMs=" << options.idleExitMs
+                  << " sampleDelayMs=" << options.sampleDelayMs
+                  << " sampleDelaySamples=" << options.sampleDelaySamples << "\n";
         const bool complete = listener.Wait();
         const ReturnCode_t finalizeResult = DDSIF::Finalize();
         if (finalizeResult != RETCODE_OK) {

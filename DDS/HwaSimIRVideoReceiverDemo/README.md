@@ -93,6 +93,20 @@ Required or commonly used options:
   stop after `N` milliseconds of inactivity following the first Sample. This
   mode is useful for proving that the sender queue fully drained at STOP.
 - `--timeout-sec N`: inactivity/acceptance timeout.
+- `--sample-delay-ms N`: test-only slow-consumer delay after each Sample,
+  default `0`. Customer production runs should leave this at zero; D3 uses it
+  to verify reliable no-drop/backpressure behavior when a Reader is slower
+  than the Publisher.
+- `--sample-delay-samples N`: delay only the first `N` Samples and then resume
+  normal speed so a bounded backpressure test can drain. `0` means delay every
+  Sample. Customer production runs should also leave this at zero.
+
+The artificial delay runs after the callback has copied the Sample into owned
+storage. It is deliberately a stress tool, not a recommendation for production
+callbacks. D3 showed that a severe one-second callback delay can leave a large
+tail inside the current vendor runtime even when the writer reports no error;
+always compare endpoint counts and move expensive customer work to a separate
+owned-buffer worker.
 
 The final line reports `receivedSamples`, `receivedBytes`,
 `sampleBytesMin/Avg/Max`, `receiveFps`, `ddsErrors`, and `timedOut`. A raw Sample
@@ -144,6 +158,18 @@ Receive a complete 800x800 precise Gray8 round:
   --qos D:\HwaSimIR\DDS\HwaSimIRVideoReceiverDemo\Config\ZRDDS_QOS_PROFILES.xml `
   --output D:\Temp\received.gray8 `
   --frames 0 --idle-exit-ms 2000 --timeout-sec 90
+```
+
+Receive 800x800 precise BGR24:
+
+```powershell
+& $receiver `
+  --domain 150 `
+  --topic HwaSimIR.Video.precise.RawBGR24 `
+  --codec raw_bgr24 --width 800 --height 800 `
+  --qos D:\HwaSimIR\DDS\HwaSimIRVideoReceiverDemo\Config\ZRDDS_QOS_PROFILES.xml `
+  --output D:\Temp\received.bgr24 `
+  --frames 0 --idle-exit-ms 10000 --timeout-sec 120
 ```
 
 For coarse video, replace `precise` with `coarse` in the selected topic. The

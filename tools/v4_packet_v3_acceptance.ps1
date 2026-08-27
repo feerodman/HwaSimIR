@@ -189,7 +189,11 @@ try {
             Add-Failure $failures ($hwaText -match "\[TcpPerf\].*activeCodec=$codec") "sender_codec_not_active"
             Add-Failure $failures ($videoText -match "\[VideoPerf\].*activeCodec=$codec") "receiver_codec_not_active"
             if ($case.H264) {
-                Add-Failure $failures ($hwaText -match "\[VideoEncoder\].*activeBackend=ffmpeg") "ffmpeg_backend_not_active"
+                # Runtime diagnostics are emitted by several threads.  A
+                # concurrent Stage0 line can split the VideoEncoder prefix
+                # from the configured/backend fields, so accept the complete
+                # configured record even when the tag is interleaved.
+                Add-Failure $failures ($hwaText -match "(?:\[VideoEncoder\].*)?configured=1.*activeBackend=ffmpeg") "ffmpeg_backend_not_active"
                 Add-Failure $failures ($hwaText -match "\[TcpFramePacket\].*keyFrame=1") "sender_idr_not_seen"
                 Add-Failure $failures ($videoText -match "\[TcpFramePacketRx\].*keyFrame=1") "receiver_idr_not_seen"
             }

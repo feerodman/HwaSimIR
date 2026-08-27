@@ -353,22 +353,40 @@ bool DdsVideoPublisher::flush(int timeoutMs, std::string& error)
 
 bool DdsVideoPublisher::endRound(std::string& error)
 {
+	const auto drainBegin = std::chrono::steady_clock::now();
 	if (!flush((m_impl->config.ackTimeoutSec + 5) * 1000, error)) return false;
+	const auto queueDrained = std::chrono::steady_clock::now();
+	int ackReturnCode = 0;
 #if defined(HWASIMIR_HAS_ZRDDS)
 	if (m_impl->writer)
 	{
 		DDS::Duration_t timeout;
 		timeout.sec = m_impl->config.ackTimeoutSec;
 		timeout.nanosec = 0;
-		const DDS::ReturnCode_t result = m_impl->writer->wait_for_acknowledgments(timeout);
-		if (result != DDS::RETCODE_OK)
+		const DDS::ReturnCode_t ackResult = m_impl->writer->wait_for_acknowledgments(timeout);
+		ackReturnCode = static_cast<int>(ackResult);
+		if (ackResult != DDS::RETCODE_OK)
 		{
 			error = "DDS endRound wait_for_acknowledgments failed";
 			return false;
 		}
 	}
 #endif
-	std::cout << "[DdsVideo] roundDrained=1 writerRetained=1 finalize=0" << std::endl;
+	const auto ackReturned = std::chrono::steady_clock::now();
+	const int boundedDrainMs = std::max(0, m_impl->config.shutdownDrainMs);
+	if (boundedDrainMs > 0)
+		std::this_thread::sleep_for(std::chrono::milliseconds(boundedDrainMs));
+	const auto drainComplete = std::chrono::steady_clock::now();
+	const double queueDrainMs = std::chrono::duration<double, std::milli>(queueDrained - drainBegin).count();
+	const double ackWaitMs = std::chrono::duration<double, std::milli>(ackReturned - queueDrained).count();
+	m_impl->logPerf(true);
+	std::cout << "[DdsVideoDrain] roundDrained=1 writerRetained=1 finalize=0"
+		<< " queueDrainMs=" << std::fixed << std::setprecision(3) << queueDrainMs
+		<< " ackReturn=" << ackReturnCode
+		<< " ackWaitMs=" << ackWaitMs
+		<< " boundedDrainMs=" << boundedDrainMs
+		<< " totalDrainMs=" << std::chrono::duration<double, std::milli>(drainComplete - drainBegin).count()
+		<< std::endl;
 	return true;
 }
 
