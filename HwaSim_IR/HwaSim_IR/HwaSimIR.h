@@ -113,6 +113,8 @@ public:
 
 	// 启动应用主循环
 	void run();
+	bool startupSucceeded() const { return m_startupSucceeded; }
+	int startupExitCode() const { return m_startupExitCode; }
 
 	// 获取主窗口（对外暴露）
 	WindowFramework* get_main_window() const;
@@ -650,6 +652,7 @@ private:
 	// 初始化UDP通讯线程
 	bool InitTcpThread();
 	void LoadD2VideoOutputConfig();
+	bool PreflightDdsVideoConfig();
 	void LoadNetworkConfig();
 	void LoadRenderBackendConfig();
 	bool IsVisibleWindowMode() const;
@@ -685,6 +688,8 @@ private:
 	int m_headlessLastTextureHeight = 0;
 	bool m_headlessLastTextureCropApplied = false;
 	bool m_renderBackendReady = false;
+	bool m_startupSucceeded = true;
+	int m_startupExitCode = 0;
 	bool m_gpuBackendLogged = false;
 	UdpCommThread* m_pUdpThread = nullptr;        // UDP通讯线程
 	TcpCommThread* m_pTcpThread = nullptr;		// TCP通信线程

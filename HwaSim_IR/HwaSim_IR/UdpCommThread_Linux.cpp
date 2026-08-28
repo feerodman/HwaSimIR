@@ -36,6 +36,7 @@ UdpCommThread::~UdpCommThread()
 bool UdpCommThread::start()
 {
 	if (m_bIsRunning) return true;
+	m_lastStartFailureReason = "none";
 
 	if (!initSocket())
 	{
@@ -177,6 +178,7 @@ bool UdpCommThread::initSocket()
 	m_udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (m_udpSocket == -1)
 	{
+		m_lastStartFailureReason = "socket_create_failed";
 		std::cerr << "创建UDP Socket失败，错误码：" << strerror(errno) << std::endl;
 		return false;
 	}
@@ -184,6 +186,7 @@ bool UdpCommThread::initSocket()
 	const int flags = fcntl(m_udpSocket, F_GETFL, 0);
 	if (flags == -1)
 	{
+		m_lastStartFailureReason = "nonblocking_query_failed";
 		std::cerr << "获取Socket标志失败，错误码：" << strerror(errno) << std::endl;
 		close(m_udpSocket);
 		m_udpSocket = -1;
@@ -191,6 +194,7 @@ bool UdpCommThread::initSocket()
 	}
 	if (fcntl(m_udpSocket, F_SETFL, flags | O_NONBLOCK) == -1)
 	{
+		m_lastStartFailureReason = "nonblocking_config_failed";
 		std::cerr << "设置Socket非阻塞失败，错误码：" << strerror(errno) << std::endl;
 		close(m_udpSocket);
 		m_udpSocket = -1;
@@ -199,6 +203,7 @@ bool UdpCommThread::initSocket()
 
 	if (bind(m_udpSocket, reinterpret_cast<sockaddr*>(&m_localAddr), sizeof(m_localAddr)) == -1)
 	{
+		m_lastStartFailureReason = "bind_failed";
 		std::cerr << "绑定UDP端口失败，错误码：" << strerror(errno) << std::endl;
 		close(m_udpSocket);
 		m_udpSocket = -1;

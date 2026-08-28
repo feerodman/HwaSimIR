@@ -35,6 +35,7 @@
 #if defined(_WIN32)
 #include <process.h>
 #else
+#include <limits.h>
 #include <unistd.h>
 #endif
 
@@ -72,6 +73,30 @@ bool FileExists(const std::string& path)
 {
 	std::ifstream file(path.c_str());
 	return file.good();
+}
+
+std::string AbsolutePathForLog(const std::string& path)
+{
+	if (path.empty())
+	{
+		return std::string();
+	}
+#if defined(_WIN32)
+	char buffer[_MAX_PATH] = { 0 };
+	return _fullpath(buffer, path.c_str(), _MAX_PATH) ? std::string(buffer) : path;
+#else
+	char resolved[PATH_MAX] = { 0 };
+	if (realpath(path.c_str(), resolved))
+	{
+		return std::string(resolved);
+	}
+	if (path[0] == '/')
+	{
+		return path;
+	}
+	char current[PATH_MAX] = { 0 };
+	return getcwd(current, sizeof(current)) ? std::string(current) + "/" + path : path;
+#endif
 }
 
 std::string H4TargetRuntimeKey(const TargetPlatformData& targetPlat)
@@ -1288,7 +1313,16 @@ HwaSimIR::HwaSimIR(int argc, char** argv, const HwaSimIRLaunchOptions& launchOpt
 		//register_custom_functions();
 	// 初始化通讯线程
 		LoadNetworkConfig();
-		InitUdpThread();
+		if (!PreflightDdsVideoConfig())
+		{
+			return;
+		}
+		if (!InitUdpThread())
+		{
+			m_startupSucceeded = false;
+			m_startupExitCode = 3;
+			return;
+		}
 
 		InitTcpThread();
 	// 初始化平台模型路径
@@ -1354,7 +1388,7 @@ HwaSimIR::~HwaSimIR() {
 //}
 
 void HwaSimIR::run() {
-	if (!m_pFramework || !IsRenderBackendReady()) return;
+	if (!m_startupSucceeded || !m_pFramework || !IsRenderBackendReady()) return;
 
 	std::cout << "应用程序已启动。按ESC键退出。" << std::endl;
 
@@ -7566,13 +7600,43 @@ bool HwaSimIR::InitUdpThread() {
 		m_acceptSensorBroadcast,
 		m_allowDynamicRemote);
 	if (!m_pUdpThread->start()) {
-		std::cerr << "UDP线程启动失败！" << std::endl;
+		std::cerr << "[StartupFatal] component=UDP"
+			<< " local=" << m_udpLocalIp << ":" << m_udpLocalPort
+			<< " reason=" << m_pUdpThread->lastStartFailureReason()
+			<< std::endl;
 		delete m_pUdpThread;
 		m_pUdpThread = nullptr;
 		return false;
 	}
 
 	std::cout << "UDP线程初始化成功" << std::endl;
+	return true;
+}
+
+bool HwaSimIR::PreflightDdsVideoConfig()
+{
+	if (!m_ddsVideoConfig.enabled)
+	{
+		return true;
+	}
+	const std::string requested = m_ddsVideoConfig.qosFile;
+	const std::string resolved = AbsolutePathForLog(requested);
+	const bool exists = FileExists(resolved);
+	std::cout << "[DdsVideoConfig]"
+		<< " requestedQos=" << requested
+		<< " resolvedQos=" << resolved
+		<< " exists=" << (exists ? 1 : 0)
+		<< std::endl;
+	if (!exists)
+	{
+		std::cerr << "[DdsVideo][FATAL] reason=qos_file_not_found"
+			<< " requestedQos=" << requested
+			<< " resolvedQos=" << resolved
+			<< std::endl;
+		m_startupSucceeded = false;
+		m_startupExitCode = 4;
+		return false;
+	}
 	return true;
 }
 
@@ -9177,6 +9241,11 @@ void HwaSimIR::InitInfraredSimulation()
 		<< " source=" << tcpPacketVersionSource << "/" << tcpSendVideoSource
 		<< "/" << tcpSendAnnotationSource << "/" << tcpSendRealtimeSource
 		<< "/" << tcpForwardInitControlSource
+		<< std::endl;
+	std::cout << "[TcpPayloadConfigSource]"
+		<< " SendVideo=" << (m_tcpSendVideo ? "1" : "0")
+		<< " source=" << (tcpSendVideoSource == "env" ? "env:TcpSendVideo" :
+			(tcpSendVideoSource == "ini" ? "ini:TcpPayload.SendVideo" : "default"))
 		<< std::endl;
 	m_enableStage4HotspotVisualDebug = m_runtimeConfig.getBool("Stage4", "EnableHotspotVisualDebug", "EnableStage4HotspotVisualDebug", false, &stage4VisualSource);
 	m_forceStage4BrightSpotVisible = m_runtimeConfig.getBool("Stage4", "ForceBrightSpotVisible", "ForceStage4BrightSpotVisible", false, &stage4BrightSource);

@@ -27,6 +27,12 @@ Requirements:
 - A valid `zrddslicence.lic` in the process working directory or the SDK root,
   as required by the installed ZRDDS trial package.
 
+The CAEP Trial runtime modifies the licence file. Run from the Receiver Demo
+directory with an independent writable licence copy. When VideoDisplay and the
+Receiver Demo run simultaneously, do not point both processes at the same
+writable trial-licence file. Record only existence, writability, hash and
+initialization status; never print the licence contents or Signature.
+
 Build both D1 programs:
 
 ```powershell
@@ -38,8 +44,8 @@ Build both D1 programs:
 Receive H.264:
 
 ```powershell
-cd $env:ZRDDS_HOME
-D:\HwaSimIR\DDS\HwaSimIRVideoReceiverDemo\x64\Release\HwaSimIRVideoReceiverDemo.exe `
+cd D:\HwaSimIR\DDS\HwaSimIRVideoReceiverDemo\x64\Release
+.\HwaSimIRVideoReceiverDemo.exe `
   --domain 150 `
   --topic HwaSimIR.Video.precise.H264 `
   --codec h264 `
@@ -52,8 +58,8 @@ D:\HwaSimIR\DDS\HwaSimIRVideoReceiverDemo\x64\Release\HwaSimIRVideoReceiverDemo.
 Receive 800x800 Gray8:
 
 ```powershell
-cd $env:ZRDDS_HOME
-D:\HwaSimIR\DDS\HwaSimIRVideoReceiverDemo\x64\Release\HwaSimIRVideoReceiverDemo.exe `
+cd D:\HwaSimIR\DDS\HwaSimIRVideoReceiverDemo\x64\Release
+.\HwaSimIRVideoReceiverDemo.exe `
   --domain 150 `
   --topic HwaSimIR.Video.precise.RawGray8 `
   --codec raw_gray8 `

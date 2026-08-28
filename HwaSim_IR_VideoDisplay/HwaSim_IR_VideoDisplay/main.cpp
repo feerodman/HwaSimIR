@@ -3,6 +3,7 @@
 #include <QTextCodec>
 #include <QtGlobal>
 #include <QDebug>
+#include <QTimer>
 #include "CommonData.h"
 
 int main(int argc, char *argv[])
@@ -16,8 +17,9 @@ int main(int argc, char *argv[])
     QString channel;
     int platID = -1;
     int sensorID = -1;
-	QString receiveTransport, ddsTopic, ddsCodec, ddsQos;
+	QString receiveTransport, ddsTopic, ddsCodec, ddsQos, ddsDumpFirstFrame;
 	int ddsDomain = -1, ddsWidth = -1, ddsHeight = -1, ddsFps = -1;
+	int acceptanceExitMs = 0;
     const QStringList arguments = app.arguments();
     for (int argumentIndex = 0; argumentIndex < arguments.size(); ++argumentIndex)
     {
@@ -66,10 +68,12 @@ int main(int argc, char *argv[])
 		if (stringOption(QStringLiteral("--dds-topic"), ddsTopic)) continue;
 		if (stringOption(QStringLiteral("--dds-codec"), ddsCodec)) continue;
 		if (stringOption(QStringLiteral("--dds-qos"), ddsQos)) continue;
+		if (stringOption(QStringLiteral("--dds-dump-first-frame"), ddsDumpFirstFrame)) continue;
 		if (intOption(QStringLiteral("--dds-domain"), ddsDomain)) continue;
 		if (intOption(QStringLiteral("--dds-width"), ddsWidth)) continue;
 		if (intOption(QStringLiteral("--dds-height"), ddsHeight)) continue;
 		if (intOption(QStringLiteral("--dds-fps"), ddsFps)) continue;
+		if (intOption(QStringLiteral("--acceptance-exit-ms"), acceptanceExitMs)) continue;
     }
     qInfo().noquote()
         << QStringLiteral("[ProtocolLayout] component=HwaSim_IR_VideoDisplay channel=%1 platID=%2 sensorID=%3 pid=%4 ControlP2cX1ObjTrackingCmd=%5 InitP2cObjectTrackingCmd=%6 DisplayC2cObjTrackingData=%7 InitAckC2pObjectTrackingCmd=%8")
@@ -81,8 +85,14 @@ int main(int argc, char *argv[])
             .arg(sizeof(BYHWICD::InitP2cObjectTrackingCmd))
             .arg(sizeof(BYHWICD::DisplayC2cObjTrackingData))
             .arg(sizeof(BYHWICD::InitAckC2pObjectTrackingCmd));
-    HwaSim_IR_VideoDisplay window(networkConfigPath, channel, platID, sensorID,
-		receiveTransport, ddsTopic, ddsCodec, ddsQos, ddsDomain, ddsWidth, ddsHeight, ddsFps);
+	HwaSim_IR_VideoDisplay window(networkConfigPath, channel, platID, sensorID,
+		receiveTransport, ddsTopic, ddsCodec, ddsQos, ddsDomain, ddsWidth, ddsHeight, ddsFps,
+		ddsDumpFirstFrame);
     window.show();
+	if (acceptanceExitMs > 0)
+	{
+		qInfo().noquote() << QStringLiteral("[AcceptanceExit] scheduledMs=%1").arg(acceptanceExitMs);
+		QTimer::singleShot(acceptanceExitMs, &app, &QCoreApplication::quit);
+	}
     return app.exec();
 }

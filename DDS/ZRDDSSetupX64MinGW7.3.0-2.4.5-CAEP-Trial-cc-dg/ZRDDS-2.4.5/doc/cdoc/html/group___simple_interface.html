@@ -1,0 +1,691 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: 简化接口</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>结构体</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('group___simple_interface.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="summary">
+<a href="#func-members">函数</a>  </div>
+  <div class="headertitle">
+<div class="title">简化接口<div class="ingroups"><a class="el" href="group___c_interface.html">C用户接口</a></div></div>  </div>
+</div><!--header-->
+<div class="contents">
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
+函数</h2></td></tr>
+<tr class="memitem:gafba8345d351be9aa3a66773fac903983"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="struct_d_d_s___domain_participant_factory.html">DDS_DomainParticipantFactory</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___simple_interface.html#gafba8345d351be9aa3a66773fac903983">DDS_Init</a> (const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *qosFilePath, const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *qosName)</td></tr>
+<tr class="memdesc:gafba8345d351be9aa3a66773fac903983"><td class="mdescLeft">&#160;</td><td class="mdescRight">以指定配置初始化DDS中间件，只在整个程序初始化时调用一次即可。  <a href="#gafba8345d351be9aa3a66773fac903983">更多...</a><br /></td></tr>
+<tr class="separator:gafba8345d351be9aa3a66773fac903983"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6a10094a97e3c90e4958ba8d2c0b0f8a"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="struct_d_d_s___domain_participant.html">DDS_DomainParticipant</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___simple_interface.html#ga6a10094a97e3c90e4958ba8d2c0b0f8a">DDS_CreateDP</a> (const <a class="el" href="group___core_base_struct.html#ga4746170369a8b1fd00f9be49999997c3">DDS_DomainId_t</a> domainId, const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *qos_name)</td></tr>
+<tr class="memdesc:ga6a10094a97e3c90e4958ba8d2c0b0f8a"><td class="mdescLeft">&#160;</td><td class="mdescRight">DDS创建域参与者，并指明域号与QoS配置名称，同一个域号可能有多个域参与者， 需要为使用不同底层传输协议的主题创建不同的域参与者，即通常SRIO、UDP、TCP的域参与者各一个。  <a href="#ga6a10094a97e3c90e4958ba8d2c0b0f8a">更多...</a><br /></td></tr>
+<tr class="separator:ga6a10094a97e3c90e4958ba8d2c0b0f8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga238c40f1cdc5183ed5936ed98156f96c"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="struct_d_d_s___data_writer.html">DDS_DataWriter</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___simple_interface.html#ga238c40f1cdc5183ed5936ed98156f96c">DDS_PubTopic</a> (<a class="el" href="struct_d_d_s___domain_participant.html">DDS_DomainParticipant</a> *self, const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *topicName, DDS_TypeSupport *typeSupport, const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *qos_name, <a class="el" href="struct_d_d_s___data_writer_listener.html">DDS_DataWriterListener</a> *dwListener)</td></tr>
+<tr class="memdesc:ga238c40f1cdc5183ed5936ed98156f96c"><td class="mdescLeft">&#160;</td><td class="mdescRight">发布主题，指定域参与者、主题名、类型名、QoS配置名称以及监听器。  <a href="#ga238c40f1cdc5183ed5936ed98156f96c">更多...</a><br /></td></tr>
+<tr class="separator:ga238c40f1cdc5183ed5936ed98156f96c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga87309fb16abbb38ce56b8afeb80d586d"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___simple_interface.html#ga87309fb16abbb38ce56b8afeb80d586d">DDS_UnPubTopic</a> (<a class="el" href="struct_d_d_s___data_writer.html">DDS_DataWriter</a> *writer)</td></tr>
+<tr class="memdesc:ga87309fb16abbb38ce56b8afeb80d586d"><td class="mdescLeft">&#160;</td><td class="mdescRight">指明数据写者指针取消发布。  <a href="#ga87309fb16abbb38ce56b8afeb80d586d">更多...</a><br /></td></tr>
+<tr class="separator:ga87309fb16abbb38ce56b8afeb80d586d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga489ef056fd8c0a3391995b977503cd45"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___simple_interface.html#ga489ef056fd8c0a3391995b977503cd45">DDS_UnPubTopicWTopicName</a> (<a class="el" href="group___core_base_struct.html#ga4746170369a8b1fd00f9be49999997c3">DDS_DomainId_t</a> domainId, const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *topicName)</td></tr>
+<tr class="memdesc:ga489ef056fd8c0a3391995b977503cd45"><td class="mdescLeft">&#160;</td><td class="mdescRight">通过域以及主题名称取消发布，如果域内存在多个主题名相同的发布者将删除所有同名主题发布者。 该接口仅在指定域内有且仅有一个域参与者条件下使用；  <a href="#ga489ef056fd8c0a3391995b977503cd45">更多...</a><br /></td></tr>
+<tr class="separator:ga489ef056fd8c0a3391995b977503cd45"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga55b3bb36aa9d47849578622687b1b451"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="struct_d_d_s___data_reader.html">DDS_DataReader</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___simple_interface.html#ga55b3bb36aa9d47849578622687b1b451">DDS_SubTopic</a> (<a class="el" href="struct_d_d_s___domain_participant.html">DDS_DomainParticipant</a> *self, const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *topicName, DDS_TypeSupport *typeSupport, const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *qos_name, <a class="el" href="struct_d_d_s___data_reader_listener.html">DDS_DataReaderListener</a> *drListener)</td></tr>
+<tr class="memdesc:ga55b3bb36aa9d47849578622687b1b451"><td class="mdescLeft">&#160;</td><td class="mdescRight">订阅主题，指定域参与者、主题名、类型名以及QoS配置名称。  <a href="#ga55b3bb36aa9d47849578622687b1b451">更多...</a><br /></td></tr>
+<tr class="separator:ga55b3bb36aa9d47849578622687b1b451"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf15d2d59e610333dcb88d9ea5b0d4316"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___simple_interface.html#gaf15d2d59e610333dcb88d9ea5b0d4316">DDS_UnSubTopic</a> (<a class="el" href="struct_d_d_s___data_reader.html">DDS_DataReader</a> *reader)</td></tr>
+<tr class="memdesc:gaf15d2d59e610333dcb88d9ea5b0d4316"><td class="mdescLeft">&#160;</td><td class="mdescRight">指明数据读者指针取消订阅。  <a href="#gaf15d2d59e610333dcb88d9ea5b0d4316">更多...</a><br /></td></tr>
+<tr class="separator:gaf15d2d59e610333dcb88d9ea5b0d4316"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad86fb2d359ff1524248b2b8043842160"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___simple_interface.html#gad86fb2d359ff1524248b2b8043842160">DDS_UnSubTopicWTopicName</a> (<a class="el" href="group___core_base_struct.html#ga4746170369a8b1fd00f9be49999997c3">DDS_DomainId_t</a> domainId, const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *topicName)</td></tr>
+<tr class="memdesc:gad86fb2d359ff1524248b2b8043842160"><td class="mdescLeft">&#160;</td><td class="mdescRight">通过域以及主题名称取消订阅，如果域内存在多个主题名相同的订阅将删除所有同名主题订阅。 该接口仅在指定域内有且仅有一个域参与者条件下使用；  <a href="#gad86fb2d359ff1524248b2b8043842160">更多...</a><br /></td></tr>
+<tr class="separator:gad86fb2d359ff1524248b2b8043842160"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4333f00c24612efca8a9823c7e43c888"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___simple_interface.html#ga4333f00c24612efca8a9823c7e43c888">DDS_Finalize</a> ()</td></tr>
+<tr class="memdesc:ga4333f00c24612efca8a9823c7e43c888"><td class="mdescLeft">&#160;</td><td class="mdescRight">清理资源。  <a href="#ga4333f00c24612efca8a9823c7e43c888">更多...</a><br /></td></tr>
+<tr class="separator:ga4333f00c24612efca8a9823c7e43c888"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7e3192fbf5dd3e7671f7b66210d58555"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="struct_d_d_s___zero_copy_bytes.html">DDS_ZeroCopyBytes</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___simple_interface.html#ga7e3192fbf5dd3e7671f7b66210d58555">DDS_ZeroCopyBytesCreate</a> (<a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> maximum)</td></tr>
+<tr class="memdesc:ga7e3192fbf5dd3e7671f7b66210d58555"><td class="mdescLeft">&#160;</td><td class="mdescRight">创建零拷贝对象，并按最大长度分配空间。  <a href="#ga7e3192fbf5dd3e7671f7b66210d58555">更多...</a><br /></td></tr>
+<tr class="separator:ga7e3192fbf5dd3e7671f7b66210d58555"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9bf7f8e452a8251f17238494ed1a22a8"><td class="memItemLeft" align="right" valign="top">DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___simple_interface.html#ga9bf7f8e452a8251f17238494ed1a22a8">DDS_ZeroCopyBytesDestroy</a> (<a class="el" href="struct_d_d_s___zero_copy_bytes.html">DDS_ZeroCopyBytes</a> *sample)</td></tr>
+<tr class="memdesc:ga9bf7f8e452a8251f17238494ed1a22a8"><td class="mdescLeft">&#160;</td><td class="mdescRight">与 DDS_ZeroCopyBytesCreate 函数对应的回收零拷贝对象空间。  <a href="#ga9bf7f8e452a8251f17238494ed1a22a8">更多...</a><br /></td></tr>
+<tr class="separator:ga9bf7f8e452a8251f17238494ed1a22a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad921924f8b71416afd1ee131efa01774"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___simple_interface.html#gad921924f8b71416afd1ee131efa01774">DDS_ZeroCopyBytesWrite</a> (<a class="el" href="group___core_base_struct.html#ga4746170369a8b1fd00f9be49999997c3">DDS_DomainId_t</a> domainId, <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *topicName, <a class="el" href="struct_d_d_s___zero_copy_bytes.html">DDS_ZeroCopyBytes</a> *sample)</td></tr>
+<tr class="memdesc:gad921924f8b71416afd1ee131efa01774"><td class="mdescLeft">&#160;</td><td class="mdescRight">向指定的域发送指定主题的零拷贝数据。使用该接口的前提：  <a href="#gad921924f8b71416afd1ee131efa01774">更多...</a><br /></td></tr>
+<tr class="separator:gad921924f8b71416afd1ee131efa01774"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga565e3026e588da04f0da6dd0fd9e0f17"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___simple_interface.html#ga565e3026e588da04f0da6dd0fd9e0f17">DDS_BytesWrapper</a> (<a class="el" href="struct_d_d_s___bytes.html">DDS_Bytes</a> *self, const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *buffer, const <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> length)</td></tr>
+<tr class="memdesc:ga565e3026e588da04f0da6dd0fd9e0f17"><td class="mdescLeft">&#160;</td><td class="mdescRight">用户缓冲区包装成DDS_Bytes类型（非零拷贝缓冲区数据类型），该接口不分配空间，无需对应的回收函数。  <a href="#ga565e3026e588da04f0da6dd0fd9e0f17">更多...</a><br /></td></tr>
+<tr class="separator:ga565e3026e588da04f0da6dd0fd9e0f17"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga026a26eae62702e4e81e5b283c619c38"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___simple_interface.html#ga026a26eae62702e4e81e5b283c619c38">DDS_BytesWrite</a> (<a class="el" href="group___core_base_struct.html#ga4746170369a8b1fd00f9be49999997c3">DDS_DomainId_t</a> domainId, <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *topicName, const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *content, const <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> length)</td></tr>
+<tr class="memdesc:ga026a26eae62702e4e81e5b283c619c38"><td class="mdescLeft">&#160;</td><td class="mdescRight">向指定的域发送指定主题的非零拷贝Bytes数据。使用该接口的前提：  <a href="#ga026a26eae62702e4e81e5b283c619c38">更多...</a><br /></td></tr>
+<tr class="separator:ga026a26eae62702e4e81e5b283c619c38"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<p>本模块定义使用ZRDDS的简化接口。 </p>
+<h2 class="groupheader">函数说明</h2>
+<a class="anchor" id="ga565e3026e588da04f0da6dd0fd9e0f17"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> DDS_BytesWrapper </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___bytes.html">DDS_Bytes</a> *&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *&#160;</td>
+          <td class="paramname"><em>buffer</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a>&#160;</td>
+          <td class="paramname"><em>length</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>用户缓冲区包装成DDS_Bytes类型（非零拷贝缓冲区数据类型），该接口不分配空间，无需对应的回收函数。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明包装的目标。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">buffer</td><td>用户提供空间。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">length</td><td>空间长度。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>0表示成功，否则表示失败。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga026a26eae62702e4e81e5b283c619c38"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> DDS_BytesWrite </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga4746170369a8b1fd00f9be49999997c3">DDS_DomainId_t</a>&#160;</td>
+          <td class="paramname"><em>domainId</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *&#160;</td>
+          <td class="paramname"><em>topicName</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *&#160;</td>
+          <td class="paramname"><em>content</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a>&#160;</td>
+          <td class="paramname"><em>length</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>向指定的域发送指定主题的非零拷贝Bytes数据。使用该接口的前提： </p>
+<ul>
+<li>指定的域内有且仅有一个域参与者；</li>
+<li>指定的域内有且仅有一个与指定主题关联的发布者；</li>
+<li>指定的主题关联的数据类型为DDS_Bytes数据类型； 如果不满足以上条件，请使用 DDS_BytesDataWriter_write 接口指定发布者发送数据。</li>
+</ul>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir"></td><td class="paramname">domainId</td><td>指明域号。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">topicName</td><td>指明主题名称。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">content</td><td>发送内容缓冲区。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">length</td><td>缓冲区长度。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> 表示发送成功， 其他表示失败。 </dd></dl>
+<dl><dt><b>示例: </b></dt><dd><a class="el" href="_simple_interface_2_simple_interface_bytes_type_pub_8c-example.html#a6">SimpleInterface/SimpleInterfaceBytesTypePub.c</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_bytes_type_pub_8c-example.html#a6">TCPConcurrentTransmission/SimpleInterfaceBytesTypePub.c</a> , 以及 <a class="el" href="_u_d_p_large_package_zero_copy_2_simple_interface_bytes_type_pub_8c-example.html#a6">UDPLargePackageZeroCopy/SimpleInterfaceBytesTypePub.c</a>.</dd>
+</dl>
+</div>
+</div>
+<a class="anchor" id="ga6a10094a97e3c90e4958ba8d2c0b0f8a"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="struct_d_d_s___domain_participant.html">DDS_DomainParticipant</a> * DDS_CreateDP </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___core_base_struct.html#ga4746170369a8b1fd00f9be49999997c3">DDS_DomainId_t</a>&#160;</td>
+          <td class="paramname"><em>domainId</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_name</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>DDS创建域参与者，并指明域号与QoS配置名称，同一个域号可能有多个域参与者， 需要为使用不同底层传输协议的主题创建不同的域参与者，即通常SRIO、UDP、TCP的域参与者各一个。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">domainId</td><td>指明域号，域号范围0-232 </td></tr>
+    <tr><td class="paramname">qos_name</td><td>指明QoS配置文件中域参与者QoS配置名称，允许为NULL，表明使用配置文件中名称为default的配置。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>NULL表示失败，否则返回域参与者的指针，该指针用于后续创建发布者以及订阅者。 </dd></dl>
+<dl><dt><b>示例: </b></dt><dd><a class="el" href="_security_example_2ac_example_pub_8c-example.html#a3">SecurityExample/ac_example_pub.c</a>, <a class="el" href="_security_example_2ac_example_sub_8c-example.html#a8">SecurityExample/ac_example_sub.c</a>, <a class="el" href="_security_example_2auth_example_pub_8c-example.html#a3">SecurityExample/auth_example_pub.c</a>, <a class="el" href="_security_example_2auth_example_sub_8c-example.html#a8">SecurityExample/auth_example_sub.c</a>, <a class="el" href="_security_example_2encry_example_pub_8c-example.html#a3">SecurityExample/encry_example_pub.c</a>, <a class="el" href="_security_example_2encry_example_sub_8c-example.html#a8">SecurityExample/encry_example_sub.c</a>, <a class="el" href="_simple_interface_2_simple_interface_bytes_type_pub_8c-example.html#a4">SimpleInterface/SimpleInterfaceBytesTypePub.c</a>, <a class="el" href="_simple_interface_2_simple_interface_bytes_type_sub_8c-example.html#a9">SimpleInterface/SimpleInterfaceBytesTypeSub.c</a>, <a class="el" href="_simple_interface_2_simple_interface_zero_copy_pub_8c-example.html#a3">SimpleInterface/SimpleInterfaceZeroCopyPub.c</a>, <a class="el" href="_simple_interface_2_simple_interface_zero_copy_sub_8c-example.html#a9">SimpleInterface/SimpleInterfaceZeroCopySub.c</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_bytes_type_pub_8c-example.html#a4">TCPConcurrentTransmission/SimpleInterfaceBytesTypePub.c</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_bytes_type_sub_8c-example.html#a9">TCPConcurrentTransmission/SimpleInterfaceBytesTypeSub.c</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_zero_copy_pub_8c-example.html#a3">TCPConcurrentTransmission/SimpleInterfaceZeroCopyPub.c</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_zero_copy_sub_8c-example.html#a9">TCPConcurrentTransmission/SimpleInterfaceZeroCopySub.c</a>, <a class="el" href="_u_d_p_large_package_zero_copy_2_simple_interface_bytes_type_pub_8c-example.html#a4">UDPLargePackageZeroCopy/SimpleInterfaceBytesTypePub.c</a> , 以及 <a class="el" href="_u_d_p_large_package_zero_copy_2_simple_interface_bytes_type_sub_8c-example.html#a9">UDPLargePackageZeroCopy/SimpleInterfaceBytesTypeSub.c</a>.</dd>
+</dl>
+</div>
+</div>
+<a class="anchor" id="ga4333f00c24612efca8a9823c7e43c888"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> DDS_Finalize </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>清理资源。 </p>
+<dl class="section return"><dt>返回</dt><dd>DDS_RETCODE_OK表示成功，否则表示部分资源清理失败。 </dd></dl>
+<dl><dt><b>示例: </b></dt><dd><a class="el" href="_security_example_2ac_example_sub_8c-example.html#a12">SecurityExample/ac_example_sub.c</a>, <a class="el" href="_security_example_2auth_example_sub_8c-example.html#a12">SecurityExample/auth_example_sub.c</a>, <a class="el" href="_security_example_2encry_example_sub_8c-example.html#a12">SecurityExample/encry_example_sub.c</a>, <a class="el" href="_simple_interface_2_simple_interface_bytes_type_pub_8c-example.html#a9">SimpleInterface/SimpleInterfaceBytesTypePub.c</a>, <a class="el" href="_simple_interface_2_simple_interface_bytes_type_sub_8c-example.html#a12">SimpleInterface/SimpleInterfaceBytesTypeSub.c</a>, <a class="el" href="_simple_interface_2_simple_interface_zero_copy_pub_8c-example.html#a13">SimpleInterface/SimpleInterfaceZeroCopyPub.c</a>, <a class="el" href="_simple_interface_2_simple_interface_zero_copy_sub_8c-example.html#a12">SimpleInterface/SimpleInterfaceZeroCopySub.c</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_bytes_type_pub_8c-example.html#a9">TCPConcurrentTransmission/SimpleInterfaceBytesTypePub.c</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_bytes_type_sub_8c-example.html#a12">TCPConcurrentTransmission/SimpleInterfaceBytesTypeSub.c</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_zero_copy_pub_8c-example.html#a13">TCPConcurrentTransmission/SimpleInterfaceZeroCopyPub.c</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_zero_copy_sub_8c-example.html#a12">TCPConcurrentTransmission/SimpleInterfaceZeroCopySub.c</a>, <a class="el" href="_u_d_p_large_package_zero_copy_2_simple_interface_bytes_type_pub_8c-example.html#a9">UDPLargePackageZeroCopy/SimpleInterfaceBytesTypePub.c</a> , 以及 <a class="el" href="_u_d_p_large_package_zero_copy_2_simple_interface_bytes_type_sub_8c-example.html#a12">UDPLargePackageZeroCopy/SimpleInterfaceBytesTypeSub.c</a>.</dd>
+</dl>
+</div>
+</div>
+<a class="anchor" id="gafba8345d351be9aa3a66773fac903983"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="struct_d_d_s___domain_participant_factory.html">DDS_DomainParticipantFactory</a> * DDS_Init </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *&#160;</td>
+          <td class="paramname"><em>qosFilePath</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *&#160;</td>
+          <td class="paramname"><em>qosName</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>以指定配置初始化DDS中间件，只在整个程序初始化时调用一次即可。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">qosFilePath</td><td>QoS配置文件的路径，可以是绝对路径，也可以是程序运行目录的相对路径， 为NULL时，默认使用运行目录的 ZRDDS_QOS_PROFILES.xml 配置文件。 </td></tr>
+    <tr><td class="paramname">qosName</td><td>QoS配置文件中工厂QoS配置名称，DDS将以 default_lib::default_profile::qosName 代表的QoS初始化DDS域厂， 允许为NULL，表明使用配置文件中名称为default的配置。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>NULL表示失败，否则返回DDS域工厂单例。 </dd></dl>
+<dl><dt><b>示例: </b></dt><dd><a class="el" href="_security_example_2ac_example_pub_8c-example.html#a1">SecurityExample/ac_example_pub.c</a>, <a class="el" href="_security_example_2ac_example_sub_8c-example.html#a6">SecurityExample/ac_example_sub.c</a>, <a class="el" href="_security_example_2auth_example_pub_8c-example.html#a1">SecurityExample/auth_example_pub.c</a>, <a class="el" href="_security_example_2auth_example_sub_8c-example.html#a6">SecurityExample/auth_example_sub.c</a>, <a class="el" href="_security_example_2encry_example_pub_8c-example.html#a1">SecurityExample/encry_example_pub.c</a>, <a class="el" href="_security_example_2encry_example_sub_8c-example.html#a6">SecurityExample/encry_example_sub.c</a>, <a class="el" href="_simple_interface_2_simple_interface_bytes_type_pub_8c-example.html#a2">SimpleInterface/SimpleInterfaceBytesTypePub.c</a>, <a class="el" href="_simple_interface_2_simple_interface_bytes_type_sub_8c-example.html#a7">SimpleInterface/SimpleInterfaceBytesTypeSub.c</a>, <a class="el" href="_simple_interface_2_simple_interface_zero_copy_pub_8c-example.html#a1">SimpleInterface/SimpleInterfaceZeroCopyPub.c</a>, <a class="el" href="_simple_interface_2_simple_interface_zero_copy_sub_8c-example.html#a7">SimpleInterface/SimpleInterfaceZeroCopySub.c</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_bytes_type_pub_8c-example.html#a2">TCPConcurrentTransmission/SimpleInterfaceBytesTypePub.c</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_bytes_type_sub_8c-example.html#a7">TCPConcurrentTransmission/SimpleInterfaceBytesTypeSub.c</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_zero_copy_pub_8c-example.html#a1">TCPConcurrentTransmission/SimpleInterfaceZeroCopyPub.c</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_zero_copy_sub_8c-example.html#a7">TCPConcurrentTransmission/SimpleInterfaceZeroCopySub.c</a>, <a class="el" href="_u_d_p_large_package_zero_copy_2_simple_interface_bytes_type_pub_8c-example.html#a2">UDPLargePackageZeroCopy/SimpleInterfaceBytesTypePub.c</a> , 以及 <a class="el" href="_u_d_p_large_package_zero_copy_2_simple_interface_bytes_type_sub_8c-example.html#a7">UDPLargePackageZeroCopy/SimpleInterfaceBytesTypeSub.c</a>.</dd>
+</dl>
+</div>
+</div>
+<a class="anchor" id="ga238c40f1cdc5183ed5936ed98156f96c"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="struct_d_d_s___data_writer.html">DDS_DataWriter</a> * DDS_PubTopic </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___domain_participant.html">DDS_DomainParticipant</a> *&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *&#160;</td>
+          <td class="paramname"><em>topicName</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">DDS_TypeSupport *&#160;</td>
+          <td class="paramname"><em>typeSupport</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___data_writer_listener.html">DDS_DataWriterListener</a> *&#160;</td>
+          <td class="paramname"><em>dwListener</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>发布主题，指定域参与者、主题名、类型名、QoS配置名称以及监听器。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明域参与者。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">topicName</td><td>主题名称。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">typeSupport</td><td>类型支持对象指明关联的数据类型，规则为： &amp;类型名称+TypeSupport+_instance, 如果为零拷贝数据类型则传输 &amp;DDS_ZeroCopyBytesTypeSupport_instance， 内置非零拷贝传入 &amp;DDS_BytesTypeSupport_instance，IDL文件自动生成的传入 &amp; 类型名称TypeSupport_instance对象。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">qos_name</td><td>指明QoS配置文件中数据写者QoS配置名称，允许为NULL，表明使用配置文件中名称为default的配置。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">dwListener</td><td>发布者的监听器，用于扩展，填NULL即可。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>NULL表示失败，否则返回数据写者指针（用于唯一标识创建好的发布者）。 </dd></dl>
+<dl><dt><b>示例: </b></dt><dd><a class="el" href="_security_example_2ac_example_pub_8c-example.html#a5">SecurityExample/ac_example_pub.c</a>, <a class="el" href="_security_example_2auth_example_pub_8c-example.html#a5">SecurityExample/auth_example_pub.c</a>, <a class="el" href="_security_example_2encry_example_pub_8c-example.html#a5">SecurityExample/encry_example_pub.c</a>, <a class="el" href="_simple_interface_2_simple_interface_bytes_type_pub_8c-example.html#a5">SimpleInterface/SimpleInterfaceBytesTypePub.c</a>, <a class="el" href="_simple_interface_2_simple_interface_zero_copy_pub_8c-example.html#a4">SimpleInterface/SimpleInterfaceZeroCopyPub.c</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_bytes_type_pub_8c-example.html#a5">TCPConcurrentTransmission/SimpleInterfaceBytesTypePub.c</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_zero_copy_pub_8c-example.html#a4">TCPConcurrentTransmission/SimpleInterfaceZeroCopyPub.c</a> , 以及 <a class="el" href="_u_d_p_large_package_zero_copy_2_simple_interface_bytes_type_pub_8c-example.html#a5">UDPLargePackageZeroCopy/SimpleInterfaceBytesTypePub.c</a>.</dd>
+</dl>
+</div>
+</div>
+<a class="anchor" id="ga55b3bb36aa9d47849578622687b1b451"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="struct_d_d_s___data_reader.html">DDS_DataReader</a> * DDS_SubTopic </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___domain_participant.html">DDS_DomainParticipant</a> *&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *&#160;</td>
+          <td class="paramname"><em>topicName</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">DDS_TypeSupport *&#160;</td>
+          <td class="paramname"><em>typeSupport</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___data_reader_listener.html">DDS_DataReaderListener</a> *&#160;</td>
+          <td class="paramname"><em>drListener</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>订阅主题，指定域参与者、主题名、类型名以及QoS配置名称。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明域参与者。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">topicName</td><td>主题名称。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">typeSupport</td><td>类型支持对象指明关联的数据类型，规则为： &amp;类型名称+TypeSupport+_instance, 如果为零拷贝数据类型则传输 &amp;DDS_ZeroCopyBytesTypeSupport_instance， 内置非零拷贝传入 &amp;DDS_BytesTypeSupport_instance，IDL文件自动生成的传入 &amp; 类型名称TypeSupport_instance对象。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">qos_name</td><td>指明QoS配置文件中数据写者QoS配置名称，允许为NULL，表明使用配置文件中名称为default的配置。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">drListener</td><td>订阅者的监听器，用于扩展，填NULL即可。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>NULL表示失败，否则返回数据读者指针（用于唯一标识创建好的订阅者）。 </dd></dl>
+<dl><dt><b>示例: </b></dt><dd><a class="el" href="_security_example_2ac_example_sub_8c-example.html#a11">SecurityExample/ac_example_sub.c</a>, <a class="el" href="_security_example_2auth_example_sub_8c-example.html#a11">SecurityExample/auth_example_sub.c</a>, <a class="el" href="_security_example_2encry_example_sub_8c-example.html#a11">SecurityExample/encry_example_sub.c</a>, <a class="el" href="_simple_interface_2_simple_interface_bytes_type_sub_8c-example.html#a10">SimpleInterface/SimpleInterfaceBytesTypeSub.c</a>, <a class="el" href="_simple_interface_2_simple_interface_zero_copy_sub_8c-example.html#a10">SimpleInterface/SimpleInterfaceZeroCopySub.c</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_bytes_type_sub_8c-example.html#a10">TCPConcurrentTransmission/SimpleInterfaceBytesTypeSub.c</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_zero_copy_sub_8c-example.html#a10">TCPConcurrentTransmission/SimpleInterfaceZeroCopySub.c</a> , 以及 <a class="el" href="_u_d_p_large_package_zero_copy_2_simple_interface_bytes_type_sub_8c-example.html#a10">UDPLargePackageZeroCopy/SimpleInterfaceBytesTypeSub.c</a>.</dd>
+</dl>
+</div>
+</div>
+<a class="anchor" id="ga87309fb16abbb38ce56b8afeb80d586d"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> DDS_UnPubTopic </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___data_writer.html">DDS_DataWriter</a> *&#160;</td>
+          <td class="paramname"><em>writer</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>指明数据写者指针取消发布。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">writer</td><td>指明数据写者指针。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> 表示取消成功，其他表示失败； </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga489ef056fd8c0a3391995b977503cd45"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> DDS_UnPubTopicWTopicName </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga4746170369a8b1fd00f9be49999997c3">DDS_DomainId_t</a>&#160;</td>
+          <td class="paramname"><em>domainId</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *&#160;</td>
+          <td class="paramname"><em>topicName</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>通过域以及主题名称取消发布，如果域内存在多个主题名相同的发布者将删除所有同名主题发布者。 该接口仅在指定域内有且仅有一个域参与者条件下使用； </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">domainId</td><td>指明域号。 </td></tr>
+    <tr><td class="paramname">topicName</td><td>指明主题名称。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> 表示取消成功，其他表示失败； </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="gaf15d2d59e610333dcb88d9ea5b0d4316"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> DDS_UnSubTopic </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___data_reader.html">DDS_DataReader</a> *&#160;</td>
+          <td class="paramname"><em>reader</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>指明数据读者指针取消订阅。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">reader</td><td>指明数据读者指针。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> 表示取消成功，其他表示失败； </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="gad86fb2d359ff1524248b2b8043842160"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> DDS_UnSubTopicWTopicName </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga4746170369a8b1fd00f9be49999997c3">DDS_DomainId_t</a>&#160;</td>
+          <td class="paramname"><em>domainId</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *&#160;</td>
+          <td class="paramname"><em>topicName</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>通过域以及主题名称取消订阅，如果域内存在多个主题名相同的订阅将删除所有同名主题订阅。 该接口仅在指定域内有且仅有一个域参与者条件下使用； </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">domainId</td><td>指明域号。 </td></tr>
+    <tr><td class="paramname">topicName</td><td>指明主题名称。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> 表示取消成功，其他表示失败； </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga7e3192fbf5dd3e7671f7b66210d58555"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="struct_d_d_s___zero_copy_bytes.html">DDS_ZeroCopyBytes</a> * DDS_ZeroCopyBytesCreate </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>&#160;</td>
+          <td class="paramname"><em>maximum</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>创建零拷贝对象，并按最大长度分配空间。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">maximum</td><td>零拷贝最大可能发送的长度。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>NULL表示失败，可能的原因为分配内存失败，否则返回零拷贝对象。 </dd></dl>
+<dl><dt><b>示例: </b></dt><dd><a class="el" href="_simple_interface_2_simple_interface_zero_copy_pub_8c-example.html#a6">SimpleInterface/SimpleInterfaceZeroCopyPub.c</a> , 以及 <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_zero_copy_pub_8c-example.html#a6">TCPConcurrentTransmission/SimpleInterfaceZeroCopyPub.c</a>.</dd>
+</dl>
+</div>
+</div>
+<a class="anchor" id="ga9bf7f8e452a8251f17238494ed1a22a8"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL void DDS_ZeroCopyBytesDestroy </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___zero_copy_bytes.html">DDS_ZeroCopyBytes</a> *&#160;</td>
+          <td class="paramname"><em>sample</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>与 DDS_ZeroCopyBytesCreate 函数对应的回收零拷贝对象空间。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">sample</td><td>指明零拷贝对象。 </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl><dt><b>示例: </b></dt><dd><a class="el" href="_simple_interface_2_simple_interface_zero_copy_pub_8c-example.html#a12">SimpleInterface/SimpleInterfaceZeroCopyPub.c</a> , 以及 <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_zero_copy_pub_8c-example.html#a12">TCPConcurrentTransmission/SimpleInterfaceZeroCopyPub.c</a>.</dd>
+</dl>
+</div>
+</div>
+<a class="anchor" id="gad921924f8b71416afd1ee131efa01774"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> DDS_ZeroCopyBytesWrite </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga4746170369a8b1fd00f9be49999997c3">DDS_DomainId_t</a>&#160;</td>
+          <td class="paramname"><em>domainId</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *&#160;</td>
+          <td class="paramname"><em>topicName</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___zero_copy_bytes.html">DDS_ZeroCopyBytes</a> *&#160;</td>
+          <td class="paramname"><em>sample</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>向指定的域发送指定主题的零拷贝数据。使用该接口的前提： </p>
+<ul>
+<li>指定的域内有且仅有一个域参与者；</li>
+<li>指定的域内有且仅有一个与指定主题关联的发布者；</li>
+<li>指定的主题关联的数据类型为零拷贝数据类型； 如果不满足以上条件，请使用 DDS_ZeroCopyBytesDataWriter_write 接口指定发布者发送数据。</li>
+</ul>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir"></td><td class="paramname">domainId</td><td>指明域号。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">topicName</td><td>指明主题名称。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">sample</td><td>指明发送的数据。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> 表示发送成功， 其他表示失败。 </dd></dl>
+
+</div>
+</div>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

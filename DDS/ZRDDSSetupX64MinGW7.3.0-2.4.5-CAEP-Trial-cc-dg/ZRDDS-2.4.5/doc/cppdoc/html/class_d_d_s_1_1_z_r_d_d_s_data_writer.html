@@ -1,0 +1,812 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: DDS::ZRDDSDataWriter&lt; T &gt; 模板类 参考</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li class="current"><a href="annotated.html"><span>类</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+  <div id="navrow2" class="tabs2">
+    <ul class="tablist">
+      <li><a href="annotated.html"><span>类列表</span></a></li>
+      <li><a href="classes.html"><span>类索引</span></a></li>
+      <li><a href="hierarchy.html"><span>类继承关系</span></a></li>
+      <li><a href="functions.html"><span>类成员</span></a></li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('class_d_d_s_1_1_z_r_d_d_s_data_writer.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public 成员函数</a> &#124;
+<a href="class_d_d_s_1_1_z_r_d_d_s_data_writer-members.html">所有成员列表</a>  </div>
+  <div class="headertitle">
+<div class="title">DDS::ZRDDSDataWriter&lt; T &gt; 模板类 参考<div class="ingroups"><a class="el" href="group___cpp_interface.html">C++用户接口</a> &raquo; <a class="el" href="group___cpp_publication.html">发布模块</a></div></div>  </div>
+</div><!--header-->
+<div class="contents">
+
+<p>ZRDDS提供的数据写者模板类，用于提供强类型安全接口的数据写者接口。  
+ <a href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#details">更多...</a></p>
+
+<p><code>#include &lt;<a class="el" href="_z_r_d_d_s_data_writer_8h_source.html">ZRDDSDataWriter.h</a>&gt;</code></p>
+<div class="dynheader">
+类 DDS::ZRDDSDataWriter&lt; T &gt; 继承关系图:</div>
+<div class="dyncontent">
+ <div class="center">
+  <img src="class_d_d_s_1_1_z_r_d_d_s_data_writer.png" usemap="#DDS::ZRDDSDataWriter&lt; T &gt;_map" alt=""/>
+  <map id="DDS::ZRDDSDataWriter&lt; T &gt;_map" name="DDS::ZRDDSDataWriter&lt; T &gt;_map">
+<area href="class_d_d_s_1_1_data_writer.html" title="DDS标准中的数据读者接口。 " alt="DDS::DataWriter" shape="rect" coords="0,112,178,136"/>
+<area href="class_d_d_s_1_1_domain_entity.html" title="该类是所有域参与者子实体的父类，没有实际意义，仅仅根据协议定义。 " alt="DDS::DomainEntity" shape="rect" coords="0,56,178,80"/>
+<area href="class_d_d_s_1_1_entity.html" title="实体（实体) 作为所有实体（包括域参与者、主题、发布者、订阅者、数据读者、数据写者）的基类，抽象实体的�..." alt="DDS::Entity" shape="rect" coords="0,0,178,24"/>
+</map>
+ </div></div>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
+Public 成员函数</h2></td></tr>
+<tr class="memitem:ac5fa298e5e5e90f8679f76525ad6474d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#ac5fa298e5e5e90f8679f76525ad6474d">register_instance</a> (const T &amp;data)</td></tr>
+<tr class="memdesc:ac5fa298e5e5e90f8679f76525ad6474d"><td class="mdescLeft">&#160;</td><td class="mdescRight">向数据写者注册一个实例  <a href="#ac5fa298e5e5e90f8679f76525ad6474d">更多...</a><br /></td></tr>
+<tr class="separator:ac5fa298e5e5e90f8679f76525ad6474d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abb11443557add8ddee534a7c2dbee20a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#abb11443557add8ddee534a7c2dbee20a">register_instance_w_timestamp</a> (const T &amp;data, const <a class="el" href="group___cpp_core_struct.html#ga48575f104487f1d51cfc068792218ea4">Time_t</a> &amp;timestamp)</td></tr>
+<tr class="memdesc:abb11443557add8ddee534a7c2dbee20a"><td class="mdescLeft">&#160;</td><td class="mdescRight">向数据写者注册一个实例（见 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#ac5fa298e5e5e90f8679f76525ad6474d" title="向数据写者注册一个实例 ">register_instance</a> ），并使用提供的时间戳覆盖默认的时间戳  <a href="#abb11443557add8ddee534a7c2dbee20a">更多...</a><br /></td></tr>
+<tr class="separator:abb11443557add8ddee534a7c2dbee20a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a819774917b46200bef9f9a5317d67362"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a819774917b46200bef9f9a5317d67362">unregister_instance</a> (const T &amp;data, const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;handle)</td></tr>
+<tr class="memdesc:a819774917b46200bef9f9a5317d67362"><td class="mdescLeft">&#160;</td><td class="mdescRight">将已经注册的实例从数据写者中注销  <a href="#a819774917b46200bef9f9a5317d67362">更多...</a><br /></td></tr>
+<tr class="separator:a819774917b46200bef9f9a5317d67362"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8f6f34a06d87339fc4805c91b24bfeae"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a8f6f34a06d87339fc4805c91b24bfeae">unregister_instance_w_timestamp</a> (const T &amp;data, const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;handle, const <a class="el" href="group___cpp_core_struct.html#ga48575f104487f1d51cfc068792218ea4">Time_t</a> &amp;timestamp)</td></tr>
+<tr class="memdesc:a8f6f34a06d87339fc4805c91b24bfeae"><td class="mdescLeft">&#160;</td><td class="mdescRight">将已经注册的实例从数据写者中注销（见 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a819774917b46200bef9f9a5317d67362" title="将已经注册的实例从数据写者中注销 ">unregister_instance</a> ），并使用提供的时间戳覆盖默认的时间戳  <a href="#a8f6f34a06d87339fc4805c91b24bfeae">更多...</a><br /></td></tr>
+<tr class="separator:a8f6f34a06d87339fc4805c91b24bfeae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abc25fe6d8b50d187bdf2a6777899a891"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#abc25fe6d8b50d187bdf2a6777899a891">get_key_value</a> (T &amp;key_holder, const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;handle)</td></tr>
+<tr class="memdesc:abc25fe6d8b50d187bdf2a6777899a891"><td class="mdescLeft">&#160;</td><td class="mdescRight">从实例句柄获取对应的样本值，只有声明为键域的数据域的值有效。  <a href="#abc25fe6d8b50d187bdf2a6777899a891">更多...</a><br /></td></tr>
+<tr class="separator:abc25fe6d8b50d187bdf2a6777899a891"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a27efb4a25b878ed2cde60d688b2f713b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a27efb4a25b878ed2cde60d688b2f713b">lookup_instance</a> (const T &amp;key_holder)</td></tr>
+<tr class="memdesc:a27efb4a25b878ed2cde60d688b2f713b"><td class="mdescLeft">&#160;</td><td class="mdescRight">通过样本值查询实例句柄。  <a href="#a27efb4a25b878ed2cde60d688b2f713b">更多...</a><br /></td></tr>
+<tr class="separator:a27efb4a25b878ed2cde60d688b2f713b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0be9bc0f81e02f48bc3a308bb27936cb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a0be9bc0f81e02f48bc3a308bb27936cb">write</a> (const T &amp;data, const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;handle)</td></tr>
+<tr class="memdesc:a0be9bc0f81e02f48bc3a308bb27936cb"><td class="mdescLeft">&#160;</td><td class="mdescRight">发布一个数据样本。  <a href="#a0be9bc0f81e02f48bc3a308bb27936cb">更多...</a><br /></td></tr>
+<tr class="separator:a0be9bc0f81e02f48bc3a308bb27936cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a819bb9b8459256225e256d12c88a6c0a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a819bb9b8459256225e256d12c88a6c0a">write_w_timestamp</a> (const T &amp;instance, const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;handle, const <a class="el" href="group___cpp_core_struct.html#ga48575f104487f1d51cfc068792218ea4">Time_t</a> &amp;timestamp)</td></tr>
+<tr class="memdesc:a819bb9b8459256225e256d12c88a6c0a"><td class="mdescLeft">&#160;</td><td class="mdescRight">发布一个数据样本（见 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a0be9bc0f81e02f48bc3a308bb27936cb" title="发布一个数据样本。 ">write</a> ），并使用提供的时间戳覆盖默认的时间戳。  <a href="#a819bb9b8459256225e256d12c88a6c0a">更多...</a><br /></td></tr>
+<tr class="separator:a819bb9b8459256225e256d12c88a6c0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5964b1cad39048aafa403c6a7a868a02"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a5964b1cad39048aafa403c6a7a868a02">write_w_dst</a> (const T &amp;instance, const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;handle, const <a class="el" href="group___cpp_core_struct.html#ga48575f104487f1d51cfc068792218ea4">Time_t</a> &amp;timestamp, const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;dst_handle)</td></tr>
+<tr class="memdesc:a5964b1cad39048aafa403c6a7a868a02"><td class="mdescLeft">&#160;</td><td class="mdescRight">向指定对端发布一个数据样本。  <a href="#a5964b1cad39048aafa403c6a7a868a02">更多...</a><br /></td></tr>
+<tr class="separator:a5964b1cad39048aafa403c6a7a868a02"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afcd89089ca6f57aa13f46a6223174bf1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#afcd89089ca6f57aa13f46a6223174bf1">write_w_dst</a> (const T &amp;instance, const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;handle, const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;dst_handle)</td></tr>
+<tr class="memdesc:afcd89089ca6f57aa13f46a6223174bf1"><td class="mdescLeft">&#160;</td><td class="mdescRight">向指定对端发布一个数据样本。  <a href="#afcd89089ca6f57aa13f46a6223174bf1">更多...</a><br /></td></tr>
+<tr class="separator:afcd89089ca6f57aa13f46a6223174bf1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa1383c0e09f84327db7be273f3053cfc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#aa1383c0e09f84327db7be273f3053cfc">dispose</a> (const T &amp;instance, const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;handle)</td></tr>
+<tr class="memdesc:aa1383c0e09f84327db7be273f3053cfc"><td class="mdescLeft">&#160;</td><td class="mdescRight">销毁一个已经注册的实例。  <a href="#aa1383c0e09f84327db7be273f3053cfc">更多...</a><br /></td></tr>
+<tr class="separator:aa1383c0e09f84327db7be273f3053cfc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ab8f981cc3cebb80958a2da0cd387cc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a3ab8f981cc3cebb80958a2da0cd387cc">dispose_w_timestamp</a> (const T &amp;instance, const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;handle, const <a class="el" href="group___cpp_core_struct.html#ga48575f104487f1d51cfc068792218ea4">Time_t</a> &amp;timestamp)</td></tr>
+<tr class="memdesc:a3ab8f981cc3cebb80958a2da0cd387cc"><td class="mdescLeft">&#160;</td><td class="mdescRight">销毁一个已经注册的实例（见 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a819774917b46200bef9f9a5317d67362" title="将已经注册的实例从数据写者中注销 ">unregister_instance</a> ），并使用提供的时间戳覆盖默认的时间戳。  <a href="#a3ab8f981cc3cebb80958a2da0cd387cc">更多...</a><br /></td></tr>
+<tr class="separator:a3ab8f981cc3cebb80958a2da0cd387cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_methods_class_d_d_s_1_1_data_writer"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_class_d_d_s_1_1_data_writer')"><img src="closed.png" alt="-"/>&#160;Public 成员函数 继承自 <a class="el" href="class_d_d_s_1_1_data_writer.html">DDS::DataWriter</a></td></tr>
+<tr class="memitem:a16290ecc09394599d81c4fb32f541abd inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_writer.html#a16290ecc09394599d81c4fb32f541abd">set_qos_with_profile</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *profile_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_name)</td></tr>
+<tr class="memdesc:a16290ecc09394599d81c4fb32f541abd inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="mdescLeft">&#160;</td><td class="mdescRight">从QoS仓库获取QoS配置并设置到数据写者。  <a href="#a16290ecc09394599d81c4fb32f541abd">更多...</a><br /></td></tr>
+<tr class="separator:a16290ecc09394599d81c4fb32f541abd inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a89877a75ce56aa9aa3096bb9949f313f inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_writer.html#a89877a75ce56aa9aa3096bb9949f313f">get_liveliness_lost_status</a> (<a class="el" href="group___cpp_core_struct.html#ga6d72f9065474beade41e36c0fa622ada">LivelinessLostStatus</a> &amp;status)</td></tr>
+<tr class="memdesc:a89877a75ce56aa9aa3096bb9949f313f inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取数据写者关联的 <a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fabb958f0f7fe005d227e808949509961c" title="数据写者存活性状态丢失状态。 ">DDS_LIVELINESS_LOST_STATUS</a> 状态。  <a href="#a89877a75ce56aa9aa3096bb9949f313f">更多...</a><br /></td></tr>
+<tr class="separator:a89877a75ce56aa9aa3096bb9949f313f inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aad7ac9c68faece7958daa47696082cb2 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_writer.html#aad7ac9c68faece7958daa47696082cb2">assert_liveliness</a> ()</td></tr>
+<tr class="memdesc:aad7ac9c68faece7958daa47696082cb2 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="mdescLeft">&#160;</td><td class="mdescRight">声明自身的存活性  <a href="#aad7ac9c68faece7958daa47696082cb2">更多...</a><br /></td></tr>
+<tr class="separator:aad7ac9c68faece7958daa47696082cb2 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aee22a2378fc759774d92ae4c2f73d194 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_writer.html#aee22a2378fc759774d92ae4c2f73d194">get_offered_deadline_missed_status</a> (<a class="el" href="group___cpp_core_struct.html#ga241b60c005f666103c8d2159bc31480f">OfferedDeadlineMissedStatus</a> &amp;status)</td></tr>
+<tr class="memdesc:aee22a2378fc759774d92ae4c2f73d194 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取数据写者关联的 <a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fa84f12530ffc8d6e68906054b06972342" title="数据写者截止时间未满足状态类型。 ">DDS_OFFERED_DEADLINE_MISSED_STATUS</a> 状态。  <a href="#aee22a2378fc759774d92ae4c2f73d194">更多...</a><br /></td></tr>
+<tr class="separator:aee22a2378fc759774d92ae4c2f73d194 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adac5041d8209fd7d0425a54565dd8efd inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_writer.html#adac5041d8209fd7d0425a54565dd8efd">get_offered_incompatible_qos_status</a> (<a class="el" href="group___cpp_core_struct.html#ga061415b3d63b2a40133e3270a8eb18f6">OfferedIncompatibleQosStatus</a> &amp;status)</td></tr>
+<tr class="memdesc:adac5041d8209fd7d0425a54565dd8efd inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取数据写者关联的 <a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fa1eb2a68f0c66c314784737a7728922b8" title="数据写者端QoS不匹配状态类型。 ">DDS_OFFERED_INCOMPATIBLE_QOS_STATUS</a> 状态。  <a href="#adac5041d8209fd7d0425a54565dd8efd">更多...</a><br /></td></tr>
+<tr class="separator:adac5041d8209fd7d0425a54565dd8efd inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aea4c7bf2b64c2eb52079d21afbbb5189 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_writer.html#aea4c7bf2b64c2eb52079d21afbbb5189">get_publication_matched_status</a> (<a class="el" href="group___cpp_core_struct.html#ga0e18e34971f8c5ade4688c983b53c2b2">PublicationMatchedStatus</a> &amp;status)</td></tr>
+<tr class="memdesc:aea4c7bf2b64c2eb52079d21afbbb5189 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取数据写者关联的 <a class="el" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fa3052f04c67620660f92aa3b5da2455d2" title="数据写者匹配状态类型。 ">DDS_PUBLICATION_MATCHED_STATUS</a> 状态。  <a href="#aea4c7bf2b64c2eb52079d21afbbb5189">更多...</a><br /></td></tr>
+<tr class="separator:aea4c7bf2b64c2eb52079d21afbbb5189 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a36fc2b9688ffae63297e4e6692dab6ce inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_writer.html#a36fc2b9688ffae63297e4e6692dab6ce">get_matched_subscriptions</a> (<a class="el" href="group___cpp_core_struct.html#ga38e54e14a30a16bf8dfb07668c3b3fae">InstanceHandleSeq</a> &amp;handles)</td></tr>
+<tr class="memdesc:a36fc2b9688ffae63297e4e6692dab6ce inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取已匹配且没有被忽略的订阅者句柄列表。  <a href="#a36fc2b9688ffae63297e4e6692dab6ce">更多...</a><br /></td></tr>
+<tr class="separator:a36fc2b9688ffae63297e4e6692dab6ce inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8714e63f6fe4bec5c1297ae798456f80 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_writer.html#a8714e63f6fe4bec5c1297ae798456f80">get_matched_subscription_data</a> (<a class="el" href="group___cpp_core_struct.html#ga170b4c26caa443efd7918548bff069ce">SubscriptionBuiltinTopicData</a> &amp;subscription_data, const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;a_handle)</td></tr>
+<tr class="memdesc:a8714e63f6fe4bec5c1297ae798456f80 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取指定的已匹配订阅者的详细信息。  <a href="#a8714e63f6fe4bec5c1297ae798456f80">更多...</a><br /></td></tr>
+<tr class="separator:a8714e63f6fe4bec5c1297ae798456f80 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a47a0191ce10efda400609987eda84edd inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_writer.html#a47a0191ce10efda400609987eda84edd">wait_for_acknowledgments</a> (const <a class="el" href="group___cpp_core_struct.html#gae56b310fa579905cdf4947b3455cbda3">Duration_t</a> &amp;max_wait)</td></tr>
+<tr class="memdesc:a47a0191ce10efda400609987eda84edd inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="mdescLeft">&#160;</td><td class="mdescRight">对可靠的数据写者调用此函数将导致调用者的阻塞，直到所有已发出的数据被应答或者等待超时。  <a href="#a47a0191ce10efda400609987eda84edd">更多...</a><br /></td></tr>
+<tr class="separator:a47a0191ce10efda400609987eda84edd inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a96507fe2b11f28c8a9a9c3ee590bfac0 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_topic.html">Topic</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_writer.html#a96507fe2b11f28c8a9a9c3ee590bfac0">get_topic</a> ()</td></tr>
+<tr class="memdesc:a96507fe2b11f28c8a9a9c3ee590bfac0 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取该数据写者所关联的主题。  <a href="#a96507fe2b11f28c8a9a9c3ee590bfac0">更多...</a><br /></td></tr>
+<tr class="separator:a96507fe2b11f28c8a9a9c3ee590bfac0 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9d4e207a5f8434ca7703ca6ea49755f4 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_publisher.html">Publisher</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_writer.html#a9d4e207a5f8434ca7703ca6ea49755f4">get_publisher</a> ()</td></tr>
+<tr class="memdesc:a9d4e207a5f8434ca7703ca6ea49755f4 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取创建该DataWriter的Publisher。  <a href="#a9d4e207a5f8434ca7703ca6ea49755f4">更多...</a><br /></td></tr>
+<tr class="separator:a9d4e207a5f8434ca7703ca6ea49755f4 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9644030bd4276847eeab26d903014373 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_writer.html#a9644030bd4276847eeab26d903014373">set_qos</a> (const <a class="el" href="group___cpp_core_struct.html#gabef03998e5a399f1053057c068dbcacb">DataWriterQos</a> &amp;qoslist)</td></tr>
+<tr class="memdesc:a9644030bd4276847eeab26d903014373 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="mdescLeft">&#160;</td><td class="mdescRight">设置DataWriterQoS。  <a href="#a9644030bd4276847eeab26d903014373">更多...</a><br /></td></tr>
+<tr class="separator:a9644030bd4276847eeab26d903014373 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0d4f22032e4b28438121b1ab440dd110 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_writer.html#a0d4f22032e4b28438121b1ab440dd110">get_qos</a> (<a class="el" href="group___cpp_core_struct.html#gabef03998e5a399f1053057c068dbcacb">DataWriterQos</a> &amp;qoslist)</td></tr>
+<tr class="memdesc:a0d4f22032e4b28438121b1ab440dd110 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取当前数据写者的QoS。  <a href="#a0d4f22032e4b28438121b1ab440dd110">更多...</a><br /></td></tr>
+<tr class="separator:a0d4f22032e4b28438121b1ab440dd110 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6ae9b965af60694767978893d9587637 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_writer.html#a6ae9b965af60694767978893d9587637">set_listener</a> (<a class="el" href="class_d_d_s_1_1_data_writer_listener.html">DataWriterListener</a> *a_listener, const <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> &amp;mask)</td></tr>
+<tr class="memdesc:a6ae9b965af60694767978893d9587637 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="mdescLeft">&#160;</td><td class="mdescRight">设置数据写者监听器。  <a href="#a6ae9b965af60694767978893d9587637">更多...</a><br /></td></tr>
+<tr class="separator:a6ae9b965af60694767978893d9587637 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afe1b10dd861eb92cad2ebafdd6700d6f inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_data_writer_listener.html">DataWriterListener</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_writer.html#afe1b10dd861eb92cad2ebafdd6700d6f">get_listener</a> ()</td></tr>
+<tr class="memdesc:afe1b10dd861eb92cad2ebafdd6700d6f inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取当前数据写者的监听器。  <a href="#afe1b10dd861eb92cad2ebafdd6700d6f">更多...</a><br /></td></tr>
+<tr class="separator:afe1b10dd861eb92cad2ebafdd6700d6f inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f44c2a1d6fd2d988ef1877b1ad50421 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_d_d_s_1_1_status_condition.html">StatusCondition</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_writer.html#a9f44c2a1d6fd2d988ef1877b1ad50421">get_statuscondition</a> ()</td></tr>
+<tr class="memdesc:a9f44c2a1d6fd2d988ef1877b1ad50421 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="mdescLeft">&#160;</td><td class="mdescRight">实现父类 <a class="el" href="class_d_d_s_1_1_entity.html" title="实体（实体) 作为所有实体（包括域参与者、主题、发布者、订阅者、数据读者、数据写者）的基类，抽象实体的�...">DDS::Entity</a> 的方法，返回该数据写者关联的状态条件。  <a href="#a9f44c2a1d6fd2d988ef1877b1ad50421">更多...</a><br /></td></tr>
+<tr class="separator:a9f44c2a1d6fd2d988ef1877b1ad50421 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa2205c55a95b589c315f25081093f655 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_writer.html#aa2205c55a95b589c315f25081093f655">get_status_changes</a> ()</td></tr>
+<tr class="memdesc:aa2205c55a95b589c315f25081093f655 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="mdescLeft">&#160;</td><td class="mdescRight">实现父类 <a class="el" href="class_d_d_s_1_1_entity.html" title="实体（实体) 作为所有实体（包括域参与者、主题、发布者、订阅者、数据读者、数据写者）的基类，抽象实体的�...">DDS::Entity</a> 的方法，获取该实体从上一次获取任意状态后的状态变化。  <a href="#aa2205c55a95b589c315f25081093f655">更多...</a><br /></td></tr>
+<tr class="separator:aa2205c55a95b589c315f25081093f655 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac1d29e33c90df0c2d47ffe07d29652f3 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_writer.html#ac1d29e33c90df0c2d47ffe07d29652f3">enable</a> ()</td></tr>
+<tr class="memdesc:ac1d29e33c90df0c2d47ffe07d29652f3 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="mdescLeft">&#160;</td><td class="mdescRight">手动使能该数据写者。  <a href="#ac1d29e33c90df0c2d47ffe07d29652f3">更多...</a><br /></td></tr>
+<tr class="separator:ac1d29e33c90df0c2d47ffe07d29652f3 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8e0294641c9eda8c1394fc9f983303a8 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_writer.html#a8e0294641c9eda8c1394fc9f983303a8">get_instance_handle</a> ()</td></tr>
+<tr class="memdesc:a8e0294641c9eda8c1394fc9f983303a8 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="mdescLeft">&#160;</td><td class="mdescRight">实现父类 <a class="el" href="class_d_d_s_1_1_entity.html" title="实体（实体) 作为所有实体（包括域参与者、主题、发布者、订阅者、数据读者、数据写者）的基类，抽象实体的�...">DDS::Entity</a> 的方法，获取该数据写者的唯一标识。  <a href="#a8e0294641c9eda8c1394fc9f983303a8">更多...</a><br /></td></tr>
+<tr class="separator:a8e0294641c9eda8c1394fc9f983303a8 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7c77799ed549ad1dbc7b3008e6d97c9c inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_writer.html#a7c77799ed549ad1dbc7b3008e6d97c9c">get_send_status</a> (<a class="el" href="group___cpp_core_struct.html#ga0e4f63bc5630dc3caa7f0610b820cb37">PublicationSendStatusSeq</a> &amp;status)</td></tr>
+<tr class="memdesc:a7c77799ed549ad1dbc7b3008e6d97c9c inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取与已匹配且没有被忽略的数据读者之间通信状态列表。  <a href="#a7c77799ed549ad1dbc7b3008e6d97c9c">更多...</a><br /></td></tr>
+<tr class="separator:a7c77799ed549ad1dbc7b3008e6d97c9c inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a75b1b69d5b3d88c6facef634d62f91 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_writer.html#a7a75b1b69d5b3d88c6facef634d62f91">print_send_status</a> (<a class="el" href="group___cpp_core_struct.html#ga0e4f63bc5630dc3caa7f0610b820cb37">PublicationSendStatusSeq</a> &amp;status)</td></tr>
+<tr class="memdesc:a7a75b1b69d5b3d88c6facef634d62f91 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="mdescLeft">&#160;</td><td class="mdescRight">打印与数据读者之间通信状态列表。  <a href="#a7a75b1b69d5b3d88c6facef634d62f91">更多...</a><br /></td></tr>
+<tr class="separator:a7a75b1b69d5b3d88c6facef634d62f91 inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a028fa81cf02b28f07e9a9ab7e7a094df inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_data_writer.html#a028fa81cf02b28f07e9a9ab7e7a094df">get_send_status_w_handle</a> (<a class="el" href="group___cpp_core_struct.html#ga25393a8c86f8f4d7bc560bc49bd46156">PublicationSendStatus</a> &amp;status, const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> *dstGuid)</td></tr>
+<tr class="memdesc:a028fa81cf02b28f07e9a9ab7e7a094df inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取与指定的数据读者之间通信状态。  <a href="#a028fa81cf02b28f07e9a9ab7e7a094df">更多...</a><br /></td></tr>
+<tr class="separator:a028fa81cf02b28f07e9a9ab7e7a094df inherit pub_methods_class_d_d_s_1_1_data_writer"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock"><h3>template&lt;typename T&gt;<br />
+class DDS::ZRDDSDataWriter&lt; T &gt;</h3>
+
+<p>ZRDDS提供的数据写者模板类，用于提供强类型安全接口的数据写者接口。 </p>
+<dl class="tparams"><dt>模板参数</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">T</td><td>用户定义数据类型，例如： <a class="el" href="struct_foo.html" title="IDL映射到C++数据类型。 ">Foo</a></td></tr>
+  </table>
+  </dd>
+</dl>
+<p>模板参数T为用户定义数据类型，本模板仅定义数据写者中与主题关联的数据类型相关的接口， 其余与类型无关的接口直接使用父类 <a class="el" href="class_d_d_s_1_1_data_writer.html" title="DDS标准中的数据读者接口。 ">DDS::DataWriter</a> 的即可。 </p>
+<dl><dt><b>示例: </b></dt><dd><a class="el" href="_extend_interface_2app1_8cpp-example.html#_a2">ExtendInterface/app1.cpp</a>, <a class="el" href="_extend_interface_2app3_8cpp-example.html#_a1">ExtendInterface/app3.cpp</a>, <a class="el" href="_security_example_2ac_example_pub_8cpp-example.html#_a7">SecurityExample/ac_example_pub.cpp</a>, <a class="el" href="_security_example_2auth_example_pub_8cpp-example.html#_a7">SecurityExample/auth_example_pub.cpp</a>, <a class="el" href="_security_example_2encry_example_pub_8cpp-example.html#_a7">SecurityExample/encry_example_pub.cpp</a>, <a class="el" href="_simple_interface_2_simple_interface_bytes_type_pub_8cpp-example.html#_a0">SimpleInterface/SimpleInterfaceBytesTypePub.cpp</a>, <a class="el" href="_simple_interface_2_simple_interface_zero_copy_pub_8cpp-example.html#_a0">SimpleInterface/SimpleInterfaceZeroCopyPub.cpp</a>, <a class="el" href="_simple_interface_2_simple_interface_zero_copy_sub_8cpp-example.html#_a0">SimpleInterface/SimpleInterfaceZeroCopySub.cpp</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_bytes_type_pub_8cpp-example.html#_a0">TCPConcurrentTransmission/SimpleInterfaceBytesTypePub.cpp</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_zero_copy_pub_8cpp-example.html#_a0">TCPConcurrentTransmission/SimpleInterfaceZeroCopyPub.cpp</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_zero_copy_sub_8cpp-example.html#_a0">TCPConcurrentTransmission/SimpleInterfaceZeroCopySub.cpp</a> , 以及 <a class="el" href="_u_d_p_large_package_zero_copy_2_simple_interface_bytes_type_pub_8cpp-example.html#_a0">UDPLargePackageZeroCopy/SimpleInterfaceBytesTypePub.cpp</a>.</dd>
+</dl></div><h2 class="groupheader">成员函数说明</h2>
+<a class="anchor" id="aa1383c0e09f84327db7be273f3053cfc"></a>
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html">DDS::ZRDDSDataWriter</a>&lt; T &gt;::dispose </td>
+          <td>(</td>
+          <td class="paramtype">const T &amp;&#160;</td>
+          <td class="paramname"><em>instance</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>handle</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>销毁一个已经注册的实例。 </p>
+<p>可以使用数据样本或实例句柄进行销毁，两者同时提供且有冲突或都缺失时，返回错误。</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">instance</td><td>样本内容，只有被声明为键域的成员会被读取 </td></tr>
+    <tr><td class="paramname">handle</td><td>注册实例时得到的实例句柄或 <a class="el" href="group___core_var.html#ga9c4dcdd857c325221ab74b89b23cf8c3" title="表示无效的 DDS_InstanceHandle_t 。 ">DDS_HANDLE_NIL_NATIVE</a></td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示注销实例成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a2e310a02f1ef7b8a7e5b5f5029b154f9" title="实体未使能，不能进行该操作。 ">DDS_RETCODE_NOT_ENABLED</a> :表示实体未使能；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a3a638871d5b4174c32c8d2880f1f6770" title="调用操作的前置条件未满足。 ">DDS_RETCODE_PRECONDITION_NOT_MET</a> :参数中提供的样本与实例句柄不匹配；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :参数中存在错误；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未知错误导致的读取错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a3ab8f981cc3cebb80958a2da0cd387cc"></a>
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html">DDS::ZRDDSDataWriter</a>&lt; T &gt;::dispose_w_timestamp </td>
+          <td>(</td>
+          <td class="paramtype">const T &amp;&#160;</td>
+          <td class="paramname"><em>instance</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga48575f104487f1d51cfc068792218ea4">Time_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>timestamp</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>销毁一个已经注册的实例（见 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a819774917b46200bef9f9a5317d67362" title="将已经注册的实例从数据写者中注销 ">unregister_instance</a> ），并使用提供的时间戳覆盖默认的时间戳。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">instance</td><td>样本内容，只有被声明为键域的成员会被读取 </td></tr>
+    <tr><td class="paramname">handle</td><td>注册实例时得到的实例句柄或 <a class="el" href="group___core_var.html#ga9c4dcdd857c325221ab74b89b23cf8c3" title="表示无效的 DDS_InstanceHandle_t 。 ">DDS_HANDLE_NIL_NATIVE</a> </td></tr>
+    <tr><td class="paramname">timestamp</td><td>用户提供的时间戳</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示注销实例成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a2e310a02f1ef7b8a7e5b5f5029b154f9" title="实体未使能，不能进行该操作。 ">DDS_RETCODE_NOT_ENABLED</a> :表示实体未使能；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a3a638871d5b4174c32c8d2880f1f6770" title="调用操作的前置条件未满足。 ">DDS_RETCODE_PRECONDITION_NOT_MET</a> :参数中提供的样本与实例句柄不匹配；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :参数中存在错误；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未知错误导致的读取错误。</li>
+</ul>
+</dd></dl>
+<p>可以使用数据样本或实例句柄进行销毁，两者同时提供且有冲突或都缺失时，返回错误。 </p>
+
+</div>
+</div>
+<a class="anchor" id="abc25fe6d8b50d187bdf2a6777899a891"></a>
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html">DDS::ZRDDSDataWriter</a>&lt; T &gt;::get_key_value </td>
+          <td>(</td>
+          <td class="paramtype">T &amp;&#160;</td>
+          <td class="paramname"><em>key_holder</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>handle</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>从实例句柄获取对应的样本值，只有声明为键域的数据域的值有效。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">key_holder</td><td>保存获取到的样本值内容的样本 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">handle</td><td>需要获取的实例对应的实例句柄</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示获取成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a2e310a02f1ef7b8a7e5b5f5029b154f9" title="实体未使能，不能进行该操作。 ">DDS_RETCODE_NOT_ENABLED</a> :表示实体未使能；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :参数中存在错误；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未知错误导致的读取错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a27efb4a25b878ed2cde60d688b2f713b"></a>
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html">DDS::ZRDDSDataWriter</a>&lt; T &gt;::lookup_instance </td>
+          <td>(</td>
+          <td class="paramtype">const T &amp;&#160;</td>
+          <td class="paramname"><em>key_holder</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>通过样本值查询实例句柄。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">key_holder</td><td>保存样本值内容的样本</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>如果查询成功，返回样本对应的实例句柄，否则返回 <a class="el" href="group___core_var.html#ga9c4dcdd857c325221ab74b89b23cf8c3" title="表示无效的 DDS_InstanceHandle_t 。 ">DDS_HANDLE_NIL_NATIVE</a> </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ac5fa298e5e5e90f8679f76525ad6474d"></a>
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html">DDS::ZRDDSDataWriter</a>&lt; T &gt;::register_instance </td>
+          <td>(</td>
+          <td class="paramtype">const T &amp;&#160;</td>
+          <td class="paramname"><em>data</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>向数据写者注册一个实例 </p>
+<p>当数据类型T中带有键域声明的成员时，成员的取值不同会形成不同的实例， 该接口向数据写者注册一个实例，数据写者会读取传入的 <em>data</em> 中声明为键域的数据域， 根据其值生成一个实例句柄并返回给用户。实例句柄用于索引实例，如 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a0be9bc0f81e02f48bc3a308bb27936cb" title="发布一个数据样本。 ">write</a> 操作中的 <em>handle</em> 参数。 当 <a class="el" href="struct_d_d_s___data_writer_resource_limits_qos_policy.html#a6845f18cc4d999f6db20fe25e9a1e5b6" title="配置发布样本时，是否自动注册未注册的实例 ">DDS_DataWriterResourceLimitsQosPolicy::autoregister_instances</a> == true 时， 且调用 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a0be9bc0f81e02f48bc3a308bb27936cb" title="发布一个数据样本。 ">write</a> 接口时 <em>handle</em> 参数传入 <a class="el" href="group___core_var.html#ga9c4dcdd857c325221ab74b89b23cf8c3" title="表示无效的 DDS_InstanceHandle_t 。 ">DDS_HANDLE_NIL_NATIVE</a> 时，会自动注册未注册的实例， 但是发送速度会减慢，因此可使用先注册的实例句柄提升发送的速度。</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">data</td><td>样本内容，只有被声明为键域的成员会被读取。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>如果注册成功，返回样本对应的实例句柄，否则返回 <a class="el" href="group___core_var.html#ga9c4dcdd857c325221ab74b89b23cf8c3" title="表示无效的 DDS_InstanceHandle_t 。 ">DDS_HANDLE_NIL_NATIVE</a> </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="abb11443557add8ddee534a7c2dbee20a"></a>
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html">DDS::ZRDDSDataWriter</a>&lt; T &gt;::register_instance_w_timestamp </td>
+          <td>(</td>
+          <td class="paramtype">const T &amp;&#160;</td>
+          <td class="paramname"><em>data</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga48575f104487f1d51cfc068792218ea4">Time_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>timestamp</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>向数据写者注册一个实例（见 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#ac5fa298e5e5e90f8679f76525ad6474d" title="向数据写者注册一个实例 ">register_instance</a> ），并使用提供的时间戳覆盖默认的时间戳 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">data</td><td>样本内容，只有被声明为键域的成员会被读取。 </td></tr>
+    <tr><td class="paramname">timestamp</td><td>用户提供的时间戳</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>如果注册成功，返回样本对应的实例句柄，否则返回 <a class="el" href="group___core_var.html#ga9c4dcdd857c325221ab74b89b23cf8c3" title="表示无效的 DDS_InstanceHandle_t 。 ">DDS_HANDLE_NIL_NATIVE</a> </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a819774917b46200bef9f9a5317d67362"></a>
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html">DDS::ZRDDSDataWriter</a>&lt; T &gt;::unregister_instance </td>
+          <td>(</td>
+          <td class="paramtype">const T &amp;&#160;</td>
+          <td class="paramname"><em>data</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>handle</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>将已经注册的实例从数据写者中注销 </p>
+<p>可以使用数据样本或实例句柄进行注销，两者同时提供且有冲突或都缺失时，返回错误</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">data</td><td>样本内容，只有被声明为键域的成员会被读取 </td></tr>
+    <tr><td class="paramname">handle</td><td>注册实例时得到的实例句柄或 <a class="el" href="group___core_var.html#ga9c4dcdd857c325221ab74b89b23cf8c3" title="表示无效的 DDS_InstanceHandle_t 。 ">DDS_HANDLE_NIL_NATIVE</a></td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示注销实例成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a2e310a02f1ef7b8a7e5b5f5029b154f9" title="实体未使能，不能进行该操作。 ">DDS_RETCODE_NOT_ENABLED</a> :表示实体未使能；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a3a638871d5b4174c32c8d2880f1f6770" title="调用操作的前置条件未满足。 ">DDS_RETCODE_PRECONDITION_NOT_MET</a> :参数中提供的样本与实例句柄不匹配；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :参数中存在错误；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未知错误导致的读取错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a8f6f34a06d87339fc4805c91b24bfeae"></a>
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html">DDS::ZRDDSDataWriter</a>&lt; T &gt;::unregister_instance_w_timestamp </td>
+          <td>(</td>
+          <td class="paramtype">const T &amp;&#160;</td>
+          <td class="paramname"><em>data</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga48575f104487f1d51cfc068792218ea4">Time_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>timestamp</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>将已经注册的实例从数据写者中注销（见 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a819774917b46200bef9f9a5317d67362" title="将已经注册的实例从数据写者中注销 ">unregister_instance</a> ），并使用提供的时间戳覆盖默认的时间戳 </p>
+<p>可以使用数据样本或实例句柄进行注销，两者同时提供且有冲突或都缺失时，返回错误。</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">data</td><td>样本内容，只有被声明为键域的成员会被读取 </td></tr>
+    <tr><td class="paramname">handle</td><td>注册实例时得到的实例句柄或 <a class="el" href="group___core_var.html#ga9c4dcdd857c325221ab74b89b23cf8c3" title="表示无效的 DDS_InstanceHandle_t 。 ">DDS_HANDLE_NIL_NATIVE</a> </td></tr>
+    <tr><td class="paramname">timestamp</td><td>用户提供的时间戳</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示注销实例成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a2e310a02f1ef7b8a7e5b5f5029b154f9" title="实体未使能，不能进行该操作。 ">DDS_RETCODE_NOT_ENABLED</a> :表示实体未使能；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a3a638871d5b4174c32c8d2880f1f6770" title="调用操作的前置条件未满足。 ">DDS_RETCODE_PRECONDITION_NOT_MET</a> :参数中提供的样本与实例句柄不匹配；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :参数中存在错误；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未知错误导致的读取错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a0be9bc0f81e02f48bc3a308bb27936cb"></a>
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html">DDS::ZRDDSDataWriter</a>&lt; T &gt;::write </td>
+          <td>(</td>
+          <td class="paramtype">const T &amp;&#160;</td>
+          <td class="paramname"><em>data</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>handle</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>发布一个数据样本。 </p>
+<p>该接口可能发生阻塞：当设置为可靠传输，且该数据写者历史数据配置 <a class="el" href="struct_d_d_s___history_qos_policy.html#a3cb2743cd13a81614bcc4f314cd640ab" title="数据实例队列类型类型配置。 ">DDS_HistoryQosPolicy::kind</a> == <a class="el" href="group___core_qos_struct.html#gga96c54dadb2beb87b23776e766e282185a9e526d876dae232aa083125c72135f5b" title="尝试保存所有样本数据类型。 ">DDS_KEEP_ALL_HISTORY_QOS</a> 时，若样本超出限制时会发生阻塞， 当使用同步发送且调用协议栈接口出现阻塞时会发生阻塞， 若因样本超出限制导致阻塞，最长阻塞时间通过 <a class="el" href="struct_d_d_s___reliability_qos_policy.html#afb69024df5cf52ba12ad4e0947be89aa" title="可靠通信下，数据写者因资源不足而导致阻塞时的最长阻塞时长。 ">DDS_ReliabilityQosPolicy::max_blocking_time</a> 配置， 因协议栈导致的阻塞最长阻塞时间不可预知</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">data</td><td>需要发布的数据样本。 </td></tr>
+    <tr><td class="paramname">handle</td><td>数据样本对应的实例句柄，当该数据写者资源限制配置 <a class="el" href="struct_d_d_s___data_writer_resource_limits_qos_policy.html#a6845f18cc4d999f6db20fe25e9a1e5b6" title="配置发布样本时，是否自动注册未注册的实例 ">DDS_DataWriterResourceLimitsQosPolicy::autoregister_instances</a> == true时， 可以传入 <a class="el" href="group___core_var.html#ga9c4dcdd857c325221ab74b89b23cf8c3" title="表示无效的 DDS_InstanceHandle_t 。 ">DDS_HANDLE_NIL_NATIVE</a> ，此时底层将自动注册 <em>data</em> 所属数据实例。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示获取成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a2e310a02f1ef7b8a7e5b5f5029b154f9" title="实体未使能，不能进行该操作。 ">DDS_RETCODE_NOT_ENABLED</a> :表示实体未使能；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :参数中存在错误；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a35b4c98bf40ced0114572156c7f41893" title="资源不够。 ">DDS_RETCODE_OUT_OF_RESOURCES</a> :当前资源不足；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a9e9b16cc5337664c6c6bbd4a9ed01bcb" title="操作超时。 ">DDS_RETCODE_TIMEOUT</a> :当前操作超时；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未知错误导致的读取错误。 </li>
+</ul>
+</dd></dl>
+<dl><dt><b>示例: </b></dt><dd><a class="el" href="_security_example_2ac_example_pub_8cpp-example.html#a12">SecurityExample/ac_example_pub.cpp</a>, <a class="el" href="_security_example_2auth_example_pub_8cpp-example.html#a10">SecurityExample/auth_example_pub.cpp</a> , 以及 <a class="el" href="_security_example_2encry_example_pub_8cpp-example.html#a12">SecurityExample/encry_example_pub.cpp</a>.</dd>
+</dl>
+</div>
+</div>
+<a class="anchor" id="a5964b1cad39048aafa403c6a7a868a02"></a>
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html">DDS::ZRDDSDataWriter</a>&lt; T &gt;::write_w_dst </td>
+          <td>(</td>
+          <td class="paramtype">const T &amp;&#160;</td>
+          <td class="paramname"><em>instance</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga48575f104487f1d51cfc068792218ea4">Time_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>timestamp</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>dst_handle</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>向指定对端发布一个数据样本。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">instance</td><td>需要发布的数据样本。 </td></tr>
+    <tr><td class="paramname">handle</td><td>数据样本对应的实例句柄，当该数据写者资源限制配置 <a class="el" href="struct_d_d_s___data_writer_resource_limits_qos_policy.html#a6845f18cc4d999f6db20fe25e9a1e5b6" title="配置发布样本时，是否自动注册未注册的实例 ">DDS_DataWriterResourceLimitsQosPolicy::autoregister_instances</a> == true时， 可以传入 <a class="el" href="group___core_var.html#ga9c4dcdd857c325221ab74b89b23cf8c3" title="表示无效的 DDS_InstanceHandle_t 。 ">DDS_HANDLE_NIL_NATIVE</a> ，此时底层将自动注册 <em>instance</em> 所属数据实例。 </td></tr>
+    <tr><td class="paramname">timestamp</td><td>用户提供的时间戳 </td></tr>
+    <tr><td class="paramname">dst_handle</td><td>对端的唯一标识，若为数据读者的唯一标识，则向该数据读者发布；若为域参与者的唯一标识，则向该域参与者创建的所有数据读者发布。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示获取成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a2e310a02f1ef7b8a7e5b5f5029b154f9" title="实体未使能，不能进行该操作。 ">DDS_RETCODE_NOT_ENABLED</a> :表示实体未使能；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :参数中存在错误；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a35b4c98bf40ced0114572156c7f41893" title="资源不够。 ">DDS_RETCODE_OUT_OF_RESOURCES</a> :当前资源不足；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a9e9b16cc5337664c6c6bbd4a9ed01bcb" title="操作超时。 ">DDS_RETCODE_TIMEOUT</a> :当前操作超时；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未知错误导致的读取错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="afcd89089ca6f57aa13f46a6223174bf1"></a>
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html">DDS::ZRDDSDataWriter</a>&lt; T &gt;::write_w_dst </td>
+          <td>(</td>
+          <td class="paramtype">const T &amp;&#160;</td>
+          <td class="paramname"><em>instance</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>dst_handle</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>向指定对端发布一个数据样本。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">instance</td><td>需要发布的数据样本。 </td></tr>
+    <tr><td class="paramname">handle</td><td>数据样本对应的实例句柄，当该数据写者资源限制配置 <a class="el" href="struct_d_d_s___data_writer_resource_limits_qos_policy.html#a6845f18cc4d999f6db20fe25e9a1e5b6" title="配置发布样本时，是否自动注册未注册的实例 ">DDS_DataWriterResourceLimitsQosPolicy::autoregister_instances</a> == true时， 可以传入 <a class="el" href="group___core_var.html#ga9c4dcdd857c325221ab74b89b23cf8c3" title="表示无效的 DDS_InstanceHandle_t 。 ">DDS_HANDLE_NIL_NATIVE</a> ，此时底层将自动注册 <em>instance</em> 所属数据实例。 </td></tr>
+    <tr><td class="paramname">dst_handle</td><td>对端的唯一标识，若为数据读者的唯一标识，则向该数据读者发布；若为域参与者的唯一标识，则向该域参与者创建的所有数据读者发布。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示获取成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a2e310a02f1ef7b8a7e5b5f5029b154f9" title="实体未使能，不能进行该操作。 ">DDS_RETCODE_NOT_ENABLED</a> :表示实体未使能；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :参数中存在错误；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a35b4c98bf40ced0114572156c7f41893" title="资源不够。 ">DDS_RETCODE_OUT_OF_RESOURCES</a> :当前资源不足；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a9e9b16cc5337664c6c6bbd4a9ed01bcb" title="操作超时。 ">DDS_RETCODE_TIMEOUT</a> :当前操作超时；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未知错误导致的读取错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a819bb9b8459256225e256d12c88a6c0a"></a>
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html">DDS::ZRDDSDataWriter</a>&lt; T &gt;::write_w_timestamp </td>
+          <td>(</td>
+          <td class="paramtype">const T &amp;&#160;</td>
+          <td class="paramname"><em>instance</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga48575f104487f1d51cfc068792218ea4">Time_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>timestamp</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>发布一个数据样本（见 <a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html#a0be9bc0f81e02f48bc3a308bb27936cb" title="发布一个数据样本。 ">write</a> ），并使用提供的时间戳覆盖默认的时间戳。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">instance</td><td>需要发布的数据样本。 </td></tr>
+    <tr><td class="paramname">handle</td><td>数据样本对应的实例句柄，当该数据写者资源限制配置 <a class="el" href="struct_d_d_s___data_writer_resource_limits_qos_policy.html#a6845f18cc4d999f6db20fe25e9a1e5b6" title="配置发布样本时，是否自动注册未注册的实例 ">DDS_DataWriterResourceLimitsQosPolicy::autoregister_instances</a> == true时， 可以传入 <a class="el" href="group___core_var.html#ga9c4dcdd857c325221ab74b89b23cf8c3" title="表示无效的 DDS_InstanceHandle_t 。 ">DDS_HANDLE_NIL_NATIVE</a> ，此时底层将自动注册 <em>instance</em> 所属数据实例。 </td></tr>
+    <tr><td class="paramname">timestamp</td><td>用户提供的时间戳</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示获取成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a2e310a02f1ef7b8a7e5b5f5029b154f9" title="实体未使能，不能进行该操作。 ">DDS_RETCODE_NOT_ENABLED</a> :表示实体未使能；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :参数中存在错误；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a35b4c98bf40ced0114572156c7f41893" title="资源不够。 ">DDS_RETCODE_OUT_OF_RESOURCES</a> :当前资源不足；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a9e9b16cc5337664c6c6bbd4a9ed01bcb" title="操作超时。 ">DDS_RETCODE_TIMEOUT</a> :当前操作超时；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未知错误导致的读取错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<hr/>该类的文档由以下文件生成:<ul>
+<li><a class="el" href="_z_r_d_d_s_data_writer_8h_source.html">ZRDDSDataWriter.h</a></li>
+</ul>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><b>DDS</b></li><li class="navelem"><a class="el" href="class_d_d_s_1_1_z_r_d_d_s_data_writer.html">ZRDDSDataWriter</a></li>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

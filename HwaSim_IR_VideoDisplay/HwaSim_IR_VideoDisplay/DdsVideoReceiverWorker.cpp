@@ -2,9 +2,12 @@
 
 #include <QByteArray>
 #include <QDebug>
+#include <QDir>
+#include <QFileInfo>
 #include <QThread>
 #include <QtGlobal>
 #include <chrono>
+#include <cmath>
 #include <cstring>
 
 #include "Video/VideoDecoder.h"
@@ -67,6 +70,19 @@ void DdsVideoReceiverWorker::doWork()
 	return;
 #else
 	DdsBytesListener listener(this);
+	const QFileInfo qosInfo(m_config.qosFile);
+	const QString resolvedQos = qosInfo.absoluteFilePath();
+	const bool qosExists = qosInfo.exists() && qosInfo.isFile();
+	qInfo().noquote() << QStringLiteral(
+		"[DdsVideoReceiverConfig] requestedQos=%1 resolvedQos=%2 exists=%3")
+		.arg(m_config.qosFile).arg(resolvedQos).arg(qosExists ? 1 : 0);
+	if (!qosExists)
+	{
+		const QString reason = QStringLiteral("qos_file_not_found resolvedQos=%1").arg(resolvedQos);
+		qCritical().noquote() << QStringLiteral("[DdsVideoReceiver][FATAL] %1").arg(reason);
+		emit fatalError(reason);
+		return;
+	}
 	const QByteArray qos = m_config.qosFile.toLocal8Bit();
 	const QByteArray topic = m_config.topic.toLatin1();
 	m_impl->factory = DDSIF::Init(qos.constData(), "hwasimir_factory");
@@ -194,6 +210,57 @@ void DdsVideoReceiverWorker::processSample(const char* data, int size)
 		++m_ddsErrors;
 		qCritical().noquote() << QStringLiteral("[DdsVideoReceiver][ERROR] unsupported codec=%1").arg(m_config.codec);
 		return;
+	}
+
+	const bool diagnosticsEnabled = !m_config.dumpFirstFramePath.trimmed().isEmpty();
+	if (!image.isNull() && diagnosticsEnabled)
+	{
+		const QImage gray = image.convertToFormat(QImage::Format_Grayscale8);
+		const quint64 pixelCount = static_cast<quint64>(gray.width()) * static_cast<quint64>(gray.height());
+		int minimum = 255;
+		int maximum = 0;
+		quint64 nonZero = 0;
+		double sum = 0.0;
+		double sumSquares = 0.0;
+		for (int y = 0; y < gray.height(); ++y)
+		{
+			const uchar* row = gray.constScanLine(y);
+			for (int x = 0; x < gray.width(); ++x)
+			{
+				const int value = row[x];
+				minimum = qMin(minimum, value);
+				maximum = qMax(maximum, value);
+				nonZero += value != 0 ? 1 : 0;
+				sum += value;
+				sumSquares += static_cast<double>(value) * value;
+			}
+		}
+		const double mean = pixelCount ? sum / static_cast<double>(pixelCount) : 0.0;
+		const double variance = pixelCount ? qMax(0.0,
+			sumSquares / static_cast<double>(pixelCount) - mean * mean) : 0.0;
+		if (sampleIndex < 3 || ((sampleIndex + 1) % 120) == 0)
+		{
+			qInfo().noquote() << QStringLiteral(
+				"[DdsFrameDiag] sample=%1 width=%2 height=%3 min=%4 max=%5 mean=%6 stddev=%7 nonZeroRatio=%8")
+				.arg(sampleIndex + 1).arg(gray.width()).arg(gray.height())
+				.arg(minimum).arg(maximum).arg(mean, 0, 'f', 3)
+				.arg(std::sqrt(variance), 0, 'f', 3)
+				.arg(pixelCount ? static_cast<double>(nonZero) / pixelCount : 0.0, 0, 'f', 6);
+		}
+		if (!m_dumpAttempted && !m_config.dumpFirstFramePath.trimmed().isEmpty())
+		{
+			m_dumpAttempted = true;
+			const QFileInfo dumpInfo(m_config.dumpFirstFramePath);
+			QDir().mkpath(dumpInfo.absolutePath());
+			const bool saved = image.save(dumpInfo.absoluteFilePath(), "PNG");
+			qInfo().noquote() << QStringLiteral(
+				"[DdsFrameDump] sample=%1 path=%2 saved=%3")
+				.arg(sampleIndex + 1).arg(dumpInfo.absoluteFilePath()).arg(saved ? 1 : 0);
+			if (!saved)
+			{
+				++m_ddsErrors;
+			}
+		}
 	}
 
 	BYHWICD::DisplayC2cObjTrackingData tracking;

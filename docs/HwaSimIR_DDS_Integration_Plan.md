@@ -616,3 +616,83 @@ are in `docs/DDS_Customer_Video_Debug_Guide.md` and
 4. Severe callback blocking did not produce observable application-writer
    backpressure before a large middleware tail accumulated; vendor guidance is
    required.
+
+## 17. D3.1 manual-start black-screen closure (2026-08-28)
+
+D3.1 was performed on the preserved local D3 checkout at HEAD
+`881441087826c7dbfab6c9281d524c862a7adf2a`. The pre-change status, empty diff,
+and untracked-file hashes are retained under
+`logs/dds-d31-20260828-012343/`; no reset, checkout, clean, commit, or push was
+used.
+
+The reported symptoms were separated into independent faults instead of being
+classified as one DDS black screen:
+
+1. a stale `HwaSim_IR` could own UDP `192.168.1.116:8888`; the new process used
+   to continue rendering and publishing after bind failure;
+2. the simplified manual environment selected Mesa llvmpipe instead of the
+   board Xorg/Mali stack and produced GL 0x502 errors;
+3. the deployment path omitted `Config/DDS/ZRDDS_QOS_PROFILES.xml`;
+4. the Windows host has multiple NICs, so discovery needed an isolated
+   default-versus-bound QoS test;
+5. the former GUI evidence proved decode return status but did not prove that
+   decoded pixels were non-black.
+
+The original historical PID was no longer present when D3.1 began and cannot
+be reconstructed honestly. There was no systemd/init auto-restart service. A
+controlled reproduction recorded PID 3331 as the sole `HwaSim_IR` owner of UDP
+8888, then proved that a second process exits with code 3 and logs
+`[StartupFatal] component=UDP ... reason=bind_failed`. Missing DDS QoS now exits
+with code 4 after logging the requested and resolved absolute path. The
+validated launcher also refuses Xorg absence, missing deployment assets, and an
+occupied UDP port before launching.
+
+The restored board GPU line was:
+
+```text
+[GpuBackend] presentationMode=HeadlessOffscreen graphicsPipe=OpenGL ES gsgType=eglGraphicsStateGuardian glVendor=ARM glRenderer=Mali-LODX glVersion=OpenGL ES 3.2 v1.g6p0-01eac0.efb75e2978d783a80fe78be1bfb0efc1 hardwareGpu=1
+```
+
+No llvmpipe line or GL 0x502 error occurred in the corrected environment. The
+new `run_precise.sh` exports the validated Panda3D, Xorg, ZRDDS, Mali and loader
+paths and performs the deployment/UDP/Xorg preflight.
+
+### Network, payload, GUI, and regression evidence
+
+- Isolated bound QoS: board-to-Windows 200/200 and Windows-to-board 200/200.
+- Isolated default QoS: board-to-Windows 200/200 and Windows-to-board 200/200.
+  Therefore multi-NIC default discovery was not the reproduced root cause on
+  this host. Manual/field tests nevertheless select Windows `192.168.1.188`
+  and board `192.168.1.116` explicitly for deterministic routing.
+- Real HwaSim_IR to customer Receiver: H264 575/575, zero errors/drop; ffprobe
+  and decode passed at 800x800. A decoded scene frame had min 8, max 194.005,
+  mean 80.076, stddev 2.828 and nonzero ratio 1.0.
+- Real HwaSim_IR to VideoDisplay: H264 decode and pixel diagnostics passed; the
+  user screenshot `videodisplay_gui_user_screenshot.png` proves a visible gray
+  IR scene and target overlay. A stopped run intentionally retains its last
+  frame.
+- Two simultaneous Readers: writer 499, customer Receiver 499, VideoDisplay
+  499, with zero writer, reader, or application errors/drop. Each Windows
+  process used its own writable Trial-licence copy to avoid concurrent file
+  mutation/locking.
+- RawGray8 regression: 168/168 at exactly 640000 bytes/Sample, zero errors/drop.
+- DDS H264 plus local MP4: 226/226 DDS; shared-H264 remux wrote 226/226 with zero
+  drop. The 800x800, 60 FPS, 3.766667-second MP4 passed ffprobe and full decode.
+- R1 routing, TCP Packet v3 H264, TCP reconnect, reset and IDR recovery all
+  passed.
+
+VideoDisplay now has test-only first-frame PNG/pixel diagnostics and a bounded
+acceptance exit option. Production defaults are unchanged. Deployment copies
+the DDS directory recursively and includes the IP-bound board QoS. The D3
+remote path now fails on stale processes, UDP bind failure, missing QoS,
+non-Mali GPU, GL 0x502, absent DDS Samples, decode failure, non-varying pixels,
+or mismatched final counts. DDS remains video-only; no Control, Init, Realtime,
+InitAck, annotation, metadata, custom header, or IDL was added.
+
+After all functional runs, code review moved the diagnostic string
+`socket_create_failed` from the Linux InitAck invalid-socket branch to the
+actual `socket()` failure branch. The VM then became unreachable on
+`192.168.203.128:22`, so this final diagnostic-only one-line delta was not
+rebuilt/deployed. The validated board binary already contains and passed the
+required UDP bind-fatal behavior; refresh this final source/binary parity when
+the VM is reachable.

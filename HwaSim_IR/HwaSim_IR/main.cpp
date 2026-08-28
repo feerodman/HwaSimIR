@@ -208,6 +208,10 @@ int main(int argc, char *argv[]) {
 
 	// Create the runtime instance after removing application-specific CLI options.
 	HwaSimIR app(frameworkArgc, argv, launchOptions);
+	if (!app.startupSucceeded())
+	{
+		return app.startupExitCode() != 0 ? app.startupExitCode() : 1;
+	}
 
 	// Run the render loop.
 	app.run();

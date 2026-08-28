@@ -1,0 +1,901 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: ZRDDS提供的日志接口</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>结构体</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('group___z_r_d_d_s_log.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="summary">
+<a href="#define-members">宏定义</a> &#124;
+<a href="#func-members">函数</a>  </div>
+  <div class="headertitle">
+<div class="title">ZRDDS提供的日志接口<div class="ingroups"><a class="el" href="group___core_function.html">核心接口函数</a></div></div>  </div>
+</div><!--header-->
+<div class="contents">
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
+宏定义</h2></td></tr>
+<tr class="memitem:ga99b55d26d803db2cca6d0935b1ad286f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___z_r_d_d_s_log.html#ga99b55d26d803db2cca6d0935b1ad286f">ZRLOG</a>(type,  format, ...)                                                                                                                            </td></tr>
+<tr class="memdesc:ga99b55d26d803db2cca6d0935b1ad286f"><td class="mdescLeft">&#160;</td><td class="mdescRight">输出日志的宏。  <a href="#ga99b55d26d803db2cca6d0935b1ad286f">更多...</a><br /></td></tr>
+<tr class="separator:ga99b55d26d803db2cca6d0935b1ad286f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga203645629eec385d4c656fb4bb0a3b10"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___z_r_d_d_s_log.html#ga203645629eec385d4c656fb4bb0a3b10">ZRLOG_DEBUG</a>(guid,  topic,  debugNo,  format, ...)                                                                                                                        </td></tr>
+<tr class="memdesc:ga203645629eec385d4c656fb4bb0a3b10"><td class="mdescLeft">&#160;</td><td class="mdescRight">输出调试信息宏。  <a href="#ga203645629eec385d4c656fb4bb0a3b10">更多...</a><br /></td></tr>
+<tr class="separator:ga203645629eec385d4c656fb4bb0a3b10"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga87d4110b2da4f7dd9b7de6c6edae5cca"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___z_r_d_d_s_log.html#ga87d4110b2da4f7dd9b7de6c6edae5cca">ZRLOG_DEBUG_W_POS</a>(guid,  topic,  debugNo,  file,  func,  line,  format, ...)                                                </td></tr>
+<tr class="memdesc:ga87d4110b2da4f7dd9b7de6c6edae5cca"><td class="mdescLeft">&#160;</td><td class="mdescRight">输出调试信息宏，并携带位置信息。  <a href="#ga87d4110b2da4f7dd9b7de6c6edae5cca">更多...</a><br /></td></tr>
+<tr class="separator:ga87d4110b2da4f7dd9b7de6c6edae5cca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga18af0c93d609e76fe44d4beff2e1388a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___z_r_d_d_s_log.html#ga18af0c93d609e76fe44d4beff2e1388a">ZRLOG_USER</a>(guid,  topic,  debugNo,  format, ...)                                                                                          </td></tr>
+<tr class="memdesc:ga18af0c93d609e76fe44d4beff2e1388a"><td class="mdescLeft">&#160;</td><td class="mdescRight">输出用户信息宏。  <a href="#ga18af0c93d609e76fe44d4beff2e1388a">更多...</a><br /></td></tr>
+<tr class="separator:ga18af0c93d609e76fe44d4beff2e1388a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab178dea1db7f92f5a540e5e76097b63f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___z_r_d_d_s_log.html#gab178dea1db7f92f5a540e5e76097b63f">ZRLOG_USER_W_POS</a>(guid,  topic,  debugNo,  file,  func,  line,  format, ...)                                          </td></tr>
+<tr class="memdesc:gab178dea1db7f92f5a540e5e76097b63f"><td class="mdescLeft">&#160;</td><td class="mdescRight">输出用户信息宏。  <a href="#gab178dea1db7f92f5a540e5e76097b63f">更多...</a><br /></td></tr>
+<tr class="separator:gab178dea1db7f92f5a540e5e76097b63f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8bfdedfd86c3480da9662278eef1f0d8"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___z_r_d_d_s_log.html#ga8bfdedfd86c3480da9662278eef1f0d8">ZRLOG_DEBUG_W_EXP</a>(guid,  topic,  debugNo,  preState1,  preState2,  postState1,  postState2,  format, ...)                </td></tr>
+<tr class="memdesc:ga8bfdedfd86c3480da9662278eef1f0d8"><td class="mdescLeft">&#160;</td><td class="mdescRight">输出调试信息宏，在输出前后分别执行指定表达式。  <a href="#ga8bfdedfd86c3480da9662278eef1f0d8">更多...</a><br /></td></tr>
+<tr class="separator:ga8bfdedfd86c3480da9662278eef1f0d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8667101b047a687b818fcb927ca20172"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___z_r_d_d_s_log.html#ga8667101b047a687b818fcb927ca20172">ZRLOG_DEBUG_W_EXP2</a>(guid,  topic,  debugNo,  preState1,  preState2,  postState1,  postState2,  format, ...)              </td></tr>
+<tr class="memdesc:ga8667101b047a687b818fcb927ca20172"><td class="mdescLeft">&#160;</td><td class="mdescRight">输出调试信息宏，连续输出日志，在输出字符串后调用输出函数输出剩余内容。  <a href="#ga8667101b047a687b818fcb927ca20172">更多...</a><br /></td></tr>
+<tr class="separator:ga8667101b047a687b818fcb927ca20172"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
+函数</h2></td></tr>
+<tr class="memitem:ga4e99f443818a58c0a806d02a2ec04695"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___z_r_d_d_s_log.html#ga4e99f443818a58c0a806d02a2ec04695">ZRLogDebugMask</a> (<a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> debugNum)</td></tr>
+<tr class="memdesc:ga4e99f443818a58c0a806d02a2ec04695"><td class="mdescLeft">&#160;</td><td class="mdescRight">指定的调试信息编号是否启用。  <a href="#ga4e99f443818a58c0a806d02a2ec04695">更多...</a><br /></td></tr>
+<tr class="separator:ga4e99f443818a58c0a806d02a2ec04695"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4d8855305f33b8ff1a85bf260d2db84e"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___z_r_d_d_s_log.html#ga4d8855305f33b8ff1a85bf260d2db84e">ZRLogDebugMaskEnableRange</a> (<a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> beginNum, <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> endNum)</td></tr>
+<tr class="memdesc:ga4d8855305f33b8ff1a85bf260d2db84e"><td class="mdescLeft">&#160;</td><td class="mdescRight">使能调试信息范围。  <a href="#ga4d8855305f33b8ff1a85bf260d2db84e">更多...</a><br /></td></tr>
+<tr class="separator:ga4d8855305f33b8ff1a85bf260d2db84e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2c869fccd1b742323c0721ee6b685267"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___z_r_d_d_s_log.html#ga2c869fccd1b742323c0721ee6b685267">ZRLogDebugMaskDisableRange</a> (<a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> beginNum, <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> endNum)</td></tr>
+<tr class="memdesc:ga2c869fccd1b742323c0721ee6b685267"><td class="mdescLeft">&#160;</td><td class="mdescRight">取消调试信息范围。  <a href="#ga2c869fccd1b742323c0721ee6b685267">更多...</a><br /></td></tr>
+<tr class="separator:ga2c869fccd1b742323c0721ee6b685267"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga363f7585daa21ebbb1626962b4fa081e"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___z_r_d_d_s_log.html#ga363f7585daa21ebbb1626962b4fa081e">ZRLogDebugMaskEnableTopicName</a> (const <a class="el" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a> *topicName)</td></tr>
+<tr class="memdesc:ga363f7585daa21ebbb1626962b4fa081e"><td class="mdescLeft">&#160;</td><td class="mdescRight">使能指定主题数据的日志。  <a href="#ga363f7585daa21ebbb1626962b4fa081e">更多...</a><br /></td></tr>
+<tr class="separator:ga363f7585daa21ebbb1626962b4fa081e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaaa45a8a7f6a45f05a993d8f095ad0384"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___z_r_d_d_s_log.html#gaaa45a8a7f6a45f05a993d8f095ad0384">ZRLogDebugMaskDisableTopicName</a> (const <a class="el" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a> *topicName)</td></tr>
+<tr class="memdesc:gaaa45a8a7f6a45f05a993d8f095ad0384"><td class="mdescLeft">&#160;</td><td class="mdescRight">取消使能指定主题数据的日志。  <a href="#gaaa45a8a7f6a45f05a993d8f095ad0384">更多...</a><br /></td></tr>
+<tr class="separator:gaaa45a8a7f6a45f05a993d8f095ad0384"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad46b71314d6875d6b283eb2e27483db6"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___z_r_d_d_s_log.html#gad46b71314d6875d6b283eb2e27483db6">ZRLogDebugMaskEnableEntityId</a> (const <a class="el" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a> *handle)</td></tr>
+<tr class="memdesc:gad46b71314d6875d6b283eb2e27483db6"><td class="mdescLeft">&#160;</td><td class="mdescRight">使能指定实体的日志。  <a href="#gad46b71314d6875d6b283eb2e27483db6">更多...</a><br /></td></tr>
+<tr class="separator:gad46b71314d6875d6b283eb2e27483db6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9fffaf4f56aebd984d6b8e0136bf81cd"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___z_r_d_d_s_log.html#ga9fffaf4f56aebd984d6b8e0136bf81cd">ZRLogDebugMaskDisableEntityId</a> (const <a class="el" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a> *handle)</td></tr>
+<tr class="memdesc:ga9fffaf4f56aebd984d6b8e0136bf81cd"><td class="mdescLeft">&#160;</td><td class="mdescRight">使能指定实体的日志。  <a href="#ga9fffaf4f56aebd984d6b8e0136bf81cd">更多...</a><br /></td></tr>
+<tr class="separator:ga9fffaf4f56aebd984d6b8e0136bf81cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<p>ZRDDS提供的日志接口。 </p>
+<h2 class="groupheader">宏定义说明</h2>
+<a class="anchor" id="ga99b55d26d803db2cca6d0935b1ad286f"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define ZRLOG</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">type, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">format, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>...</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>值:</b><div class="fragment"><div class="line">ZRLogAquireLock();                                                                      \</div>
+<div class="line">        ZRLogToConsole(type, NULL, NULL, 0, __FILE__, __FUNCTION__, __LINE__, format, ##__VA_ARGS__); \</div>
+<div class="line">        ZRLogReleaseLock();</div>
+</div><!-- fragment -->
+<p>输出日志的宏。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">type</td><td>该日志所属的级别。 </td></tr>
+    <tr><td class="paramname">format</td><td>字符串格式(类printf). </td></tr>
+    <tr><td class="paramname">...</td><td>变参。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="ga203645629eec385d4c656fb4bb0a3b10"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define ZRLOG_DEBUG</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">guid, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">topic, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">debugNo, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">format, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>...</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>值:</b><div class="fragment"><div class="line">ZRLOG_PRINT_MESSAGE(format, debugNo);                                                                           \</div>
+<div class="line">    if (ZRLogVerifyDebugCondition(debugNo, topic, guid))                                                            \</div>
+<div class="line">    {                                                                                                               \</div>
+<div class="line">        ZRLogAquireLock();                                                                                          \</div>
+<div class="line">        ZRLogToConsole(<a class="code" href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227ae757b8532c0973c14bdd73e67845cd12">ZRLOG_ADMIN_INFO</a>, guid, topic, debugNo, __FILE__, __FUNCTION__, __LINE__, format, ##__VA_ARGS__);  \</div>
+<div class="line">        ZRLogReleaseLock();                                                                                         \</div>
+<div class="line">    }</div>
+<div class="ttc" id="group___core_qos_struct_html_ggae4033e1174016dbd31c46763f740d227ae757b8532c0973c14bdd73e67845cd12"><div class="ttname"><a href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227ae757b8532c0973c14bdd73e67845cd12">ZRLOG_ADMIN_INFO</a></div><div class="ttdoc">系统管理员视角的信息,比如一些调试信息。 </div><div class="ttdef"><b>Definition:</b> ZRUserLog.h:148</div></div>
+</div><!-- fragment -->
+<p>输出调试信息宏。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">guid</td><td>该调试信息所属实体。 </td></tr>
+    <tr><td class="paramname">topic</td><td>该调试信息所属主题。 </td></tr>
+    <tr><td class="paramname">debugNo</td><td>该调试信息的编号。 </td></tr>
+    <tr><td class="paramname">format</td><td>字符串格式(类printf). </td></tr>
+    <tr><td class="paramname">...</td><td>变参。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="ga8bfdedfd86c3480da9662278eef1f0d8"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define ZRLOG_DEBUG_W_EXP</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">guid, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">topic, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">debugNo, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">preState1, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">preState2, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">postState1, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">postState2, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">format, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>...</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>值:</b><div class="fragment"><div class="line">ZRLOG_PRINT_MESSAGE(format, debugNo);                                                                           \</div>
+<div class="line">    if (ZRLogVerifyDebugCondition(debugNo, topic, guid))                                                            \</div>
+<div class="line">    {                                                                                                               \</div>
+<div class="line">        preState1;                                                                                                  \</div>
+<div class="line">        preState2;                                                                                                  \</div>
+<div class="line">        ZRLogAquireLock();                                                                                          \</div>
+<div class="line">        ZRLogToConsole(<a class="code" href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227ae757b8532c0973c14bdd73e67845cd12">ZRLOG_ADMIN_INFO</a>, guid, topic, debugNo, __FILE__, __FUNCTION__, __LINE__, format, ##__VA_ARGS__);  \</div>
+<div class="line">        ZRLogReleaseLock();                                                                                         \</div>
+<div class="line">        postState1;                                                                                                 \</div>
+<div class="line">        postState2;                                                                                                 \</div>
+<div class="line">    }</div>
+<div class="ttc" id="group___core_qos_struct_html_ggae4033e1174016dbd31c46763f740d227ae757b8532c0973c14bdd73e67845cd12"><div class="ttname"><a href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227ae757b8532c0973c14bdd73e67845cd12">ZRLOG_ADMIN_INFO</a></div><div class="ttdoc">系统管理员视角的信息,比如一些调试信息。 </div><div class="ttdef"><b>Definition:</b> ZRUserLog.h:148</div></div>
+</div><!-- fragment -->
+<p>输出调试信息宏，在输出前后分别执行指定表达式。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">guid</td><td>该调试信息所属实体。 </td></tr>
+    <tr><td class="paramname">topic</td><td>该调试信息所属主题。 </td></tr>
+    <tr><td class="paramname">debugNo</td><td>该调试信息的编号。 </td></tr>
+    <tr><td class="paramname">preState1</td><td>第一条前置语句。 </td></tr>
+    <tr><td class="paramname">preState2</td><td>第二条前置语句。 </td></tr>
+    <tr><td class="paramname">postState1</td><td>第一条后置语句。 </td></tr>
+    <tr><td class="paramname">postState2</td><td>第二条后置语句。 </td></tr>
+    <tr><td class="paramname">format</td><td>字符串格式(类printf). </td></tr>
+    <tr><td class="paramname">...</td><td>变参。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="ga8667101b047a687b818fcb927ca20172"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define ZRLOG_DEBUG_W_EXP2</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">guid, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">topic, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">debugNo, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">preState1, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">preState2, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">postState1, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">postState2, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">format, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>...</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>值:</b><div class="fragment"><div class="line">ZRLOG_PRINT_MESSAGE(format, debugNo);                                                                           \</div>
+<div class="line">    if (ZRLogVerifyDebugCondition(debugNo, topic, guid))                                                            \</div>
+<div class="line">    {                                                                                                               \</div>
+<div class="line">        ZRLogBeginLogWNo(<a class="code" href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227ae757b8532c0973c14bdd73e67845cd12">ZRLOG_ADMIN_INFO</a>, __FILE__, __FUNCTION__, __LINE__, <span class="keyword">true</span>, topic, debugNo);                 \</div>
+<div class="line">        preState1;                                                                                                  \</div>
+<div class="line">        preState2;                                                                                                  \</div>
+<div class="line">        ZRLogAquireLock();                                                                                          \</div>
+<div class="line">        ZRLogToConsole(<a class="code" href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227ae757b8532c0973c14bdd73e67845cd12">ZRLOG_ADMIN_INFO</a>, guid, topic, debugNo, __FILE__, __FUNCTION__, __LINE__, format, ##__VA_ARGS__);  \</div>
+<div class="line">        ZRLogReleaseLock();                                                                                         \</div>
+<div class="line">        postState1;                                                                                                 \</div>
+<div class="line">        postState2;                                                                                                 \</div>
+<div class="line">        ZRLogEndLog();                                                                                              \</div>
+<div class="line">    }</div>
+<div class="ttc" id="group___core_qos_struct_html_ggae4033e1174016dbd31c46763f740d227ae757b8532c0973c14bdd73e67845cd12"><div class="ttname"><a href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227ae757b8532c0973c14bdd73e67845cd12">ZRLOG_ADMIN_INFO</a></div><div class="ttdoc">系统管理员视角的信息,比如一些调试信息。 </div><div class="ttdef"><b>Definition:</b> ZRUserLog.h:148</div></div>
+</div><!-- fragment -->
+<p>输出调试信息宏，连续输出日志，在输出字符串后调用输出函数输出剩余内容。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">guid</td><td>该调试信息所属实体。 </td></tr>
+    <tr><td class="paramname">topic</td><td>该调试信息所属主题。 </td></tr>
+    <tr><td class="paramname">debugNo</td><td>该调试信息的编号。 </td></tr>
+    <tr><td class="paramname">preState1</td><td>第一条前置语句。 </td></tr>
+    <tr><td class="paramname">preState2</td><td>第二条前置语句。 </td></tr>
+    <tr><td class="paramname">postState1</td><td>第一条后置语句。 </td></tr>
+    <tr><td class="paramname">postState2</td><td>第二条后置语句。 </td></tr>
+    <tr><td class="paramname">format</td><td>字符串格式(类printf). </td></tr>
+    <tr><td class="paramname">...</td><td>变参。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="ga87d4110b2da4f7dd9b7de6c6edae5cca"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define ZRLOG_DEBUG_W_POS</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">guid, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">topic, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">debugNo, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">file, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">func, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">line, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">format, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>...</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>值:</b><div class="fragment"><div class="line">ZRLOG_PRINT_MESSAGE(format, debugNo);                                                               \</div>
+<div class="line">    if (ZRLogVerifyDebugCondition(debugNo, topic, guid))                                                \</div>
+<div class="line">    {                                                                                               \</div>
+<div class="line">        ZRLogAquireLock();                                                                          \</div>
+<div class="line">        ZRLogToConsole(<a class="code" href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227ae757b8532c0973c14bdd73e67845cd12">ZRLOG_ADMIN_INFO</a>, guid, topic, debugNo, file, func, line, format, ##__VA_ARGS__);  \</div>
+<div class="line">        ZRLogReleaseLock();                                                                         \</div>
+<div class="line">    }</div>
+<div class="ttc" id="group___core_qos_struct_html_ggae4033e1174016dbd31c46763f740d227ae757b8532c0973c14bdd73e67845cd12"><div class="ttname"><a href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227ae757b8532c0973c14bdd73e67845cd12">ZRLOG_ADMIN_INFO</a></div><div class="ttdoc">系统管理员视角的信息,比如一些调试信息。 </div><div class="ttdef"><b>Definition:</b> ZRUserLog.h:148</div></div>
+</div><!-- fragment -->
+<p>输出调试信息宏，并携带位置信息。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">guid</td><td>该调试信息所属实体。 </td></tr>
+    <tr><td class="paramname">topic</td><td>该调试信息所属主题。 </td></tr>
+    <tr><td class="paramname">debugNo</td><td>该调试信息的编号。 </td></tr>
+    <tr><td class="paramname">file</td><td>所属文件，字符串型。 </td></tr>
+    <tr><td class="paramname">func</td><td>所属函数，字符串型。 </td></tr>
+    <tr><td class="paramname">line</td><td>行号，整型。 </td></tr>
+    <tr><td class="paramname">format</td><td>字符串格式(类printf). </td></tr>
+    <tr><td class="paramname">...</td><td>变参。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="ga18af0c93d609e76fe44d4beff2e1388a"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define ZRLOG_USER</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">guid, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">topic, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">debugNo, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">format, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>...</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>值:</b><div class="fragment"><div class="line">ZRLOG_PRINT_MESSAGE(format, debugNo);                                                           \</div>
+<div class="line">    if (ZRLogVerifyDebugCondition(debugNo, topic, guid))                                            \</div>
+<div class="line">    {                                                                                               \</div>
+<div class="line">        ZRLogAquireLock();                                                                          \</div>
+<div class="line">        ZRLogToConsole(<a class="code" href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227a9daa5fcc4a75eb768bd865701dc4c88e">ZRLOG_USER_INFO</a>, __FILE__, __FUNCTION__, __LINE__, format, ##__VA_ARGS__);   \</div>
+<div class="line">        ZRLogReleaseLock();                                                                         \</div>
+<div class="line">    }</div>
+<div class="ttc" id="group___core_qos_struct_html_ggae4033e1174016dbd31c46763f740d227a9daa5fcc4a75eb768bd865701dc4c88e"><div class="ttname"><a href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227a9daa5fcc4a75eb768bd865701dc4c88e">ZRLOG_USER_INFO</a></div><div class="ttdoc">通知用户视角信息，即只能看到自定义Endpoint之间的数据交互。 </div><div class="ttdef"><b>Definition:</b> ZRUserLog.h:150</div></div>
+</div><!-- fragment -->
+<p>输出用户信息宏。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">guid</td><td>该信息所属实体。 </td></tr>
+    <tr><td class="paramname">topic</td><td>该信息所属主题。 </td></tr>
+    <tr><td class="paramname">debugNo</td><td>该信息的编号。 </td></tr>
+    <tr><td class="paramname">format</td><td>字符串格式(类printf). </td></tr>
+    <tr><td class="paramname">...</td><td>变参。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="gab178dea1db7f92f5a540e5e76097b63f"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define ZRLOG_USER_W_POS</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">guid, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">topic, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">debugNo, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">file, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">func, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">line, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">format, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>...</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>值:</b><div class="fragment"><div class="line">ZRLOG_PRINT_MESSAGE(format, debugNo);                                                           \</div>
+<div class="line">    if (ZRLogVerifyDebugCondition(debugNo, topic, guid))                                            \</div>
+<div class="line">    {                                                                                               \</div>
+<div class="line">        ZRLogAquireLock();                                                                          \</div>
+<div class="line">        ZRLogToConsole(<a class="code" href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227a9daa5fcc4a75eb768bd865701dc4c88e">ZRLOG_USER_INFO</a>, guid, topic, debugNo, file, func, line, format, ##__VA_ARGS__);   \</div>
+<div class="line">        ZRLogReleaseLock();                                                                         \</div>
+<div class="line">    }</div>
+<div class="ttc" id="group___core_qos_struct_html_ggae4033e1174016dbd31c46763f740d227a9daa5fcc4a75eb768bd865701dc4c88e"><div class="ttname"><a href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227a9daa5fcc4a75eb768bd865701dc4c88e">ZRLOG_USER_INFO</a></div><div class="ttdoc">通知用户视角信息，即只能看到自定义Endpoint之间的数据交互。 </div><div class="ttdef"><b>Definition:</b> ZRUserLog.h:150</div></div>
+</div><!-- fragment -->
+<p>输出用户信息宏。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">guid</td><td>该用户信息所属实体。 </td></tr>
+    <tr><td class="paramname">topic</td><td>该用户信息所属主题。 </td></tr>
+    <tr><td class="paramname">debugNo</td><td>该用户信息的编号。 </td></tr>
+    <tr><td class="paramname">file</td><td>所属文件，字符串型。 </td></tr>
+    <tr><td class="paramname">func</td><td>所属函数，字符串型。 </td></tr>
+    <tr><td class="paramname">line</td><td>行号，整型。 </td></tr>
+    <tr><td class="paramname">format</td><td>字符串格式(类printf). </td></tr>
+    <tr><td class="paramname">...</td><td>变参。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<h2 class="groupheader">函数说明</h2>
+<a class="anchor" id="ga4e99f443818a58c0a806d02a2ec04695"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> ZRLogDebugMask </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td>
+          <td class="paramname"><em>debugNum</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>指定的调试信息编号是否启用。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">debugNum</td><td>指明调试信息编号。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>true表示已启用，false表示未启用。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga9fffaf4f56aebd984d6b8e0136bf81cd"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> ZRLogDebugMaskDisableEntityId </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a> *&#160;</td>
+          <td class="paramname"><em>handle</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>使能指定实体的日志。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">handle</td><td>实体唯一标识，( Entity::get_instance_handle ), 由用户保证InstanceHandle的有效性。.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>0表示成功，小于0表示失败。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga2c869fccd1b742323c0721ee6b685267"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ZRLogDebugMaskDisableRange </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td>
+          <td class="paramname"><em>beginNum</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td>
+          <td class="paramname"><em>endNum</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>取消调试信息范围。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">beginNum</td><td>开始编号(包含)。 </td></tr>
+    <tr><td class="paramname">endNum</td><td>结束编号(包含)。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>0表示成功，小于0表示失败。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="gaaa45a8a7f6a45f05a993d8f095ad0384"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a> ZRLogDebugMaskDisableTopicName </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a> *&#160;</td>
+          <td class="paramname"><em>topicName</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>取消使能指定主题数据的日志。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">topicName</td><td>指明主题名称，由用户保证主题名称的有效性。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>0表示成功，小于0表示失败。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="gad46b71314d6875d6b283eb2e27483db6"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> ZRLogDebugMaskEnableEntityId </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a> *&#160;</td>
+          <td class="paramname"><em>handle</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>使能指定实体的日志。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">handle</td><td>实体唯一标识，( Entity::get_instance_handle ), 由用户保证InstanceHandle的有效性。.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>0表示成功，小于0表示失败。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga4d8855305f33b8ff1a85bf260d2db84e"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> ZRLogDebugMaskEnableRange </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td>
+          <td class="paramname"><em>beginNum</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td>
+          <td class="paramname"><em>endNum</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>使能调试信息范围。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">beginNum</td><td>开始编号(包含)。 </td></tr>
+    <tr><td class="paramname">endNum</td><td>结束编号(包含)。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>0表示成功，小于0表示失败。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga363f7585daa21ebbb1626962b4fa081e"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> ZRLogDebugMaskEnableTopicName </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a> *&#160;</td>
+          <td class="paramname"><em>topicName</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>使能指定主题数据的日志。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">topicName</td><td>指明主题名称，由用户保证主题名称的有效性。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>0表示成功，小于0表示失败。 </dd></dl>
+
+</div>
+</div>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

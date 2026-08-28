@@ -1,0 +1,214 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: ZRBuiltinTypesDataReader.h 源文件</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>结构体</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('_z_r_builtin_types_data_reader_8h_source.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">ZRBuiltinTypesDataReader.h</div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#ifndef ZRBuiltinTypesDataReader_h__</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#define ZRBuiltinTypesDataReader_h__</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#include &quot;ZRBuiltinTypes.h&quot;</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#include &quot;ZRDDSDataReader.h&quot;</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#ifdef _ZRDDS_INCLUDE_BUILTIN_TYPES</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span></div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;{</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span>DDS_BooleanDataReader DDS_BooleanDataReader;</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;ZRDDSDataReader(DDS_BooleanDataReader, <a class="code" href="struct_d_d_s___boolean_seq.html">DDS_BooleanSeq</a>, <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a>);</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span>DDS_OctetDataReader DDS_OctetDataReader;</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;ZRDDSDataReader(DDS_OctetDataReader, <a class="code" href="struct_d_d_s___octet_seq.html">DDS_OctetSeq</a>, <a class="code" href="group___core_builtin_types.html#gacfea17333fbcbbb9b97d6af81179dc2b">DDS_Octet</a>);</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span>DDS_CharDataReader DDS_CharDataReader;</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;ZRDDSDataReader(DDS_CharDataReader, <a class="code" href="struct_d_d_s___char_seq.html">DDS_CharSeq</a>, <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>);</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span>DDS_ShortDataReader DDS_ShortDataReader;</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;ZRDDSDataReader(DDS_ShortDataReader, <a class="code" href="struct_d_d_s___short_seq.html">DDS_ShortSeq</a>, <a class="code" href="group___core_builtin_types.html#ga6c2f4f401b2d08de12f3e2990666e244">DDS_Short</a>);</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span>DDS_UShortDataReader DDS_UShortDataReader;</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;ZRDDSDataReader(DDS_UShortDataReader, <a class="code" href="struct_d_d_s___u_short_seq.html">DDS_UShortSeq</a>, <a class="code" href="group___core_builtin_types.html#ga5a635e7d8f5e34ea9a308c9f864dea11">DDS_UShort</a>);</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span>DDS_LongDataReader DDS_LongDataReader;</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;ZRDDSDataReader(DDS_LongDataReader, <a class="code" href="struct_d_d_s___long_seq.html">DDS_LongSeq</a>, <a class="code" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a>);</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span>DDS_ULongDataReader DDS_ULongDataReader;</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;ZRDDSDataReader(DDS_ULongDataReader, <a class="code" href="struct_d_d_s___u_long_seq.html">DDS_ULongSeq</a>, <a class="code" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>);</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span>DDS_LongLongDataReader DDS_LongLongDataReader;</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;ZRDDSDataReader(DDS_LongLongDataReader, <a class="code" href="struct_d_d_s___long_long_seq.html">DDS_LongLongSeq</a>, <a class="code" href="group___core_builtin_types.html#gae442c460f1bf5c4383bfb302ec3d145f">DDS_LongLong</a>);</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span>DDS_ULongLongDataReader DDS_ULongLongDataReader;</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;ZRDDSDataReader(DDS_ULongLongDataReader, <a class="code" href="struct_d_d_s___u_long_long_seq.html">DDS_ULongLongSeq</a>, <a class="code" href="group___core_builtin_types.html#ga4032c6d83163558f1f0eab63080a1b9b">DDS_ULongLong</a>);</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span>DDS_FloatDataReader DDS_FloatDataReader;</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;ZRDDSDataReader(DDS_FloatDataReader, <a class="code" href="struct_d_d_s___float_seq.html">DDS_FloatSeq</a>, <a class="code" href="group___core_builtin_types.html#ga41bfe9ef2e315331bb94579617fd53c9">DDS_Float</a>);</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span>DDS_DoubleDataReader DDS_DoubleDataReader;</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;ZRDDSDataReader(DDS_DoubleDataReader, <a class="code" href="struct_d_d_s___double_seq.html">DDS_DoubleSeq</a>, <a class="code" href="group___core_builtin_types.html#ga5de7eaf8baff4032c311439467e141c9">DDS_Double</a>);</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span>DDS_StringDataReader DDS_StringDataReader;</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;ZRDDSDataReader(DDS_StringDataReader, <a class="code" href="struct_d_d_s___string_seq.html">DDS_StringSeq</a>, <a class="code" href="group___core_builtin_types.html#ga79f432cd0b7559ee19d7ce2c24480541">DDS_String</a>);</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span>DDS_KeyedStringDataReader DDS_KeyedStringDataReader;</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;ZRDDSDataReader(DDS_KeyedStringDataReader, <a class="code" href="struct_d_d_s___keyed_string_seq.html">DDS_KeyedStringSeq</a>, <a class="code" href="struct_d_d_s___keyed_string.html">DDS_KeyedString</a>);</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span>DDS_BytesDataReader DDS_BytesDataReader;</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;ZRDDSDataReader(DDS_BytesDataReader, <a class="code" href="struct_d_d_s___bytes_seq.html">DDS_BytesSeq</a>, <a class="code" href="struct_d_d_s___bytes.html">DDS_Bytes</a>);</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span>DDS_KeyedBytesDataReader DDS_KeyedBytesDataReader;</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;ZRDDSDataReader(DDS_KeyedBytesDataReader, <a class="code" href="struct_d_d_s___keyed_bytes_seq.html">DDS_KeyedBytesSeq</a>, <a class="code" href="struct_d_d_s___keyed_bytes.html">DDS_KeyedBytes</a>);</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span>DDS_ZeroCopyBytesDataReader DDS_ZeroCopyBytesDataReader;</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;ZRDDSDataReader(DDS_ZeroCopyBytesDataReader, <a class="code" href="struct_d_d_s___zero_copy_bytes_seq.html">DDS_ZeroCopyBytesSeq</a>, <a class="code" href="struct_d_d_s___zero_copy_bytes.html">DDS_ZeroCopyBytes</a>);</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;}</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/*_ZRDDS_INCLUDE_BUILTIN_TYPES*/</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;</div>
+<div class="ttc" id="struct_d_d_s___keyed_string_html"><div class="ttname"><a href="struct_d_d_s___keyed_string.html">DDS_KeyedString</a></div><div class="ttdoc">ZRDDS内置的带键值的字符串类型（以/0结尾），无最大长度限制。 </div><div class="ttdef"><b>Definition:</b> ZRBuiltinTypes.h:2054</div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga79f432cd0b7559ee19d7ce2c24480541"><div class="ttname"><a href="group___core_builtin_types.html#ga79f432cd0b7559ee19d7ce2c24480541">DDS_String</a></div><div class="ttdeci">DDS_Char * DDS_String</div><div class="ttdoc">声明内置字符串数据类型。 </div><div class="ttdef"><b>Definition:</b> ZRBuiltinTypes.h:155</div></div>
+<div class="ttc" id="struct_d_d_s___zero_copy_bytes_seq_html"><div class="ttname"><a href="struct_d_d_s___zero_copy_bytes_seq.html">DDS_ZeroCopyBytesSeq</a></div><div class="ttdoc">声明内置数据类型 DDS_ZeroCopyBytes 的序列，参见核心接口序列相关数据类型 。 </div></div>
+<div class="ttc" id="struct_d_d_s___float_seq_html"><div class="ttname"><a href="struct_d_d_s___float_seq.html">DDS_FloatSeq</a></div><div class="ttdoc">声明内置数据类型 DDS_Float 的序列，参见核心接口序列相关数据类型 。 </div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga5a635e7d8f5e34ea9a308c9f864dea11"><div class="ttname"><a href="group___core_builtin_types.html#ga5a635e7d8f5e34ea9a308c9f864dea11">DDS_UShort</a></div><div class="ttdeci">ZR_UINT16 DDS_UShort</div><div class="ttdoc">ZRDDS内置的2字节无符号整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:238</div></div>
+<div class="ttc" id="struct_d_d_s___bytes_html"><div class="ttname"><a href="struct_d_d_s___bytes.html">DDS_Bytes</a></div><div class="ttdoc">为方便用户直接传输缓冲区数据类型，ZRDDS提供内置的缓冲区类型，该类型与字符串类型的主要区别为，允许内容...</div><div class="ttdef"><b>Definition:</b> ZRBuiltinTypes.h:2214</div></div>
+<div class="ttc" id="group___core_builtin_types_html_gae442c460f1bf5c4383bfb302ec3d145f"><div class="ttname"><a href="group___core_builtin_types.html#gae442c460f1bf5c4383bfb302ec3d145f">DDS_LongLong</a></div><div class="ttdeci">ZR_INT64 DDS_LongLong</div><div class="ttdoc">ZRDDS内置的8字节长整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:268</div></div>
+<div class="ttc" id="struct_d_d_s___u_short_seq_html"><div class="ttname"><a href="struct_d_d_s___u_short_seq.html">DDS_UShortSeq</a></div><div class="ttdoc">声明内置数据类型 DDS_UShort 的序列，参见核心接口序列相关数据类型 。 </div></div>
+<div class="ttc" id="struct_d_d_s___double_seq_html"><div class="ttname"><a href="struct_d_d_s___double_seq.html">DDS_DoubleSeq</a></div><div class="ttdoc">声明内置数据类型 DDS_Double 的序列，参见核心接口序列相关数据类型 。 </div></div>
+<div class="ttc" id="struct_d_d_s___char_seq_html"><div class="ttname"><a href="struct_d_d_s___char_seq.html">DDS_CharSeq</a></div><div class="ttdoc">声明内置数据类型 DDS_Char 的序列，参见核心接口序列相关数据类型 。 </div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga40aa7a1400d66542eba212ef019321bf"><div class="ttname"><a href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a></div><div class="ttdeci">ZR_BOOLEAN DDS_Boolean</div><div class="ttdoc">ZRDDS内置的true/false类型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:197</div></div>
+<div class="ttc" id="struct_d_d_s___string_seq_html"><div class="ttname"><a href="struct_d_d_s___string_seq.html">DDS_StringSeq</a></div><div class="ttdoc">声明内置数据类型 DDS_Char* 的序列，参见核心接口序列相关数据类型 。 </div></div>
+<div class="ttc" id="group___core_builtin_types_html_gacfea17333fbcbbb9b97d6af81179dc2b"><div class="ttname"><a href="group___core_builtin_types.html#gacfea17333fbcbbb9b97d6af81179dc2b">DDS_Octet</a></div><div class="ttdeci">unsigned char DDS_Octet</div><div class="ttdoc">ZRDDS内置的1字节无符号整型 </div><div class="ttdef"><b>Definition:</b> OsResource.h:208</div></div>
+<div class="ttc" id="struct_d_d_s___keyed_bytes_seq_html"><div class="ttname"><a href="struct_d_d_s___keyed_bytes_seq.html">DDS_KeyedBytesSeq</a></div><div class="ttdoc">声明内置数据类型 DDS_KeyedBytes 的序列，参见核心接口序列相关数据类型 。 </div></div>
+<div class="ttc" id="struct_d_d_s___u_long_seq_html"><div class="ttname"><a href="struct_d_d_s___u_long_seq.html">DDS_ULongSeq</a></div><div class="ttdoc">声明内置数据类型 DDS_ULong 的序列，参见核心接口序列相关数据类型 。 </div></div>
+<div class="ttc" id="struct_d_d_s___u_long_long_seq_html"><div class="ttname"><a href="struct_d_d_s___u_long_long_seq.html">DDS_ULongLongSeq</a></div><div class="ttdoc">声明内置数据类型 DDS_ULongLong 的序列，参见核心接口序列相关数据类型 。 </div></div>
+<div class="ttc" id="struct_d_d_s___boolean_seq_html"><div class="ttname"><a href="struct_d_d_s___boolean_seq.html">DDS_BooleanSeq</a></div><div class="ttdoc">声明内置数据类型 DDS_Boolean 的序列，参见核心接口序列相关数据类型 。 </div></div>
+<div class="ttc" id="struct_d_d_s___bytes_seq_html"><div class="ttname"><a href="struct_d_d_s___bytes_seq.html">DDS_BytesSeq</a></div><div class="ttdoc">声明内置数据类型 DDS_Bytes 的序列，参见核心接口序列相关数据类型 。 </div></div>
+<div class="ttc" id="struct_d_d_s___zero_copy_bytes_html"><div class="ttname"><a href="struct_d_d_s___zero_copy_bytes.html">DDS_ZeroCopyBytes</a></div><div class="ttdoc">ZRDDS内置的零拷贝数据类型。 </div><div class="ttdef"><b>Definition:</b> ZRBuiltinTypes.h:2517</div></div>
+<div class="ttc" id="struct_d_d_s___long_long_seq_html"><div class="ttname"><a href="struct_d_d_s___long_long_seq.html">DDS_LongLongSeq</a></div><div class="ttdoc">声明内置数据类型 DDS_LongLong 的序列，参见核心接口序列相关数据类型 。 </div></div>
+<div class="ttc" id="struct_d_d_s___octet_seq_html"><div class="ttname"><a href="struct_d_d_s___octet_seq.html">DDS_OctetSeq</a></div><div class="ttdoc">声明内置数据类型 DDS_Octet 的序列，参见核心接口序列相关数据类型 。 </div></div>
+<div class="ttc" id="struct_d_d_s___long_seq_html"><div class="ttname"><a href="struct_d_d_s___long_seq.html">DDS_LongSeq</a></div><div class="ttdoc">声明内置数据类型 DDS_Long 的序列，参见核心接口序列相关数据类型 。 </div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga5de7eaf8baff4032c311439467e141c9"><div class="ttname"><a href="group___core_builtin_types.html#ga5de7eaf8baff4032c311439467e141c9">DDS_Double</a></div><div class="ttdeci">ZR_DOUBLE64 DDS_Double</div><div class="ttdoc">ZRDDS内置的8字节双精度浮点型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:298</div></div>
+<div class="ttc" id="struct_d_d_s___keyed_bytes_html"><div class="ttname"><a href="struct_d_d_s___keyed_bytes.html">DDS_KeyedBytes</a></div><div class="ttdoc">ZRDDS内置的带键域的缓冲区类型，该类型与带键域字符串类型的主要区别为，允许内容中含有/0。 ...</div><div class="ttdef"><b>Definition:</b> ZRBuiltinTypes.h:2359</div></div>
+<div class="ttc" id="group___core_builtin_types_html_gab598f8f664dfec10ab367e753dc68419"><div class="ttname"><a href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a></div><div class="ttdeci">ZR_UINT32 DDS_ULong</div><div class="ttdoc">ZRDDS内置的4字节无符号整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:258</div></div>
+<div class="ttc" id="struct_d_d_s___keyed_string_seq_html"><div class="ttname"><a href="struct_d_d_s___keyed_string_seq.html">DDS_KeyedStringSeq</a></div><div class="ttdoc">声明内置数据类型 DDS_KeyedString 的序列，参见核心接口序列相关数据类型 。 </div></div>
+<div class="ttc" id="struct_d_d_s___short_seq_html"><div class="ttname"><a href="struct_d_d_s___short_seq.html">DDS_ShortSeq</a></div><div class="ttdoc">声明内置数据类型 DDS_Short 的序列，参见核心接口序列相关数据类型 。 </div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga6c2f4f401b2d08de12f3e2990666e244"><div class="ttname"><a href="group___core_builtin_types.html#ga6c2f4f401b2d08de12f3e2990666e244">DDS_Short</a></div><div class="ttdeci">ZR_INT16 DDS_Short</div><div class="ttdoc">ZRDDS内置的2字节整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:228</div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga07e4e24db44e921d6b33e916c4442dab"><div class="ttname"><a href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a></div><div class="ttdeci">char DDS_Char</div><div class="ttdoc">ZRDDS内置的1字节整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:218</div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga41bfe9ef2e315331bb94579617fd53c9"><div class="ttname"><a href="group___core_builtin_types.html#ga41bfe9ef2e315331bb94579617fd53c9">DDS_Float</a></div><div class="ttdeci">ZR_FLOAT32 DDS_Float</div><div class="ttdoc">ZRDDS内置的4字节单精度浮点型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:288</div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga4032c6d83163558f1f0eab63080a1b9b"><div class="ttname"><a href="group___core_builtin_types.html#ga4032c6d83163558f1f0eab63080a1b9b">DDS_ULongLong</a></div><div class="ttdeci">ZR_UINT64 DDS_ULongLong</div><div class="ttdoc">ZRDDS内置的8字节无符号长整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:278</div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga7ebc41ac14e48dd9ee0b7b83acec714c"><div class="ttname"><a href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a></div><div class="ttdeci">ZR_INT32 DDS_Long</div><div class="ttdoc">ZRDDS内置的4字节整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:248</div></div>
+</div><!-- fragment --></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="dir_0fc3f8f3ef96ce2d45d66d6e29832317.html">resources</a></li><li class="navelem"><a class="el" href="dir_cf9ceadfa18f25e608d16251156af657.html">zrdds</a></li><li class="navelem"><a class="el" href="dir_49213087373222e5c37cddb4e4d5f33e.html">src</a></li><li class="navelem"><a class="el" href="dir_a789ccf0f178fa94fb7fe735f25025ab.html">CInterface</a></li><li class="navelem"><b>ZRBuiltinTypesDataReader.h</b></li>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

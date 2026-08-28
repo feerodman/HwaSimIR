@@ -160,3 +160,29 @@ libavutil.so.56
 Profile 是否选错、`ZRDDS_ROOT`/`RKMPP_ROOT` 是否被改动，以及 VM sysroot 的软链接
 是否完整。D3 自动验收可用 `tools/dds_d3_acceptance.ps1` 重跑构建与证据解析；远端
 无人值守模式使用 `-SshKey`，脚本不会保存密码。
+
+## D3.1 部署与手工启动补充
+
+只在 CLion 中 Build 出 ELF 还不等于部署完成。部署到
+`/userdata/HwaSimIR` 时必须同时递归复制 `HwaSim_IR/Bin/Config/DDS/`，并检查：
+
+```bash
+test -f /userdata/HwaSimIR/Config/DDS/ZRDDS_QOS_PROFILES.xml
+test -f /userdata/HwaSimIR/Config/DDS/ZRDDS_QOS_RK3588_192.168.1.116.xml
+test -x /userdata/HwaSimIR/run_precise.sh
+```
+
+`tools/codex_rk3588_pipeline.ps1` 已包含上述递归复制和 deployment manifest。
+手工运行不要直接拼一套简化的 Mesa 环境，应使用：
+
+```bash
+cd /userdata/HwaSimIR
+HwaSimIRDdsVideoEnable=true \
+HwaSimIRDdsVideoQosFile=Config/DDS/ZRDDS_QOS_RK3588_192.168.1.116.xml \
+TcpSendVideo=false \
+./run_precise.sh
+```
+
+脚本会检查 Xorg、资产、QoS 和 UDP 8888，并设置 ARM Mali、Panda3D 和 ZRDDS
+运行环境。启动日志必须是 `glVendor=ARM`、`glRenderer=Mali-LODX`、
+`hardwareGpu=1`；否则该次功能/性能结果无效。

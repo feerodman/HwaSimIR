@@ -32,6 +32,7 @@ public:
 	bool start();
 	// 停止UDP通讯线程
 	void stop();
+	const std::string& lastStartFailureReason() const { return m_lastStartFailureReason; }
 
 	// 发送初始化应答（供HwaSimIR调用）
 	bool sendInitAck(const BYHWICD::InitAckC2pObjectTrackingCmd& ackData);
@@ -78,6 +79,7 @@ private:
 	std::thread m_recvThread;       // 接收线程
 	std::atomic<bool> m_bIsRunning;  // 线程运行标志
 	mutable std::mutex m_mtx;       // 互斥锁（保护远端地址和Socket）
+	std::string m_lastStartFailureReason = "none";
 
 								   // 接收缓冲区（足够容纳最大数据包）
 	static const int RECV_BUF_SIZE = 4096;

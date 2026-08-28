@@ -56,3 +56,17 @@
 - [ ] H264 或 Raw audit hash（仅验收开关）
 - [ ] MP4 ffprobe/decode 输出
 - [ ] `git diff --check`、`git diff --stat`、`git status`
+
+## D3.1 手工黑屏专项门禁
+
+- [ ] `ps -ef | grep '[H]waSim_IR'` 只有预期实例；启动前 UDP 8888 无旧 owner
+- [ ] UDP bind 失败时出现 `[StartupFatal]` 且进程非零退出
+- [ ] `/userdata/HwaSimIR/Config/DDS/ZRDDS_QOS_PROFILES.xml` 和现场 bound QoS 均存在
+- [ ] Xorg `:0` 存在，`glVendor=ARM`、`glRenderer=Mali-LODX`、`hardwareGpu=1`
+- [ ] 日志中无 llvmpipe、`hardwareGpu=0` 和 GL 0x502
+- [ ] Windows 使用 `192.168.1.188` bound QoS；板端使用 `192.168.1.116` bound QoS
+- [ ] `[DdsVideoReceiverSample]` 持续增长且 `[H264DecodeSuccess]` 存在
+- [ ] `[DdsFrameDiag] max > min`、`stddev > 0`，首帧 PNG 存在
+- [ ] GUI 在 START/Realtime 期间有图；STOP 后保留最后一帧属于正常行为
+- [ ] 双 Reader 时每个 Windows 进程使用独立、可写的 Trial licence 副本
+- [ ] DDS VideoDisplay 左侧 INIT/Realtime 栏为空按 video-only 设计处理，不扩展 DDS IDL

@@ -1,0 +1,255 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: DataReaderListener.h 源文件</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>结构体</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('_data_reader_listener_8h_source.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">DataReaderListener.h</div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#ifndef DataReaderListener_h__</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#define DataReaderListener_h__</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#include &quot;Listener.h&quot;</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#include &quot;SampleInfo.h&quot;</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="preprocessor">#include &quot;RequestedDeadlineMissedStatus.h&quot;</span></div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#include &quot;LivelinessChangedStatus.h&quot;</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="preprocessor">#include &quot;RequestedIncompatibleQosStatus.h&quot;</span></div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="preprocessor">#include &quot;SampleRejectedStatus.h&quot;</span></div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="preprocessor">#include &quot;SubscriptionMatchedStatus.h&quot;</span></div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="preprocessor">#include &quot;SampleLostStatus.h&quot;</span></div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="preprocessor">#include &quot;ZRDDSCWrapper.h&quot;</span></div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#ifdef _ZRDDS_INCLUDE_DEADLINE_QOS</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;</div>
+<div class="line"><a name="l00034"></a><span class="lineno"><a class="line" href="group___c_listener.html#gafde62c73cd73f7ca8331b1ce194f9f49">   34</a></span>&#160;<span class="keyword">typedef</span> void(*<a class="code" href="group___c_listener.html#gafde62c73cd73f7ca8331b1ce194f9f49">DataReaderListenerRequestedDeadlineMissedCallback</a>)(</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <a class="code" href="struct_d_d_s___data_reader.html">DDS_DataReader</a>* reader,</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___requested_deadline_missed_status.html">DDS_RequestedDeadlineMissedStatus</a>* status);</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* _ZRDDS_INCLUDE_DEADLINE_QOS */</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="preprocessor">#ifdef _ZRDDS_INCLUDE_LIVELINESS_QOS</span></div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;</div>
+<div class="line"><a name="l00052"></a><span class="lineno"><a class="line" href="group___c_listener.html#ga4bd98553ce7a340424277ff79ae0aa3c">   52</a></span>&#160;<span class="keyword">typedef</span> void(*<a class="code" href="group___c_listener.html#ga4bd98553ce7a340424277ff79ae0aa3c">DataReaderListenerLivelinessChangedCallback</a>)(</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <a class="code" href="struct_d_d_s___data_reader.html">DDS_DataReader</a>* reader,</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___liveliness_changed_status.html">DDS_LivelinessChangedStatus</a>* status);</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* _ZRDDS_INCLUDE_LIVELINESS_QOS */</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;</div>
+<div class="line"><a name="l00068"></a><span class="lineno"><a class="line" href="group___c_listener.html#ga3835b60c2ce3330f993e3cdea196e50e">   68</a></span>&#160;<span class="keyword">typedef</span> void(*<a class="code" href="group___c_listener.html#ga3835b60c2ce3330f993e3cdea196e50e">DataReaderListenerRequestedIncompatibleQosCallback</a>)(</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <a class="code" href="struct_d_d_s___data_reader.html">DDS_DataReader</a>* reader,</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___requested_incompatible_qos_status.html">DDS_RequestedIncompatibleQosStatus</a>* status);</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;</div>
+<div class="line"><a name="l00083"></a><span class="lineno"><a class="line" href="group___c_listener.html#gab5adf251d4473fd09f8684de7e5570be">   83</a></span>&#160;<span class="keyword">typedef</span> void(*<a class="code" href="group___c_listener.html#gab5adf251d4473fd09f8684de7e5570be">DataReaderListenerSampleRejectedCallback</a>)(</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <a class="code" href="struct_d_d_s___data_reader.html">DDS_DataReader</a>* reader,</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___sample_rejected_status.html">DDS_SampleRejectedStatus</a>* status);</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;</div>
+<div class="line"><a name="l00099"></a><span class="lineno"><a class="line" href="group___c_listener.html#ga01c61dc72810231439f62ec2456ffc3f">   99</a></span>&#160;<span class="keyword">typedef</span> void(*<a class="code" href="group___c_listener.html#ga01c61dc72810231439f62ec2456ffc3f">DataReaderListenerDataAvailableCallback</a>)(</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    <a class="code" href="struct_d_d_s___data_reader.html">DDS_DataReader</a>* reader);</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;</div>
+<div class="line"><a name="l00113"></a><span class="lineno"><a class="line" href="group___c_listener.html#gaa958880d9fcaa509c620c586e5d51864">  113</a></span>&#160;<span class="keyword">typedef</span> void(*<a class="code" href="group___c_listener.html#gaa958880d9fcaa509c620c586e5d51864">DataReaderListenerSubscriptionMatchedCallback</a>)(</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    <a class="code" href="struct_d_d_s___data_reader.html">DDS_DataReader</a>* reader,</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___subscription_matched_status.html">DDS_SubscriptionMatchedStatus</a>* status);</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;</div>
+<div class="line"><a name="l00128"></a><span class="lineno"><a class="line" href="group___c_listener.html#ga85f756861212e1e4e2557d180f0ec02d">  128</a></span>&#160;<span class="keyword">typedef</span> void(*<a class="code" href="group___c_listener.html#ga85f756861212e1e4e2557d180f0ec02d">DataReaderListenerSampleLostCallback</a>)(</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;    <a class="code" href="struct_d_d_s___data_reader.html">DDS_DataReader</a>* reader,</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___sample_lost_status.html">DDS_SampleLostStatus</a>* status);</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;<span class="keyword">typedef</span> void(*DataReaderListenerSampleArrivedCallback)(</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;    <a class="code" href="struct_d_d_s___data_reader.html">DDS_DataReader</a>* reader,</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    <span class="keywordtype">void</span>* sample,</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___sample_info.html">DDS_SampleInfo</a>* sampleInfo);</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;</div>
+<div class="line"><a name="l00145"></a><span class="lineno"><a class="line" href="struct_d_d_s___data_reader_listener.html">  145</a></span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="struct_d_d_s___data_reader_listener.html">DDS_DataReaderListener</a></div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;{</div>
+<div class="line"><a name="l00148"></a><span class="lineno"><a class="line" href="struct_d_d_s___data_reader_listener.html#a9b9a3a1fb7b80491faf1700e2eb2ecf3">  148</a></span>&#160;    <a class="code" href="struct_d_d_s___listener.html">DDS_Listener</a> <a class="code" href="struct_d_d_s___data_reader_listener.html#a9b9a3a1fb7b80491faf1700e2eb2ecf3">listener</a>;</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;<span class="preprocessor">#ifdef _ZRDDS_INCLUDE_DEADLINE_QOS</span></div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;    <a class="code" href="group___c_listener.html#gafde62c73cd73f7ca8331b1ce194f9f49">DataReaderListenerRequestedDeadlineMissedCallback</a></div>
+<div class="line"><a name="l00152"></a><span class="lineno"><a class="line" href="struct_d_d_s___data_reader_listener.html#a5420e31f0625ad13f39f4949ca56ccb8">  152</a></span>&#160;        <a class="code" href="struct_d_d_s___data_reader_listener.html#a5420e31f0625ad13f39f4949ca56ccb8">on_requested_deadline_missed</a>;</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* _ZRDDS_INCLUDE_DEADLINE_QOS */</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;    <a class="code" href="group___c_listener.html#ga3835b60c2ce3330f993e3cdea196e50e">DataReaderListenerRequestedIncompatibleQosCallback</a></div>
+<div class="line"><a name="l00156"></a><span class="lineno"><a class="line" href="struct_d_d_s___data_reader_listener.html#a7235cf27f994f963c1b8b10579ccc3f9">  156</a></span>&#160;        <a class="code" href="struct_d_d_s___data_reader_listener.html#a7235cf27f994f963c1b8b10579ccc3f9">on_requested_incompatible_qos</a>;</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;    <a class="code" href="group___c_listener.html#gab5adf251d4473fd09f8684de7e5570be">DataReaderListenerSampleRejectedCallback</a> </div>
+<div class="line"><a name="l00159"></a><span class="lineno"><a class="line" href="struct_d_d_s___data_reader_listener.html#a6fed3f79cb04568932cb6f662baa4a0e">  159</a></span>&#160;        <a class="code" href="struct_d_d_s___data_reader_listener.html#a6fed3f79cb04568932cb6f662baa4a0e">on_sample_rejected</a>;</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;    <a class="code" href="group___c_listener.html#ga85f756861212e1e4e2557d180f0ec02d">DataReaderListenerSampleLostCallback</a></div>
+<div class="line"><a name="l00162"></a><span class="lineno"><a class="line" href="struct_d_d_s___data_reader_listener.html#a81096fc9c331cbe604bdd96039bec007">  162</a></span>&#160;        <a class="code" href="struct_d_d_s___data_reader_listener.html#a81096fc9c331cbe604bdd96039bec007">on_sample_lost</a>;</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;<span class="preprocessor">#ifdef _ZRDDS_INCLUDE_LIVELINESS_QOS</span></div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;    <a class="code" href="group___c_listener.html#ga4bd98553ce7a340424277ff79ae0aa3c">DataReaderListenerLivelinessChangedCallback</a></div>
+<div class="line"><a name="l00166"></a><span class="lineno"><a class="line" href="struct_d_d_s___data_reader_listener.html#aee2aae60a5e9e0e78e7d55ed619af094">  166</a></span>&#160;        <a class="code" href="struct_d_d_s___data_reader_listener.html#aee2aae60a5e9e0e78e7d55ed619af094">on_liveliness_changed</a>;</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* _ZRDDS_INCLUDE_LIVELINESS_QOS */</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    <a class="code" href="group___c_listener.html#ga01c61dc72810231439f62ec2456ffc3f">DataReaderListenerDataAvailableCallback</a> </div>
+<div class="line"><a name="l00170"></a><span class="lineno"><a class="line" href="struct_d_d_s___data_reader_listener.html#a22e978fcd2ba56b995d1a912da3a77f0">  170</a></span>&#160;        <a class="code" href="struct_d_d_s___data_reader_listener.html#a22e978fcd2ba56b995d1a912da3a77f0">on_data_available</a>;</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    DataReaderListenerSampleArrivedCallback</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;        on_data_arrived;</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;    <a class="code" href="group___c_listener.html#gaa958880d9fcaa509c620c586e5d51864">DataReaderListenerSubscriptionMatchedCallback</a> </div>
+<div class="line"><a name="l00175"></a><span class="lineno"><a class="line" href="struct_d_d_s___data_reader_listener.html#acf09ab6001cfd43feb9574515dc8a905">  175</a></span>&#160;        <a class="code" href="struct_d_d_s___data_reader_listener.html#acf09ab6001cfd43feb9574515dc8a905">on_subscription_matched</a>;</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;} <a class="code" href="struct_d_d_s___data_reader_listener.html">DDS_DataReaderListener</a>;</div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;</div>
+<div class="line"><a name="l00214"></a><span class="lineno"><a class="line" href="group___c_listener.html#ga2e9336107976cdbbd4f0003513df4639">  214</a></span>&#160;<span class="preprocessor">#define DDS_SimpleDataReaderListener(NAME, TYPE)                                                \</span></div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;<span class="preprocessor">    void NAME##_on_process_sample(DDS_DataReader* reader, TYPE* sample, DDS_SampleInfo* info);  \</span></div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;<span class="preprocessor">    void NAME##_on_data_available(DDS_DataReader* the_reader)                                   \</span></div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;<span class="preprocessor">    {                                                                                           \</span></div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;<span class="preprocessor">        TYPE##Seq data_values;                                                                  \</span></div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;<span class="preprocessor">        TYPE##Seq_initialize(&amp;data_values);                                                     \</span></div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;<span class="preprocessor">        DDS_SampleInfoSeq sample_infos;                                                         \</span></div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;<span class="preprocessor">        DDS_SampleInfoSeq_initialize(&amp;sample_infos);                                            \</span></div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;<span class="preprocessor">        TYPE##DataReader* reader = (TYPE##DataReader*)the_reader;                               \</span></div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;<span class="preprocessor">        DDS_ReturnCode_t retCode = TYPE##DataReader_take(reader, &amp;data_values,                  \</span></div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;<span class="preprocessor">            &amp;sample_infos, LENGTH_UNLIMITED,                                                    \</span></div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;<span class="preprocessor">            DDS_ANY_SAMPLE_STATE, DDS_ANY_VIEW_STATE, DDS_ANY_INSTANCE_STATE);                  \</span></div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;<span class="preprocessor">        if (DDS_RETCODE_OK != retCode)                                                          \</span></div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;<span class="preprocessor">        {                                                                                       \</span></div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;<span class="preprocessor">            printf(&quot;take failed(%d.\n&quot;, retCode);                                               \</span></div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;<span class="preprocessor">            return;                                                                             \</span></div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;<span class="preprocessor">        }                                                                                       \</span></div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;<span class="preprocessor">        ZR_UINT32 i;                                                                            \</span></div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;<span class="preprocessor">        for (i = 0; i &lt; sample_infos._length; i++)                                              \</span></div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;<span class="preprocessor">        {                                                                                       \</span></div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;<span class="preprocessor">            DDS_SampleInfo* info = DDS_SampleInfoSeq_get_reference(&amp;sample_infos, i);           \</span></div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;<span class="preprocessor">            if (!info-&gt;valid_data)                                                              \</span></div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;<span class="preprocessor">            {                                                                                   \</span></div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;<span class="preprocessor">                continue;                                                                       \</span></div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;<span class="preprocessor">            }                                                                                   \</span></div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;<span class="preprocessor">            TYPE* sample = TYPE##Seq_get_reference(&amp;data_values, i);                 \</span></div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;<span class="preprocessor">            NAME##_on_process_sample(the_reader, sample, info);                                 \</span></div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;<span class="preprocessor">        }                                                                                       \</span></div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;<span class="preprocessor">        TYPE##DataReader_return_loan(reader, &amp;data_values, &amp;sample_infos);                      \</span></div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;<span class="preprocessor">        return;                                                                                 \</span></div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;<span class="preprocessor">    }                                                                                           \</span></div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;<span class="preprocessor">    void NAME##_on_process_sample</span></div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;</div>
+<div class="line"><a name="l00257"></a><span class="lineno"><a class="line" href="group___c_listener.html#ga07c09b63c045f40a8da751650728c317">  257</a></span>&#160;<span class="preprocessor">#define DDS_DataReaderListener_initial(listener) memset(listener, 0, sizeof(DDS_DataReaderListener))</span></div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;</div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* DataReaderListener_h__*/</span><span class="preprocessor"></span></div>
+<div class="ttc" id="group___c_listener_html_gaa958880d9fcaa509c620c586e5d51864"><div class="ttname"><a href="group___c_listener.html#gaa958880d9fcaa509c620c586e5d51864">DataReaderListenerSubscriptionMatchedCallback</a></div><div class="ttdeci">void(* DataReaderListenerSubscriptionMatchedCallback)(DDS_DataReader *reader, const DDS_SubscriptionMatchedStatus *status)</div><div class="ttdoc">底层 DDS_SUBSCRIPTION_MATCHED_STATUS 状态的回调函数函数指针类型。 </div><div class="ttdef"><b>Definition:</b> DataReaderListener.h:113</div></div>
+<div class="ttc" id="struct_d_d_s___listener_html"><div class="ttname"><a href="struct_d_d_s___listener.html">DDS_Listener</a></div><div class="ttdoc">所有实体监听器类型的“父类”。 </div><div class="ttdef"><b>Definition:</b> Listener.h:18</div></div>
+<div class="ttc" id="group___c_listener_html_ga85f756861212e1e4e2557d180f0ec02d"><div class="ttname"><a href="group___c_listener.html#ga85f756861212e1e4e2557d180f0ec02d">DataReaderListenerSampleLostCallback</a></div><div class="ttdeci">void(* DataReaderListenerSampleLostCallback)(DDS_DataReader *reader, const DDS_SampleLostStatus *status)</div><div class="ttdoc">底层 DDS_SAMPLE_LOST_STATUS 状态的回调函数函数指针类型。 </div><div class="ttdef"><b>Definition:</b> DataReaderListener.h:128</div></div>
+<div class="ttc" id="struct_d_d_s___sample_lost_status_html"><div class="ttname"><a href="struct_d_d_s___sample_lost_status.html">DDS_SampleLostStatus</a></div><div class="ttdoc">样本丢失状态。 </div><div class="ttdef"><b>Definition:</b> SampleLostStatus.h:33</div></div>
+<div class="ttc" id="struct_d_d_s___data_reader_listener_html_a9b9a3a1fb7b80491faf1700e2eb2ecf3"><div class="ttname"><a href="struct_d_d_s___data_reader_listener.html#a9b9a3a1fb7b80491faf1700e2eb2ecf3">DDS_DataReaderListener::listener</a></div><div class="ttdeci">DDS_Listener listener</div><div class="ttdoc">“基类对象” </div><div class="ttdef"><b>Definition:</b> DataReaderListener.h:148</div></div>
+<div class="ttc" id="group___c_listener_html_ga3835b60c2ce3330f993e3cdea196e50e"><div class="ttname"><a href="group___c_listener.html#ga3835b60c2ce3330f993e3cdea196e50e">DataReaderListenerRequestedIncompatibleQosCallback</a></div><div class="ttdeci">void(* DataReaderListenerRequestedIncompatibleQosCallback)(DDS_DataReader *reader, const DDS_RequestedIncompatibleQosStatus *status)</div><div class="ttdoc">底层 DDS_REQUESTED_INCOMPATIBLE_QOS_STATUS 状态的回调函数函数指针类型。 </div><div class="ttdef"><b>Definition:</b> DataReaderListener.h:68</div></div>
+<div class="ttc" id="struct_d_d_s___data_reader_listener_html_a22e978fcd2ba56b995d1a912da3a77f0"><div class="ttname"><a href="struct_d_d_s___data_reader_listener.html#a22e978fcd2ba56b995d1a912da3a77f0">DDS_DataReaderListener::on_data_available</a></div><div class="ttdeci">DataReaderListenerDataAvailableCallback on_data_available</div><div class="ttdoc">有新的样本存储到数据读者底层时设置的回调函数。 </div><div class="ttdef"><b>Definition:</b> DataReaderListener.h:170</div></div>
+<div class="ttc" id="group___c_listener_html_ga4bd98553ce7a340424277ff79ae0aa3c"><div class="ttname"><a href="group___c_listener.html#ga4bd98553ce7a340424277ff79ae0aa3c">DataReaderListenerLivelinessChangedCallback</a></div><div class="ttdeci">void(* DataReaderListenerLivelinessChangedCallback)(DDS_DataReader *reader, const DDS_LivelinessChangedStatus *status)</div><div class="ttdoc">底层 DDS_LIVELINESS_LOST_STATUS 状态的回调函数函数指针类型。 </div><div class="ttdef"><b>Definition:</b> DataReaderListener.h:52</div></div>
+<div class="ttc" id="group___c_listener_html_gab5adf251d4473fd09f8684de7e5570be"><div class="ttname"><a href="group___c_listener.html#gab5adf251d4473fd09f8684de7e5570be">DataReaderListenerSampleRejectedCallback</a></div><div class="ttdeci">void(* DataReaderListenerSampleRejectedCallback)(DDS_DataReader *reader, const DDS_SampleRejectedStatus *status)</div><div class="ttdoc">底层 DDS_SAMPLE_REJECTED_STATUS 状态的回调函数函数指针类型。 </div><div class="ttdef"><b>Definition:</b> DataReaderListener.h:83</div></div>
+<div class="ttc" id="struct_d_d_s___data_reader_listener_html_aee2aae60a5e9e0e78e7d55ed619af094"><div class="ttname"><a href="struct_d_d_s___data_reader_listener.html#aee2aae60a5e9e0e78e7d55ed619af094">DDS_DataReaderListener::on_liveliness_changed</a></div><div class="ttdeci">DataReaderListenerLivelinessChangedCallback on_liveliness_changed</div><div class="ttdoc">为 DDS_LIVELINESS_LOST_STATUS 状态设置的回调函数。 </div><div class="ttdef"><b>Definition:</b> DataReaderListener.h:166</div></div>
+<div class="ttc" id="struct_d_d_s___data_reader_html"><div class="ttname"><a href="struct_d_d_s___data_reader.html">DDS_DataReader</a></div><div class="ttdoc">表示ZRDDS中的数据读者。 </div></div>
+<div class="ttc" id="struct_d_d_s___data_reader_listener_html_a81096fc9c331cbe604bdd96039bec007"><div class="ttname"><a href="struct_d_d_s___data_reader_listener.html#a81096fc9c331cbe604bdd96039bec007">DDS_DataReaderListener::on_sample_lost</a></div><div class="ttdeci">DataReaderListenerSampleLostCallback on_sample_lost</div><div class="ttdoc">为 DDS_SAMPLE_LOST_STATUS 状态设置的回调函数。 </div><div class="ttdef"><b>Definition:</b> DataReaderListener.h:162</div></div>
+<div class="ttc" id="struct_d_d_s___data_reader_listener_html_a6fed3f79cb04568932cb6f662baa4a0e"><div class="ttname"><a href="struct_d_d_s___data_reader_listener.html#a6fed3f79cb04568932cb6f662baa4a0e">DDS_DataReaderListener::on_sample_rejected</a></div><div class="ttdeci">DataReaderListenerSampleRejectedCallback on_sample_rejected</div><div class="ttdoc">为 DDS_SAMPLE_REJECTED_STATUS 状态设置的回调函数。 </div><div class="ttdef"><b>Definition:</b> DataReaderListener.h:159</div></div>
+<div class="ttc" id="struct_d_d_s___subscription_matched_status_html"><div class="ttname"><a href="struct_d_d_s___subscription_matched_status.html">DDS_SubscriptionMatchedStatus</a></div><div class="ttdoc">数据读者端与数据写者的匹配状态。 </div><div class="ttdef"><b>Definition:</b> SubscriptionMatchedStatus.h:23</div></div>
+<div class="ttc" id="struct_d_d_s___requested_incompatible_qos_status_html"><div class="ttname"><a href="struct_d_d_s___requested_incompatible_qos_status.html">DDS_RequestedIncompatibleQosStatus</a></div><div class="ttdoc">数据读者端QoS不匹配状态。 </div><div class="ttdef"><b>Definition:</b> RequestedIncompatibleQosStatus.h:25</div></div>
+<div class="ttc" id="struct_d_d_s___requested_deadline_missed_status_html"><div class="ttname"><a href="struct_d_d_s___requested_deadline_missed_status.html">DDS_RequestedDeadlineMissedStatus</a></div><div class="ttdoc">数据读者端截止时间未满足状态。 </div><div class="ttdef"><b>Definition:</b> RequestedDeadlineMissedStatus.h:24</div></div>
+<div class="ttc" id="struct_d_d_s___data_reader_listener_html_a5420e31f0625ad13f39f4949ca56ccb8"><div class="ttname"><a href="struct_d_d_s___data_reader_listener.html#a5420e31f0625ad13f39f4949ca56ccb8">DDS_DataReaderListener::on_requested_deadline_missed</a></div><div class="ttdeci">DataReaderListenerRequestedDeadlineMissedCallback on_requested_deadline_missed</div><div class="ttdoc">为 DDS_REQUESTED_DEADLINE_MISSED_STATUS 状态设置的回调函数。 </div><div class="ttdef"><b>Definition:</b> DataReaderListener.h:152</div></div>
+<div class="ttc" id="struct_d_d_s___sample_info_html"><div class="ttname"><a href="struct_d_d_s___sample_info.html">DDS_SampleInfo</a></div><div class="ttdoc">数据读者为每一个接收到的数据维护的样本信息。 </div><div class="ttdef"><b>Definition:</b> SampleInfo.h:33</div></div>
+<div class="ttc" id="struct_d_d_s___data_reader_listener_html_acf09ab6001cfd43feb9574515dc8a905"><div class="ttname"><a href="struct_d_d_s___data_reader_listener.html#acf09ab6001cfd43feb9574515dc8a905">DDS_DataReaderListener::on_subscription_matched</a></div><div class="ttdeci">DataReaderListenerSubscriptionMatchedCallback on_subscription_matched</div><div class="ttdoc">为 DDS_SUBSCRIPTION_MATCHED_STATUS 状态设置的回调函数。 </div><div class="ttdef"><b>Definition:</b> DataReaderListener.h:175</div></div>
+<div class="ttc" id="group___c_listener_html_gafde62c73cd73f7ca8331b1ce194f9f49"><div class="ttname"><a href="group___c_listener.html#gafde62c73cd73f7ca8331b1ce194f9f49">DataReaderListenerRequestedDeadlineMissedCallback</a></div><div class="ttdeci">void(* DataReaderListenerRequestedDeadlineMissedCallback)(DDS_DataReader *reader, const DDS_RequestedDeadlineMissedStatus *status)</div><div class="ttdoc">底层 DDS_REQUESTED_DEADLINE_MISSED_STATUS 状态的回调函数函数指针类型。 </div><div class="ttdef"><b>Definition:</b> DataReaderListener.h:34</div></div>
+<div class="ttc" id="group___c_listener_html_ga01c61dc72810231439f62ec2456ffc3f"><div class="ttname"><a href="group___c_listener.html#ga01c61dc72810231439f62ec2456ffc3f">DataReaderListenerDataAvailableCallback</a></div><div class="ttdeci">void(* DataReaderListenerDataAvailableCallback)(DDS_DataReader *reader)</div><div class="ttdoc">有新的样本存储到数据读者底层时回调。 </div><div class="ttdef"><b>Definition:</b> DataReaderListener.h:99</div></div>
+<div class="ttc" id="struct_d_d_s___liveliness_changed_status_html"><div class="ttname"><a href="struct_d_d_s___liveliness_changed_status.html">DDS_LivelinessChangedStatus</a></div><div class="ttdoc">数据写者存活性变化状态。 </div><div class="ttdef"><b>Definition:</b> LivelinessChangedStatus.h:33</div></div>
+<div class="ttc" id="struct_d_d_s___data_reader_listener_html_a7235cf27f994f963c1b8b10579ccc3f9"><div class="ttname"><a href="struct_d_d_s___data_reader_listener.html#a7235cf27f994f963c1b8b10579ccc3f9">DDS_DataReaderListener::on_requested_incompatible_qos</a></div><div class="ttdeci">DataReaderListenerRequestedIncompatibleQosCallback on_requested_incompatible_qos</div><div class="ttdoc">为 DDS_REQUESTED_INCOMPATIBLE_QOS_STATUS 状态设置的回调函数。 </div><div class="ttdef"><b>Definition:</b> DataReaderListener.h:156</div></div>
+<div class="ttc" id="struct_d_d_s___sample_rejected_status_html"><div class="ttname"><a href="struct_d_d_s___sample_rejected_status.html">DDS_SampleRejectedStatus</a></div><div class="ttdoc">数据样本被拒绝状态。 </div><div class="ttdef"><b>Definition:</b> SampleRejectedStatus.h:27</div></div>
+<div class="ttc" id="struct_d_d_s___data_reader_listener_html"><div class="ttname"><a href="struct_d_d_s___data_reader_listener.html">DDS_DataReaderListener</a></div><div class="ttdoc">数据读者监听器类型。 </div><div class="ttdef"><b>Definition:</b> DataReaderListener.h:145</div></div>
+</div><!-- fragment --></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="dir_0fc3f8f3ef96ce2d45d66d6e29832317.html">resources</a></li><li class="navelem"><a class="el" href="dir_cf9ceadfa18f25e608d16251156af657.html">zrdds</a></li><li class="navelem"><a class="el" href="dir_49213087373222e5c37cddb4e4d5f33e.html">src</a></li><li class="navelem"><a class="el" href="dir_a789ccf0f178fa94fb7fe735f25025ab.html">CInterface</a></li><li class="navelem"><b>DataReaderListener.h</b></li>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

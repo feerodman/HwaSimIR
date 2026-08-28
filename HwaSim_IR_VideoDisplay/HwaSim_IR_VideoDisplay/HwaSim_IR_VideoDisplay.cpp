@@ -41,6 +41,7 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
 	int ddsWidth,
 	int ddsHeight,
 	int ddsFps,
+	const QString& ddsDumpFirstFrame,
     QWidget *parent)
     : QWidget(parent),
       m_networkConfigPath(networkConfigPath.trimmed()),
@@ -132,6 +133,7 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
 		if (ddsWidth > 0) config.width = ddsWidth;
 		if (ddsHeight > 0) config.height = ddsHeight;
 		if (ddsFps > 0) config.fps = ddsFps;
+		config.dumpFirstFramePath = ddsDumpFirstFrame.trimmed();
 		if (QFileInfo(config.qosFile).isRelative())
 			config.qosFile = QDir(QCoreApplication::applicationDirPath()).filePath(config.qosFile);
 		m_ddsWorker = new DdsVideoReceiverWorker(config);

@@ -553,6 +553,9 @@ void MainWindow::setupUDP()
 			if (datagram.size() >= sizeof(int)) {
 				int flag = *reinterpret_cast<const int*>(datagram.data());
 				if (flag == 0x37) { // 初始化应答
+					qInfo().noquote()
+						<< QStringLiteral("[StimInitAck] received=1 from=%1:%2 bytes=%3")
+							.arg(sender.toString()).arg(senderPort).arg(datagram.size());
 					m_lastReceivedLabel->setText(QString(QStringLiteral("↓ 接收: 初始化应答 (0x37) 来自 %1:%2"))
 						.arg(sender.toString()).arg(senderPort));
 					m_statusLabel->setText(QStringLiteral("● 状态: 初始化完成 | 等待开始指令"));

@@ -25,6 +25,7 @@ public:
 
 	bool start();
 	void stop();
+	const std::string& lastStartFailureReason() const { return m_lastStartFailureReason; }
 
 	bool sendInitAck(const BYHWICD::InitAckC2pObjectTrackingCmd& ackData);
 
@@ -58,6 +59,7 @@ private:
 	std::thread m_recvThread;
 	std::atomic<bool> m_bIsRunning;
 	mutable std::mutex m_mtx;
+	std::string m_lastStartFailureReason = "none";
 
 	static const int RECV_BUF_SIZE = 4096;
 	char _recvBuf[RECV_BUF_SIZE];

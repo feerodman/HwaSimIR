@@ -1,0 +1,368 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: ZRUserLog.h 源文件</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>结构体</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('_z_r_user_log_8h_source.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">ZRUserLog.h</div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#ifndef ZRUserLog_h__</span></div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#define ZRUserLog_h__</span></div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;</div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &quot;InstanceHandle_t.h&quot;</span></div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;</div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#if defined(_WIN32) &amp;&amp; defined(_ZRDDS_GENERATOR_DEBUG_INFO)</span></div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#define ZRLOG_DO_STRINGIZE(x) #x</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#define ZRLOG_STRINGIZE(x) ZRLOG_DO_STRINGIZE(x)</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="keyword">template</span>&lt;const <span class="keywordtype">int</span> line, const <span class="keywordtype">int</span> number&gt; </div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="keywordtype">void</span> ZRLogWarningPrint() </div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;{ </div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="preprocessor">#pragma message(__FUNCSIG__) </span></div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;}</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="preprocessor">#define ZRLOG_MESSAGE_STRING(msg) &quot;ZRLOG_INFO: &quot; __FILE__ &quot;: &quot; __FUNCTION__ &quot;: &quot; ZRLOG_STRINGIZE(__LINE__) &quot;: &quot; msg</span></div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="preprocessor">#define ZRLOG_PRINT_MESSAGE(msg, debugNo) __pragma(message(ZRLOG_MESSAGE_STRING(msg))); ZRLogWarningPrint&lt;__LINE__, debugNo&gt;();</span></div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="preprocessor">#else</span></div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="preprocessor">#define ZRLOG_PRINT_MESSAGE(msg, debugNo) </span></div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;{</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#define ZRDDS_NETWORK_TOPIC &quot;ZRDDS_NETWORK_TOPIC&quot;</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#define ZRDDS_DOMAINPARTICIPANT_TOPIC &quot;ZRDDS_DOMAINPARTICIPANT_TOPIC&quot;</span></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#define ZRDDS_PUBLISHER_TOPIC &quot;ZRDDS_PUBLISHER_TOPIC&quot;</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="preprocessor">#define ZRDDS_DOMAINPARTICIPANTFACTORY_TOPIC &quot;ZRDDS_DOMAINPARTICIPANTFACTORY_TOPIC&quot;</span></div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="preprocessor">#define ZRDDS_MPORT_TOPIC &quot;ZRDDS_MPORT_TOPIC&quot;</span></div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="preprocessor">#define ZRDDS_SHMEM_TOPIC &quot;ZRDDS_SHMEM_TOPIC&quot;</span></div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="preprocessor">#define ZRDDS_VALIDATOR_TOPIC &quot;ZRDDS_VALIDATOR_TOPIC&quot;</span></div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="preprocessor">#define ZRDDS_INTERACTIVECMD_TOPIC &quot;ZRDDS_INTERACTIVECMD_TOPIC&quot;</span></div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="preprocessor">#define ZRDDS_ANY_TOPICNAME &quot;ZRDDS_ANY_LOG_TOPIC_NAME___&quot;</span></div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="preprocessor">#define ZRDDS_LOG_ENABLE_BEGIN_NUM 7000</span></div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<span class="preprocessor">#define ZRDDS_LOG_ENABLE_END_NUM 7000</span></div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="keyword">typedef</span> <span class="keyword">enum</span> ZRLogDisplayStyle</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;{</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    GRACEFUL_STYLE = 0,</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    PRACTICAL_STYLE = 2,</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    META_STYLE = 4,</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    DEBUG_STYLE = 6,</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    UNKNOWN_STYLE</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;}ZRLogDisplayStyle;</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="keyword">typedef</span> <span class="keyword">enum</span> ZRLogBackupMode</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;{</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    ZRLOG_BACKUP_NOTUSED,</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    ZRLOG_BACKUP_EXIST_FILE,</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    ZRLOG_BACKUP_FILE_SIZE,</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    ZRLOG_BACKUP_TIME_INTERVAL,</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;} ZRLogBackupMode;</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span>ZRLogBackupParam</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;{</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    ZRLogBackupMode mode;</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> param;</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;}ZRLogBackupParam;</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span>ZRLogParam</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;{</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> consoleMask;</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> fileMask;</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> distMask;</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;    ZRLogDisplayStyle style;</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* logFileDir;</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;    <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* logFileName;</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;    ZRLogBackupParam backupParam;</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;} ZRLogParam;</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;DCPSDLL <span class="keyword">extern</span> <span class="keywordtype">void</span> ZRLogParamInitial(ZRLogParam* param);</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;</div>
+<div class="line"><a name="l00143"></a><span class="lineno"><a class="line" href="group___core_qos_struct.html#gae4033e1174016dbd31c46763f740d227">  143</a></span>&#160;<span class="keyword">typedef</span> <span class="keyword">enum</span> <a class="code" href="group___core_qos_struct.html#gae4033e1174016dbd31c46763f740d227">DDS_LogType</a></div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;{</div>
+<div class="line"><a name="l00146"></a><span class="lineno"><a class="line" href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227a56218878acc4b04bf527311b97e6d9e0">  146</a></span>&#160;    <a class="code" href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227a56218878acc4b04bf527311b97e6d9e0">ZRLOG_ERROR</a> = 0x0001 &lt;&lt; 1,</div>
+<div class="line"><a name="l00148"></a><span class="lineno"><a class="line" href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227ae757b8532c0973c14bdd73e67845cd12">  148</a></span>&#160;    <a class="code" href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227ae757b8532c0973c14bdd73e67845cd12">ZRLOG_ADMIN_INFO</a> = 0x0001 &lt;&lt; 2,</div>
+<div class="line"><a name="l00150"></a><span class="lineno"><a class="line" href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227a9daa5fcc4a75eb768bd865701dc4c88e">  150</a></span>&#160;    <a class="code" href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227a9daa5fcc4a75eb768bd865701dc4c88e">ZRLOG_USER_INFO</a> = 0x0001 &lt;&lt; 3,</div>
+<div class="line"><a name="l00152"></a><span class="lineno"><a class="line" href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227a981fd02cacae783d343bc88196f8479e">  152</a></span>&#160;    <a class="code" href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227a981fd02cacae783d343bc88196f8479e">ZRLOG_WARNING</a> = 0x0001 &lt;&lt; 4,</div>
+<div class="line"><a name="l00154"></a><span class="lineno"><a class="line" href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227a3c84d63470191c327ad32d830fb497e9">  154</a></span>&#160;    <a class="code" href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227a3c84d63470191c327ad32d830fb497e9">LOGTYPE_UNKNOWN</a> = 0x0001 &lt;&lt; 9</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;} <a class="code" href="group___core_qos_struct.html#gae4033e1174016dbd31c46763f740d227">DDS_LogType</a>;</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;</div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;<span class="keyword">typedef</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a>(*ZRLogCallbackInitialize)(<span class="keywordtype">void</span>* logCallbackParam);</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;<span class="keyword">typedef</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a>(*ZRLogCallbackOutput)(<a class="code" href="group___core_qos_struct.html#gae4033e1174016dbd31c46763f740d227">DDS_LogType</a> type, <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* topicName, </div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;    <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> debugNo, <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* time, <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* file, </div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;    <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* func, <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> line, <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* content, <span class="keywordtype">void</span>* logCallbackParam);</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;<span class="keyword">typedef</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a>(*ZRLogCallbackFinalize)(<span class="keywordtype">void</span>* logCallbackParam);</div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;</div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span>ZRLogCallback</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;{</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;    ZRLogCallbackInitialize initialize_callback;</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;    ZRLogCallbackOutput log_output_callback;</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;    ZRLogCallbackFinalize finalize_callback;</div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;    <span class="keywordtype">void</span>* log_callback_param;</div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;}ZRLogCallback;</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;DCPSDLL <span class="keyword">extern</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> ZRLogInitial(<span class="keyword">const</span> ZRLogParam* param);</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;DCPSDLL <span class="keyword">extern</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> ZRLogDestroy();</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;DCPSDLL <span class="keyword">extern</span> <span class="keywordtype">void</span> ZRLogSetDisplayStyle(ZRLogDisplayStyle style);</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;</div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;DCPSDLL <span class="keyword">extern</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> ZRLogSetListener(ZRLogCallback* listener);</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;</div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;DCPSDLL <span class="keyword">extern</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> ZRLogRemoveListener(ZRLogCallback* listener);</div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;</div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;DCPSDLL <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> <a class="code" href="group___z_r_d_d_s_log.html#ga4e99f443818a58c0a806d02a2ec04695">ZRLogDebugMask</a>(<a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> debugNum);</div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;</div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;DCPSDLL <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> <a class="code" href="group___z_r_d_d_s_log.html#ga4d8855305f33b8ff1a85bf260d2db84e">ZRLogDebugMaskEnableRange</a>(<a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> beginNum, <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> endNum);</div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;DCPSDLL <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> <a class="code" href="group___z_r_d_d_s_log.html#ga2c869fccd1b742323c0721ee6b685267">ZRLogDebugMaskDisableRange</a>(<a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> beginNum, <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> endNum);</div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;DCPSDLL <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> <a class="code" href="group___z_r_d_d_s_log.html#ga363f7585daa21ebbb1626962b4fa081e">ZRLogDebugMaskEnableTopicName</a>(<span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* topicName);</div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;</div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;DCPSDLL <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a> <a class="code" href="group___z_r_d_d_s_log.html#gaaa45a8a7f6a45f05a993d8f095ad0384">ZRLogDebugMaskDisableTopicName</a>(<span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* topicName);</div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;</div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;DCPSDLL <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> <a class="code" href="group___z_r_d_d_s_log.html#gad46b71314d6875d6b283eb2e27483db6">ZRLogDebugMaskEnableEntityId</a>(<span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a>* handle);</div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;</div>
+<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;DCPSDLL <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> <a class="code" href="group___z_r_d_d_s_log.html#ga9fffaf4f56aebd984d6b8e0136bf81cd">ZRLogDebugMaskDisableEntityId</a>(<span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a>* handle);</div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;</div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;DCPSDLL <span class="keyword">extern</span> <span class="keywordtype">void</span> ZRLogBeginLog(<a class="code" href="group___core_qos_struct.html#gae4033e1174016dbd31c46763f740d227">DDS_LogType</a> type, <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* file, <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* func, <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> line, <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> combie);</div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;</div>
+<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;DCPSDLL <span class="keyword">extern</span> <span class="keywordtype">void</span> ZRLogBeginLogWNo(<a class="code" href="group___core_qos_struct.html#gae4033e1174016dbd31c46763f740d227">DDS_LogType</a> type, <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* file, <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* func, <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> line, <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> combie, <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* topicName, <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> debugNo);</div>
+<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;</div>
+<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;DCPSDLL <span class="keyword">extern</span> <span class="keywordtype">void</span> ZRLogEndLog();</div>
+<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;</div>
+<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;DCPSDLL <span class="keyword">extern</span> <span class="keywordtype">void</span> ZRLogToConsole(<a class="code" href="group___core_qos_struct.html#gae4033e1174016dbd31c46763f740d227">DDS_LogType</a> type, <span class="keyword">const</span> <span class="keyword">struct</span> GUID_t* guid, <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* topicName, <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> debugNo,</div>
+<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;    <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* file, <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* func, <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> line, <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* content, ...);</div>
+<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;</div>
+<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;DCPSDLL <span class="keyword">extern</span> <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> ZRLogVerifyDebugCondition(<a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> debugNo, <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* topicName, <span class="keyword">const</span> <span class="keyword">struct</span> GUID_t* guid);</div>
+<div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;</div>
+<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;DCPSDLL <span class="keyword">extern</span> <span class="keywordtype">void</span> ZRLogAquireLock();</div>
+<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;</div>
+<div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;DCPSDLL <span class="keyword">extern</span> <span class="keywordtype">void</span> ZRLogReleaseLock();</div>
+<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;</div>
+<div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160;DCPSDLL <span class="keyword">extern</span> <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* InstanceHandleToString(<span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a>* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;</div>
+<div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160;DCPSDLL <span class="keyword">extern</span> <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* InstanceHandleToString2(<span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a>* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160;</div>
+<div class="line"><a name="l00441"></a><span class="lineno"><a class="line" href="group___z_r_d_d_s_log.html#ga99b55d26d803db2cca6d0935b1ad286f">  441</a></span>&#160;<span class="preprocessor">#define ZRLOG(type, format, ...)                                                                \</span></div>
+<div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160;<span class="preprocessor">        ZRLogAquireLock();                                                                      \</span></div>
+<div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;<span class="preprocessor">        ZRLogToConsole(type, NULL, NULL, 0, __FILE__, __FUNCTION__, __LINE__, format, ##__VA_ARGS__); \</span></div>
+<div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160;<span class="preprocessor">        ZRLogReleaseLock();</span></div>
+<div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160;</div>
+<div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;<span class="preprocessor">#define ZRLOG_W_NO(type, guid, topic, debugNo, format, ...)                                                                \</span></div>
+<div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160;<span class="preprocessor">    ZRLOG_PRINT_MESSAGE(format, debugNo);                                                                           \</span></div>
+<div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160;<span class="preprocessor">    if (ZRLogVerifyDebugCondition(debugNo, topic, guid))                                                            \</span></div>
+<div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160;<span class="preprocessor">    {                                                                                                               \</span></div>
+<div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160;<span class="preprocessor">        ZRLogAquireLock();                                                                                          \</span></div>
+<div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160;<span class="preprocessor">        ZRLogToConsole(type, guid, topic, debugNo, __FILE__, __FUNCTION__, __LINE__, format, ##__VA_ARGS__);  \</span></div>
+<div class="line"><a name="l00464"></a><span class="lineno">  464</span>&#160;<span class="preprocessor">        ZRLogReleaseLock();                                                                                         \</span></div>
+<div class="line"><a name="l00465"></a><span class="lineno">  465</span>&#160;<span class="preprocessor">    }</span></div>
+<div class="line"><a name="l00466"></a><span class="lineno">  466</span>&#160;</div>
+<div class="line"><a name="l00482"></a><span class="lineno">  482</span>&#160;<span class="preprocessor">#ifndef _ZRDDS_FT_6678_MPORT_SRIO</span></div>
+<div class="line"><a name="l00483"></a><span class="lineno"><a class="line" href="group___z_r_d_d_s_log.html#ga203645629eec385d4c656fb4bb0a3b10">  483</a></span>&#160;<span class="preprocessor">#define ZRLOG_DEBUG(guid, topic, debugNo, format, ...)                                                              \</span></div>
+<div class="line"><a name="l00484"></a><span class="lineno">  484</span>&#160;<span class="preprocessor">    ZRLOG_PRINT_MESSAGE(format, debugNo);                                                                           \</span></div>
+<div class="line"><a name="l00485"></a><span class="lineno">  485</span>&#160;<span class="preprocessor">    if (ZRLogVerifyDebugCondition(debugNo, topic, guid))                                                            \</span></div>
+<div class="line"><a name="l00486"></a><span class="lineno">  486</span>&#160;<span class="preprocessor">    {                                                                                                               \</span></div>
+<div class="line"><a name="l00487"></a><span class="lineno">  487</span>&#160;<span class="preprocessor">        ZRLogAquireLock();                                                                                          \</span></div>
+<div class="line"><a name="l00488"></a><span class="lineno">  488</span>&#160;<span class="preprocessor">        ZRLogToConsole(ZRLOG_ADMIN_INFO, guid, topic, debugNo, __FILE__, __FUNCTION__, __LINE__, format, ##__VA_ARGS__);  \</span></div>
+<div class="line"><a name="l00489"></a><span class="lineno">  489</span>&#160;<span class="preprocessor">        ZRLogReleaseLock();                                                                                         \</span></div>
+<div class="line"><a name="l00490"></a><span class="lineno">  490</span>&#160;<span class="preprocessor">    }</span></div>
+<div class="line"><a name="l00491"></a><span class="lineno">  491</span>&#160;</div>
+<div class="line"><a name="l00492"></a><span class="lineno">  492</span>&#160;<span class="preprocessor">#else</span></div>
+<div class="line"><a name="l00493"></a><span class="lineno">  493</span>&#160;<span class="preprocessor">#define ZRLOG_DEBUG(guid, topic, debugNo, format, ...)</span></div>
+<div class="line"><a name="l00494"></a><span class="lineno">  494</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00495"></a><span class="lineno">  495</span>&#160;</div>
+<div class="line"><a name="l00513"></a><span class="lineno"><a class="line" href="group___z_r_d_d_s_log.html#ga87d4110b2da4f7dd9b7de6c6edae5cca">  513</a></span>&#160;<span class="preprocessor">#define ZRLOG_DEBUG_W_POS(guid, topic, debugNo, file, func, line, format, ...)                          \</span></div>
+<div class="line"><a name="l00514"></a><span class="lineno">  514</span>&#160;<span class="preprocessor">    ZRLOG_PRINT_MESSAGE(format, debugNo);                                                               \</span></div>
+<div class="line"><a name="l00515"></a><span class="lineno">  515</span>&#160;<span class="preprocessor">    if (ZRLogVerifyDebugCondition(debugNo, topic, guid))                                                \</span></div>
+<div class="line"><a name="l00516"></a><span class="lineno">  516</span>&#160;<span class="preprocessor">    {                                                                                               \</span></div>
+<div class="line"><a name="l00517"></a><span class="lineno">  517</span>&#160;<span class="preprocessor">        ZRLogAquireLock();                                                                          \</span></div>
+<div class="line"><a name="l00518"></a><span class="lineno">  518</span>&#160;<span class="preprocessor">        ZRLogToConsole(ZRLOG_ADMIN_INFO, guid, topic, debugNo, file, func, line, format, ##__VA_ARGS__);  \</span></div>
+<div class="line"><a name="l00519"></a><span class="lineno">  519</span>&#160;<span class="preprocessor">        ZRLogReleaseLock();                                                                         \</span></div>
+<div class="line"><a name="l00520"></a><span class="lineno">  520</span>&#160;<span class="preprocessor">    }</span></div>
+<div class="line"><a name="l00521"></a><span class="lineno">  521</span>&#160;</div>
+<div class="line"><a name="l00536"></a><span class="lineno"><a class="line" href="group___z_r_d_d_s_log.html#ga18af0c93d609e76fe44d4beff2e1388a">  536</a></span>&#160;<span class="preprocessor">#define ZRLOG_USER(guid, topic, debugNo, format, ...)                                               \</span></div>
+<div class="line"><a name="l00537"></a><span class="lineno">  537</span>&#160;<span class="preprocessor">    ZRLOG_PRINT_MESSAGE(format, debugNo);                                                           \</span></div>
+<div class="line"><a name="l00538"></a><span class="lineno">  538</span>&#160;<span class="preprocessor">    if (ZRLogVerifyDebugCondition(debugNo, topic, guid))                                            \</span></div>
+<div class="line"><a name="l00539"></a><span class="lineno">  539</span>&#160;<span class="preprocessor">    {                                                                                               \</span></div>
+<div class="line"><a name="l00540"></a><span class="lineno">  540</span>&#160;<span class="preprocessor">        ZRLogAquireLock();                                                                          \</span></div>
+<div class="line"><a name="l00541"></a><span class="lineno">  541</span>&#160;<span class="preprocessor">        ZRLogToConsole(ZRLOG_USER_INFO, __FILE__, __FUNCTION__, __LINE__, format, ##__VA_ARGS__);   \</span></div>
+<div class="line"><a name="l00542"></a><span class="lineno">  542</span>&#160;<span class="preprocessor">        ZRLogReleaseLock();                                                                         \</span></div>
+<div class="line"><a name="l00543"></a><span class="lineno">  543</span>&#160;<span class="preprocessor">    }</span></div>
+<div class="line"><a name="l00544"></a><span class="lineno">  544</span>&#160;</div>
+<div class="line"><a name="l00562"></a><span class="lineno"><a class="line" href="group___z_r_d_d_s_log.html#gab178dea1db7f92f5a540e5e76097b63f">  562</a></span>&#160;<span class="preprocessor">#define ZRLOG_USER_W_POS(guid, topic, debugNo, file, func, line, format, ...)                       \</span></div>
+<div class="line"><a name="l00563"></a><span class="lineno">  563</span>&#160;<span class="preprocessor">    ZRLOG_PRINT_MESSAGE(format, debugNo);                                                           \</span></div>
+<div class="line"><a name="l00564"></a><span class="lineno">  564</span>&#160;<span class="preprocessor">    if (ZRLogVerifyDebugCondition(debugNo, topic, guid))                                            \</span></div>
+<div class="line"><a name="l00565"></a><span class="lineno">  565</span>&#160;<span class="preprocessor">    {                                                                                               \</span></div>
+<div class="line"><a name="l00566"></a><span class="lineno">  566</span>&#160;<span class="preprocessor">        ZRLogAquireLock();                                                                          \</span></div>
+<div class="line"><a name="l00567"></a><span class="lineno">  567</span>&#160;<span class="preprocessor">        ZRLogToConsole(ZRLOG_USER_INFO, guid, topic, debugNo, file, func, line, format, ##__VA_ARGS__);   \</span></div>
+<div class="line"><a name="l00568"></a><span class="lineno">  568</span>&#160;<span class="preprocessor">        ZRLogReleaseLock();                                                                         \</span></div>
+<div class="line"><a name="l00569"></a><span class="lineno">  569</span>&#160;<span class="preprocessor">    }</span></div>
+<div class="line"><a name="l00570"></a><span class="lineno">  570</span>&#160;</div>
+<div class="line"><a name="l00590"></a><span class="lineno"><a class="line" href="group___z_r_d_d_s_log.html#ga8bfdedfd86c3480da9662278eef1f0d8">  590</a></span>&#160;<span class="preprocessor">#define ZRLOG_DEBUG_W_EXP(guid, topic, debugNo, preState1, preState2, postState1, postState2, format, ...)          \</span></div>
+<div class="line"><a name="l00591"></a><span class="lineno">  591</span>&#160;<span class="preprocessor">    ZRLOG_PRINT_MESSAGE(format, debugNo);                                                                           \</span></div>
+<div class="line"><a name="l00592"></a><span class="lineno">  592</span>&#160;<span class="preprocessor">    if (ZRLogVerifyDebugCondition(debugNo, topic, guid))                                                            \</span></div>
+<div class="line"><a name="l00593"></a><span class="lineno">  593</span>&#160;<span class="preprocessor">    {                                                                                                               \</span></div>
+<div class="line"><a name="l00594"></a><span class="lineno">  594</span>&#160;<span class="preprocessor">        preState1;                                                                                                  \</span></div>
+<div class="line"><a name="l00595"></a><span class="lineno">  595</span>&#160;<span class="preprocessor">        preState2;                                                                                                  \</span></div>
+<div class="line"><a name="l00596"></a><span class="lineno">  596</span>&#160;<span class="preprocessor">        ZRLogAquireLock();                                                                                          \</span></div>
+<div class="line"><a name="l00597"></a><span class="lineno">  597</span>&#160;<span class="preprocessor">        ZRLogToConsole(ZRLOG_ADMIN_INFO, guid, topic, debugNo, __FILE__, __FUNCTION__, __LINE__, format, ##__VA_ARGS__);  \</span></div>
+<div class="line"><a name="l00598"></a><span class="lineno">  598</span>&#160;<span class="preprocessor">        ZRLogReleaseLock();                                                                                         \</span></div>
+<div class="line"><a name="l00599"></a><span class="lineno">  599</span>&#160;<span class="preprocessor">        postState1;                                                                                                 \</span></div>
+<div class="line"><a name="l00600"></a><span class="lineno">  600</span>&#160;<span class="preprocessor">        postState2;                                                                                                 \</span></div>
+<div class="line"><a name="l00601"></a><span class="lineno">  601</span>&#160;<span class="preprocessor">    }</span></div>
+<div class="line"><a name="l00602"></a><span class="lineno">  602</span>&#160;</div>
+<div class="line"><a name="l00622"></a><span class="lineno"><a class="line" href="group___z_r_d_d_s_log.html#ga8667101b047a687b818fcb927ca20172">  622</a></span>&#160;<span class="preprocessor">#define ZRLOG_DEBUG_W_EXP2(guid, topic, debugNo, preState1, preState2, postState1, postState2, format, ...)         \</span></div>
+<div class="line"><a name="l00623"></a><span class="lineno">  623</span>&#160;<span class="preprocessor">    ZRLOG_PRINT_MESSAGE(format, debugNo);                                                                           \</span></div>
+<div class="line"><a name="l00624"></a><span class="lineno">  624</span>&#160;<span class="preprocessor">    if (ZRLogVerifyDebugCondition(debugNo, topic, guid))                                                            \</span></div>
+<div class="line"><a name="l00625"></a><span class="lineno">  625</span>&#160;<span class="preprocessor">    {                                                                                                               \</span></div>
+<div class="line"><a name="l00626"></a><span class="lineno">  626</span>&#160;<span class="preprocessor">        ZRLogBeginLogWNo(ZRLOG_ADMIN_INFO, __FILE__, __FUNCTION__, __LINE__, true, topic, debugNo);                 \</span></div>
+<div class="line"><a name="l00627"></a><span class="lineno">  627</span>&#160;<span class="preprocessor">        preState1;                                                                                                  \</span></div>
+<div class="line"><a name="l00628"></a><span class="lineno">  628</span>&#160;<span class="preprocessor">        preState2;                                                                                                  \</span></div>
+<div class="line"><a name="l00629"></a><span class="lineno">  629</span>&#160;<span class="preprocessor">        ZRLogAquireLock();                                                                                          \</span></div>
+<div class="line"><a name="l00630"></a><span class="lineno">  630</span>&#160;<span class="preprocessor">        ZRLogToConsole(ZRLOG_ADMIN_INFO, guid, topic, debugNo, __FILE__, __FUNCTION__, __LINE__, format, ##__VA_ARGS__);  \</span></div>
+<div class="line"><a name="l00631"></a><span class="lineno">  631</span>&#160;<span class="preprocessor">        ZRLogReleaseLock();                                                                                         \</span></div>
+<div class="line"><a name="l00632"></a><span class="lineno">  632</span>&#160;<span class="preprocessor">        postState1;                                                                                                 \</span></div>
+<div class="line"><a name="l00633"></a><span class="lineno">  633</span>&#160;<span class="preprocessor">        postState2;                                                                                                 \</span></div>
+<div class="line"><a name="l00634"></a><span class="lineno">  634</span>&#160;<span class="preprocessor">        ZRLogEndLog();                                                                                              \</span></div>
+<div class="line"><a name="l00635"></a><span class="lineno">  635</span>&#160;<span class="preprocessor">    }</span></div>
+<div class="line"><a name="l00636"></a><span class="lineno">  636</span>&#160;</div>
+<div class="line"><a name="l00637"></a><span class="lineno">  637</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a name="l00638"></a><span class="lineno">  638</span>&#160;}</div>
+<div class="line"><a name="l00639"></a><span class="lineno">  639</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00640"></a><span class="lineno">  640</span>&#160;</div>
+<div class="line"><a name="l00641"></a><span class="lineno">  641</span>&#160;<span class="preprocessor">#endif // ZRUserLog_h__</span></div>
+<div class="ttc" id="group___core_qos_struct_html_ggae4033e1174016dbd31c46763f740d227a981fd02cacae783d343bc88196f8479e"><div class="ttname"><a href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227a981fd02cacae783d343bc88196f8479e">ZRLOG_WARNING</a></div><div class="ttdoc">警告信息但是能够正常运行。 </div><div class="ttdef"><b>Definition:</b> ZRUserLog.h:152</div></div>
+<div class="ttc" id="group___core_qos_struct_html_ggae4033e1174016dbd31c46763f740d227a3c84d63470191c327ad32d830fb497e9"><div class="ttname"><a href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227a3c84d63470191c327ad32d830fb497e9">LOGTYPE_UNKNOWN</a></div><div class="ttdoc">无效的选项。 </div><div class="ttdef"><b>Definition:</b> ZRUserLog.h:154</div></div>
+<div class="ttc" id="group___core_qos_struct_html_gae4033e1174016dbd31c46763f740d227"><div class="ttname"><a href="group___core_qos_struct.html#gae4033e1174016dbd31c46763f740d227">DDS_LogType</a></div><div class="ttdeci">DDS_LogType</div><div class="ttdoc">用于表示某一条日志的输出等级，对于不同的等级的用户可以看到不同的日志文件。 </div><div class="ttdef"><b>Definition:</b> ZRUserLog.h:143</div></div>
+<div class="ttc" id="group___z_r_d_d_s_log_html_ga4d8855305f33b8ff1a85bf260d2db84e"><div class="ttname"><a href="group___z_r_d_d_s_log.html#ga4d8855305f33b8ff1a85bf260d2db84e">ZRLogDebugMaskEnableRange</a></div><div class="ttdeci">DCPSDLL ZR_INT32 ZRLogDebugMaskEnableRange(ZR_UINT32 beginNum, ZR_UINT32 endNum)</div><div class="ttdoc">使能调试信息范围。 </div></div>
+<div class="ttc" id="group___z_r_d_d_s_log_html_ga363f7585daa21ebbb1626962b4fa081e"><div class="ttname"><a href="group___z_r_d_d_s_log.html#ga363f7585daa21ebbb1626962b4fa081e">ZRLogDebugMaskEnableTopicName</a></div><div class="ttdeci">DCPSDLL ZR_INT32 ZRLogDebugMaskEnableTopicName(const ZR_INT8 *topicName)</div><div class="ttdoc">使能指定主题数据的日志。 </div></div>
+<div class="ttc" id="group___z_r_d_d_s_log_html_ga4e99f443818a58c0a806d02a2ec04695"><div class="ttname"><a href="group___z_r_d_d_s_log.html#ga4e99f443818a58c0a806d02a2ec04695">ZRLogDebugMask</a></div><div class="ttdeci">DCPSDLL ZR_BOOLEAN ZRLogDebugMask(ZR_UINT32 debugNum)</div><div class="ttdoc">指定的调试信息编号是否启用。 </div></div>
+<div class="ttc" id="group___core_base_struct_html_ga79dbbaba1af8dfe2efe567fdcce2940b"><div class="ttname"><a href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a></div><div class="ttdeci">unsigned int ZR_UINT32</div><div class="ttdoc">为屏蔽平台差异，定义在接口中使用的4个字节无符号整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:101</div></div>
+<div class="ttc" id="group___z_r_d_d_s_log_html_ga9fffaf4f56aebd984d6b8e0136bf81cd"><div class="ttname"><a href="group___z_r_d_d_s_log.html#ga9fffaf4f56aebd984d6b8e0136bf81cd">ZRLogDebugMaskDisableEntityId</a></div><div class="ttdeci">DCPSDLL ZR_INT32 ZRLogDebugMaskDisableEntityId(const DDS_InstanceHandle_t *handle)</div><div class="ttdoc">使能指定实体的日志。 </div></div>
+<div class="ttc" id="group___z_r_d_d_s_log_html_gad46b71314d6875d6b283eb2e27483db6"><div class="ttname"><a href="group___z_r_d_d_s_log.html#gad46b71314d6875d6b283eb2e27483db6">ZRLogDebugMaskEnableEntityId</a></div><div class="ttdeci">DCPSDLL ZR_INT32 ZRLogDebugMaskEnableEntityId(const DDS_InstanceHandle_t *handle)</div><div class="ttdoc">使能指定实体的日志。 </div></div>
+<div class="ttc" id="group___core_qos_struct_html_ggae4033e1174016dbd31c46763f740d227a9daa5fcc4a75eb768bd865701dc4c88e"><div class="ttname"><a href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227a9daa5fcc4a75eb768bd865701dc4c88e">ZRLOG_USER_INFO</a></div><div class="ttdoc">通知用户视角信息，即只能看到自定义Endpoint之间的数据交互。 </div><div class="ttdef"><b>Definition:</b> ZRUserLog.h:150</div></div>
+<div class="ttc" id="group___z_r_d_d_s_log_html_gaaa45a8a7f6a45f05a993d8f095ad0384"><div class="ttname"><a href="group___z_r_d_d_s_log.html#gaaa45a8a7f6a45f05a993d8f095ad0384">ZRLogDebugMaskDisableTopicName</a></div><div class="ttdeci">DCPSDLL ZR_INT8 ZRLogDebugMaskDisableTopicName(const ZR_INT8 *topicName)</div><div class="ttdoc">取消使能指定主题数据的日志。 </div></div>
+<div class="ttc" id="group___core_base_struct_html_ga41af8a0ee350bae22a2791d338ee89ea"><div class="ttname"><a href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a></div><div class="ttdeci">char ZR_BOOLEAN</div><div class="ttdoc">为屏蔽平台差异，定义在接口中使用bool类型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:27</div></div>
+<div class="ttc" id="struct_d_d_s___instance_handle__t_html"><div class="ttname"><a href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a></div><div class="ttdoc">用来表示一个实体或者一个数据实例。 </div><div class="ttdef"><b>Definition:</b> InstanceHandle_t.h:24</div></div>
+<div class="ttc" id="group___core_qos_struct_html_ggae4033e1174016dbd31c46763f740d227ae757b8532c0973c14bdd73e67845cd12"><div class="ttname"><a href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227ae757b8532c0973c14bdd73e67845cd12">ZRLOG_ADMIN_INFO</a></div><div class="ttdoc">系统管理员视角的信息,比如一些调试信息。 </div><div class="ttdef"><b>Definition:</b> ZRUserLog.h:148</div></div>
+<div class="ttc" id="group___core_qos_struct_html_ggae4033e1174016dbd31c46763f740d227a56218878acc4b04bf527311b97e6d9e0"><div class="ttname"><a href="group___core_qos_struct.html#ggae4033e1174016dbd31c46763f740d227a56218878acc4b04bf527311b97e6d9e0">ZRLOG_ERROR</a></div><div class="ttdoc">程序出现不可忽略的错误。 </div><div class="ttdef"><b>Definition:</b> ZRUserLog.h:146</div></div>
+<div class="ttc" id="group___z_r_d_d_s_log_html_ga2c869fccd1b742323c0721ee6b685267"><div class="ttname"><a href="group___z_r_d_d_s_log.html#ga2c869fccd1b742323c0721ee6b685267">ZRLogDebugMaskDisableRange</a></div><div class="ttdeci">DCPSDLL ZR_INT32 ZRLogDebugMaskDisableRange(ZR_UINT32 beginNum, ZR_UINT32 endNum)</div><div class="ttdoc">取消调试信息范围。 </div></div>
+<div class="ttc" id="group___core_base_struct_html_gacc550da50917f3aa72ed5229fed9bb41"><div class="ttname"><a href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a></div><div class="ttdeci">char ZR_INT8</div><div class="ttdoc">为屏蔽平台差异，定义在接口中使用的1个字节整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:51</div></div>
+<div class="ttc" id="group___core_base_struct_html_gab3de48fd32f773622806baa963567e20"><div class="ttname"><a href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a></div><div class="ttdeci">int ZR_INT32</div><div class="ttdoc">为屏蔽平台差异，定义在接口中使用的4个字节整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:91</div></div>
+</div><!-- fragment --></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="dir_0fc3f8f3ef96ce2d45d66d6e29832317.html">resources</a></li><li class="navelem"><a class="el" href="dir_cf9ceadfa18f25e608d16251156af657.html">zrdds</a></li><li class="navelem"><a class="el" href="dir_49213087373222e5c37cddb4e4d5f33e.html">src</a></li><li class="navelem"><a class="el" href="dir_53336e619d60bf3f94a9dfb5f5011ef0.html">ZRDDSCoreInterface</a></li><li class="navelem"><b>ZRUserLog.h</b></li>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

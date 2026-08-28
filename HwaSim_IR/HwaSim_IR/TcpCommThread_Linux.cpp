@@ -715,7 +715,9 @@ bool TcpCommThread::sendControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cm
 	}
 	if (!m_bIsConnected)
 	{
-		std::cerr << "sendControlCmd: TCP未连接，无法转发控制命令" << std::endl;
+		std::cerr << "[TcpControlForward][WARN] skipped=1 reason=tcp_not_connected"
+			<< " ddsVideoEnabled=" << (m_ddsConfig.enabled ? 1 : 0)
+			<< " simCommand=" << cmd.simCommand << std::endl;
 		return false;
 	}
 

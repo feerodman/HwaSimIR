@@ -1,0 +1,21 @@
+var searchData=
+[
+  ['_5fallocmemory',['_allocMemory',['../struct_foo_seq.html#ae9d2628758c64c419dbb3df0df379fdf',1,'FooSeq']]],
+  ['_5fcontiguousbuffer',['_contiguousBuffer',['../struct_foo_seq.html#a2409d366e761abde4ac0b8effb5bb04b',1,'FooSeq']]],
+  ['_5fdataptr',['_dataPtr',['../struct_foo_seq.html#ad1e8e974460b4d1f10ddab9a432df344',1,'FooSeq']]],
+  ['_5fdiscontiguousbuffer',['_discontiguousBuffer',['../struct_foo_seq.html#a6dadebc5f6352e22f5dc7d32e7ef8a0d',1,'FooSeq']]],
+  ['_5ffirstfragsize',['_firstFragSize',['../struct_foo_seq.html#ada2f32abd2fba2e8fac38a81cbbea97a',1,'FooSeq']]],
+  ['_5ffixedfragments',['_fixedFragments',['../struct_foo_seq.html#a8dd308da7d1dc18feb33270cac07364f',1,'FooSeq']]],
+  ['_5ffixedheader',['_fixedHeader',['../struct_foo_seq.html#a52ae4f62c3c2c3fca1da528366427d82',1,'FooSeq']]],
+  ['_5ffragmentnum',['_fragmentNum',['../struct_foo_seq.html#a955106bc307bb209931b0712301d73a2',1,'FooSeq']]],
+  ['_5ffragmentsize',['_fragmentSize',['../struct_foo_seq.html#ac1146e35a0f2c31582dfb1bd6c08c5a4',1,'FooSeq']]],
+  ['_5flastfragsize',['_lastFragSize',['../struct_foo_seq.html#a9df81db8577a2fce0c1c177741e76701',1,'FooSeq']]],
+  ['_5flength',['_length',['../struct_foo_seq.html#a6a09e40af8582c80b4effaa8692a8122',1,'FooSeq']]],
+  ['_5fmaximum',['_maximum',['../struct_foo_seq.html#ab3c0bced36d81a343e10f14de6fd6e9f',1,'FooSeq']]],
+  ['_5fmempool',['_mempool',['../struct_foo_seq.html#a98438cf72396e34cfded9a99e0aa471b',1,'FooSeq']]],
+  ['_5fowned',['_owned',['../struct_foo_seq.html#a45097e4628ca2cf13ed279e81e2abf67',1,'FooSeq']]],
+  ['_5freaderptr',['_readerPtr',['../struct_foo_seq.html#a01670d37d64a28a3bd04ea3c6659c5bb',1,'FooSeq']]],
+  ['_5fsequenceinit',['_sequenceInit',['../struct_foo_seq.html#ae057b3736a7854ffd6cbb19170a8ccab',1,'FooSeq']]],
+  ['_5fvariousfragments',['_variousFragments',['../struct_foo_seq.html#a809d40484842fe6cc0d4a869c0d672d5',1,'FooSeq']]],
+  ['_5fvariousheader',['_variousHeader',['../struct_foo_seq.html#acdee769e6d1b95c0154fd9be05bbaa39',1,'FooSeq']]]
+];

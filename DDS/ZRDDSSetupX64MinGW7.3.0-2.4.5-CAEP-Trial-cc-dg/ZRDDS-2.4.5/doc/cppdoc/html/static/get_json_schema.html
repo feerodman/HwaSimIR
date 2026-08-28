@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>QoSXMLEditor</title>
+<link rel="stylesheet" href="css/reset.css" type="text/css" />
+<link rel="stylesheet" href="css/demo.css" type="text/css" />
+<link rel="stylesheet" href="css/jquery.xmleditor.css" type="text/css" />
+<script src="js/ace/src-min/ace.js"></script>
+<script src="js/jquery.min.js"></script>
+<script src="js/jquery-ui.min.js"></script>
+<script src="js/json2.js"></script>
+<script src="js/cycle.js"></script>
+<script src="js/jquery.autosize-min.js"></script>
+<script src="js/xsd2json.js"></script>
+<script src="js/jquery.xmleditor.js"></script>
+</head>
+<body>
+    <div class="wrapper">
+        <header>
+            <h1>获取JSON格式的XML Schema，步骤：</h1>
+            <h2>刷新网页</h2>
+            <h2>打开开发者模式</h2>
+            <h2>在控制台复制json对象</h2>
+            <h2>覆盖page/dds_qos_editor.html中jsonScheme变量的值</h2>
+        </header>
+    </div>
+    <div id="xml_editor">
+        <zrdds_qos></zrdds_qos>
+    </div>
+    <script>
+        $(function() {
+            var extractor = new Xsd2Json("zrddsqosprofile.xsd", {"schemaURI":"./", "rootElement": "qos_library"});
+            console.log(extractor.stringify(false));
+        });
+    </script>
+</body>
+</html>

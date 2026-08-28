@@ -1,0 +1,261 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: TypeCode.h 源文件</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>类</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('_type_code_8h_source.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">TypeCode.h</div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#ifndef TypeCode_h__</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#define TypeCode_h__</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#include &quot;ZRDDSCommon.h&quot;</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#include &quot;TypeCodeKind.h&quot;</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span>TypeCodeHeader TypeCodeHeader;</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span>TypeObject TypeObject;</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespace_d_d_s.html">DDS</a> {</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="keyword">class </span>TypeCode;</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#ifdef _ZRDDS_INCLUDE_TYPECODE</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="keyword">class </span>DCPSDLL TypeCode</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;{</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <span class="keyword">virtual</span> ~TypeCode() {}</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keyword">virtual</span> TCTypeKind getKind() <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> compare(<span class="keyword">const</span> TypeCode* typeCode2) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <span class="keyword">virtual</span> <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* getName() <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> getMemberCount() <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <span class="keyword">virtual</span> <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* getMemberName(<a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> index) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> getIndexByName(<span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* name) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    <span class="keyword">virtual</span> TypeCode* getMemberType(<a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> index) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> getLabelCount(<a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> index) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> getLabel(</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;        <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> memberIdx,</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;        <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> labelIdx,</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;        TypeCodeExceptionCode* expCode) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> getDefaultIndex() <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> getEnumVal(</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;        <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> memberIdx,</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;        TypeCodeExceptionCode* expCode) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;    <span class="keyword">virtual</span> <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* getEnumString(</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;        <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> enumVal,</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;        TypeCodeExceptionCode* expCode) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;</div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> isMemberKey(</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;        <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> index,</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;        TypeCodeExceptionCode* expCode) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> getArrayDimensionCount() <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> getArrayDimension(<a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> index) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> getMaxLength() <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;    <span class="keyword">virtual</span> <span class="keyword">const</span> TypeCode* getBaseType() <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;</div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;    <span class="keyword">virtual</span> <span class="keyword">const</span> TypeCode* getElementType() <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;</div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> addMemberToEnum(</div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;        <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> index,</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;        <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* name,</div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;        <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> value) = 0;</div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> addMemberToUnion(<a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> index, <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* name, <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> labelCount, <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>* labels, <span class="keyword">const</span> TypeCode* tc) = 0;</div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;</div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> addMemberToStruct(<a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> index,</div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;        <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> memberId,</div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;        <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* name,</div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;        <span class="keyword">const</span> TypeCode* tc,</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;        <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> isKey,</div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;        <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> isOption) = 0;</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;</div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> addMemberToValueType(<a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> index, <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> memberId,</div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;        <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* name,</div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;        <span class="keyword">const</span> TypeCode* tc,</div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;        <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> isKey,</div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;        <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> isOption) = 0;</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;</div>
+<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> printIDL() <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;</div>
+<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* getPrintableString() <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;</div>
+<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span> releasePrintableString(<a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* buffer) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;</div>
+<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;    <span class="keyword">virtual</span> TypeCodeHeader* getImpl() = 0;</div>
+<div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160;</div>
+<div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> hasKey() <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160;};</div>
+<div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160;</div>
+<div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;<span class="keyword">class </span>DCPSDLL TypeCodeFactory</div>
+<div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;{</div>
+<div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160;    <span class="keyword">virtual</span> ~TypeCodeFactory(){}</div>
+<div class="line"><a name="l00464"></a><span class="lineno">  464</span>&#160;    <span class="keyword">static</span> TypeCodeFactory&amp; getInstance();</div>
+<div class="line"><a name="l00465"></a><span class="lineno">  465</span>&#160;</div>
+<div class="line"><a name="l00475"></a><span class="lineno">  475</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">void</span> finalize();</div>
+<div class="line"><a name="l00476"></a><span class="lineno">  476</span>&#160;</div>
+<div class="line"><a name="l00490"></a><span class="lineno">  490</span>&#160;    <span class="keyword">virtual</span> TypeCode* getPrimitiveTC(TCTypeKind kind) = 0;</div>
+<div class="line"><a name="l00491"></a><span class="lineno">  491</span>&#160;</div>
+<div class="line"><a name="l00506"></a><span class="lineno">  506</span>&#160;    <span class="keyword">virtual</span> TypeCode* createStructTC(<span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* name,</div>
+<div class="line"><a name="l00507"></a><span class="lineno">  507</span>&#160;        ExtensibilityKind kind) = 0;</div>
+<div class="line"><a name="l00508"></a><span class="lineno">  508</span>&#160;</div>
+<div class="line"><a name="l00525"></a><span class="lineno">  525</span>&#160;    <span class="keyword">virtual</span> TypeCode* createValueTypeTC(</div>
+<div class="line"><a name="l00526"></a><span class="lineno">  526</span>&#160;        <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* name, </div>
+<div class="line"><a name="l00527"></a><span class="lineno">  527</span>&#160;        TypeCodeModifierKind modifierKind, </div>
+<div class="line"><a name="l00528"></a><span class="lineno">  528</span>&#160;        ExtensibilityKind kind, </div>
+<div class="line"><a name="l00529"></a><span class="lineno">  529</span>&#160;        <span class="keyword">const</span> TypeCode* baseTC) = 0;</div>
+<div class="line"><a name="l00543"></a><span class="lineno">  543</span>&#160;    <span class="keyword">virtual</span> TypeCode* wrapperTypeCode(TypeCodeHeader* cTypeCode) = 0;</div>
+<div class="line"><a name="l00544"></a><span class="lineno">  544</span>&#160;</div>
+<div class="line"><a name="l00560"></a><span class="lineno">  560</span>&#160;    <span class="keyword">virtual</span> TypeCode* createEnumTC(<span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* name,</div>
+<div class="line"><a name="l00561"></a><span class="lineno">  561</span>&#160;        <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> bitBound,</div>
+<div class="line"><a name="l00562"></a><span class="lineno">  562</span>&#160;        ExtensibilityKind kind) = 0;</div>
+<div class="line"><a name="l00563"></a><span class="lineno">  563</span>&#160;</div>
+<div class="line"><a name="l00579"></a><span class="lineno">  579</span>&#160;    <span class="keyword">virtual</span> TypeCode* createUnionTC(<span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* name, <span class="keyword">const</span> TypeCode* switchTC, <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> defaultIdx) = 0;</div>
+<div class="line"><a name="l00580"></a><span class="lineno">  580</span>&#160;</div>
+<div class="line"><a name="l00594"></a><span class="lineno">  594</span>&#160;    <span class="keyword">virtual</span> TypeCode* createStringTC(<span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> length) = 0;</div>
+<div class="line"><a name="l00595"></a><span class="lineno">  595</span>&#160;</div>
+<div class="line"><a name="l00610"></a><span class="lineno">  610</span>&#160;    <span class="keyword">virtual</span> TypeCode* createSequenceTC(<span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> length, <span class="keyword">const</span> TypeCode* tc) = 0;</div>
+<div class="line"><a name="l00611"></a><span class="lineno">  611</span>&#160;</div>
+<div class="line"><a name="l00627"></a><span class="lineno">  627</span>&#160;    <span class="keyword">virtual</span> TypeCode* createArrayTC(<span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> dimensionCount, <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>* dimensions, <span class="keyword">const</span> TypeCode* tc) = 0;</div>
+<div class="line"><a name="l00628"></a><span class="lineno">  628</span>&#160;</div>
+<div class="line"><a name="l00642"></a><span class="lineno">  642</span>&#160;    <span class="keyword">virtual</span> TypeCode* cloneTC(<span class="keyword">const</span> TypeCode* tc) = 0;</div>
+<div class="line"><a name="l00643"></a><span class="lineno">  643</span>&#160;</div>
+<div class="line"><a name="l00657"></a><span class="lineno">  657</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> deleteTC(TypeCode* tc) = 0;</div>
+<div class="line"><a name="l00658"></a><span class="lineno">  658</span>&#160;</div>
+<div class="line"><a name="l00659"></a><span class="lineno">  659</span>&#160;<span class="preprocessor">#ifdef _ZRDDS_INCLUDE_TYPE_OBJECT</span></div>
+<div class="line"><a name="l00660"></a><span class="lineno">  660</span>&#160;</div>
+<div class="line"><a name="l00673"></a><span class="lineno">  673</span>&#160;    <span class="keyword">virtual</span> TypeCode* createFromTypeObject(<span class="keyword">const</span> TypeObject* typeObject) = 0;</div>
+<div class="line"><a name="l00674"></a><span class="lineno">  674</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00675"></a><span class="lineno">  675</span>&#160;};</div>
+<div class="line"><a name="l00676"></a><span class="lineno">  676</span>&#160;</div>
+<div class="line"><a name="l00677"></a><span class="lineno">  677</span>&#160;<span class="preprocessor">#endif // _ZRDDS_INCLUDE_TYPECODE</span></div>
+<div class="line"><a name="l00678"></a><span class="lineno">  678</span>&#160;} <span class="comment">// namespace DDS</span></div>
+<div class="line"><a name="l00679"></a><span class="lineno">  679</span>&#160;</div>
+<div class="line"><a name="l00680"></a><span class="lineno">  680</span>&#160;<span class="preprocessor">#endif // TypeCode_h__</span></div>
+<div class="ttc" id="group___core_base_struct_html_ga79dbbaba1af8dfe2efe567fdcce2940b"><div class="ttname"><a href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a></div><div class="ttdeci">unsigned int ZR_UINT32</div><div class="ttdoc">为屏蔽平台差异，定义在接口中使用的4个字节无符号整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:101</div></div>
+<div class="ttc" id="namespace_d_d_s_html"><div class="ttname"><a href="namespace_d_d_s.html">DDS</a></div><div class="ttdef"><b>Definition:</b> BuiltinDataDataReader.h:13</div></div>
+<div class="ttc" id="group___core_base_struct_html_ga41af8a0ee350bae22a2791d338ee89ea"><div class="ttname"><a href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a></div><div class="ttdeci">char ZR_BOOLEAN</div><div class="ttdoc">为屏蔽平台差异，定义在接口中使用bool类型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:27</div></div>
+<div class="ttc" id="group___core_base_struct_html_gacc550da50917f3aa72ed5229fed9bb41"><div class="ttname"><a href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a></div><div class="ttdeci">char ZR_INT8</div><div class="ttdoc">为屏蔽平台差异，定义在接口中使用的1个字节整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:51</div></div>
+<div class="ttc" id="group___core_base_struct_html_gab3de48fd32f773622806baa963567e20"><div class="ttname"><a href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a></div><div class="ttdeci">int ZR_INT32</div><div class="ttdoc">为屏蔽平台差异，定义在接口中使用的4个字节整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:91</div></div>
+</div><!-- fragment --></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="dir_0fc3f8f3ef96ce2d45d66d6e29832317.html">resources</a></li><li class="navelem"><a class="el" href="dir_cf9ceadfa18f25e608d16251156af657.html">zrdds</a></li><li class="navelem"><a class="el" href="dir_49213087373222e5c37cddb4e4d5f33e.html">src</a></li><li class="navelem"><a class="el" href="dir_e5f368d85bc0ec88e5ed7b816b1951ba.html">CPlusPlusInterface</a></li><li class="navelem"><b>TypeCode.h</b></li>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

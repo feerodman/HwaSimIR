@@ -1,0 +1,194 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: ExtendInterface/app2.cpp</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>类</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('_extend_interface_2app2_8cpp-example.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">ExtendInterface/app2.cpp</div>  </div>
+</div><!--header-->
+<div class="contents">
+<p>该程序展示了扩展接口中app2的示例代码。</p>
+<div class="fragment"><div class="line"><span class="preprocessor">#include &quot;DomainParticipantFactory.h&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &quot;DomainParticipant.h&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &quot;Publisher.h&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &quot;Subscriber.h&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &quot;ZRBuiltinTypesDataWriter.h&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &quot;ZRBuiltinTypesDataReader.h&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &quot;ZRBuiltinTypesTypeSupport.h&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &quot;DefaultQos.h&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
+<div class="line"><span class="preprocessor">#include &lt;stdlib.h&gt;</span></div>
+<div class="line"><span class="preprocessor">#include &lt;string.h&gt;</span></div>
+<div class="line"></div>
+<div class="line"><span class="keyword">using namespace </span><a class="code" href="namespace_d_d_s.html">DDS</a>;</div>
+<div class="line"></div>
+<div class="line"><span class="keyword">typedef</span> <span class="keyword">struct </span>ZRDDSDemoModules</div>
+<div class="line">{</div>
+<div class="line">    <a name="_a0"></a><a class="code" href="class_d_d_s_1_1_domain_participant.html">DomainParticipant</a>* m_udpDp;</div>
+<div class="line">    <a name="_a1"></a><a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html">ZeroCopyBytesDataReader</a>* m_airTrackDr;</div>
+<div class="line">    <a name="_a2"></a><a class="code" href="class_d_d_s_1_1_data_reader_listener.html">DataReaderListener</a>* m_listener;</div>
+<div class="line">}ZRDDSDemoModules;</div>
+<div class="line"></div>
+<div class="line">ZRDDSDemoModules g_zrddsModule;</div>
+<div class="line"></div>
+<div class="line"><span class="comment">/* 实现数据读者回调接口 */</span></div>
+<div class="line"><span class="keyword">class </span>SeaTrackTopicListener : <span class="keyword">public</span> <a name="_a3"></a><a class="code" href="class_d_d_s_1_1_simple_data_reader_listener.html">SimpleDataReaderListener</a>&lt;ZeroCopyBytes, ZeroCopyBytesSeq, ZeroCopyBytesDataReader&gt;</div>
+<div class="line">{</div>
+<div class="line"><span class="keyword">public</span>:</div>
+<div class="line">    <span class="keyword">virtual</span> <span class="keywordtype">void</span> on_process_sample(<a name="_a4"></a><a class="code" href="class_d_d_s_1_1_data_reader.html">DataReader</a>* reader, <span class="keyword">const</span> <a name="_a5"></a><a class="code" href="struct_d_d_s___zero_copy_bytes.html">ZeroCopyBytes</a>&amp; sample, <span class="keyword">const</span> <a name="_a6"></a><a class="code" href="struct_d_d_s___sample_info.html">SampleInfo</a>&amp; info)</div>
+<div class="line">    {</div>
+<div class="line">        printf(<span class="stringliteral">&quot;received data %s\n&quot;</span>, sample.<a name="a7"></a><a class="code" href="struct_d_d_s___zero_copy_bytes.html#a83b93f48ff6176495e2d1aaa085556fb">value</a>);</div>
+<div class="line">    }</div>
+<div class="line"></div>
+<div class="line">};</div>
+<div class="line"></div>
+<div class="line"><span class="keywordtype">int</span> ZRDDSDemoModulesInitial()</div>
+<div class="line">{</div>
+<div class="line">    <span class="comment">// 获取入口，并指明QoS配置</span></div>
+<div class="line">    <a name="_a8"></a><a class="code" href="class_d_d_s_1_1_domain_participant_factory.html">DomainParticipantFactory</a>* factory = <a name="a9"></a><a class="code" href="class_d_d_s_1_1_domain_participant_factory.html#adac89594487009cc55e98469e7320738">DomainParticipantFactory::get_instance_w_profile</a>(NULL, <span class="stringliteral">&quot;lib1&quot;</span>, <span class="stringliteral">&quot;profile1&quot;</span>, <span class="stringliteral">&quot;app1&quot;</span>);</div>
+<div class="line">    <span class="keywordflow">if</span> (factory == NULL)</div>
+<div class="line">    {</div>
+<div class="line">        printf(<span class="stringliteral">&quot;DomainParticipantFactory::get_instance failed.\n&quot;</span>);</div>
+<div class="line">        <span class="keywordflow">return</span> -1;</div>
+<div class="line">    }</div>
+<div class="line">    <span class="comment">// 初始化使用udp的域参与者</span></div>
+<div class="line">    g_zrddsModule.m_udpDp = factory-&gt;<a name="a10"></a><a class="code" href="class_d_d_s_1_1_domain_participant_factory.html#aa81f1fb6d643ecac3bcf0a03258a5620">create_participant_with_qos_profile</a>(150, <span class="stringliteral">&quot;lib1&quot;</span>, <span class="stringliteral">&quot;profile1&quot;</span>, <span class="stringliteral">&quot;udp_dp&quot;</span>, NULL, STATUS_MASK_NONE);</div>
+<div class="line">    <span class="keywordflow">if</span> (NULL == g_zrddsModule.m_udpDp)</div>
+<div class="line">    {</div>
+<div class="line">        printf(<span class="stringliteral">&quot;DomainParticipantFactory_create_participant_with_qos_profile failed.\n&quot;</span>);</div>
+<div class="line">        <span class="keywordflow">return</span> -2;</div>
+<div class="line">    }</div>
+<div class="line">    <span class="comment">// 创建数据读者，并设置监听器</span></div>
+<div class="line">    g_zrddsModule.m_listener = <span class="keyword">new</span> SeaTrackTopicListener();</div>
+<div class="line">    <a class="code" href="class_d_d_s_1_1_data_reader.html">DataReader</a>* rawReader = g_zrddsModule.m_udpDp-&gt;create_datareader_with_topic_and_qos_profile(</div>
+<div class="line">        <span class="stringliteral">&quot;AirTrack&quot;</span>, ZeroCopyBytesTypeSupport::get_instance(), <span class="stringliteral">&quot;lib1&quot;</span>, <span class="stringliteral">&quot;profile1&quot;</span>, <span class="stringliteral">&quot;AirTrack&quot;</span>, g_zrddsModule.m_listener, STATUS_MASK_ALL);</div>
+<div class="line">    g_zrddsModule.m_airTrackDr = <span class="keyword">dynamic_cast&lt;</span><a class="code" href="class_d_d_s_1_1_z_r_d_d_s_data_reader.html">ZeroCopyBytesDataReader</a>*<span class="keyword">&gt;</span>(rawReader);</div>
+<div class="line">    <span class="keywordflow">if</span> (NULL == g_zrddsModule.m_airTrackDr)</div>
+<div class="line">    {</div>
+<div class="line">        printf(<span class="stringliteral">&quot;Subscriber_create_datareader_with_qos_profile failed.\n&quot;</span>);</div>
+<div class="line">        <span class="keywordflow">return</span> -4;</div>
+<div class="line">    }</div>
+<div class="line">    <span class="keywordflow">return</span> 0;</div>
+<div class="line">}</div>
+<div class="line"></div>
+<div class="line"><span class="keywordtype">void</span> ZRDDSDemoModulesFinialize(ZRDDSDemoModules* ddsModule)</div>
+<div class="line">{</div>
+<div class="line">    <span class="comment">// 回收DDS模块资源</span></div>
+<div class="line">    <a name="a11"></a><a class="code" href="class_d_d_s_1_1_domain_participant_factory.html#aac93dd83a14bb246001d86b74ad48071">DomainParticipantFactory::get_instance</a>()-&gt;<a name="a12"></a><a class="code" href="class_d_d_s_1_1_domain_participant_factory.html#a5ca8fe4eb0421c07e5eded689d087d6f">delete_contained_entities</a>();</div>
+<div class="line">    <a name="a13"></a><a class="code" href="class_d_d_s_1_1_domain_participant_factory.html#abd43aa3275d32e1adb2ad08948cd8b1d">DomainParticipantFactory::finalize_instance</a>();</div>
+<div class="line">    <span class="comment">// 回收listener</span></div>
+<div class="line">    <span class="keyword">delete</span> ddsModule-&gt;m_listener;</div>
+<div class="line">}</div>
+<div class="line"></div>
+<div class="line"><span class="keywordtype">int</span> main()</div>
+<div class="line">{</div>
+<div class="line">    <span class="keywordflow">if</span> (ZRDDSDemoModulesInitial() &lt; 0)</div>
+<div class="line">    {</div>
+<div class="line">        getchar();</div>
+<div class="line">        <span class="keywordflow">return</span> -1;</div>
+<div class="line">    }</div>
+<div class="line">    getchar();</div>
+<div class="line">    ZRDDSDemoModulesFinialize(&amp;g_zrddsModule);</div>
+<div class="line">}</div>
+</div><!-- fragment --> </div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

@@ -1,0 +1,27 @@
+var searchData=
+[
+  ['sampleinfo',['SampleInfo',['../group___cpp_core_struct.html#ga7836a2fa552fc2e4dc177df88a910eb6',1,'DDS']]],
+  ['sampleinfoseq',['SampleInfoSeq',['../group___cpp_core_struct.html#gaae5f5bf83566034a5602b3e10bb5f778',1,'DDS']]],
+  ['sampleinfovalidmember',['SampleInfoValidMember',['../group___cpp_core_struct.html#ga32e52e61dd67aa67bdbe3ac0af1e557b',1,'DDS']]],
+  ['sampleloststatus',['SampleLostStatus',['../group___cpp_core_struct.html#ga0b3937f95fdfa2195e7f8999e51be78f',1,'DDS']]],
+  ['samplerejectedstatus',['SampleRejectedStatus',['../group___cpp_core_struct.html#ga85571a700a8a1949d3f8b242ce1694b9',1,'DDS']]],
+  ['samplerejectedstatuskind',['SampleRejectedStatusKind',['../group___cpp_core_struct.html#ga402a8aed5b737a61ecd17547d45e3cd1',1,'DDS']]],
+  ['samplestatekind',['SampleStateKind',['../group___cpp_core_struct.html#ga4528f76f98ee82400fe765ef299fb6d8',1,'DDS']]],
+  ['samplestatemask',['SampleStateMask',['../group___cpp_core_struct.html#ga617cca5c6231edc3a37b955a4aadfedc',1,'DDS']]],
+  ['securityplugin',['SecurityPlugin',['../group___cpp_core_struct.html#ga31adc4714206faecaaf89c15600028cf',1,'DDS']]],
+  ['securitypluginqospolicy',['SecurityPluginQosPolicy',['../group___cpp_core_struct.html#gaeec43d2cfc7b1fac2b737253ad3c1506',1,'DDS']]],
+  ['securitypluginseq',['SecurityPluginSeq',['../group___cpp_core_struct.html#gaa7af8723058eb48abbcf307690094228',1,'DDS']]],
+  ['securityplugintype',['SecurityPluginType',['../group___cpp_core_struct.html#ga1f2e438fb7484eb4e803f4822f32050b',1,'DDS']]],
+  ['sequencenumber_5ft',['SequenceNumber_t',['../group___cpp_core_struct.html#ga39e25bf5fcae3fd4ef6bde8c40143d31',1,'DDS']]],
+  ['short',['Short',['../group___cpp_core_struct.html#ga99c4207aeee474d21f311148833d349c',1,'DDS']]],
+  ['shortseq',['ShortSeq',['../group___cpp_core_struct.html#gabe8baadee3ab6ac78f5952aa0f0b0f06',1,'DDS']]],
+  ['statuskind',['StatusKind',['../group___cpp_core_struct.html#ga9dc5c7cc145e41783bedabf6eb6f47dc',1,'DDS']]],
+  ['statuskindmask',['StatusKindMask',['../group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233',1,'DDS']]],
+  ['string',['String',['../group___cpp_core_struct.html#gabd874ac2a655b9e4bab8b61cfedafcd4',1,'DDS']]],
+  ['stringseq',['StringSeq',['../group___cpp_core_struct.html#ga17edac9ffccff75d0705a8365f8a438d',1,'DDS']]],
+  ['subscriberptr',['SubscriberPtr',['../group___cpp_subscription.html#ga7ff60a59416a730c710295ec6b28895c',1,'DDS']]],
+  ['subscriberqos',['SubscriberQos',['../group___cpp_core_struct.html#ga520dd7eb30d45597c5166df1ad347d26',1,'DDS']]],
+  ['subscriptionbuiltintopicdata',['SubscriptionBuiltinTopicData',['../group___cpp_core_struct.html#ga170b4c26caa443efd7918548bff069ce',1,'DDS']]],
+  ['subscriptionbuiltintopicdatasecure',['SubscriptionBuiltinTopicDataSecure',['../group___cpp_core_struct.html#gac0887ad77ce032dd5b85fd23578b09cf',1,'DDS']]],
+  ['subscriptionmatchedstatus',['SubscriptionMatchedStatus',['../group___cpp_core_struct.html#ga75b692c663c70dbdbc5c3f217333c987',1,'DDS']]]
+];

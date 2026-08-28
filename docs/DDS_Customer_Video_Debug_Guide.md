@@ -214,3 +214,72 @@ timedOut=0
 3. CAEP Trial licence 在运行时会修改 licence 副本，因此副本必须可写，多进程应各用独立运行副本。
 
 发现上述问题时保留原始命令、stdout/stderr 和双方计数，提交厂商确认；不要自行替换 SDK。
+
+## 12. D3.1 现场手工启动（已验证）
+
+### Windows：VideoDisplay
+
+在 PowerShell 中执行：
+
+```powershell
+cd D:\HwaSimIR\HwaSim_IR_VideoDisplay\x64\Release
+$env:ZRDDS_HOME='F:\Programs\ZRDDS\ZRDDS-2.4.5'
+.\HwaSim_IR_VideoDisplay.exe `
+  --receive-transport dds `
+  --dds-topic HwaSimIR.Video.precise.H264 `
+  --dds-codec h264 `
+  --dds-width 800 `
+  --dds-height 800 `
+  --dds-fps 60 `
+  --dds-qos D:\HwaSimIR\tools\dds_d1_qos\ZRDDS_QOS_WINDOWS_192.168.1.188.xml
+```
+
+看到 `[DdsVideoReceiver] ready=1` 后，再启动板端和 DataDrivenTestQT。运行中
+应连续出现 `[DdsVideoReceiverSample]`、`[H264DecodeSuccess]` 和
+`[DdsFrameDiag]`。若 DataDrivenTestQT 已发送 STOP，界面保留最后一帧并停止
+变化是正常行为。
+
+DDS 模式左侧初始化/实时数据栏为空也是当前设计：DDS 只传视频，INIT、START、
+STOP、Realtime 和 InitAck 仍走原 UDP。本阶段不要把它当 DDS 黑屏。
+
+### RK3588：precise
+
+正式部署后只需使用启动脚本，不要手工省略 Xorg/Mali 环境：
+
+```bash
+cd /userdata/HwaSimIR
+export HwaSimIRDdsVideoEnable=true
+export HwaSimIRDdsVideoCodec=auto
+export HwaSimIRDdsVideoQosFile=Config/DDS/ZRDDS_QOS_RK3588_192.168.1.116.xml
+export HwaSimIRLocalRecordingEnable=false
+export TcpSendVideo=false
+export RenderPresentationMode=HeadlessOffscreen
+./run_precise.sh
+```
+
+启动后硬检查：
+
+```text
+[DdsVideoConfig] ... exists=1
+[TcpPayloadConfigSource] SendVideo=0 source=env:TcpSendVideo
+[GpuBackend] ... glVendor=ARM glRenderer=Mali-LODX ... hardwareGpu=1
+```
+
+若看到 `llvmpipe`、`hardwareGpu=0`、`Address already in use` 或
+`[StartupFatal]`，立即停止测试，不能继续把后续 Sample 数当成有效验收。
+
+### 多个 Windows DDS 进程
+
+CAEP Trial runtime 会修改 licence。VideoDisplay 与客户 Receiver Demo 同时运行
+时，每个工作目录必须有各自独立、可写的 `zrddslicence.lic` 副本；不要让多个
+进程并发写同一个 SDK 根目录 licence。只记录副本是否存在、是否可写和 SHA256，
+禁止输出 licence 正文或 Signature。
+
+### 黑屏快速分层
+
+1. `ss -lunp | grep ':8888'`：确认只有预期 HwaSim_IR 占用 UDP。
+2. 检查 ARM/Mali/hardwareGpu=1；llvmpipe 不是生产验收环境。
+3. 检查双方 bound QoS：Windows 192.168.1.188，板端 192.168.1.116。
+4. 检查 Writer `sentSamples` 与 Reader `receivedSamples`。
+5. 检查 H264 解码与 `[DdsFrameDiag] max > min`、`stddev > 0`。
+6. 测试时可加 `--dds-dump-first-frame D:\logs\dds_first.png` 保存首帧证据。

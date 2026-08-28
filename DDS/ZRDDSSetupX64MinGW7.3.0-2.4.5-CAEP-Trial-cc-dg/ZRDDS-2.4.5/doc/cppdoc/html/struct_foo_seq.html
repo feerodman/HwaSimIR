@@ -1,0 +1,926 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: FooSeq结构体 参考</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li class="current"><a href="annotated.html"><span>类</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+  <div id="navrow2" class="tabs2">
+    <ul class="tablist">
+      <li><a href="annotated.html"><span>类列表</span></a></li>
+      <li><a href="classes.html"><span>类索引</span></a></li>
+      <li><a href="hierarchy.html"><span>类继承关系</span></a></li>
+      <li><a href="functions.html"><span>类成员</span></a></li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('struct_foo_seq.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public 成员函数</a> &#124;
+<a href="#pub-attribs">Public 属性</a> &#124;
+<a href="struct_foo_seq-members.html">所有成员列表</a>  </div>
+  <div class="headertitle">
+<div class="title">FooSeq结构体 参考<div class="ingroups"><a class="el" href="group___core_struct.html">核心接口数据类型</a> &raquo; <a class="el" href="group___core_seq_struct.html">核心接口序列相关数据类型</a></div></div>  </div>
+</div><!--header-->
+<div class="contents">
+
+<p>使用 <a class="el" href="group___core_seq_struct.html#ga9ae4ea259ad8d4bdc06fdbede9d736ec" title="宏定义实现C序列模板，该宏用于声明T类型的序列类型TSeq及其支持方法，具体参见核心接口序列相关的函数 。 ...">DDS_USER_SEQUENCE_C</a> 以及 <a class="el" href="group___core_seq_struct.html#gaa26133b833e4be0b4c58791dde05b1b7" title="宏定义实现C++序列模板，该宏用于声明T类型的序列类型TSeq及其支持方法，具体参见核心接口序列相关的函数 。...">DDS_USER_SEQUENCE_CPP</a> 定义类型序列的等效代码的结构体部分。  
+ <a href="struct_foo_seq.html#details">更多...</a></p>
+
+<p><code>#include &lt;<a class="el" href="_foo_seq_8h_source.html">FooSeq.h</a>&gt;</code></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
+Public 成员函数</h2></td></tr>
+<tr class="memitem:a7d777d64d89c7a9b658767e86957cc4b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a7d777d64d89c7a9b658767e86957cc4b">FooSeq</a> (<a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> max=0)</td></tr>
+<tr class="memdesc:a7d777d64d89c7a9b658767e86957cc4b"><td class="mdescLeft">&#160;</td><td class="mdescRight">构造函数，默认构造容量为0的序列。  <a href="#a7d777d64d89c7a9b658767e86957cc4b">更多...</a><br /></td></tr>
+<tr class="separator:a7d777d64d89c7a9b658767e86957cc4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8a45fde09555c4f664ea2c5b0b20f9eb"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a8a45fde09555c4f664ea2c5b0b20f9eb">FooSeq</a> (const struct <a class="el" href="struct_foo_seq.html">FooSeq</a> &amp;seq)</td></tr>
+<tr class="memdesc:a8a45fde09555c4f664ea2c5b0b20f9eb"><td class="mdescLeft">&#160;</td><td class="mdescRight">拷贝构造函数。  <a href="#a8a45fde09555c4f664ea2c5b0b20f9eb">更多...</a><br /></td></tr>
+<tr class="separator:a8a45fde09555c4f664ea2c5b0b20f9eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae8ad8cfcb30ba3660fb421548938241a"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ae8ad8cfcb30ba3660fb421548938241a"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#ae8ad8cfcb30ba3660fb421548938241a">~FooSeq</a> ()</td></tr>
+<tr class="memdesc:ae8ad8cfcb30ba3660fb421548938241a"><td class="mdescLeft">&#160;</td><td class="mdescRight">析构函数。 <br /></td></tr>
+<tr class="separator:ae8ad8cfcb30ba3660fb421548938241a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4421f4b4f8cf80cbbf0729c0774a5003"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="struct_foo.html">Foo</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a4421f4b4f8cf80cbbf0729c0774a5003">operator[]</a> (<a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> i) const </td></tr>
+<tr class="memdesc:a4421f4b4f8cf80cbbf0729c0774a5003"><td class="mdescLeft">&#160;</td><td class="mdescRight">常量下标操作符重载。  <a href="#a4421f4b4f8cf80cbbf0729c0774a5003">更多...</a><br /></td></tr>
+<tr class="separator:a4421f4b4f8cf80cbbf0729c0774a5003"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7075e80837f7de55a981109ddf576ddd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_foo.html">Foo</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a7075e80837f7de55a981109ddf576ddd">operator[]</a> (<a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> i)</td></tr>
+<tr class="memdesc:a7075e80837f7de55a981109ddf576ddd"><td class="mdescLeft">&#160;</td><td class="mdescRight">下标操作符重载。  <a href="#a7075e80837f7de55a981109ddf576ddd">更多...</a><br /></td></tr>
+<tr class="separator:a7075e80837f7de55a981109ddf576ddd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a506350d41a7260a30ce6d951be0ebf2a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a506350d41a7260a30ce6d951be0ebf2a">append</a> (const <a class="el" href="struct_foo.html">Foo</a> &amp;val)</td></tr>
+<tr class="memdesc:a506350d41a7260a30ce6d951be0ebf2a"><td class="mdescLeft">&#160;</td><td class="mdescRight">向序列尾部添加数据。  <a href="#a506350d41a7260a30ce6d951be0ebf2a">更多...</a><br /></td></tr>
+<tr class="separator:a506350d41a7260a30ce6d951be0ebf2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a76635279ecac90b9272532cee6302b15"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a76635279ecac90b9272532cee6302b15">maximum</a> () const </td></tr>
+<tr class="memdesc:a76635279ecac90b9272532cee6302b15"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取序列的最大长度。  <a href="#a76635279ecac90b9272532cee6302b15">更多...</a><br /></td></tr>
+<tr class="separator:a76635279ecac90b9272532cee6302b15"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a50b84428b7e74e1eb954b7a778d40b3c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a50b84428b7e74e1eb954b7a778d40b3c">maximum</a> (<a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> new_max)</td></tr>
+<tr class="memdesc:a50b84428b7e74e1eb954b7a778d40b3c"><td class="mdescLeft">&#160;</td><td class="mdescRight">重新设置序列的最大长度。  <a href="#a50b84428b7e74e1eb954b7a778d40b3c">更多...</a><br /></td></tr>
+<tr class="separator:a50b84428b7e74e1eb954b7a778d40b3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a26062905a9af686517ef84444dfeed35"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a26062905a9af686517ef84444dfeed35">length</a> () const </td></tr>
+<tr class="memdesc:a26062905a9af686517ef84444dfeed35"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取序列当前的长度。  <a href="#a26062905a9af686517ef84444dfeed35">更多...</a><br /></td></tr>
+<tr class="separator:a26062905a9af686517ef84444dfeed35"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a421c59686328b17660c8e41f39b09015"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a421c59686328b17660c8e41f39b09015">clear</a> ()</td></tr>
+<tr class="memdesc:a421c59686328b17660c8e41f39b09015"><td class="mdescLeft">&#160;</td><td class="mdescRight">清空序列内的所有元素，并将长度与最大长度设置为0。  <a href="#a421c59686328b17660c8e41f39b09015">更多...</a><br /></td></tr>
+<tr class="separator:a421c59686328b17660c8e41f39b09015"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a33587784f6a573a87ed41a717092ffb9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a33587784f6a573a87ed41a717092ffb9">length</a> (<a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> new_length)</td></tr>
+<tr class="memdesc:a33587784f6a573a87ed41a717092ffb9"><td class="mdescLeft">&#160;</td><td class="mdescRight">设置序列的长度，新元素将调用元素的初始化元素。  <a href="#a33587784f6a573a87ed41a717092ffb9">更多...</a><br /></td></tr>
+<tr class="separator:a33587784f6a573a87ed41a717092ffb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ecffafc1a797815b9583b59ac24d225"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a3ecffafc1a797815b9583b59ac24d225">unloan</a> ()</td></tr>
+<tr class="memdesc:a3ecffafc1a797815b9583b59ac24d225"><td class="mdescLeft">&#160;</td><td class="mdescRight">将租借空间归还用户。  <a href="#a3ecffafc1a797815b9583b59ac24d225">更多...</a><br /></td></tr>
+<tr class="separator:a3ecffafc1a797815b9583b59ac24d225"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a327f009abd6eea0695d5005e65227ae9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_foo.html">Foo</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a327f009abd6eea0695d5005e65227ae9">get_contiguous_buffer</a> () const </td></tr>
+<tr class="memdesc:a327f009abd6eea0695d5005e65227ae9"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取序列的内部存储空间，元素的数组。  <a href="#a327f009abd6eea0695d5005e65227ae9">更多...</a><br /></td></tr>
+<tr class="separator:a327f009abd6eea0695d5005e65227ae9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d1593df80405f858bf4a90eca16d31c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_foo.html">Foo</a> **&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a4d1593df80405f858bf4a90eca16d31c">get_discontiguous_buffer</a> () const </td></tr>
+<tr class="memdesc:a4d1593df80405f858bf4a90eca16d31c"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取序列的非连续空间中，元素指针的数组，只有通过 <a class="el" href="struct_foo_seq.html#ab0bffef8961329cea5e27b69f0135675" title="租借元素指针数组构成的非连续空间给序列。 ">loan_discontiguous</a> 函数租借的元素才存储在非连续空间 。  <a href="#a4d1593df80405f858bf4a90eca16d31c">更多...</a><br /></td></tr>
+<tr class="separator:a4d1593df80405f858bf4a90eca16d31c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adc660175ba4e310deedce3d07f3ec6f6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#adc660175ba4e310deedce3d07f3ec6f6">set_at</a> (<a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> i, const <a class="el" href="struct_foo.html">Foo</a> &amp;val)</td></tr>
+<tr class="memdesc:adc660175ba4e310deedce3d07f3ec6f6"><td class="mdescLeft">&#160;</td><td class="mdescRight">设置指定下标元素值，将<em>val</em> 拷贝到指定元素的空间。  <a href="#adc660175ba4e310deedce3d07f3ec6f6">更多...</a><br /></td></tr>
+<tr class="separator:adc660175ba4e310deedce3d07f3ec6f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a77a62d302af8068607b17d4caf4980a3"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="struct_foo.html">Foo</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a77a62d302af8068607b17d4caf4980a3">get_at</a> (<a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> i) const </td></tr>
+<tr class="memdesc:a77a62d302af8068607b17d4caf4980a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取指定下标的对象的引用。  <a href="#a77a62d302af8068607b17d4caf4980a3">更多...</a><br /></td></tr>
+<tr class="separator:a77a62d302af8068607b17d4caf4980a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa5afef88bbd5ceb9971acde231a90b78"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#aa5afef88bbd5ceb9971acde231a90b78">ensure_length</a> (<a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> <a class="el" href="struct_foo_seq.html#a26062905a9af686517ef84444dfeed35">length</a>, <a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> max)</td></tr>
+<tr class="memdesc:aa5afef88bbd5ceb9971acde231a90b78"><td class="mdescLeft">&#160;</td><td class="mdescRight">同时设置序列的最大长度以及当前长度，参见 <a class="el" href="struct_foo_seq.html#a26062905a9af686517ef84444dfeed35" title="获取序列当前的长度。 ">length()</a> 以及 <a class="el" href="struct_foo_seq.html#a76635279ecac90b9272532cee6302b15" title="获取序列的最大长度。 ">maximum()</a>。  <a href="#aa5afef88bbd5ceb9971acde231a90b78">更多...</a><br /></td></tr>
+<tr class="separator:aa5afef88bbd5ceb9971acde231a90b78"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a958de43c71030d44b40fe7adee2e58cb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a958de43c71030d44b40fe7adee2e58cb">has_ownership</a> () const </td></tr>
+<tr class="memdesc:a958de43c71030d44b40fe7adee2e58cb"><td class="mdescLeft">&#160;</td><td class="mdescRight">查询当前序列的空间是否为从外部租借的。  <a href="#a958de43c71030d44b40fe7adee2e58cb">更多...</a><br /></td></tr>
+<tr class="separator:a958de43c71030d44b40fe7adee2e58cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4a0fbcd2deeee6baf9e9ccf184f650bc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a4a0fbcd2deeee6baf9e9ccf184f650bc">compare</a> (const struct <a class="el" href="struct_foo_seq.html">FooSeq</a> &amp;compared_seq) const </td></tr>
+<tr class="memdesc:a4a0fbcd2deeee6baf9e9ccf184f650bc"><td class="mdescLeft">&#160;</td><td class="mdescRight">比较当前序列与指定序列的大小关系，包括元素内容，其中元素的比较方法由宏 TCOMPARE 指定。  <a href="#a4a0fbcd2deeee6baf9e9ccf184f650bc">更多...</a><br /></td></tr>
+<tr class="separator:a4a0fbcd2deeee6baf9e9ccf184f650bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae323c378e48b051c87b53568d2c8e201"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#ae323c378e48b051c87b53568d2c8e201">from_array</a> (const <a class="el" href="struct_foo.html">Foo</a> array[], <a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> <a class="el" href="struct_foo_seq.html#a26062905a9af686517ef84444dfeed35">length</a>)</td></tr>
+<tr class="memdesc:ae323c378e48b051c87b53568d2c8e201"><td class="mdescLeft">&#160;</td><td class="mdescRight">从元素的数组构造含有相同元素及其顺序的等价序列。  <a href="#ae323c378e48b051c87b53568d2c8e201">更多...</a><br /></td></tr>
+<tr class="separator:ae323c378e48b051c87b53568d2c8e201"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a56d98616a4f735cd3b6b0998a8db27e5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a56d98616a4f735cd3b6b0998a8db27e5">to_array</a> (<a class="el" href="struct_foo.html">Foo</a> array[], <a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> <a class="el" href="struct_foo_seq.html#a26062905a9af686517ef84444dfeed35">length</a>) const </td></tr>
+<tr class="memdesc:a56d98616a4f735cd3b6b0998a8db27e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">从当前序列构造等价的含有相同元素及其顺序的等价数组。  <a href="#a56d98616a4f735cd3b6b0998a8db27e5">更多...</a><br /></td></tr>
+<tr class="separator:a56d98616a4f735cd3b6b0998a8db27e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa0a468c6a5130199f03d341b9921260d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#aa0a468c6a5130199f03d341b9921260d">loan_contiguous</a> (<a class="el" href="struct_foo.html">Foo</a> *buffer, <a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> new_length, <a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> new_max)</td></tr>
+<tr class="memdesc:aa0a468c6a5130199f03d341b9921260d"><td class="mdescLeft">&#160;</td><td class="mdescRight">租借元素数组构成的连续空间给序列。  <a href="#aa0a468c6a5130199f03d341b9921260d">更多...</a><br /></td></tr>
+<tr class="separator:aa0a468c6a5130199f03d341b9921260d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab0bffef8961329cea5e27b69f0135675"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#ab0bffef8961329cea5e27b69f0135675">loan_discontiguous</a> (<a class="el" href="struct_foo.html">Foo</a> **buffer, <a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> new_length, <a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> new_max)</td></tr>
+<tr class="memdesc:ab0bffef8961329cea5e27b69f0135675"><td class="mdescLeft">&#160;</td><td class="mdescRight">租借元素指针数组构成的非连续空间给序列。  <a href="#ab0bffef8961329cea5e27b69f0135675">更多...</a><br /></td></tr>
+<tr class="separator:ab0bffef8961329cea5e27b69f0135675"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
+Public 属性</h2></td></tr>
+<tr class="memitem:a45097e4628ca2cf13ed279e81e2abf67"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a45097e4628ca2cf13ed279e81e2abf67"></a>
+<a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a45097e4628ca2cf13ed279e81e2abf67">_owned</a></td></tr>
+<tr class="memdesc:a45097e4628ca2cf13ed279e81e2abf67"><td class="mdescLeft">&#160;</td><td class="mdescRight">是否拥有存储空间。 <br /></td></tr>
+<tr class="separator:a45097e4628ca2cf13ed279e81e2abf67"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2409d366e761abde4ac0b8effb5bb04b"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a2409d366e761abde4ac0b8effb5bb04b"></a>
+<a class="el" href="struct_foo.html">Foo</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a2409d366e761abde4ac0b8effb5bb04b">_contiguousBuffer</a></td></tr>
+<tr class="memdesc:a2409d366e761abde4ac0b8effb5bb04b"><td class="mdescLeft">&#160;</td><td class="mdescRight">元素的连续内存存储空间。 <br /></td></tr>
+<tr class="separator:a2409d366e761abde4ac0b8effb5bb04b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6dadebc5f6352e22f5dc7d32e7ef8a0d"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a6dadebc5f6352e22f5dc7d32e7ef8a0d"></a>
+<a class="el" href="struct_foo.html">Foo</a> **&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a6dadebc5f6352e22f5dc7d32e7ef8a0d">_discontiguousBuffer</a></td></tr>
+<tr class="memdesc:a6dadebc5f6352e22f5dc7d32e7ef8a0d"><td class="mdescLeft">&#160;</td><td class="mdescRight">元素的非连续内存空间，存储元素的指针数组。 <br /></td></tr>
+<tr class="separator:a6dadebc5f6352e22f5dc7d32e7ef8a0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab3c0bced36d81a343e10f14de6fd6e9f"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ab3c0bced36d81a343e10f14de6fd6e9f"></a>
+<a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#ab3c0bced36d81a343e10f14de6fd6e9f">_maximum</a></td></tr>
+<tr class="memdesc:ab3c0bced36d81a343e10f14de6fd6e9f"><td class="mdescLeft">&#160;</td><td class="mdescRight">sequence的容量。 <br /></td></tr>
+<tr class="separator:ab3c0bced36d81a343e10f14de6fd6e9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6a09e40af8582c80b4effaa8692a8122"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a6a09e40af8582c80b4effaa8692a8122"></a>
+<a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a6a09e40af8582c80b4effaa8692a8122">_length</a></td></tr>
+<tr class="memdesc:a6a09e40af8582c80b4effaa8692a8122"><td class="mdescLeft">&#160;</td><td class="mdescRight">sequence当前的元素个数。 <br /></td></tr>
+<tr class="separator:a6a09e40af8582c80b4effaa8692a8122"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae057b3736a7854ffd6cbb19170a8ccab"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ae057b3736a7854ffd6cbb19170a8ccab"></a>
+<a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#ae057b3736a7854ffd6cbb19170a8ccab">_sequenceInit</a></td></tr>
+<tr class="memdesc:ae057b3736a7854ffd6cbb19170a8ccab"><td class="mdescLeft">&#160;</td><td class="mdescRight">表明该sequence是否被初始化。 <br /></td></tr>
+<tr class="separator:ae057b3736a7854ffd6cbb19170a8ccab"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a01670d37d64a28a3bd04ea3c6659c5bb"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a01670d37d64a28a3bd04ea3c6659c5bb"></a>
+void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a01670d37d64a28a3bd04ea3c6659c5bb">_readerPtr</a></td></tr>
+<tr class="memdesc:a01670d37d64a28a3bd04ea3c6659c5bb"><td class="mdescLeft">&#160;</td><td class="mdescRight">租借空间来源的DataReader的指针。 <br /></td></tr>
+<tr class="separator:a01670d37d64a28a3bd04ea3c6659c5bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad1e8e974460b4d1f10ddab9a432df344"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ad1e8e974460b4d1f10ddab9a432df344"></a>
+void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#ad1e8e974460b4d1f10ddab9a432df344">_dataPtr</a></td></tr>
+<tr class="memdesc:ad1e8e974460b4d1f10ddab9a432df344"><td class="mdescLeft">&#160;</td><td class="mdescRight">租借空间来源的样本指针。 <br /></td></tr>
+<tr class="separator:ad1e8e974460b4d1f10ddab9a432df344"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a98438cf72396e34cfded9a99e0aa471b"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a98438cf72396e34cfded9a99e0aa471b"></a>
+ZRMemPool *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a98438cf72396e34cfded9a99e0aa471b">_mempool</a></td></tr>
+<tr class="memdesc:a98438cf72396e34cfded9a99e0aa471b"><td class="mdescLeft">&#160;</td><td class="mdescRight">分配空间的内存池。 <br /></td></tr>
+<tr class="separator:a98438cf72396e34cfded9a99e0aa471b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae9d2628758c64c419dbb3df0df379fdf"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ae9d2628758c64c419dbb3df0df379fdf"></a>
+<a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#ae9d2628758c64c419dbb3df0df379fdf">_allocMemory</a></td></tr>
+<tr class="memdesc:ae9d2628758c64c419dbb3df0df379fdf"><td class="mdescLeft">&#160;</td><td class="mdescRight">初始化原始时是否分配空间。 <br /></td></tr>
+<tr class="separator:ae9d2628758c64c419dbb3df0df379fdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8dd308da7d1dc18feb33270cac07364f"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a8dd308da7d1dc18feb33270cac07364f"></a>
+<a class="el" href="struct_foo.html">Foo</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a8dd308da7d1dc18feb33270cac07364f">_fixedFragments</a> [64]</td></tr>
+<tr class="memdesc:a8dd308da7d1dc18feb33270cac07364f"><td class="mdescLeft">&#160;</td><td class="mdescRight">分段数据数组，预分配64个分段 <br /></td></tr>
+<tr class="separator:a8dd308da7d1dc18feb33270cac07364f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a809d40484842fe6cc0d4a869c0d672d5"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a809d40484842fe6cc0d4a869c0d672d5"></a>
+<a class="el" href="struct_foo.html">Foo</a> **&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a809d40484842fe6cc0d4a869c0d672d5">_variousFragments</a></td></tr>
+<tr class="memdesc:a809d40484842fe6cc0d4a869c0d672d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">分段数据数组，分段数大于64个分段的存储位置 <br /></td></tr>
+<tr class="separator:a809d40484842fe6cc0d4a869c0d672d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a52ae4f62c3c2c3fca1da528366427d82"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a52ae4f62c3c2c3fca1da528366427d82"></a>
+void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a52ae4f62c3c2c3fca1da528366427d82">_fixedHeader</a> [64]</td></tr>
+<tr class="memdesc:a52ae4f62c3c2c3fca1da528366427d82"><td class="mdescLeft">&#160;</td><td class="mdescRight">分段数据数组的头指针，在回收空间时使用 <br /></td></tr>
+<tr class="separator:a52ae4f62c3c2c3fca1da528366427d82"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acdee769e6d1b95c0154fd9be05bbaa39"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="acdee769e6d1b95c0154fd9be05bbaa39"></a>
+void **&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#acdee769e6d1b95c0154fd9be05bbaa39">_variousHeader</a></td></tr>
+<tr class="memdesc:acdee769e6d1b95c0154fd9be05bbaa39"><td class="mdescLeft">&#160;</td><td class="mdescRight">分段数据数组的头指针，分段数大于64个时存储 <br /></td></tr>
+<tr class="separator:acdee769e6d1b95c0154fd9be05bbaa39"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a955106bc307bb209931b0712301d73a2"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a955106bc307bb209931b0712301d73a2"></a>
+<a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a955106bc307bb209931b0712301d73a2">_fragmentNum</a></td></tr>
+<tr class="memdesc:a955106bc307bb209931b0712301d73a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">分段数据数组数量。 <br /></td></tr>
+<tr class="separator:a955106bc307bb209931b0712301d73a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac1146e35a0f2c31582dfb1bd6c08c5a4"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ac1146e35a0f2c31582dfb1bd6c08c5a4"></a>
+<a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#ac1146e35a0f2c31582dfb1bd6c08c5a4">_fragmentSize</a></td></tr>
+<tr class="memdesc:ac1146e35a0f2c31582dfb1bd6c08c5a4"><td class="mdescLeft">&#160;</td><td class="mdescRight">分段长度，除首个以及最后一个分段外，所有分段一样长 <br /></td></tr>
+<tr class="separator:ac1146e35a0f2c31582dfb1bd6c08c5a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ada2f32abd2fba2e8fac38a81cbbea97a"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ada2f32abd2fba2e8fac38a81cbbea97a"></a>
+<a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#ada2f32abd2fba2e8fac38a81cbbea97a">_firstFragSize</a></td></tr>
+<tr class="memdesc:ada2f32abd2fba2e8fac38a81cbbea97a"><td class="mdescLeft">&#160;</td><td class="mdescRight">最后一个分段的长度。 <br /></td></tr>
+<tr class="separator:ada2f32abd2fba2e8fac38a81cbbea97a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9df81db8577a2fce0c1c177741e76701"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a9df81db8577a2fce0c1c177741e76701"></a>
+<a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_foo_seq.html#a9df81db8577a2fce0c1c177741e76701">_lastFragSize</a></td></tr>
+<tr class="memdesc:a9df81db8577a2fce0c1c177741e76701"><td class="mdescLeft">&#160;</td><td class="mdescRight">最后一个分段的长度。 <br /></td></tr>
+<tr class="separator:a9df81db8577a2fce0c1c177741e76701"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock"><p>使用 <a class="el" href="group___core_seq_struct.html#ga9ae4ea259ad8d4bdc06fdbede9d736ec" title="宏定义实现C序列模板，该宏用于声明T类型的序列类型TSeq及其支持方法，具体参见核心接口序列相关的函数 。 ...">DDS_USER_SEQUENCE_C</a> 以及 <a class="el" href="group___core_seq_struct.html#gaa26133b833e4be0b4c58791dde05b1b7" title="宏定义实现C++序列模板，该宏用于声明T类型的序列类型TSeq及其支持方法，具体参见核心接口序列相关的函数 。...">DDS_USER_SEQUENCE_CPP</a> 定义类型序列的等效代码的结构体部分。 </p>
+<p>使用 <a class="el" href="group___core_seq_struct.html#ga9ae4ea259ad8d4bdc06fdbede9d736ec" title="宏定义实现C序列模板，该宏用于声明T类型的序列类型TSeq及其支持方法，具体参见核心接口序列相关的函数 。 ...">DDS_USER_SEQUENCE_C</a> 以及 <a class="el" href="group___core_seq_struct.html#gaa26133b833e4be0b4c58791dde05b1b7" title="宏定义实现C++序列模板，该宏用于声明T类型的序列类型TSeq及其支持方法，具体参见核心接口序列相关的函数 。...">DDS_USER_SEQUENCE_CPP</a> 定义类型序列时，会相应的生成两部分代码， 第一部分为结构体部分，第二部分为序列的支持函数部分 <a class="el" href="group___core_seq_function.html">核心接口序列相关的函数</a> 。 </p>
+<dl><dt><b>示例: </b></dt><dd><a class="el" href="subscription_example_8cpp-example.html#_a0">subscription_example.cpp</a> , 以及 <a class="el" href="_wait-_condition_8cpp-example.html#_a7">Wait-Condition.cpp</a>.</dd>
+</dl></div><h2 class="groupheader">构造及析构函数说明</h2>
+<a class="anchor" id="a7d777d64d89c7a9b658767e86957cc4b"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">FooSeq::FooSeq </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>&#160;</td>
+          <td class="paramname"><em>max</em> = <code>0</code></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">explicit</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>构造函数，默认构造容量为0的序列。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">max</td><td>指定序列的容量。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="a8a45fde09555c4f664ea2c5b0b20f9eb"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">FooSeq::FooSeq </td>
+          <td>(</td>
+          <td class="paramtype">const struct <a class="el" href="struct_foo_seq.html">FooSeq</a> &amp;&#160;</td>
+          <td class="paramname"><em>seq</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>拷贝构造函数。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">seq</td><td>源序列。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<h2 class="groupheader">成员函数说明</h2>
+<a class="anchor" id="a506350d41a7260a30ce6d951be0ebf2a"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> FooSeq::append </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="struct_foo.html">Foo</a> &amp;&#160;</td>
+          <td class="paramname"><em>val</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>向序列尾部添加数据。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">val</td><td>指明需要添加的数据。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>true表示成功，false表示失败，失败的原因可能为：<ul>
+<li>序列尚未初始化；</li>
+<li>序列的空间是租借的；</li>
+<li>当前长度已达最大长度。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a421c59686328b17660c8e41f39b09015"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> FooSeq::clear </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>清空序列内的所有元素，并将长度与最大长度设置为0。 </p>
+<dl class="section return"><dt>返回</dt><dd>true表示成功，false表示失败，失败的原因可能为：<ul>
+<li>序列的空间是租借的，此时调用 <a class="el" href="struct_foo_seq.html#a3ecffafc1a797815b9583b59ac24d225" title="将租借空间归还用户。 ">unloan()</a> 方法清空。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a4a0fbcd2deeee6baf9e9ccf184f650bc"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> FooSeq::compare </td>
+          <td>(</td>
+          <td class="paramtype">const struct <a class="el" href="struct_foo_seq.html">FooSeq</a> &amp;&#160;</td>
+          <td class="paramname"><em>compared_seq</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>比较当前序列与指定序列的大小关系，包括元素内容，其中元素的比较方法由宏 TCOMPARE 指定。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">compared_seq</td><td>指定的序列。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>0表示两者相等，小于0表示 this &lt;<em>compared_seq</em> ，大于0表示 this &gt;<em>compared_seq</em> </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="aa5afef88bbd5ceb9971acde231a90b78"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> FooSeq::ensure_length </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>&#160;</td>
+          <td class="paramname"><em>length</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>&#160;</td>
+          <td class="paramname"><em>max</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>同时设置序列的最大长度以及当前长度，参见 <a class="el" href="struct_foo_seq.html#a26062905a9af686517ef84444dfeed35" title="获取序列当前的长度。 ">length()</a> 以及 <a class="el" href="struct_foo_seq.html#a76635279ecac90b9272532cee6302b15" title="获取序列的最大长度。 ">maximum()</a>。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">length</td><td>新的当前长度。 </td></tr>
+    <tr><td class="paramname">max</td><td>新的最大长度。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>true表示成功，false表示失败，失败的原因可能为：<ul>
+<li>序列尚未初始化；</li>
+<li>序列的空间是租借的；</li>
+<li>新的当前长度大于新的最大长度；</li>
+<li>分配空间失败。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ae323c378e48b051c87b53568d2c8e201"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> FooSeq::from_array </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="struct_foo.html">Foo</a>&#160;</td>
+          <td class="paramname"><em>array</em>[], </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>&#160;</td>
+          <td class="paramname"><em>length</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>从元素的数组构造含有相同元素及其顺序的等价序列。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">array</td><td>指明源数组。 </td></tr>
+    <tr><td class="paramname">length</td><td>数组长度。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>true表示成功，false表示失败，失败的原因包括：<ul>
+<li>序列尚未初始化；</li>
+<li>序列的空间是租借的；</li>
+<li>分配内存失败。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a77a62d302af8068607b17d4caf4980a3"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="struct_foo.html">Foo</a> &amp; FooSeq::get_at </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>&#160;</td>
+          <td class="paramname"><em>i</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>获取指定下标的对象的引用。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">i</td><td>指明下标，范围应小于序列当前长度。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>指定元素的常量引用，当 i &gt;= 序列当前长度时，程序发生异常。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a327f009abd6eea0695d5005e65227ae9"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="struct_foo.html">Foo</a> * FooSeq::get_contiguous_buffer </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>获取序列的内部存储空间，元素的数组。 </p>
+<dl class="section return"><dt>返回</dt><dd>元素的数组，NULL有以下几种情况：<ul>
+<li>最大长度为0；</li>
+<li>数据为租借的且存储在非连续空间中。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a4d1593df80405f858bf4a90eca16d31c"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="struct_foo.html">Foo</a> ** FooSeq::get_discontiguous_buffer </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>获取序列的非连续空间中，元素指针的数组，只有通过 <a class="el" href="struct_foo_seq.html#ab0bffef8961329cea5e27b69f0135675" title="租借元素指针数组构成的非连续空间给序列。 ">loan_discontiguous</a> 函数租借的元素才存储在非连续空间 。 </p>
+<dl class="section return"><dt>返回</dt><dd>元素指针的数据，NULL表示数据存储在连续空间中。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a958de43c71030d44b40fe7adee2e58cb"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> FooSeq::has_ownership </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>查询当前序列的空间是否为从外部租借的。 </p>
+<dl class="section return"><dt>返回</dt><dd>true表示是租借的，false表示不是。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a26062905a9af686517ef84444dfeed35"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> FooSeq::length </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>获取序列当前的长度。 </p>
+<dl class="section return"><dt>返回</dt><dd>当前的长度。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a33587784f6a573a87ed41a717092ffb9"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> FooSeq::length </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>&#160;</td>
+          <td class="paramname"><em>new_length</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>设置序列的长度，新元素将调用元素的初始化元素。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">new_length</td><td>新长度。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>true表示成功，false表示失败，失败的原因可能为：<ul>
+<li>新长度大于序列的最大长度。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="aa0a468c6a5130199f03d341b9921260d"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> FooSeq::loan_contiguous </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_foo.html">Foo</a> *&#160;</td>
+          <td class="paramname"><em>buffer</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>&#160;</td>
+          <td class="paramname"><em>new_length</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>&#160;</td>
+          <td class="paramname"><em>new_max</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>租借元素数组构成的连续空间给序列。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">buffer</td><td>元素数组。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">new_length</td><td>数组长度。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">new_max</td><td>数组长度。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>true表示成功，false表示失败，失败的原因包括：<ul>
+<li>序列尚未初始化；</li>
+<li>该序列的最大长度不为0； </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ab0bffef8961329cea5e27b69f0135675"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> FooSeq::loan_discontiguous </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_foo.html">Foo</a> **&#160;</td>
+          <td class="paramname"><em>buffer</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>&#160;</td>
+          <td class="paramname"><em>new_length</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>&#160;</td>
+          <td class="paramname"><em>new_max</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>租借元素指针数组构成的非连续空间给序列。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">buffer</td><td>元素指针数组。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">new_length</td><td>数组长度。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">new_max</td><td>数组长度。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>true表示成功，false表示失败，失败的原因包括：<ul>
+<li>序列尚未初始化；</li>
+<li>该序列的最大长度不为0； </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a76635279ecac90b9272532cee6302b15"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> FooSeq::maximum </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>获取序列的最大长度。 </p>
+<dl class="section return"><dt>返回</dt><dd>序列的最大长度。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a50b84428b7e74e1eb954b7a778d40b3c"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> FooSeq::maximum </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>&#160;</td>
+          <td class="paramname"><em>new_max</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>重新设置序列的最大长度。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">new_max</td><td>新的最大长度。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>true表示成功，false表示失败，失败的原因可能为：<ul>
+<li>序列尚未初始化；</li>
+<li>序列的空间是租借的；</li>
+<li>分配新的空间失败； </li>
+</ul>
+</dd></dl>
+<dl class="section note"><dt>注解</dt><dd>该函数可能造成大量的数据拷贝。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a4421f4b4f8cf80cbbf0729c0774a5003"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="struct_foo.html">Foo</a> &amp; FooSeq::operator[] </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>&#160;</td>
+          <td class="paramname"><em>i</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>常量下标操作符重载。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">i</td><td>指明下标，范围应小于序列当前长度。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>指定元素的常量引用，当 i &gt;= 序列当前长度时，程序发生异常。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a7075e80837f7de55a981109ddf576ddd"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="struct_foo.html">Foo</a> &amp; FooSeq::operator[] </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>&#160;</td>
+          <td class="paramname"><em>i</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>下标操作符重载。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">i</td><td>指明下标，范围应小于序列当前长度。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>指定元素的引用，当 i &gt;= 序列当前长度时，程序发生异常。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="adc660175ba4e310deedce3d07f3ec6f6"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> FooSeq::set_at </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>&#160;</td>
+          <td class="paramname"><em>i</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="struct_foo.html">Foo</a> &amp;&#160;</td>
+          <td class="paramname"><em>val</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>设置指定下标元素值，将<em>val</em> 拷贝到指定元素的空间。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">i</td><td>指明下标，范围应小于序列当前长度。 </td></tr>
+    <tr><td class="paramname">val</td><td>指明源。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>true表示成功，false表示失败，失败的原因可能为：<ul>
+<li>序列尚未初始化；</li>
+<li>序列的空间是租借的；</li>
+<li>下标超过当前序列的长度； </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a56d98616a4f735cd3b6b0998a8db27e5"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> FooSeq::to_array </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_foo.html">Foo</a>&#160;</td>
+          <td class="paramname"><em>array</em>[], </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>&#160;</td>
+          <td class="paramname"><em>length</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>从当前序列构造等价的含有相同元素及其顺序的等价数组。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">array</td><td>指明目标数组。 </td></tr>
+    <tr><td class="paramname">length</td><td>需要获取的元素个数。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>true表示成功，false表示失败，失败的原因包括：<ul>
+<li>序列尚未初始化；</li>
+<li>序列为空； -<em>length</em> &gt; 当前序列的长度。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a3ecffafc1a797815b9583b59ac24d225"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> FooSeq::unloan </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>将租借空间归还用户。 </p>
+<dl class="section return"><dt>返回</dt><dd>true表示成功，false表示失败，失败的原因可能为：<ul>
+<li>序列的空间是不是租借的； </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<hr/>该结构体的文档由以下文件生成:<ul>
+<li><a class="el" href="_foo_seq_8h_source.html">FooSeq.h</a></li>
+</ul>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="struct_foo_seq.html">FooSeq</a></li>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

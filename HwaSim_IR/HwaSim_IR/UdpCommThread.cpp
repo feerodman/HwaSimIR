@@ -37,6 +37,7 @@ UdpCommThread::~UdpCommThread()
 bool UdpCommThread::start()
 {
 	if (m_bIsRunning) return true;
+	m_lastStartFailureReason = "none";
 
 	// 初始化Socket
 	if (!initSocket())
@@ -185,6 +186,7 @@ bool UdpCommThread::initSocket()
 	// 初始化Winsock
 	if (WSAStartup(MAKEWORD(2, 2), &m_wsaData) != 0)
 	{
+		m_lastStartFailureReason = "winsock_startup_failed";
 		std::cerr << "WSAStartup失败，错误码：" << WSAGetLastError() << std::endl;
 		return false;
 	}
@@ -193,6 +195,7 @@ bool UdpCommThread::initSocket()
 	m_udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (m_udpSocket == INVALID_SOCKET)
 	{
+		m_lastStartFailureReason = "socket_create_failed";
 		std::cerr << "创建UDP Socket失败，错误码：" << WSAGetLastError() << std::endl;
 		WSACleanup();
 		return false;
@@ -202,6 +205,7 @@ bool UdpCommThread::initSocket()
 	u_long nonBlock = 1;
 	if (ioctlsocket(m_udpSocket, FIONBIO, &nonBlock) == SOCKET_ERROR)
 	{
+		m_lastStartFailureReason = "nonblocking_config_failed";
 		std::cerr << "设置Socket非阻塞失败，错误码：" << WSAGetLastError() << std::endl;
 		closesocket(m_udpSocket);
 		WSACleanup();
@@ -211,6 +215,7 @@ bool UdpCommThread::initSocket()
 	// 绑定本地地址
 	if (bind(m_udpSocket, (sockaddr*)&m_localAddr, sizeof(m_localAddr)) == SOCKET_ERROR)
 	{
+		m_lastStartFailureReason = "bind_failed";
 		std::cerr << "绑定UDP端口失败，错误码：" << WSAGetLastError() << std::endl;
 		closesocket(m_udpSocket);
 		WSACleanup();

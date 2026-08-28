@@ -1,0 +1,27 @@
+var struct_d_d_s___publication_builtin_topic_data =
+[
+    [ "data_tags", "struct_d_d_s___publication_builtin_topic_data.html#a04e4bf3d0759981e37b638022fa02067", null ],
+    [ "deadline", "struct_d_d_s___publication_builtin_topic_data.html#a565133ccfadf6046bacf0c582ebb8ad6", null ],
+    [ "destination_order", "struct_d_d_s___publication_builtin_topic_data.html#abd5cabd3682e303c48f33ba21475a790", null ],
+    [ "durability", "struct_d_d_s___publication_builtin_topic_data.html#a1bb85d9e468aa6cf92ad66b22eee7482", null ],
+    [ "durability_service", "struct_d_d_s___publication_builtin_topic_data.html#a0d55e57d87cb5fafb65e9284f43bcf0e", null ],
+    [ "group_data", "struct_d_d_s___publication_builtin_topic_data.html#ab76d3270aa9c472fb2a225d4415ab44b", null ],
+    [ "key", "struct_d_d_s___publication_builtin_topic_data.html#a4780175a7c9b523cd5d635256d6e0121", null ],
+    [ "latency_budget", "struct_d_d_s___publication_builtin_topic_data.html#ab21fa1bffc3dc36b0f0aa395672895e1", null ],
+    [ "lifespan", "struct_d_d_s___publication_builtin_topic_data.html#a03edcdc5dc9bbfc40a7320d55aafd096", null ],
+    [ "liveliness", "struct_d_d_s___publication_builtin_topic_data.html#ab44c00a16f6926eb72d8abe8291867c4", null ],
+    [ "ownership", "struct_d_d_s___publication_builtin_topic_data.html#aef39a6b1a284e51ca0a52bfe720268c1", null ],
+    [ "ownership_strength", "struct_d_d_s___publication_builtin_topic_data.html#a34b10affbd2ed7872359f5310c1308f0", null ],
+    [ "participant_key", "struct_d_d_s___publication_builtin_topic_data.html#ac1fecede53d648df3be9a1a7de342da4", null ],
+    [ "partition", "struct_d_d_s___publication_builtin_topic_data.html#a7a3bcdf29d526fc91c0385f65b54ea8e", null ],
+    [ "presention", "struct_d_d_s___publication_builtin_topic_data.html#a3a2ad8716bcc9b7588bbee648aa1a504", null ],
+    [ "property_list", "struct_d_d_s___publication_builtin_topic_data.html#ac94886ee32a2ae45bd00eab0605a6629", null ],
+    [ "protected_discovery", "struct_d_d_s___publication_builtin_topic_data.html#a865a182eadce0fb9d0d9ea1d1bbd8d2a", null ],
+    [ "reliability", "struct_d_d_s___publication_builtin_topic_data.html#a49eeb3120d4a9f2b930aab4f7825707a", null ],
+    [ "security_info", "struct_d_d_s___publication_builtin_topic_data.html#ac1ab599589665dc60de3950acce0de59", null ],
+    [ "topic_data", "struct_d_d_s___publication_builtin_topic_data.html#ac7ed22946c5fd508ec7bc56d093dc701", null ],
+    [ "topic_name", "struct_d_d_s___publication_builtin_topic_data.html#a3dea4ddc2f525de45bb3d2719d66995a", null ],
+    [ "type_name", "struct_d_d_s___publication_builtin_topic_data.html#a3cdd0faf836dac261f903d029ab6587d", null ],
+    [ "type_object", "struct_d_d_s___publication_builtin_topic_data.html#a083b849d9dadd06732c29d647829ff12", null ],
+    [ "user_data", "struct_d_d_s___publication_builtin_topic_data.html#a2e81216cc666494913cecf91fc78fd76", null ]
+];

@@ -12,7 +12,8 @@ param(
     [int]$RunSeconds = 35,
     [switch]$SkipSourceSync,
     [switch]$SkipBuild,
-    [switch]$SkipDeploy
+    [switch]$SkipDeploy,
+    [switch]$DdsH264Smoke
 )
 
 $ErrorActionPreference = 'Stop'
@@ -41,8 +42,10 @@ function Invoke-Ssh {
 }
 
 function Invoke-Scp {
-    param([string]$Source, [string]$Target)
-    $args = @(New-SshArguments) + @($Source, $Target)
+    param([string]$Source, [string]$Target, [switch]$Recursive)
+    $args = @(New-SshArguments)
+    if ($Recursive) { $args += '-r' }
+    $args += @($Source, $Target)
     Invoke-Native -FilePath 'scp.exe' -Arguments $args
 }
 
@@ -143,6 +146,8 @@ try {
             '-DCMAKE_BUILD_TYPE=Release',
             '-DHWASIMIR_ENABLE_RKMPP=ON',
             '-DRKMPP_ROOT=/home/linaro/sysroots/rk3588-mpp',
+            '-DHWASIMIR_ENABLE_ZRDDS=ON',
+            '-DZRDDS_ROOT=/home/linaro/sysroots/zrdds-aarch64',
             '-DHWASIMIR_ENABLE_FFMPEG=OFF',
             '-DPANDA3D_ROOT=/opt/panda3d-aarch64',
             '-DOpenCV_DIR=/usr/lib/aarch64-linux-gnu/cmake/opencv4'
@@ -158,7 +163,19 @@ try {
         Invoke-Ssh $boardTarget "pkill -TERM -x HwaSim_IR || true; cd $BoardRoot && cp -p HwaSim_IR HwaSim_IR.before_codex_$stamp"
         Invoke-Scp $localElf "$boardTarget`:$BoardRoot/HwaSim_IR.codex_new"
         Invoke-Ssh $boardTarget "cd $BoardRoot && chmod +x HwaSim_IR.codex_new && mv HwaSim_IR.codex_new HwaSim_IR && file HwaSim_IR && ldd HwaSim_IR"
+        Write-Host '[Pipeline] Deploying DDS runtime configuration and the validated RK3588 launcher'
+        Invoke-Ssh $boardTarget "mkdir -p $BoardRoot/Config"
+        Invoke-Scp (Join-Path $RepoRoot 'HwaSim_IR\Bin\Config\DDS') "$boardTarget`:$BoardRoot/Config/" -Recursive
+        $boardBoundQos = Join-Path $RepoRoot 'tools\dds_d1_qos\ZRDDS_QOS_RK3588_192.168.1.116.xml'
+        if (Test-Path -LiteralPath $boardBoundQos) {
+            Invoke-Scp $boardBoundQos "$boardTarget`:$BoardRoot/Config/DDS/"
+        }
+        Invoke-Scp (Join-Path $RepoRoot 'tools\rk3588_run_hwasimir_precise.sh') "$boardTarget`:$BoardRoot/run_precise.sh"
+        Invoke-Ssh $boardTarget "chmod +x $BoardRoot/run_precise.sh && test -f $BoardRoot/Config/DDS/ZRDDS_QOS_PROFILES.xml"
     }
+
+    Invoke-Ssh $boardTarget "test -x $BoardRoot/HwaSim_IR && test -f $BoardRoot/Config/NetworkConfig_precise.ini && test -f $BoardRoot/Config/HwaSimIRRuntime.ini && test -f $BoardRoot/Config/DDS/ZRDDS_QOS_PROFILES.xml && test -d $BoardRoot/Config/Weather && test -d $BoardRoot/Config/TargetLib && test -d $BoardRoot/Config/SensorWave && test -d $BoardRoot/Config/IRRadiance && echo '[DeploymentManifest] result=PASS'"
+    Invoke-Ssh $boardTarget "test -x $BoardRoot/run_precise.sh; test -f $BoardRoot/Config/DDS/ZRDDS_QOS_RK3588_192.168.1.116.xml; ps -ef | grep '[X]org :0' >/dev/null; if pgrep -x HwaSim_IR >/dev/null; then echo '[PipelinePreflight][FATAL] stale_hwasimir_process' >&2; exit 21; fi; if ss -H -lunp 2>/dev/null | awk '`$4 ~ /:8888`$/ { found=1 } END { exit !found }'; then echo '[PipelinePreflight][FATAL] udp_8888_in_use' >&2; ss -lunp | grep ':8888' >&2 || true; exit 22; fi; echo '[PipelinePreflight] process=PASS udp8888=PASS xorg=PASS qos=PASS'"
 
     Write-Host '[Pipeline] Creating temporary direct-link configs and starting all three endpoints'
     Invoke-Ssh $boardTarget "cp -p $BoardRoot/Config/HwaSimIRRuntime.ini $boardConfigBackup"
@@ -183,6 +200,15 @@ try {
         @('Performance','EnablePerfLog','1'),
         @('Performance','QuietPerfMode','true')
     )
+    if ($DdsH264Smoke) {
+        $settings += @(
+            @('DdsVideo','Enable','true'),
+            @('DdsVideo','Codec','auto'),
+            @('DdsVideo','QosFile','Config/DDS/ZRDDS_QOS_RK3588_192.168.1.116.xml'),
+            @('LocalRecording','Enable','false'),
+            @('TcpPayload','SendVideo','false')
+        )
+    }
     foreach ($setting in $settings) {
         $configLines = @(Set-IniValue $configLines $setting[0] $setting[1] $setting[2])
     }
@@ -232,17 +258,28 @@ remotePort=8888
     $env:QT_FORCE_STDERR_LOGGING = '1'
     $videoOut = Join-Path $logDir 'VideoDisplay.out.log'
     $videoErr = Join-Path $logDir 'VideoDisplay.err.log'
-    $videoLine = 'start "" /b "' + $videoExe.FullName + '" "--network-config=' + $videoConfig + '" "--channel=precise" 1>"' + $videoOut + '" 2>"' + $videoErr + '"'
+    $firstFramePng = Join-Path $logDir 'VideoDisplay.first-frame.png'
+    if ($DdsH264Smoke) {
+        $windowsQos = Join-Path $RepoRoot 'tools\dds_d1_qos\ZRDDS_QOS_WINDOWS_192.168.1.188.xml'
+        if (-not (Test-Path -LiteralPath $windowsQos)) { throw "Windows bound DDS QoS missing: $windowsQos" }
+        $autoExitMs = ($RunSeconds + 25) * 1000
+        $videoLine = 'start "" /b "' + $videoExe.FullName + '" "--receive-transport=dds" "--dds-topic=HwaSimIR.Video.precise.H264" "--dds-codec=h264" "--dds-width=800" "--dds-height=800" "--dds-fps=60" "--dds-qos=' + $windowsQos + '" "--dds-dump-first-frame=' + $firstFramePng + '" "--acceptance-exit-ms=' + $autoExitMs + '" 1>"' + $videoOut + '" 2>"' + $videoErr + '"'
+    }
+    else {
+        $videoLine = 'start "" /b "' + $videoExe.FullName + '" "--network-config=' + $videoConfig + '" "--channel=precise" 1>"' + $videoOut + '" 2>"' + $videoErr + '"'
+    }
     & cmd.exe /d /s /c $videoLine
     Start-Sleep -Seconds 3
     $videoProcess = Get-Process HwaSim_IR_VideoDisplay -ErrorAction Stop |
         Sort-Object StartTime -Descending | Select-Object -First 1
-    if (-not (netstat -ano -p tcp | Select-String "$WindowsHost`:5555 .*LISTENING .* $($videoProcess.Id)$")) {
+    if (-not $DdsH264Smoke -and -not (netstat -ano -p tcp | Select-String "$WindowsHost`:5555 .*LISTENING .* $($videoProcess.Id)$")) {
         throw 'VideoDisplay is not listening on the expected address and port'
     }
 
     $boardLog = "$BoardRoot/logs/codex_pipeline_$stamp.log"
-    Invoke-Ssh $boardTarget "cd $BoardRoot && mkdir -p logs && PANDA3D_ROOT=/opt/panda3d-aarch64 PRC_DIR=/opt/panda3d-aarch64/etc LD_LIBRARY_PATH=/opt/panda3d-aarch64/lib:/usr/lib/aarch64-linux-gnu:/lib/aarch64-linux-gnu RenderPresentationMode=HeadlessOffscreen nohup ./HwaSim_IR --channel precise </dev/null >$boardLog 2>&1 &"
+    $boardDdsEnable = if ($DdsH264Smoke) { 'true' } else { 'false' }
+    $boardTcpVideo = if ($DdsH264Smoke) { 'false' } else { 'true' }
+    Invoke-Ssh $boardTarget "cd $BoardRoot && mkdir -p logs && HwaSimIRDdsVideoEnable=$boardDdsEnable HwaSimIRDdsVideoCodec=auto HwaSimIRDdsVideoQosFile=Config/DDS/ZRDDS_QOS_RK3588_192.168.1.116.xml HwaSimIRLocalRecordingEnable=false HwaSimIRExitOnStop=true TcpSendVideo=$boardTcpVideo H264Encoder=mpp H264FallbackToJpeg=false RenderPresentationMode=HeadlessOffscreen nohup ./run_precise.sh </dev/null >$boardLog 2>&1 &"
     Start-Sleep -Seconds 5
 
     $stimArgs = @(
@@ -268,13 +305,43 @@ remotePort=8888
         Pop-Location
     }
     Start-Sleep -Seconds 3
+    if ($DdsH264Smoke) {
+        Get-Process -Id $videoProcess.Id -ErrorAction Stop | Wait-Process -Timeout 20
+    }
     Invoke-Scp "$boardTarget`:$boardLog" (Join-Path $logDir 'RK3588_HwaSim_IR.log')
 
     $boardLines = Get-Content -LiteralPath (Join-Path $logDir 'RK3588_HwaSim_IR.log')
     $videoLines = Get-Content -LiteralPath $videoErr
+    if ($DdsH264Smoke) {
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $RepoRoot 'tools\dds_d31_runtime_gate.ps1') -BoardLog (Join-Path $logDir 'RK3588_HwaSim_IR.log') -VideoDisplayLog $videoErr -FirstFramePng $firstFramePng
+        if ($LASTEXITCODE -ne 0) { throw 'D3.1 hard runtime gate rejected the DDS smoke' }
+    }
     $encodePass = [bool]($boardLines -match '\[H264EncodeSuccess\].*backend=mpp.*codec=h264_annexb.*keyFrame=true.*spsPps=true')
     $decodePass = [bool]($videoLines -match '\[H264DecodeSuccess\].*backend=ffmpeg.*codec=h264_annexb')
-    $packetPass = [bool]($videoLines -match 'packetVersion=3 flags=0x7 codec=h264_annexb')
+    $packetPass = $DdsH264Smoke -or [bool]($videoLines -match 'packetVersion=3 flags=0x7 codec=h264_annexb')
+    $gpuPass = [bool]($boardLines -match '\[GpuBackend\].*glVendor=ARM.*glRenderer=Mali-LODX.*hardwareGpu=1') -and -not [bool]($boardLines -match 'llvmpipe|hardwareGpu=0')
+    $startupPass = -not [bool]($boardLines -match '\[StartupFatal\]|绑定UDP端口失败|Address already in use')
+    $glPass = -not [bool]($boardLines -match 'GL error 0x502|GL_INVALID_OPERATION')
+    $ddsPass = $true
+    $pixelPass = $true
+    $ddsCountDetail = 'legacy TCP smoke'
+    if ($DdsH264Smoke) {
+        $senderMatches = [regex]::Matches(($boardLines -join "`n"), 'sentSamples=(\d+).*writeErrors=(\d+).*droppedSamples=(\d+)')
+        $receiverMatches = [regex]::Matches(($videoLines -join "`n"), '\[DdsVideoReceiverPerf\] receivedSamples=(\d+).*ddsErrors=(\d+)')
+        $diagMatches = [regex]::Matches(($videoLines -join "`n"), '\[DdsFrameDiag\].*min=([-+0-9.]+).*max=([-+0-9.]+).*mean=([-+0-9.]+).*stddev=([-+0-9.]+)')
+        $ddsPass = $senderMatches.Count -gt 0 -and $receiverMatches.Count -gt 0
+        if ($ddsPass) {
+            $s = $senderMatches[$senderMatches.Count - 1]
+            $r = $receiverMatches[$receiverMatches.Count - 1]
+            $ddsPass = [int64]$s.Groups[1].Value -eq [int64]$r.Groups[1].Value -and [int64]$s.Groups[2].Value -eq 0 -and [int64]$s.Groups[3].Value -eq 0 -and [int64]$r.Groups[2].Value -eq 0
+            $ddsCountDetail = "sent=$($s.Groups[1].Value) received=$($r.Groups[1].Value) writerErrors=$($s.Groups[2].Value) dropped=$($s.Groups[3].Value) readerErrors=$($r.Groups[2].Value)"
+        }
+        if ($diagMatches.Count -eq 0) { $pixelPass = $false }
+        else {
+            $diag = $diagMatches[$diagMatches.Count - 1]
+            $pixelPass = [double]$diag.Groups[2].Value -gt [double]$diag.Groups[1].Value -and [double]$diag.Groups[4].Value -gt 0 -and (Test-Path -LiteralPath $firstFramePng)
+        }
+    }
     $firstH264Line = ($boardLines | Select-String '\[H264EncodeSuccess\]' | Select-Object -First 1).LineNumber
     $h264BoardLines = if ($firstH264Line) { @($boardLines | Select-Object -Skip ($firstH264Line - 1)) } else { @() }
     $fallbackSeen = [bool]($h264BoardLines -match '^\[CodecFallback\]|activeBackend=(jpeg|ffmpeg)|mpp_(init|cfg|encode).*failed')
@@ -294,7 +361,7 @@ remotePort=8888
     })
     $outputAverage = Get-LogMetricAverage $activeBoardPerf 'outputFps'
     $displayAverage = Get-LogMetricAverage $activeVideoPerf 'displayFps'
-    $fpsPass = $null -ne $outputAverage -and $null -ne $displayAverage -and $outputAverage -ge 59.0 -and $displayAverage -ge 59.0
+    $fpsPass = $DdsH264Smoke -or ($null -ne $outputAverage -and $null -ne $displayAverage -and $outputAverage -ge 59.0 -and $displayAverage -ge 59.0)
 
     $summary = @(
         "H264EncodeSuccess=$encodePass",
@@ -304,9 +371,17 @@ remotePort=8888
         "outputFpsAverage=$outputAverage",
         "displayFpsAverage=$displayAverage",
         "FpsTargetPass=$fpsPass",
-        "OverallPass=$($encodePass -and $decodePass -and $packetPass -and -not $fallbackSeen -and $fpsPass)"
+        "GpuMaliPass=$gpuPass",
+        "UdpStartupPass=$startupPass",
+        "GlErrorPass=$glPass",
+        "DdsExactCountsPass=$ddsPass ($ddsCountDetail)",
+        "DecodedPixelContentPass=$pixelPass",
+        "OverallPass=$($encodePass -and $decodePass -and $packetPass -and -not $fallbackSeen -and $fpsPass -and $gpuPass -and $startupPass -and $glPass -and $ddsPass -and $pixelPass)"
     )
     $summary | Tee-Object -FilePath (Join-Path $logDir 'summary.txt')
+    if (-not ($encodePass -and $decodePass -and $packetPass -and -not $fallbackSeen -and $fpsPass -and $gpuPass -and $startupPass -and $glPass -and $ddsPass -and $pixelPass)) {
+        throw 'RK3588 runtime acceptance failed; see summary.txt and raw logs'
+    }
 }
 finally {
     if ($videoProcess) {

@@ -1,0 +1,251 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: TypeCode.h 源文件</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>结构体</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('_type_code_8h_source.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">TypeCode.h</div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#ifndef TypeCode_h__</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#define TypeCode_h__</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#include &quot;OsResource.h&quot;</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#include &quot;TypeCodeKind.h&quot;</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="preprocessor">#include &quot;ZRDDSCommon.h&quot;</span></div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#include &quot;ZRDDSCWrapper.h&quot;</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="preprocessor">#ifdef _ZRDDS_INCLUDE_TYPECODE</span></div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span></div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;{</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;DCPSDLL <span class="keyword">extern</span> TCTypeKind TypeCodeGetKind(<span class="keyword">const</span> TypeCode* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;DCPSDLL <span class="keyword">extern</span> <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> TypeCodeCompare(<span class="keyword">const</span> TypeCode* typeCode1, <span class="keyword">const</span> TypeCode* typeCode2);</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;DCPSDLL <span class="keyword">extern</span> <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* TypeCodeGetName(<span class="keyword">const</span> TypeCode* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;DCPSDLL <span class="keyword">extern</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> TypeCodeGetMemberCount(<span class="keyword">const</span> TypeCode* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;DCPSDLL <span class="keyword">extern</span> <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* TypeCodeGetMemberName(<span class="keyword">const</span> TypeCode* <span class="keyword">self</span>, <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> index);</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;DCPSDLL <span class="keyword">extern</span> <span class="keyword">const</span> TypeCodeHeader* TypeCodeGetBaseType(<span class="keyword">const</span> TypeCodeHeader* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;DCPSDLL <span class="keyword">extern</span> TypeCode* TypeCodeGetElementType(<span class="keyword">const</span> TypeCode* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;DCPSDLL <span class="keyword">extern</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> TypeCodeGetIndexByName(<span class="keyword">const</span> TypeCode* <span class="keyword">self</span>, <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* name);</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;DCPSDLL <span class="keyword">extern</span> TypeCode*TypeCodeGetMemberType(<span class="keyword">const</span> TypeCode* <span class="keyword">self</span>, <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> index);</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;DCPSDLL <span class="keyword">extern</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> TypeCodeGetLabelCount(<span class="keyword">const</span> TypeCode* <span class="keyword">self</span>, <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> index);</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;DCPSDLL <span class="keyword">extern</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> TypeCodeGetLabel(<span class="keyword">const</span> TypeCode* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;    <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> memberIdx,</div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;    <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> labelIdx,</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;    TypeCodeExceptionCode* expCode);</div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;DCPSDLL <span class="keyword">extern</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> TypeCodeGetDefaultIndex(<span class="keyword">const</span> TypeCode* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;DCPSDLL <span class="keyword">extern</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> TypeCodeGetEnumVal(<span class="keyword">const</span> TypeCode* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;    <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> memberIdx,</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;    TypeCodeExceptionCode* expCode);</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;DCPSDLL <span class="keyword">extern</span> <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* TypeCodeGetEnumString(<span class="keyword">const</span> TypeCode* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;    <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> enumVal,</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;    TypeCodeExceptionCode* expCode);</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;DCPSDLL <span class="keyword">extern</span> <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> TypeCodeIsMemberKey(<span class="keyword">const</span> TypeCode* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;    <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> index,</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;    TypeCodeExceptionCode* expCode);</div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;DCPSDLL <span class="keyword">extern</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> TypeCodeGetArrayDimensionCount(<span class="keyword">const</span> TypeCode* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;</div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;DCPSDLL <span class="keyword">extern</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> TypeCodeGetArrayDimension(<span class="keyword">const</span> TypeCode* <span class="keyword">self</span>, <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> index);</div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;</div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;DCPSDLL <span class="keyword">extern</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> TypeCodeGetMaxLength(<span class="keyword">const</span> TypeCodeHeader* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;DCPSDLL <span class="keyword">extern</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> TypeCodeGetArrayElementCount(<span class="keyword">const</span> TypeCode* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;</div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;DCPSDLL <span class="keyword">extern</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> TypeCodeAddMemberToEnum(TypeCode* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;    <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> index,</div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;    <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* name,</div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;    <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> value);</div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;</div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;DCPSDLL <span class="keyword">extern</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> TypeCodeAddMemberToUnion(TypeCode* <span class="keyword">self</span>, <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> index, <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* name, <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> labelCount, <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>* labels, <span class="keyword">const</span> TypeCode* tc);</div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;</div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;DCPSDLL <span class="keyword">extern</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> TypeCodeAddMemberToStruct(</div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;    TypeCode* <span class="keyword">self</span>, </div>
+<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;    <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> index, </div>
+<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;    <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> memberId, </div>
+<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;    <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* name, </div>
+<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;    <span class="keyword">const</span> TypeCode* tc, </div>
+<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;    <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> isKey, </div>
+<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;    <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> isOption);</div>
+<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;</div>
+<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;DCPSDLL <span class="keyword">extern</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> TypeCodeAddMemberToValueType(</div>
+<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;    TypeCode* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;    <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> index,</div>
+<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;    <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> memberId,</div>
+<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;    <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* name,</div>
+<div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;    <span class="keyword">const</span> TypeCode* tc,</div>
+<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;    <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> isKey,</div>
+<div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160;    <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> isOption);</div>
+<div class="line"><a name="l00438"></a><span class="lineno">  438</span>&#160;DCPSDLL <span class="keyword">extern</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* TypeCodeGetTypePrintableString(<span class="keyword">const</span> TypeCodeHeader* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00439"></a><span class="lineno">  439</span>&#160;</div>
+<div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160;DCPSDLL <span class="keyword">extern</span> <span class="keywordtype">void</span> TypeCodeReleasePrintableString(<a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* buffer);</div>
+<div class="line"><a name="l00465"></a><span class="lineno">  465</span>&#160;DCPSDLL <span class="keyword">extern</span> <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> TypeCodePrintIDL(<span class="keyword">const</span> TypeCode* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00466"></a><span class="lineno">  466</span>&#160;</div>
+<div class="line"><a name="l00478"></a><span class="lineno">  478</span>&#160;DCPSDLL <span class="keyword">extern</span> TypeCodeFactory* TypeCodeFactoryGetInstance();</div>
+<div class="line"><a name="l00479"></a><span class="lineno">  479</span>&#160;</div>
+<div class="line"><a name="l00491"></a><span class="lineno">  491</span>&#160;DCPSDLL <span class="keyword">extern</span> <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> TypeCodeFactoryFinalize();</div>
+<div class="line"><a name="l00492"></a><span class="lineno">  492</span>&#160;</div>
+<div class="line"><a name="l00507"></a><span class="lineno">  507</span>&#160;DCPSDLL <span class="keyword">extern</span> TypeCode* TypeCodeFactoryGetPrimitiveTC(TypeCodeFactory* <span class="keyword">self</span>, TCTypeKind kind);</div>
+<div class="line"><a name="l00508"></a><span class="lineno">  508</span>&#160;</div>
+<div class="line"><a name="l00524"></a><span class="lineno">  524</span>&#160;DCPSDLL <span class="keyword">extern</span> TypeCode* TypeCodeFactoryCreateStructTC(</div>
+<div class="line"><a name="l00525"></a><span class="lineno">  525</span>&#160;    TypeCodeFactory* <span class="keyword">self</span>, </div>
+<div class="line"><a name="l00526"></a><span class="lineno">  526</span>&#160;    <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* name, </div>
+<div class="line"><a name="l00527"></a><span class="lineno">  527</span>&#160;    ExtensibilityKind kind);</div>
+<div class="line"><a name="l00528"></a><span class="lineno">  528</span>&#160;</div>
+<div class="line"><a name="l00546"></a><span class="lineno">  546</span>&#160;DCPSDLL <span class="keyword">extern</span> TypeCode* TypeCodeFactoryCreateValueTypeTC(</div>
+<div class="line"><a name="l00547"></a><span class="lineno">  547</span>&#160;    TypeCodeFactory* <span class="keyword">self</span>, </div>
+<div class="line"><a name="l00548"></a><span class="lineno">  548</span>&#160;    <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* name, </div>
+<div class="line"><a name="l00549"></a><span class="lineno">  549</span>&#160;    TypeCodeModifierKind modifierKind, </div>
+<div class="line"><a name="l00550"></a><span class="lineno">  550</span>&#160;    ExtensibilityKind kind, </div>
+<div class="line"><a name="l00551"></a><span class="lineno">  551</span>&#160;    <span class="keyword">const</span> TypeCode*baseTC);</div>
+<div class="line"><a name="l00552"></a><span class="lineno">  552</span>&#160;</div>
+<div class="line"><a name="l00569"></a><span class="lineno">  569</span>&#160;DCPSDLL <span class="keyword">extern</span> TypeCode* TypeCodeFactoryCreateEnumTC(</div>
+<div class="line"><a name="l00570"></a><span class="lineno">  570</span>&#160;    TypeCodeFactory* <span class="keyword">self</span>, </div>
+<div class="line"><a name="l00571"></a><span class="lineno">  571</span>&#160;    <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* name,</div>
+<div class="line"><a name="l00572"></a><span class="lineno">  572</span>&#160;    <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> bitBound,</div>
+<div class="line"><a name="l00573"></a><span class="lineno">  573</span>&#160;    ExtensibilityKind kind);</div>
+<div class="line"><a name="l00574"></a><span class="lineno">  574</span>&#160;</div>
+<div class="line"><a name="l00591"></a><span class="lineno">  591</span>&#160;DCPSDLL <span class="keyword">extern</span> TypeCode* TypeCodeFactoryCreateUnionTC(TypeCodeFactory* <span class="keyword">self</span>, <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* name, <span class="keyword">const</span> TypeCode* switchTC, <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> defaultIdx);</div>
+<div class="line"><a name="l00592"></a><span class="lineno">  592</span>&#160;</div>
+<div class="line"><a name="l00607"></a><span class="lineno">  607</span>&#160;DCPSDLL <span class="keyword">extern</span> TypeCode* TypeCodeFactoryCreateStringTC(TypeCodeFactory* <span class="keyword">self</span>, <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> length);</div>
+<div class="line"><a name="l00608"></a><span class="lineno">  608</span>&#160;</div>
+<div class="line"><a name="l00624"></a><span class="lineno">  624</span>&#160;DCPSDLL <span class="keyword">extern</span> TypeCode* TypeCodeFactoryCreateSequenceTC(TypeCodeFactory* <span class="keyword">self</span>, <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> maxLength, <span class="keyword">const</span> TypeCode* tc);</div>
+<div class="line"><a name="l00625"></a><span class="lineno">  625</span>&#160;</div>
+<div class="line"><a name="l00642"></a><span class="lineno">  642</span>&#160;DCPSDLL <span class="keyword">extern</span> TypeCode* TypeCodeFactoryCreateArrayTC(TypeCodeFactory* <span class="keyword">self</span>, <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> dimensionCount, <span class="keyword">const</span> <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>* dimensions, <span class="keyword">const</span> TypeCode* tc);</div>
+<div class="line"><a name="l00643"></a><span class="lineno">  643</span>&#160;</div>
+<div class="line"><a name="l00658"></a><span class="lineno">  658</span>&#160;DCPSDLL <span class="keyword">extern</span> TypeCode* TypeCodeFactoryCloneTC(TypeCodeFactory* <span class="keyword">self</span>, <span class="keyword">const</span> TypeCode* tc);</div>
+<div class="line"><a name="l00659"></a><span class="lineno">  659</span>&#160;</div>
+<div class="line"><a name="l00674"></a><span class="lineno">  674</span>&#160;DCPSDLL <span class="keyword">extern</span> <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> TypeCodeFactoryDeleteTC(TypeCodeFactory* <span class="keyword">self</span>, TypeCode* tc);</div>
+<div class="line"><a name="l00675"></a><span class="lineno">  675</span>&#160;</div>
+<div class="line"><a name="l00676"></a><span class="lineno">  676</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a name="l00677"></a><span class="lineno">  677</span>&#160;}</div>
+<div class="line"><a name="l00678"></a><span class="lineno">  678</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00679"></a><span class="lineno">  679</span>&#160;</div>
+<div class="line"><a name="l00680"></a><span class="lineno">  680</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* _ZRDDS_INCLUDE_TYPECODE */</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00681"></a><span class="lineno">  681</span>&#160;</div>
+<div class="line"><a name="l00682"></a><span class="lineno">  682</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* TypeCode_h__*/</span><span class="preprocessor"></span></div>
+<div class="ttc" id="group___core_base_struct_html_ga79dbbaba1af8dfe2efe567fdcce2940b"><div class="ttname"><a href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a></div><div class="ttdeci">unsigned int ZR_UINT32</div><div class="ttdoc">为屏蔽平台差异，定义在接口中使用的4个字节无符号整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:101</div></div>
+<div class="ttc" id="group___core_base_struct_html_ga41af8a0ee350bae22a2791d338ee89ea"><div class="ttname"><a href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a></div><div class="ttdeci">char ZR_BOOLEAN</div><div class="ttdoc">为屏蔽平台差异，定义在接口中使用bool类型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:27</div></div>
+<div class="ttc" id="group___core_base_struct_html_gacc550da50917f3aa72ed5229fed9bb41"><div class="ttname"><a href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a></div><div class="ttdeci">char ZR_INT8</div><div class="ttdoc">为屏蔽平台差异，定义在接口中使用的1个字节整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:51</div></div>
+<div class="ttc" id="group___core_base_struct_html_gab3de48fd32f773622806baa963567e20"><div class="ttname"><a href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a></div><div class="ttdeci">int ZR_INT32</div><div class="ttdoc">为屏蔽平台差异，定义在接口中使用的4个字节整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:91</div></div>
+</div><!-- fragment --></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="dir_0fc3f8f3ef96ce2d45d66d6e29832317.html">resources</a></li><li class="navelem"><a class="el" href="dir_cf9ceadfa18f25e608d16251156af657.html">zrdds</a></li><li class="navelem"><a class="el" href="dir_49213087373222e5c37cddb4e4d5f33e.html">src</a></li><li class="navelem"><a class="el" href="dir_a789ccf0f178fa94fb7fe735f25025ab.html">CInterface</a></li><li class="navelem"><b>TypeCode.h</b></li>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

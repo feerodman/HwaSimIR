@@ -150,8 +150,8 @@ if (-not $ValidateEvidenceOnly -and -not $SkipDeploy) {
     }
     else {
         Invoke-Gate 'VM build / board deploy' 'deploy.txt' {
-            & (Join-Path $RepoRoot 'tools\codex_rk3588_pipeline.ps1') -RepoRoot $RepoRoot -VmHost $VmHost -VmUser $VmUser -BoardHost $BoardHost -BoardUser $BoardUser -SshKey $SshKey -RunSeconds 10
-        } 'Reuse codex_rk3588_pipeline.ps1 for source sync, exact CLion-profile build, deploy and smoke'
+            & (Join-Path $RepoRoot 'tools\codex_rk3588_pipeline.ps1') -RepoRoot $RepoRoot -VmHost $VmHost -VmUser $VmUser -BoardHost $BoardHost -BoardUser $BoardUser -SshKey $SshKey -RunSeconds 10 -DdsH264Smoke
+        } 'Reuse codex_rk3588_pipeline.ps1 for build/deploy and hard-gated Mali DDS H264 pixel smoke'
     }
 }
 
@@ -200,7 +200,7 @@ if ($RunRemoteSmoke) {
     # D3 case launching remains explicit in logs so an interrupted run can resume
     # from a single case without deleting earlier evidence.
     Invoke-Gate 'remote production smoke after deploy' 'matrix.txt' {
-        & (Join-Path $RepoRoot 'tools\codex_rk3588_pipeline.ps1') -RepoRoot $RepoRoot -VmHost $VmHost -VmUser $VmUser -BoardHost $BoardHost -BoardUser $BoardUser -SshKey $SshKey -SkipSourceSync -SkipBuild -SkipDeploy -RunSeconds $DurationSec
+        & (Join-Path $RepoRoot 'tools\codex_rk3588_pipeline.ps1') -RepoRoot $RepoRoot -VmHost $VmHost -VmUser $VmUser -BoardHost $BoardHost -BoardUser $BoardUser -SshKey $SshKey -SkipSourceSync -SkipBuild -SkipDeploy -RunSeconds $DurationSec -DdsH264Smoke
     } 'Run deployed precise MPP+DDS H264 path with existing UDP stimulus'
 }
 

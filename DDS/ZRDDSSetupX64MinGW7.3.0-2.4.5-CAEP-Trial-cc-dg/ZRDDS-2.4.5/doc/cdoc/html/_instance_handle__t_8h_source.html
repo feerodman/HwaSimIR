@@ -1,0 +1,158 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: InstanceHandle_t.h 源文件</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>结构体</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('_instance_handle__t_8h_source.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">InstanceHandle_t.h</div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#ifndef DDS_InstanceHandle_t_h__</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#define DDS_InstanceHandle_t_h__</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#include &quot;OsResource.h&quot;</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#include &quot;ZRSequence.h&quot;</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;</div>
+<div class="line"><a name="l00024"></a><span class="lineno"><a class="line" href="struct_d_d_s___instance_handle__t.html">   24</a></span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span>DCPSDLL <a class="code" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;{</div>
+<div class="line"><a name="l00045"></a><span class="lineno"><a class="line" href="struct_d_d_s___instance_handle__t.html#aed158ae1d098c519a0f21d3f4599c6cc">   45</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#gacfea17333fbcbbb9b97d6af81179dc2b">DDS_Octet</a> value[16];</div>
+<div class="line"><a name="l00051"></a><span class="lineno"><a class="line" href="struct_d_d_s___instance_handle__t.html#a249008ada0bca18fe049b7c3a293eb15">   51</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> <a class="code" href="struct_d_d_s___instance_handle__t.html#a249008ada0bca18fe049b7c3a293eb15">valid</a>;</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="preprocessor">#ifdef _ZRDDSCPPINTERFACE</span></div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> operator==(<span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a>&amp; handle) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> operator&lt;(<span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a>&amp; handle) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;}<a class="code" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a>;</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;<span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span></div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;{</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;DCPSDLL <a class="code" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> <a class="code" href="group___core_base_function.html#ga9aad30bed023c6fb6c0d00cb55a48c79">DDS_InstanceHandle_t_Compare</a>(<span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a>* handle1, <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a>* handle2);</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;DCPSDLL <span class="keyword">extern</span> <span class="keyword">const</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a> <a class="code" href="group___core_var.html#ga9c4dcdd857c325221ab74b89b23cf8c3">DDS_HANDLE_NIL_NATIVE</a>;</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;</div>
+<div class="line"><a name="l00119"></a><span class="lineno"><a class="line" href="group___core_base_struct.html#gaa5249da286cf7b4793c930ba2ec76e7f">  119</a></span>&#160;<span class="keyword">typedef</span> <a class="code" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a> <a class="code" href="group___core_base_struct.html#gaa5249da286cf7b4793c930ba2ec76e7f">DDS_KeyHash_t</a>;</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;DDS_SEQUENCE_CPP(<a class="code" href="struct_d_d_s___instance_handle_seq.html">DDS_InstanceHandleSeq</a>, <a class="code" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a>);</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;}</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* DDS_InstanceHandle_t_h__*/</span><span class="preprocessor"></span></div>
+<div class="ttc" id="group___core_base_function_html_ga9aad30bed023c6fb6c0d00cb55a48c79"><div class="ttname"><a href="group___core_base_function.html#ga9aad30bed023c6fb6c0d00cb55a48c79">DDS_InstanceHandle_t_Compare</a></div><div class="ttdeci">DCPSDLL DDS_Long DDS_InstanceHandle_t_Compare(const DDS_InstanceHandle_t *handle1, const DDS_InstanceHandle_t *handle2)</div><div class="ttdoc">C风格的 DDS_InstanceHandle_t 比较函数。 </div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga40aa7a1400d66542eba212ef019321bf"><div class="ttname"><a href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a></div><div class="ttdeci">ZR_BOOLEAN DDS_Boolean</div><div class="ttdoc">ZRDDS内置的true/false类型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:197</div></div>
+<div class="ttc" id="group___core_builtin_types_html_gacfea17333fbcbbb9b97d6af81179dc2b"><div class="ttname"><a href="group___core_builtin_types.html#gacfea17333fbcbbb9b97d6af81179dc2b">DDS_Octet</a></div><div class="ttdeci">unsigned char DDS_Octet</div><div class="ttdoc">ZRDDS内置的1字节无符号整型 </div><div class="ttdef"><b>Definition:</b> OsResource.h:208</div></div>
+<div class="ttc" id="struct_d_d_s___instance_handle__t_html_a249008ada0bca18fe049b7c3a293eb15"><div class="ttname"><a href="struct_d_d_s___instance_handle__t.html#a249008ada0bca18fe049b7c3a293eb15">DDS_InstanceHandle_t::valid</a></div><div class="ttdeci">DDS_Boolean valid</div><div class="ttdoc">该成员为true时表示value值有效，否则该DDS_InstanceHandle_t无效。 </div><div class="ttdef"><b>Definition:</b> InstanceHandle_t.h:51</div></div>
+<div class="ttc" id="struct_d_d_s___instance_handle__t_html"><div class="ttname"><a href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a></div><div class="ttdoc">用来表示一个实体或者一个数据实例。 </div><div class="ttdef"><b>Definition:</b> InstanceHandle_t.h:24</div></div>
+<div class="ttc" id="struct_d_d_s___instance_handle_seq_html"><div class="ttname"><a href="struct_d_d_s___instance_handle_seq.html">DDS_InstanceHandleSeq</a></div><div class="ttdoc">声明 DDS_InstanceHandle_t 的序列类型，参见 DDS_USER_SEQUENCE_CPP 。 </div></div>
+<div class="ttc" id="group___core_var_html_ga9c4dcdd857c325221ab74b89b23cf8c3"><div class="ttname"><a href="group___core_var.html#ga9c4dcdd857c325221ab74b89b23cf8c3">DDS_HANDLE_NIL_NATIVE</a></div><div class="ttdeci">DCPSDLL const DDS_InstanceHandle_t DDS_HANDLE_NIL_NATIVE</div><div class="ttdoc">表示无效的 DDS_InstanceHandle_t 。 </div></div>
+<div class="ttc" id="group___core_base_struct_html_gaa5249da286cf7b4793c930ba2ec76e7f"><div class="ttname"><a href="group___core_base_struct.html#gaa5249da286cf7b4793c930ba2ec76e7f">DDS_KeyHash_t</a></div><div class="ttdeci">DDS_InstanceHandle_t DDS_KeyHash_t</div><div class="ttdoc">DDS_KeyHash_t 作为当 DDS_InstanceHandle_t 作为数据实例的唯一标识时的别名。 </div><div class="ttdef"><b>Definition:</b> InstanceHandle_t.h:119</div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga7ebc41ac14e48dd9ee0b7b83acec714c"><div class="ttname"><a href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a></div><div class="ttdeci">ZR_INT32 DDS_Long</div><div class="ttdoc">ZRDDS内置的4字节整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:248</div></div>
+</div><!-- fragment --></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="dir_0fc3f8f3ef96ce2d45d66d6e29832317.html">resources</a></li><li class="navelem"><a class="el" href="dir_cf9ceadfa18f25e608d16251156af657.html">zrdds</a></li><li class="navelem"><a class="el" href="dir_49213087373222e5c37cddb4e4d5f33e.html">src</a></li><li class="navelem"><a class="el" href="dir_53336e619d60bf3f94a9dfb5f5011ef0.html">ZRDDSCoreInterface</a></li><li class="navelem"><b>InstanceHandle_t.h</b></li>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

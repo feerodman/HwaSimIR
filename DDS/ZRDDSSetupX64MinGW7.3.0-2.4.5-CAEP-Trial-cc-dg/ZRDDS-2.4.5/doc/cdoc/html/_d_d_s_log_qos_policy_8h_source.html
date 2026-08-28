@@ -1,0 +1,164 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: DDSLogQosPolicy.h 源文件</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>结构体</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('_d_d_s_log_qos_policy_8h_source.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">DDSLogQosPolicy.h</div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#ifndef DDSLogQosPolicy_h__</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#define DDSLogQosPolicy_h__</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#include &quot;OsResource.h&quot;</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#include &quot;ZRBuiltinTypes.h&quot;</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;</div>
+<div class="line"><a name="l00021"></a><span class="lineno"><a class="line" href="group___core_qos_struct.html#ga4c3f6f46b600d6c53ddbea9a7518e717">   21</a></span>&#160;<span class="keyword">typedef</span> <span class="keyword">enum</span> <a class="code" href="group___core_qos_struct.html#ga4c3f6f46b600d6c53ddbea9a7518e717">DDS_LogBackupKind</a></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;{</div>
+<div class="line"><a name="l00024"></a><span class="lineno"><a class="line" href="group___core_qos_struct.html#gga4c3f6f46b600d6c53ddbea9a7518e717a30fc7849bc95477763a130d75d67c168">   24</a></span>&#160;    <a class="code" href="group___core_qos_struct.html#gga4c3f6f46b600d6c53ddbea9a7518e717a30fc7849bc95477763a130d75d67c168">DDS_LOG_BACKUP_NOTUSED_QOS</a>,</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    DDS_LOG_BACKUP_EXIST_FILE,</div>
+<div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="group___core_qos_struct.html#gga4c3f6f46b600d6c53ddbea9a7518e717aad98ab7d8aa56fd32e1a342583fd23d6">   32</a></span>&#160;    <a class="code" href="group___core_qos_struct.html#gga4c3f6f46b600d6c53ddbea9a7518e717aad98ab7d8aa56fd32e1a342583fd23d6">DDS_LOG_BACKUP_FILE_SIZE_QOS</a>,</div>
+<div class="line"><a name="l00038"></a><span class="lineno"><a class="line" href="group___core_qos_struct.html#gga4c3f6f46b600d6c53ddbea9a7518e717a3bdc646ce19ecac5c70374fee25444fa">   38</a></span>&#160;    <a class="code" href="group___core_qos_struct.html#gga4c3f6f46b600d6c53ddbea9a7518e717a3bdc646ce19ecac5c70374fee25444fa">DDS_LOG_BACKUP_TIME_INTERVAL_QOS</a>,</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;}<a class="code" href="group___core_qos_struct.html#ga4c3f6f46b600d6c53ddbea9a7518e717">DDS_LogBackupKind</a>;</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;</div>
+<div class="line"><a name="l00066"></a><span class="lineno"><a class="line" href="struct_d_d_s___log_qos_policy.html">   66</a></span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="struct_d_d_s___log_qos_policy.html">DDS_LogQosPolicy</a></div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;{</div>
+<div class="line"><a name="l00069"></a><span class="lineno"><a class="line" href="struct_d_d_s___log_qos_policy.html#a7438007058b64c555f87f8d0fcf1fe1e">   69</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> <a class="code" href="struct_d_d_s___log_qos_policy.html#a7438007058b64c555f87f8d0fcf1fe1e">console_mask</a>;</div>
+<div class="line"><a name="l00071"></a><span class="lineno"><a class="line" href="struct_d_d_s___log_qos_policy.html#a633f651c983e3eaa07508979251c58c9">   71</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> <a class="code" href="struct_d_d_s___log_qos_policy.html#a633f651c983e3eaa07508979251c58c9">file_mask</a>;</div>
+<div class="line"><a name="l00077"></a><span class="lineno"><a class="line" href="struct_d_d_s___log_qos_policy.html#a5128b0f7485aba616223cd49b23096ce">   77</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> <a class="code" href="struct_d_d_s___log_qos_policy.html#a5128b0f7485aba616223cd49b23096ce">local_level_mask</a>;</div>
+<div class="line"><a name="l00079"></a><span class="lineno"><a class="line" href="struct_d_d_s___log_qos_policy.html#a8a8f52879d8cfd9e8183f5cc7edafaa8">   79</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> <a class="code" href="struct_d_d_s___log_qos_policy.html#a8a8f52879d8cfd9e8183f5cc7edafaa8">enable_distributed_log</a>;</div>
+<div class="line"><a name="l00081"></a><span class="lineno"><a class="line" href="struct_d_d_s___log_qos_policy.html#a8b660c2814c02df70f5d93f72812b4a5">   81</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> <a class="code" href="struct_d_d_s___log_qos_policy.html#a8b660c2814c02df70f5d93f72812b4a5">enable_distributed_log_finished</a>;</div>
+<div class="line"><a name="l00083"></a><span class="lineno"><a class="line" href="struct_d_d_s___log_qos_policy.html#a5264485b04174c4787b93fd246a005b9">   83</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> <a class="code" href="struct_d_d_s___log_qos_policy.html#a5264485b04174c4787b93fd246a005b9">distributed_log_writer_domain_id</a>;</div>
+<div class="line"><a name="l00085"></a><span class="lineno"><a class="line" href="struct_d_d_s___log_qos_policy.html#a01c7a8f8cf8588141d6ba09532d18b12">   85</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> <a class="code" href="struct_d_d_s___log_qos_policy.html#a01c7a8f8cf8588141d6ba09532d18b12">distributed_log_level_mask</a>;</div>
+<div class="line"><a name="l00087"></a><span class="lineno"><a class="line" href="struct_d_d_s___log_qos_policy.html#a205e89ed60cc49f13e448a47e5e45ad4">   87</a></span>&#160;    <a class="code" href="struct_d_d_s___char_seq.html">DDS_CharSeq</a> <a class="code" href="struct_d_d_s___log_qos_policy.html#a205e89ed60cc49f13e448a47e5e45ad4">file_dir</a>;</div>
+<div class="line"><a name="l00089"></a><span class="lineno"><a class="line" href="struct_d_d_s___log_qos_policy.html#a1037b04bc97c418dc4a8041c2721c1a3">   89</a></span>&#160;    <a class="code" href="struct_d_d_s___char_seq.html">DDS_CharSeq</a> <a class="code" href="struct_d_d_s___log_qos_policy.html#a1037b04bc97c418dc4a8041c2721c1a3">file_name</a>;</div>
+<div class="line"><a name="l00091"></a><span class="lineno"><a class="line" href="struct_d_d_s___log_qos_policy.html#a35afa725f54d97055b24b64fa10d9034">   91</a></span>&#160;    <a class="code" href="group___core_qos_struct.html#ga4c3f6f46b600d6c53ddbea9a7518e717">DDS_LogBackupKind</a> <a class="code" href="struct_d_d_s___log_qos_policy.html#a35afa725f54d97055b24b64fa10d9034">file_backup_kind</a>;</div>
+<div class="line"><a name="l00098"></a><span class="lineno"><a class="line" href="struct_d_d_s___log_qos_policy.html#adabf85cee87b4ef5fdfe021b8b72839f">   98</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> <a class="code" href="struct_d_d_s___log_qos_policy.html#adabf85cee87b4ef5fdfe021b8b72839f">file_backup_param</a>;</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;}<a class="code" href="struct_d_d_s___log_qos_policy.html">DDS_LogQosPolicy</a>;</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* DDSLogQosPolicy_h__*/</span><span class="preprocessor"></span></div>
+<div class="ttc" id="struct_d_d_s___log_qos_policy_html_a8a8f52879d8cfd9e8183f5cc7edafaa8"><div class="ttname"><a href="struct_d_d_s___log_qos_policy.html#a8a8f52879d8cfd9e8183f5cc7edafaa8">DDS_LogQosPolicy::enable_distributed_log</a></div><div class="ttdeci">DDS_Boolean enable_distributed_log</div><div class="ttdoc">控制是否使能分布式日志。 </div><div class="ttdef"><b>Definition:</b> DDSLogQosPolicy.h:79</div></div>
+<div class="ttc" id="struct_d_d_s___log_qos_policy_html_a7438007058b64c555f87f8d0fcf1fe1e"><div class="ttname"><a href="struct_d_d_s___log_qos_policy.html#a7438007058b64c555f87f8d0fcf1fe1e">DDS_LogQosPolicy::console_mask</a></div><div class="ttdeci">DDS_ULong console_mask</div><div class="ttdoc">本地日志控制台输出级别类型掩码，为 DDS_LogType 枚举值按位或的结果。 </div><div class="ttdef"><b>Definition:</b> DDSLogQosPolicy.h:69</div></div>
+<div class="ttc" id="group___core_qos_struct_html_gga4c3f6f46b600d6c53ddbea9a7518e717a30fc7849bc95477763a130d75d67c168"><div class="ttname"><a href="group___core_qos_struct.html#gga4c3f6f46b600d6c53ddbea9a7518e717a30fc7849bc95477763a130d75d67c168">DDS_LOG_BACKUP_NOTUSED_QOS</a></div><div class="ttdoc">默认模式。不使用日志备份功能。每次重启应用，都将覆盖原有日志。 </div><div class="ttdef"><b>Definition:</b> DDSLogQosPolicy.h:24</div></div>
+<div class="ttc" id="struct_d_d_s___log_qos_policy_html_a35afa725f54d97055b24b64fa10d9034"><div class="ttname"><a href="struct_d_d_s___log_qos_policy.html#a35afa725f54d97055b24b64fa10d9034">DDS_LogQosPolicy::file_backup_kind</a></div><div class="ttdeci">DDS_LogBackupKind file_backup_kind</div><div class="ttdoc">指定本地日志文件的备份模式。 </div><div class="ttdef"><b>Definition:</b> DDSLogQosPolicy.h:91</div></div>
+<div class="ttc" id="struct_d_d_s___log_qos_policy_html_a8b660c2814c02df70f5d93f72812b4a5"><div class="ttname"><a href="struct_d_d_s___log_qos_policy.html#a8b660c2814c02df70f5d93f72812b4a5">DDS_LogQosPolicy::enable_distributed_log_finished</a></div><div class="ttdeci">DDS_Boolean enable_distributed_log_finished</div><div class="ttdoc">分布式日志使能结束标志。 </div><div class="ttdef"><b>Definition:</b> DDSLogQosPolicy.h:81</div></div>
+<div class="ttc" id="struct_d_d_s___log_qos_policy_html_adabf85cee87b4ef5fdfe021b8b72839f"><div class="ttname"><a href="struct_d_d_s___log_qos_policy.html#adabf85cee87b4ef5fdfe021b8b72839f">DDS_LogQosPolicy::file_backup_param</a></div><div class="ttdeci">DDS_Long file_backup_param</div><div class="ttdoc">本地日志文件备份相关参数。 当file_backup_kind被设置为DDS_LOG_BACKUP_NOTUSED_QOS时，该参数无效。 当fil...</div><div class="ttdef"><b>Definition:</b> DDSLogQosPolicy.h:98</div></div>
+<div class="ttc" id="struct_d_d_s___char_seq_html"><div class="ttname"><a href="struct_d_d_s___char_seq.html">DDS_CharSeq</a></div><div class="ttdoc">声明内置数据类型 DDS_Char 的序列，参见核心接口序列相关数据类型 。 </div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga40aa7a1400d66542eba212ef019321bf"><div class="ttname"><a href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a></div><div class="ttdeci">ZR_BOOLEAN DDS_Boolean</div><div class="ttdoc">ZRDDS内置的true/false类型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:197</div></div>
+<div class="ttc" id="struct_d_d_s___log_qos_policy_html_a01c7a8f8cf8588141d6ba09532d18b12"><div class="ttname"><a href="struct_d_d_s___log_qos_policy.html#a01c7a8f8cf8588141d6ba09532d18b12">DDS_LogQosPolicy::distributed_log_level_mask</a></div><div class="ttdeci">DDS_Long distributed_log_level_mask</div><div class="ttdoc">控制分布式日志级别，为 DDS_LogType 枚举值按位或的结果。 </div><div class="ttdef"><b>Definition:</b> DDSLogQosPolicy.h:85</div></div>
+<div class="ttc" id="group___core_qos_struct_html_gga4c3f6f46b600d6c53ddbea9a7518e717a3bdc646ce19ecac5c70374fee25444fa"><div class="ttname"><a href="group___core_qos_struct.html#gga4c3f6f46b600d6c53ddbea9a7518e717a3bdc646ce19ecac5c70374fee25444fa">DDS_LOG_BACKUP_TIME_INTERVAL_QOS</a></div><div class="ttdoc">每隔一段时间后将进行备份，并重新创建日志文件。 选用该模式后，日志文件的名称将为“日志文件名称_创建时�...</div><div class="ttdef"><b>Definition:</b> DDSLogQosPolicy.h:38</div></div>
+<div class="ttc" id="struct_d_d_s___log_qos_policy_html_a633f651c983e3eaa07508979251c58c9"><div class="ttname"><a href="struct_d_d_s___log_qos_policy.html#a633f651c983e3eaa07508979251c58c9">DDS_LogQosPolicy::file_mask</a></div><div class="ttdeci">DDS_ULong file_mask</div><div class="ttdoc">本地日志日志文件输出级别类型掩码，为 DDS_LogType 枚举值按位或的结果。 </div><div class="ttdef"><b>Definition:</b> DDSLogQosPolicy.h:71</div></div>
+<div class="ttc" id="group___core_qos_struct_html_gga4c3f6f46b600d6c53ddbea9a7518e717aad98ab7d8aa56fd32e1a342583fd23d6"><div class="ttname"><a href="group___core_qos_struct.html#gga4c3f6f46b600d6c53ddbea9a7518e717aad98ab7d8aa56fd32e1a342583fd23d6">DDS_LOG_BACKUP_FILE_SIZE_QOS</a></div><div class="ttdoc">当前日志文件达到一定大小后将进行备份，并重新创建日志文件。 选用该模式后，日志文件的名称将为“日志文件...</div><div class="ttdef"><b>Definition:</b> DDSLogQosPolicy.h:32</div></div>
+<div class="ttc" id="group___core_builtin_types_html_gab598f8f664dfec10ab367e753dc68419"><div class="ttname"><a href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a></div><div class="ttdeci">ZR_UINT32 DDS_ULong</div><div class="ttdoc">ZRDDS内置的4字节无符号整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:258</div></div>
+<div class="ttc" id="struct_d_d_s___log_qos_policy_html_a205e89ed60cc49f13e448a47e5e45ad4"><div class="ttname"><a href="struct_d_d_s___log_qos_policy.html#a205e89ed60cc49f13e448a47e5e45ad4">DDS_LogQosPolicy::file_dir</a></div><div class="ttdeci">DDS_CharSeq file_dir</div><div class="ttdoc">指定本地日志文件的输出文件路径。如果设置为NULL，则将使用默认路径（当前运行目录）。 ...</div><div class="ttdef"><b>Definition:</b> DDSLogQosPolicy.h:87</div></div>
+<div class="ttc" id="struct_d_d_s___log_qos_policy_html_a5128b0f7485aba616223cd49b23096ce"><div class="ttname"><a href="struct_d_d_s___log_qos_policy.html#a5128b0f7485aba616223cd49b23096ce">DDS_LogQosPolicy::local_level_mask</a></div><div class="ttdeci">DDS_ULong local_level_mask</div><div class="ttdoc">本地日志级别掩码。 </div><div class="ttdef"><b>Definition:</b> DDSLogQosPolicy.h:77</div></div>
+<div class="ttc" id="struct_d_d_s___log_qos_policy_html"><div class="ttname"><a href="struct_d_d_s___log_qos_policy.html">DDS_LogQosPolicy</a></div><div class="ttdoc">DDS的日志系统配置QoS。 </div><div class="ttdef"><b>Definition:</b> DDSLogQosPolicy.h:66</div></div>
+<div class="ttc" id="struct_d_d_s___log_qos_policy_html_a5264485b04174c4787b93fd246a005b9"><div class="ttname"><a href="struct_d_d_s___log_qos_policy.html#a5264485b04174c4787b93fd246a005b9">DDS_LogQosPolicy::distributed_log_writer_domain_id</a></div><div class="ttdeci">DDS_Long distributed_log_writer_domain_id</div><div class="ttdoc">控制分布式日志主题所属域。 </div><div class="ttdef"><b>Definition:</b> DDSLogQosPolicy.h:83</div></div>
+<div class="ttc" id="group___core_qos_struct_html_ga4c3f6f46b600d6c53ddbea9a7518e717"><div class="ttname"><a href="group___core_qos_struct.html#ga4c3f6f46b600d6c53ddbea9a7518e717">DDS_LogBackupKind</a></div><div class="ttdeci">DDS_LogBackupKind</div><div class="ttdoc">本地日志文件的备份策略。 </div><div class="ttdef"><b>Definition:</b> DDSLogQosPolicy.h:21</div></div>
+<div class="ttc" id="struct_d_d_s___log_qos_policy_html_a1037b04bc97c418dc4a8041c2721c1a3"><div class="ttname"><a href="struct_d_d_s___log_qos_policy.html#a1037b04bc97c418dc4a8041c2721c1a3">DDS_LogQosPolicy::file_name</a></div><div class="ttdeci">DDS_CharSeq file_name</div><div class="ttdoc">指定本地日志文件的输出文件名。如果设置为NULL，则将使用默认名称（进程名称.ddslog）。 ...</div><div class="ttdef"><b>Definition:</b> DDSLogQosPolicy.h:89</div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga7ebc41ac14e48dd9ee0b7b83acec714c"><div class="ttname"><a href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a></div><div class="ttdeci">ZR_INT32 DDS_Long</div><div class="ttdoc">ZRDDS内置的4字节整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:248</div></div>
+</div><!-- fragment --></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="dir_0fc3f8f3ef96ce2d45d66d6e29832317.html">resources</a></li><li class="navelem"><a class="el" href="dir_cf9ceadfa18f25e608d16251156af657.html">zrdds</a></li><li class="navelem"><a class="el" href="dir_49213087373222e5c37cddb4e4d5f33e.html">src</a></li><li class="navelem"><a class="el" href="dir_53336e619d60bf3f94a9dfb5f5011ef0.html">ZRDDSCoreInterface</a></li><li class="navelem"><b>DDSLogQosPolicy.h</b></li>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

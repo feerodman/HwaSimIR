@@ -19,6 +19,7 @@ struct DdsVideoReceiverConfig
 	int width = 800;
 	int height = 800;
 	int fps = 60;
+	QString dumpFirstFramePath;
 };
 
 class DdsVideoReceiverWorker : public QObject
@@ -64,4 +65,5 @@ private:
 	std::atomic<quint64> m_receivedSamples{ 0 };
 	std::atomic<quint64> m_receivedBytes{ 0 };
 	std::atomic<quint64> m_ddsErrors{ 0 };
+	bool m_dumpAttempted = false;
 };
