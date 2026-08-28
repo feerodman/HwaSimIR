@@ -1,0 +1,43 @@
+{
+    "channels":[
+        {
+            "enable": 1,
+            "sub":{
+                "domain_id": 90,
+                "topic_name": "USEDATATYPE"
+            },
+            "dec":{
+                "width":640,
+                "height":512,
+                "gray":1
+            },
+            "pub":{
+                "domain_id": 91,
+                "topic_name": "USEDATATYPE",
+                "data_size":32768,
+                "key":0
+            }
+        },
+        {
+            "enable": 1,
+            "sub":{
+                "domain_id": 80,
+                "topic_name": "USEDATATYPE"
+            },
+            "dec":{
+                "width":640,
+                "height":512,
+                "gray":1
+            },
+            "pub":{
+                "domain_id": 81,
+                "topic_name": "USEDATATYPE_1",
+                "data_size":32768,
+                "key":0
+            }
+        }
+    ],
+
+    "//x":"end"
+
+}

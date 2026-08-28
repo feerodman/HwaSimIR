@@ -1,0 +1,10 @@
+struct ShapeType
+{
+    long x; //@key
+    long type;
+    long sn;
+    long cmd;
+    long len;
+    long crc;
+    sequence<octet,32768> data;
+};
