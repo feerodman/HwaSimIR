@@ -180,4 +180,34 @@ module HwaSimIRDds
         boolean compressed;
         long currentRound;
     };
+
+    struct VideoFrameMetaV1
+    {
+        long platID;   //@key
+        long sensorID; //@key
+        string<16> channel;
+
+        unsigned long frameSeq;
+        long currentRound;
+
+        double ptsMs;
+        boolean keyFrame;
+
+        string<24> codec;
+        long width;
+        long height;
+    };
+
+    struct AnnotationFrameV1
+    {
+        long platID;   //@key
+        long sensorID; //@key
+        string<16> channel;
+
+        unsigned long frameSeq;
+        long currentRound;
+
+        double ptsMs;
+        string<32768> json;
+    };
 };

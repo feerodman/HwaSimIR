@@ -112,3 +112,26 @@ VideoStatus 自动选择 Topic/geometry。
 3. CAEP Trial runtime 会改写 licence；每个并发进程必须使用独立、可写的 licence 副本。
 
 F1 没有 Annotation、VideoFrameMeta、Gateway 或 DDS 视频自定义 IDL；这些只能在 F2 单独设计。
+
+## 10. F2 帧同步接口
+
+F2 保持视频数据为内置 `DDS::Bytes`，不向 H264 AU 或 Raw 帧中加入头。帧身份由两个独立 typed Topic 给出：
+
+| Channel | VideoMeta Topic | Annotation Topic |
+|---|---|---|
+| precise | `HwaSimIR.VideoMeta.precise` | `HwaSimIR.Annotation.precise` |
+| coarse | `HwaSimIR.VideoMeta.coarse` | `HwaSimIR.Annotation.coarse` |
+
+`VideoFrameMetaV1` 包含 `platID/sensorID/channel/frameSeq/currentRound/ptsMs/keyFrame/codec/width/height`。`AnnotationFrameV1` 包含相同帧身份和不超过 32768 字节的 JSON。两者 key 均为 `platID,sensorID`。
+
+每次 START 将输出序号归零，首个实际输出帧为 1。同一逻辑帧的 DDS video、VideoMeta、Annotation、TCP Packet v3 和 Local MP4 输入共用序号。跨 Topic 到达顺序不构成协议顺序；接收端必须按 `currentRound + frameSeq` 建立小型 pending map。`realtimeAnnotation=false` 时可以不发布 Annotation，但 VideoMeta 仍逐帧发布。
+
+STOP 依次停止新业务帧、完成已进入输出队列的帧、排空 video/meta/annotation、flush/close MP4 和本地文件，最后发布 `VideoStatus.running=false`。下一 START 建立新 round，`frameSeq` 再从 1 开始。
+
+## 11. F2 Decode Gateway
+
+生产直传仍优先使用 `HwaSimIR.Video.<channel>.H264`，一 AU 一 Sample。需要 Raw 的客户可在 RK3588 部署：
+
+`H264 DDS -> RKMPP decode -> NV12 Y plane -> HwaSimIR.Decoded.<channel>.RawGray8`
+
+Gateway 发布的每个 Raw Sample 是一整帧 `width*height` 字节，并在 `HwaSimIR.VideoStatus` 发布 `codec=raw_gray8`、`pixelFormat=gray8`、decoded Topic 和 geometry。Gateway 不使用 ShapeType、1 KB 分片或 VideoChunkV1。

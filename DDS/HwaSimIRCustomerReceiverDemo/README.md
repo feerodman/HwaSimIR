@@ -2,11 +2,37 @@
 
 板端纯 C++ 客户接收端。先订阅 `HwaSimIR.VideoStatus`，然后自动按 Status 的
 `videoTopic/codec/pixelFormat/width/height/fps` 订阅 `DDS::Bytes`。H264 原样保存
-Annex-B，Raw 严格验证完整帧长度。当前基础构建不链接 MPP，因而 `decodeFps=0`；
-MPP 解码为可选现场后端，不影响接收和落盘契约。
+Annex-B，Raw 严格验证完整帧长度。AArch64 构建打开 `HWASIMIR_ENABLE_RKMPP=ON`
+后，`--decode mpp` 使用真实 RKMPP 解码 H264 为 NV12，并可保存去 stride 的 Y/Gray8。
 
 ```bash
 ./HwaSimIRCustomerReceiverDemo --domain 150 --qos Config/DDS/ZRDDS_PROTOCOL_QOS.xml --status-topic HwaSimIR.VideoStatus --output received.h264 --frames 600 --timeout-sec 30
+```
+
+H264 + MPP + Meta/Annotation：
+
+```bash
+./HwaSimIRCustomerReceiverDemo --domain 150 --qos Config/DDS/ZRDDS_PROTOCOL_QOS.xml \
+  --channel precise --expect-codec h264 --output received.h264 --decode mpp \
+  --gray-output decoded.gray --receive-meta 1 --receive-annotation 1 \
+  --meta-output frame_meta.txt --annotation-output annotation.txt --frames 300
+```
+
+Gateway RawGray8：
+
+```bash
+./HwaSimIRCustomerReceiverDemo --domain 150 --qos Config/DDS/ZRDDS_PROTOCOL_QOS.xml \
+  --channel precise --expect-codec raw_gray8 --output decoded.raw --decode none --frames 300
+```
+
+AArch64 交叉构建：
+
+```bash
+cmake -S DDS/HwaSimIRCustomerReceiverDemo -B build/customer-aarch64 \
+  -DCMAKE_TOOLCHAIN_FILE=/home/linaro/userdata/HwaSimIR/toolchains/aarch64-linux-gnu.cmake \
+  -DZRDDS_ROOT=/home/linaro/sysroots/zrdds-aarch64 \
+  -DHWASIMIR_ENABLE_RKMPP=ON -DRKMPP_ROOT=/home/linaro/sysroots/rk3588-mpp
+cmake --build build/customer-aarch64 -j4
 ```
 
 板端运行前：

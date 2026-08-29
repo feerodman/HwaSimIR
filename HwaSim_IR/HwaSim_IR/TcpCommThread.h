@@ -168,6 +168,9 @@ private:
 		AnnotationFrameRecord annotationRecord;
 		bool annotationEnabled = false;
 		IRFrameTelemetry telemetry;
+		std::uint64_t logicalFrameSeq = 0;
+		int currentRound = 0;
+		bool roundActive = false;
 		double queueWaitMs = 0.0;
 		bool overwritten = false;
 	};
@@ -175,6 +178,7 @@ private:
 	std::mutex m_frameMtx;                 // 帧缓冲互斥锁
 	std::condition_variable m_frameCv;     // 条件变量通知新帧
 	std::condition_variable m_queueSpaceCv;
+	std::condition_variable m_roundDrainCv;
 	std::deque<PendingFrame> m_frameQueue;
 	static const std::size_t kMaxFrameQueue = 4;
 	std::atomic<bool> m_syncMode{ true };
@@ -216,6 +220,10 @@ private:
 	std::unique_ptr<LocalMp4Recorder> m_localRecorder;
 	std::atomic<bool> m_ddsEnabled{ false };
 	std::atomic<bool> m_outputRoundActive{ false };
+	std::atomic<unsigned long long> m_roundFrameSequence{ 0 };
+	std::atomic<unsigned long long> m_roundLastCompletedFrame{ 0 };
+	std::atomic<unsigned long long> m_roundFramesInFlight{ 0 };
+	std::atomic<int> m_outputRound{ 0 };
 	std::vector<std::uint8_t> m_ddsRawBuffer;
 	std::atomic<unsigned long long> m_h264EncodeCounter{ 0 };
 	std::atomic<unsigned long long> m_jpegEncodeCounter{ 0 };

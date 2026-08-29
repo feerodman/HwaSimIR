@@ -1,6 +1,19 @@
 # DDS 视频现场调试检查单
 
-本检查单只覆盖 HwaSimIR 视频 DDS。RESET/INIT/START/STOP/Realtime/InitAck 仍走原 UDP。
+F2 已支持 DDS 全链 Control/Init/Realtime/Ack、VideoStatus、VideoMeta、Annotation；legacy 模式仍使用原 UDP+TCP，DDS full 模式由 `CommandTransport Input=dds|both` 选择。
+
+## F2 帧同步与 Gateway
+
+- [ ] precise/coarse 的 Video、Meta、Annotation Topic 未串通道
+- [ ] 每个 START 首帧 `frameSeq=1`，同 round 连续且无重复
+- [ ] STOP 后 video==meta；标注开启时 video==annotation；pending=0
+- [ ] 5 个 round 独立，下一 round 不沿用上一 round 序号
+- [ ] H264 Receiver `--decode mpp` 确认链接真实 `librockchip_mpp.so.1`
+- [ ] MPP `receivedSamples==decodedFrames`、`decodeErrors=0`、geometry 一致
+- [ ] Gateway `sourceH264AUs==decodedFrames==rawPublished==customer videoSamples`
+- [ ] decoded Raw Topic 每 Sample 严格为 width*height bytes
+- [ ] Gateway STOP 完成 decoder EOS、DDS drain，并发布 decoded `running=false`
+- [ ] 视频 Bytes 中没有 frameSeq/PTS/Annotation/custom header
 
 ## 启动前
 

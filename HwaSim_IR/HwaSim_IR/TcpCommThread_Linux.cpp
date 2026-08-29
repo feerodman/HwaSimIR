@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstring>
 #include <iomanip>
+#include <functional>
 #include <iostream>
 #include <sstream>
 #include <fcntl.h>
@@ -15,6 +16,15 @@
 
 namespace
 {
+class ScopeExit
+{
+public:
+	explicit ScopeExit(const std::function<void()>& fn) : m_fn(fn) {}
+	~ScopeExit() { if (m_fn) m_fn(); }
+private:
+	std::function<void()> m_fn;
+};
+
 void AppendUint32BE(std::vector<char>& buffer, uint32_t value)
 {
 	const uint32_t netValue = htonl(value);
@@ -154,6 +164,7 @@ bool TcpCommThread::start()
 void TcpCommThread::stop()
 {
 	if (!m_bIsRunning) return;
+	stopOutputRound("process_stop");
 	m_bIsRunning = false;
 	m_frameCv.notify_all();
 	m_queueSpaceCv.notify_all();
@@ -194,7 +205,16 @@ void TcpCommThread::setLocalRecordingProtocolEnabled(bool enabled)
 
 bool TcpCommThread::startOutputRound(int round)
 {
-	m_outputRoundActive.store(true);
+	{
+		std::lock_guard<std::mutex> lock(m_frameMtx);
+		m_outputRound.store(round);
+		m_roundFrameSequence.store(0);
+		m_roundLastCompletedFrame.store(0);
+		m_outputRoundActive.store(true);
+	}
+#if defined(HWASIMIR_HAS_ZRDDS)
+	if (m_pHwaSimIR) m_pHwaSimIR->ResetDdsFrameProductStats();
+#endif
 	requestEncoderKeyFrame("round_start");
 	if (!m_localRecorder || !m_localRecorder->effectiveEnabled()) return true;
 	std::string error;
@@ -208,7 +228,17 @@ bool TcpCommThread::startOutputRound(int round)
 
 bool TcpCommThread::stopOutputRound(const char* reason)
 {
-	m_outputRoundActive.store(false);
+	bool wasActive = false;
+	unsigned long long targetFrame = 0;
+	{
+		std::unique_lock<std::mutex> lock(m_frameMtx);
+		wasActive = m_outputRoundActive.exchange(false);
+		if (!wasActive) return true;
+		targetFrame = m_roundFrameSequence.load();
+		m_roundDrainCv.wait(lock, [this, targetFrame] {
+			return m_roundLastCompletedFrame.load() >= targetFrame || !m_bIsRunning.load();
+		});
+	}
 	bool ok = true;
 	std::string error;
 	if (m_localRecorder && !m_localRecorder->stopAndFlush(reason, error))
@@ -221,6 +251,16 @@ bool TcpCommThread::stopOutputRound(const char* reason)
 		std::cerr << "[DdsVideo][ERROR] round drain failed reason=" << error << std::endl;
 		ok = false;
 	}
+#if defined(HWASIMIR_HAS_ZRDDS)
+	if (m_pHwaSimIR && m_ddsEnabled.load() && !m_pHwaSimIR->DrainDdsFrameProducts(error))
+	{
+		std::cerr << "[DdsFrameProducts][ERROR] round drain failed reason=" << error << std::endl;
+		ok = false;
+	}
+#endif
+	std::cout << "[OutputRoundDrain] reason=" << (reason ? reason : "unknown")
+		<< " round=" << m_outputRound.load() << " targetFrames=" << targetFrame
+		<< " completedFrames=" << m_roundLastCompletedFrame.load() << std::endl;
 	return ok;
 }
 
@@ -591,7 +631,9 @@ void TcpCommThread::resetFrameCounters()
 {
 	{
 		std::lock_guard<std::mutex> lock(m_frameMtx);
-		m_frameQueue.clear();
+		// Preserve the no-drop queue while a DDS/recording round is active.
+		if (!m_outputRoundActive.load())
+			m_frameQueue.clear();
 		m_tcpPacketCounter.store(0);
 		m_videoOutputFrameCounter.store(0);
 		m_lastTcpPerfLogNs = 0;
@@ -905,7 +947,7 @@ std::string TcpCommThread::buildAnnotationJson(
 		<< ",\"packetVersion\":" << packetVersion
 		<< ",\"enabled\":" << (annotationEnabled ? "true" : "false")
 		<< ",\"frameIndex\":" << frameIndex
-		<< ",\"frameSeq\":" << telemetry.sourceSeq
+		<< ",\"frameSeq\":" << outputOrdinal
 		<< ",\"sourceSeq\":" << telemetry.sourceSeq
 		<< ",\"outputOrdinal\":" << outputOrdinal
 		<< ",\"udpReceiveTimeNs\":\"" << telemetry.udpReceiveTimeNs << "\""
@@ -1031,6 +1073,7 @@ void TcpCommThread::sendFrameThreadFunc()
 
 				frame = std::move(m_frameQueue.front());
 				m_frameQueue.pop_front();
+				if (frame.roundActive) ++m_roundFramesInFlight;
 				queueDepth = static_cast<int>(m_frameQueue.size());
 				m_queueSpaceCv.notify_one();
 			}
@@ -1057,6 +1100,14 @@ void TcpCommThread::sendFrameThreadFunc()
 				continue;
 			}
 		}
+		ScopeExit frameCompletion([this, &frame] {
+			if (frame.roundActive)
+			{
+				m_roundLastCompletedFrame.store(frame.logicalFrameSeq);
+				--m_roundFramesInFlight;
+				m_roundDrainCv.notify_all();
+			}
+		});
 
 		const int packetVersion = m_packetVersion.load();
 		const bool includeVideo = packetVersion == 2 || m_sendVideo.load();
@@ -1090,18 +1141,24 @@ void TcpCommThread::sendFrameThreadFunc()
 		rawFrame.stride = frame.width * 3;
 		rawFrame.pixelFormat = RawVideoPixelFormat::Bgr24;
 		rawFrame.flipVertical = m_flipVertical.load();
-		rawFrame.ptsMs = frame.telemetry.udpReceiveTimeNs > 0
-			? frame.telemetry.udpReceiveTimeNs / 1000000LL
-			: static_cast<std::int64_t>(productOrdinal * 1000ULL / std::max(1, m_videoFps.load()));
+		const std::uint64_t logicalFrameSeq = frame.logicalFrameSeq > 0
+			? frame.logicalFrameSeq : productOrdinal;
+		rawFrame.ptsMs = frame.logicalFrameSeq > 0
+			? static_cast<std::int64_t>((frame.logicalFrameSeq - 1ULL) * 1000ULL /
+				std::max(1, m_videoFps.load()))
+			: (frame.telemetry.udpReceiveTimeNs > 0
+				? frame.telemetry.udpReceiveTimeNs / 1000000LL
+				: static_cast<std::int64_t>(productOrdinal * 1000ULL /
+					std::max(1, m_videoFps.load())));
 
 		const bool tcpH264 = includeVideo && tcpWantsH264();
 		// DDS video belongs to an active simulation round.  Keep the middleware and
 		// writer alive between rounds, but STOP/RESET must not produce idle samples.
-		const bool ddsRoundActive = m_ddsEnabled.load() && m_outputRoundActive.load();
+		const bool ddsRoundActive = m_ddsEnabled.load() && frame.roundActive;
 		const std::string ddsCodec = ddsRoundActive ? resolvedDdsCodec() : "none";
 		const bool ddsH264 = ddsCodec == "h264";
 		const bool ddsRaw = ddsCodec == "raw_gray8" || ddsCodec == "raw_bgr24";
-		const bool recording = m_outputRoundActive.load() && m_localRecorder &&
+		const bool recording = frame.roundActive && m_localRecorder &&
 			m_localRecorder->effectiveEnabled();
 		const bool needH264 = tcpH264 || ddsH264 || (recording && m_localRecorder->wantsH264());
 		bool needJpeg = includeVideo && !tcpH264;
@@ -1150,12 +1207,13 @@ void TcpCommThread::sendFrameThreadFunc()
 
 		std::string ddsError;
 		double ddsBackpressureMs = 0.0;
+		bool ddsVideoPublished = false;
 		if (ddsH264 && h264Ok)
 		{
 			if (!m_ddsPublisher->publishBytes(h264Frame.payload.data(), h264Frame.payload.size(),
 				&ddsBackpressureMs, ddsError))
 				std::cerr << "[DdsVideo][FATAL] codec=h264 publishSkipped=1 reason=" << ddsError << std::endl;
-			else ++m_ddsFrameCounter;
+			else { ++m_ddsFrameCounter; ddsVideoPublished = true; }
 		}
 		else if (ddsRaw)
 		{
@@ -1186,7 +1244,7 @@ void TcpCommThread::sendFrameThreadFunc()
 				&ddsBackpressureMs, ddsError))
 				std::cerr << "[DdsVideo][FATAL] codec=" << ddsCodec << " publishSkipped=1 reason="
 					<< ddsError << std::endl;
-			else ++m_ddsFrameCounter;
+			else { ++m_ddsFrameCounter; ddsVideoPublished = true; }
 		}
 
 		if (recording)
@@ -1232,6 +1290,48 @@ void TcpCommThread::sendFrameThreadFunc()
 				<< " ddsH264=" << (ddsH264 && h264Ok ? 1 : 0) << " ddsRaw=" << (ddsRaw ? 1 : 0)
 				<< " localRecordH264=" << (recording && m_localRecorder->wantsH264() && h264Ok ? 1 : 0)
 				<< std::endl;
+
+#if defined(HWASIMIR_HAS_ZRDDS)
+		if (ddsVideoPublished && m_pHwaSimIR)
+		{
+			const EncodedVideoFrame& annotationEncodedFrame = ddsH264 ? h264Frame : encodedFrame;
+			const std::string ddsAnnotationJson = frame.annotationEnabled
+				? buildAnnotationJson(frame.annotationRecord, true, frame.width, frame.height,
+					frame.telemetry, logicalFrameSeq, IRPerfStats::wallTimeNs(), packetVersion,
+					ddsCodec, ddsH264 ? h264RequestedBackend : "raw", annotationEncodedFrame)
+				: std::string();
+			DdsVideoFrameMeta meta;
+			meta.platID = m_localPlatID;
+			meta.sensorID = m_localSensorID;
+			meta.channel = m_channel;
+			meta.frameSeq = static_cast<std::uint32_t>(logicalFrameSeq);
+			meta.currentRound = frame.currentRound;
+			meta.ptsMs = static_cast<double>(rawFrame.ptsMs);
+			meta.keyFrame = ddsH264 && h264Frame.keyFrame;
+			meta.codec = ddsCodec;
+			meta.width = frame.width;
+			meta.height = frame.height;
+			DdsAnnotationFrame annotation;
+			DdsAnnotationFrame* annotationPtr = nullptr;
+			if (frame.annotationEnabled)
+			{
+				annotation.platID = m_localPlatID;
+				annotation.sensorID = m_localSensorID;
+				annotation.channel = m_channel;
+				annotation.frameSeq = meta.frameSeq;
+				annotation.currentRound = frame.currentRound;
+				annotation.ptsMs = meta.ptsMs;
+				annotation.json = ddsAnnotationJson;
+				annotationPtr = &annotation;
+			}
+			std::string auxError;
+			if (!m_pHwaSimIR->PublishDdsFrameProducts(meta, annotationPtr, auxError))
+			{
+				std::cerr << "[DdsFrameProducts][FATAL] round=" << frame.currentRound
+					<< " frameSeq=" << logicalFrameSeq << " reason=" << auxError << std::endl;
+			}
+		}
+#endif
 		if (!m_bIsConnected) continue;
 		const std::uint64_t outputOrdinal = ++m_tcpPacketCounter;
 		const std::int64_t tcpSendTimeNs = IRPerfStats::wallTimeNs();
@@ -1242,7 +1342,7 @@ void TcpCommThread::sendFrameThreadFunc()
 				frame.width,
 				frame.height,
 				frame.telemetry,
-				outputOrdinal,
+				logicalFrameSeq,
 				tcpSendTimeNs,
 				packetVersion,
 				requestedCodec,
@@ -1268,7 +1368,7 @@ void TcpCommThread::sendFrameThreadFunc()
 			frame.trackingData,
 			annotationJson,
 			encodedFrame,
-			frame.telemetry.sourceSeq,
+			logicalFrameSeq,
 			outputOrdinal,
 			rawFrame.ptsMs,
 			sectionFlags,
@@ -1302,7 +1402,7 @@ void TcpCommThread::sendFrameThreadFunc()
 				<< " realtimeBytes=" << realtimeBytes
 				<< " annotationBytes=" << annotationBytes
 				<< " videoBytes=" << videoBytes
-				<< " frameSeq=" << frame.telemetry.sourceSeq
+				<< " frameSeq=" << logicalFrameSeq
 				<< " outputOrdinal=" << outputOrdinal
 				<< " ptsMs=" << rawFrame.ptsMs
 				<< " targets=" << frame.annotationRecord.targets.size()
@@ -1476,6 +1576,9 @@ IRFrameEnqueueResult TcpCommThread::updateFrame(
 	frame.annotationRecord = annotationRecord;
 	frame.annotationEnabled = annotationEnabled;
 	frame.telemetry = telemetry;
+	frame.roundActive = m_outputRoundActive.load();
+	frame.currentRound = frame.roundActive ? m_outputRound.load() : 0;
+	frame.logicalFrameSeq = frame.roundActive ? ++m_roundFrameSequence : 0;
 	frame.queueWaitMs = result.queueWaitMs;
 	frame.overwritten = result.overwritten;
 	result.copyMs = std::chrono::duration<double, std::milli>(

@@ -147,6 +147,13 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
 			QStringLiteral("HwaSimIR.InitAck")).toString();
 		config.topicVideoStatus = instanceSettings.value(QStringLiteral("DdsProtocol/TopicVideoStatus"),
 			QStringLiteral("HwaSimIR.VideoStatus")).toString();
+		config.channel = instanceSettings.value(QStringLiteral("DdsVideo/Channel"),
+			config.topic.contains(QStringLiteral(".coarse."), Qt::CaseInsensitive)
+				? QStringLiteral("coarse") : QStringLiteral("precise")).toString().trimmed().toLower();
+		config.topicVideoMeta = instanceSettings.value(QStringLiteral("DdsProtocol/TopicVideoMeta"),
+			QStringLiteral("HwaSimIR.VideoMeta.%1").arg(config.channel)).toString();
+		config.topicAnnotation = instanceSettings.value(QStringLiteral("DdsProtocol/TopicAnnotation"),
+			QStringLiteral("HwaSimIR.Annotation.%1").arg(config.channel)).toString();
 		if (QFileInfo(config.qosFile).isRelative())
 			config.qosFile = QDir(QCoreApplication::applicationDirPath()).filePath(config.qosFile);
 		m_ddsWorker = new DdsVideoReceiverWorker(config);

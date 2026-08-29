@@ -140,6 +140,10 @@ public:
 	void handleDdsControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd);
 	void handleDdsInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& cmd);
 	void handleDdsDisplayData(const BYHWICD::DisplayC2cObjTrackingData& data);
+	bool PublishDdsFrameProducts(const DdsVideoFrameMeta& meta,
+		const DdsAnnotationFrame* annotation, std::string& error);
+	bool DrainDdsFrameProducts(std::string& error);
+	void ResetDdsFrameProductStats();
 #endif
 
 	// VisibleWindow UI初始化（键盘、背景、帧率显示等）

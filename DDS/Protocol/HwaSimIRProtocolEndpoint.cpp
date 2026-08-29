@@ -7,9 +7,11 @@
 #include "HwaSimIRProtocolV1TypeSupport.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cstring>
 #include <iostream>
 #include <mutex>
+#include <thread>
 
 #if defined(HWASIMIR_HAS_ZRDDS)
 #include "ZRDDSCppSimpleInterface.h"
@@ -69,7 +71,8 @@ struct HwaSimIRProtocolEndpoint::Impl
     DdsProtocolConfig config;
     DdsProtocolCallbacks callbacks;
     bool running = false;
-    std::mutex writeMutex;
+    mutable std::mutex writeMutex;
+    DdsFrameAuxStats frameStats;
 #if defined(HWASIMIR_HAS_ZRDDS)
     typedef CopyingListener<HwaSimIRDds::ControlCommandV1,
         HwaSimIRDds::ControlCommandV1Seq,
@@ -91,6 +94,10 @@ struct HwaSimIRProtocolEndpoint::Impl
     HwaSimIRDds::InitAckV1DataWriter* ackWriter = nullptr;
     DDS::DataWriter* statusWriterBase = nullptr;
     HwaSimIRDds::VideoStatusV1DataWriter* statusWriter = nullptr;
+    DDS::DataWriter* metaWriterBase = nullptr;
+    HwaSimIRDds::VideoFrameMetaV1DataWriter* metaWriter = nullptr;
+    DDS::DataWriter* annotationWriterBase = nullptr;
+    HwaSimIRDds::AnnotationFrameV1DataWriter* annotationWriter = nullptr;
 #endif
 };
 
@@ -146,10 +153,17 @@ bool HwaSimIRProtocolEndpoint::start(
         participant, config.topicInitAck, config.writerProfile);
     m_impl->statusWriterBase = Publish<HwaSimIRDds::VideoStatusV1TypeSupport>(
         participant, config.topicVideoStatus, config.statusWriterProfile);
+    m_impl->metaWriterBase = Publish<HwaSimIRDds::VideoFrameMetaV1TypeSupport>(
+        participant, config.topicVideoMeta, config.writerProfile);
+    m_impl->annotationWriterBase = Publish<HwaSimIRDds::AnnotationFrameV1TypeSupport>(
+        participant, config.topicAnnotation, config.writerProfile);
     m_impl->ackWriter = dynamic_cast<HwaSimIRDds::InitAckV1DataWriter*>(m_impl->ackWriterBase);
     m_impl->statusWriter = dynamic_cast<HwaSimIRDds::VideoStatusV1DataWriter*>(m_impl->statusWriterBase);
+    m_impl->metaWriter = dynamic_cast<HwaSimIRDds::VideoFrameMetaV1DataWriter*>(m_impl->metaWriterBase);
+    m_impl->annotationWriter = dynamic_cast<HwaSimIRDds::AnnotationFrameV1DataWriter*>(m_impl->annotationWriterBase);
     if (!m_impl->controlReader || !m_impl->initReader || !m_impl->realtimeReader ||
-        !m_impl->ackWriter || !m_impl->statusWriter)
+        !m_impl->ackWriter || !m_impl->statusWriter || !m_impl->metaWriter ||
+        !m_impl->annotationWriter)
     {
         error = "DDS protocol reader/writer creation failed";
         shutdown();
@@ -161,9 +175,154 @@ bool HwaSimIRProtocolEndpoint::start(
               << " init=" << config.topicInit
               << " realtime=" << config.topicRealtime
               << " ack=" << config.topicInitAck
-              << " status=" << config.topicVideoStatus << std::endl;
+              << " status=" << config.topicVideoStatus
+              << " meta=" << config.topicVideoMeta
+              << " annotation=" << config.topicAnnotation << std::endl;
     return true;
 #endif
+}
+
+bool HwaSimIRProtocolEndpoint::publishVideoFrameMeta(
+    const DdsVideoFrameMeta& meta, std::string& error)
+{
+#if !defined(HWASIMIR_HAS_ZRDDS)
+    (void)meta; error = "DDS unavailable"; return false;
+#else
+    if (!m_impl->running || !m_impl->metaWriter) { error = "VideoMeta writer is not ready"; return false; }
+    HwaSimIRDds::VideoFrameMetaV1 sample;
+    if (!HwaSimIRDds::VideoFrameMetaV1Initialize(&sample))
+    {
+        error = "VideoFrameMetaV1Initialize failed";
+        return false;
+    }
+    sample.platID = meta.platID;
+    sample.sensorID = meta.sensorID;
+    CopyBounded(sample.channel, 17, meta.channel);
+    sample.frameSeq = meta.frameSeq;
+    sample.currentRound = meta.currentRound;
+    sample.ptsMs = meta.ptsMs;
+    sample.keyFrame = meta.keyFrame;
+    CopyBounded(sample.codec, 25, meta.codec);
+    sample.width = meta.width;
+    sample.height = meta.height;
+    const auto begin = std::chrono::steady_clock::now();
+    DDS::ReturnCode_t result;
+    {
+        std::lock_guard<std::mutex> lock(m_impl->writeMutex);
+        result = m_impl->metaWriter->write(sample, DDS::HANDLE_NIL_NATIVE);
+        const double elapsed = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - begin).count();
+        if (result == DDS::RETCODE_OK)
+        {
+            ++m_impl->frameStats.metaCount;
+            m_impl->frameStats.metaWriteMsTotal += elapsed;
+            m_impl->frameStats.metaWriteMsMax = (std::max)(m_impl->frameStats.metaWriteMsMax, elapsed);
+        }
+        else ++m_impl->frameStats.writeErrors;
+    }
+    HwaSimIRDds::VideoFrameMetaV1Finalize(&sample);
+    if (result != DDS::RETCODE_OK)
+    {
+        error = "VideoMeta write failed code=" + std::to_string(static_cast<int>(result));
+        return false;
+    }
+    return true;
+#endif
+}
+
+bool HwaSimIRProtocolEndpoint::publishAnnotationFrame(
+    const DdsAnnotationFrame& annotation, std::string& error)
+{
+#if !defined(HWASIMIR_HAS_ZRDDS)
+    (void)annotation; error = "DDS unavailable"; return false;
+#else
+    if (!m_impl->running || !m_impl->annotationWriter) { error = "Annotation writer is not ready"; return false; }
+    if (annotation.json.size() > 32768u)
+    {
+        error = "Annotation JSON exceeds IDL bound 32768";
+        std::lock_guard<std::mutex> lock(m_impl->writeMutex);
+        ++m_impl->frameStats.writeErrors;
+        return false;
+    }
+    HwaSimIRDds::AnnotationFrameV1 sample;
+    if (!HwaSimIRDds::AnnotationFrameV1Initialize(&sample))
+    {
+        error = "AnnotationFrameV1Initialize failed";
+        return false;
+    }
+    sample.platID = annotation.platID;
+    sample.sensorID = annotation.sensorID;
+    CopyBounded(sample.channel, 17, annotation.channel);
+    sample.frameSeq = annotation.frameSeq;
+    sample.currentRound = annotation.currentRound;
+    sample.ptsMs = annotation.ptsMs;
+    CopyBounded(sample.json, 32769, annotation.json);
+    const auto begin = std::chrono::steady_clock::now();
+    DDS::ReturnCode_t result;
+    {
+        std::lock_guard<std::mutex> lock(m_impl->writeMutex);
+        result = m_impl->annotationWriter->write(sample, DDS::HANDLE_NIL_NATIVE);
+        const double elapsed = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - begin).count();
+        if (result == DDS::RETCODE_OK)
+        {
+            ++m_impl->frameStats.annotationCount;
+            m_impl->frameStats.annotationWriteMsTotal += elapsed;
+            m_impl->frameStats.annotationWriteMsMax = (std::max)(m_impl->frameStats.annotationWriteMsMax, elapsed);
+        }
+        else ++m_impl->frameStats.writeErrors;
+    }
+    HwaSimIRDds::AnnotationFrameV1Finalize(&sample);
+    if (result != DDS::RETCODE_OK)
+    {
+        error = "Annotation write failed code=" + std::to_string(static_cast<int>(result));
+        return false;
+    }
+    return true;
+#endif
+}
+
+bool HwaSimIRProtocolEndpoint::drainFrameOutputs(
+    int ackTimeoutSec, int boundedDrainMs, std::string& error)
+{
+#if !defined(HWASIMIR_HAS_ZRDDS)
+    (void)ackTimeoutSec; (void)boundedDrainMs; error = "DDS unavailable"; return false;
+#else
+    DDS::Duration_t timeout;
+    timeout.sec = (std::max)(1, ackTimeoutSec);
+    timeout.nanosec = 0;
+    DDS::ReturnCode_t metaResult = DDS::RETCODE_OK;
+    DDS::ReturnCode_t annotationResult = DDS::RETCODE_OK;
+    {
+        std::lock_guard<std::mutex> lock(m_impl->writeMutex);
+        if (m_impl->metaWriterBase)
+            metaResult = m_impl->metaWriterBase->wait_for_acknowledgments(timeout);
+        if (m_impl->annotationWriterBase)
+            annotationResult = m_impl->annotationWriterBase->wait_for_acknowledgments(timeout);
+    }
+    if (boundedDrainMs > 0)
+        std::this_thread::sleep_for(std::chrono::milliseconds(boundedDrainMs));
+    if (metaResult != DDS::RETCODE_OK || annotationResult != DDS::RETCODE_OK)
+    {
+        error = "VideoMeta/Annotation wait_for_acknowledgments failed meta=" +
+            std::to_string(static_cast<int>(metaResult)) + " annotation=" +
+            std::to_string(static_cast<int>(annotationResult));
+        return false;
+    }
+    return true;
+#endif
+}
+
+void HwaSimIRProtocolEndpoint::resetFrameStats()
+{
+    std::lock_guard<std::mutex> lock(m_impl->writeMutex);
+    m_impl->frameStats = DdsFrameAuxStats();
+}
+
+DdsFrameAuxStats HwaSimIRProtocolEndpoint::frameStats() const
+{
+    std::lock_guard<std::mutex> lock(m_impl->writeMutex);
+    return m_impl->frameStats;
 }
 
 bool HwaSimIRProtocolEndpoint::publishInitAck(
@@ -242,6 +401,8 @@ void HwaSimIRProtocolEndpoint::shutdown()
     if (m_impl->realtimeReader) DDS::DDSIF::UnSubTopic(m_impl->realtimeReader);
     if (m_impl->ackWriterBase) DDS::DDSIF::UnPubTopic(m_impl->ackWriterBase);
     if (m_impl->statusWriterBase) DDS::DDSIF::UnPubTopic(m_impl->statusWriterBase);
+    if (m_impl->metaWriterBase) DDS::DDSIF::UnPubTopic(m_impl->metaWriterBase);
+    if (m_impl->annotationWriterBase) DDS::DDSIF::UnPubTopic(m_impl->annotationWriterBase);
     m_impl->controlReader = nullptr;
     m_impl->initReader = nullptr;
     m_impl->realtimeReader = nullptr;
@@ -249,6 +410,10 @@ void HwaSimIRProtocolEndpoint::shutdown()
     m_impl->ackWriter = nullptr;
     m_impl->statusWriterBase = nullptr;
     m_impl->statusWriter = nullptr;
+    m_impl->metaWriterBase = nullptr;
+    m_impl->metaWriter = nullptr;
+    m_impl->annotationWriterBase = nullptr;
+    m_impl->annotationWriter = nullptr;
     m_impl->controlListener.reset();
     m_impl->initListener.reset();
     m_impl->realtimeListener.reset();

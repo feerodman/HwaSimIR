@@ -42,6 +42,12 @@ typedef DDS::ZRDDSDataWriter<InitAckV1> InitAckV1DataWriter;
 
 typedef DDS::ZRDDSDataWriter<VideoStatusV1> VideoStatusV1DataWriter;
 
+
+typedef DDS::ZRDDSDataWriter<VideoFrameMetaV1> VideoFrameMetaV1DataWriter;
+
+
+typedef DDS::ZRDDSDataWriter<AnnotationFrameV1> AnnotationFrameV1DataWriter;
+
 }
 #endif
 

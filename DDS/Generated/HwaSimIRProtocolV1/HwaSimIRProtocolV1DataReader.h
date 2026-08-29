@@ -53,6 +53,14 @@ typedef struct VideoStatusV1Seq VideoStatusV1Seq;
 
 typedef DDS::ZRDDSDataReader<VideoStatusV1, VideoStatusV1Seq> VideoStatusV1DataReader;
 
+typedef struct VideoFrameMetaV1Seq VideoFrameMetaV1Seq;
+
+typedef DDS::ZRDDSDataReader<VideoFrameMetaV1, VideoFrameMetaV1Seq> VideoFrameMetaV1DataReader;
+
+typedef struct AnnotationFrameV1Seq AnnotationFrameV1Seq;
+
+typedef DDS::ZRDDSDataReader<AnnotationFrameV1, AnnotationFrameV1Seq> AnnotationFrameV1DataReader;
+
 }
 #endif
 

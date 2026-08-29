@@ -27,6 +27,9 @@ struct DdsVideoReceiverConfig
 	QString topicRealtime = QStringLiteral("HwaSimIR.Realtime");
 	QString topicInitAck = QStringLiteral("HwaSimIR.InitAck");
 	QString topicVideoStatus = QStringLiteral("HwaSimIR.VideoStatus");
+	QString channel = QStringLiteral("precise");
+	QString topicVideoMeta = QStringLiteral("HwaSimIR.VideoMeta.precise");
+	QString topicAnnotation = QStringLiteral("HwaSimIR.Annotation.precise");
 };
 
 class DdsVideoReceiverWorker : public QObject
@@ -73,11 +76,16 @@ private:
 	friend class DdsDisplayControlListener;
 	friend class DdsDisplayInitListener;
 	friend class DdsDisplayRealtimeListener;
+	friend class DdsVideoMetaListener;
+	friend class DdsAnnotationListener;
 	void processSample(const char* data, int size);
 	void processVideoStatus(const QString& topic, const QString& codec,
 		const QString& pixelFormat, int width, int height, int fps,
 		bool running, int currentRound);
 	void processRealtime(const BYHWICD::DisplayC2cObjTrackingData& data);
+	void processVideoMeta(int currentRound, quint32 frameSeq, double ptsMs);
+	void processAnnotation(int currentRound, quint32 frameSeq, double ptsMs, const QString& json);
+	void logFrameSync(bool force);
 	struct Impl;
 	std::unique_ptr<Impl> m_impl;
 	DdsVideoReceiverConfig m_config;

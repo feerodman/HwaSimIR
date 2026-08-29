@@ -19,6 +19,8 @@ DDSTypeSupport(InitCommandV1TypeSupport, InitCommandV1);
 DDSTypeSupport(RealtimeDataV1TypeSupport, RealtimeDataV1);
 DDSTypeSupport(InitAckV1TypeSupport, InitAckV1);
 DDSTypeSupport(VideoStatusV1TypeSupport, VideoStatusV1);
+DDSTypeSupport(VideoFrameMetaV1TypeSupport, VideoFrameMetaV1);
+DDSTypeSupport(AnnotationFrameV1TypeSupport, AnnotationFrameV1);
 }
 #endif
 

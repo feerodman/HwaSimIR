@@ -7763,7 +7763,8 @@ void HwaSimIR::LoadF1ProtocolConfig()
 	m_ddsProtocolEnabled = m_runtimeConfig.getBool(
 		"DdsProtocol", "Enable", "HwaSimIRDdsProtocolEnable", false, 0);
 	m_ddsProtocolConfig.enabled = m_ddsProtocolEnabled &&
-		(m_commandTransportInput == "dds" || m_commandTransportInput == "both");
+		(m_commandTransportInput == "dds" || m_commandTransportInput == "both" ||
+		 m_ddsVideoConfig.enabled);
 	m_ddsProtocolConfig.domainId = m_runtimeConfig.getInt(
 		"DdsProtocol", "DomainId", "HwaSimIRDdsProtocolDomainId", 150, 0);
 	const std::string protocolQos = m_runtimeConfig.getString(
@@ -7779,6 +7780,18 @@ void HwaSimIR::LoadF1ProtocolConfig()
 		"DdsProtocol", "TopicInitAck", "HwaSimIRDdsTopicInitAck", "HwaSimIR.InitAck", 0);
 	m_ddsProtocolConfig.topicVideoStatus = m_runtimeConfig.getString(
 		"DdsProtocol", "TopicVideoStatus", "HwaSimIRDdsTopicVideoStatus", "HwaSimIR.VideoStatus", 0);
+	const std::string defaultMetaTopic = m_channel == "coarse"
+		? "HwaSimIR.VideoMeta.coarse" : "HwaSimIR.VideoMeta.precise";
+	const std::string defaultAnnotationTopic = m_channel == "coarse"
+		? "HwaSimIR.Annotation.coarse" : "HwaSimIR.Annotation.precise";
+	m_ddsProtocolConfig.topicVideoMeta = m_runtimeConfig.getString(
+		"DdsProtocol", m_channel == "coarse" ? "TopicVideoMetaCoarse" : "TopicVideoMetaPrecise",
+		m_channel == "coarse" ? "HwaSimIRDdsTopicVideoMetaCoarse" : "HwaSimIRDdsTopicVideoMetaPrecise",
+		defaultMetaTopic, 0);
+	m_ddsProtocolConfig.topicAnnotation = m_runtimeConfig.getString(
+		"DdsProtocol", m_channel == "coarse" ? "TopicAnnotationCoarse" : "TopicAnnotationPrecise",
+		m_channel == "coarse" ? "HwaSimIRDdsTopicAnnotationCoarse" : "HwaSimIRDdsTopicAnnotationPrecise",
+		defaultAnnotationTopic, 0);
 	m_deduplicateWhenBoth = m_runtimeConfig.getBool(
 		"DdsProtocol", "DeduplicateWhenBoth", "HwaSimIRDdsDeduplicateWhenBoth", true, 0);
 	m_deduplicateWindowMs = (std::max)(1, m_runtimeConfig.getInt(
@@ -7889,6 +7902,55 @@ void HwaSimIR::PublishDdsVideoStatus(bool running, const char* reason)
 	}
 	m_lastVideoStatusRefreshNs = std::chrono::duration_cast<std::chrono::nanoseconds>(
 		std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+
+bool HwaSimIR::PublishDdsFrameProducts(const DdsVideoFrameMeta& meta,
+	const DdsAnnotationFrame* annotation, std::string& error)
+{
+	if (!m_ddsProtocolEndpoint || !m_ddsProtocolEndpoint->running())
+	{
+		error = "DDS protocol endpoint is not ready";
+		return false;
+	}
+	if (!m_ddsProtocolEndpoint->publishVideoFrameMeta(meta, error)) return false;
+	if (annotation && !m_ddsProtocolEndpoint->publishAnnotationFrame(*annotation, error)) return false;
+	const DdsFrameAuxStats stats = m_ddsProtocolEndpoint->frameStats();
+	if (meta.frameSeq <= 3 || (meta.frameSeq % 120u) == 0u)
+	{
+		std::cout << std::fixed << std::setprecision(3)
+			<< "[DdsFrameProducts] round=" << meta.currentRound
+			<< " frameSeq=" << meta.frameSeq
+			<< " videoMeta=" << stats.metaCount
+			<< " annotation=" << stats.annotationCount
+			<< " metaWriteMs=" << (stats.metaCount ? stats.metaWriteMsTotal / stats.metaCount : 0.0)
+			<< " annotationWriteMs=" << (stats.annotationCount ?
+				stats.annotationWriteMsTotal / stats.annotationCount : 0.0)
+			<< " writeErrors=" << stats.writeErrors << std::endl;
+	}
+	return true;
+}
+
+bool HwaSimIR::DrainDdsFrameProducts(std::string& error)
+{
+	if (!m_ddsProtocolEndpoint || !m_ddsProtocolEndpoint->running()) return true;
+	const bool ok = m_ddsProtocolEndpoint->drainFrameOutputs(
+		m_ddsVideoConfig.ackTimeoutSec, m_ddsVideoConfig.shutdownDrainMs, error);
+	const DdsFrameAuxStats stats = m_ddsProtocolEndpoint->frameStats();
+	std::cout << std::fixed << std::setprecision(3)
+		<< "[DdsFrameProductsFinal] videoMeta=" << stats.metaCount
+		<< " annotation=" << stats.annotationCount
+		<< " metaWriteMsAvg=" << (stats.metaCount ? stats.metaWriteMsTotal / stats.metaCount : 0.0)
+		<< " metaWriteMsMax=" << stats.metaWriteMsMax
+		<< " annotationWriteMsAvg=" << (stats.annotationCount ?
+			stats.annotationWriteMsTotal / stats.annotationCount : 0.0)
+		<< " annotationWriteMsMax=" << stats.annotationWriteMsMax
+		<< " writeErrors=" << stats.writeErrors << std::endl;
+	return ok;
+}
+
+void HwaSimIR::ResetDdsFrameProductStats()
+{
+	if (m_ddsProtocolEndpoint) m_ddsProtocolEndpoint->resetFrameStats();
 }
 #endif
 
@@ -8193,9 +8255,6 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		m_perfStats.configure(m_bSyncRenderMode.load(), static_cast<double>(m_targetVideoFps.load()));
 		// TODO: 实现开始仿真逻辑（启动渲染、数据采集等）
 		m_isSimRunning.store(true);
-#if defined(HWASIMIR_HAS_ZRDDS)
-		PublishDdsVideoStatus(true, "start");
-#endif
 		// Stage2B：同步转发开始控制命令，触发显示端开始录制和创建保存目录。
 		if (m_pTcpThread) {
 			m_pTcpThread->resetFrameCounters();
@@ -8204,6 +8263,9 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 			m_pTcpThread->resetInitCompleted();
 			std::cout << "TCP线程初始化标志已重置，回合重新开始" << std::endl;
 		}
+#if defined(HWASIMIR_HAS_ZRDDS)
+		PublishDdsVideoStatus(true, "start");
+#endif
 		
 		std::cout << "仿真开始：当前回合=" << m_currentRound << std::endl;
 		break;
@@ -8211,14 +8273,14 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		std::cout << "执行停止仿真逻辑..." << std::endl;
 		// TODO: 实现停止仿真逻辑（停止渲染、保存数据等）
 		m_isSimRunning.store(false);
-#if defined(HWASIMIR_HAS_ZRDDS)
-		PublishDdsVideoStatus(false, "stop");
-#endif
 		// Stage2B：同步转发停止控制命令，触发显示端 flush 并关闭视频/数据/标注文件。
 		if (m_pTcpThread) {
 			m_pTcpThread->stopOutputRound("stop");
 			m_pTcpThread->sendControlCmd(cmd);
 		}
+#if defined(HWASIMIR_HAS_ZRDDS)
+		PublishDdsVideoStatus(false, "stop");
+#endif
 	
 		std::cout << "仿真停止：当前回合=" << m_currentRound << std::endl;
 		{

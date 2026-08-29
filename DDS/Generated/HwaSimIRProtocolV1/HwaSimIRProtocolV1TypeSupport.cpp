@@ -55,4 +55,12 @@ DDSTypeSupportImpl(InitAckV1TypeSupport, InitAckV1, InitAckV1_TYPENAME);
 const DDS_Char* VideoStatusV1_TYPENAME = "VideoStatusV1";
 DDSTypeSupportImpl(VideoStatusV1TypeSupport, VideoStatusV1, VideoStatusV1_TYPENAME);
 
+
+const DDS_Char* VideoFrameMetaV1_TYPENAME = "VideoFrameMetaV1";
+DDSTypeSupportImpl(VideoFrameMetaV1TypeSupport, VideoFrameMetaV1, VideoFrameMetaV1_TYPENAME);
+
+
+const DDS_Char* AnnotationFrameV1_TYPENAME = "AnnotationFrameV1";
+DDSTypeSupportImpl(AnnotationFrameV1TypeSupport, AnnotationFrameV1, AnnotationFrameV1_TYPENAME);
+
 }

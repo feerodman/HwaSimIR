@@ -10,6 +10,7 @@
 #include <cmath>
 #include <cstring>
 #include <mutex>
+#include <set>
 
 #include "Video/VideoDecoder.h"
 #include "CommonDataDdsAdapter.h"
@@ -45,12 +46,25 @@ struct DdsVideoReceiverWorker::Impl
 	int pendingFps = 0;
 	bool pendingRunning = false;
 	int pendingRound = 0;
+	std::mutex syncMutex;
+	int syncRound = 0;
+	quint64 syncVideo = 0;
+	quint64 syncMeta = 0;
+	quint64 syncAnnotation = 0;
+	quint64 syncMismatch = 0;
+	quint32 lastMetaSeq = 0;
+	quint32 lastAnnotationSeq = 0;
+	std::set<quint32> videoSeqs;
+	std::set<quint32> metaSeqs;
+	std::set<quint32> annotationSeqs;
 #if defined(HWASIMIR_HAS_ZRDDS)
 	DataReader* reader = nullptr;
 	DataReader* statusReader = nullptr;
 	DataReader* controlReader = nullptr;
 	DataReader* initReader = nullptr;
 	DataReader* realtimeReader = nullptr;
+	DataReader* metaReader = nullptr;
+	DataReader* annotationReader = nullptr;
 #endif
 };
 
@@ -77,9 +91,43 @@ public:
 	void on_process_sample(DataReader*, const HwaSimIRDds::VideoStatusV1& sample,
 		const SampleInfo&) override
 	{
+		if (QString::fromLatin1(sample.channel) != m_owner->m_config.channel) return;
 		m_owner->processVideoStatus(QString::fromLatin1(sample.videoTopic),
 			QString::fromLatin1(sample.codec), QString::fromLatin1(sample.pixelFormat),
 			sample.width, sample.height, sample.fps, sample.running, sample.currentRound);
+	}
+private:
+	DdsVideoReceiverWorker* m_owner;
+};
+
+class DdsVideoMetaListener : public SimpleDataReaderListener<
+	HwaSimIRDds::VideoFrameMetaV1, HwaSimIRDds::VideoFrameMetaV1Seq,
+	HwaSimIRDds::VideoFrameMetaV1DataReader>
+{
+public:
+	explicit DdsVideoMetaListener(DdsVideoReceiverWorker* owner) : m_owner(owner) {}
+	void on_process_sample(DataReader*, const HwaSimIRDds::VideoFrameMetaV1& sample,
+		const SampleInfo&) override
+	{
+		if (QString::fromLatin1(sample.channel) != m_owner->m_config.channel) return;
+		m_owner->processVideoMeta(sample.currentRound, sample.frameSeq, sample.ptsMs);
+	}
+private:
+	DdsVideoReceiverWorker* m_owner;
+};
+
+class DdsAnnotationListener : public SimpleDataReaderListener<
+	HwaSimIRDds::AnnotationFrameV1, HwaSimIRDds::AnnotationFrameV1Seq,
+	HwaSimIRDds::AnnotationFrameV1DataReader>
+{
+public:
+	explicit DdsAnnotationListener(DdsVideoReceiverWorker* owner) : m_owner(owner) {}
+	void on_process_sample(DataReader*, const HwaSimIRDds::AnnotationFrameV1& sample,
+		const SampleInfo&) override
+	{
+		if (QString::fromLatin1(sample.channel) != m_owner->m_config.channel) return;
+		m_owner->processAnnotation(sample.currentRound, sample.frameSeq, sample.ptsMs,
+			QString::fromUtf8(sample.json));
 	}
 private:
 	DdsVideoReceiverWorker* m_owner;
@@ -169,6 +217,8 @@ void DdsVideoReceiverWorker::doWork()
 	DdsDisplayControlListener controlListener(this);
 	DdsDisplayInitListener initListener(this);
 	DdsDisplayRealtimeListener realtimeListener(this);
+	DdsVideoMetaListener metaListener(this);
+	DdsAnnotationListener annotationListener(this);
 	const QFileInfo qosInfo(m_config.qosFile);
 	const QString resolvedQos = qosInfo.absoluteFilePath();
 	const bool qosExists = qosInfo.exists() && qosInfo.isFile();
@@ -206,8 +256,13 @@ void DdsVideoReceiverWorker::doWork()
 		HwaSimIRDds::InitCommandV1TypeSupport::get_instance(), "hwasimir_protocol_reader", &initListener);
 	m_impl->realtimeReader = DDSIF::SubTopic(participant, m_config.topicRealtime.toLatin1().constData(),
 		HwaSimIRDds::RealtimeDataV1TypeSupport::get_instance(), "hwasimir_protocol_reader", &realtimeListener);
+	m_impl->metaReader = DDSIF::SubTopic(participant, m_config.topicVideoMeta.toLatin1().constData(),
+		HwaSimIRDds::VideoFrameMetaV1TypeSupport::get_instance(), "hwasimir_protocol_reader", &metaListener);
+	m_impl->annotationReader = DDSIF::SubTopic(participant, m_config.topicAnnotation.toLatin1().constData(),
+		HwaSimIRDds::AnnotationFrameV1TypeSupport::get_instance(), "hwasimir_protocol_reader", &annotationListener);
 	if (!m_impl->reader || !m_impl->statusReader || !m_impl->controlReader ||
-		!m_impl->initReader || !m_impl->realtimeReader)
+		!m_impl->initReader || !m_impl->realtimeReader || !m_impl->metaReader ||
+		!m_impl->annotationReader)
 	{
 		const QString reason = QStringLiteral("DDS full reader creation failed video=%1 status=%2")
 			.arg(m_config.topic).arg(m_config.topicVideoStatus);
@@ -218,6 +273,8 @@ void DdsVideoReceiverWorker::doWork()
 		if (m_impl->controlReader) DDSIF::UnSubTopic(m_impl->controlReader);
 		if (m_impl->initReader) DDSIF::UnSubTopic(m_impl->initReader);
 		if (m_impl->realtimeReader) DDSIF::UnSubTopic(m_impl->realtimeReader);
+		if (m_impl->metaReader) DDSIF::UnSubTopic(m_impl->metaReader);
+		if (m_impl->annotationReader) DDSIF::UnSubTopic(m_impl->annotationReader);
 		m_impl->runtime->shutdown();
 		return;
 	}
@@ -287,8 +344,11 @@ void DdsVideoReceiverWorker::doWork()
 	if (m_impl->controlReader) DDSIF::UnSubTopic(m_impl->controlReader);
 	if (m_impl->initReader) DDSIF::UnSubTopic(m_impl->initReader);
 	if (m_impl->realtimeReader) DDSIF::UnSubTopic(m_impl->realtimeReader);
+	if (m_impl->metaReader) DDSIF::UnSubTopic(m_impl->metaReader);
+	if (m_impl->annotationReader) DDSIF::UnSubTopic(m_impl->annotationReader);
 	m_impl->reader = m_impl->statusReader = m_impl->controlReader =
-		m_impl->initReader = m_impl->realtimeReader = nullptr;
+		m_impl->initReader = m_impl->realtimeReader = m_impl->metaReader =
+		m_impl->annotationReader = nullptr;
 	m_impl->runtime->shutdown();
 	qInfo().noquote() << QStringLiteral(
 		"[DdsVideoReceiverPerf] receivedSamples=%1 receivedBytes=%2 ddsErrors=%3 finalizeCode=manager")
@@ -300,16 +360,33 @@ void DdsVideoReceiverWorker::doWork()
 void DdsVideoReceiverWorker::processVideoStatus(const QString& topic, const QString& codec,
 	const QString& pixelFormat, int width, int height, int fps, bool running, int currentRound)
 {
-	std::lock_guard<std::mutex> lock(m_impl->statusMutex);
-	m_impl->pendingTopic = topic;
-	m_impl->pendingCodec = codec;
-	m_impl->pendingPixelFormat = pixelFormat;
-	m_impl->pendingWidth = width;
-	m_impl->pendingHeight = height;
-	m_impl->pendingFps = fps;
-	m_impl->pendingRunning = running;
-	m_impl->pendingRound = currentRound;
-	m_impl->statusPending = true;
+	{
+		std::lock_guard<std::mutex> lock(m_impl->statusMutex);
+		m_impl->pendingTopic = topic;
+		m_impl->pendingCodec = codec;
+		m_impl->pendingPixelFormat = pixelFormat;
+		m_impl->pendingWidth = width;
+		m_impl->pendingHeight = height;
+		m_impl->pendingFps = fps;
+		m_impl->pendingRunning = running;
+		m_impl->pendingRound = currentRound;
+		m_impl->statusPending = true;
+	}
+	if (running)
+	{
+		std::lock_guard<std::mutex> lock(m_impl->syncMutex);
+		if (m_impl->syncRound != currentRound)
+		{
+			m_impl->syncRound = currentRound;
+			m_impl->syncVideo = m_impl->syncMeta = m_impl->syncAnnotation = 0;
+			m_impl->syncMismatch = 0;
+			m_impl->lastMetaSeq = m_impl->lastAnnotationSeq = 0;
+			m_impl->videoSeqs.clear();
+			m_impl->metaSeqs.clear();
+			m_impl->annotationSeqs.clear();
+		}
+	}
+	else logFrameSync(true);
 }
 
 void DdsVideoReceiverWorker::processRealtime(const BYHWICD::DisplayC2cObjTrackingData& data)
@@ -318,9 +395,73 @@ void DdsVideoReceiverWorker::processRealtime(const BYHWICD::DisplayC2cObjTrackin
 		false, 0, 0, 0, WallTimeNs(), 0.0, 0, QStringLiteral("dds_realtime"));
 }
 
+void DdsVideoReceiverWorker::processVideoMeta(int currentRound, quint32 frameSeq, double ptsMs)
+{
+	Q_UNUSED(ptsMs);
+	{
+		std::lock_guard<std::mutex> lock(m_impl->syncMutex);
+		++m_impl->syncMeta;
+		if (currentRound != m_impl->syncRound || !m_impl->metaSeqs.insert(frameSeq).second ||
+			(m_impl->lastMetaSeq != 0 && frameSeq != m_impl->lastMetaSeq + 1) ||
+			(m_impl->syncMeta == 1 && frameSeq != 1))
+			++m_impl->syncMismatch;
+		m_impl->lastMetaSeq = frameSeq;
+	}
+	logFrameSync(frameSeq <= 3 || (frameSeq % 120u) == 0u);
+}
+
+void DdsVideoReceiverWorker::processAnnotation(
+	int currentRound, quint32 frameSeq, double ptsMs, const QString& json)
+{
+	Q_UNUSED(ptsMs);
+	Q_UNUSED(json);
+	{
+		std::lock_guard<std::mutex> lock(m_impl->syncMutex);
+		++m_impl->syncAnnotation;
+		if (currentRound != m_impl->syncRound || !m_impl->annotationSeqs.insert(frameSeq).second ||
+			(m_impl->lastAnnotationSeq != 0 && frameSeq != m_impl->lastAnnotationSeq + 1) ||
+			(m_impl->syncAnnotation == 1 && frameSeq != 1))
+			++m_impl->syncMismatch;
+		m_impl->lastAnnotationSeq = frameSeq;
+	}
+	logFrameSync(frameSeq <= 3 || (frameSeq % 120u) == 0u);
+}
+
+void DdsVideoReceiverWorker::logFrameSync(bool force)
+{
+	std::lock_guard<std::mutex> lock(m_impl->syncMutex);
+	if (!force && m_impl->syncVideo > 3 && (m_impl->syncVideo % 120) != 0) return;
+	quint64 pendingMeta = 0;
+	quint64 pendingAnnotation = 0;
+	for (std::set<quint32>::const_iterator it = m_impl->videoSeqs.begin();
+		it != m_impl->videoSeqs.end(); ++it)
+	{
+		if (m_impl->metaSeqs.count(*it) == 0) ++pendingMeta;
+		if (m_impl->syncAnnotation > 0 && m_impl->annotationSeqs.count(*it) == 0)
+			++pendingAnnotation;
+	}
+	for (std::set<quint32>::const_iterator it = m_impl->metaSeqs.begin();
+		it != m_impl->metaSeqs.end(); ++it)
+		if (m_impl->videoSeqs.count(*it) == 0) ++pendingMeta;
+	for (std::set<quint32>::const_iterator it = m_impl->annotationSeqs.begin();
+		it != m_impl->annotationSeqs.end(); ++it)
+		if (m_impl->videoSeqs.count(*it) == 0) ++pendingAnnotation;
+	qInfo().noquote() << QStringLiteral(
+		"[DdsFrameSync] round=%1 video=%2 meta=%3 annotation=%4 lastFrameSeq=%5 pendingMeta=%6 pendingAnnotation=%7 mismatch=%8")
+		.arg(m_impl->syncRound).arg(m_impl->syncVideo).arg(m_impl->syncMeta)
+		.arg(m_impl->syncAnnotation).arg(m_impl->lastMetaSeq).arg(pendingMeta)
+		.arg(pendingAnnotation).arg(m_impl->syncMismatch);
+}
+
 void DdsVideoReceiverWorker::processSample(const char* data, int size)
 {
 	const quint64 sampleIndex = m_receivedSamples.fetch_add(1);
+	quint64 logicalFrameSeq = 0;
+	{
+		std::lock_guard<std::mutex> lock(m_impl->syncMutex);
+		logicalFrameSeq = ++m_impl->syncVideo;
+		m_impl->videoSeqs.insert(static_cast<quint32>(logicalFrameSeq));
+	}
 	m_receivedBytes.fetch_add(static_cast<quint64>(qMax(0, size)));
 	if (!data || size <= 0)
 	{
@@ -459,7 +600,8 @@ void DdsVideoReceiverWorker::processSample(const char* data, int size)
 	BYHWICD::DisplayC2cObjTrackingData tracking;
 	std::memset(&tracking, 0, sizeof(tracking));
 	emit dataReceived(image, tracking, QString(), true, false, false, 0, 0, codecId,
-		keyFrame, sampleIndex + 1, sampleIndex + 1, ptsMs, WallTimeNs(), decodeMs, channels, imageFormat);
+		keyFrame, logicalFrameSeq, logicalFrameSeq, ptsMs, WallTimeNs(), decodeMs, channels, imageFormat);
+	logFrameSync(logicalFrameSeq <= 3 || (logicalFrameSeq % 120u) == 0u);
 	if (sampleIndex < 3 || ((sampleIndex + 1) % 120) == 0)
 		qInfo().noquote() << QStringLiteral("[DdsVideoReceiverSample] sample=%1 bytes=%2 codec=%3 ddsErrors=%4")
 			.arg(sampleIndex + 1).arg(size).arg(m_config.codec).arg(m_ddsErrors.load());

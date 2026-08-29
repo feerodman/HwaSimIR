@@ -1400,5 +1400,252 @@ DDS_Long VideoStatusV1LoanDeserialize(VideoStatusV1* sampleBuf,
     DDS_ULong fixedHeaderLen);
 
 #endif/*_ZRDDS_INCLUDE_NO_SERIALIZE_MODE*/
+typedef struct VideoFrameMetaV1
+{
+    DDS_Long platID; // @ID(0) @Key
+    DDS_Long sensorID; // @ID(1) @Key
+    DDS_Char* channel; // @ID(2) /* maximum length = (16) */
+    DDS_ULong frameSeq; // @ID(3)
+    DDS_Long currentRound; // @ID(4)
+    DDS_Double ptsMs; // @ID(5)
+    DDS_Boolean keyFrame; // @ID(6)
+    DDS_Char* codec; // @ID(7) /* maximum length = (24) */
+    DDS_Long width; // @ID(8)
+    DDS_Long height; // @ID(9)
+} VideoFrameMetaV1; // @Extensibility(EXTENSIBLE)
+
+DDS_USER_SEQUENCE_CPP(VideoFrameMetaV1Seq, VideoFrameMetaV1);
+
+// 用户使用接口
+DDS_Boolean VideoFrameMetaV1Initialize(
+    VideoFrameMetaV1* self);
+
+DDS_Boolean VideoFrameMetaV1InitializeEx(
+    VideoFrameMetaV1* self,
+    ZRMemPool* pool,
+    DDS_Boolean allocateMemory);
+
+void VideoFrameMetaV1Finalize(
+    VideoFrameMetaV1* self);
+
+void VideoFrameMetaV1FinalizeEx(
+    VideoFrameMetaV1* self,
+    ZRMemPool* pool,
+    DDS_Boolean deletePointers);
+
+DDS_Boolean VideoFrameMetaV1Copy(
+    VideoFrameMetaV1* dst,
+    const VideoFrameMetaV1* src);
+
+DDS_Boolean VideoFrameMetaV1CopyEx(
+    VideoFrameMetaV1* dst,
+    const VideoFrameMetaV1* src,
+    ZRMemPool* pool);
+
+void VideoFrameMetaV1PrintData(
+    const VideoFrameMetaV1* sample);
+
+DDS::TypeCode* VideoFrameMetaV1GetTypeCode();
+
+// 底层使用函数
+VideoFrameMetaV1* VideoFrameMetaV1CreateSample(
+    ZRMemPool* pool,
+    DDS_Boolean allocMutable);
+
+void VideoFrameMetaV1DestroySample(
+    ZRMemPool* pool,
+    VideoFrameMetaV1* sample);
+
+DDS_ULong VideoFrameMetaV1GetSerializedSampleMaxSize();
+
+DDS_ULong VideoFrameMetaV1GetSerializedSampleSize(
+    const VideoFrameMetaV1* sample,
+    DDS_ULong currentAlignment);
+
+DDS_Long VideoFrameMetaV1Serialize(
+    const VideoFrameMetaV1* sample,
+    CDRSerializer* cdr);
+
+DDS_Long VideoFrameMetaV1Deserialize(
+    VideoFrameMetaV1* sample,
+    CDRDeserializer* cdr,
+    ZRMemPool* pool);
+
+DDS_ULong VideoFrameMetaV1GetSerializedKeyMaxSize();
+
+DDS_ULong VideoFrameMetaV1GetSerializedKeySize(
+    const VideoFrameMetaV1* sample,
+    DDS_ULong currentAlignment);
+
+DDS_Long VideoFrameMetaV1SerializeKey(
+    const VideoFrameMetaV1* sample,
+    CDRSerializer* cdr);
+
+DDS_Long VideoFrameMetaV1DeserializeKey(
+    VideoFrameMetaV1* sample,
+    CDRDeserializer* cdr,
+    ZRMemPool* pool);
+
+DDS_Long VideoFrameMetaV1GetKeyHash(
+    const VideoFrameMetaV1* sample,
+    CDRSerializer* cdr,
+    DDS::KeyHash_t* result);
+
+DDS_Boolean VideoFrameMetaV1HasKey();
+
+TypeCodeHeader* VideoFrameMetaV1GetInnerTypeCode();
+
+#ifdef _ZRDDS_INCLUDE_ONSITE_DESERILIZE
+DDS_Boolean VideoFrameMetaV1NoSerializingSupported();
+
+DDS_ULong VideoFrameMetaV1FixedHeaderLength();
+
+DDS_Long VideoFrameMetaV1OnSiteDeserialize(CDRDeserializer* cdr,
+    VideoFrameMetaV1* sample,
+    DDS_ULong offset,
+    DDS_ULong totalSize,
+    DDS_Char* payload,
+    DDS_ULong payloadLen,
+    DDS_ULong fixedHeaderLen);
+
+#endif/*_ZRDDS_INCLUDE_ONSITE_DESERILIZE*/
+
+#ifdef _ZRDDS_INCLUDE_NO_SERIALIZE_MODE
+DDS_Char* VideoFrameMetaV1LoanSampleBuf(VideoFrameMetaV1* sample, DDS_Boolean takeBuffer);
+
+void VideoFrameMetaV1ReturnSampleBuf(DDS_Char* sampleBuf);
+
+DDS_Long VideoFrameMetaV1LoanDeserialize(VideoFrameMetaV1* sampleBuf,
+    CDRDeserializer* cdr,
+    DDS_ULong curIndex,
+    DDS_ULong totalNum,
+    DDS_Char* base,
+    DDS_ULong offset,
+    DDS_ULong space,
+    DDS_ULong fixedHeaderLen);
+
+#endif/*_ZRDDS_INCLUDE_NO_SERIALIZE_MODE*/
+typedef struct AnnotationFrameV1
+{
+    DDS_Long platID; // @ID(0) @Key
+    DDS_Long sensorID; // @ID(1) @Key
+    DDS_Char* channel; // @ID(2) /* maximum length = (16) */
+    DDS_ULong frameSeq; // @ID(3)
+    DDS_Long currentRound; // @ID(4)
+    DDS_Double ptsMs; // @ID(5)
+    DDS_Char* json; // @ID(6) /* maximum length = (32768) */
+} AnnotationFrameV1; // @Extensibility(EXTENSIBLE)
+
+DDS_USER_SEQUENCE_CPP(AnnotationFrameV1Seq, AnnotationFrameV1);
+
+// 用户使用接口
+DDS_Boolean AnnotationFrameV1Initialize(
+    AnnotationFrameV1* self);
+
+DDS_Boolean AnnotationFrameV1InitializeEx(
+    AnnotationFrameV1* self,
+    ZRMemPool* pool,
+    DDS_Boolean allocateMemory);
+
+void AnnotationFrameV1Finalize(
+    AnnotationFrameV1* self);
+
+void AnnotationFrameV1FinalizeEx(
+    AnnotationFrameV1* self,
+    ZRMemPool* pool,
+    DDS_Boolean deletePointers);
+
+DDS_Boolean AnnotationFrameV1Copy(
+    AnnotationFrameV1* dst,
+    const AnnotationFrameV1* src);
+
+DDS_Boolean AnnotationFrameV1CopyEx(
+    AnnotationFrameV1* dst,
+    const AnnotationFrameV1* src,
+    ZRMemPool* pool);
+
+void AnnotationFrameV1PrintData(
+    const AnnotationFrameV1* sample);
+
+DDS::TypeCode* AnnotationFrameV1GetTypeCode();
+
+// 底层使用函数
+AnnotationFrameV1* AnnotationFrameV1CreateSample(
+    ZRMemPool* pool,
+    DDS_Boolean allocMutable);
+
+void AnnotationFrameV1DestroySample(
+    ZRMemPool* pool,
+    AnnotationFrameV1* sample);
+
+DDS_ULong AnnotationFrameV1GetSerializedSampleMaxSize();
+
+DDS_ULong AnnotationFrameV1GetSerializedSampleSize(
+    const AnnotationFrameV1* sample,
+    DDS_ULong currentAlignment);
+
+DDS_Long AnnotationFrameV1Serialize(
+    const AnnotationFrameV1* sample,
+    CDRSerializer* cdr);
+
+DDS_Long AnnotationFrameV1Deserialize(
+    AnnotationFrameV1* sample,
+    CDRDeserializer* cdr,
+    ZRMemPool* pool);
+
+DDS_ULong AnnotationFrameV1GetSerializedKeyMaxSize();
+
+DDS_ULong AnnotationFrameV1GetSerializedKeySize(
+    const AnnotationFrameV1* sample,
+    DDS_ULong currentAlignment);
+
+DDS_Long AnnotationFrameV1SerializeKey(
+    const AnnotationFrameV1* sample,
+    CDRSerializer* cdr);
+
+DDS_Long AnnotationFrameV1DeserializeKey(
+    AnnotationFrameV1* sample,
+    CDRDeserializer* cdr,
+    ZRMemPool* pool);
+
+DDS_Long AnnotationFrameV1GetKeyHash(
+    const AnnotationFrameV1* sample,
+    CDRSerializer* cdr,
+    DDS::KeyHash_t* result);
+
+DDS_Boolean AnnotationFrameV1HasKey();
+
+TypeCodeHeader* AnnotationFrameV1GetInnerTypeCode();
+
+#ifdef _ZRDDS_INCLUDE_ONSITE_DESERILIZE
+DDS_Boolean AnnotationFrameV1NoSerializingSupported();
+
+DDS_ULong AnnotationFrameV1FixedHeaderLength();
+
+DDS_Long AnnotationFrameV1OnSiteDeserialize(CDRDeserializer* cdr,
+    AnnotationFrameV1* sample,
+    DDS_ULong offset,
+    DDS_ULong totalSize,
+    DDS_Char* payload,
+    DDS_ULong payloadLen,
+    DDS_ULong fixedHeaderLen);
+
+#endif/*_ZRDDS_INCLUDE_ONSITE_DESERILIZE*/
+
+#ifdef _ZRDDS_INCLUDE_NO_SERIALIZE_MODE
+DDS_Char* AnnotationFrameV1LoanSampleBuf(AnnotationFrameV1* sample, DDS_Boolean takeBuffer);
+
+void AnnotationFrameV1ReturnSampleBuf(DDS_Char* sampleBuf);
+
+DDS_Long AnnotationFrameV1LoanDeserialize(AnnotationFrameV1* sampleBuf,
+    CDRDeserializer* cdr,
+    DDS_ULong curIndex,
+    DDS_ULong totalNum,
+    DDS_Char* base,
+    DDS_ULong offset,
+    DDS_ULong space,
+    DDS_ULong fixedHeaderLen);
+
+#endif/*_ZRDDS_INCLUDE_NO_SERIALIZE_MODE*/
 }
 #endif

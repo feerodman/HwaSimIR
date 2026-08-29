@@ -9302,4 +9302,1557 @@ DDS_ULong VideoStatusV1FixedHeaderLength()
 }
 
 #endif/*_ZRDDS_INCLUDE_ONSITE_DESERILIZE*/
+#define T VideoFrameMetaV1
+#define TSeq VideoFrameMetaV1Seq
+#define TINITIALIZE VideoFrameMetaV1InitializeEx
+#define TFINALIZE VideoFrameMetaV1FinalizeEx
+#define TCOPY VideoFrameMetaV1CopyEx
+
+#include "ZRSequence.cpp"
+#include "ZRCPlusPlusSequence.cpp"
+
+#undef TCOPY
+#undef TFINALIZE
+#undef TINITIALIZE
+#undef TSeq
+#undef T
+
+DDS_Boolean VideoFrameMetaV1Initialize(VideoFrameMetaV1* self)
+{
+    return VideoFrameMetaV1InitializeEx(self, NULL, true);
+}
+
+void VideoFrameMetaV1Finalize(VideoFrameMetaV1* self)
+{
+    VideoFrameMetaV1FinalizeEx(self, NULL, true);
+}
+
+DDS_Boolean VideoFrameMetaV1Copy(
+    VideoFrameMetaV1* dst,
+    const VideoFrameMetaV1* src)
+{
+    return VideoFrameMetaV1CopyEx(dst, src, NULL);
+}
+
+VideoFrameMetaV1* VideoFrameMetaV1CreateSample(
+    ZRMemPool* pool,
+    DDS_Boolean allocMutable)
+{
+    VideoFrameMetaV1* newSample = (VideoFrameMetaV1*)ZRMalloc(pool, sizeof(VideoFrameMetaV1));
+    if (newSample == NULL)
+    {
+        printf("malloc for VideoFrameMetaV1 failed.");
+        return NULL;
+    }
+    if (!VideoFrameMetaV1InitializeEx(newSample, pool, allocMutable))
+    {
+        printf("initial Sample failed.");
+        VideoFrameMetaV1DestroySample(pool, newSample);
+        return NULL;
+    }
+    return newSample;
+}
+
+void VideoFrameMetaV1DestroySample(ZRMemPool* pool, VideoFrameMetaV1* sample)
+{
+    if (sample == NULL) return;
+    VideoFrameMetaV1FinalizeEx(sample, pool, true);
+    ZRDealloc(pool, sample);
+}
+
+DDS_ULong VideoFrameMetaV1GetSerializedSampleMaxSize()
+{
+    return 92;
+}
+
+DDS_ULong VideoFrameMetaV1GetSerializedKeyMaxSize()
+{
+    return 8;
+}
+
+DDS_Long VideoFrameMetaV1GetKeyHash(
+    const VideoFrameMetaV1* sample,
+    CDRSerializer* cdr,
+    DDS::KeyHash_t* result)
+{
+    DDS_Long ret = VideoFrameMetaV1SerializeKey(sample, cdr);
+    if (ret < 0)
+    {
+        printf("serialize key failed.");
+        *result = DDS_HANDLE_NIL_NATIVE;
+        return -1;
+    }
+    ret = CDRSerializeGetKeyHash(cdr, result->value, false);
+    if (ret < 0)
+    {
+        printf("get keyhash failed.");
+        *result = DDS_HANDLE_NIL_NATIVE;
+        return -1;
+    }
+    result->valid = true;
+    return 0;
+}
+
+DDS_Boolean VideoFrameMetaV1HasKey()
+{
+    return true;
+}
+
+TypeCodeHeader* VideoFrameMetaV1GetInnerTypeCode()
+{
+#ifdef _ZRDDS_INCLUDE_TYPECODE
+    DDS::TypeCode* userTypeCode = VideoFrameMetaV1GetTypeCode();
+    if (userTypeCode == NULL) return NULL;
+    return userTypeCode->getImpl();
+#else
+    return NULL;
+#endif
+}
+
+DDS_Boolean VideoFrameMetaV1InitializeEx(
+    VideoFrameMetaV1* self,
+    ZRMemPool* pool,
+    DDS_Boolean allocateMemory)
+{
+    self->platID = 0;
+
+    self->sensorID = 0;
+
+    self->channel = NULL;
+
+    self->frameSeq = 0;
+
+    self->currentRound = 0;
+
+    self->ptsMs = 0;
+
+    self->keyFrame = 0;
+
+    self->codec = NULL;
+
+    self->width = 0;
+
+    self->height = 0;
+
+    if (allocateMemory)
+    {
+        self->channel = (DDS_Char*) ZRMalloc(pool, 16 + 1);
+        if (self->channel == NULL)
+        {
+            printf("Malloc for self->channel failed.");
+            return false;
+        }
+        self->channel[0] = '\0';
+        self->codec = (DDS_Char*) ZRMalloc(pool, 24 + 1);
+        if (self->codec == NULL)
+        {
+            printf("Malloc for self->codec failed.");
+            return false;
+        }
+        self->codec[0] = '\0';
+    }
+    else
+    {
+        if (self->channel != NULL)
+        {
+            self->channel[0] = '\0';
+        }
+        if (self->codec != NULL)
+        {
+            self->codec[0] = '\0';
+        }
+    }
+    return true;
+}
+
+void VideoFrameMetaV1FinalizeEx(
+    VideoFrameMetaV1* self,
+    ZRMemPool* pool,
+    DDS_Boolean deletePointers)
+{
+    if (deletePointers)
+    {
+        ZRDealloc(pool, self->channel);
+        self->channel = NULL;
+        ZRDealloc(pool, self->codec);
+        self->codec = NULL;
+    }
+}
+
+DDS_Boolean VideoFrameMetaV1CopyEx(
+    VideoFrameMetaV1* dst,
+    const VideoFrameMetaV1* src,
+    ZRMemPool* pool)
+{
+    dst->platID = src->platID;
+    dst->sensorID = src->sensorID;
+    if (src->channel == NULL)
+    {
+        ZRDealloc(pool, dst->channel);
+        dst->channel = NULL;
+    }
+    else
+    {
+        if (dst->channel == NULL)
+        {
+            dst->channel = (DDS_Char*) ZRMalloc(pool, 16 + 1);
+            if (dst->channel == NULL)
+            {
+                printf("malloc for channel failed.");
+                return false;
+            }
+        }
+        strcpy(dst->channel, src->channel);
+    }
+    dst->frameSeq = src->frameSeq;
+    dst->currentRound = src->currentRound;
+    dst->ptsMs = src->ptsMs;
+    dst->keyFrame = src->keyFrame;
+    if (src->codec == NULL)
+    {
+        ZRDealloc(pool, dst->codec);
+        dst->codec = NULL;
+    }
+    else
+    {
+        if (dst->codec == NULL)
+        {
+            dst->codec = (DDS_Char*) ZRMalloc(pool, 24 + 1);
+            if (dst->codec == NULL)
+            {
+                printf("malloc for codec failed.");
+                return false;
+            }
+        }
+        strcpy(dst->codec, src->codec);
+    }
+    dst->width = src->width;
+    dst->height = src->height;
+    return true;
+}
+
+void VideoFrameMetaV1PrintData(const VideoFrameMetaV1 *sample)
+{
+    if (sample == NULL)
+    {
+        printf("NULL\n");
+        return;
+    }
+    printf("sample->platID: %d\n", sample->platID);
+    printf("\n");
+
+    printf("sample->sensorID: %d\n", sample->sensorID);
+    printf("\n");
+
+    if (sample->channel != NULL)
+    {
+        printf("sample->channel(%d): %s\n", strlen(sample->channel), sample->channel);
+    }
+    else
+    {
+        printf("sample->channel(0): NULL\n");
+    }
+    printf("\n");
+
+    printf("sample->frameSeq: %u\n", sample->frameSeq);
+    printf("\n");
+
+    printf("sample->currentRound: %d\n", sample->currentRound);
+    printf("\n");
+
+    printf("sample->ptsMs: %lf\n", sample->ptsMs);
+    printf("\n");
+
+    printf("sample->keyFrame: %d\n", sample->keyFrame);
+    printf("\n");
+
+    if (sample->codec != NULL)
+    {
+        printf("sample->codec(%d): %s\n", strlen(sample->codec), sample->codec);
+    }
+    else
+    {
+        printf("sample->codec(0): NULL\n");
+    }
+    printf("\n");
+
+    printf("sample->width: %d\n", sample->width);
+    printf("\n");
+
+    printf("sample->height: %d\n", sample->height);
+    printf("\n");
+
+}
+
+DDS::TypeCode* VideoFrameMetaV1GetTypeCode()
+{
+    static DDS::TypeCode* s_typeCode = NULL;
+    if (s_typeCode != NULL) return s_typeCode;
+    DDS::TypeCodeFactory &factory = DDS::TypeCodeFactory::getInstance();
+
+    s_typeCode = factory.createStructTC(
+        "HwaSimIRDds::VideoFrameMetaV1",
+        DDS_EXTENSIBLE_EXTENSIBILITY);
+    if (s_typeCode == NULL)
+    {
+        printf("create struct VideoFrameMetaV1 typecode failed.");
+        return s_typeCode;
+    }
+    DDS_Long ret = 0;
+    DDS::TypeCode* memberTc = NULL;
+    DDS::TypeCode* eleTc = NULL;
+
+    memberTc = factory.getPrimitiveTC(DDS_TK_INT);
+    if (memberTc == NULL)
+    {
+        printf("Get Member platID TypeCode failed.");
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+    ret = s_typeCode->addMemberToStruct(
+        0,
+        0,
+        "platID",
+        memberTc,
+        true,
+        false);
+    if (ret < 0)
+    {
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+
+    memberTc = factory.getPrimitiveTC(DDS_TK_INT);
+    if (memberTc == NULL)
+    {
+        printf("Get Member sensorID TypeCode failed.");
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+    ret = s_typeCode->addMemberToStruct(
+        1,
+        1,
+        "sensorID",
+        memberTc,
+        true,
+        false);
+    if (ret < 0)
+    {
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+
+    memberTc = factory.createStringTC(16);
+    if (memberTc == NULL)
+    {
+        printf("Get Member channel TypeCode failed.");
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+    ret = s_typeCode->addMemberToStruct(
+        2,
+        2,
+        "channel",
+        memberTc,
+        false,
+        false);
+    factory.deleteTC(memberTc);
+    if (ret < 0)
+    {
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+
+    memberTc = factory.getPrimitiveTC(DDS_TK_UINT);
+    if (memberTc == NULL)
+    {
+        printf("Get Member frameSeq TypeCode failed.");
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+    ret = s_typeCode->addMemberToStruct(
+        3,
+        3,
+        "frameSeq",
+        memberTc,
+        false,
+        false);
+    if (ret < 0)
+    {
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+
+    memberTc = factory.getPrimitiveTC(DDS_TK_INT);
+    if (memberTc == NULL)
+    {
+        printf("Get Member currentRound TypeCode failed.");
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+    ret = s_typeCode->addMemberToStruct(
+        4,
+        4,
+        "currentRound",
+        memberTc,
+        false,
+        false);
+    if (ret < 0)
+    {
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+
+    memberTc = factory.getPrimitiveTC(DDS_TK_DOUBLE);
+    if (memberTc == NULL)
+    {
+        printf("Get Member ptsMs TypeCode failed.");
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+    ret = s_typeCode->addMemberToStruct(
+        5,
+        5,
+        "ptsMs",
+        memberTc,
+        false,
+        false);
+    if (ret < 0)
+    {
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+
+    memberTc = factory.getPrimitiveTC(DDS_TK_BOOLEAN);
+    if (memberTc == NULL)
+    {
+        printf("Get Member keyFrame TypeCode failed.");
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+    ret = s_typeCode->addMemberToStruct(
+        6,
+        6,
+        "keyFrame",
+        memberTc,
+        false,
+        false);
+    if (ret < 0)
+    {
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+
+    memberTc = factory.createStringTC(24);
+    if (memberTc == NULL)
+    {
+        printf("Get Member codec TypeCode failed.");
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+    ret = s_typeCode->addMemberToStruct(
+        7,
+        7,
+        "codec",
+        memberTc,
+        false,
+        false);
+    factory.deleteTC(memberTc);
+    if (ret < 0)
+    {
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+
+    memberTc = factory.getPrimitiveTC(DDS_TK_INT);
+    if (memberTc == NULL)
+    {
+        printf("Get Member width TypeCode failed.");
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+    ret = s_typeCode->addMemberToStruct(
+        8,
+        8,
+        "width",
+        memberTc,
+        false,
+        false);
+    if (ret < 0)
+    {
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+
+    memberTc = factory.getPrimitiveTC(DDS_TK_INT);
+    if (memberTc == NULL)
+    {
+        printf("Get Member height TypeCode failed.");
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+    ret = s_typeCode->addMemberToStruct(
+        9,
+        9,
+        "height",
+        memberTc,
+        false,
+        false);
+    if (ret < 0)
+    {
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+
+    return s_typeCode;
+}
+
+DDS_Long VideoFrameMetaV1Serialize(const VideoFrameMetaV1* sample, CDRSerializer *cdr)
+{
+    if (!CDRSerializerPutUntype(cdr, (DDS_Octet*) &sample->platID, 4))
+    {
+        printf("serialize sample->platID failed.");
+        return -2;
+    }
+
+    if (!CDRSerializerPutUntype(cdr, (DDS_Octet*) &sample->sensorID, 4))
+    {
+        printf("serialize sample->sensorID failed.");
+        return -2;
+    }
+
+    if (!CDRSerializerPutString(cdr, (DDS_Char*) sample->channel, sample->channel == NULL ? 0 : strlen(sample->channel) + 1))
+    {
+        printf("serialize sample->channel failed.");
+        return -2;
+    }
+
+    if (!CDRSerializerPutUntype(cdr, (DDS_Octet*) &sample->frameSeq, 4))
+    {
+        printf("serialize sample->frameSeq failed.");
+        return -2;
+    }
+
+    if (!CDRSerializerPutUntype(cdr, (DDS_Octet*) &sample->currentRound, 4))
+    {
+        printf("serialize sample->currentRound failed.");
+        return -2;
+    }
+
+    if (!CDRSerializerPutUntype(cdr, (DDS_Octet*) &sample->ptsMs, 8))
+    {
+        printf("serialize sample->ptsMs failed.");
+        return -2;
+    }
+
+    if (!CDRSerializerPutUntype(cdr, (DDS_Octet*) &sample->keyFrame, 1))
+    {
+        printf("serialize sample->keyFrame failed.");
+        return -2;
+    }
+
+    if (!CDRSerializerPutString(cdr, (DDS_Char*) sample->codec, sample->codec == NULL ? 0 : strlen(sample->codec) + 1))
+    {
+        printf("serialize sample->codec failed.");
+        return -2;
+    }
+
+    if (!CDRSerializerPutUntype(cdr, (DDS_Octet*) &sample->width, 4))
+    {
+        printf("serialize sample->width failed.");
+        return -2;
+    }
+
+    if (!CDRSerializerPutUntype(cdr, (DDS_Octet*) &sample->height, 4))
+    {
+        printf("serialize sample->height failed.");
+        return -2;
+    }
+
+    return 0;
+}
+
+DDS_Long VideoFrameMetaV1Deserialize(
+    VideoFrameMetaV1* sample,
+    CDRDeserializer* cdr,
+    ZRMemPool* pool)
+{
+    //has key :last key name:sensorID
+    if (!CDRDeserializerGetUntype(cdr, (DDS_Octet*) &sample->platID, 4))
+    {
+        printf("deserialize sample->platID failed.");
+        return -2;
+    }
+    if (!CDRDeserializerGetUntype(cdr, (DDS_Octet*) &sample->sensorID, 4))
+    {
+        printf("deserialize sample->sensorID failed.");
+        return -2;
+    }
+    //last key :sensorID has been deserialized
+    DDS_ULong channelTmpLen = 0;
+    if (!CDRDeserializerGetUntype(cdr, (DDS_Octet*) &channelTmpLen, 4))
+    {
+        sample->channel = NULL;
+        sample->frameSeq = 0;
+        sample->currentRound = 0;
+        sample->ptsMs = 0;
+        sample->keyFrame = 0;
+        sample->codec = NULL;
+        sample->width = 0;
+        sample->height = 0;
+        return 0;
+    }
+    if (0 == channelTmpLen)
+    {
+        ZRDealloc(pool, sample->channel);
+        sample->channel = NULL;
+    }
+    else
+    {
+        if (sample->channel == NULL)
+        {
+            sample->channel = (DDS_Char*) ZRMalloc(pool, channelTmpLen);
+            if (sample->channel == NULL)
+            {
+                printf("malloc for sample->channel failed(%d).", channelTmpLen);
+                return -3;
+            }
+        }
+        if (!CDRDeserializerGetUntypeArray(cdr, (DDS_Octet*)sample->channel, channelTmpLen, 1))
+        {
+            printf("deserialize member sample->channel failed.");
+            return -4;
+        }
+    }
+    if (!CDRDeserializerGetUntype(cdr, (DDS_Octet*) &sample->frameSeq, 4))
+    {
+        sample->frameSeq = 0;
+        sample->currentRound = 0;
+        sample->ptsMs = 0;
+        sample->keyFrame = 0;
+        sample->codec = NULL;
+        sample->width = 0;
+        sample->height = 0;
+        return 0;
+    }
+    if (!CDRDeserializerGetUntype(cdr, (DDS_Octet*) &sample->currentRound, 4))
+    {
+        sample->currentRound = 0;
+        sample->ptsMs = 0;
+        sample->keyFrame = 0;
+        sample->codec = NULL;
+        sample->width = 0;
+        sample->height = 0;
+        return 0;
+    }
+    if (!CDRDeserializerGetUntype(cdr, (DDS_Octet*) &sample->ptsMs, 8))
+    {
+        sample->ptsMs = 0;
+        sample->keyFrame = 0;
+        sample->codec = NULL;
+        sample->width = 0;
+        sample->height = 0;
+        return 0;
+    }
+    if (!CDRDeserializerGetUntype(cdr, (DDS_Octet*) &sample->keyFrame, 1))
+    {
+        sample->keyFrame = 0;
+        sample->codec = NULL;
+        sample->width = 0;
+        sample->height = 0;
+        return 0;
+    }
+    DDS_ULong codecTmpLen = 0;
+    if (!CDRDeserializerGetUntype(cdr, (DDS_Octet*) &codecTmpLen, 4))
+    {
+        sample->codec = NULL;
+        sample->width = 0;
+        sample->height = 0;
+        return 0;
+    }
+    if (0 == codecTmpLen)
+    {
+        ZRDealloc(pool, sample->codec);
+        sample->codec = NULL;
+    }
+    else
+    {
+        if (sample->codec == NULL)
+        {
+            sample->codec = (DDS_Char*) ZRMalloc(pool, codecTmpLen);
+            if (sample->codec == NULL)
+            {
+                printf("malloc for sample->codec failed(%d).", codecTmpLen);
+                return -3;
+            }
+        }
+        if (!CDRDeserializerGetUntypeArray(cdr, (DDS_Octet*)sample->codec, codecTmpLen, 1))
+        {
+            printf("deserialize member sample->codec failed.");
+            return -4;
+        }
+    }
+    if (!CDRDeserializerGetUntype(cdr, (DDS_Octet*) &sample->width, 4))
+    {
+        sample->width = 0;
+        sample->height = 0;
+        return 0;
+    }
+    if (!CDRDeserializerGetUntype(cdr, (DDS_Octet*) &sample->height, 4))
+    {
+        sample->height = 0;
+        return 0;
+    }
+    return 0;
+}
+
+DDS_ULong VideoFrameMetaV1GetSerializedSampleSize(const VideoFrameMetaV1* sample, DDS_ULong currentAlignment)
+{
+    DDS_ULong initialAlignment = currentAlignment;
+
+    currentAlignment += CDRSerializerGetUntypeSize(4, currentAlignment);
+
+    currentAlignment += CDRSerializerGetUntypeSize(4, currentAlignment);
+
+    currentAlignment += CDRSerializerGetStringSize(sample->channel == NULL ? 0 : strlen(sample->channel) + 1, currentAlignment);
+
+    currentAlignment += CDRSerializerGetUntypeSize(4, currentAlignment);
+
+    currentAlignment += CDRSerializerGetUntypeSize(4, currentAlignment);
+
+    currentAlignment += CDRSerializerGetUntypeSize(8, currentAlignment);
+
+    currentAlignment += CDRSerializerGetUntypeSize(1, currentAlignment);
+
+    currentAlignment += CDRSerializerGetStringSize(sample->codec == NULL ? 0 : strlen(sample->codec) + 1, currentAlignment);
+
+    currentAlignment += CDRSerializerGetUntypeSize(4, currentAlignment);
+
+    currentAlignment += CDRSerializerGetUntypeSize(4, currentAlignment);
+
+    return currentAlignment - initialAlignment;
+}
+
+DDS_Long VideoFrameMetaV1SerializeKey(const VideoFrameMetaV1* sample, CDRSerializer *cdr)
+{
+    if (!CDRSerializerPutUntype(cdr, (DDS_Octet*) &sample->platID, 4))
+    {
+        printf("serialize sample->platID failed.");
+        return -2;
+    }
+
+    if (!CDRSerializerPutUntype(cdr, (DDS_Octet*) &sample->sensorID, 4))
+    {
+        printf("serialize sample->sensorID failed.");
+        return -2;
+    }
+
+    return 0;
+}
+
+DDS_Long VideoFrameMetaV1DeserializeKey(
+    VideoFrameMetaV1* sample,
+    CDRDeserializer* cdr,
+    ZRMemPool* pool)
+{
+    if (!CDRDeserializerGetUntype(cdr, (DDS_Octet*) &sample->platID, 4))
+    {
+        printf("deserialize sample->platID failed.");
+        return -2;
+    }
+
+    if (!CDRDeserializerGetUntype(cdr, (DDS_Octet*) &sample->sensorID, 4))
+    {
+        printf("deserialize sample->sensorID failed.");
+        return -2;
+    }
+
+    return 0;
+}
+
+DDS_ULong VideoFrameMetaV1GetSerializedKeySize(const VideoFrameMetaV1* sample, DDS_ULong currentAlignment)
+{
+    DDS_ULong initialAlignment = currentAlignment;
+
+    currentAlignment += CDRSerializerGetUntypeSize(4, currentAlignment);
+
+    currentAlignment += CDRSerializerGetUntypeSize(4, currentAlignment);
+
+    return currentAlignment - initialAlignment;
+}
+
+#ifdef _ZRDDS_INCLUDE_NO_SERIALIZE_MODE
+DDS_Char* VideoFrameMetaV1LoanSampleBuf(VideoFrameMetaV1* sample, DDS_Boolean takeBuffer)
+{
+    return NULL;
+}
+
+void VideoFrameMetaV1ReturnSampleBuf(DDS_Char* sampleBuf)
+{
+    ;
+}
+
+DDS_Long VideoFrameMetaV1LoanDeserialize(VideoFrameMetaV1* sampleBuf,
+    CDRDeserializer* cdr,
+    DDS_ULong curIndex,
+    DDS_ULong totalNum,
+    DDS_Char* base,
+    DDS_ULong offset,
+    DDS_ULong space,
+    DDS_ULong fixedHeaderLen)
+{
+    return 0;
+}
+
+#endif /*_ZRDDS_INCLUDE_NO_SERIALIZE_MODE*/
+
+#ifdef _ZRDDS_INCLUDE_ONSITE_DESERILIZE
+DDS_Long VideoFrameMetaV1OnSiteDeserialize(CDRDeserializer* cdr,
+    VideoFrameMetaV1* sample,
+    DDS_ULong offset,
+    DDS_ULong totalSize,
+    DDS_Char* payload,
+    DDS_ULong payloadLen,
+    DDS_ULong fixedHeaderLen)
+{
+    return 0;
+}
+
+DDS_Boolean VideoFrameMetaV1NoSerializingSupported()
+{
+    return false;
+}
+
+DDS_ULong VideoFrameMetaV1FixedHeaderLength()
+{
+    return 0;
+}
+
+#endif/*_ZRDDS_INCLUDE_ONSITE_DESERILIZE*/
+#define T AnnotationFrameV1
+#define TSeq AnnotationFrameV1Seq
+#define TINITIALIZE AnnotationFrameV1InitializeEx
+#define TFINALIZE AnnotationFrameV1FinalizeEx
+#define TCOPY AnnotationFrameV1CopyEx
+
+#include "ZRSequence.cpp"
+#include "ZRCPlusPlusSequence.cpp"
+
+#undef TCOPY
+#undef TFINALIZE
+#undef TINITIALIZE
+#undef TSeq
+#undef T
+
+DDS_Boolean AnnotationFrameV1Initialize(AnnotationFrameV1* self)
+{
+    return AnnotationFrameV1InitializeEx(self, NULL, true);
+}
+
+void AnnotationFrameV1Finalize(AnnotationFrameV1* self)
+{
+    AnnotationFrameV1FinalizeEx(self, NULL, true);
+}
+
+DDS_Boolean AnnotationFrameV1Copy(
+    AnnotationFrameV1* dst,
+    const AnnotationFrameV1* src)
+{
+    return AnnotationFrameV1CopyEx(dst, src, NULL);
+}
+
+AnnotationFrameV1* AnnotationFrameV1CreateSample(
+    ZRMemPool* pool,
+    DDS_Boolean allocMutable)
+{
+    AnnotationFrameV1* newSample = (AnnotationFrameV1*)ZRMalloc(pool, sizeof(AnnotationFrameV1));
+    if (newSample == NULL)
+    {
+        printf("malloc for AnnotationFrameV1 failed.");
+        return NULL;
+    }
+    if (!AnnotationFrameV1InitializeEx(newSample, pool, allocMutable))
+    {
+        printf("initial Sample failed.");
+        AnnotationFrameV1DestroySample(pool, newSample);
+        return NULL;
+    }
+    return newSample;
+}
+
+void AnnotationFrameV1DestroySample(ZRMemPool* pool, AnnotationFrameV1* sample)
+{
+    if (sample == NULL) return;
+    AnnotationFrameV1FinalizeEx(sample, pool, true);
+    ZRDealloc(pool, sample);
+}
+
+DDS_ULong AnnotationFrameV1GetSerializedSampleMaxSize()
+{
+    return 32821;
+}
+
+DDS_ULong AnnotationFrameV1GetSerializedKeyMaxSize()
+{
+    return 8;
+}
+
+DDS_Long AnnotationFrameV1GetKeyHash(
+    const AnnotationFrameV1* sample,
+    CDRSerializer* cdr,
+    DDS::KeyHash_t* result)
+{
+    DDS_Long ret = AnnotationFrameV1SerializeKey(sample, cdr);
+    if (ret < 0)
+    {
+        printf("serialize key failed.");
+        *result = DDS_HANDLE_NIL_NATIVE;
+        return -1;
+    }
+    ret = CDRSerializeGetKeyHash(cdr, result->value, false);
+    if (ret < 0)
+    {
+        printf("get keyhash failed.");
+        *result = DDS_HANDLE_NIL_NATIVE;
+        return -1;
+    }
+    result->valid = true;
+    return 0;
+}
+
+DDS_Boolean AnnotationFrameV1HasKey()
+{
+    return true;
+}
+
+TypeCodeHeader* AnnotationFrameV1GetInnerTypeCode()
+{
+#ifdef _ZRDDS_INCLUDE_TYPECODE
+    DDS::TypeCode* userTypeCode = AnnotationFrameV1GetTypeCode();
+    if (userTypeCode == NULL) return NULL;
+    return userTypeCode->getImpl();
+#else
+    return NULL;
+#endif
+}
+
+DDS_Boolean AnnotationFrameV1InitializeEx(
+    AnnotationFrameV1* self,
+    ZRMemPool* pool,
+    DDS_Boolean allocateMemory)
+{
+    self->platID = 0;
+
+    self->sensorID = 0;
+
+    self->channel = NULL;
+
+    self->frameSeq = 0;
+
+    self->currentRound = 0;
+
+    self->ptsMs = 0;
+
+    self->json = NULL;
+
+    if (allocateMemory)
+    {
+        self->channel = (DDS_Char*) ZRMalloc(pool, 16 + 1);
+        if (self->channel == NULL)
+        {
+            printf("Malloc for self->channel failed.");
+            return false;
+        }
+        self->channel[0] = '\0';
+        self->json = (DDS_Char*) ZRMalloc(pool, 32768 + 1);
+        if (self->json == NULL)
+        {
+            printf("Malloc for self->json failed.");
+            return false;
+        }
+        self->json[0] = '\0';
+    }
+    else
+    {
+        if (self->channel != NULL)
+        {
+            self->channel[0] = '\0';
+        }
+        if (self->json != NULL)
+        {
+            self->json[0] = '\0';
+        }
+    }
+    return true;
+}
+
+void AnnotationFrameV1FinalizeEx(
+    AnnotationFrameV1* self,
+    ZRMemPool* pool,
+    DDS_Boolean deletePointers)
+{
+    if (deletePointers)
+    {
+        ZRDealloc(pool, self->channel);
+        self->channel = NULL;
+        ZRDealloc(pool, self->json);
+        self->json = NULL;
+    }
+}
+
+DDS_Boolean AnnotationFrameV1CopyEx(
+    AnnotationFrameV1* dst,
+    const AnnotationFrameV1* src,
+    ZRMemPool* pool)
+{
+    dst->platID = src->platID;
+    dst->sensorID = src->sensorID;
+    if (src->channel == NULL)
+    {
+        ZRDealloc(pool, dst->channel);
+        dst->channel = NULL;
+    }
+    else
+    {
+        if (dst->channel == NULL)
+        {
+            dst->channel = (DDS_Char*) ZRMalloc(pool, 16 + 1);
+            if (dst->channel == NULL)
+            {
+                printf("malloc for channel failed.");
+                return false;
+            }
+        }
+        strcpy(dst->channel, src->channel);
+    }
+    dst->frameSeq = src->frameSeq;
+    dst->currentRound = src->currentRound;
+    dst->ptsMs = src->ptsMs;
+    if (src->json == NULL)
+    {
+        ZRDealloc(pool, dst->json);
+        dst->json = NULL;
+    }
+    else
+    {
+        if (dst->json == NULL)
+        {
+            dst->json = (DDS_Char*) ZRMalloc(pool, 32768 + 1);
+            if (dst->json == NULL)
+            {
+                printf("malloc for json failed.");
+                return false;
+            }
+        }
+        strcpy(dst->json, src->json);
+    }
+    return true;
+}
+
+void AnnotationFrameV1PrintData(const AnnotationFrameV1 *sample)
+{
+    if (sample == NULL)
+    {
+        printf("NULL\n");
+        return;
+    }
+    printf("sample->platID: %d\n", sample->platID);
+    printf("\n");
+
+    printf("sample->sensorID: %d\n", sample->sensorID);
+    printf("\n");
+
+    if (sample->channel != NULL)
+    {
+        printf("sample->channel(%d): %s\n", strlen(sample->channel), sample->channel);
+    }
+    else
+    {
+        printf("sample->channel(0): NULL\n");
+    }
+    printf("\n");
+
+    printf("sample->frameSeq: %u\n", sample->frameSeq);
+    printf("\n");
+
+    printf("sample->currentRound: %d\n", sample->currentRound);
+    printf("\n");
+
+    printf("sample->ptsMs: %lf\n", sample->ptsMs);
+    printf("\n");
+
+    if (sample->json != NULL)
+    {
+        printf("sample->json(%d): %s\n", strlen(sample->json), sample->json);
+    }
+    else
+    {
+        printf("sample->json(0): NULL\n");
+    }
+    printf("\n");
+
+}
+
+DDS::TypeCode* AnnotationFrameV1GetTypeCode()
+{
+    static DDS::TypeCode* s_typeCode = NULL;
+    if (s_typeCode != NULL) return s_typeCode;
+    DDS::TypeCodeFactory &factory = DDS::TypeCodeFactory::getInstance();
+
+    s_typeCode = factory.createStructTC(
+        "HwaSimIRDds::AnnotationFrameV1",
+        DDS_EXTENSIBLE_EXTENSIBILITY);
+    if (s_typeCode == NULL)
+    {
+        printf("create struct AnnotationFrameV1 typecode failed.");
+        return s_typeCode;
+    }
+    DDS_Long ret = 0;
+    DDS::TypeCode* memberTc = NULL;
+    DDS::TypeCode* eleTc = NULL;
+
+    memberTc = factory.getPrimitiveTC(DDS_TK_INT);
+    if (memberTc == NULL)
+    {
+        printf("Get Member platID TypeCode failed.");
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+    ret = s_typeCode->addMemberToStruct(
+        0,
+        0,
+        "platID",
+        memberTc,
+        true,
+        false);
+    if (ret < 0)
+    {
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+
+    memberTc = factory.getPrimitiveTC(DDS_TK_INT);
+    if (memberTc == NULL)
+    {
+        printf("Get Member sensorID TypeCode failed.");
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+    ret = s_typeCode->addMemberToStruct(
+        1,
+        1,
+        "sensorID",
+        memberTc,
+        true,
+        false);
+    if (ret < 0)
+    {
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+
+    memberTc = factory.createStringTC(16);
+    if (memberTc == NULL)
+    {
+        printf("Get Member channel TypeCode failed.");
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+    ret = s_typeCode->addMemberToStruct(
+        2,
+        2,
+        "channel",
+        memberTc,
+        false,
+        false);
+    factory.deleteTC(memberTc);
+    if (ret < 0)
+    {
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+
+    memberTc = factory.getPrimitiveTC(DDS_TK_UINT);
+    if (memberTc == NULL)
+    {
+        printf("Get Member frameSeq TypeCode failed.");
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+    ret = s_typeCode->addMemberToStruct(
+        3,
+        3,
+        "frameSeq",
+        memberTc,
+        false,
+        false);
+    if (ret < 0)
+    {
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+
+    memberTc = factory.getPrimitiveTC(DDS_TK_INT);
+    if (memberTc == NULL)
+    {
+        printf("Get Member currentRound TypeCode failed.");
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+    ret = s_typeCode->addMemberToStruct(
+        4,
+        4,
+        "currentRound",
+        memberTc,
+        false,
+        false);
+    if (ret < 0)
+    {
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+
+    memberTc = factory.getPrimitiveTC(DDS_TK_DOUBLE);
+    if (memberTc == NULL)
+    {
+        printf("Get Member ptsMs TypeCode failed.");
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+    ret = s_typeCode->addMemberToStruct(
+        5,
+        5,
+        "ptsMs",
+        memberTc,
+        false,
+        false);
+    if (ret < 0)
+    {
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+
+    memberTc = factory.createStringTC(32768);
+    if (memberTc == NULL)
+    {
+        printf("Get Member json TypeCode failed.");
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+    ret = s_typeCode->addMemberToStruct(
+        6,
+        6,
+        "json",
+        memberTc,
+        false,
+        false);
+    factory.deleteTC(memberTc);
+    if (ret < 0)
+    {
+        factory.deleteTC(s_typeCode);
+        s_typeCode = NULL;
+        return NULL;
+    }
+
+    return s_typeCode;
+}
+
+DDS_Long AnnotationFrameV1Serialize(const AnnotationFrameV1* sample, CDRSerializer *cdr)
+{
+    if (!CDRSerializerPutUntype(cdr, (DDS_Octet*) &sample->platID, 4))
+    {
+        printf("serialize sample->platID failed.");
+        return -2;
+    }
+
+    if (!CDRSerializerPutUntype(cdr, (DDS_Octet*) &sample->sensorID, 4))
+    {
+        printf("serialize sample->sensorID failed.");
+        return -2;
+    }
+
+    if (!CDRSerializerPutString(cdr, (DDS_Char*) sample->channel, sample->channel == NULL ? 0 : strlen(sample->channel) + 1))
+    {
+        printf("serialize sample->channel failed.");
+        return -2;
+    }
+
+    if (!CDRSerializerPutUntype(cdr, (DDS_Octet*) &sample->frameSeq, 4))
+    {
+        printf("serialize sample->frameSeq failed.");
+        return -2;
+    }
+
+    if (!CDRSerializerPutUntype(cdr, (DDS_Octet*) &sample->currentRound, 4))
+    {
+        printf("serialize sample->currentRound failed.");
+        return -2;
+    }
+
+    if (!CDRSerializerPutUntype(cdr, (DDS_Octet*) &sample->ptsMs, 8))
+    {
+        printf("serialize sample->ptsMs failed.");
+        return -2;
+    }
+
+    if (!CDRSerializerPutString(cdr, (DDS_Char*) sample->json, sample->json == NULL ? 0 : strlen(sample->json) + 1))
+    {
+        printf("serialize sample->json failed.");
+        return -2;
+    }
+
+    return 0;
+}
+
+DDS_Long AnnotationFrameV1Deserialize(
+    AnnotationFrameV1* sample,
+    CDRDeserializer* cdr,
+    ZRMemPool* pool)
+{
+    //has key :last key name:sensorID
+    if (!CDRDeserializerGetUntype(cdr, (DDS_Octet*) &sample->platID, 4))
+    {
+        printf("deserialize sample->platID failed.");
+        return -2;
+    }
+    if (!CDRDeserializerGetUntype(cdr, (DDS_Octet*) &sample->sensorID, 4))
+    {
+        printf("deserialize sample->sensorID failed.");
+        return -2;
+    }
+    //last key :sensorID has been deserialized
+    DDS_ULong channelTmpLen = 0;
+    if (!CDRDeserializerGetUntype(cdr, (DDS_Octet*) &channelTmpLen, 4))
+    {
+        sample->channel = NULL;
+        sample->frameSeq = 0;
+        sample->currentRound = 0;
+        sample->ptsMs = 0;
+        sample->json = NULL;
+        return 0;
+    }
+    if (0 == channelTmpLen)
+    {
+        ZRDealloc(pool, sample->channel);
+        sample->channel = NULL;
+    }
+    else
+    {
+        if (sample->channel == NULL)
+        {
+            sample->channel = (DDS_Char*) ZRMalloc(pool, channelTmpLen);
+            if (sample->channel == NULL)
+            {
+                printf("malloc for sample->channel failed(%d).", channelTmpLen);
+                return -3;
+            }
+        }
+        if (!CDRDeserializerGetUntypeArray(cdr, (DDS_Octet*)sample->channel, channelTmpLen, 1))
+        {
+            printf("deserialize member sample->channel failed.");
+            return -4;
+        }
+    }
+    if (!CDRDeserializerGetUntype(cdr, (DDS_Octet*) &sample->frameSeq, 4))
+    {
+        sample->frameSeq = 0;
+        sample->currentRound = 0;
+        sample->ptsMs = 0;
+        sample->json = NULL;
+        return 0;
+    }
+    if (!CDRDeserializerGetUntype(cdr, (DDS_Octet*) &sample->currentRound, 4))
+    {
+        sample->currentRound = 0;
+        sample->ptsMs = 0;
+        sample->json = NULL;
+        return 0;
+    }
+    if (!CDRDeserializerGetUntype(cdr, (DDS_Octet*) &sample->ptsMs, 8))
+    {
+        sample->ptsMs = 0;
+        sample->json = NULL;
+        return 0;
+    }
+    DDS_ULong jsonTmpLen = 0;
+    if (!CDRDeserializerGetUntype(cdr, (DDS_Octet*) &jsonTmpLen, 4))
+    {
+        sample->json = NULL;
+        return 0;
+    }
+    if (0 == jsonTmpLen)
+    {
+        ZRDealloc(pool, sample->json);
+        sample->json = NULL;
+    }
+    else
+    {
+        if (sample->json == NULL)
+        {
+            sample->json = (DDS_Char*) ZRMalloc(pool, jsonTmpLen);
+            if (sample->json == NULL)
+            {
+                printf("malloc for sample->json failed(%d).", jsonTmpLen);
+                return -3;
+            }
+        }
+        if (!CDRDeserializerGetUntypeArray(cdr, (DDS_Octet*)sample->json, jsonTmpLen, 1))
+        {
+            printf("deserialize member sample->json failed.");
+            return -4;
+        }
+    }
+    return 0;
+}
+
+DDS_ULong AnnotationFrameV1GetSerializedSampleSize(const AnnotationFrameV1* sample, DDS_ULong currentAlignment)
+{
+    DDS_ULong initialAlignment = currentAlignment;
+
+    currentAlignment += CDRSerializerGetUntypeSize(4, currentAlignment);
+
+    currentAlignment += CDRSerializerGetUntypeSize(4, currentAlignment);
+
+    currentAlignment += CDRSerializerGetStringSize(sample->channel == NULL ? 0 : strlen(sample->channel) + 1, currentAlignment);
+
+    currentAlignment += CDRSerializerGetUntypeSize(4, currentAlignment);
+
+    currentAlignment += CDRSerializerGetUntypeSize(4, currentAlignment);
+
+    currentAlignment += CDRSerializerGetUntypeSize(8, currentAlignment);
+
+    currentAlignment += CDRSerializerGetStringSize(sample->json == NULL ? 0 : strlen(sample->json) + 1, currentAlignment);
+
+    return currentAlignment - initialAlignment;
+}
+
+DDS_Long AnnotationFrameV1SerializeKey(const AnnotationFrameV1* sample, CDRSerializer *cdr)
+{
+    if (!CDRSerializerPutUntype(cdr, (DDS_Octet*) &sample->platID, 4))
+    {
+        printf("serialize sample->platID failed.");
+        return -2;
+    }
+
+    if (!CDRSerializerPutUntype(cdr, (DDS_Octet*) &sample->sensorID, 4))
+    {
+        printf("serialize sample->sensorID failed.");
+        return -2;
+    }
+
+    return 0;
+}
+
+DDS_Long AnnotationFrameV1DeserializeKey(
+    AnnotationFrameV1* sample,
+    CDRDeserializer* cdr,
+    ZRMemPool* pool)
+{
+    if (!CDRDeserializerGetUntype(cdr, (DDS_Octet*) &sample->platID, 4))
+    {
+        printf("deserialize sample->platID failed.");
+        return -2;
+    }
+
+    if (!CDRDeserializerGetUntype(cdr, (DDS_Octet*) &sample->sensorID, 4))
+    {
+        printf("deserialize sample->sensorID failed.");
+        return -2;
+    }
+
+    return 0;
+}
+
+DDS_ULong AnnotationFrameV1GetSerializedKeySize(const AnnotationFrameV1* sample, DDS_ULong currentAlignment)
+{
+    DDS_ULong initialAlignment = currentAlignment;
+
+    currentAlignment += CDRSerializerGetUntypeSize(4, currentAlignment);
+
+    currentAlignment += CDRSerializerGetUntypeSize(4, currentAlignment);
+
+    return currentAlignment - initialAlignment;
+}
+
+#ifdef _ZRDDS_INCLUDE_NO_SERIALIZE_MODE
+DDS_Char* AnnotationFrameV1LoanSampleBuf(AnnotationFrameV1* sample, DDS_Boolean takeBuffer)
+{
+    return NULL;
+}
+
+void AnnotationFrameV1ReturnSampleBuf(DDS_Char* sampleBuf)
+{
+    ;
+}
+
+DDS_Long AnnotationFrameV1LoanDeserialize(AnnotationFrameV1* sampleBuf,
+    CDRDeserializer* cdr,
+    DDS_ULong curIndex,
+    DDS_ULong totalNum,
+    DDS_Char* base,
+    DDS_ULong offset,
+    DDS_ULong space,
+    DDS_ULong fixedHeaderLen)
+{
+    return 0;
+}
+
+#endif /*_ZRDDS_INCLUDE_NO_SERIALIZE_MODE*/
+
+#ifdef _ZRDDS_INCLUDE_ONSITE_DESERILIZE
+DDS_Long AnnotationFrameV1OnSiteDeserialize(CDRDeserializer* cdr,
+    AnnotationFrameV1* sample,
+    DDS_ULong offset,
+    DDS_ULong totalSize,
+    DDS_Char* payload,
+    DDS_ULong payloadLen,
+    DDS_ULong fixedHeaderLen)
+{
+    return 0;
+}
+
+DDS_Boolean AnnotationFrameV1NoSerializingSupported()
+{
+    return false;
+}
+
+DDS_ULong AnnotationFrameV1FixedHeaderLength()
+{
+    return 0;
+}
+
+#endif/*_ZRDDS_INCLUDE_ONSITE_DESERILIZE*/
 }
