@@ -115,15 +115,24 @@ MainWindow::MainWindow(
 	const QString& networkConfigPath,
 	const QString& channel,
 	const QString& inputDataPath,
+	const QString& controlTransport,
 	QWidget *parent)
 	: QMainWindow(parent),
 	  m_networkConfigPath(networkConfigPath.trimmed()),
 	  m_inputDataPath(inputDataPath.trimmed()),
-	  m_channel(channel.trimmed().toLower())
+	  m_channel(channel.trimmed().toLower()),
+	  m_controlTransport(controlTransport.trimmed().toLower())
 {
+	if (m_controlTransport != QStringLiteral("udp") &&
+		m_controlTransport != QStringLiteral("dds") &&
+		m_controlTransport != QStringLiteral("both"))
+		qFatal("invalid --control-transport; expected udp|dds|both");
 	loadNetworkConfig();
 	setupUI();
-	setupUDP();
+	if (m_controlTransport == QStringLiteral("udp") || m_controlTransport == QStringLiteral("both"))
+		setupUDP();
+	if (m_controlTransport == QStringLiteral("dds") || m_controlTransport == QStringLiteral("both"))
+		setupDDS();
 
 
     //讀取文件内容
@@ -175,10 +184,53 @@ MainWindow::MainWindow(
 
 MainWindow::~MainWindow()
 {
+#if defined(HWASIMIR_HAS_ZRDDS)
+	if (m_ddsStim) m_ddsStim->shutdown();
+#endif
 	if (m_udpSocket) {
 		m_udpSocket->close();
 		delete m_udpSocket;
 	}
+}
+
+void MainWindow::setupDDS()
+{
+#if !defined(HWASIMIR_HAS_ZRDDS)
+	qFatal("DDS control transport selected but DataDrivenTestQT lacks HWASIMIR_HAS_ZRDDS");
+#else
+	QSettings settings(m_networkConfigPath, QSettings::IniFormat);
+	DdsStimConfig config;
+	config.domainId = settings.value(QStringLiteral("DdsProtocol/DomainId"), 150).toInt();
+	QString qos = settings.value(QStringLiteral("DdsProtocol/QosFile"),
+		QStringLiteral("Config/DDS/ZRDDS_PROTOCOL_QOS.xml")).toString();
+	if (QFileInfo(qos).isRelative())
+		qos = QDir(QCoreApplication::applicationDirPath()).filePath(qos);
+	config.qosFile = qos.toLocal8Bit().constData();
+	config.topicControl = settings.value(QStringLiteral("DdsProtocol/TopicControl"),
+		QStringLiteral("HwaSimIR.Control")).toString().toLatin1().constData();
+	config.topicInit = settings.value(QStringLiteral("DdsProtocol/TopicInit"),
+		QStringLiteral("HwaSimIR.Init")).toString().toLatin1().constData();
+	config.topicRealtime = settings.value(QStringLiteral("DdsProtocol/TopicRealtime"),
+		QStringLiteral("HwaSimIR.Realtime")).toString().toLatin1().constData();
+	config.topicInitAck = settings.value(QStringLiteral("DdsProtocol/TopicInitAck"),
+		QStringLiteral("HwaSimIR.InitAck")).toString().toLatin1().constData();
+	m_ddsStim.reset(new DdsStimClient());
+	m_ddsStim->setAckCallback([this](const BYHWICD::InitAckC2pObjectTrackingCmd& ack) {
+		QMetaObject::invokeMethod(this, [this, ack]() {
+			qInfo().noquote() << QStringLiteral("[StimInitAck] transport=dds received=1 platID=%1 sensorID=%2 ready=%3")
+				.arg(ack.platID).arg(ack.sensorID).arg(ack.trackingReady ? 1 : 0);
+			m_lastReceivedLabel->setText(QStringLiteral("↓ 接收: DDS 初始化应答 (0x37)"));
+			m_statusLabel->setText(QStringLiteral("● 状态: DDS 初始化完成 | 等待开始指令"));
+			m_statusLabel->setStyleSheet("color: #388E3C; font-weight: bold;");
+			emit initAckReceived();
+		}, Qt::QueuedConnection);
+	});
+	std::string error;
+	if (!m_ddsStim->start(config, error))
+		qFatal("DataDriven DDS start failed: %s", error.c_str());
+	qInfo().noquote() << QStringLiteral("[StimTransport] mode=%1 ddsRuntimeInitCount=%2 domain=%3 qos=%4")
+		.arg(m_controlTransport).arg(m_ddsStim->runtimeInitCount()).arg(config.domainId).arg(qos);
+#endif
 }
 
 void MainWindow::configurePhase4cAeroMachTest(bool enabled, double altitudeKm, double mach)
@@ -560,6 +612,7 @@ void MainWindow::setupUDP()
 						.arg(sender.toString()).arg(senderPort));
 					m_statusLabel->setText(QStringLiteral("● 状态: 初始化完成 | 等待开始指令"));
 					m_statusLabel->setStyleSheet("color: #388E3C; font-weight: bold;");
+					emit initAckReceived();
 				}
 			}
 		}
@@ -577,6 +630,17 @@ void MainWindow::sendControlCommand(int command)
 	//cmd.currentRound = m_currentRoundEdit->text().toInt();
 	cmd.roundCut = 1;
 	cmd.currentRound = 1;
+#if defined(HWASIMIR_HAS_ZRDDS)
+	if (m_ddsStim)
+	{
+		std::string error;
+		if (!m_ddsStim->sendControl(cmd, error))
+			qCritical().noquote() << QStringLiteral("[StimDDS][ERROR] type=control reason=%1")
+				.arg(QString::fromStdString(error));
+		else
+			qInfo().noquote() << QStringLiteral("[StimDDS] type=control command=%1 sent=1").arg(command);
+	}
+#endif
 	if (m_udpSocket)
 	{
 		QHostAddress remoteIp(m_remoteIpEdit->text());
@@ -593,7 +657,7 @@ void MainWindow::sendControlCommand(int command)
 		}
 		qDebug() << "Sent Control Command:" << cmdStr << "Bytes:" << sent;
 	}
-	else
+	else if (m_controlTransport == QStringLiteral("udp") || m_controlTransport == QStringLiteral("both"))
 	{
 		m_statusLabel->setText(QStringLiteral("● 状态: 发送失败！ | udpSocket错误"));
 		m_statusLabel->setStyleSheet("color: #D32F2F; font-weight: bold;");
@@ -690,7 +754,20 @@ void MainWindow::sendInitCommand()
     cmd.MissileMaxCount9 = 3;
     cmd.MissileMaxCountF35 = 3;
     cmd.MissileMaxCountF22 = 3;
-    cmd.MissileMaxCountMMD = 0;
+	cmd.MissileMaxCountMMD = 0;
+
+#if defined(HWASIMIR_HAS_ZRDDS)
+	if (m_ddsStim)
+	{
+		std::string error;
+		if (!m_ddsStim->sendInit(cmd, error))
+			qCritical().noquote() << QStringLiteral("[StimDDS][ERROR] type=init reason=%1")
+				.arg(QString::fromStdString(error));
+		else
+			qInfo().noquote() << QStringLiteral("[StimDDS] type=init sent=1 platID=%1 sensorID=%2")
+				.arg(cmd.platID).arg(cmd.sensorID);
+	}
+#endif
 
 	if (m_udpSocket)
 	{
@@ -719,7 +796,7 @@ void MainWindow::sendInitCommand()
 				.arg(cmd.trackingInit.trackerSensor[0].trackerSensorBand)
 				.arg(sent);
 	}
-	else
+	else if (m_controlTransport == QStringLiteral("udp") || m_controlTransport == QStringLiteral("both"))
 	{
 		m_statusLabel->setText(QStringLiteral("● 状态: 初始化发送失败！ | udpSocket错误"));
 		m_statusLabel->setStyleSheet("color: #D32F2F; font-weight: bold;");
@@ -898,6 +975,17 @@ void MainWindow::sendRealTimeData()
 //    }
 
     //applyPhase4cAeroMachOverride(data);
+	bool ddsSent = false;
+#if defined(HWASIMIR_HAS_ZRDDS)
+	if (m_ddsStim)
+	{
+		std::string error;
+		ddsSent = m_ddsStim->sendRealtime(data, error);
+		if (!ddsSent)
+			qCritical().noquote() << QStringLiteral("[StimDDS][ERROR] type=realtime reason=%1")
+				.arg(QString::fromStdString(error));
+	}
+#endif
 
 	if (m_udpSocket)
 	{
@@ -955,10 +1043,32 @@ void MainWindow::sendRealTimeData()
 			m_statusLabel->setStyleSheet("color: #D32F2F; font-weight: bold;");
 		}
 	}
+	else if (!ddsSent)
+	{
+		m_statusLabel->setText(QStringLiteral("● 状态: 发送失败！ | transport错误"));
+		m_statusLabel->setStyleSheet("color: #D32F2F; font-weight: bold;");
+	}
 	else
 	{
-		m_statusLabel->setText(QStringLiteral("● 状态: 发送失败！ | udpSocket错误"));
-		m_statusLabel->setStyleSheet("color: #D32F2F; font-weight: bold;");
+		++m_sentFrameCount;
+		const qint64 nowNs = m_sendClock.isValid() ? m_sendClock.nsecsElapsed() : 0;
+		if (nowNs - m_lastSendPerfLogNs >= 2000000000LL)
+		{
+			const qint64 intervalNs = qMax<qint64>(1, nowNs - m_lastSendPerfLogNs);
+			const quint64 intervalFrames = m_sentFrameCount - m_lastSendPerfFrameCount;
+			qInfo().noquote() << QStringLiteral(
+				"[StimPerf] transport=dds targetFps=%1 sentFpsInstant=%2 packetSeq=%3 runtimeInitCount=%4")
+				.arg(m_targetVideoFps)
+				.arg(static_cast<double>(intervalFrames) * 1.0e9 / intervalNs, 0, 'f', 3)
+				.arg(m_sentFrameCount)
+#if defined(HWASIMIR_HAS_ZRDDS)
+				.arg(m_ddsStim ? m_ddsStim->runtimeInitCount() : 0);
+#else
+				.arg(0);
+#endif
+			m_lastSendPerfLogNs = nowNs;
+			m_lastSendPerfFrameCount = m_sentFrameCount;
+		}
 	}
 	
 

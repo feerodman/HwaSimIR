@@ -24,6 +24,8 @@ int main(int argc, char *argv[])
 	QString networkConfigPath;
 	QString channel;
 	QString inputDataPath;
+	QString controlTransport = QStringLiteral("udp");
+	int ddsDiscoveryWaitMs = 12000;
     const QStringList arguments = a.arguments();
 	for (int argumentIndex = 0; argumentIndex < arguments.size(); ++argumentIndex)
     {
@@ -147,6 +149,14 @@ int main(int argc, char *argv[])
 		{
 			inputDataPath = arguments.at(++argumentIndex).trimmed();
 		}
+		const QString transportPrefix = QStringLiteral("--control-transport=");
+		if (argument.startsWith(transportPrefix))
+			controlTransport = argument.mid(transportPrefix.size()).trimmed().toLower();
+		else if (argument == QStringLiteral("--control-transport") && argumentIndex + 1 < arguments.size())
+			controlTransport = arguments.at(++argumentIndex).trimmed().toLower();
+		const QString discoveryPrefix = QStringLiteral("--dds-discovery-wait-ms=");
+		if (argument.startsWith(discoveryPrefix))
+			ddsDiscoveryWaitMs = qMax(0, argument.mid(discoveryPrefix.size()).toInt());
     }
     qInfo().noquote()
         << QStringLiteral("[ProtocolLayout] component=DataDrivenTestQT ControlP2cX1ObjTrackingCmd=%1 InitP2cObjectTrackingCmd=%2 DisplayC2cObjTrackingData=%3 InitAckC2pObjectTrackingCmd=%4")
@@ -154,7 +164,7 @@ int main(int argc, char *argv[])
             .arg(sizeof(BYHWICD::InitP2cObjectTrackingCmd))
             .arg(sizeof(BYHWICD::DisplayC2cObjTrackingData))
             .arg(sizeof(BYHWICD::InitAckC2pObjectTrackingCmd));
-	MainWindow w(networkConfigPath, channel, inputDataPath);
+	MainWindow w(networkConfigPath, channel, inputDataPath, controlTransport);
 	w.show();
     w.setH264EnabledForTest(h264Enabled);
 	w.setSaveMP4EnabledForTest(saveMP4Enabled);
@@ -165,22 +175,38 @@ int main(int argc, char *argv[])
 	if (initOnly)
 	{
 		QTimer::singleShot(500, &w, [&w]() {
+			QMetaObject::invokeMethod(&w, "onResetButtonClicked", Qt::DirectConnection);
+		});
+		QTimer::singleShot(750, &w, [&w]() {
 			QMetaObject::invokeMethod(&w, "onInitButtonClicked", Qt::DirectConnection);
 		});
 		QTimer::singleShot(1500, &a, &QApplication::quit);
 	}
     else if (autoSeconds > 0)
     {
-        QTimer::singleShot(500, &w, [&w]() {
+		const int initialDelayMs = controlTransport == QStringLiteral("udp") ? 500 : ddsDiscoveryWaitMs;
+		bool autoStarted = false;
+		QObject::connect(&w, &MainWindow::initAckReceived, &w, [&w, &a, &autoStarted, autoSeconds]() {
+			if (autoStarted) return;
+			autoStarted = true;
+			QMetaObject::invokeMethod(&w, "onStartButtonClicked", Qt::DirectConnection);
+			QTimer::singleShot(autoSeconds * 1000, &w, [&w]() {
+				QMetaObject::invokeMethod(&w, "onStopButtonClicked", Qt::DirectConnection);
+			});
+			QTimer::singleShot(autoSeconds * 1000 + 500, &a, &QApplication::quit);
+		});
+        QTimer::singleShot(initialDelayMs, &w, [&w]() {
+			QMetaObject::invokeMethod(&w, "onResetButtonClicked", Qt::DirectConnection);
+		});
+        QTimer::singleShot(initialDelayMs + 500, &w, [&w]() {
             QMetaObject::invokeMethod(&w, "onInitButtonClicked", Qt::DirectConnection);
         });
-        QTimer::singleShot(6000, &w, [&w]() {
-            QMetaObject::invokeMethod(&w, "onStartButtonClicked", Qt::DirectConnection);
-        });
-        QTimer::singleShot(6000 + autoSeconds * 1000, &w, [&w]() {
-            QMetaObject::invokeMethod(&w, "onStopButtonClicked", Qt::DirectConnection);
-        });
-        QTimer::singleShot(6500 + autoSeconds * 1000, &a, &QApplication::quit);
+		QTimer::singleShot(initialDelayMs + 30500, &a, [&a, &autoStarted]() {
+			if (!autoStarted) {
+				qCritical().noquote() << QStringLiteral("[StimInitAck][FATAL] timeout=30000ms");
+				a.exit(6);
+			}
+		});
     }
     return a.exec();
 }

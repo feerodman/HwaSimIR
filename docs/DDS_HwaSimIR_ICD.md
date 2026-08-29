@@ -1,126 +1,114 @@
-# HwaSimIR DDS Video Interface Control Document
+# HwaSimIR DDS 接口控制文档（F1）
 
-This ICD covers only the D2 video-only DDS interface. Initialization, control,
-annotation, target tracking realtime data, and TCP packet formats are outside
-this DDS interface and remain on their existing transports.
+本文件冻结 F1 的 DDS 控制面、状态面和视频接口。Legacy UDP `0x41/0x36/0x38/0x37`
+及 TCP Packet v3 保留；DDS 是可并列选择的 Transport，不改变原协议布局。
 
-## Middleware contract
+## 1. 中间件与 QoS
 
-- DDS implementation: ZRDDS, installed package path labelled 2.4.5. The tested
-  runtime banner is `2.4.4-r6873577`.
-- Built-in type: `DDS::Bytes`; no IDL is required.
-- Domain default: `150`.
-- Transport: ZRDDS `tcpv4`.
-- Writer and reader reliability: `RELIABLE_RELIABILITY_QOS`.
-- Writer history: `KEEP_ALL_HISTORY_QOS`.
-- The supplied customer profile is
-  `DDS/HwaSimIRVideoReceiverDemo/Config/ZRDDS_QOS_PROFILES.xml` and uses
-  `tcpv4://default//0`.
-- `BEST_EFFORT` and UDP large-package zero-copy are not permitted.
+- SDK 路径标签：ZRDDS 2.4.5；Windows/板端实测 runtime banner：`2.4.4-r6873577`。
+- 默认 Domain：`150`；Transport：`tcpv4`。
+- Control、Init、Realtime、InitAck：`RELIABLE_RELIABILITY_QOS` + `KEEP_ALL_HISTORY_QOS`。
+- VideoStatus：RELIABLE + KEEP_LAST depth=1。
+- Video：RELIABLE + KEEP_ALL。
+- 客户通用配置：`Config/DDS/ZRDDS_PROTOCOL_QOS.xml`，网卡为 `tcpv4://default//0`。
+- 现场多网卡选错时可使用测试专用绑定文件；不得将现场 IP 写死进通用代码。
+- 禁止 BEST_EFFORT 和 ZRDDS UDP 大包零拷贝。
 
-DDS provides video payload only. A Sample never contains a frame sequence,
-PTS/DTS, width, height, codec identifier, platform/sensor identifier, TCP v2/v3
-header, annotation, realtime data, initialization, or control data.
+## 2. 类型与 Topic
 
-## Topics
+正式 IDL 位于 `DDS/IDL/HwaSimIRProtocolV1.idl`，命名空间为 `HwaSimIRDds`。
 
-| Channel | Codec/pixel format | Topic |
+| Topic | Type | Key | Legacy 对应 |
+|---|---|---|---|
+| `HwaSimIR.Control` | `ControlCommandV1` | `platID` | UDP 0x41 |
+| `HwaSimIR.Init` | `InitCommandV1` | `platID,sensorID` | UDP 0x36 |
+| `HwaSimIR.Realtime` | `RealtimeDataV1` | `platID,sensorID` | UDP 0x38 |
+| `HwaSimIR.InitAck` | `InitAckV1` | `platID,sensorID` | UDP 0x37 |
+| `HwaSimIR.VideoStatus` | `VideoStatusV1` | `platID,sensorID` | F1 新增状态 |
+
+`sensorID=255` 广播仍由 HwaSimIR 应用层判断。DDS typed sample 不依赖 `flag`
+反序列化，但保留 0x41/0x36/0x38/0x37，便于 UDP/DDS A/B 和语义审计。
+
+## 3. 字段映射
+
+转换代码位于 `DDS/Protocol/CommonDataDdsAdapter.cpp`，逐字段赋值，禁止 `memcpy`
+DDS object。
+
+| Legacy struct | DDS type | 字段组 |
 |---|---|---|
-| precise | H.264 | `HwaSimIR.Video.precise.H264` |
+| `ControlP2cX1ObjTrackingCmd` | `ControlCommandV1` | flag, JB, platID, simCommand, roundCut, currentRound |
+| `InitP2cObjectTrackingCmd` | `InitCommandV1` | flag/JB/platID/sensorID、platParamInit、trackingInit、7 个 MissileMaxCount |
+| `DisplayC2cObjTrackingData` | `RealtimeDataV1` | flag/platID/sensorID/time、platLoc、weaponState、targetNumValid、targetState[5] |
+| `InitAckC2pObjectTrackingCmd` | `InitAckV1` | flag, JB, platID, sensorID, trackingReady |
+
+嵌套数组保持 `trackerSensor[1]`、`targetState[5]`、`xxOutAng[2]`、`offsetAng[2]`。
+Legacy packed size 必须保持 24/385/506/17 bytes。
+
+## 4. VideoStatusV1
+
+字段：`platID`、`sensorID`、`channel`、`running`、`codec`、`pixelFormat`、
+`videoTopic`、`width`、`height`、`fps`、`bitrateKbps`、`gopFrames`、
+`compressed`、`currentRound`。
+
+HwaSimIR 在 DDS ready、INIT、START、STOP、codec/topic/geometry 改变及 1 Hz 刷新时发布。
+START 为 `running=true`，STOP 为 `running=false`。Receiver 应等待一个 running Status，
+再按其中 Topic 和 geometry 创建视频 Reader；CLI override 只用于调试。
+
+## 5. 视频 Topic
+
+| Channel | 格式 | Topic |
+|---|---|---|
+| precise | H264 | `HwaSimIR.Video.precise.H264` |
 | precise | Gray8 | `HwaSimIR.Video.precise.RawGray8` |
 | precise | BGR24 | `HwaSimIR.Video.precise.RawBGR24` |
-| coarse | H.264 | `HwaSimIR.Video.coarse.H264` |
+| coarse | H264 | `HwaSimIR.Video.coarse.H264` |
 | coarse | Gray8 | `HwaSimIR.Video.coarse.RawGray8` |
 | coarse | BGR24 | `HwaSimIR.Video.coarse.RawBGR24` |
 
-Topic and codec must agree. A JPEG payload must never be published on an H.264
-topic. `DdsVideo.Codec=auto` means `trackerSensorParam.h264En=true` selects H.264
-and `false` selects the configured Raw pixel format; `TcpOutput.Codec` does not
-change this rule.
+视频 Type 始终仅为内置 `DDS::Bytes`。VideoStatus 是独立 typed Topic，不嵌入视频 Sample。
 
-## H.264 Sample contract
+### H264
 
-One DDS Sample is exactly one complete H.264 Annex-B Access Unit (AU). The first
-byte is the first byte of the original AU. No length prefix or other header is
-inserted. An AU may contain multiple Annex-B NAL units, including SPS/PPS and an
-IDR. The sender requests an IDR on initialization, reset, a new round, encoder
-reset, and DDS writer/topic creation.
+一个 DDS Sample 精确等于一个完整 Annex-B Access Unit。无长度前缀、自定义 header、
+frameSeq、PTS、geometry、codec 或任何 TCP Packet v3 字段。接收端按 Sample 顺序原样
+append 即可重组 `.h264`。
 
-Receivers append Samples in receive order to reconstruct an Annex-B elementary
-stream. The receiver must not parse `TcpVideoPacketV3`. Where a local display
-timestamp is required, it may derive one from its own Sample counter and the
-agreed FPS; that timestamp is not sender metadata.
+### Raw
 
-## Raw Sample contracts
+一个 DDS Sample 精确等于一整帧。RawGray8 必须为 `width*height` bytes；RawBGR24 必须为
+`width*height*3` bytes，紧密 BGR 排列、无行 padding。geometry 来自 VideoStatus，尺寸不符
+必须报错，不得猜测。
 
-One DDS Sample is exactly one complete frame. Geometry is configured out of
-band and is never transmitted in the Sample.
+## 6. Transport 与业务状态机
 
-- `RawGray8`: tightly packed, one byte per pixel. Required Sample size is
-  `width * height`.
-- `RawBGR24`: tightly packed B, G, R bytes with no row padding. Required Sample
-  size is `width * height * 3`.
+HwaSimIR `[CommandTransport] Input=udp|dds|both`；Ack 可为
+`match_input|udp|dds|both`。两种入口最终进入同一套 `handleControlCmd`、`handleInitCmd`、
+`handleDisplayData`。DDS callback 只复制、adapter、route/queue，不直接操作 Panda3D。
 
-Raw orientation matches the final HwaSimIR video output. With
-`Stage6Capture/FlipInTcpThread=true`, the DDS Raw preparation applies the same
-vertical flip as the TCP video path. A receiver must reject a Sample whose size
-does not exactly match the configured geometry.
+both 模式去重键：Control=`platID/simCommand/currentRound/roundCut`；Init=语义 hash；
+Realtime=`platID/sensorID/time`。默认窗口 1000 ms。被判为 duplicate 的消息不再次执行
+业务，也不产生第二份业务 Ack。
 
-## Delivery and backpressure
+## 7. 可靠停止
 
-The HwaSim_IR application queue and DDS writer queue are no-drop queues. When
-full, the producer blocks; it does not clear, overwrite, pop the oldest frame,
-or continue after a write failure. Reliable acceptance requires the sender's
-`sentSamples` to equal the receiver's `receivedSamples`, with sender/receiver
-errors and application dropped counts all zero.
+STOP 停止新视频/标注输出并 flush Local MP4；DDS 视频应用 queue 先 drain，Writer/Participant
+可跨回合复用。`wait_for_acknowledgments()` 不能作为尾帧到达的唯一证据，必须配合 bounded
+drain 和 sender/receiver Sample 计数。
 
-On normal simulation STOP the application stops producing, drains its DDS
-queue, and retains the Writer and Participant. Topic changes and final process
-shutdown additionally use `wait_for_acknowledgments` plus a bounded drain. The
-installed runtime's acknowledgement call is not used as the sole proof of
-delivery; endpoint Sample counts are authoritative.
+## 8. D3/F1 已验证结果
 
-## D3 production qualification
+D3 生产测试已验证 precise DDS H264 689/689、TCP+DDS 716/716、TCP+DDS+record
+684/684、RawGray8 622/622、双通道 377/377 和 372/372、20 round 尾帧一致。
 
-The RK3588 production direction was qualified with the same wire contract:
+F1 控制闭环已验证 VS2015 Stim DDS RESET/INIT/Ack/START/360 realtime/STOP；MinGW Stim
+60 realtime；DataDriven both 中每对 UDP+DDS 仅接受一次。板端新 Customer Receiver 实测：
+H264 30 Samples/2,887 bytes/0 error，RawGray8 10 Samples/6,400,000 bytes/0 error，均由
+VideoStatus 自动选择 Topic/geometry。
 
-- precise DDS H264: 689 sent / 689 received;
-- precise TCP plus DDS H264: 716 / 716;
-- precise TCP plus DDS plus local MP4: 684 / 684;
-- RawGray8 800x800: 622 / 622, exactly 640,000 bytes per Sample;
-- RawBGR24 800x800: reliable maximum observed 28.180 Samples/s, exactly
-  1,920,000 bytes per Sample;
-- dual precise/coarse H264: 377 / 377 and 372 / 372;
-- 20 independent START/STOP rounds: exact sender/receiver counts in all rounds.
+## 9. 厂商已知事项
 
-All listed normal-consumer cases used tcpv4, RELIABLE, KEEP_ALL and reported
-zero application drops and zero writer/reader errors. The production renderer
-baseline was below 59 FPS, so these figures qualify delivery correctness, not a
-60 FPS renderer guarantee.
+1. 安装目录标称 2.4.5，但 runtime banner 为 2.4.4-r6873577。
+2. `wait_for_acknowledgments()` 可能早于接收应用完成最后 Sample drain 返回。
+3. CAEP Trial runtime 会改写 licence；每个并发进程必须使用独立、可写的 licence 副本。
 
-### Slow consumer limitation
-
-The customer demo offers test-only `--sample-delay-ms` and
-`--sample-delay-samples` options. They default to zero and do not change normal
-operation. A 100 ms/sample H264 test drained exactly (436/436). A deliberately
-severe callback-blocking test (1,000 ms for the first 50 callbacks) did not:
-749 Samples were accepted by the writer while only 328 reached the reader
-before the receiver exit window. This is a retained D3 failure and vendor issue,
-not a permitted delivery mode. Customer callbacks should copy the Bytes data
-immediately and move expensive processing to an owned-buffer worker; endpoint
-counts remain mandatory.
-
-## Vendor/runtime notes
-
-1. The installation path is labelled 2.4.5 while the runtime banner is
-   `2.4.4-r6873577`.
-2. `wait_for_acknowledgments()` may return before the receiving application has
-   drained the last Samples. Bounded drain plus sender/receiver counts are
-   required.
-3. The CAEP Trial runtime modifies its licence copy. Every running instance
-   must use a writable copy; concurrent processes should not share one mutable
-   trial-licence file.
-
-These notes do not change the video payload. No Control, Init, Realtime,
-InitAck, annotation, metadata, custom header, or additional IDL is part of this
-ICD.
+F1 没有 Annotation、VideoFrameMeta、Gateway 或 DDS 视频自定义 IDL；这些只能在 F2 单独设计。

@@ -1,4 +1,5 @@
 #include "DdsVideoPublisher.h"
+#include "DdsRuntimeManager.h"
 
 #include <algorithm>
 #include <atomic>
@@ -39,7 +40,7 @@ struct DdsVideoPublisher::Impl
 	std::condition_variable dataCv;
 	std::condition_variable spaceCv;
 	std::condition_variable drainedCv;
-	std::deque<std::vector<std::uint8_t> > queue;
+	std::deque<std::shared_ptr<const std::vector<std::uint8_t> > > queue;
 	bool writeInProgress = false;
 	std::string topic;
 	std::string fatalError;
@@ -48,10 +49,11 @@ struct DdsVideoPublisher::Impl
 	std::int64_t lastPerfLogNs = 0;
 	std::ofstream audit;
 #if defined(HWASIMIR_HAS_ZRDDS)
-	DDS::DomainParticipantFactory* factory = nullptr;
 	DDS::DomainParticipant* participant = nullptr;
 	DDS::DataWriter* writer = nullptr;
 #endif
+	std::shared_ptr<DdsRuntimeManager> runtime;
+	bool ownsRuntime = false;
 
 	void logPerf(bool force)
 	{
@@ -76,8 +78,25 @@ struct DdsVideoPublisher::Impl
 			<< " queueDepth=" << snapshot.queueDepth
 			<< " maxQueueDepth=" << snapshot.maxQueueDepth
 			<< " backpressureMs=" << snapshot.backpressureMs
+			<< " appCopyMs=" << snapshot.appCopyMs
+			<< " enqueueMs=" << snapshot.enqueueMs
+			<< " queueWaitMs=" << snapshot.queueWaitMs
 			<< " writeErrors=" << snapshot.writeErrors
 			<< " droppedSamples=0"
+			<< std::endl;
+		const double sentDenominator = snapshot.sentSamples
+			? static_cast<double>(snapshot.sentSamples) : 1.0;
+		const double acceptedDenominator = snapshot.acceptedSamples
+			? static_cast<double>(snapshot.acceptedSamples) : 1.0;
+		std::cout << std::fixed << std::setprecision(3)
+			<< "[DdsVideoTiming]"
+			<< " ddsAppCopyMs=" << snapshot.appCopyMs / acceptedDenominator
+			<< " ddsEnqueueMs=" << snapshot.enqueueMs / acceptedDenominator
+			<< " ddsQueueWaitMs=" << snapshot.queueWaitMs / acceptedDenominator
+			<< " ddsWriteMs=" << snapshot.writeMsAverage
+			<< " ddsTotalSenderMs="
+			<< (snapshot.appCopyMs / acceptedDenominator + snapshot.enqueueMs / acceptedDenominator + snapshot.writeMsAverage)
+			<< " samples=" << snapshot.sentSamples
 			<< std::endl;
 		lastPerfLogNs = now;
 	}
@@ -86,7 +105,7 @@ struct DdsVideoPublisher::Impl
 	{
 		while (true)
 		{
-			std::vector<std::uint8_t> payload;
+			std::shared_ptr<const std::vector<std::uint8_t> > payload;
 			std::string topicSnapshot;
 			{
 				std::unique_lock<std::mutex> lock(mutex);
@@ -106,8 +125,8 @@ struct DdsVideoPublisher::Impl
 			const DDS::ReturnCode_t result = DDSIF::BytesWrite(
 				config.domainId,
 				const_cast<char*>(topicSnapshot.c_str()),
-				reinterpret_cast<const char*>(payload.data()),
-				static_cast<DDS::Long>(payload.size()));
+				reinterpret_cast<const char*>(payload->data()),
+				static_cast<DDS::Long>(payload->size()));
 			writeOk = result == DDS::RETCODE_OK;
 			if (!writeOk)
 			{
@@ -127,8 +146,8 @@ struct DdsVideoPublisher::Impl
 					if (audit.is_open() &&
 						(config.auditMaxSamples == 0 || stats.sentSamples < config.auditMaxSamples))
 					{
-						audit.write(reinterpret_cast<const char*>(payload.data()),
-							static_cast<std::streamsize>(payload.size()));
+						audit.write(reinterpret_cast<const char*>(payload->data()),
+							static_cast<std::streamsize>(payload->size()));
 						if (!audit)
 						{
 							fatalError = "DDS audit file write failed";
@@ -139,7 +158,7 @@ struct DdsVideoPublisher::Impl
 				if (writeOk)
 				{
 					++stats.sentSamples;
-					stats.sentBytes += payload.size();
+					stats.sentBytes += payload->size();
 					writeMsTotal += writeMs;
 					stats.writeMsMaximum = (std::max)(stats.writeMsMaximum, writeMs);
 				}
@@ -182,24 +201,21 @@ bool DdsVideoPublisher::start(const DdsVideoPublisherConfig& config, std::string
 	std::cerr << error << std::endl;
 	return false;
 #else
-	m_impl->factory = DDSIF::Init(config.qosFile.c_str(), "hwasimir_factory");
-	if (!m_impl->factory)
+	if (!m_impl->runtime)
 	{
-		error = "DDSIF::Init failed qos=" + config.qosFile;
+		m_impl->runtime.reset(new DdsRuntimeManager());
+		m_impl->ownsRuntime = true;
+	}
+	DdsRuntimeConfig runtimeConfig;
+	runtimeConfig.domainId = config.domainId;
+	runtimeConfig.qosFile = config.qosFile;
+	if (!m_impl->runtime->start(runtimeConfig, error))
+	{
 		m_impl->healthy.store(false);
 		std::cerr << "[DdsVideo][FATAL] " << error << std::endl;
 		return false;
 	}
-	m_impl->participant = DDSIF::CreateDP(config.domainId, "hwasimir_tcp");
-	if (!m_impl->participant)
-	{
-		error = "DDSIF::CreateDP failed domain=" + std::to_string(config.domainId);
-		m_impl->healthy.store(false);
-		DDSIF::Finalize();
-		m_impl->factory = nullptr;
-		std::cerr << "[DdsVideo][FATAL] " << error << std::endl;
-		return false;
-	}
+	m_impl->participant = m_impl->runtime->participant();
 	if (!config.auditPath.empty())
 	{
 		m_impl->audit.open(config.auditPath.c_str(), std::ios::binary | std::ios::trunc);
@@ -207,9 +223,7 @@ bool DdsVideoPublisher::start(const DdsVideoPublisherConfig& config, std::string
 		{
 			error = "cannot open DDS audit file: " + config.auditPath;
 			m_impl->healthy.store(false);
-			DDSIF::Finalize();
-			m_impl->factory = nullptr;
-			m_impl->participant = nullptr;
+			if (m_impl->ownsRuntime) m_impl->runtime->shutdown();
 			return false;
 		}
 	}
@@ -217,7 +231,8 @@ bool DdsVideoPublisher::start(const DdsVideoPublisherConfig& config, std::string
 	m_impl->accepting.store(true);
 	m_impl->running.store(true);
 	m_impl->worker = std::thread(&Impl::run, m_impl.get());
-	std::cout << "[DdsVideo] initialized=1 initCount=1 domain=" << config.domainId
+	std::cout << "[DdsVideo] initialized=1 runtimeInitCount=" << m_impl->runtime->initCount()
+		<< " sharedRuntime=" << (m_impl->ownsRuntime ? 0 : 1) << " domain=" << config.domainId
 		<< " qos=" << config.qosFile
 		<< " queueMaxFrames=" << config.queueMaxFrames
 		<< " blockWhenQueueFull=" << (config.blockWhenQueueFull ? "1" : "0")
@@ -229,6 +244,13 @@ bool DdsVideoPublisher::start(const DdsVideoPublisherConfig& config, std::string
 	}
 	return true;
 #endif
+}
+
+void DdsVideoPublisher::setRuntime(const std::shared_ptr<DdsRuntimeManager>& runtime)
+{
+	if (m_impl->running.load()) return;
+	m_impl->runtime = runtime;
+	m_impl->ownsRuntime = false;
 }
 
 bool DdsVideoPublisher::configureTopic(const std::string& topic, bool* changed, std::string& error)
@@ -291,12 +313,42 @@ bool DdsVideoPublisher::publishBytes(const std::uint8_t* data, std::size_t size,
 	if (backpressureMs) *backpressureMs = 0.0;
 	if (!m_impl->enabled.load()) return true;
 	if (!data || size == 0) { error = "DDS payload is empty"; return false; }
+	const auto copyBegin = std::chrono::steady_clock::now();
+	std::shared_ptr<std::vector<std::uint8_t> > owned(
+		new std::vector<std::uint8_t>(data, data + size));
+	const double copyMs = std::chrono::duration<double, std::milli>(
+		std::chrono::steady_clock::now() - copyBegin).count();
+	const bool ok = publishShared(owned, backpressureMs, error);
+	if (ok)
+	{
+		std::lock_guard<std::mutex> lock(m_impl->mutex);
+		m_impl->stats.appCopyMs += copyMs;
+	}
+	return ok;
+}
+
+bool DdsVideoPublisher::publishOwned(std::vector<std::uint8_t>&& payload,
+	double* backpressureMs, std::string& error)
+{
+	std::shared_ptr<std::vector<std::uint8_t> > owned(
+		new std::vector<std::uint8_t>(std::move(payload)));
+	return publishShared(owned, backpressureMs, error);
+}
+
+bool DdsVideoPublisher::publishShared(
+	const std::shared_ptr<const std::vector<std::uint8_t> >& payload,
+	double* backpressureMs, std::string& error)
+{
+	if (backpressureMs) *backpressureMs = 0.0;
+	if (!m_impl->enabled.load()) return true;
+	if (!payload || payload->empty()) { error = "DDS payload is empty"; return false; }
 	if (!m_impl->healthy.load() || !m_impl->accepting.load())
 	{
 		error = m_impl->fatalError.empty() ? "DDS publisher is not accepting" : m_impl->fatalError;
 		return false;
 	}
-	const auto waitBegin = std::chrono::steady_clock::now();
+	const auto enqueueBegin = std::chrono::steady_clock::now();
+	const auto waitBegin = enqueueBegin;
 	std::unique_lock<std::mutex> lock(m_impl->mutex);
 	if (m_impl->topic.empty()) { error = "DDS writer topic is not configured"; return false; }
 	if (m_impl->queue.size() >= m_impl->config.queueMaxFrames)
@@ -320,14 +372,21 @@ bool DdsVideoPublisher::publishBytes(const std::uint8_t* data, std::size_t size,
 	}
 	const double waited = std::chrono::duration<double, std::milli>(
 		std::chrono::steady_clock::now() - waitBegin).count();
-	m_impl->queue.emplace_back(data, data + size);
+	m_impl->queue.emplace_back(payload);
 	++m_impl->stats.acceptedSamples;
 	m_impl->stats.backpressureMs += waited;
+	m_impl->stats.queueWaitMs += waited;
 	m_impl->stats.queueDepth = m_impl->queue.size();
 	m_impl->stats.maxQueueDepth = (std::max)(m_impl->stats.maxQueueDepth, m_impl->queue.size());
 	if (backpressureMs) *backpressureMs = waited;
 	lock.unlock();
 	m_impl->dataCv.notify_one();
+	const double enqueueMs = std::chrono::duration<double, std::milli>(
+		std::chrono::steady_clock::now() - enqueueBegin).count();
+	{
+		std::lock_guard<std::mutex> statsLock(m_impl->mutex);
+		m_impl->stats.enqueueMs += enqueueMs;
+	}
 	return true;
 }
 
@@ -411,13 +470,12 @@ void DdsVideoPublisher::shutdown()
 		DDSIF::UnPubTopic(m_impl->writer);
 		m_impl->writer = nullptr;
 	}
-	DDSIF::Finalize();
-	m_impl->factory = nullptr;
 	m_impl->participant = nullptr;
 #endif
+	if (m_impl->ownsRuntime && m_impl->runtime) m_impl->runtime->shutdown();
 	if (m_impl->audit.is_open()) m_impl->audit.close();
 	m_impl->logPerf(true);
-	std::cout << "[DdsVideo] shutdown=1 finalize=1" << std::endl;
+	std::cout << "[DdsVideo] shutdown=1 finalize=" << (m_impl->ownsRuntime ? 1 : 0) << std::endl;
 	m_impl->enabled.store(false);
 }
 

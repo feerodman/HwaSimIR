@@ -116,6 +116,13 @@ if (HWASIMIR_ENABLE_ZRDDS)
     if (NOT EXISTS "${ZRDDS_CPP_LIBRARY}")
         message(FATAL_ERROR "ZRDDS C++ release library not found: ${ZRDDS_CPP_LIBRARY}")
     endif()
+    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../DDS/Runtime/DdsRuntimeManager.cpp")
+        set(HWASIMIR_DDS_SOURCE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../DDS")
+    elseif (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/DDS/Runtime/DdsRuntimeManager.cpp")
+        set(HWASIMIR_DDS_SOURCE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/DDS")
+    else()
+        message(FATAL_ERROR "F1 DDS shared runtime/protocol sources not found")
+    endif()
 endif()
 
 include_directories(
@@ -206,8 +213,18 @@ elseif (HWASIMIR_ENABLE_AVFORMAT)
 endif()
 
 if (HWASIMIR_ENABLE_ZRDDS)
+    target_sources(HwaSim_IR PRIVATE
+            ${HWASIMIR_DDS_SOURCE_ROOT}/Runtime/DdsRuntimeManager.cpp
+            ${HWASIMIR_DDS_SOURCE_ROOT}/Protocol/CommonDataDdsAdapter.cpp
+            ${HWASIMIR_DDS_SOURCE_ROOT}/Protocol/HwaSimIRProtocolEndpoint.cpp
+            ${HWASIMIR_DDS_SOURCE_ROOT}/Generated/HwaSimIRProtocolV1/HwaSimIRProtocolV1.cpp
+            ${HWASIMIR_DDS_SOURCE_ROOT}/Generated/HwaSimIRProtocolV1/HwaSimIRProtocolV1TypeSupport.cpp)
     target_compile_definitions(HwaSim_IR PRIVATE _ZRDDSCPPINTERFACE HWASIMIR_HAS_ZRDDS=1)
-    target_include_directories(HwaSim_IR PRIVATE ${ZRDDS_CPP_INCLUDE_DIR} ${ZRDDS_CORE_INCLUDE_DIR})
+    target_include_directories(HwaSim_IR PRIVATE
+            ${ZRDDS_CPP_INCLUDE_DIR} ${ZRDDS_CORE_INCLUDE_DIR}
+            ${HWASIMIR_DDS_SOURCE_ROOT}/Runtime
+            ${HWASIMIR_DDS_SOURCE_ROOT}/Protocol
+            ${HWASIMIR_DDS_SOURCE_ROOT}/Generated/HwaSimIRProtocolV1)
     target_link_libraries(HwaSim_IR PRIVATE ${ZRDDS_CPP_LIBRARY})
     message(STATUS "ZRDDS C++ video publisher integration enabled")
     message(STATUS "ZRDDS_ROOT = ${ZRDDS_ROOT}")

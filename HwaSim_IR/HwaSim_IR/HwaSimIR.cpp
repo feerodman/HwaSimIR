@@ -41,6 +41,24 @@
 
 namespace
 {
+std::int64_t ProtocolSteadyNowMs()
+{
+	return std::chrono::duration_cast<std::chrono::milliseconds>(
+		std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+
+std::uint64_t Fnv1a64(const void* data, std::size_t size)
+{
+	const unsigned char* bytes = static_cast<const unsigned char*>(data);
+	std::uint64_t value = 1469598103934665603ULL;
+	for (std::size_t i = 0; i < size; ++i)
+	{
+		value ^= bytes[i];
+		value *= 1099511628211ULL;
+	}
+	return value;
+}
+
 class ScopedSteadyMs
 {
 public:
@@ -1212,6 +1230,7 @@ HwaSimIR::HwaSimIR(int argc, char** argv, const HwaSimIRLaunchOptions& launchOpt
 	m_launchOptions = launchOptions;
 	m_runtimeConfig.loadFromCandidates(BuildRuntimeConfigCandidatePaths());
 	LoadD2VideoOutputConfig();
+	LoadF1ProtocolConfig();
 	LoadRenderControlConfig();
 	LoadRenderBackendConfig();
 	m_annotationOverlayInSensorImage = m_runtimeConfig.getBool(
@@ -1317,7 +1336,24 @@ HwaSimIR::HwaSimIR(int argc, char** argv, const HwaSimIRLaunchOptions& launchOpt
 		{
 			return;
 		}
-		if (!InitUdpThread())
+		#if defined(HWASIMIR_HAS_ZRDDS)
+		if (!InitDdsProtocol())
+		{
+			m_startupSucceeded = false;
+			m_startupExitCode = 5;
+			return;
+		}
+		#else
+		if (m_ddsProtocolEnabled || m_ddsVideoConfig.enabled)
+		{
+			std::cerr << "[StartupFatal] DDS enabled but binary lacks HWASIMIR_HAS_ZRDDS" << std::endl;
+			m_startupSucceeded = false;
+			m_startupExitCode = 5;
+			return;
+		}
+		#endif
+		if ((m_commandTransportInput == "udp" || m_commandTransportInput == "both") &&
+			!InitUdpThread())
 		{
 			m_startupSucceeded = false;
 			m_startupExitCode = 3;
@@ -1358,6 +1394,11 @@ HwaSimIR::~HwaSimIR() {
 	ProcessAddRemoveWeaponPlatform();
 	ProcessAddRemoveTargetPlatform();
 
+	// Stop protocol readers first, then video writer, and finalize the one
+	// process-wide DDS Runtime last.
+#if defined(HWASIMIR_HAS_ZRDDS)
+	if (m_ddsProtocolEndpoint) m_ddsProtocolEndpoint->shutdown();
+#endif
 	// 停止UDP线程
 	if (m_pUdpThread) {
 		m_pUdpThread->stop();
@@ -1369,6 +1410,11 @@ HwaSimIR::~HwaSimIR() {
 		delete m_pTcpThread;
 		m_pTcpThread = nullptr;
 	}
+#if defined(HWASIMIR_HAS_ZRDDS)
+	if (m_ddsRuntime) m_ddsRuntime->shutdown();
+	m_ddsProtocolEndpoint.reset();
+	m_ddsRuntime.reset();
+#endif
 	// 清理HwaSimIR框架和窗口资源
 	if (m_pFramework) {
 		m_pFramework->close_all_windows();
@@ -7615,11 +7661,15 @@ bool HwaSimIR::InitUdpThread() {
 
 bool HwaSimIR::PreflightDdsVideoConfig()
 {
-	if (!m_ddsVideoConfig.enabled)
+	if (!m_startupSucceeded) return false;
+	if (!m_ddsVideoConfig.enabled && !m_ddsProtocolConfig.enabled)
 	{
 		return true;
 	}
-	const std::string requested = m_ddsVideoConfig.qosFile;
+	const std::string requested = m_ddsProtocolConfig.enabled
+		? m_runtimeConfig.getString("DdsProtocol", "QosFile", "HwaSimIRDdsProtocolQosFile",
+			"Config/DDS/ZRDDS_PROTOCOL_QOS.xml", 0)
+		: m_ddsVideoConfig.qosFile;
 	const std::string resolved = AbsolutePathForLog(requested);
 	const bool exists = FileExists(resolved);
 	std::cout << "[DdsVideoConfig]"
@@ -7629,7 +7679,7 @@ bool HwaSimIR::PreflightDdsVideoConfig()
 		<< std::endl;
 	if (!exists)
 	{
-		std::cerr << "[DdsVideo][FATAL] reason=qos_file_not_found"
+		std::cerr << "[DdsRuntime][FATAL] reason=qos_file_not_found"
 			<< " requestedQos=" << requested
 			<< " resolvedQos=" << resolved
 			<< std::endl;
@@ -7688,6 +7738,160 @@ void HwaSimIR::LoadD2VideoOutputConfig()
 		<< " outputDirectory=" << m_localRecordingConfig.outputDirectory << std::endl;
 }
 
+void HwaSimIR::LoadF1ProtocolConfig()
+{
+	m_commandTransportInput = ToLowerAscii(m_runtimeConfig.getString(
+		"CommandTransport", "Input", "HwaSimIRCommandTransportInput", "udp", 0));
+	m_commandTransportAck = ToLowerAscii(m_runtimeConfig.getString(
+		"CommandTransport", "Ack", "HwaSimIRCommandTransportAck", "match_input", 0));
+	if (m_commandTransportInput != "udp" && m_commandTransportInput != "dds" &&
+		m_commandTransportInput != "both")
+	{
+		std::cerr << "[DdsProtocol][FATAL] invalid CommandTransport.Input="
+			<< m_commandTransportInput << std::endl;
+		m_commandTransportInput = "udp";
+		m_startupSucceeded = false;
+	}
+	if (m_commandTransportAck != "match_input" && m_commandTransportAck != "udp" &&
+		m_commandTransportAck != "dds" && m_commandTransportAck != "both")
+	{
+		std::cerr << "[DdsProtocol][FATAL] invalid CommandTransport.Ack="
+			<< m_commandTransportAck << std::endl;
+		m_commandTransportAck = "match_input";
+		m_startupSucceeded = false;
+	}
+	m_ddsProtocolEnabled = m_runtimeConfig.getBool(
+		"DdsProtocol", "Enable", "HwaSimIRDdsProtocolEnable", false, 0);
+	m_ddsProtocolConfig.enabled = m_ddsProtocolEnabled &&
+		(m_commandTransportInput == "dds" || m_commandTransportInput == "both");
+	m_ddsProtocolConfig.domainId = m_runtimeConfig.getInt(
+		"DdsProtocol", "DomainId", "HwaSimIRDdsProtocolDomainId", 150, 0);
+	const std::string protocolQos = m_runtimeConfig.getString(
+		"DdsProtocol", "QosFile", "HwaSimIRDdsProtocolQosFile",
+		"Config/DDS/ZRDDS_PROTOCOL_QOS.xml", 0);
+	m_ddsProtocolConfig.topicControl = m_runtimeConfig.getString(
+		"DdsProtocol", "TopicControl", "HwaSimIRDdsTopicControl", "HwaSimIR.Control", 0);
+	m_ddsProtocolConfig.topicInit = m_runtimeConfig.getString(
+		"DdsProtocol", "TopicInit", "HwaSimIRDdsTopicInit", "HwaSimIR.Init", 0);
+	m_ddsProtocolConfig.topicRealtime = m_runtimeConfig.getString(
+		"DdsProtocol", "TopicRealtime", "HwaSimIRDdsTopicRealtime", "HwaSimIR.Realtime", 0);
+	m_ddsProtocolConfig.topicInitAck = m_runtimeConfig.getString(
+		"DdsProtocol", "TopicInitAck", "HwaSimIRDdsTopicInitAck", "HwaSimIR.InitAck", 0);
+	m_ddsProtocolConfig.topicVideoStatus = m_runtimeConfig.getString(
+		"DdsProtocol", "TopicVideoStatus", "HwaSimIRDdsTopicVideoStatus", "HwaSimIR.VideoStatus", 0);
+	m_deduplicateWhenBoth = m_runtimeConfig.getBool(
+		"DdsProtocol", "DeduplicateWhenBoth", "HwaSimIRDdsDeduplicateWhenBoth", true, 0);
+	m_deduplicateWindowMs = (std::max)(1, m_runtimeConfig.getInt(
+		"DdsProtocol", "DeduplicateWindowMs", "HwaSimIRDdsDeduplicateWindowMs", 1000, 0));
+
+	if ((m_commandTransportInput == "dds" || m_commandTransportInput == "both") &&
+		!m_ddsProtocolEnabled)
+	{
+		std::cerr << "[DdsProtocol][FATAL] DDS command input selected but DdsProtocol.Enable=false"
+			<< std::endl;
+		m_startupSucceeded = false;
+	}
+	if (m_ddsProtocolConfig.enabled && m_ddsVideoConfig.enabled)
+	{
+		m_ddsVideoConfig.qosFile = protocolQos;
+		m_ddsVideoConfig.domainId = m_ddsProtocolConfig.domainId;
+	}
+	std::cout << "[CommandTransport] input=" << m_commandTransportInput
+		<< " ack=" << m_commandTransportAck
+		<< " ddsProtocolEnable=" << (m_ddsProtocolConfig.enabled ? 1 : 0)
+		<< " domain=" << m_ddsProtocolConfig.domainId
+		<< " qos=" << protocolQos
+		<< " deduplicate=" << (m_deduplicateWhenBoth ? 1 : 0)
+		<< " windowMs=" << m_deduplicateWindowMs << std::endl;
+}
+
+#if defined(HWASIMIR_HAS_ZRDDS)
+bool HwaSimIR::InitDdsProtocol()
+{
+	if (!m_ddsVideoConfig.enabled && !m_ddsProtocolConfig.enabled) return true;
+	m_ddsRuntime.reset(new DdsRuntimeManager());
+	DdsRuntimeConfig runtimeConfig;
+	runtimeConfig.domainId = m_ddsProtocolConfig.enabled
+		? m_ddsProtocolConfig.domainId : m_ddsVideoConfig.domainId;
+	runtimeConfig.qosFile = m_ddsProtocolConfig.enabled
+		? m_runtimeConfig.getString("DdsProtocol", "QosFile", "HwaSimIRDdsProtocolQosFile",
+			"Config/DDS/ZRDDS_PROTOCOL_QOS.xml", 0)
+		: m_ddsVideoConfig.qosFile;
+	std::string error;
+	if (!m_ddsRuntime->start(runtimeConfig, error))
+	{
+		std::cerr << "[StartupFatal] component=DDSRuntime reason=" << error << std::endl;
+		return false;
+	}
+	if (m_ddsProtocolConfig.enabled)
+	{
+		m_ddsProtocolEndpoint.reset(new HwaSimIRProtocolEndpoint());
+		DdsProtocolCallbacks callbacks;
+		callbacks.control = [this](const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd) {
+			handleDdsControlCmd(cmd);
+		};
+		callbacks.init = [this](const BYHWICD::InitP2cObjectTrackingCmd& cmd) {
+			handleDdsInitCmd(cmd);
+		};
+		callbacks.realtime = [this](const BYHWICD::DisplayC2cObjTrackingData& data) {
+			handleDdsDisplayData(data);
+		};
+		if (!m_ddsProtocolEndpoint->start(m_ddsRuntime, m_ddsProtocolConfig, callbacks, error))
+		{
+			std::cerr << "[StartupFatal] component=DDSProtocol reason=" << error << std::endl;
+			return false;
+		}
+		PublishDdsVideoStatus(false, "dds_ready");
+	}
+	return true;
+}
+
+void HwaSimIR::PublishDdsVideoStatus(bool running, const char* reason)
+{
+	if (!m_ddsProtocolEndpoint || !m_ddsProtocolEndpoint->running()) return;
+	std::string codec = ToLowerAscii(m_ddsVideoConfig.codec);
+	if (codec == "auto")
+	{
+		codec = m_sensorParam.h264En ? "h264" :
+			(ToLowerAscii(m_ddsVideoConfig.rawPixelFormat) == "bgr24" ? "raw_bgr24" : "raw_gray8");
+	}
+	if (codec == "raw")
+		codec = ToLowerAscii(m_ddsVideoConfig.rawPixelFormat) == "bgr24" ? "raw_bgr24" : "raw_gray8";
+	DdsVideoStatus status;
+	status.platID = m_localPlatID;
+	status.sensorID = m_localSensorID;
+	status.channel = m_channel;
+	status.running = running && m_ddsVideoConfig.enabled;
+	status.codec = codec;
+	status.pixelFormat = codec == "h264" ? "annexb" :
+		(codec == "raw_bgr24" ? "bgr24" : "gray8");
+	const bool precise = m_channel != "coarse";
+	if (codec == "h264")
+		status.videoTopic = precise ? m_ddsVideoConfig.topicH264Precise : m_ddsVideoConfig.topicH264Coarse;
+	else if (codec == "raw_bgr24")
+		status.videoTopic = precise ? m_ddsVideoConfig.topicRawBgr24Precise : m_ddsVideoConfig.topicRawBgr24Coarse;
+	else
+		status.videoTopic = precise ? m_ddsVideoConfig.topicRawGray8Precise : m_ddsVideoConfig.topicRawGray8Coarse;
+	status.width = m_sensorParam.trackerSensorWidth > 0 ? m_sensorParam.trackerSensorWidth :
+		(m_stage6FinalWidth > 0 ? m_stage6FinalWidth : m_headlessWidth);
+	status.height = m_sensorParam.trackerSensorHeight > 0 ? m_sensorParam.trackerSensorHeight :
+		(m_stage6FinalHeight > 0 ? m_stage6FinalHeight : m_headlessHeight);
+	status.fps = m_targetVideoFps.load() > 0 ? m_targetVideoFps.load() : m_configuredVideoFps;
+	status.bitrateKbps = m_h264BitrateKbps;
+	status.gopFrames = m_h264GopFrames;
+	status.compressed = codec == "h264";
+	status.currentRound = m_currentRound;
+	std::string error;
+	if (!m_ddsProtocolEndpoint->publishVideoStatus(status, error))
+	{
+		std::cerr << "[VideoStatus][ERROR] reason=" << (reason ? reason : "unknown")
+			<< " detail=" << error << std::endl;
+	}
+	m_lastVideoStatusRefreshNs = std::chrono::duration_cast<std::chrono::nanoseconds>(
+		std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+#endif
+
 bool HwaSimIR::InitTcpThread()
 {
 	std::cout << "[Stage0] TCP video baseline server=" << m_tcpServerIp << ":" << m_tcpServerPort
@@ -7716,6 +7920,9 @@ bool HwaSimIR::InitTcpThread()
 		m_tcpSendRealtimeData,
 		m_tcpForwardInitControl);
 	m_pTcpThread->configureDdsVideo(m_ddsVideoConfig);
+#if defined(HWASIMIR_HAS_ZRDDS)
+	m_pTcpThread->configureDdsRuntime(m_ddsRuntime);
+#endif
 	m_pTcpThread->configureLocalRecording(m_localRecordingConfig);
 	if (!m_pTcpThread->start()) {
 		std::cerr << "TCP线程启动失败！" << std::endl;
@@ -7746,23 +7953,40 @@ void HwaSimIR::ProcessPendingNetworkCommands()
 				<< std::endl;
 			ProcessControlCmdOnMainThread(it->controlCmd);
 		}
-		else
+		else if (it->type == PendingNetworkCommandType::Init)
 		{
 			std::cout << "[Stage0] Processing queued init command on render thread"
 				<< " sensorID=" << it->initCmd.sensorID
 				<< " platID=" << it->initCmd.platID
 				//<< " platNumValid=" << it->initCmd.platNumValid
 				<< std::endl;
-			ProcessInitCmdOnMainThread(it->initCmd);
+			ProcessInitCmdOnMainThread(it->initCmd, it->transport);
+		}
+		else
+		{
+			ProcessDisplayDataOnMainThread(it->realtimeData);
 		}
 	}
+#if defined(HWASIMIR_HAS_ZRDDS)
+	const std::int64_t nowNs = std::chrono::duration_cast<std::chrono::nanoseconds>(
+		std::chrono::steady_clock::now().time_since_epoch()).count();
+	if (m_ddsProtocolEndpoint && m_ddsProtocolEndpoint->running() &&
+		nowNs - m_lastVideoStatusRefreshNs >= 1000000000LL)
+	{
+		PublishDdsVideoStatus(m_isSimRunning.load(), "periodic_1hz");
+	}
+#endif
 }
 
 // 处理控制指令（复位/开始/停止）
 void HwaSimIR::handleControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd)
 {
+	std::ostringstream key;
+	key << cmd.platID << ':' << cmd.simCommand << ':' << cmd.currentRound << ':' << cmd.roundCut;
+	if (!AcceptProtocolIngress("udp", "control", key.str(), cmd.platID, -1)) return;
 	PendingNetworkCommand pending;
 	pending.type = PendingNetworkCommandType::Control;
+	pending.transport = "udp";
 	pending.controlCmd = cmd;
 	{
 		std::lock_guard<std::mutex> lock(m_mtx);
@@ -7771,6 +7995,76 @@ void HwaSimIR::handleControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd)
 	std::cout << "[Stage0] Control command queued for main thread: command=" << cmd.simCommand
 		<< ", round=" << cmd.currentRound << "/" << cmd.roundCut << std::endl;
 	m_cvNewData.notify_one();
+}
+
+#if defined(HWASIMIR_HAS_ZRDDS)
+void HwaSimIR::handleDdsControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd)
+{
+	std::ostringstream key;
+	key << cmd.platID << ':' << cmd.simCommand << ':' << cmd.currentRound << ':' << cmd.roundCut;
+	if (!AcceptProtocolIngress("dds", "control", key.str(), cmd.platID, -1)) return;
+	PendingNetworkCommand pending;
+	pending.type = PendingNetworkCommandType::Control;
+	pending.transport = "dds";
+	pending.controlCmd = cmd;
+	{
+		std::lock_guard<std::mutex> lock(m_mtx);
+		m_pendingNetworkCommands.push_back(pending);
+	}
+	m_cvNewData.notify_one();
+}
+#endif
+
+bool HwaSimIR::AcceptProtocolIngress(const std::string& transport, const std::string& type,
+	const std::string& semanticKey, int platID, int sensorID)
+{
+	bool duplicate = false;
+	if (m_commandTransportInput == "both" && m_deduplicateWhenBoth)
+	{
+		const std::int64_t now = ProtocolSteadyNowMs();
+		const std::string mapKey = type + ":" + semanticKey;
+		std::lock_guard<std::mutex> lock(m_protocolDedupMutex);
+		std::map<std::string, std::pair<std::string, std::int64_t> >::iterator found =
+			m_protocolDedup.find(mapKey);
+		if (found != m_protocolDedup.end() && found->second.first != transport &&
+			now - found->second.second <= m_deduplicateWindowMs)
+		{
+			duplicate = true;
+		}
+		else
+		{
+			m_protocolDedup[mapKey] = std::make_pair(transport, now);
+		}
+		if (m_protocolDedup.size() > 8192)
+		{
+			for (std::map<std::string, std::pair<std::string, std::int64_t> >::iterator it =
+				m_protocolDedup.begin(); it != m_protocolDedup.end(); )
+			{
+				if (now - it->second.second > m_deduplicateWindowMs * 2)
+					it = m_protocolDedup.erase(it);
+				else
+					++it;
+			}
+		}
+	}
+	bool logIngress = type != "realtime" || duplicate;
+	std::uint64_t ingressCount = 0;
+	if (type == "realtime")
+	{
+		const std::uint64_t count = ++m_protocolIngressRealtimeCount;
+		ingressCount = count;
+		logIngress = logIngress || count <= 3 || (count % 120) == 0;
+	}
+	if (logIngress)
+	{
+		std::cout << "[ProtocolIngress] transport=" << transport << " type=" << type
+			<< " accepted=" << (duplicate ? 0 : 1)
+			<< " duplicate=" << (duplicate ? 1 : 0)
+			<< " platID=" << platID << " sensorID=" << sensorID;
+		if (type == "realtime") std::cout << " ingressCount=" << ingressCount;
+		std::cout << std::endl;
+	}
+	return !duplicate;
 }
 
 void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd) {
@@ -7869,6 +8163,9 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 
 		// 重置仿真状态
 		m_isSimRunning.store(false);
+#if defined(HWASIMIR_HAS_ZRDDS)
+		PublishDdsVideoStatus(false, "reset");
+#endif
 		// Stage2B：同步转发复位控制命令，驱动显示端关闭/重置本回合保存状态。
 		if (m_pTcpThread) {
 			m_pTcpThread->resetFrameCounters();
@@ -7896,6 +8193,9 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		m_perfStats.configure(m_bSyncRenderMode.load(), static_cast<double>(m_targetVideoFps.load()));
 		// TODO: 实现开始仿真逻辑（启动渲染、数据采集等）
 		m_isSimRunning.store(true);
+#if defined(HWASIMIR_HAS_ZRDDS)
+		PublishDdsVideoStatus(true, "start");
+#endif
 		// Stage2B：同步转发开始控制命令，触发显示端开始录制和创建保存目录。
 		if (m_pTcpThread) {
 			m_pTcpThread->resetFrameCounters();
@@ -7911,6 +8211,9 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		std::cout << "执行停止仿真逻辑..." << std::endl;
 		// TODO: 实现停止仿真逻辑（停止渲染、保存数据等）
 		m_isSimRunning.store(false);
+#if defined(HWASIMIR_HAS_ZRDDS)
+		PublishDdsVideoStatus(false, "stop");
+#endif
 		// Stage2B：同步转发停止控制命令，触发显示端 flush 并关闭视频/数据/标注文件。
 		if (m_pTcpThread) {
 			m_pTcpThread->stopOutputRound("stop");
@@ -7937,8 +8240,12 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 // 处理初始化指令并发送应答
 void HwaSimIR::handleInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& cmd)
 {
+	std::ostringstream hashKey;
+	hashKey << std::hex << Fnv1a64(&cmd, sizeof(cmd));
+	if (!AcceptProtocolIngress("udp", "init", hashKey.str(), cmd.platID, cmd.sensorID)) return;
 	PendingNetworkCommand pending;
 	pending.type = PendingNetworkCommandType::Init;
+	pending.transport = "udp";
 	pending.initCmd = cmd;
 	{
 		std::lock_guard<std::mutex> lock(m_mtx);
@@ -7950,7 +8257,26 @@ void HwaSimIR::handleInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& cmd)
 	m_cvNewData.notify_one();
 }
 
-void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCmd& cmd) {
+#if defined(HWASIMIR_HAS_ZRDDS)
+void HwaSimIR::handleDdsInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& cmd)
+{
+	std::ostringstream hashKey;
+	hashKey << std::hex << Fnv1a64(&cmd, sizeof(cmd));
+	if (!AcceptProtocolIngress("dds", "init", hashKey.str(), cmd.platID, cmd.sensorID)) return;
+	PendingNetworkCommand pending;
+	pending.type = PendingNetworkCommandType::Init;
+	pending.transport = "dds";
+	pending.initCmd = cmd;
+	{
+		std::lock_guard<std::mutex> lock(m_mtx);
+		m_pendingNetworkCommands.push_back(pending);
+	}
+	m_cvNewData.notify_one();
+}
+#endif
+
+void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCmd& cmd,
+	const std::string& ingressTransport) {
 	std::lock_guard<std::mutex> lock(m_mtx);
 
 	std::cout << "收到成像初始化指令：" << std::endl;
@@ -7967,7 +8293,8 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 		<< ", videoFps=" << cmd.trackingInit.videoFps
 		<< ", missileMax(AIM120/AIM9/MMD)=" << cmd.MissileMaxCount120 << "/"
 		<< cmd.MissileMaxCount9 << "/" << cmd.MissileMaxCountMMD << std::endl;
-	ApplyRenderControl(cmd.trackingInit.simMode, cmd.trackingInit.videoFps, "udp_init");
+	const std::string renderControlSource = ingressTransport + "_init";
+	ApplyRenderControl(cmd.trackingInit.simMode, cmd.trackingInit.videoFps, renderControlSource.c_str());
 	const int targetVideoFps = m_targetVideoFps.load();
 	m_inputQueueBackpressureLogCount = 0;
 	m_annotationLastProjectionSourceSeq = 0;
@@ -8065,11 +8392,29 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 	ack.sensorID = m_localSensorID;
 	ack.trackingReady = true; // 标记为已准备好（根据实际初始化结果修改）
 
-							  // 发送应答
-	if (m_pUdpThread) {
-		m_pUdpThread->sendInitAck(ack);
+	const bool ackUdp = m_commandTransportAck == "udp" || m_commandTransportAck == "both" ||
+		(m_commandTransportAck == "match_input" && ingressTransport == "udp");
+	const bool ackDds = m_commandTransportAck == "dds" || m_commandTransportAck == "both" ||
+		(m_commandTransportAck == "match_input" && ingressTransport == "dds");
+	bool udpAckOk = !ackUdp;
+	bool ddsAckOk = !ackDds;
+	if (ackUdp && m_pUdpThread) udpAckOk = m_pUdpThread->sendInitAck(ack);
+#if defined(HWASIMIR_HAS_ZRDDS)
+	if (ackDds && m_ddsProtocolEndpoint)
+	{
+		std::string ackError;
+		ddsAckOk = m_ddsProtocolEndpoint->publishInitAck(ack, ackError);
+		if (!ddsAckOk)
+			std::cerr << "[DdsProtocol][ERROR] InitAck reason=" << ackError << std::endl;
 	}
-	std::cout << "发送初始化应答：准备状态=" << (ack.trackingReady ? "就绪" : "未就绪") << std::endl;
+#endif
+	std::cout << "发送初始化应答：准备状态=" << (ack.trackingReady ? "就绪" : "未就绪")
+		<< " ingress=" << ingressTransport
+		<< " udp=" << (ackUdp ? (udpAckOk ? "PASS" : "FAIL") : "OFF")
+		<< " dds=" << (ackDds ? (ddsAckOk ? "PASS" : "FAIL") : "OFF") << std::endl;
+#if defined(HWASIMIR_HAS_ZRDDS)
+	PublishDdsVideoStatus(false, "init");
+#endif
 
 	// Stage2B：同步转发初始化命令，驱动显示端初始化界面和传感器/平台状态。
 	if (m_pTcpThread) {
@@ -8077,8 +8422,43 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 	}
 }
 
+// UDP and DDS ingress converge on the same render-thread business handler.
+void HwaSimIR::handleDisplayData(const BYHWICD::DisplayC2cObjTrackingData& data)
+{
+	std::ostringstream key;
+	key << data.platID << ':' << data.sensorID << ':' << std::setprecision(17) << data.time;
+	if (!AcceptProtocolIngress("udp", "realtime", key.str(), data.platID, data.sensorID)) return;
+	PendingNetworkCommand pending;
+	pending.type = PendingNetworkCommandType::Realtime;
+	pending.transport = "udp";
+	pending.realtimeData = data;
+	{
+		std::lock_guard<std::mutex> lock(m_mtx);
+		m_pendingNetworkCommands.push_back(pending);
+	}
+	m_cvNewData.notify_one();
+}
+
+#if defined(HWASIMIR_HAS_ZRDDS)
+void HwaSimIR::handleDdsDisplayData(const BYHWICD::DisplayC2cObjTrackingData& data)
+{
+	std::ostringstream key;
+	key << data.platID << ':' << data.sensorID << ':' << std::setprecision(17) << data.time;
+	if (!AcceptProtocolIngress("dds", "realtime", key.str(), data.platID, data.sensorID)) return;
+	PendingNetworkCommand pending;
+	pending.type = PendingNetworkCommandType::Realtime;
+	pending.transport = "dds";
+	pending.realtimeData = data;
+	{
+		std::lock_guard<std::mutex> lock(m_mtx);
+		m_pendingNetworkCommands.push_back(pending);
+	}
+	m_cvNewData.notify_one();
+}
+#endif
+
 // 处理实时成像数据包
-void HwaSimIR::handleDisplayData(const BYHWICD::DisplayC2cObjTrackingData& data) {
+void HwaSimIR::ProcessDisplayDataOnMainThread(const BYHWICD::DisplayC2cObjTrackingData& data) {
 	const std::int64_t receiveTimeNs = IRPerfStats::wallTimeNs();
 	std::unique_lock<std::mutex> lock(m_mtx);
 	++m_stage0DisplayFrameCount;

@@ -134,6 +134,7 @@ bool TcpCommThread::start() {
 	m_bIsRunning = true;
 	m_bIsConnected = false;
 	std::string outputError;
+	if (m_ddsRuntime) m_ddsPublisher->setRuntime(m_ddsRuntime);
 	if (!m_ddsPublisher->start(m_ddsConfig, outputError))
 	{
 		std::cerr << "[DdsVideo][FATAL] startup failed reason=" << outputError << std::endl;
@@ -168,6 +169,11 @@ void TcpCommThread::configureDdsVideo(const DdsVideoPublisherConfig& config)
 {
 	m_ddsConfig = config;
 	m_ddsEnabled.store(config.enabled);
+}
+
+void TcpCommThread::configureDdsRuntime(const std::shared_ptr<DdsRuntimeManager>& runtime)
+{
+	m_ddsRuntime = runtime;
 }
 
 void TcpCommThread::configureLocalRecording(const LocalMp4RecorderConfig& config)

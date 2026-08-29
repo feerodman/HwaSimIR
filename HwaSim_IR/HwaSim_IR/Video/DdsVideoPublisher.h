@@ -4,6 +4,9 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <vector>
+
+class DdsRuntimeManager;
 
 struct DdsVideoPublisherConfig
 {
@@ -40,6 +43,9 @@ struct DdsVideoPublisherStats
 	double writeMsAverage = 0.0;
 	double writeMsMaximum = 0.0;
 	double backpressureMs = 0.0;
+	double appCopyMs = 0.0;
+	double enqueueMs = 0.0;
+	double queueWaitMs = 0.0;
 };
 
 // Owns the process-lifetime ZRDDS publisher. It never reads a Panda texture,
@@ -52,8 +58,12 @@ public:
 	~DdsVideoPublisher();
 
 	bool start(const DdsVideoPublisherConfig& config, std::string& error);
+	void setRuntime(const std::shared_ptr<DdsRuntimeManager>& runtime);
 	bool configureTopic(const std::string& topic, bool* changed, std::string& error);
 	bool publishBytes(const std::uint8_t* data, std::size_t size, double* backpressureMs, std::string& error);
+	bool publishOwned(std::vector<std::uint8_t>&& payload, double* backpressureMs, std::string& error);
+	bool publishShared(const std::shared_ptr<const std::vector<std::uint8_t> >& payload,
+		double* backpressureMs, std::string& error);
 	bool flush(int timeoutMs, std::string& error);
 	bool endRound(std::string& error);
 	void shutdown();

@@ -102,7 +102,8 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
     showMaximized();
 
     // m_Label_Video 居中 + 自适应缩放
-    ui.m_Label_Video->setScaledContents(true);
+    ui.m_Label_Video->setScaledContents(false);
+    ui.m_Label_Video->setAlignment(Qt::AlignCenter);
 
     // 设置 dockWidget
     ui.dockWidget_dataShow->setWindowTitle("数据显示");
@@ -134,15 +135,33 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
 		if (ddsHeight > 0) config.height = ddsHeight;
 		if (ddsFps > 0) config.fps = ddsFps;
 		config.dumpFirstFramePath = ddsDumpFirstFrame.trimmed();
+		config.autoFromVideoStatus = ddsTopic.trimmed().isEmpty() && ddsCodec.trimmed().isEmpty() &&
+			ddsWidth <= 0 && ddsHeight <= 0 && ddsFps <= 0;
+		config.topicControl = instanceSettings.value(QStringLiteral("DdsProtocol/TopicControl"),
+			QStringLiteral("HwaSimIR.Control")).toString();
+		config.topicInit = instanceSettings.value(QStringLiteral("DdsProtocol/TopicInit"),
+			QStringLiteral("HwaSimIR.Init")).toString();
+		config.topicRealtime = instanceSettings.value(QStringLiteral("DdsProtocol/TopicRealtime"),
+			QStringLiteral("HwaSimIR.Realtime")).toString();
+		config.topicInitAck = instanceSettings.value(QStringLiteral("DdsProtocol/TopicInitAck"),
+			QStringLiteral("HwaSimIR.InitAck")).toString();
+		config.topicVideoStatus = instanceSettings.value(QStringLiteral("DdsProtocol/TopicVideoStatus"),
+			QStringLiteral("HwaSimIR.VideoStatus")).toString();
 		if (QFileInfo(config.qosFile).isRelative())
 			config.qosFile = QDir(QCoreApplication::applicationDirPath()).filePath(config.qosFile);
 		m_ddsWorker = new DdsVideoReceiverWorker(config);
 		m_ddsWorker->moveToThread(m_workerThread);
 		connect(m_ddsWorker, &DdsVideoReceiverWorker::dataReceived,
 			this, &HwaSim_IR_VideoDisplay::imageReceivedSlot);
+		connect(m_ddsWorker, &DdsVideoReceiverWorker::initCommandReceived,
+			this, &HwaSim_IR_VideoDisplay::initCommandReceivedSlot);
+		connect(m_ddsWorker, &DdsVideoReceiverWorker::controlCmdReceived,
+			this, &HwaSim_IR_VideoDisplay::controlCmdReceivedSlot);
+		connect(m_ddsWorker, &DdsVideoReceiverWorker::videoStatusChanged,
+			this, &HwaSim_IR_VideoDisplay::videoStatusReceivedSlot);
 		connect(m_workerThread, &QThread::finished, m_ddsWorker, &QObject::deleteLater);
 		connect(m_workerThread, &QThread::started, m_ddsWorker, &DdsVideoReceiverWorker::doWork);
-		ui.dockWidget_dataShow->setWindowTitle(QStringLiteral("数据显示 - DDS video-only"));
+		ui.dockWidget_dataShow->setWindowTitle(QStringLiteral("数据显示 - DDS full transport"));
 		qInfo().noquote() << QStringLiteral("[VideoInput] Transport=dds topic=%1 codec=%2 domain=%3")
 			.arg(config.topic).arg(config.codec).arg(config.domainId);
 	}
@@ -421,6 +440,27 @@ quint64 HwaSim_IR_VideoDisplay::receivedFrameCount() const
 	return m_videoPerfFrames;
 }
 
+void HwaSim_IR_VideoDisplay::videoStatusReceivedSlot(const QString& topic,
+	const QString& codec, const QString& pixelFormat, int width, int height,
+	int fps, bool running, int currentRound)
+{
+	m_statusTopic = topic;
+	m_statusCodec = codec;
+	m_statusWidth = qMax(0, width);
+	m_statusHeight = qMax(0, height);
+	m_videoFps = qMax(1, fps);
+	if (m_statusWidth > 0 && m_statusHeight > 0)
+	{
+		m_maxImageWidth = m_statusWidth;
+		m_maxImageHeight = m_statusHeight;
+		centerVideoLabel();
+	}
+	qInfo().noquote() << QStringLiteral(
+		"[VideoStatus] received=1 topic=%1 codec=%2 pixelFormat=%3 width=%4 height=%5 fps=%6 running=%7 round=%8")
+		.arg(topic).arg(codec).arg(pixelFormat).arg(width).arg(height).arg(fps)
+		.arg(running ? 1 : 0).arg(currentRound);
+}
+
 // ==================== 图像帧接收槽 ====================
 void HwaSim_IR_VideoDisplay::imageReceivedSlot(
     const QImage& img,
@@ -454,7 +494,28 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
 
     QElapsedTimer displayTimer;
     displayTimer.start();
-    ui.m_Label_Video->setPixmap(QPixmap::fromImage(img));
+    if (img.width() > 0 && img.height() > 0)
+    {
+		if (m_statusWidth > 0 && m_statusHeight > 0 &&
+			(img.width() != m_statusWidth || img.height() != m_statusHeight))
+		{
+			qWarning().noquote() << QStringLiteral(
+				"[VideoGeometry][WARN] status=%1x%2 decoded=%3x%4")
+				.arg(m_statusWidth).arg(m_statusHeight).arg(img.width()).arg(img.height());
+		}
+		m_maxImageWidth = img.width();
+		m_maxImageHeight = img.height();
+		centerVideoLabel();
+		ui.m_Label_Video->setPixmap(QPixmap::fromImage(img).scaled(
+			ui.m_Label_Video->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+		if (m_videoPerfFrames < 3 || ((m_videoPerfFrames + 1) % 120) == 0)
+		{
+			qInfo().noquote() << QStringLiteral(
+				"[VideoGeometry] statusWidth=%1 statusHeight=%2 decodedWidth=%3 decodedHeight=%4 labelWidth=%5 labelHeight=%6 aspectPreserved=1")
+				.arg(m_statusWidth).arg(m_statusHeight).arg(img.width()).arg(img.height())
+				.arg(ui.m_Label_Video->width()).arg(ui.m_Label_Video->height());
+		}
+    }
     const double displayMs = static_cast<double>(displayTimer.nsecsElapsed()) / 1.0e6;
     const qint64 shownTimeNs = wallTimeNs();
 

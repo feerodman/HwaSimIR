@@ -37,7 +37,12 @@
 #include <cmath>
 #include <iomanip>
 #include <QVector>
+#include <memory>
 #include "ICD/common_data.h"
+
+#if defined(HWASIMIR_HAS_ZRDDS)
+#include "DdsStimClient.h"
+#endif
 
 using namespace ICD;
 
@@ -50,6 +55,7 @@ public:
 		const QString& networkConfigPath = QString(),
 		const QString& channel = QString(),
 		const QString& inputDataPath = QString(),
+		const QString& controlTransport = QStringLiteral("udp"),
 		QWidget *parent = nullptr);
 	~MainWindow();
 	void setH264EnabledForTest(bool enabled) { m_h264Enabled = enabled; }
@@ -58,6 +64,9 @@ public:
 	void configureProtocolForTest(int platID, int sensorID, int simMode, int videoFps);
 	void configureEnvironmentForTest(int envSky, int sensorBand);
 	void setSensorPixelAngleForTest(double pixelAngleUrad);
+
+signals:
+	void initAckReceived();
 
 	private slots:
 	void onResetButtonClicked();
@@ -71,6 +80,7 @@ private:
 	void setupUI();
 	void loadNetworkConfig();
 	void setupUDP();
+	void setupDDS();
 	void sendControlCommand(int command);
 	void sendInitCommand();
 	void sendRealTimeData();
@@ -91,6 +101,7 @@ private:
 	QString m_networkConfigPath;
 	QString m_inputDataPath;
 	QString m_channel = QStringLiteral("unknown");
+	QString m_controlTransport = QStringLiteral("udp");
 	int m_protocolPlatID = 1001;
 	int m_protocolSensorID = 2;
 	int m_protocolSimMode = 2;
@@ -148,7 +159,10 @@ private:
 	QLabel *m_lastReceivedLabel;
 
 	// UDP Socket
-	QUdpSocket *m_udpSocket;
+	QUdpSocket *m_udpSocket = nullptr;
+#if defined(HWASIMIR_HAS_ZRDDS)
+	std::unique_ptr<DdsStimClient> m_ddsStim;
+#endif
 	QTimer *m_realTimeTimer;
 	QElapsedTimer m_sendClock;
 	bool m_isRealtimeSending = false;

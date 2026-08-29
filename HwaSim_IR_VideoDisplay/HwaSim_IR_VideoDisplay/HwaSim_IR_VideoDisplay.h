@@ -56,6 +56,9 @@ public slots:
         const QString& imageFormat);
     void initCommandReceivedSlot(const BYHWICD::InitP2cObjectTrackingCmd& cmd);
     void controlCmdReceivedSlot(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd);
+	void videoStatusReceivedSlot(const QString& topic, const QString& codec,
+		const QString& pixelFormat, int width, int height, int fps,
+		bool running, int currentRound);
 
 private:
     void updatePlatDataTable(int platID, const BYHWICD::SpatialState& platLoc);
@@ -82,6 +85,10 @@ private:
     int m_maxImageWidth = 0;
     int m_maxImageHeight = 0;
     int m_videoFps = 25;
+	int m_statusWidth = 0;
+	int m_statusHeight = 0;
+	QString m_statusTopic;
+	QString m_statusCodec;
     int m_uiUpdateEveryFrames = 5;
     int m_maxRecordingQueueFrames = 180;
     int m_recorderFlushTimeoutMs = 10000;

@@ -9,8 +9,13 @@
 #include <chrono>
 #include <cmath>
 #include <cstring>
+#include <mutex>
 
 #include "Video/VideoDecoder.h"
+#include "CommonDataDdsAdapter.h"
+#include "DdsRuntimeManager.h"
+#include "HwaSimIRProtocolV1DataReader.h"
+#include "HwaSimIRProtocolV1TypeSupport.h"
 
 #if defined(HWASIMIR_HAS_ZRDDS)
 #include "ZRDDSCppSimpleInterface.h"
@@ -29,10 +34,23 @@ qint64 WallTimeNs()
 struct DdsVideoReceiverWorker::Impl
 {
 	std::unique_ptr<H264FfmpegDecoder> h264Decoder;
+	std::shared_ptr<DdsRuntimeManager> runtime;
+	std::mutex statusMutex;
+	bool statusPending = false;
+	QString pendingTopic;
+	QString pendingCodec;
+	QString pendingPixelFormat;
+	int pendingWidth = 0;
+	int pendingHeight = 0;
+	int pendingFps = 0;
+	bool pendingRunning = false;
+	int pendingRound = 0;
 #if defined(HWASIMIR_HAS_ZRDDS)
-	DomainParticipantFactory* factory = nullptr;
-	DomainParticipant* participant = nullptr;
 	DataReader* reader = nullptr;
+	DataReader* statusReader = nullptr;
+	DataReader* controlReader = nullptr;
+	DataReader* initReader = nullptr;
+	DataReader* realtimeReader = nullptr;
 #endif
 };
 
@@ -45,6 +63,83 @@ public:
 	{
 		const char* data = reinterpret_cast<const char*>(sample.value.get_contiguous_buffer());
 		m_owner->processSample(data, static_cast<int>(sample.value.length()));
+	}
+private:
+	DdsVideoReceiverWorker* m_owner;
+};
+
+class DdsVideoStatusListener : public SimpleDataReaderListener<
+	HwaSimIRDds::VideoStatusV1, HwaSimIRDds::VideoStatusV1Seq,
+	HwaSimIRDds::VideoStatusV1DataReader>
+{
+public:
+	explicit DdsVideoStatusListener(DdsVideoReceiverWorker* owner) : m_owner(owner) {}
+	void on_process_sample(DataReader*, const HwaSimIRDds::VideoStatusV1& sample,
+		const SampleInfo&) override
+	{
+		m_owner->processVideoStatus(QString::fromLatin1(sample.videoTopic),
+			QString::fromLatin1(sample.codec), QString::fromLatin1(sample.pixelFormat),
+			sample.width, sample.height, sample.fps, sample.running, sample.currentRound);
+	}
+private:
+	DdsVideoReceiverWorker* m_owner;
+};
+
+class DdsDisplayControlListener : public SimpleDataReaderListener<
+	HwaSimIRDds::ControlCommandV1, HwaSimIRDds::ControlCommandV1Seq,
+	HwaSimIRDds::ControlCommandV1DataReader>
+{
+public:
+	explicit DdsDisplayControlListener(DdsVideoReceiverWorker* owner) : m_owner(owner) {}
+	void on_process_sample(DataReader*, const HwaSimIRDds::ControlCommandV1& sample,
+		const SampleInfo&) override
+	{
+		qInfo().noquote() << QStringLiteral(
+			"[DdsProtocolReceiver] type=control platID=%1 command=%2 round=%3")
+			.arg(sample.platID).arg(sample.simCommand).arg(sample.currentRound);
+		emit m_owner->controlCmdReceived(HwaSimIRDdsAdapter::FromDds(sample));
+	}
+private:
+	DdsVideoReceiverWorker* m_owner;
+};
+
+class DdsDisplayInitListener : public SimpleDataReaderListener<
+	HwaSimIRDds::InitCommandV1, HwaSimIRDds::InitCommandV1Seq,
+	HwaSimIRDds::InitCommandV1DataReader>
+{
+public:
+	explicit DdsDisplayInitListener(DdsVideoReceiverWorker* owner) : m_owner(owner) {}
+	void on_process_sample(DataReader*, const HwaSimIRDds::InitCommandV1& sample,
+		const SampleInfo&) override
+	{
+		qInfo().noquote() << QStringLiteral(
+			"[DdsProtocolReceiver] type=init platID=%1 sensorID=%2 simMode=%3 videoFps=%4")
+			.arg(sample.platID).arg(sample.sensorID).arg(sample.trackingInit.simMode)
+			.arg(sample.trackingInit.videoFps);
+		emit m_owner->initCommandReceived(HwaSimIRDdsAdapter::FromDds(sample));
+	}
+private:
+	DdsVideoReceiverWorker* m_owner;
+};
+
+class DdsDisplayRealtimeListener : public SimpleDataReaderListener<
+	HwaSimIRDds::RealtimeDataV1, HwaSimIRDds::RealtimeDataV1Seq,
+	HwaSimIRDds::RealtimeDataV1DataReader>
+{
+public:
+	explicit DdsDisplayRealtimeListener(DdsVideoReceiverWorker* owner) : m_owner(owner) {}
+	void on_process_sample(DataReader*, const HwaSimIRDds::RealtimeDataV1& sample,
+		const SampleInfo&) override
+	{
+		static std::atomic<quint64> count(0);
+		const quint64 current = count.fetch_add(1) + 1;
+		if (current <= 3 || (current % 120) == 0)
+		{
+			qInfo().noquote() << QStringLiteral(
+				"[DdsProtocolReceiver] type=realtime count=%1 platID=%2 sensorID=%3 time=%4")
+				.arg(current).arg(sample.platID).arg(sample.sensorID).arg(sample.time, 0, 'f', 3);
+		}
+		m_owner->processRealtime(HwaSimIRDdsAdapter::FromDds(sample));
 	}
 private:
 	DdsVideoReceiverWorker* m_owner;
@@ -70,6 +165,10 @@ void DdsVideoReceiverWorker::doWork()
 	return;
 #else
 	DdsBytesListener listener(this);
+	DdsVideoStatusListener statusListener(this);
+	DdsDisplayControlListener controlListener(this);
+	DdsDisplayInitListener initListener(this);
+	DdsDisplayRealtimeListener realtimeListener(this);
 	const QFileInfo qosInfo(m_config.qosFile);
 	const QString resolvedQos = qosInfo.absoluteFilePath();
 	const bool qosExists = qosInfo.exists() && qosInfo.isFile();
@@ -83,46 +182,140 @@ void DdsVideoReceiverWorker::doWork()
 		emit fatalError(reason);
 		return;
 	}
-	const QByteArray qos = m_config.qosFile.toLocal8Bit();
+	DdsRuntimeConfig runtimeConfig;
+	runtimeConfig.domainId = m_config.domainId;
+	runtimeConfig.qosFile = m_config.qosFile.toLocal8Bit().constData();
+	m_impl->runtime.reset(new DdsRuntimeManager());
+	std::string runtimeError;
+	if (!m_impl->runtime->start(runtimeConfig, runtimeError))
+	{
+		const QString reason = QString::fromStdString(runtimeError);
+		qCritical().noquote() << QStringLiteral("[DdsVideoReceiver][FATAL] %1").arg(reason);
+		emit fatalError(reason);
+		return;
+	}
+	DomainParticipant* participant = m_impl->runtime->participant();
 	const QByteArray topic = m_config.topic.toLatin1();
-	m_impl->factory = DDSIF::Init(qos.constData(), "hwasimir_factory");
-	if (!m_impl->factory)
-	{
-		const QString reason = QStringLiteral("DDSIF::Init failed qos=%1").arg(m_config.qosFile);
-		qCritical().noquote() << QStringLiteral("[DdsVideoReceiver][FATAL] %1").arg(reason);
-		emit fatalError(reason);
-		return;
-	}
-	m_impl->participant = DDSIF::CreateDP(m_config.domainId, "hwasimir_tcp");
-	if (!m_impl->participant)
-	{
-		const QString reason = QStringLiteral("DDSIF::CreateDP failed domain=%1").arg(m_config.domainId);
-		qCritical().noquote() << QStringLiteral("[DdsVideoReceiver][FATAL] %1").arg(reason);
-		emit fatalError(reason);
-		DDSIF::Finalize();
-		return;
-	}
-	m_impl->reader = DDSIF::SubTopic(m_impl->participant, topic.constData(),
+	m_impl->reader = DDSIF::SubTopic(participant, topic.constData(),
 		BytesTypeSupport::get_instance(), "hwasimir_reliable_reader", &listener);
-	if (!m_impl->reader)
+	m_impl->statusReader = DDSIF::SubTopic(participant, m_config.topicVideoStatus.toLatin1().constData(),
+		HwaSimIRDds::VideoStatusV1TypeSupport::get_instance(), "hwasimir_status_reader", &statusListener);
+	m_impl->controlReader = DDSIF::SubTopic(participant, m_config.topicControl.toLatin1().constData(),
+		HwaSimIRDds::ControlCommandV1TypeSupport::get_instance(), "hwasimir_protocol_reader", &controlListener);
+	m_impl->initReader = DDSIF::SubTopic(participant, m_config.topicInit.toLatin1().constData(),
+		HwaSimIRDds::InitCommandV1TypeSupport::get_instance(), "hwasimir_protocol_reader", &initListener);
+	m_impl->realtimeReader = DDSIF::SubTopic(participant, m_config.topicRealtime.toLatin1().constData(),
+		HwaSimIRDds::RealtimeDataV1TypeSupport::get_instance(), "hwasimir_protocol_reader", &realtimeListener);
+	if (!m_impl->reader || !m_impl->statusReader || !m_impl->controlReader ||
+		!m_impl->initReader || !m_impl->realtimeReader)
 	{
-		const QString reason = QStringLiteral("DDSIF::SubTopic failed topic=%1").arg(m_config.topic);
+		const QString reason = QStringLiteral("DDS full reader creation failed video=%1 status=%2")
+			.arg(m_config.topic).arg(m_config.topicVideoStatus);
 		qCritical().noquote() << QStringLiteral("[DdsVideoReceiver][FATAL] %1").arg(reason);
 		emit fatalError(reason);
-		DDSIF::Finalize();
+		if (m_impl->reader) DDSIF::UnSubTopic(m_impl->reader);
+		if (m_impl->statusReader) DDSIF::UnSubTopic(m_impl->statusReader);
+		if (m_impl->controlReader) DDSIF::UnSubTopic(m_impl->controlReader);
+		if (m_impl->initReader) DDSIF::UnSubTopic(m_impl->initReader);
+		if (m_impl->realtimeReader) DDSIF::UnSubTopic(m_impl->realtimeReader);
+		m_impl->runtime->shutdown();
 		return;
 	}
 	qInfo().noquote() << QStringLiteral(
-		"[DdsVideoReceiver] ready=1 initCount=1 domain=%1 topic=%2 codec=%3 width=%4 height=%5 fps=%6 wireType=DDS::Bytes videoOnly=1")
+		"[DdsVideoReceiver] ready=1 initCount=%7 domain=%1 topic=%2 codec=%3 width=%4 height=%5 fps=%6 wireType=DDS::Bytes fullTransport=1")
 		.arg(m_config.domainId).arg(m_config.topic).arg(m_config.codec)
-		.arg(m_config.width).arg(m_config.height).arg(m_config.fps);
-	while (!m_stop.load()) QThread::msleep(50);
-	const ReturnCode_t result = DDSIF::Finalize();
+		.arg(m_config.width).arg(m_config.height).arg(m_config.fps).arg(m_impl->runtime->initCount());
+	while (!m_stop.load())
+	{
+		QString nextTopic, nextCodec, nextPixelFormat;
+		int nextWidth = 0, nextHeight = 0, nextFps = 0, nextRound = 0;
+		bool nextRunning = false, pending = false;
+		{
+			std::lock_guard<std::mutex> lock(m_impl->statusMutex);
+			pending = m_impl->statusPending;
+			if (pending)
+			{
+				nextTopic = m_impl->pendingTopic;
+				nextCodec = m_impl->pendingCodec;
+				nextPixelFormat = m_impl->pendingPixelFormat;
+				nextWidth = m_impl->pendingWidth;
+				nextHeight = m_impl->pendingHeight;
+				nextFps = m_impl->pendingFps;
+				nextRunning = m_impl->pendingRunning;
+				nextRound = m_impl->pendingRound;
+				m_impl->statusPending = false;
+			}
+		}
+		if (pending)
+		{
+			const QString resolvedCodec = nextCodec.trimmed().toLower() == QStringLiteral("raw")
+				? (nextPixelFormat.trimmed().toLower() == QStringLiteral("bgr24")
+					? QStringLiteral("raw_bgr24") : QStringLiteral("raw_gray8"))
+				: nextCodec.trimmed().toLower();
+			if (m_config.autoFromVideoStatus && !nextTopic.isEmpty() &&
+				(nextTopic != m_config.topic || resolvedCodec != m_config.codec ||
+				 nextWidth != m_config.width || nextHeight != m_config.height || nextFps != m_config.fps))
+			{
+				DDSIF::UnSubTopic(m_impl->reader);
+				m_impl->reader = nullptr;
+				m_impl->h264Decoder.reset(new H264FfmpegDecoder());
+				m_config.topic = nextTopic;
+				m_config.codec = resolvedCodec;
+				m_config.width = qMax(1, nextWidth);
+				m_config.height = qMax(1, nextHeight);
+				m_config.fps = qMax(1, nextFps);
+				m_impl->reader = DDSIF::SubTopic(participant, m_config.topic.toLatin1().constData(),
+					BytesTypeSupport::get_instance(), "hwasimir_reliable_reader", &listener);
+				if (!m_impl->reader)
+				{
+					++m_ddsErrors;
+					emit fatalError(QStringLiteral("VideoStatus topic switch failed: %1").arg(m_config.topic));
+					break;
+				}
+				qInfo().noquote() << QStringLiteral(
+					"[VideoStatus] applied=1 topic=%1 codec=%2 width=%3 height=%4 fps=%5 round=%6 running=%7")
+					.arg(m_config.topic).arg(m_config.codec).arg(m_config.width).arg(m_config.height)
+					.arg(m_config.fps).arg(nextRound).arg(nextRunning ? 1 : 0);
+			}
+			emit videoStatusChanged(nextTopic, nextCodec, nextPixelFormat,
+				nextWidth, nextHeight, nextFps, nextRunning, nextRound);
+		}
+		QThread::msleep(20);
+	}
+	if (m_impl->reader) DDSIF::UnSubTopic(m_impl->reader);
+	if (m_impl->statusReader) DDSIF::UnSubTopic(m_impl->statusReader);
+	if (m_impl->controlReader) DDSIF::UnSubTopic(m_impl->controlReader);
+	if (m_impl->initReader) DDSIF::UnSubTopic(m_impl->initReader);
+	if (m_impl->realtimeReader) DDSIF::UnSubTopic(m_impl->realtimeReader);
+	m_impl->reader = m_impl->statusReader = m_impl->controlReader =
+		m_impl->initReader = m_impl->realtimeReader = nullptr;
+	m_impl->runtime->shutdown();
 	qInfo().noquote() << QStringLiteral(
-		"[DdsVideoReceiverPerf] receivedSamples=%1 receivedBytes=%2 ddsErrors=%3 finalizeCode=%4")
+		"[DdsVideoReceiverPerf] receivedSamples=%1 receivedBytes=%2 ddsErrors=%3 finalizeCode=manager")
 		.arg(m_receivedSamples.load()).arg(m_receivedBytes.load())
-		.arg(m_ddsErrors.load()).arg(static_cast<int>(result));
+		.arg(m_ddsErrors.load());
 #endif
+}
+
+void DdsVideoReceiverWorker::processVideoStatus(const QString& topic, const QString& codec,
+	const QString& pixelFormat, int width, int height, int fps, bool running, int currentRound)
+{
+	std::lock_guard<std::mutex> lock(m_impl->statusMutex);
+	m_impl->pendingTopic = topic;
+	m_impl->pendingCodec = codec;
+	m_impl->pendingPixelFormat = pixelFormat;
+	m_impl->pendingWidth = width;
+	m_impl->pendingHeight = height;
+	m_impl->pendingFps = fps;
+	m_impl->pendingRunning = running;
+	m_impl->pendingRound = currentRound;
+	m_impl->statusPending = true;
+}
+
+void DdsVideoReceiverWorker::processRealtime(const BYHWICD::DisplayC2cObjTrackingData& data)
+{
+	emit dataReceived(QImage(), data, QString(), false, true, false, 0, 0, 0,
+		false, 0, 0, 0, WallTimeNs(), 0.0, 0, QStringLiteral("dds_realtime"));
 }
 
 void DdsVideoReceiverWorker::processSample(const char* data, int size)

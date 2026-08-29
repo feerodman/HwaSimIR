@@ -16,6 +16,7 @@
 #include <unordered_set>
 #include <vector>
 #include <atomic>
+#include <memory>
 
 
 #include "pandaSystem.h"
@@ -58,6 +59,11 @@
 #include "IR/IRWeatherEffects.h"
 #include "IR/IRWorldCloudStreaming.h"
 #include "Annotation/AnnotationManager.h"
+
+#include "HwaSimIRProtocolEndpoint.h"
+#if defined(HWASIMIR_HAS_ZRDDS)
+#include "DdsRuntimeManager.h"
+#endif
 
 #include "shader.h"             // 新增：着色器支持
 #include "clockObject.h"        // 新增：获取全局时间
@@ -130,6 +136,11 @@ public:
 	void handleInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& cmd);
 	// 处理实时成像数据包
 	void handleDisplayData(const BYHWICD::DisplayC2cObjTrackingData& data);
+#if defined(HWASIMIR_HAS_ZRDDS)
+	void handleDdsControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd);
+	void handleDdsInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& cmd);
+	void handleDdsDisplayData(const BYHWICD::DisplayC2cObjTrackingData& data);
+#endif
 
 	// VisibleWindow UI初始化（键盘、背景、帧率显示等）
 	void InitVisibleWindowUi();
@@ -166,19 +177,30 @@ private:
 	enum class PendingNetworkCommandType
 	{
 		Control,
-		Init
+		Init,
+		Realtime
 	};
 
 	struct PendingNetworkCommand
 	{
 		PendingNetworkCommandType type = PendingNetworkCommandType::Control;
+		std::string transport = "udp";
 		BYHWICD::ControlP2cX1ObjTrackingCmd controlCmd{};
 		BYHWICD::InitP2cObjectTrackingCmd initCmd{};
+		BYHWICD::DisplayC2cObjTrackingData realtimeData{};
 	};
 
 	void ProcessPendingNetworkCommands();
 	void ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd);
-	void ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCmd& cmd);
+	void ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCmd& cmd,
+		const std::string& ingressTransport = "udp");
+	void ProcessDisplayDataOnMainThread(const BYHWICD::DisplayC2cObjTrackingData& data);
+	bool AcceptProtocolIngress(const std::string& transport, const std::string& type,
+		const std::string& semanticKey, int platID, int sensorID);
+#if defined(HWASIMIR_HAS_ZRDDS)
+	bool InitDdsProtocol();
+	void PublishDdsVideoStatus(bool running, const char* reason);
+#endif
 	void LoadRenderControlConfig();
 	void ApplyRenderControl(int externalSimMode, int externalVideoFps, const char* requestSource);
 	void ResetRenderSchedulingState();
@@ -295,6 +317,20 @@ private:
 	bool m_tcpForwardInitControl = true;
 	DdsVideoPublisherConfig m_ddsVideoConfig;
 	LocalMp4RecorderConfig m_localRecordingConfig;
+	std::string m_commandTransportInput = "udp";
+	std::string m_commandTransportAck = "match_input";
+	bool m_ddsProtocolEnabled = false;
+	DdsProtocolConfig m_ddsProtocolConfig;
+	bool m_deduplicateWhenBoth = true;
+	int m_deduplicateWindowMs = 1000;
+	std::mutex m_protocolDedupMutex;
+	std::map<std::string, std::pair<std::string, std::int64_t> > m_protocolDedup;
+	std::int64_t m_lastVideoStatusRefreshNs = 0;
+	std::uint64_t m_protocolIngressRealtimeCount = 0;
+#if defined(HWASIMIR_HAS_ZRDDS)
+	std::shared_ptr<DdsRuntimeManager> m_ddsRuntime;
+	std::unique_ptr<HwaSimIRProtocolEndpoint> m_ddsProtocolEndpoint;
+#endif
 	std::uint64_t m_lastIrUpdateSourceSeq = 0;
 	std::uint64_t m_irBreakdownUpdateCounter = 0;
 	double m_stage7LastFullUpdateTime = -1.0;
@@ -649,6 +685,7 @@ private:
 
 	// 初始化UDP通讯线程
 	bool InitUdpThread();
+	void LoadF1ProtocolConfig();
 	// 初始化UDP通讯线程
 	bool InitTcpThread();
 	void LoadD2VideoOutputConfig();

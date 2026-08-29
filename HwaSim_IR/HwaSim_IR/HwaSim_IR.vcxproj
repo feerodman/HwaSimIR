@@ -147,7 +147,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>$(FFmpegDefinitions)$(ZrddsDefinitions)NDEBUG;_CONSOLE;GEOGRAPHICLIB_SHARED_LIB=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(FFmpegIncludeDir)$(ZrddsIncludeDirs).\opencv2-440;.\CoordinateConverter;.\Eigen;.\Common;$(PANDA3D_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(FFmpegIncludeDir)$(ZrddsIncludeDirs)..\..\DDS\Protocol;..\..\DDS\Runtime;..\..\DDS\Generated\HwaSimIRProtocolV1;.\opencv2-440;.\CoordinateConverter;.\Eigen;.\Common;$(PANDA3D_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -209,6 +209,8 @@
     <ClInclude Include="Video\VideoEncoder.h" />
     <ClInclude Include="Video\DdsVideoPublisher.h" />
     <ClInclude Include="Video\LocalMp4Recorder.h" />
+    <ClInclude Include="..\..\DDS\Protocol\HwaSimIRProtocolEndpoint.h" />
+    <ClInclude Include="..\..\DDS\Runtime\DdsRuntimeManager.h" Condition="'$(ZrddsEnabled)' == 'true'" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Annotation\AnnotationConfig.cpp" />
@@ -247,6 +249,11 @@
     <ClCompile Include="Video\JpegFrameEncoder.cpp" />
     <ClCompile Include="Video\DdsVideoPublisher.cpp" />
     <ClCompile Include="Video\LocalMp4Recorder.cpp" />
+    <ClCompile Include="..\..\DDS\Runtime\DdsRuntimeManager.cpp" Condition="'$(ZrddsEnabled)' == 'true'" />
+    <ClCompile Include="..\..\DDS\Protocol\CommonDataDdsAdapter.cpp" Condition="'$(ZrddsEnabled)' == 'true'" />
+    <ClCompile Include="..\..\DDS\Protocol\HwaSimIRProtocolEndpoint.cpp" Condition="'$(ZrddsEnabled)' == 'true'" />
+    <ClCompile Include="..\..\DDS\Generated\HwaSimIRProtocolV1\HwaSimIRProtocolV1.cpp" Condition="'$(ZrddsEnabled)' == 'true'" />
+    <ClCompile Include="..\..\DDS\Generated\HwaSimIRProtocolV1\HwaSimIRProtocolV1TypeSupport.cpp" Condition="'$(ZrddsEnabled)' == 'true'" />
   </ItemGroup>
   <ItemGroup Condition="'$(FFmpegEnabled)' == 'true'">
     <FFmpegRuntimeDll Include="$(FFMPEG_ROOT)\bin\*.dll" />

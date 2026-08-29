@@ -30,6 +30,7 @@
 #include "Video/LocalMp4Recorder.h"
 
 class HwaSimIR;
+class DdsRuntimeManager;
 
 class TcpCommThread {
 public:
@@ -69,6 +70,7 @@ public:
 		bool sendRealtimeData,
 		bool forwardInitControl);
 	void configureDdsVideo(const DdsVideoPublisherConfig& config);
+	void configureDdsRuntime(const std::shared_ptr<DdsRuntimeManager>& runtime);
 	void configureLocalRecording(const LocalMp4RecorderConfig& config);
 	void setH264Requested(bool enabled, int videoFps = 60);
 	void setLocalRecordingProtocolEnabled(bool enabled);
@@ -201,6 +203,7 @@ private:
 	DdsVideoPublisherConfig m_ddsConfig;
 	LocalMp4RecorderConfig m_recordingConfig;
 	std::unique_ptr<DdsVideoPublisher> m_ddsPublisher;
+	std::shared_ptr<DdsRuntimeManager> m_ddsRuntime;
 	std::unique_ptr<LocalMp4Recorder> m_localRecorder;
 	std::atomic<bool> m_ddsEnabled{ false };
 	std::atomic<bool> m_outputRoundActive{ false };

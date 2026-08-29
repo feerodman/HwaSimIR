@@ -5,6 +5,7 @@
 #include <QString>
 #include <atomic>
 #include <memory>
+#include <mutex>
 
 #include "CommonData.h"
 
@@ -20,6 +21,12 @@ struct DdsVideoReceiverConfig
 	int height = 800;
 	int fps = 60;
 	QString dumpFirstFramePath;
+	bool autoFromVideoStatus = true;
+	QString topicControl = QStringLiteral("HwaSimIR.Control");
+	QString topicInit = QStringLiteral("HwaSimIR.Init");
+	QString topicRealtime = QStringLiteral("HwaSimIR.Realtime");
+	QString topicInitAck = QStringLiteral("HwaSimIR.InitAck");
+	QString topicVideoStatus = QStringLiteral("HwaSimIR.VideoStatus");
 };
 
 class DdsVideoReceiverWorker : public QObject
@@ -54,10 +61,23 @@ signals:
 		int decodedChannels,
 		const QString& imageFormat);
 	void fatalError(const QString& reason);
+	void initCommandReceived(const BYHWICD::InitP2cObjectTrackingCmd& cmd);
+	void controlCmdReceived(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd);
+	void videoStatusChanged(const QString& topic, const QString& codec,
+		const QString& pixelFormat, int width, int height, int fps, bool running,
+		int currentRound);
 
 private:
 	friend class DdsBytesListener;
+	friend class DdsVideoStatusListener;
+	friend class DdsDisplayControlListener;
+	friend class DdsDisplayInitListener;
+	friend class DdsDisplayRealtimeListener;
 	void processSample(const char* data, int size);
+	void processVideoStatus(const QString& topic, const QString& codec,
+		const QString& pixelFormat, int width, int height, int fps,
+		bool running, int currentRound);
+	void processRealtime(const BYHWICD::DisplayC2cObjTrackingData& data);
 	struct Impl;
 	std::unique_ptr<Impl> m_impl;
 	DdsVideoReceiverConfig m_config;
