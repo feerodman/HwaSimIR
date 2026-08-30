@@ -16,6 +16,8 @@ struct DdsVideoPublisherConfig
 	std::string topic;
 	std::string codec = "auto";
 	std::string rawPixelFormat = "gray8";
+	std::string topicMode = "identity";
+	std::string topicPattern = "HwaSimIR.Video.{platID}.{sensorID}.{codec}";
 	std::string topicH264Precise = "HwaSimIR.Video.precise.H264";
 	std::string topicRawGray8Precise = "HwaSimIR.Video.precise.RawGray8";
 	std::string topicRawBgr24Precise = "HwaSimIR.Video.precise.RawBGR24";

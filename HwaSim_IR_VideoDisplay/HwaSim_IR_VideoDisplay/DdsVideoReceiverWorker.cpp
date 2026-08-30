@@ -11,6 +11,7 @@
 #include <cstring>
 #include <mutex>
 #include <set>
+#include <vector>
 
 #include "Video/VideoDecoder.h"
 #include "CommonDataDdsAdapter.h"
@@ -46,6 +47,8 @@ struct DdsVideoReceiverWorker::Impl
 	int pendingFps = 0;
 	bool pendingRunning = false;
 	int pendingRound = 0;
+	int pendingPlatID = -1;
+	int pendingSensorID = -1;
 	std::mutex syncMutex;
 	int syncRound = 0;
 	quint64 syncVideo = 0;
@@ -65,6 +68,9 @@ struct DdsVideoReceiverWorker::Impl
 	DataReader* realtimeReader = nullptr;
 	DataReader* metaReader = nullptr;
 	DataReader* annotationReader = nullptr;
+	std::vector<DataReader*> retiredVideoReaders;
+	std::vector<DataReader*> retiredMetaReaders;
+	std::vector<DataReader*> retiredAnnotationReaders;
 #endif
 };
 
@@ -73,8 +79,9 @@ class DdsBytesListener : public SimpleDataReaderListener<Bytes, BytesSeq, BytesD
 {
 public:
 	explicit DdsBytesListener(DdsVideoReceiverWorker* owner) : m_owner(owner) {}
-	void on_process_sample(DataReader*, const Bytes& sample, const SampleInfo&) override
+	void on_process_sample(DataReader* reader, const Bytes& sample, const SampleInfo&) override
 	{
+		if (reader != m_owner->m_impl->reader) return;
 		const char* data = reinterpret_cast<const char*>(sample.value.get_contiguous_buffer());
 		m_owner->processSample(data, static_cast<int>(sample.value.length()));
 	}
@@ -91,8 +98,12 @@ public:
 	void on_process_sample(DataReader*, const HwaSimIRDds::VideoStatusV1& sample,
 		const SampleInfo&) override
 	{
-		if (QString::fromLatin1(sample.channel) != m_owner->m_config.channel) return;
-		m_owner->processVideoStatus(QString::fromLatin1(sample.videoTopic),
+		if (m_owner->m_config.platID >= 0 && sample.platID != m_owner->m_config.platID) return;
+		if (m_owner->m_config.sensorID >= 0 && sample.sensorID != m_owner->m_config.sensorID) return;
+		if (m_owner->m_config.platID < 0 && m_owner->m_config.sensorID < 0 &&
+			QString::fromLatin1(sample.channel) != m_owner->m_config.channel) return;
+		m_owner->processVideoStatus(sample.platID, sample.sensorID,
+			QString::fromLatin1(sample.videoTopic),
 			QString::fromLatin1(sample.codec), QString::fromLatin1(sample.pixelFormat),
 			sample.width, sample.height, sample.fps, sample.running, sample.currentRound);
 	}
@@ -106,10 +117,12 @@ class DdsVideoMetaListener : public SimpleDataReaderListener<
 {
 public:
 	explicit DdsVideoMetaListener(DdsVideoReceiverWorker* owner) : m_owner(owner) {}
-	void on_process_sample(DataReader*, const HwaSimIRDds::VideoFrameMetaV1& sample,
+	void on_process_sample(DataReader* reader, const HwaSimIRDds::VideoFrameMetaV1& sample,
 		const SampleInfo&) override
 	{
-		if (QString::fromLatin1(sample.channel) != m_owner->m_config.channel) return;
+		if (reader != m_owner->m_impl->metaReader) return;
+		if (m_owner->m_config.platID >= 0 && sample.platID != m_owner->m_config.platID) return;
+		if (m_owner->m_config.sensorID >= 0 && sample.sensorID != m_owner->m_config.sensorID) return;
 		m_owner->processVideoMeta(sample.currentRound, sample.frameSeq, sample.ptsMs);
 	}
 private:
@@ -122,10 +135,12 @@ class DdsAnnotationListener : public SimpleDataReaderListener<
 {
 public:
 	explicit DdsAnnotationListener(DdsVideoReceiverWorker* owner) : m_owner(owner) {}
-	void on_process_sample(DataReader*, const HwaSimIRDds::AnnotationFrameV1& sample,
+	void on_process_sample(DataReader* reader, const HwaSimIRDds::AnnotationFrameV1& sample,
 		const SampleInfo&) override
 	{
-		if (QString::fromLatin1(sample.channel) != m_owner->m_config.channel) return;
+		if (reader != m_owner->m_impl->annotationReader) return;
+		if (m_owner->m_config.platID >= 0 && sample.platID != m_owner->m_config.platID) return;
+		if (m_owner->m_config.sensorID >= 0 && sample.sensorID != m_owner->m_config.sensorID) return;
 		m_owner->processAnnotation(sample.currentRound, sample.frameSeq, sample.ptsMs,
 			QString::fromUtf8(sample.json));
 	}
@@ -142,6 +157,7 @@ public:
 	void on_process_sample(DataReader*, const HwaSimIRDds::ControlCommandV1& sample,
 		const SampleInfo&) override
 	{
+		if (m_owner->m_config.platID >= 0 && sample.platID != m_owner->m_config.platID) return;
 		qInfo().noquote() << QStringLiteral(
 			"[DdsProtocolReceiver] type=control platID=%1 command=%2 round=%3")
 			.arg(sample.platID).arg(sample.simCommand).arg(sample.currentRound);
@@ -160,6 +176,9 @@ public:
 	void on_process_sample(DataReader*, const HwaSimIRDds::InitCommandV1& sample,
 		const SampleInfo&) override
 	{
+		if (m_owner->m_config.platID >= 0 && sample.platID != m_owner->m_config.platID) return;
+		if (m_owner->m_config.sensorID >= 0 && sample.sensorID != m_owner->m_config.sensorID &&
+			sample.sensorID != 255) return;
 		qInfo().noquote() << QStringLiteral(
 			"[DdsProtocolReceiver] type=init platID=%1 sensorID=%2 simMode=%3 videoFps=%4")
 			.arg(sample.platID).arg(sample.sensorID).arg(sample.trackingInit.simMode)
@@ -179,6 +198,9 @@ public:
 	void on_process_sample(DataReader*, const HwaSimIRDds::RealtimeDataV1& sample,
 		const SampleInfo&) override
 	{
+		if (m_owner->m_config.platID >= 0 && sample.platID != m_owner->m_config.platID) return;
+		if (m_owner->m_config.sensorID >= 0 && sample.sensorID != m_owner->m_config.sensorID &&
+			sample.sensorID != 255) return;
 		static std::atomic<quint64> count(0);
 		const quint64 current = count.fetch_add(1) + 1;
 		if (current <= 3 || (current % 120) == 0)
@@ -245,9 +267,21 @@ void DdsVideoReceiverWorker::doWork()
 		return;
 	}
 	DomainParticipant* participant = m_impl->runtime->participant();
-	const QByteArray topic = m_config.topic.toLatin1();
-	m_impl->reader = DDSIF::SubTopic(participant, topic.constData(),
-		BytesTypeSupport::get_instance(), "hwasimir_reliable_reader", &listener);
+	const bool deferVideoReader = m_config.autoFromVideoStatus &&
+		m_config.platID >= 0 && m_config.sensorID >= 0;
+	if (!deferVideoReader)
+	{
+		const QByteArray topic = m_config.topic.toLatin1();
+		m_impl->reader = DDSIF::SubTopic(participant, topic.constData(),
+			BytesTypeSupport::get_instance(), "hwasimir_reliable_reader", &listener);
+	}
+	if (m_config.autoFromVideoStatus && m_config.platID >= 0 && m_config.sensorID >= 0)
+	{
+		m_config.topicVideoMeta = QStringLiteral("HwaSimIR.VideoMeta.%1.%2")
+			.arg(m_config.platID).arg(m_config.sensorID);
+		m_config.topicAnnotation = QStringLiteral("HwaSimIR.Annotation.%1.%2")
+			.arg(m_config.platID).arg(m_config.sensorID);
+	}
 	m_impl->statusReader = DDSIF::SubTopic(participant, m_config.topicVideoStatus.toLatin1().constData(),
 		HwaSimIRDds::VideoStatusV1TypeSupport::get_instance(), "hwasimir_status_reader", &statusListener);
 	m_impl->controlReader = DDSIF::SubTopic(participant, m_config.topicControl.toLatin1().constData(),
@@ -260,7 +294,7 @@ void DdsVideoReceiverWorker::doWork()
 		HwaSimIRDds::VideoFrameMetaV1TypeSupport::get_instance(), "hwasimir_protocol_reader", &metaListener);
 	m_impl->annotationReader = DDSIF::SubTopic(participant, m_config.topicAnnotation.toLatin1().constData(),
 		HwaSimIRDds::AnnotationFrameV1TypeSupport::get_instance(), "hwasimir_protocol_reader", &annotationListener);
-	if (!m_impl->reader || !m_impl->statusReader || !m_impl->controlReader ||
+	if ((!deferVideoReader && !m_impl->reader) || !m_impl->statusReader || !m_impl->controlReader ||
 		!m_impl->initReader || !m_impl->realtimeReader || !m_impl->metaReader ||
 		!m_impl->annotationReader)
 	{
@@ -286,6 +320,7 @@ void DdsVideoReceiverWorker::doWork()
 	{
 		QString nextTopic, nextCodec, nextPixelFormat;
 		int nextWidth = 0, nextHeight = 0, nextFps = 0, nextRound = 0;
+		int nextPlatID = -1, nextSensorID = -1;
 		bool nextRunning = false, pending = false;
 		{
 			std::lock_guard<std::mutex> lock(m_impl->statusMutex);
@@ -300,6 +335,8 @@ void DdsVideoReceiverWorker::doWork()
 				nextFps = m_impl->pendingFps;
 				nextRunning = m_impl->pendingRunning;
 				nextRound = m_impl->pendingRound;
+				nextPlatID = m_impl->pendingPlatID;
+				nextSensorID = m_impl->pendingSensorID;
 				m_impl->statusPending = false;
 			}
 		}
@@ -311,41 +348,84 @@ void DdsVideoReceiverWorker::doWork()
 				: nextCodec.trimmed().toLower();
 			if (m_config.autoFromVideoStatus && !nextTopic.isEmpty() &&
 				(nextTopic != m_config.topic || resolvedCodec != m_config.codec ||
-				 nextWidth != m_config.width || nextHeight != m_config.height || nextFps != m_config.fps))
+				 nextWidth != m_config.width || nextHeight != m_config.height || nextFps != m_config.fps ||
+				 !m_impl->reader))
 			{
-				DDSIF::UnSubTopic(m_impl->reader);
-				m_impl->reader = nullptr;
+				DataReader* previousReader = m_impl->reader;
 				m_impl->h264Decoder.reset(new H264FfmpegDecoder());
 				m_config.topic = nextTopic;
 				m_config.codec = resolvedCodec;
 				m_config.width = qMax(1, nextWidth);
 				m_config.height = qMax(1, nextHeight);
 				m_config.fps = qMax(1, nextFps);
-				m_impl->reader = DDSIF::SubTopic(participant, m_config.topic.toLatin1().constData(),
+				DataReader* nextReader = DDSIF::SubTopic(participant, m_config.topic.toLatin1().constData(),
 					BytesTypeSupport::get_instance(), "hwasimir_reliable_reader", &listener);
-				if (!m_impl->reader)
+				if (!nextReader)
 				{
 					++m_ddsErrors;
 					emit fatalError(QStringLiteral("VideoStatus topic switch failed: %1").arg(m_config.topic));
 					break;
 				}
+				m_impl->reader = nextReader;
+				if (previousReader) m_impl->retiredVideoReaders.push_back(previousReader);
 				qInfo().noquote() << QStringLiteral(
 					"[VideoStatus] applied=1 topic=%1 codec=%2 width=%3 height=%4 fps=%5 round=%6 running=%7")
 					.arg(m_config.topic).arg(m_config.codec).arg(m_config.width).arg(m_config.height)
 					.arg(m_config.fps).arg(nextRound).arg(nextRunning ? 1 : 0);
+			}
+			if (m_config.autoFromVideoStatus && nextPlatID >= 0 && nextSensorID >= 0)
+			{
+				const QString nextMeta = QStringLiteral("HwaSimIR.VideoMeta.%1.%2")
+					.arg(nextPlatID).arg(nextSensorID);
+				const QString nextAnnotation = QStringLiteral("HwaSimIR.Annotation.%1.%2")
+					.arg(nextPlatID).arg(nextSensorID);
+				if (nextMeta != m_config.topicVideoMeta)
+				{
+					DataReader* previousReader = m_impl->metaReader;
+					m_config.topicVideoMeta = nextMeta;
+					m_impl->metaReader = DDSIF::SubTopic(participant,
+						m_config.topicVideoMeta.toLatin1().constData(),
+						HwaSimIRDds::VideoFrameMetaV1TypeSupport::get_instance(),
+						"hwasimir_protocol_reader", &metaListener);
+					if (m_impl->metaReader && previousReader)
+						m_impl->retiredMetaReaders.push_back(previousReader);
+				}
+				if (nextAnnotation != m_config.topicAnnotation)
+				{
+					DataReader* previousReader = m_impl->annotationReader;
+					m_config.topicAnnotation = nextAnnotation;
+					m_impl->annotationReader = DDSIF::SubTopic(participant,
+						m_config.topicAnnotation.toLatin1().constData(),
+						HwaSimIRDds::AnnotationFrameV1TypeSupport::get_instance(),
+						"hwasimir_protocol_reader", &annotationListener);
+					if (m_impl->annotationReader && previousReader)
+						m_impl->retiredAnnotationReaders.push_back(previousReader);
+				}
+				if (!m_impl->metaReader || !m_impl->annotationReader)
+				{
+					++m_ddsErrors;
+					emit fatalError(QStringLiteral("identity Meta/Annotation topic switch failed"));
+					break;
+				}
 			}
 			emit videoStatusChanged(nextTopic, nextCodec, nextPixelFormat,
 				nextWidth, nextHeight, nextFps, nextRunning, nextRound);
 		}
 		QThread::msleep(20);
 	}
+	// Acceptance timers and GUI shutdown can race the final running=false
+	// status callback. Always emit one owned-state snapshot before teardown.
+	logFrameSync(true);
 	if (m_impl->reader) DDSIF::UnSubTopic(m_impl->reader);
+	for (DataReader* reader : m_impl->retiredVideoReaders) DDSIF::UnSubTopic(reader);
 	if (m_impl->statusReader) DDSIF::UnSubTopic(m_impl->statusReader);
 	if (m_impl->controlReader) DDSIF::UnSubTopic(m_impl->controlReader);
 	if (m_impl->initReader) DDSIF::UnSubTopic(m_impl->initReader);
 	if (m_impl->realtimeReader) DDSIF::UnSubTopic(m_impl->realtimeReader);
 	if (m_impl->metaReader) DDSIF::UnSubTopic(m_impl->metaReader);
+	for (DataReader* reader : m_impl->retiredMetaReaders) DDSIF::UnSubTopic(reader);
 	if (m_impl->annotationReader) DDSIF::UnSubTopic(m_impl->annotationReader);
+	for (DataReader* reader : m_impl->retiredAnnotationReaders) DDSIF::UnSubTopic(reader);
 	m_impl->reader = m_impl->statusReader = m_impl->controlReader =
 		m_impl->initReader = m_impl->realtimeReader = m_impl->metaReader =
 		m_impl->annotationReader = nullptr;
@@ -357,7 +437,8 @@ void DdsVideoReceiverWorker::doWork()
 #endif
 }
 
-void DdsVideoReceiverWorker::processVideoStatus(const QString& topic, const QString& codec,
+void DdsVideoReceiverWorker::processVideoStatus(int platID, int sensorID,
+	const QString& topic, const QString& codec,
 	const QString& pixelFormat, int width, int height, int fps, bool running, int currentRound)
 {
 	{
@@ -370,9 +451,11 @@ void DdsVideoReceiverWorker::processVideoStatus(const QString& topic, const QStr
 		m_impl->pendingFps = fps;
 		m_impl->pendingRunning = running;
 		m_impl->pendingRound = currentRound;
+		m_impl->pendingPlatID = platID;
+		m_impl->pendingSensorID = sensorID;
 		m_impl->statusPending = true;
 	}
-	if (running)
+	if (currentRound > 0)
 	{
 		std::lock_guard<std::mutex> lock(m_impl->syncMutex);
 		if (m_impl->syncRound != currentRound)
@@ -386,7 +469,7 @@ void DdsVideoReceiverWorker::processVideoStatus(const QString& topic, const QStr
 			m_impl->annotationSeqs.clear();
 		}
 	}
-	else logFrameSync(true);
+	if (!running) logFrameSync(true);
 }
 
 void DdsVideoReceiverWorker::processRealtime(const BYHWICD::DisplayC2cObjTrackingData& data)

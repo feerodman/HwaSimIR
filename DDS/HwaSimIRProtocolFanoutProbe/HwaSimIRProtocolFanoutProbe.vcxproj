@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|x64"><Configuration>Release</Configuration><Platform>x64</Platform></ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals"><ProjectGuid>{FB858B8B-84A5-4300-AF48-D7E78AC2AE2D}</ProjectGuid><Keyword>Win32Proj</Keyword><RootNamespace>HwaSimIRProtocolFanoutProbe</RootNamespace></PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration"><ConfigurationType>Application</ConfigurationType><UseDebugLibraries>false</UseDebugLibraries><PlatformToolset>v140</PlatformToolset><CharacterSet>MultiByte</CharacterSet><WholeProgramOptimization>true</WholeProgramOptimization></PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'"><Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" /></ImportGroup>
+  <PropertyGroup Label="UserMacros"><ZRDDS_ROOT Condition="'$(ZRDDS_ROOT)'==''">$(ZRDDS_HOME)</ZRDDS_ROOT></PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'"><OutDir>$(ProjectDir)x64\Release\</OutDir><IntDir>$(ProjectDir)x64\Release\obj\</IntDir><TargetName>HwaSimIRProtocolFanoutProbe</TargetName></PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile><WarningLevel>Level3</WarningLevel><Optimization>MaxSpeed</Optimization><FunctionLevelLinking>true</FunctionLevelLinking><IntrinsicFunctions>true</IntrinsicFunctions><SDLCheck>true</SDLCheck><AdditionalIncludeDirectories>$(ProjectDir)..\Protocol;$(ProjectDir)..\Runtime;$(ProjectDir)..\Generated\HwaSimIRProtocolV1;$(ProjectDir)..\..\HwaSim_IR\HwaSim_IR\Common;$(ZRDDS_ROOT)\include\CPlusPlusInterface;$(ZRDDS_ROOT)\include\ZRDDSCoreInterface;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories><PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;HWASIMIR_HAS_ZRDDS=1;_ZRDDSCPPINTERFACE;_ZRDDSDLLIMPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions><DisableSpecificWarnings>4828;%(DisableSpecificWarnings)</DisableSpecificWarnings></ClCompile>
+    <Link><SubSystem>Console</SubSystem><EnableCOMDATFolding>true</EnableCOMDATFolding><OptimizeReferences>true</OptimizeReferences><AdditionalLibraryDirectories>$(ZRDDS_ROOT)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories><AdditionalDependencies>ZRDDSCpp_VS2015.lib;%(AdditionalDependencies)</AdditionalDependencies></Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="..\Protocol\DdsStimClient.cpp" />
+    <ClCompile Include="..\Protocol\CommonDataDdsAdapter.cpp" />
+    <ClCompile Include="..\Protocol\HwaSimIRProtocolEndpoint.cpp" />
+    <ClCompile Include="..\Runtime\DdsRuntimeManager.cpp" />
+    <ClCompile Include="..\Generated\HwaSimIRProtocolV1\HwaSimIRProtocolV1.cpp" />
+    <ClCompile Include="..\Generated\HwaSimIRProtocolV1\HwaSimIRProtocolV1TypeSupport.cpp" />
+  </ItemGroup>
+  <ItemGroup><ClInclude Include="..\Protocol\ProtocolRoute.h" /><None Include="README.md" /></ItemGroup>
+  <Target Name="CopyRuntimeFiles" AfterTargets="Build">
+    <MakeDir Directories="$(OutDir)Config\DDS" />
+    <Copy SourceFiles="$(ZRDDS_ROOT)\lib\ZRDDSCpp_VS2015.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(ZRDDS_ROOT)\zrddslicence.lic" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(ProjectDir)Config\ZRDDS_PROTOCOL_QOS.xml" DestinationFolder="$(OutDir)Config\DDS" SkipUnchangedFiles="true" />
+    <Exec Command="attrib -R &quot;$(OutDir)zrddslicence.lic&quot;" />
+  </Target>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

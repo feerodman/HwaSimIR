@@ -3,6 +3,8 @@
 //#include "stdafx.h"
 
 #include "HwaSimIR.h"
+#include "ProtocolRoute.h"
+#include "VideoTopicResolver.h"
 #include "lvecBase4.h"
 #include "pta_LVecBase4.h"
 #include "pta_float.h"
@@ -7702,6 +7704,11 @@ void HwaSimIR::LoadD2VideoOutputConfig()
 	m_ddsVideoConfig.codec = ToLowerAscii(m_runtimeConfig.getString("DdsVideo", "Codec", "HwaSimIRDdsVideoCodec", "auto", 0));
 	m_ddsVideoConfig.rawPixelFormat = ToLowerAscii(m_runtimeConfig.getString(
 		"DdsVideo", "RawPixelFormat", "HwaSimIRDdsVideoRawPixelFormat", "gray8", 0));
+	m_ddsVideoConfig.topicMode = ToLowerAscii(m_runtimeConfig.getString(
+		"DdsVideo", "TopicMode", "HwaSimIRDdsVideoTopicMode", "identity", 0));
+	m_ddsVideoConfig.topicPattern = m_runtimeConfig.getString(
+		"DdsVideo", "TopicPattern", "HwaSimIRDdsVideoTopicPattern",
+		"HwaSimIR.Video.{platID}.{sensorID}.{codec}", 0);
 	m_ddsVideoConfig.domainId = m_runtimeConfig.getInt("DdsVideo", "DomainId", "HwaSimIRDdsVideoDomainId", 150, 0);
 	m_ddsVideoConfig.qosFile = m_runtimeConfig.getString(
 		"DdsVideo", "QosFile", "HwaSimIRDdsVideoQosFile", "Config/DDS/ZRDDS_QOS_PROFILES.xml", 0);
@@ -7721,6 +7728,31 @@ void HwaSimIR::LoadD2VideoOutputConfig()
 	m_ddsVideoConfig.auditPath = m_runtimeConfig.getString("DdsVideo", "AuditPath", "HwaSimIRDdsAuditPath", "", 0);
 	m_ddsVideoConfig.auditMaxSamples = static_cast<std::uint64_t>((std::max)(0,
 		m_runtimeConfig.getInt("DdsVideo", "AuditMaxSamples", "HwaSimIRDdsAuditMaxSamples", 0, 0)));
+	if (m_ddsVideoConfig.topicMode != "identity" &&
+		m_ddsVideoConfig.topicMode != "legacy_channel")
+	{
+		std::cerr << "[DdsVideoTopic][FATAL] invalid TopicMode="
+			<< m_ddsVideoConfig.topicMode << std::endl;
+		m_startupSucceeded = false;
+	}
+	if (m_ddsVideoConfig.topicMode == "identity")
+	{
+		std::string resolved, topicError;
+		if (!ResolveVideoTopic(m_ddsVideoConfig.topicPattern, m_localPlatID,
+			m_localSensorID, "h264", resolved, topicError))
+		{
+			std::cerr << "[DdsVideoTopic][FATAL] pattern=" << m_ddsVideoConfig.topicPattern
+				<< " reason=" << topicError << std::endl;
+			m_startupSucceeded = false;
+		}
+		else
+		{
+			std::cout << "[DdsVideoTopic] mode=identity pattern="
+				<< m_ddsVideoConfig.topicPattern << " resolved=" << resolved
+				<< " platID=" << m_localPlatID << " sensorID=" << m_localSensorID
+				<< " codec=H264" << std::endl;
+		}
+	}
 
 	m_localRecordingConfig.enabled = m_runtimeConfig.getBool("LocalRecording", "Enable", "HwaSimIRLocalRecordingEnable", false, 0);
 	m_localRecordingConfig.outputDirectory = m_runtimeConfig.getString("LocalRecording", "OutputDirectory", "HwaSimIRLocalRecordingOutputDirectory", "/home/linaro/HwaSimIR_Record", 0);
@@ -7787,18 +7819,40 @@ void HwaSimIR::LoadF1ProtocolConfig()
 		"DdsProtocol", "TopicInitAck", "HwaSimIRDdsTopicInitAck", "HwaSimIR.InitAck", 0);
 	m_ddsProtocolConfig.topicVideoStatus = m_runtimeConfig.getString(
 		"DdsProtocol", "TopicVideoStatus", "HwaSimIRDdsTopicVideoStatus", "HwaSimIR.VideoStatus", 0);
-	const std::string defaultMetaTopic = m_channel == "coarse"
-		? "HwaSimIR.VideoMeta.coarse" : "HwaSimIR.VideoMeta.precise";
-	const std::string defaultAnnotationTopic = m_channel == "coarse"
-		? "HwaSimIR.Annotation.coarse" : "HwaSimIR.Annotation.precise";
-	m_ddsProtocolConfig.topicVideoMeta = m_runtimeConfig.getString(
-		"DdsProtocol", m_channel == "coarse" ? "TopicVideoMetaCoarse" : "TopicVideoMetaPrecise",
-		m_channel == "coarse" ? "HwaSimIRDdsTopicVideoMetaCoarse" : "HwaSimIRDdsTopicVideoMetaPrecise",
-		defaultMetaTopic, 0);
-	m_ddsProtocolConfig.topicAnnotation = m_runtimeConfig.getString(
-		"DdsProtocol", m_channel == "coarse" ? "TopicAnnotationCoarse" : "TopicAnnotationPrecise",
-		m_channel == "coarse" ? "HwaSimIRDdsTopicAnnotationCoarse" : "HwaSimIRDdsTopicAnnotationPrecise",
-		defaultAnnotationTopic, 0);
+	if (m_ddsVideoConfig.topicMode == "identity")
+	{
+		const std::string metaPattern = m_runtimeConfig.getString(
+			"DdsProtocol", "VideoMetaTopicPattern", "HwaSimIRDdsVideoMetaTopicPattern",
+			"HwaSimIR.VideoMeta.{platID}.{sensorID}", 0);
+		const std::string annotationPattern = m_runtimeConfig.getString(
+			"DdsProtocol", "AnnotationTopicPattern", "HwaSimIRDdsAnnotationTopicPattern",
+			"HwaSimIR.Annotation.{platID}.{sensorID}", 0);
+		std::string topicError;
+		if (!ResolveIdentityTopicPattern(metaPattern, m_localPlatID, m_localSensorID,
+			std::string(), m_ddsProtocolConfig.topicVideoMeta, topicError) ||
+			!ResolveIdentityTopicPattern(annotationPattern, m_localPlatID, m_localSensorID,
+				std::string(), m_ddsProtocolConfig.topicAnnotation, topicError))
+		{
+			std::cerr << "[DdsProtocol][FATAL] identity frame topic reason="
+				<< topicError << std::endl;
+			m_startupSucceeded = false;
+		}
+	}
+	else
+	{
+		const std::string defaultMetaTopic = m_channel == "coarse"
+			? "HwaSimIR.VideoMeta.coarse" : "HwaSimIR.VideoMeta.precise";
+		const std::string defaultAnnotationTopic = m_channel == "coarse"
+			? "HwaSimIR.Annotation.coarse" : "HwaSimIR.Annotation.precise";
+		m_ddsProtocolConfig.topicVideoMeta = m_runtimeConfig.getString(
+			"DdsProtocol", m_channel == "coarse" ? "TopicVideoMetaCoarse" : "TopicVideoMetaPrecise",
+			m_channel == "coarse" ? "HwaSimIRDdsTopicVideoMetaCoarse" : "HwaSimIRDdsTopicVideoMetaPrecise",
+			defaultMetaTopic, 0);
+		m_ddsProtocolConfig.topicAnnotation = m_runtimeConfig.getString(
+			"DdsProtocol", m_channel == "coarse" ? "TopicAnnotationCoarse" : "TopicAnnotationPrecise",
+			m_channel == "coarse" ? "HwaSimIRDdsTopicAnnotationCoarse" : "HwaSimIRDdsTopicAnnotationPrecise",
+			defaultAnnotationTopic, 0);
+	}
 	m_deduplicateWhenBoth = m_runtimeConfig.getBool(
 		"DdsProtocol", "DeduplicateWhenBoth", "HwaSimIRDdsDeduplicateWhenBoth", true, 0);
 	m_deduplicateWindowMs = (std::max)(1, m_runtimeConfig.getInt(
@@ -7829,6 +7883,32 @@ void HwaSimIR::LoadF1ProtocolConfig()
 bool HwaSimIR::InitDdsProtocol()
 {
 	if (!m_ddsVideoConfig.enabled && !m_ddsProtocolConfig.enabled) return true;
+	// Runtime configuration is loaded before the instance network identity.  Re-resolve
+	// per-stream typed Topics here, after LoadNetworkConfig(), so the Writer never stays
+	// attached to the temporary 0/0 identity used during early configuration parsing.
+	if (m_ddsProtocolConfig.enabled && m_ddsVideoConfig.topicMode == "identity")
+	{
+		const std::string metaPattern = m_runtimeConfig.getString(
+			"DdsProtocol", "VideoMetaTopicPattern", "HwaSimIRDdsVideoMetaTopicPattern",
+			"HwaSimIR.VideoMeta.{platID}.{sensorID}", 0);
+		const std::string annotationPattern = m_runtimeConfig.getString(
+			"DdsProtocol", "AnnotationTopicPattern", "HwaSimIRDdsAnnotationTopicPattern",
+			"HwaSimIR.Annotation.{platID}.{sensorID}", 0);
+		std::string metaError, annotationError;
+		if (!ResolveIdentityTopicPattern(metaPattern, m_localPlatID, m_localSensorID,
+			std::string(), m_ddsProtocolConfig.topicVideoMeta, metaError) ||
+			!ResolveIdentityTopicPattern(annotationPattern, m_localPlatID, m_localSensorID,
+				std::string(), m_ddsProtocolConfig.topicAnnotation, annotationError))
+		{
+			std::cerr << "[StartupFatal] component=DDSFrameTopics reason="
+				<< (!metaError.empty() ? metaError : annotationError) << std::endl;
+			return false;
+		}
+		std::cout << "[DdsFrameTopic] mode=identity platID=" << m_localPlatID
+			<< " sensorID=" << m_localSensorID
+			<< " meta=" << m_ddsProtocolConfig.topicVideoMeta
+			<< " annotation=" << m_ddsProtocolConfig.topicAnnotation << std::endl;
+	}
 	m_ddsRuntime.reset(new DdsRuntimeManager());
 	DdsRuntimeConfig runtimeConfig;
 	runtimeConfig.domainId = m_ddsProtocolConfig.enabled
@@ -7886,7 +7966,17 @@ void HwaSimIR::PublishDdsVideoStatus(bool running, const char* reason)
 	status.pixelFormat = codec == "h264" ? "annexb" :
 		(codec == "raw_bgr24" ? "bgr24" : "gray8");
 	const bool precise = m_channel != "coarse";
-	if (codec == "h264")
+	if (m_ddsVideoConfig.topicMode == "identity")
+	{
+		std::string topicError;
+		if (!ResolveVideoTopic(m_ddsVideoConfig.topicPattern, m_localPlatID,
+			m_localSensorID, codec, status.videoTopic, topicError))
+		{
+			std::cerr << "[VideoStatus][ERROR] identityTopic reason=" << topicError << std::endl;
+			return;
+		}
+	}
+	else if (codec == "h264")
 		status.videoTopic = precise ? m_ddsVideoConfig.topicH264Precise : m_ddsVideoConfig.topicH264Coarse;
 	else if (codec == "raw_bgr24")
 		status.videoTopic = precise ? m_ddsVideoConfig.topicRawBgr24Precise : m_ddsVideoConfig.topicRawBgr24Coarse;
@@ -8087,6 +8177,30 @@ void HwaSimIR::handleDdsControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cm
 bool HwaSimIR::AcceptProtocolIngress(const std::string& transport, const std::string& type,
 	const std::string& semanticKey, int platID, int sensorID)
 {
+	const bool hasSensorID = type != "control";
+	const ProtocolRouteResult route = EvaluateProtocolRoute(
+		m_localPlatID, m_localSensorID, m_acceptSensorBroadcast,
+		platID, sensorID, hasSensorID);
+	const bool routeAccepted = ProtocolRouteAccepted(route);
+	std::uint64_t ingressCount = 0;
+	if (type == "realtime") ingressCount = ++m_protocolIngressRealtimeCount;
+	const bool logRoute = type != "realtime" || ingressCount <= 3 ||
+		(ingressCount % 120) == 0 || !routeAccepted;
+	if (transport == "dds" && logRoute)
+	{
+		std::cout << "[ProtocolRoute] transport=dds type=" << type
+			<< " accepted=" << (routeAccepted ? 1 : 0)
+			<< " localPlatID=" << m_localPlatID
+			<< " localSensorID=" << m_localSensorID
+			<< " packetPlatID=" << platID
+			<< " packetSensorID=";
+		if (hasSensorID) std::cout << sensorID; else std::cout << "na";
+		std::cout << " reason=" << ProtocolRouteReason(route);
+		if (type == "realtime") std::cout << " routeCount=" << ingressCount;
+		std::cout << std::endl;
+	}
+	if (!routeAccepted) return false;
+
 	bool duplicate = false;
 	if (m_commandTransportInput == "both" && m_deduplicateWhenBoth)
 	{
@@ -8117,13 +8231,8 @@ bool HwaSimIR::AcceptProtocolIngress(const std::string& transport, const std::st
 		}
 	}
 	bool logIngress = type != "realtime" || duplicate;
-	std::uint64_t ingressCount = 0;
 	if (type == "realtime")
-	{
-		const std::uint64_t count = ++m_protocolIngressRealtimeCount;
-		ingressCount = count;
-		logIngress = logIngress || count <= 3 || (count % 120) == 0;
-	}
+		logIngress = logIngress || ingressCount <= 3 || (ingressCount % 120) == 0;
 	if (logIngress)
 	{
 		std::cout << "[ProtocolIngress] transport=" << transport << " type=" << type

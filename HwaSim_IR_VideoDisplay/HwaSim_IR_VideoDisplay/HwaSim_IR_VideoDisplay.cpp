@@ -150,6 +150,8 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
 		config.channel = instanceSettings.value(QStringLiteral("DdsVideo/Channel"),
 			config.topic.contains(QStringLiteral(".coarse."), Qt::CaseInsensitive)
 				? QStringLiteral("coarse") : QStringLiteral("precise")).toString().trimmed().toLower();
+		config.platID = m_platID;
+		config.sensorID = m_sensorID;
 		config.topicVideoMeta = instanceSettings.value(QStringLiteral("DdsProtocol/TopicVideoMeta"),
 			QStringLiteral("HwaSimIR.VideoMeta.%1").arg(config.channel)).toString();
 		config.topicAnnotation = instanceSettings.value(QStringLiteral("DdsProtocol/TopicAnnotation"),

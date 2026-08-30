@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cstring>
 #include <sstream>
+#include "ProtocolRoute.h"
 
 
 // 构造函数
@@ -158,7 +159,10 @@ void UdpCommThread::logRoute(
 		return;
 	}
 	std::ostringstream line;
-	line << (accepted ? "[PacketRoute]" : "[PacketRouteReject]")
+	const char* type = flag == 0x41 ? "control" :
+		(flag == 0x36 ? "init" : (flag == 0x38 ? "realtime" : "unknown"));
+	line << "[ProtocolRoute] transport=udp"
+		<< " type=" << type
 		<< " flag=0x" << std::hex << flag << std::dec
 		<< " accepted=" << (accepted ? "1" : "0")
 		<< " localPlatID=" << m_localPlatID
@@ -329,9 +333,12 @@ void UdpCommThread::parseUdpData(const char* data, int dataLen, const sockaddr_i
 		{
 			BYHWICD::ControlP2cX1ObjTrackingCmd cmd;
 			memcpy(&cmd, data, sizeof(cmd));
-			const bool accepted = cmd.platID == m_localPlatID;
+			const ProtocolRouteResult route = EvaluateProtocolRoute(
+				m_localPlatID, m_localSensorID, m_acceptSensorBroadcast,
+				cmd.platID, -1, false);
+			const bool accepted = ProtocolRouteAccepted(route);
 			logRoute(flag, accepted, cmd.platID, false, -1,
-				accepted ? "plat_match" : "plat_mismatch");
+				ProtocolRouteReason(route));
 			if (!accepted)
 			{
 				return;
@@ -353,13 +360,11 @@ void UdpCommThread::parseUdpData(const char* data, int dataLen, const sockaddr_i
 		{
 			BYHWICD::InitP2cObjectTrackingCmd cmd;
 			memcpy(&cmd, data, sizeof(cmd));
-			const bool platMatch = cmd.platID == m_localPlatID;
-			const bool exactSensor = cmd.sensorID == m_localSensorID;
-			const bool sensorBroadcast = m_acceptSensorBroadcast && cmd.sensorID == 255;
-			const bool accepted = platMatch && (exactSensor || sensorBroadcast);
-			const char* reason = !platMatch ? "plat_mismatch"
-				: (exactSensor ? "exact_match" : (sensorBroadcast ? "sensor_broadcast" : "sensor_mismatch"));
-			logRoute(flag, accepted, cmd.platID, true, cmd.sensorID, reason);
+			const ProtocolRouteResult route = EvaluateProtocolRoute(
+				m_localPlatID, m_localSensorID, m_acceptSensorBroadcast,
+				cmd.platID, cmd.sensorID, true);
+			const bool accepted = ProtocolRouteAccepted(route);
+			logRoute(flag, accepted, cmd.platID, true, cmd.sensorID, ProtocolRouteReason(route));
 			if (!accepted)
 			{
 				return;
@@ -381,13 +386,12 @@ void UdpCommThread::parseUdpData(const char* data, int dataLen, const sockaddr_i
 		{
 			BYHWICD::DisplayC2cObjTrackingData displayData;
 			memcpy(&displayData, data, sizeof(displayData));
-			const bool platMatch = displayData.platID == m_localPlatID;
-			const bool exactSensor = displayData.sensorID == m_localSensorID;
-			const bool sensorBroadcast = m_acceptSensorBroadcast && displayData.sensorID == 255;
-			const bool accepted = platMatch && (exactSensor || sensorBroadcast);
-			const char* reason = !platMatch ? "plat_mismatch"
-				: (exactSensor ? "exact_match" : (sensorBroadcast ? "sensor_broadcast" : "sensor_mismatch"));
-			logRoute(flag, accepted, displayData.platID, true, displayData.sensorID, reason);
+			const ProtocolRouteResult route = EvaluateProtocolRoute(
+				m_localPlatID, m_localSensorID, m_acceptSensorBroadcast,
+				displayData.platID, displayData.sensorID, true);
+			const bool accepted = ProtocolRouteAccepted(route);
+			logRoute(flag, accepted, displayData.platID, true, displayData.sensorID,
+				ProtocolRouteReason(route));
 			if (!accepted)
 			{
 				return;

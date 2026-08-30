@@ -1,5 +1,6 @@
 ﻿#include "TcpCommThread.h"
 #include "HwaSimIR.h"
+#include "VideoTopicResolver.h"
 #include <iostream>
 #include <cstring>
 #include <algorithm>
@@ -376,6 +377,17 @@ std::string TcpCommThread::resolvedDdsCodec() const
 
 std::string TcpCommThread::resolvedDdsTopic(const std::string& codec) const
 {
+	if (LowerAscii(m_ddsConfig.topicMode) == "identity")
+	{
+		std::string topic, error;
+		if (ResolveVideoTopic(m_ddsConfig.topicPattern, m_localPlatID,
+			m_localSensorID, codec, topic, error)) return topic;
+		std::cerr << "[DdsVideoTopic][FATAL] mode=identity pattern="
+			<< m_ddsConfig.topicPattern << " platID=" << m_localPlatID
+			<< " sensorID=" << m_localSensorID << " codec=" << codec
+			<< " reason=" << error << std::endl;
+		return std::string();
+	}
 	const bool coarse = LowerAscii(m_channel) == "coarse";
 	if (codec == "h264") return coarse ? m_ddsConfig.topicH264Coarse : m_ddsConfig.topicH264Precise;
 	if (codec == "raw_bgr24") return coarse ? m_ddsConfig.topicRawBgr24Coarse : m_ddsConfig.topicRawBgr24Precise;

@@ -29,6 +29,9 @@ struct Options
     std::string statusTopic = "HwaSimIR.VideoStatus";
     std::string output = "received.h264";
     std::string channel = "precise";
+    int platID = -1;
+    int sensorID = -1;
+    std::string videoTopic;
     std::string expectCodec;
     std::string decode = "none";
     std::string grayOutput;
@@ -58,6 +61,9 @@ static Options Parse(int argc, char** argv)
         else if (arg == "--frames") o.frames = std::strtoull(value.c_str(), 0, 10);
         else if (arg == "--timeout-sec") o.timeoutSec = std::atoi(value.c_str());
         else if (arg == "--channel") o.channel = value;
+        else if (arg == "--plat-id") o.platID = std::atoi(value.c_str());
+        else if (arg == "--sensor-id") o.sensorID = std::atoi(value.c_str());
+        else if (arg == "--video-topic") o.videoTopic = value;
         else if (arg == "--expect-codec") o.expectCodec = value;
         else if (arg == "--decode") o.decode = value;
         else if (arg == "--gray-output") o.grayOutput = value;
@@ -151,11 +157,11 @@ public:
         ready.notify_all();
     }
 
-    bool waitForRunningStatus(int timeoutSec)
+    bool waitForStatus(int timeoutSec)
     {
         std::unique_lock<std::mutex> lock(mutex);
         return ready.wait_for(lock, std::chrono::seconds(timeoutSec), [this] {
-            return status.received && status.running && !status.topic.empty();
+            return status.received && !status.topic.empty();
         });
     }
 
@@ -169,24 +175,8 @@ public:
         const std::uint64_t size = sample.value.length();
         const std::uint8_t* data = sample.value.get_contiguous_buffer();
         std::lock_guard<std::mutex> lock(mutex);
-        // Readers are created before START so a fast START cannot outrun DDS
-        // discovery.  With an explicit expected codec the conventional topic
-        // is authoritative; otherwise VideoStatus selects the active reader.
-        if (!o.expectCodec.empty())
-        {
-            if (o.expectCodec == "h264")
-            {
-                if (readerTopic != "HwaSimIR.Video." + o.channel + ".H264") return;
-            }
-            else if (!status.received || readerTopic != status.topic)
-            {
-                return;
-            }
-        }
-        else if (!status.received || readerTopic != status.topic)
-        {
-            return;
-        }
+		const std::string expectedTopic = o.videoTopic.empty() ? status.topic : o.videoTopic;
+		if (!status.received || readerTopic != expectedTopic) return;
         if (!started) { started = true; first = std::chrono::steady_clock::now(); }
         last = std::chrono::steady_clock::now();
         ++videoSamples; videoBytes += size;
@@ -388,7 +378,9 @@ public:
     {
         const std::string channel = s.channel ? s.channel : "";
         const std::string codec = s.codec ? s.codec : "";
-        if (channel != m_options.channel) return;
+        if (m_options.platID >= 0 && s.platID != m_options.platID) return;
+        if (m_options.sensorID >= 0 && s.sensorID != m_options.sensorID) return;
+        if (m_options.platID < 0 && m_options.sensorID < 0 && channel != m_options.channel) return;
         if (!m_options.expectCodec.empty() && codec != m_options.expectCodec) return;
         m_state.setStatus(s);
     }
@@ -441,55 +433,53 @@ int main(int argc, char** argv)
         StatusListener statusListener(state, o);
         DataReader* statusReader = DDSIF::SubTopic(participant, o.statusTopic.c_str(),
             HwaSimIRDds::VideoStatusV1TypeSupport::get_instance(), "hwasimir_status_reader", &statusListener);
-        MetaListener metaListener(state);
-        AnnotationListener annotationListener(state);
-        DataReader* metaReader = nullptr;
-        DataReader* annotationReader = nullptr;
-        if (o.receiveMeta)
-        {
-            const std::string topic = "HwaSimIR.VideoMeta." + o.channel;
-            metaReader = DDSIF::SubTopic(participant, topic.c_str(),
-                HwaSimIRDds::VideoFrameMetaV1TypeSupport::get_instance(),
-                "hwasimir_protocol_reader", &metaListener);
-            if (!metaReader) throw std::runtime_error("VideoMeta SubTopic failed");
-        }
-        if (o.receiveAnnotation)
-        {
-            const std::string topic = "HwaSimIR.Annotation." + o.channel;
-            annotationReader = DDSIF::SubTopic(participant, topic.c_str(),
-                HwaSimIRDds::AnnotationFrameV1TypeSupport::get_instance(),
-                "hwasimir_protocol_reader", &annotationListener);
-            if (!annotationReader) throw std::runtime_error("Annotation SubTopic failed");
-        }
-        const std::string videoTopics[] = {
-            "HwaSimIR.Video." + o.channel + ".H264",
-            "HwaSimIR.Video." + o.channel + ".RawGray8",
-            "HwaSimIR.Video." + o.channel + ".RawBGR24",
-            "HwaSimIR.Decoded." + o.channel + ".RawGray8"
-        };
-        std::vector<std::unique_ptr<VideoListener> > videoListeners;
-        std::vector<DataReader*> videoReaders;
-        for (std::size_t i = 0; i < sizeof(videoTopics) / sizeof(videoTopics[0]); ++i)
-        {
-            videoListeners.push_back(std::unique_ptr<VideoListener>(new VideoListener(state, videoTopics[i])));
-            DataReader* reader = DDSIF::SubTopic(participant, videoTopics[i].c_str(),
-                BytesTypeSupport::get_instance(), "hwasimir_reliable_reader", videoListeners.back().get());
-            if (!reader) throw std::runtime_error("video SubTopic failed: " + videoTopics[i]);
-            videoReaders.push_back(reader);
-        }
-        if (!statusReader || !state.waitForRunningStatus(o.timeoutSec))
+        if (!statusReader || !state.waitForStatus(o.timeoutSec))
             throw std::runtime_error("VideoStatus timeout");
         const StatusSnapshot status = state.statusSnapshot();
         if (o.decode == "mpp" && status.codec != "h264")
             throw std::runtime_error("MPP decode requires H264 VideoStatus");
+		const std::string selectedVideoTopic = o.videoTopic.empty() ? status.topic : o.videoTopic;
+		if (selectedVideoTopic.empty()) throw std::runtime_error("VideoStatus returned empty videoTopic");
+		MetaListener metaListener(state);
+		AnnotationListener annotationListener(state);
+		DataReader* metaReader = nullptr;
+		DataReader* annotationReader = nullptr;
+		const std::string identityMarker = "HwaSimIR.Video." +
+			std::to_string(status.platID) + "." + std::to_string(status.sensorID) + ".";
+		const bool identityMode = selectedVideoTopic.find(identityMarker) == 0;
+		if (o.receiveMeta)
+		{
+			const std::string topic = identityMode
+				? "HwaSimIR.VideoMeta." + std::to_string(status.platID) + "." + std::to_string(status.sensorID)
+				: "HwaSimIR.VideoMeta." + o.channel;
+			metaReader = DDSIF::SubTopic(participant, topic.c_str(),
+				HwaSimIRDds::VideoFrameMetaV1TypeSupport::get_instance(),
+				"hwasimir_protocol_reader", &metaListener);
+			if (!metaReader) throw std::runtime_error("VideoMeta SubTopic failed: " + topic);
+		}
+		if (o.receiveAnnotation)
+		{
+			const std::string topic = identityMode
+				? "HwaSimIR.Annotation." + std::to_string(status.platID) + "." + std::to_string(status.sensorID)
+				: "HwaSimIR.Annotation." + o.channel;
+			annotationReader = DDSIF::SubTopic(participant, topic.c_str(),
+				HwaSimIRDds::AnnotationFrameV1TypeSupport::get_instance(),
+				"hwasimir_protocol_reader", &annotationListener);
+			if (!annotationReader) throw std::runtime_error("Annotation SubTopic failed: " + topic);
+		}
+		std::unique_ptr<VideoListener> videoListener(new VideoListener(state, selectedVideoTopic));
+		DataReader* videoReader = DDSIF::SubTopic(participant, selectedVideoTopic.c_str(),
+			BytesTypeSupport::get_instance(), "hwasimir_reliable_reader", videoListener.get());
+		if (!videoReader) throw std::runtime_error("video SubTopic failed: " + selectedVideoTopic);
         std::cout << "receiverReady=1 statusTopic=" << o.statusTopic
-                  << " autoVideoTopic=" << status.topic
+				  << " autoVideoTopic=" << status.topic
+				  << " selectedPlatID=" << status.platID
+				  << " selectedSensorID=" << status.sensorID
                   << " decode=" << o.decode << std::endl;
         const bool complete = state.waitComplete();
         state.finishDecoder();
         const int result = state.summary(complete);
-        for (std::size_t i = 0; i < videoReaders.size(); ++i)
-            DDSIF::UnSubTopic(videoReaders[i]);
+		DDSIF::UnSubTopic(videoReader);
         if (metaReader) DDSIF::UnSubTopic(metaReader);
         if (annotationReader) DDSIF::UnSubTopic(annotationReader);
         DDSIF::UnSubTopic(statusReader);

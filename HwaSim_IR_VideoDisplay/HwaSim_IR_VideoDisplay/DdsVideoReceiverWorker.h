@@ -28,6 +28,8 @@ struct DdsVideoReceiverConfig
 	QString topicInitAck = QStringLiteral("HwaSimIR.InitAck");
 	QString topicVideoStatus = QStringLiteral("HwaSimIR.VideoStatus");
 	QString channel = QStringLiteral("precise");
+	int platID = -1;
+	int sensorID = -1;
 	QString topicVideoMeta = QStringLiteral("HwaSimIR.VideoMeta.precise");
 	QString topicAnnotation = QStringLiteral("HwaSimIR.Annotation.precise");
 };
@@ -79,7 +81,7 @@ private:
 	friend class DdsVideoMetaListener;
 	friend class DdsAnnotationListener;
 	void processSample(const char* data, int size);
-	void processVideoStatus(const QString& topic, const QString& codec,
+	void processVideoStatus(int platID, int sensorID, const QString& topic, const QString& codec,
 		const QString& pixelFormat, int width, int height, int fps,
 		bool running, int currentRound);
 	void processRealtime(const BYHWICD::DisplayC2cObjTrackingData& data);

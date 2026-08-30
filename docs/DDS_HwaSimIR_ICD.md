@@ -1,141 +1,137 @@
-# HwaSimIR DDS 接口控制文档（F1）
+# HwaSimIR DDS 接口控制文档（F2.1）
 
-本文件冻结 F1 的 DDS 控制面、状态面和视频接口。Legacy UDP `0x41/0x36/0x38/0x37`
-及 TCP Packet v3 保留；DDS 是可并列选择的 Transport，不改变原协议布局。
+## 1. 总体架构
 
-## 1. 中间件与 QoS
+DDS 与 Legacy 并列存在，不互相替换：
 
-- SDK 路径标签：ZRDDS 2.4.5；Windows/板端实测 runtime banner：`2.4.4-r6873577`。
-- 默认 Domain：`150`；Transport：`tcpv4`。
-- Control、Init、Realtime、InitAck：`RELIABLE_RELIABILITY_QOS` + `KEEP_ALL_HISTORY_QOS`。
-- VideoStatus：RELIABLE + KEEP_LAST depth=1。
-- Video：RELIABLE + KEEP_ALL。
-- 客户通用配置：`Config/DDS/ZRDDS_PROTOCOL_QOS.xml`，网卡为 `tcpv4://default//0`。
-- 现场多网卡选错时可使用测试专用绑定文件；不得将现场 IP 写死进通用代码。
-- 禁止 BEST_EFFORT 和 ZRDDS UDP 大包零拷贝。
+- Legacy 控制面继续使用 UDP 0x41/0x36/0x38/0x37，视频继续支持 TCP Packet v3。
+- DDS 控制面使用共享 Topic 和 `platID/sensorID` 应用层路由。
+- DDS 视频面默认使用每个传感器独立的 identity Topic。
+- DDS 视频 Sample 仍只包含视频本体，不包含 frameSeq、PTS、geometry、annotation 或自定义头。
 
-## 2. 类型与 Topic
+```text
+                 One Stim process
+                        |
+        +---------------+---------------+
+        |               |               |
+   ControlWriter    InitWriter    RealtimeWriter
+        |               |               |
+        +---------------+---------------+
+                        |
+               Shared DDS Topics
+                        |
+          +-------------+-------------+
+          |             |             |
+       1001/1        1001/2        1001/3
+       HwaSimIR      HwaSimIR      HwaSimIR
+          |             |             |
+ Video.1001.1.* Video.1001.2.* Video.1001.3.*
+```
 
-正式 IDL 位于 `DDS/IDL/HwaSimIRProtocolV1.idl`，命名空间为 `HwaSimIRDds`。
+默认 Domain 为 150。QoS 为 `tcpv4 + RELIABLE`；Control/Init/Realtime/Ack/视频使用 KEEP_ALL，VideoStatus 使用可靠状态 QoS。配置文件为 `Config/DDS/ZRDDS_PROTOCOL_QOS.xml`。
 
-| Topic | Type | Key | Legacy 对应 |
+## 2. 共享控制 Topic
+
+| Topic | Type | Key | Legacy |
 |---|---|---|---|
-| `HwaSimIR.Control` | `ControlCommandV1` | `platID` | UDP 0x41 |
-| `HwaSimIR.Init` | `InitCommandV1` | `platID,sensorID` | UDP 0x36 |
-| `HwaSimIR.Realtime` | `RealtimeDataV1` | `platID,sensorID` | UDP 0x38 |
-| `HwaSimIR.InitAck` | `InitAckV1` | `platID,sensorID` | UDP 0x37 |
-| `HwaSimIR.VideoStatus` | `VideoStatusV1` | `platID,sensorID` | F1 新增状态 |
+| `HwaSimIR.Control` | `ControlCommandV1` | `platID` | 0x41 |
+| `HwaSimIR.Init` | `InitCommandV1` | `platID,sensorID` | 0x36 |
+| `HwaSimIR.Realtime` | `RealtimeDataV1` | `platID,sensorID` | 0x38 |
+| `HwaSimIR.InitAck` | `InitAckV1` | `platID,sensorID` | 0x37 |
+| `HwaSimIR.VideoStatus` | `VideoStatusV1` | `platID,sensorID` | DDS 状态 |
 
-`sensorID=255` 广播仍由 HwaSimIR 应用层判断。DDS typed sample 不依赖 `flag`
-反序列化，但保留 0x41/0x36/0x38/0x37，便于 UDP/DDS A/B 和语义审计。
+正式 IDL 位于 `DDS/IDL/HwaSimIRProtocolV1.idl`，generated 文件位于 `DDS/Generated/HwaSimIRProtocolV1`。Legacy packed size 必须保持 24/385/506/17 bytes。
 
-## 3. 字段映射
+## 3. ID 路由
 
-转换代码位于 `DDS/Protocol/CommonDataDdsAdapter.cpp`，逐字段赋值，禁止 `memcpy`
-DDS object。
+所有 UDP/DDS ingress 共用 `DDS/Protocol/ProtocolRoute.h`：
 
-| Legacy struct | DDS type | 字段组 |
-|---|---|---|
-| `ControlP2cX1ObjTrackingCmd` | `ControlCommandV1` | flag, JB, platID, simCommand, roundCut, currentRound |
-| `InitP2cObjectTrackingCmd` | `InitCommandV1` | flag/JB/platID/sensorID、platParamInit、trackingInit、7 个 MissileMaxCount |
-| `DisplayC2cObjTrackingData` | `RealtimeDataV1` | flag/platID/sensorID/time、platLoc、weaponState、targetNumValid、targetState[5] |
-| `InitAckC2pObjectTrackingCmd` | `InitAckV1` | flag, JB, platID, sensorID, trackingReady |
+- Control：`packet.platID == localPlatID` 时接受；Control 不增加 sensorID。
+- Init/Realtime exact：platID 与 sensorID 均匹配时接受。
+- Init/Realtime broadcast：platID 匹配、`sensorID=255` 且本地 `acceptSensorBroadcast=true` 时接受。
+- 其余返回 `plat_mismatch` 或 `sensor_mismatch`，业务 handler 不执行。
+- 广播 Init 的 Ack 使用每个进程自己的本地身份，例如 1001/1、1001/2，而不是 1001/255。
 
-嵌套数组保持 `trackerSensor[1]`、`targetState[5]`、`xxOutAng[2]`、`offsetAng[2]`。
-Legacy packed size 必须保持 24/385/506/17 bytes。
+一个 Stim 正常只创建一组 Writer。增加传感器不会增加 Writer 数量；同一 InitWriter 可依次写 1001/1、1001/2、1001/3。
 
-## 4. VideoStatusV1
+## 4. 视频 Topic
 
-字段：`platID`、`sensorID`、`channel`、`running`、`codec`、`pixelFormat`、
-`videoTopic`、`width`、`height`、`fps`、`bitrateKbps`、`gopFrames`、
-`compressed`、`currentRound`。
+生产推荐：
 
-HwaSimIR 在 DDS ready、INIT、START、STOP、codec/topic/geometry 改变及 1 Hz 刷新时发布。
-START 为 `running=true`，STOP 为 `running=false`。Receiver 应等待一个 running Status，
-再按其中 Topic 和 geometry 创建视频 Reader；CLI override 只用于调试。
+```ini
+[DdsVideo]
+TopicMode=identity
+TopicPattern=HwaSimIR.Video.{platID}.{sensorID}.{codec}
+```
 
-## 5. 视频 Topic
+Codec token 固定为 `H264`、`RawGray8`、`RawBGR24`。示例：
 
-| Channel | 格式 | Topic |
-|---|---|---|
-| precise | H264 | `HwaSimIR.Video.precise.H264` |
-| precise | Gray8 | `HwaSimIR.Video.precise.RawGray8` |
-| precise | BGR24 | `HwaSimIR.Video.precise.RawBGR24` |
-| coarse | H264 | `HwaSimIR.Video.coarse.H264` |
-| coarse | Gray8 | `HwaSimIR.Video.coarse.RawGray8` |
-| coarse | BGR24 | `HwaSimIR.Video.coarse.RawBGR24` |
+```text
+HwaSimIR.Video.1001.1.H264
+HwaSimIR.Video.1001.2.RawGray8
+HwaSimIR.Video.1001.3.RawBGR24
+```
 
-视频 Type 始终仅为内置 `DDS::Bytes`。VideoStatus 是独立 typed Topic，不嵌入视频 Sample。
+`VideoStatusV1.videoTopic` 是接收端正式发现 Topic 的唯一事实源。VideoDisplay、Gateway 和 CustomerReceiver 先按 platID/sensorID 过滤共享 VideoStatus，再订阅其中的 videoTopic。`--video-topic` 仅是调试 override。
 
-### H264
+兼容模式 `TopicMode=legacy_channel` 保留 precise/coarse 六个历史 Topic，不删除老客户接口。
 
-一个 DDS Sample 精确等于一个完整 Annex-B Access Unit。无长度前缀、自定义 header、
-frameSeq、PTS、geometry、codec 或任何 TCP Packet v3 字段。接收端按 Sample 顺序原样
-append 即可重组 `.h264`。
+## 5. 视频 Sample 契约
 
-### Raw
+- Type 始终为内置 `DDS::Bytes`。
+- H264：一个 Sample 等于一个完整 Annex-B Access Unit。
+- RawGray8：一个 Sample 等于一帧，严格为 `width*height` bytes。
+- RawBGR24：一个 Sample 等于一帧，严格为 `width*height*3` bytes。
+- 禁止 BEST_EFFORT、UDP 大包零拷贝、应用层覆盖旧帧和自定义视频头。
 
-一个 DDS Sample 精确等于一整帧。RawGray8 必须为 `width*height` bytes；RawBGR24 必须为
-`width*height*3` bytes，紧密 BGR 排列、无行 padding。geometry 来自 VideoStatus，尺寸不符
-必须报错，不得猜测。
+## 6. VideoStatus、Meta 与 Annotation
 
-## 6. Transport 与业务状态机
+共享状态 Topic `HwaSimIR.VideoStatus` 携带 identity、running、codec、pixelFormat、videoTopic、width、height、fps、bitrate、GOP 和 round。
 
-HwaSimIR `[CommandTransport] Input=udp|dds|both`；Ack 可为
-`match_input|udp|dds|both`。两种入口最终进入同一套 `handleControlCmd`、`handleInitCmd`、
-`handleDisplayData`。DDS callback 只复制、adapter、route/queue，不直接操作 Panda3D。
+identity 模式的逐流辅助 Topic：
 
-both 模式去重键：Control=`platID/simCommand/currentRound/roundCut`；Init=语义 hash；
-Realtime=`platID/sensorID/time`。默认窗口 1000 ms。被判为 duplicate 的消息不再次执行
-业务，也不产生第二份业务 Ack。
+```text
+HwaSimIR.VideoMeta.{platID}.{sensorID}
+HwaSimIR.Annotation.{platID}.{sensorID}
+```
 
-## 7. 可靠停止
+历史 `HwaSimIR.VideoMeta.precise/coarse` 与 `HwaSimIR.Annotation.precise/coarse` 继续由 legacy_channel 模式兼容。
 
-STOP 停止新视频/标注输出并 flush Local MP4；DDS 视频应用 queue 先 drain，Writer/Participant
-可跨回合复用。`wait_for_acknowledgments()` 不能作为尾帧到达的唯一证据，必须配合 bounded
-drain 和 sender/receiver Sample 计数。
+每个 START 的首帧 frameSeq=1。同一逻辑帧的 video、VideoFrameMeta、Annotation、TCP Packet v3 和 Local MP4 输入共享帧身份。跨 Topic 到达顺序不保证，接收端按 `currentRound + frameSeq` 使用 pending map 对齐。
 
-## 8. D3/F1 已验证结果
+## 7. START/STOP 生命周期
 
-D3 生产测试已验证 precise DDS H264 689/689、TCP+DDS 716/716、TCP+DDS+record
-684/684、RawGray8 622/622、双通道 377/377 和 372/372、20 round 尾帧一致。
+1. RESET/INIT 完成业务状态更新；InitAck 返回实际本地 identity。
+2. START 开启本回合，frameSeq 从 1 开始。
+3. 不同 DDS Topic 不提供跨 Topic 顺序保证；Stim 在 START 后使用 bounded settle，再开始固定 60 Hz Realtime。
+4. STOP 停止新帧 ingress，依次 drain video/meta/annotation，flush/close MP4，最后发布 `VideoStatus.running=false`。
+5. `wait_for_acknowledgments()` 不能作为尾帧到达的唯一证据，必须结合 app queue drain、bounded drain 和双端计数。
 
-F1 控制闭环已验证 VS2015 Stim DDS RESET/INIT/Ack/START/360 realtime/STOP；MinGW Stim
-60 realtime；DataDriven both 中每对 UDP+DDS 仅接受一次。板端新 Customer Receiver 实测：
-H264 30 Samples/2,887 bytes/0 error，RawGray8 10 Samples/6,400,000 bytes/0 error，均由
-VideoStatus 自动选择 Topic/geometry。
+## 8. Decode Gateway
 
-## 9. 厂商已知事项
+```text
+HwaSimIR.Video.<plat>.<sensor>.H264
+  -> RKMPP decode
+  -> NV12 Y / Gray8
+  -> HwaSimIR.Decoded.<plat>.<sensor>.RawGray8
+```
 
-1. 安装目录标称 2.4.5，但 runtime banner 为 2.4.4-r6873577。
-2. `wait_for_acknowledgments()` 可能早于接收应用完成最后 Sample drain 返回。
-3. CAEP Trial runtime 会改写 licence；每个并发进程必须使用独立、可写的 licence 副本。
-4. RK3588 显式绑定 `192.168.1.116` 时 discovery 异常；当前现场验收使用 `tcpv4://default//0`。
-5. 2.4.4 runtime 在同板双 HwaSimIR 共享协议 Topic 的测试中出现一路收不到广播及 `Send message failed:18`；在厂商确认前，双通道不得仅凭单路计数验收。
+Gateway callback 只复制 AU 并进入 bounded no-drop queue；worker 执行 MPP decode 和 WholeFrame Raw DDS publish。Gateway 先发布 decoded `running=false` VideoStatus，供客户预建 Reader；STOP 时 drain decoder、Raw writer，再发布 running=false。F2.1 不实现 VideoChunkV1。
 
-F1 没有 Annotation、VideoFrameMeta、Gateway 或 DDS 视频自定义 IDL；这些只能在 F2 单独设计。
+## 9. Legacy 与配置模式
 
-## 10. F2 帧同步接口
+```ini
+[CommandTransport]
+Input=udp|dds|both
+Ack=match_input|udp|dds|both
+```
 
-F2 保持视频数据为内置 `DDS::Bytes`，不向 H264 AU 或 Raw 帧中加入头。帧身份由两个独立 typed Topic 给出：
+UDP 与 DDS 都进入同一套业务 handler。both 模式按既有 semantic key 去重。Legacy precise/coarse 继续使用独立 UDP/TCP 端口；channel 仅用于可读名称、Legacy 配置和 legacy_channel Topic，DDS 身份以 platID+sensorID 为准。
 
-| Channel | VideoMeta Topic | Annotation Topic |
-|---|---|---|
-| precise | `HwaSimIR.VideoMeta.precise` | `HwaSimIR.Annotation.precise` |
-| coarse | `HwaSimIR.VideoMeta.coarse` | `HwaSimIR.Annotation.coarse` |
+## 10. Vendor Known Issues
 
-`VideoFrameMetaV1` 包含 `platID/sensorID/channel/frameSeq/currentRound/ptsMs/keyFrame/codec/width/height`。`AnnotationFrameV1` 包含相同帧身份和不超过 32768 字节的 JSON。两者 key 均为 `platID,sensorID`。
-
-每次 START 将输出序号归零，首个实际输出帧为 1。同一逻辑帧的 DDS video、VideoMeta、Annotation、TCP Packet v3 和 Local MP4 输入共用序号。跨 Topic 到达顺序不构成协议顺序；接收端必须按 `currentRound + frameSeq` 建立小型 pending map。`realtimeAnnotation=false` 时可以不发布 Annotation，但 VideoMeta 仍逐帧发布。
-
-STOP 依次停止新业务帧、完成已进入输出队列的帧、排空 video/meta/annotation、flush/close MP4 和本地文件，最后发布 `VideoStatus.running=false`。下一 START 建立新 round，`frameSeq` 再从 1 开始。
-
-## 11. F2 Decode Gateway
-
-生产直传仍优先使用 `HwaSimIR.Video.<channel>.H264`，一 AU 一 Sample。需要 Raw 的客户可在 RK3588 部署：
-
-`H264 DDS -> RKMPP decode -> NV12 Y plane -> HwaSimIR.Decoded.<channel>.RawGray8`
-
-Gateway 发布的每个 Raw Sample 是一整帧 `width*height` 字节，并在 `HwaSimIR.VideoStatus` 发布 `codec=raw_gray8`、`pixelFormat=gray8`、decoded Topic 和 geometry。Gateway 不使用 ShapeType、1 KB 分片或 VideoChunkV1。
-
-F2 precise 实测计数为 source AU 300、RKMPP decoded 300、Raw published 300、Customer received 300，所有 decode/writer/DDS/drop error 为 0。MPP 输入按一 Sample 一完整 AU 处理，parser split mode 必须关闭。
+1. SDK 安装路径标称 2.4.5，实际 runtime banner 为 2.4.4-r6873577。
+2. `wait_for_acknowledgments()` 可能早于接收应用处理完末尾 Sample 返回。
+3. Trial runtime 会改写 licence；共享 licence 的本次 fan-out A/B 也可运行，但生产并发进程仍建议使用独立可写副本，避免并发改写风险。
+4. RK3588 显式绑定 `192.168.1.116` 时 discovery 异常；现场验收使用官方支持的 `tcpv4://default//0`。
+5. 800x800 WholeFrame RawGray8 在同板 Gateway RELIABLE loopback 实测约 20.46 FPS；可靠计数为零丢帧，但未达到 55 FPS。不得通过丢帧、BEST_EFFORT 或 VideoChunkV1 伪造性能。

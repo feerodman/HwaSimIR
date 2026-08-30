@@ -5,7 +5,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 $root = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
-$hwaExe = Join-Path $root "HwaSim_IR\Bin\HwaSim_IR.exe"
+$hwaExe = Join-Path $root "HwaSim_IR\HwaSim_IR\Bin\HwaSim_IR.exe"
+$legacyHwaExe = Join-Path $root "HwaSim_IR\Bin\HwaSim_IR.exe"
+if (-not (Test-Path -LiteralPath $hwaExe)) { $hwaExe = $legacyHwaExe }
 $hwaWorkDir = Join-Path $root "HwaSim_IR\Bin"
 $gxx = "D:\Qt\Qt5.12.12\Tools\mingw730_64\bin\g++.exe"
 $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
@@ -135,6 +137,15 @@ $oldWindowPreview = $env:RenderWindowPreview
 $oldPerfLog = $env:EnablePerfLog
 $channelProcesses = @()
 $routeProcesses = @()
+$basePort = Get-Random -Minimum 22000 -Maximum 32000
+$preciseUdpPort = $basePort
+$coarseUdpPort = $basePort + 1
+$preciseAckPort = $basePort + 100
+$coarseAckPort = $basePort + 101
+$preciseConfig = Join-Path $logDir "NetworkConfig_precise_test.ini"
+$coarseConfig = Join-Path $logDir "NetworkConfig_coarse_test.ini"
+New-InstanceConfig $preciseConfig "precise" 2 $preciseUdpPort $preciseAckPort ($basePort + 200)
+New-InstanceConfig $coarseConfig "coarse" 1 $coarseUdpPort $coarseAckPort ($basePort + 201)
 
 try {
     $env:RenderPresentationMode = "HeadlessOffscreen"
@@ -142,8 +153,8 @@ try {
     $env:EnablePerfLog = "0"
 
     $channelProcesses = @(
-        (Start-HwaInstance -Arguments @("--channel", "precise") -Name "channel-precise"),
-        (Start-HwaInstance -Arguments @("--channel", "coarse") -Name "channel-coarse")
+        (Start-HwaInstance -Arguments @("--network-config", $preciseConfig) -Name "channel-precise"),
+        (Start-HwaInstance -Arguments @("--network-config", $coarseConfig) -Name "channel-coarse")
     )
     Start-Sleep -Seconds $StartupDelaySec
     foreach ($process in $channelProcesses) {
@@ -154,22 +165,12 @@ try {
     }
     Stop-HwaInstances -Processes $channelProcesses
     Assert-LogContains (Join-Path $logDir "channel-precise.out.log") `
-        '\[RuntimeInstance\].*channel=precise.*udpLocal=.*:8888.*configSource=cli-channel' `
-        "precise channel selection"
+        ("\[RuntimeInstance\].*channel=precise.*udpLocal=127\.0\.0\.1:{0}.*configSource=cli-network-config" -f $preciseUdpPort) `
+        "precise loopback channel selection"
     Assert-LogContains (Join-Path $logDir "channel-coarse.out.log") `
-        '\[RuntimeInstance\].*channel=coarse.*udpLocal=.*:8889.*configSource=cli-channel' `
-        "coarse channel selection"
+        ("\[RuntimeInstance\].*channel=coarse.*udpLocal=127\.0\.0\.1:{0}.*configSource=cli-network-config" -f $coarseUdpPort) `
+        "coarse loopback channel selection"
     $channelProcesses = @()
-
-    $basePort = Get-Random -Minimum 22000 -Maximum 32000
-    $preciseUdpPort = $basePort
-    $coarseUdpPort = $basePort + 1
-    $preciseAckPort = $basePort + 100
-    $coarseAckPort = $basePort + 101
-    $preciseConfig = Join-Path $logDir "NetworkConfig_precise_test.ini"
-    $coarseConfig = Join-Path $logDir "NetworkConfig_coarse_test.ini"
-    New-InstanceConfig $preciseConfig "precise" 2 $preciseUdpPort $preciseAckPort ($basePort + 200)
-    New-InstanceConfig $coarseConfig "coarse" 1 $coarseUdpPort $coarseAckPort ($basePort + 201)
 
     $routeProcesses = @(
         (Start-HwaInstance -Arguments @("--network-config", $preciseConfig) -Name "route-precise"),
@@ -238,16 +239,16 @@ try {
     $coarseLog = Join-Path $logDir "route-coarse.out.log"
     Assert-LogContains $preciseLog '\[RuntimeInstance\].*channel=precise.*allowDynamicRemote=0.*configSource=cli-network-config' "precise custom config"
     Assert-LogContains $coarseLog '\[RuntimeInstance\].*channel=coarse.*allowDynamicRemote=0.*configSource=cli-network-config' "coarse custom config"
-    Assert-LogContains $preciseLog '\[PacketRoute\] flag=0x41 accepted=1.*packetPlatID=1001.*reason=plat_match' "control route accept"
-    Assert-LogContains $preciseLog '\[PacketRouteReject\] flag=0x41 accepted=0.*packetPlatID=9999.*reason=plat_mismatch' "control route reject"
-    Assert-LogContains $preciseLog '\[PacketRoute\] flag=0x36 accepted=1.*packetSensorID=2.*reason=exact_match' "precise init exact"
-    Assert-LogContains $coarseLog '\[PacketRoute\] flag=0x36 accepted=1.*packetSensorID=1.*reason=exact_match' "coarse init exact"
-    Assert-LogContains $preciseLog '\[PacketRouteReject\] flag=0x36 accepted=0.*packetSensorID=1.*reason=sensor_mismatch' "init wrong sensor"
-    Assert-LogContains $preciseLog '\[PacketRoute\] flag=0x36 accepted=1.*packetSensorID=255.*reason=sensor_broadcast' "init broadcast"
-    Assert-LogContains $preciseLog '\[PacketRoute\] flag=0x38 accepted=1.*packetSensorID=2.*reason=exact_match' "display exact"
-    Assert-LogContains $preciseLog '\[PacketRouteReject\] flag=0x38 accepted=0.*packetSensorID=1.*reason=sensor_mismatch' "display wrong sensor"
-    Assert-LogContains $preciseLog '\[PacketRoute\] flag=0x38 accepted=1.*packetSensorID=255.*reason=sensor_broadcast' "display broadcast"
-    Assert-LogContains $preciseLog '\[PacketRouteReject\] flag=0x38 accepted=0.*packetPlatID=9999.*reason=plat_mismatch' "display wrong plat"
+    Assert-LogContains $preciseLog '\[ProtocolRoute\] transport=udp type=control flag=0x41 accepted=1.*packetPlatID=1001.*reason=exact_match' "control route accept"
+    Assert-LogContains $preciseLog '\[ProtocolRoute\] transport=udp type=control flag=0x41 accepted=0.*packetPlatID=9999.*reason=plat_mismatch' "control route reject"
+    Assert-LogContains $preciseLog '\[ProtocolRoute\] transport=udp type=init flag=0x36 accepted=1.*packetSensorID=2.*reason=exact_match' "precise init exact"
+    Assert-LogContains $coarseLog '\[ProtocolRoute\] transport=udp type=init flag=0x36 accepted=1.*packetSensorID=1.*reason=exact_match' "coarse init exact"
+    Assert-LogContains $preciseLog '\[ProtocolRoute\] transport=udp type=init flag=0x36 accepted=0.*packetSensorID=1.*reason=sensor_mismatch' "init wrong sensor"
+    Assert-LogContains $preciseLog '\[ProtocolRoute\] transport=udp type=init flag=0x36 accepted=1.*packetSensorID=255.*reason=sensor_broadcast' "init broadcast"
+    Assert-LogContains $preciseLog '\[ProtocolRoute\] transport=udp type=realtime flag=0x38 accepted=1.*packetSensorID=2.*reason=exact_match' "display exact"
+    Assert-LogContains $preciseLog '\[ProtocolRoute\] transport=udp type=realtime flag=0x38 accepted=0.*packetSensorID=1.*reason=sensor_mismatch' "display wrong sensor"
+    Assert-LogContains $preciseLog '\[ProtocolRoute\] transport=udp type=realtime flag=0x38 accepted=1.*packetSensorID=255.*reason=sensor_broadcast' "display broadcast"
+    Assert-LogContains $preciseLog '\[ProtocolRoute\] transport=udp type=realtime flag=0x38 accepted=0.*packetPlatID=9999.*reason=plat_mismatch' "display wrong plat"
     Assert-LogContains $preciseLog '\[RenderControl\].*externalSimMode=1.*effectiveSimMode=1.*source=udp_init' "sync mode apply"
     Assert-LogContains $preciseLog '\[RenderControl\].*externalSimMode=2.*externalVideoFps=60.*effectiveSimMode=2.*effectiveVideoFps=60.*source=udp_init' "async 60 mode apply"
     Assert-LogContains $preciseLog '\[RenderControl\].*externalSimMode=99.*externalModeValid=0.*effectiveSimMode=2.*effectiveVideoFps=60.*source=config_fallback' "invalid mode config fallback"

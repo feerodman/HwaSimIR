@@ -3,9 +3,11 @@
 #include "CommonData.h"
 
 #include <atomic>
+#include <cstddef>
 #include <functional>
 #include <memory>
 #include <string>
+#include <vector>
 
 class DdsRuntimeManager;
 
@@ -36,6 +38,8 @@ public:
     bool sendInit(const BYHWICD::InitP2cObjectTrackingCmd& value, std::string& error);
     bool sendRealtime(const BYHWICD::DisplayC2cObjTrackingData& value, std::string& error);
     bool waitForInitAck(int timeoutMs, BYHWICD::InitAckC2pObjectTrackingCmd& value);
+    bool waitForInitAcks(int timeoutMs, std::size_t expectedCount,
+        std::vector<BYHWICD::InitAckC2pObjectTrackingCmd>& values);
     bool waitForAcknowledgments(int timeoutMs, std::string& error);
     void setAckCallback(const std::function<void(const BYHWICD::InitAckC2pObjectTrackingCmd&)>& callback);
     unsigned long long ackCount() const;

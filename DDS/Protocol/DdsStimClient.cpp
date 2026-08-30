@@ -10,6 +10,7 @@
 #include <condition_variable>
 #include <iostream>
 #include <mutex>
+#include <vector>
 
 #if defined(HWASIMIR_HAS_ZRDDS)
 #include "ZRDDSCppSimpleInterface.h"
@@ -41,6 +42,7 @@ struct DdsStimClient::Impl
     BYHWICD::InitAckC2pObjectTrackingCmd lastAck = {};
     unsigned long long ackCount = 0;
     unsigned long long ackConsumedCount = 0;
+    std::vector<BYHWICD::InitAckC2pObjectTrackingCmd> acknowledgments;
     std::function<void(const BYHWICD::InitAckC2pObjectTrackingCmd&)> ackCallback;
 #if defined(HWASIMIR_HAS_ZRDDS)
     std::unique_ptr<StimAckListener> ackListener;
@@ -75,6 +77,7 @@ bool DdsStimClient::start(const DdsStimConfig& config, std::string& error)
         {
             std::lock_guard<std::mutex> lock(m_impl->mutex);
             m_impl->lastAck = ack;
+            m_impl->acknowledgments.push_back(ack);
             ++m_impl->ackCount;
             callback = m_impl->ackCallback;
             m_impl->ackReady.notify_all();
@@ -168,6 +171,25 @@ bool DdsStimClient::waitForInitAck(int timeoutMs, BYHWICD::InitAckC2pObjectTrack
         [this, initial] { return m_impl->ackCount > initial; })) return false;
     m_impl->ackConsumedCount = m_impl->ackCount;
     value = m_impl->lastAck;
+    return true;
+}
+
+bool DdsStimClient::waitForInitAcks(int timeoutMs, std::size_t expectedCount,
+    std::vector<BYHWICD::InitAckC2pObjectTrackingCmd>& values)
+{
+    std::unique_lock<std::mutex> lock(m_impl->mutex);
+    const unsigned long long initial = m_impl->ackConsumedCount;
+    if (!m_impl->ackReady.wait_for(lock, std::chrono::milliseconds(timeoutMs),
+        [this, initial, expectedCount] {
+            return m_impl->ackCount >= initial + expectedCount;
+        })) return false;
+    values.clear();
+    const std::size_t begin = static_cast<std::size_t>(initial);
+    const std::size_t end = begin + expectedCount;
+    if (m_impl->acknowledgments.size() < end) return false;
+    values.insert(values.end(), m_impl->acknowledgments.begin() + begin,
+        m_impl->acknowledgments.begin() + end);
+    m_impl->ackConsumedCount = initial + expectedCount;
     return true;
 }
 

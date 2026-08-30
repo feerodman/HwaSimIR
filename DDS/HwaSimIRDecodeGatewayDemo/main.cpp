@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <deque>
 #include <iomanip>
 #include <iostream>
 #include <mutex>
@@ -26,10 +27,14 @@ struct Options
     int timeoutSec = 120;
     int ackTimeoutSec = 60;
     int shutdownDrainMs = 5000;
+    int platID = -1;
+    int sensorID = -1;
+    std::size_t queueMaxFrames = 120;
     std::uint64_t frames = 0;
     std::string qos = "Config/DDS/ZRDDS_PROTOCOL_QOS.xml";
     std::string statusTopic = "HwaSimIR.VideoStatus";
     std::string channel = "precise";
+    std::string sourceTopicOverride;
     std::string decodedTopic;
 };
 
@@ -45,15 +50,18 @@ static Options Parse(int argc, char** argv)
         else if (arg == "--qos") o.qos = value;
         else if (arg == "--status-topic") o.statusTopic = value;
         else if (arg == "--channel") o.channel = value;
+        else if (arg == "--plat-id") o.platID = std::atoi(value.c_str());
+        else if (arg == "--sensor-id") o.sensorID = std::atoi(value.c_str());
+        else if (arg == "--video-topic") o.sourceTopicOverride = value;
         else if (arg == "--decoded-topic") o.decodedTopic = value;
+        else if (arg == "--queue-max-frames") o.queueMaxFrames =
+            static_cast<std::size_t>(std::max(1, std::atoi(value.c_str())));
         else if (arg == "--frames") o.frames = std::strtoull(value.c_str(), nullptr, 10);
         else if (arg == "--timeout-sec") o.timeoutSec = std::atoi(value.c_str());
         else if (arg == "--ack-timeout-sec") o.ackTimeoutSec = std::atoi(value.c_str());
         else if (arg == "--shutdown-drain-ms") o.shutdownDrainMs = std::atoi(value.c_str());
         else throw std::runtime_error("unknown option " + arg);
     }
-    if (o.decodedTopic.empty())
-        o.decodedTopic = "HwaSimIR.Decoded." + o.channel + ".RawGray8";
     return o;
 }
 
@@ -67,8 +75,9 @@ static void CopyBounded(char* target, std::size_t capacity, const std::string& v
 
 struct SourceStatus
 {
-    int platID = 0, sensorID = 0, width = 0, height = 0, fps = 0, currentRound = 0;
+    bool received = false;
     bool running = false;
+    int platID = 0, sensorID = 0, width = 0, height = 0, fps = 0, currentRound = 0;
     std::string channel, topic;
 };
 
@@ -76,20 +85,37 @@ class GatewayState
 {
 public:
     explicit GatewayState(const Options& options) : o(options) {}
+    ~GatewayState() { stopWorker(); }
 
     bool initialize(DomainParticipant* participant, std::string& error)
     {
         if (!decoder.initialize(error)) return false;
-        rawWriterBase = DDSIF::PubTopic(participant, o.decodedTopic.c_str(),
-            BytesTypeSupport::get_instance(), "hwasimir_reliable_writer", nullptr);
         statusWriterBase = DDSIF::PubTopic(participant, o.statusTopic.c_str(),
-            HwaSimIRDds::VideoStatusV1TypeSupport::get_instance(), "hwasimir_status_writer", nullptr);
+            HwaSimIRDds::VideoStatusV1TypeSupport::get_instance(),
+            "hwasimir_status_writer", nullptr);
         statusWriter = dynamic_cast<HwaSimIRDds::VideoStatusV1DataWriter*>(statusWriterBase);
-        if (!rawWriterBase || !statusWriter)
+        if (!statusWriter) { error = "gateway status writer creation failed"; return false; }
+        worker = std::thread(&GatewayState::workerLoop, this);
+        return true;
+    }
+
+    bool configureOutput(DomainParticipant* participant, const SourceStatus& s, std::string& error)
+    {
         {
-            error = "gateway writer creation failed";
-            return false;
+            std::lock_guard<std::mutex> lock(mutex);
+            outputTopic = o.decodedTopic.empty()
+                ? "HwaSimIR.Decoded." + std::to_string(s.platID) + "." +
+                    std::to_string(s.sensorID) + ".RawGray8"
+                : o.decodedTopic;
+            rawWriterBase = DDSIF::PubTopic(participant, outputTopic.c_str(),
+                BytesTypeSupport::get_instance(), "hwasimir_reliable_writer", nullptr);
+            if (!rawWriterBase) { error = "gateway raw writer creation failed"; return false; }
+            outputReady = true;
+            workChanged.notify_all();
         }
+        // Publish the discoverable topic/geometry before START so a status-driven
+        // receiver can create its Raw reader without losing the first frame.
+        publishStatus(false);
         return true;
     }
 
@@ -97,8 +123,13 @@ public:
     {
         const std::string channel = s.channel ? s.channel : "";
         const std::string codec = s.codec ? s.codec : "";
-        const bool accepted = channel == o.channel && codec == "h264";
-        std::cout << "[GatewaySourceStatus] channel=" << channel
+        const bool identityMatch = (o.platID < 0 || s.platID == o.platID) &&
+            (o.sensorID < 0 || s.sensorID == o.sensorID);
+        const bool selectorMatch = (o.platID >= 0 || o.sensorID >= 0)
+            ? identityMatch : channel == o.channel;
+        const bool accepted = selectorMatch && codec == "h264";
+        std::cout << "[GatewaySourceStatus] platID=" << s.platID
+                  << " sensorID=" << s.sensorID << " channel=" << channel
                   << " codec=" << codec << " running=" << (s.running ? 1 : 0)
                   << " topic=" << (s.videoTopic ? s.videoTopic : "")
                   << " accepted=" << (accepted ? 1 : 0) << std::endl;
@@ -107,87 +138,61 @@ public:
 
     void onStatus(const HwaSimIRDds::VideoStatusV1& s)
     {
-        std::lock_guard<std::mutex> lock(mutex);
-        source.platID = s.platID; source.sensorID = s.sensorID;
-        source.width = s.width; source.height = s.height; source.fps = s.fps;
-        source.currentRound = s.currentRound; source.running = s.running != 0;
-        source.channel = s.channel ? s.channel : "";
-        source.topic = s.videoTopic ? s.videoTopic : "";
-        ++statusReceived;
-        if (source.running && !decodedRunning)
+        WorkKind transition = WorkKind::None;
         {
-            if (decoderFlushed)
-            {
-                decoder.shutdown();
-                std::string error;
-                if (!decoder.initialize(error))
-                {
-                    ++decodeErrors;
-                    std::cerr << "[Gateway][ERROR] decoderRoundReset=" << error << std::endl;
-                    changed.notify_all();
-                    return;
-                }
-                decoderFlushed = false;
-            }
-            stopped = false;
-            decodedRunning = true;
-            publishStatusLocked(true);
+            std::lock_guard<std::mutex> lock(mutex);
+            const bool wasRunning = source.running;
+            source.received = true;
+            source.platID = s.platID; source.sensorID = s.sensorID;
+            source.width = s.width; source.height = s.height; source.fps = s.fps;
+            source.currentRound = s.currentRound; source.running = s.running != 0;
+            source.channel = s.channel ? s.channel : "";
+            source.topic = s.videoTopic ? s.videoTopic : "";
+            ++statusReceived;
+            if (source.running && !wasRunning) transition = WorkKind::Start;
+            else if (!source.running && wasRunning) transition = WorkKind::Stop;
+            changed.notify_all();
         }
-        else if (!source.running && decodedRunning)
-        {
-            std::vector<MppDecodedGrayFrame> flushed;
-            std::string error;
-            if (!decoder.flush(flushed, error))
-            {
-                ++decodeErrors;
-                std::cerr << "[Gateway][ERROR] decoderFlush=" << error << std::endl;
-            }
-            publishFramesLocked(flushed);
-            drainRawLocked();
-            publishStatusLocked(false);
-            decodedRunning = false;
-            decoderFlushed = true;
-            stopped = true;
-        }
-        changed.notify_all();
+        if (transition != WorkKind::None) enqueueControl(transition);
     }
 
     void onVideo(const Bytes& sample)
     {
         const std::uint8_t* data = sample.value.get_contiguous_buffer();
         const std::size_t size = static_cast<std::size_t>(sample.value.length());
-        std::lock_guard<std::mutex> lock(mutex);
-        ++sourceAuCount;
         if (!data || size == 0)
         {
+            std::lock_guard<std::mutex> lock(mutex);
             ++ddsErrors;
             changed.notify_all();
             return;
         }
-        const auto begin = std::chrono::steady_clock::now();
-        std::vector<MppDecodedGrayFrame> decoded;
-        std::string error;
-        if (!decoder.pushAccessUnit(data, size, decoded, error))
-        {
-            ++decodeErrors;
-            std::cerr << "[Gateway][ERROR] sourceAU=" << sourceAuCount
-                      << " decode=" << error << std::endl;
-        }
-        publishFramesLocked(decoded);
-        const double elapsed = std::chrono::duration<double, std::milli>(
-            std::chrono::steady_clock::now() - begin).count();
-        decodeMsTotal += elapsed;
-        decodeMsMax = (std::max)(decodeMsMax, elapsed);
-        changed.notify_all();
+        const auto copyBegin = std::chrono::steady_clock::now();
+        WorkItem item;
+        item.kind = WorkKind::AccessUnit;
+        item.payload.assign(data, data + size);
+        const double copyMs = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - copyBegin).count();
+        std::unique_lock<std::mutex> lock(mutex);
+        const auto waitBegin = std::chrono::steady_clock::now();
+        queueSpace.wait(lock, [this] { return stopRequested || workQueue.size() < o.queueMaxFrames; });
+        if (stopRequested) return;
+        queueWaitMs += std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - waitBegin).count();
+        callbackCopyMs += copyMs;
+        ++sourceAuCount;
+        workQueue.push_back(std::move(item));
+        maxQueueDepth = (std::max)(maxQueueDepth, workQueue.size());
+        workChanged.notify_one();
     }
 
-    bool waitForSource(std::string& topic)
+    bool waitForSource(SourceStatus& value)
     {
         std::unique_lock<std::mutex> lock(mutex);
         const bool ok = changed.wait_for(lock, std::chrono::seconds(o.timeoutSec), [this] {
-            return source.running && !source.topic.empty();
+            return source.received && !source.topic.empty();
         });
-        topic = source.topic;
+        value = source;
         return ok;
     }
 
@@ -201,6 +206,18 @@ public:
         });
     }
 
+    void stopWorker()
+    {
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            if (stopRequested) return;
+            stopRequested = true;
+            workChanged.notify_all();
+            queueSpace.notify_all();
+        }
+        if (worker.joinable()) worker.join();
+    }
+
     int summary(bool complete)
     {
         std::lock_guard<std::mutex> lock(mutex);
@@ -210,8 +227,11 @@ public:
             << " decodedFrames=" << decodedFrames
             << " rawPublished=" << rawPublished
             << " rawBytes=" << rawBytes
+            << " decodeFps=" << (decodeMsTotal > 0.0 ? decodedFrames * 1000.0 / decodeMsTotal : 0.0)
             << " decodeMsAvg=" << (sourceAuCount ? decodeMsTotal / sourceAuCount : 0.0)
             << " decodeMsMax=" << decodeMsMax
+            << " callbackCopyMsAvg=" << (sourceAuCount ? callbackCopyMs / sourceAuCount : 0.0)
+            << " queueWaitMs=" << queueWaitMs << " maxQueueDepth=" << maxQueueDepth
             << " decodedWidth=" << decodedWidth << " decodedHeight=" << decodedHeight
             << " decodeErrors=" << decodeErrors << " writerErrors=" << writerErrors
             << " ddsErrors=" << ddsErrors << " dropped=0" << std::endl;
@@ -221,78 +241,188 @@ public:
 
     DataWriter* rawWriter() const { return rawWriterBase; }
     DataWriter* statusWriterBasePtr() const { return statusWriterBase; }
+    std::string decodedTopic() const { std::lock_guard<std::mutex> lock(mutex); return outputTopic; }
 
 private:
-    void publishFramesLocked(const std::vector<MppDecodedGrayFrame>& frames)
+    enum class WorkKind { None, Start, AccessUnit, Stop };
+    struct WorkItem { WorkKind kind = WorkKind::None; std::vector<std::uint8_t> payload; };
+
+    void enqueueControl(WorkKind kind)
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        queueSpace.wait(lock, [this] { return stopRequested || workQueue.size() < o.queueMaxFrames; });
+        if (stopRequested) return;
+        WorkItem item; item.kind = kind;
+        workQueue.push_back(std::move(item));
+        maxQueueDepth = (std::max)(maxQueueDepth, workQueue.size());
+        workChanged.notify_one();
+    }
+
+    void workerLoop()
+    {
+        for (;;)
+        {
+            WorkItem item;
+            {
+                std::unique_lock<std::mutex> lock(mutex);
+                workChanged.wait(lock, [this] {
+                    return stopRequested || (outputReady && !workQueue.empty());
+                });
+                if (stopRequested && workQueue.empty()) return;
+                if (!outputReady || workQueue.empty()) continue;
+                item = std::move(workQueue.front());
+                workQueue.pop_front();
+                queueSpace.notify_all();
+            }
+            if (item.kind == WorkKind::Start) processStart();
+            else if (item.kind == WorkKind::AccessUnit) processAccessUnit(item.payload);
+            else if (item.kind == WorkKind::Stop) processStop();
+        }
+    }
+
+    void processStart()
+    {
+        if (decoderFlushed)
+        {
+            decoder.shutdown();
+            std::string error;
+            if (!decoder.initialize(error))
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                ++decodeErrors; changed.notify_all(); return;
+            }
+            decoderFlushed = false;
+        }
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            decodedRunning = true; stopped = false;
+        }
+        publishStatus(true);
+    }
+
+    void processAccessUnit(const std::vector<std::uint8_t>& payload)
+    {
+        const auto begin = std::chrono::steady_clock::now();
+        std::vector<MppDecodedGrayFrame> frames;
+        std::string error;
+        const bool ok = decoder.pushAccessUnit(payload.data(), payload.size(), frames, error);
+        const double elapsed = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - begin).count();
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            decodeMsTotal += elapsed;
+            decodeMsMax = (std::max)(decodeMsMax, elapsed);
+            if (!ok) ++decodeErrors;
+        }
+        if (!ok) std::cerr << "[Gateway][ERROR] decode=" << error << std::endl;
+        publishFrames(frames);
+    }
+
+    void processStop()
+    {
+        std::vector<MppDecodedGrayFrame> frames;
+        std::string error;
+        if (!decoder.flush(frames, error))
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            ++decodeErrors;
+        }
+        publishFrames(frames);
+        drainRaw();
+        publishStatus(false);
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            decodedRunning = false; decoderFlushed = true; stopped = true;
+            changed.notify_all();
+        }
+    }
+
+    void publishFrames(const std::vector<MppDecodedGrayFrame>& frames)
     {
         for (std::size_t i = 0; i < frames.size(); ++i)
         {
             const MppDecodedGrayFrame& frame = frames[i];
-            decodedWidth = frame.width; decodedHeight = frame.height;
-            if (source.width > 0 && (frame.width != source.width || frame.height != source.height))
+            SourceStatus snapshot;
             {
-                ++decodeErrors;
-                continue;
+                std::lock_guard<std::mutex> lock(mutex);
+                snapshot = source;
+                decodedWidth = frame.width; decodedHeight = frame.height;
+                if (snapshot.width > 0 &&
+                    (frame.width != snapshot.width || frame.height != snapshot.height))
+                { ++decodeErrors; continue; }
+                ++decodedFrames;
             }
-            ++decodedFrames;
             const ReturnCode_t result = DDSIF::BytesWrite(o.domain,
-                const_cast<char*>(o.decodedTopic.c_str()),
+                const_cast<char*>(outputTopic.c_str()),
                 reinterpret_cast<const char*>(frame.gray8.data()),
                 static_cast<DDS_Long>(frame.gray8.size()));
+            std::lock_guard<std::mutex> lock(mutex);
             if (result != RETCODE_OK) ++writerErrors;
             else { ++rawPublished; rawBytes += frame.gray8.size(); }
+            changed.notify_all();
         }
     }
 
-    void publishStatusLocked(bool running)
+    void publishStatus(bool running)
     {
-        HwaSimIRDds::VideoStatusV1 sample;
-        if (!HwaSimIRDds::VideoStatusV1Initialize(&sample))
+        SourceStatus snapshot;
+        int width = 0, height = 0;
+        std::string topic;
         {
-            ++writerErrors;
-            return;
+            std::lock_guard<std::mutex> lock(mutex);
+            snapshot = source; width = decodedWidth; height = decodedHeight; topic = outputTopic;
         }
-        sample.platID = source.platID; sample.sensorID = source.sensorID;
-        CopyBounded(sample.channel, 17, source.channel);
+        HwaSimIRDds::VideoStatusV1 sample;
+        if (!HwaSimIRDds::VideoStatusV1Initialize(&sample)) return;
+        sample.platID = snapshot.platID; sample.sensorID = snapshot.sensorID;
+        CopyBounded(sample.channel, 17, snapshot.channel);
         sample.running = running;
         CopyBounded(sample.codec, 25, "raw_gray8");
         CopyBounded(sample.pixelFormat, 25, "gray8");
-        CopyBounded(sample.videoTopic, 129, o.decodedTopic);
-        sample.width = decodedWidth > 0 ? decodedWidth : source.width;
-        sample.height = decodedHeight > 0 ? decodedHeight : source.height;
-        sample.fps = source.fps; sample.bitrateKbps = 0; sample.gopFrames = 0;
-        sample.compressed = false; sample.currentRound = source.currentRound;
-        if (statusWriter->write(sample, HANDLE_NIL_NATIVE) != RETCODE_OK) ++writerErrors;
+        CopyBounded(sample.videoTopic, 129, topic);
+        const int statusWidth = width > 0 ? width : snapshot.width;
+        const int statusHeight = height > 0 ? height : snapshot.height;
+        sample.width = statusWidth;
+        sample.height = statusHeight;
+        sample.fps = snapshot.fps; sample.bitrateKbps = 0; sample.gopFrames = 0;
+        sample.compressed = false; sample.currentRound = snapshot.currentRound;
+        if (statusWriter->write(sample, HANDLE_NIL_NATIVE) != RETCODE_OK)
+        { std::lock_guard<std::mutex> lock(mutex); ++writerErrors; }
         HwaSimIRDds::VideoStatusV1Finalize(&sample);
         std::cout << "[GatewayStatus] running=" << (running ? 1 : 0)
-                  << " topic=" << o.decodedTopic << " width=" << source.width
-                  << " height=" << source.height << " round=" << source.currentRound << std::endl;
+                  << " topic=" << topic << " width=" << statusWidth
+                  << " height=" << statusHeight << " round=" << snapshot.currentRound << std::endl;
     }
 
-    void drainRawLocked()
+    void drainRaw()
     {
-        Duration_t timeout;
-        timeout.sec = o.ackTimeoutSec; timeout.nanosec = 0;
+        Duration_t timeout; timeout.sec = o.ackTimeoutSec; timeout.nanosec = 0;
         if (rawWriterBase && rawWriterBase->wait_for_acknowledgments(timeout) != RETCODE_OK)
-            ++writerErrors;
+        { std::lock_guard<std::mutex> lock(mutex); ++writerErrors; }
         if (o.shutdownDrainMs > 0)
             std::this_thread::sleep_for(std::chrono::milliseconds(o.shutdownDrainMs));
     }
 
     const Options& o;
     mutable std::mutex mutex;
-    std::condition_variable changed;
+    std::condition_variable changed, workChanged, queueSpace;
+    std::deque<WorkItem> workQueue;
+    std::thread worker;
     SourceStatus source;
     MppH264GrayDecoder decoder;
     DataWriter* rawWriterBase = nullptr;
     DataWriter* statusWriterBase = nullptr;
     HwaSimIRDds::VideoStatusV1DataWriter* statusWriter = nullptr;
+    std::string outputTopic;
+    bool outputReady = false, stopRequested = false;
     bool decodedRunning = false, decoderFlushed = false, stopped = false;
     std::uint64_t statusReceived = 0, sourceAuCount = 0, decodedFrames = 0;
     std::uint64_t rawPublished = 0, rawBytes = 0;
     std::uint64_t decodeErrors = 0, writerErrors = 0, ddsErrors = 0;
+    std::size_t maxQueueDepth = 0;
     int decodedWidth = 0, decodedHeight = 0;
     double decodeMsTotal = 0.0, decodeMsMax = 0.0;
+    double callbackCopyMs = 0.0, queueWaitMs = 0.0;
 };
 
 class StatusListener : public SimpleDataReaderListener<HwaSimIRDds::VideoStatusV1,
@@ -331,28 +461,28 @@ int main(int argc, char** argv)
             HwaSimIRDds::VideoStatusV1TypeSupport::get_instance(),
             "hwasimir_status_reader", &statusListener);
         if (!statusReader) throw std::runtime_error("status SubTopic failed");
-        // Subscribe before START. Waiting for running VideoStatus and only then
-        // creating the Reader can lose the first reliable samples because the
-        // writer has no matched reader yet.
-        const std::string sourceTopic = "HwaSimIR.Video." + o.channel + ".H264";
+        SourceStatus source;
+        if (!state.waitForSource(source)) throw std::runtime_error("source H264 status timeout");
+        const std::string sourceTopic = o.sourceTopicOverride.empty()
+            ? source.topic : o.sourceTopicOverride;
+        if (sourceTopic.empty()) throw std::runtime_error("source VideoStatus topic is empty");
+        if (!state.configureOutput(participant, source, error)) throw std::runtime_error(error);
         VideoListener videoListener(state);
         DataReader* sourceReader = DDSIF::SubTopic(participant, sourceTopic.c_str(),
             BytesTypeSupport::get_instance(), "hwasimir_reliable_reader", &videoListener);
         if (!sourceReader) throw std::runtime_error("source H264 SubTopic failed");
-        std::cout << "[GatewayDdsReady] writers=2 readers=2 sourceTopic="
-                  << sourceTopic << std::endl;
-        std::string statusSourceTopic;
-        if (!state.waitForSource(statusSourceTopic)) throw std::runtime_error("source H264 status timeout");
-        if (statusSourceTopic != sourceTopic)
-            throw std::runtime_error("source VideoStatus topic mismatch");
-        std::cout << "gatewayReady=1 channel=" << o.channel << " sourceTopic=" << sourceTopic
-                  << " decodedTopic=" << o.decodedTopic << " decoder=rkmpp" << std::endl;
+        std::cout << "gatewayReady=1 platID=" << source.platID
+                  << " sensorID=" << source.sensorID << " channel=" << source.channel
+                  << " sourceTopic=" << sourceTopic
+                  << " decodedTopic=" << state.decodedTopic()
+                  << " decoder=rkmpp callbackMode=enqueue_only" << std::endl;
         const bool complete = state.waitComplete();
+        state.stopWorker();
         const int result = state.summary(complete);
         DDSIF::UnSubTopic(sourceReader);
         DDSIF::UnSubTopic(statusReader);
-        DDSIF::UnPubTopic(state.rawWriter());
-        DDSIF::UnPubTopic(state.statusWriterBasePtr());
+        if (state.rawWriter()) DDSIF::UnPubTopic(state.rawWriter());
+        if (state.statusWriterBasePtr()) DDSIF::UnPubTopic(state.statusWriterBasePtr());
         DDSIF::Finalize();
         return result;
     }
