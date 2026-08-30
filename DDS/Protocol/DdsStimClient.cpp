@@ -40,6 +40,7 @@ struct DdsStimClient::Impl
     std::condition_variable ackReady;
     BYHWICD::InitAckC2pObjectTrackingCmd lastAck = {};
     unsigned long long ackCount = 0;
+    unsigned long long ackConsumedCount = 0;
     std::function<void(const BYHWICD::InitAckC2pObjectTrackingCmd&)> ackCallback;
 #if defined(HWASIMIR_HAS_ZRDDS)
     std::unique_ptr<StimAckListener> ackListener;
@@ -162,10 +163,10 @@ bool DdsStimClient::sendRealtime(const BYHWICD::DisplayC2cObjTrackingData& value
 bool DdsStimClient::waitForInitAck(int timeoutMs, BYHWICD::InitAckC2pObjectTrackingCmd& value)
 {
     std::unique_lock<std::mutex> lock(m_impl->mutex);
-    if (m_impl->ackCount > 0) { value = m_impl->lastAck; return true; }
-    const unsigned long long initial = 0;
+    const unsigned long long initial = m_impl->ackConsumedCount;
     if (!m_impl->ackReady.wait_for(lock, std::chrono::milliseconds(timeoutMs),
         [this, initial] { return m_impl->ackCount > initial; })) return false;
+    m_impl->ackConsumedCount = m_impl->ackCount;
     value = m_impl->lastAck;
     return true;
 }

@@ -35,7 +35,7 @@ F2 已支持 DDS 全链 Control/Init/Realtime/Ack、VideoStatus、VideoMeta、An
 - [ ] 再启动 HwaSim_IR，并从其正常资产工作目录运行
 - [ ] 通过原 UDP 发送 INIT、START 和 realtime
 - [ ] H264 首个可用 AU 含 SPS/PPS/IDR，或在一个 GOP 内恢复
-- [ ] DDS VideoDisplay 显示 `packetVersion=0`、无 realtime/annotation，不把它当错误
+- [ ] DDS VideoDisplay 显示 `packetVersion=0`；Init/Realtime 来自 typed DDS，Annotation 来自独立 Topic，不从视频 Bytes 解析
 
 ## 运行中
 
@@ -82,4 +82,4 @@ F2 已支持 DDS 全链 Control/Init/Realtime/Ack、VideoStatus、VideoMeta、An
 - [ ] `[DdsFrameDiag] max > min`、`stddev > 0`，首帧 PNG 存在
 - [ ] GUI 在 START/Realtime 期间有图；STOP 后保留最后一帧属于正常行为
 - [ ] 双 Reader 时每个 Windows 进程使用独立、可写的 Trial licence 副本
-- [ ] DDS VideoDisplay 左侧 INIT/Realtime 栏为空按 video-only 设计处理，不扩展 DDS IDL
+- [ ] DDS full 模式左侧 INIT/Realtime 来自 F1 typed Topic；F2 Meta/Annotation 仅用于帧同步，不写入视频 Bytes

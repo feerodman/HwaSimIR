@@ -110,6 +110,8 @@ VideoStatus 自动选择 Topic/geometry。
 1. 安装目录标称 2.4.5，但 runtime banner 为 2.4.4-r6873577。
 2. `wait_for_acknowledgments()` 可能早于接收应用完成最后 Sample drain 返回。
 3. CAEP Trial runtime 会改写 licence；每个并发进程必须使用独立、可写的 licence 副本。
+4. RK3588 显式绑定 `192.168.1.116` 时 discovery 异常；当前现场验收使用 `tcpv4://default//0`。
+5. 2.4.4 runtime 在同板双 HwaSimIR 共享协议 Topic 的测试中出现一路收不到广播及 `Send message failed:18`；在厂商确认前，双通道不得仅凭单路计数验收。
 
 F1 没有 Annotation、VideoFrameMeta、Gateway 或 DDS 视频自定义 IDL；这些只能在 F2 单独设计。
 
@@ -135,3 +137,5 @@ STOP 依次停止新业务帧、完成已进入输出队列的帧、排空 video
 `H264 DDS -> RKMPP decode -> NV12 Y plane -> HwaSimIR.Decoded.<channel>.RawGray8`
 
 Gateway 发布的每个 Raw Sample 是一整帧 `width*height` 字节，并在 `HwaSimIR.VideoStatus` 发布 `codec=raw_gray8`、`pixelFormat=gray8`、decoded Topic 和 geometry。Gateway 不使用 ShapeType、1 KB 分片或 VideoChunkV1。
+
+F2 precise 实测计数为 source AU 300、RKMPP decoded 300、Raw published 300、Customer received 300，所有 decode/writer/DDS/drop error 为 0。MPP 输入按一 Sample 一完整 AU 处理，parser split mode 必须关闭。

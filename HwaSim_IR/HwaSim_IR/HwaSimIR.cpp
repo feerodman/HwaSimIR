@@ -1227,6 +1227,12 @@ double WeatherSunStrength(int weatherCode, double sunElevationDeg)
 HwaSimIR::HwaSimIR(int argc, char** argv, const HwaSimIRLaunchOptions& launchOptions)
 	: m_pFramework(new PandaFramework()), m_pMainWindow(nullptr)
 	,m_isAddPlatform(false), m_isSimRunning(false), m_currentRound(0), m_isCameraAttached(false), m_isInitTargetPlatID(false), m_stage0DisplayFrameCount(0){
+	// VideoStatus is published as soon as DDS is ready, before the first INIT.
+	// Keep its pre-round geometry/codec inputs deterministic instead of exposing
+	// uninitialised protocol storage to customers.
+	std::memset(&m_initSceneData, 0, sizeof(m_initSceneData));
+	std::memset(&m_realTimeSceneData, 0, sizeof(m_realTimeSceneData));
+	std::memset(&m_sensorParam, 0, sizeof(m_sensorParam));
 	m_launchOptions = launchOptions;
 	m_runtimeConfig.loadFromCandidates(BuildRuntimeConfigCandidatePaths());
 	LoadD2VideoOutputConfig();
@@ -7709,6 +7715,7 @@ void HwaSimIR::LoadD2VideoOutputConfig()
 		m_runtimeConfig.getInt("DdsVideo", "QueueMaxFrames", "HwaSimIRDdsQueueMaxFrames", 120, 0)));
 	m_ddsVideoConfig.blockWhenQueueFull = m_runtimeConfig.getBool("DdsVideo", "BlockWhenQueueFull", "HwaSimIRDdsBlockWhenQueueFull", true, 0);
 	m_ddsVideoConfig.ackTimeoutSec = (std::max)(1, m_runtimeConfig.getInt("DdsVideo", "AckTimeoutSec", "HwaSimIRDdsAckTimeoutSec", 60, 0));
+	m_ddsVideoConfig.discoverySettleMs = (std::max)(0, m_runtimeConfig.getInt("DdsVideo", "DiscoverySettleMs", "HwaSimIRDdsDiscoverySettleMs", 1000, 0));
 	m_ddsVideoConfig.shutdownDrainMs = (std::max)(0, m_runtimeConfig.getInt("DdsVideo", "ShutdownDrainMs", "HwaSimIRDdsShutdownDrainMs", 5000, 0));
 	m_ddsVideoConfig.enablePerfLog = m_runtimeConfig.getBool("DdsVideo", "EnablePerfLog", "HwaSimIRDdsEnablePerfLog", true, 0);
 	m_ddsVideoConfig.auditPath = m_runtimeConfig.getString("DdsVideo", "AuditPath", "HwaSimIRDdsAuditPath", "", 0);

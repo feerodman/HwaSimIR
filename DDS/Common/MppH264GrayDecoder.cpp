@@ -41,6 +41,11 @@ struct MppH264GrayDecoder::Impl
             {
                 ++idlePolls;
                 if (waitForEos) std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                // Some RK3588 MPP builds report an empty EOS marker before a
+                // final delayed image becomes observable.  Keep polling for a
+                // short bounded quiet window after EOS instead of returning at
+                // the marker itself.
+                if (waitForEos && eosSeen && idlePolls >= 100) break;
                 continue;
             }
             idlePolls = 0;
@@ -52,12 +57,10 @@ struct MppH264GrayDecoder::Impl
                 mpp_frame_deinit(&frame);
                 continue;
             }
-            if (mpp_frame_get_eos(frame))
-            {
-                eosSeen = true;
-                mpp_frame_deinit(&frame);
-                break;
-            }
+            // RKMPP may attach EOS to the final frame that still owns a valid
+            // image buffer.  Consume that image before terminating the drain;
+            // otherwise every round loses exactly its last decoded frame.
+            const bool frameEos = mpp_frame_get_eos(frame) != 0;
             if (mpp_frame_get_errinfo(frame) || mpp_frame_get_discard(frame))
             {
                 error = "MPP returned corrupt/discarded frame";
@@ -67,6 +70,12 @@ struct MppH264GrayDecoder::Impl
             MppBuffer buffer = mpp_frame_get_buffer(frame);
             const std::uint8_t* source = buffer
                 ? static_cast<const std::uint8_t*>(mpp_buffer_get_ptr(buffer)) : nullptr;
+            if (!source && frameEos)
+            {
+                eosSeen = true;
+                mpp_frame_deinit(&frame);
+                continue;
+            }
             const int frameWidth = static_cast<int>(mpp_frame_get_width(frame));
             const int frameHeight = static_cast<int>(mpp_frame_get_height(frame));
             const int stride = static_cast<int>(mpp_frame_get_hor_stride(frame));
@@ -88,6 +97,8 @@ struct MppH264GrayDecoder::Impl
             height = frameHeight;
             output.push_back(std::move(decoded));
             mpp_frame_deinit(&frame);
+            if (frameEos)
+                eosSeen = true;
         }
         if (waitForEos && !eosSeen)
         {
@@ -115,7 +126,11 @@ bool MppH264GrayDecoder::initialize(std::string& error)
         error = "mpp_create failed code=" + std::to_string(result);
         return false;
     }
-    RK_U32 split = 1;
+    // DDS F2 contract is one complete Annex-B access unit per Sample.  Parser
+    // split mode is for an arbitrary byte stream/chunks and retains the final
+    // AU while waiting for a following start code, producing N-1 frames at
+    // STOP.  Preserve the already-known DDS packet boundary instead.
+    RK_U32 split = 0;
     m_impl->api->control(m_impl->context, MPP_DEC_SET_PARSER_SPLIT_MODE, &split);
     result = mpp_init(m_impl->context, MPP_CTX_DEC, MPP_VIDEO_CodingAVC);
     if (result != MPP_OK)
@@ -130,6 +145,8 @@ bool MppH264GrayDecoder::initialize(std::string& error)
     m_impl->api->control(m_impl->context, MPP_DEC_SET_IMMEDIATE_OUT, &immediate);
     RK_S64 outputTimeout = 0;
     m_impl->api->control(m_impl->context, MPP_SET_OUTPUT_TIMEOUT, &outputTimeout);
+    RK_S64 inputTimeout = 0;
+    m_impl->api->control(m_impl->context, MPP_SET_INPUT_TIMEOUT, &inputTimeout);
     m_impl->ready = true;
     return true;
 #endif
@@ -176,17 +193,25 @@ bool MppH264GrayDecoder::flush(std::vector<MppDecodedGrayFrame>& output, std::st
     (void)output; error = "binary was built without real RKMPP support"; return false;
 #else
     if (!m_impl->ready) return true;
-    MppPacket packet = nullptr;
-    MPP_RET result = mpp_packet_init(&packet, nullptr, 0);
-    if (result != MPP_OK) { error = "MPP EOS packet init failed"; return false; }
-    mpp_packet_set_eos(packet);
-    result = m_impl->api->decode_put_packet(m_impl->context, packet);
-    mpp_packet_deinit(&packet);
-    if (result != MPP_OK)
+    bool eosQueued = false;
+    for (int attempt = 0; attempt < 2000 && !eosQueued; ++attempt)
     {
-        error = "MPP EOS put failed code=" + std::to_string(result);
-        return false;
+        MppPacket packet = nullptr;
+        MPP_RET result = mpp_packet_init(&packet, nullptr, 0);
+        if (result != MPP_OK) { error = "MPP EOS packet init failed"; return false; }
+        mpp_packet_set_eos(packet);
+        result = m_impl->api->decode_put_packet(m_impl->context, packet);
+        mpp_packet_deinit(&packet);
+        if (result == MPP_OK)
+        {
+            eosQueued = true;
+            break;
+        }
+        bool ignoredEos = false;
+        if (!m_impl->collect(output, false, ignoredEos, error)) return false;
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
+    if (!eosQueued) { error = "MPP EOS input remained full for 2000 ms"; return false; }
     bool eos = false;
     return m_impl->collect(output, true, eos, error);
 #endif

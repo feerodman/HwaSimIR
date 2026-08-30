@@ -16,7 +16,7 @@
 客户 Stim 驱动 HwaSimIR：
 
 ```bash
-HwaSimIRStimDdsDemo --domain 150 --qos Config/DDS/ZRDDS_PROTOCOL_QOS.xml --plat-id 1 --sensor-id 1 --sim-mode 2 --video-fps 60 --width 800 --height 800 --h264 1 --save-mp4 0 --duration 10 --realtime-hz 60
+HwaSimIRStimDdsDemo --domain 150 --qos Config/DDS/ZRDDS_PROTOCOL_QOS.xml --plat-id 1 --sensor-id 1 --sim-mode 2 --video-fps 60 --width 800 --height 800 --h264 1 --save-mp4 0 --realtime-annotation 1 --rounds 1 --inter-round-wait-ms 6000 --duration 10 --realtime-hz 60
 ```
 
 客户直接接收 H264 并用 RKMPP 解码：
@@ -55,6 +55,8 @@ Gateway 转 Raw 后由客户接收：
 | Meta/Annotation pending | 等待 STOP drain；按 `round+frameSeq` 匹配，不假设跨 Topic 同时到达 |
 | 最后几帧缺失 | 检查应用 queue、bounded drain 和双端计数，不能只看 ack API |
 | 绑定 192.168.1.116 无 discovery | 使用已验证的 `tcpv4://default//0` 并作为 vendor issue 留证 |
+| Gateway DDSIF::Init 失败 | 每个进程使用从已验证 SDK 复制的独立可写 Trial licence；失效或被并发改写的副本必须替换，禁止多个进程共享同一副本 |
+| 双 HwaSimIR 只有一路收到控制 | 分别检查两实例的 ProtocolIngress；当前 2.4.4 runtime 在同板共享协议 Topic 场景有已知广播/重连问题，不能把单路收到当成双路 PASS |
 
 ## 5. 交付物
 

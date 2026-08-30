@@ -299,7 +299,11 @@ bool DdsVideoPublisher::configureTopic(const std::string& topic, bool* changed, 
 	}
 	if (changed) *changed = true;
 	std::cout << "[DdsVideo] writerCreated=1 topic=" << topic
-		<< " profile=hwasimir_reliable_writer requestIdr=1" << std::endl;
+		<< " profile=hwasimir_reliable_writer requestIdr=1"
+		<< " discoverySettleMs=" << m_impl->config.discoverySettleMs << std::endl;
+	if (m_impl->config.discoverySettleMs > 0)
+		std::this_thread::sleep_for(std::chrono::milliseconds(
+			m_impl->config.discoverySettleMs));
 	return true;
 #else
 	error = "DDS requested but binary lacks HWASIMIR_HAS_ZRDDS";

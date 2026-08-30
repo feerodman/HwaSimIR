@@ -25,6 +25,11 @@ struct DdsVideoPublisherConfig
 	std::size_t queueMaxFrames = 120;
 	bool blockWhenQueueFull = true;
 	int ackTimeoutSec = 60;
+	// ZRDDS 2.4.4 creates the Writer synchronously but discovery/matching is
+	// asynchronous.  A short settle after a new Topic prevents the first AU
+	// (normally the only SPS/PPS/IDR) from being written before an already
+	// running customer Reader has matched.
+	int discoverySettleMs = 1000;
 	int shutdownDrainMs = 5000;
 	bool enablePerfLog = true;
 	std::string auditPath;

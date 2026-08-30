@@ -212,6 +212,7 @@ bool TcpCommThread::startOutputRound(int round)
 		m_roundLastCompletedFrame.store(0);
 		m_outputRoundActive.store(true);
 	}
+	std::cout << "[OutputRoundStart] round=" << round << " frameSeqReset=1" << std::endl;
 #if defined(HWASIMIR_HAS_ZRDDS)
 	if (m_pHwaSimIR) m_pHwaSimIR->ResetDdsFrameProductStats();
 #endif
@@ -233,7 +234,13 @@ bool TcpCommThread::stopOutputRound(const char* reason)
 	{
 		std::unique_lock<std::mutex> lock(m_frameMtx);
 		wasActive = m_outputRoundActive.exchange(false);
-		if (!wasActive) return true;
+		if (!wasActive)
+		{
+			std::cout << "[OutputRoundDrain] reason=" << (reason ? reason : "unknown")
+				<< " active=0 targetFrames=0 completedFrames="
+				<< m_roundLastCompletedFrame.load() << std::endl;
+			return true;
+		}
 		targetFrame = m_roundFrameSequence.load();
 		m_roundDrainCv.wait(lock, [this, targetFrame] {
 			return m_roundLastCompletedFrame.load() >= targetFrame || !m_bIsRunning.load();

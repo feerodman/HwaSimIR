@@ -33,9 +33,9 @@ cmake --build build-aarch64 -j4
 运行：
 
 ```text
-HwaSimIRStimDdsDemo --domain 150 --qos Config/DDS/ZRDDS_PROTOCOL_QOS.xml --plat-id 1 --sensor-id 1 --sim-mode 2 --video-fps 60 --width 800 --height 800 --h264 1 --save-mp4 0 --duration 10 --realtime-hz 60
+HwaSimIRStimDdsDemo --domain 150 --qos Config/DDS/ZRDDS_PROTOCOL_QOS.xml --plat-id 1 --sensor-id 1 --sim-mode 2 --video-fps 60 --width 800 --height 800 --h264 1 --save-mp4 0 --realtime-annotation 1 --rounds 1 --inter-round-wait-ms 6000 --duration 10 --realtime-hz 60
 ```
 
 可靠启动/退出参数默认值为 `--discovery-wait-ms 2000`、`--ack-timeout-ms 30000`、
-`--shutdown-drain-ms 5000`。每个并发 Windows DDS 进程必须在自己的工作目录中使用独立、
+`--inter-round-wait-ms 6000`、`--shutdown-drain-ms 5000`。多回合时每回合必须消费一份新的 InitAck，不能复用上一回合的 Ack。每个并发 Windows DDS 进程必须在自己的工作目录中使用独立、
 可写的 `zrddslicence.lic`；VS2015 和 MinGW 必须分别使用对应 SDK 的 DLL/导入库。

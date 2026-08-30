@@ -95,8 +95,14 @@ public:
 
     bool accepts(const HwaSimIRDds::VideoStatusV1& s) const
     {
-        return (s.channel ? s.channel : "") == o.channel &&
-            (s.codec ? s.codec : "") == "h264";
+        const std::string channel = s.channel ? s.channel : "";
+        const std::string codec = s.codec ? s.codec : "";
+        const bool accepted = channel == o.channel && codec == "h264";
+        std::cout << "[GatewaySourceStatus] channel=" << channel
+                  << " codec=" << codec << " running=" << (s.running ? 1 : 0)
+                  << " topic=" << (s.videoTopic ? s.videoTopic : "")
+                  << " accepted=" << (accepted ? 1 : 0) << std::endl;
+        return accepted;
     }
 
     void onStatus(const HwaSimIRDds::VideoStatusV1& s)
@@ -325,12 +331,20 @@ int main(int argc, char** argv)
             HwaSimIRDds::VideoStatusV1TypeSupport::get_instance(),
             "hwasimir_status_reader", &statusListener);
         if (!statusReader) throw std::runtime_error("status SubTopic failed");
-        std::string sourceTopic;
-        if (!state.waitForSource(sourceTopic)) throw std::runtime_error("source H264 status timeout");
+        // Subscribe before START. Waiting for running VideoStatus and only then
+        // creating the Reader can lose the first reliable samples because the
+        // writer has no matched reader yet.
+        const std::string sourceTopic = "HwaSimIR.Video." + o.channel + ".H264";
         VideoListener videoListener(state);
         DataReader* sourceReader = DDSIF::SubTopic(participant, sourceTopic.c_str(),
             BytesTypeSupport::get_instance(), "hwasimir_reliable_reader", &videoListener);
         if (!sourceReader) throw std::runtime_error("source H264 SubTopic failed");
+        std::cout << "[GatewayDdsReady] writers=2 readers=2 sourceTopic="
+                  << sourceTopic << std::endl;
+        std::string statusSourceTopic;
+        if (!state.waitForSource(statusSourceTopic)) throw std::runtime_error("source H264 status timeout");
+        if (statusSourceTopic != sourceTopic)
+            throw std::runtime_error("source VideoStatus topic mismatch");
         std::cout << "gatewayReady=1 channel=" << o.channel << " sourceTopic=" << sourceTopic
                   << " decodedTopic=" << o.decodedTopic << " decoder=rkmpp" << std::endl;
         const bool complete = state.waitComplete();

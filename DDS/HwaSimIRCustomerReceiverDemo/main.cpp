@@ -12,6 +12,7 @@
 #include <iomanip>
 #include <iostream>
 #include <mutex>
+#include <memory>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -143,9 +144,10 @@ public:
         else if (status.running && !wasRunning)
         {
             decoderFlushed = false;
+            roundStopped = false;
         }
-        if (wasRunning && !status.running && o.decode == "mpp" && !decoderFlushed)
-            flushDecoderLocked();
+        if (wasRunning && !status.running)
+            roundStopped = true;
         ready.notify_all();
     }
 
@@ -162,11 +164,29 @@ public:
         std::lock_guard<std::mutex> lock(mutex); return status;
     }
 
-    void onVideo(const Bytes& sample)
+    void onVideo(const std::string& readerTopic, const Bytes& sample)
     {
         const std::uint64_t size = sample.value.length();
         const std::uint8_t* data = sample.value.get_contiguous_buffer();
         std::lock_guard<std::mutex> lock(mutex);
+        // Readers are created before START so a fast START cannot outrun DDS
+        // discovery.  With an explicit expected codec the conventional topic
+        // is authoritative; otherwise VideoStatus selects the active reader.
+        if (!o.expectCodec.empty())
+        {
+            if (o.expectCodec == "h264")
+            {
+                if (readerTopic != "HwaSimIR.Video." + o.channel + ".H264") return;
+            }
+            else if (!status.received || readerTopic != status.topic)
+            {
+                return;
+            }
+        }
+        else if (!status.received || readerTopic != status.topic)
+        {
+            return;
+        }
         if (!started) { started = true; first = std::chrono::steady_clock::now(); }
         last = std::chrono::steady_clock::now();
         ++videoSamples; videoBytes += size;
@@ -244,12 +264,24 @@ public:
     {
         std::unique_lock<std::mutex> lock(mutex);
         return ready.wait_for(lock, std::chrono::seconds(o.timeoutSec), [this] {
-            const bool videoDone = o.frames == 0 ? videoSamples > 0 : videoSamples >= o.frames;
+            const bool videoDone = o.frames == 0
+                ? (roundStopped && videoSamples > 0)
+                : videoSamples >= o.frames;
             const bool metaDone = !o.receiveMeta || metaCount >= videoSamples;
             const bool annotationDone = !o.receiveAnnotation || annotationCount >= videoSamples;
-            const bool decodeDone = o.decode != "mpp" || decodedFrames >= videoSamples;
+            // Decoder EOS flush is deliberately performed by the main thread
+            // after this predicate.  Blocking MPP calls inside a ZRDDS callback
+            // can starve the Meta/Annotation callbacks queued behind Status.
+            const bool decodeDone = o.frames == 0 || o.decode != "mpp" ||
+                decodedFrames >= videoSamples;
             return videoDone && metaDone && annotationDone && decodeDone;
         });
+    }
+
+    void finishDecoder()
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        if (o.decode == "mpp" && !decoderFlushed) flushDecoderLocked();
     }
 
     int summary(bool complete)
@@ -335,7 +367,7 @@ private:
     StatusSnapshot status;
     std::ofstream videoFile, grayFile, metaFile, annotationFile;
     MppH264GrayDecoder decoder;
-    bool decoderFlushed = false, started = false;
+    bool decoderFlushed = false, roundStopped = false, started = false;
     std::chrono::steady_clock::time_point first, last;
     std::uint64_t statusCount = 0, videoSamples = 0, videoBytes = 0;
     std::uint64_t decodedFrames = 0, decodeErrors = 0, ddsErrors = 0;
@@ -367,9 +399,10 @@ private:
 class VideoListener : public SimpleDataReaderListener<Bytes, BytesSeq, BytesDataReader>
 {
 public:
-    explicit VideoListener(ReceiverState& state) : m_state(state) {}
-    void on_process_sample(DataReader*, const Bytes& sample, const SampleInfo&) override { m_state.onVideo(sample); }
-private: ReceiverState& m_state;
+    VideoListener(ReceiverState& state, const std::string& topic) : m_state(state), m_topic(topic) {}
+    void on_process_sample(DataReader*, const Bytes& sample, const SampleInfo&) override
+    { m_state.onVideo(m_topic, sample); }
+private: ReceiverState& m_state; std::string m_topic;
 };
 
 class MetaListener : public SimpleDataReaderListener<HwaSimIRDds::VideoFrameMetaV1,
@@ -404,23 +437,17 @@ int main(int argc, char** argv)
         if (!factory) throw std::runtime_error("DDSIF::Init failed");
         DomainParticipant* participant = DDSIF::CreateDP(o.domain, "hwasimir_tcp");
         if (!participant) throw std::runtime_error("DDSIF::CreateDP failed");
+        if (!state.openOutputs(error)) throw std::runtime_error(error);
         StatusListener statusListener(state, o);
         DataReader* statusReader = DDSIF::SubTopic(participant, o.statusTopic.c_str(),
             HwaSimIRDds::VideoStatusV1TypeSupport::get_instance(), "hwasimir_status_reader", &statusListener);
-        if (!statusReader || !state.waitForRunningStatus(o.timeoutSec))
-            throw std::runtime_error("VideoStatus timeout");
-        const StatusSnapshot status = state.statusSnapshot();
-        if (o.decode == "mpp" && status.codec != "h264")
-            throw std::runtime_error("MPP decode requires H264 VideoStatus");
-        if (!state.openOutputs(error)) throw std::runtime_error(error);
-        VideoListener videoListener(state);
         MetaListener metaListener(state);
         AnnotationListener annotationListener(state);
         DataReader* metaReader = nullptr;
         DataReader* annotationReader = nullptr;
         if (o.receiveMeta)
         {
-            const std::string topic = "HwaSimIR.VideoMeta." + status.channel;
+            const std::string topic = "HwaSimIR.VideoMeta." + o.channel;
             metaReader = DDSIF::SubTopic(participant, topic.c_str(),
                 HwaSimIRDds::VideoFrameMetaV1TypeSupport::get_instance(),
                 "hwasimir_protocol_reader", &metaListener);
@@ -428,21 +455,41 @@ int main(int argc, char** argv)
         }
         if (o.receiveAnnotation)
         {
-            const std::string topic = "HwaSimIR.Annotation." + status.channel;
+            const std::string topic = "HwaSimIR.Annotation." + o.channel;
             annotationReader = DDSIF::SubTopic(participant, topic.c_str(),
                 HwaSimIRDds::AnnotationFrameV1TypeSupport::get_instance(),
                 "hwasimir_protocol_reader", &annotationListener);
             if (!annotationReader) throw std::runtime_error("Annotation SubTopic failed");
         }
-        DataReader* videoReader = DDSIF::SubTopic(participant, status.topic.c_str(),
-            BytesTypeSupport::get_instance(), "hwasimir_reliable_reader", &videoListener);
-        if (!videoReader) throw std::runtime_error("video SubTopic failed");
+        const std::string videoTopics[] = {
+            "HwaSimIR.Video." + o.channel + ".H264",
+            "HwaSimIR.Video." + o.channel + ".RawGray8",
+            "HwaSimIR.Video." + o.channel + ".RawBGR24",
+            "HwaSimIR.Decoded." + o.channel + ".RawGray8"
+        };
+        std::vector<std::unique_ptr<VideoListener> > videoListeners;
+        std::vector<DataReader*> videoReaders;
+        for (std::size_t i = 0; i < sizeof(videoTopics) / sizeof(videoTopics[0]); ++i)
+        {
+            videoListeners.push_back(std::unique_ptr<VideoListener>(new VideoListener(state, videoTopics[i])));
+            DataReader* reader = DDSIF::SubTopic(participant, videoTopics[i].c_str(),
+                BytesTypeSupport::get_instance(), "hwasimir_reliable_reader", videoListeners.back().get());
+            if (!reader) throw std::runtime_error("video SubTopic failed: " + videoTopics[i]);
+            videoReaders.push_back(reader);
+        }
+        if (!statusReader || !state.waitForRunningStatus(o.timeoutSec))
+            throw std::runtime_error("VideoStatus timeout");
+        const StatusSnapshot status = state.statusSnapshot();
+        if (o.decode == "mpp" && status.codec != "h264")
+            throw std::runtime_error("MPP decode requires H264 VideoStatus");
         std::cout << "receiverReady=1 statusTopic=" << o.statusTopic
                   << " autoVideoTopic=" << status.topic
                   << " decode=" << o.decode << std::endl;
         const bool complete = state.waitComplete();
+        state.finishDecoder();
         const int result = state.summary(complete);
-        DDSIF::UnSubTopic(videoReader);
+        for (std::size_t i = 0; i < videoReaders.size(); ++i)
+            DDSIF::UnSubTopic(videoReaders[i]);
         if (metaReader) DDSIF::UnSubTopic(metaReader);
         if (annotationReader) DDSIF::UnSubTopic(annotationReader);
         DDSIF::UnSubTopic(statusReader);
