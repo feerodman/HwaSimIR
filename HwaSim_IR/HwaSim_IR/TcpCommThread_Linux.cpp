@@ -1127,6 +1127,7 @@ void TcpCommThread::sendFrameThreadFunc()
 				m_roundDrainCv.notify_all();
 			}
 		});
+		const auto outputWorkBegin = std::chrono::steady_clock::now();
 
 		const int packetVersion = m_packetVersion.load();
 		const bool includeVideo = packetVersion == 2 || m_sendVideo.load();
@@ -1226,13 +1227,17 @@ void TcpCommThread::sendFrameThreadFunc()
 
 		std::string ddsError;
 		double ddsBackpressureMs = 0.0;
+		double ddsPublishCallMs = 0.0;
 		bool ddsVideoPublished = false;
 		if (ddsH264 && h264Ok)
 		{
+			const auto publishBegin = std::chrono::steady_clock::now();
 			if (!m_ddsPublisher->publishBytes(h264Frame.payload.data(), h264Frame.payload.size(),
 				&ddsBackpressureMs, ddsError))
 				std::cerr << "[DdsVideo][FATAL] codec=h264 publishSkipped=1 reason=" << ddsError << std::endl;
 			else { ++m_ddsFrameCounter; ddsVideoPublished = true; }
+			ddsPublishCallMs = std::chrono::duration<double, std::milli>(
+				std::chrono::steady_clock::now() - publishBegin).count();
 		}
 		else if (ddsRaw)
 		{
@@ -1259,17 +1264,22 @@ void TcpCommThread::sendFrameThreadFunc()
 				std::cout << "[DdsRawPrep] format=" << (gray ? "gray8" : "bgr24")
 					<< " width=" << frame.width << " height=" << frame.height
 					<< " bytes=" << m_ddsRawBuffer.size() << " prepMs=" << prepMs << std::endl;
+			const auto publishBegin = std::chrono::steady_clock::now();
 			if (!m_ddsPublisher->publishBytes(m_ddsRawBuffer.data(), m_ddsRawBuffer.size(),
 				&ddsBackpressureMs, ddsError))
 				std::cerr << "[DdsVideo][FATAL] codec=" << ddsCodec << " publishSkipped=1 reason="
 					<< ddsError << std::endl;
 			else { ++m_ddsFrameCounter; ddsVideoPublished = true; }
+			ddsPublishCallMs = std::chrono::duration<double, std::milli>(
+				std::chrono::steady_clock::now() - publishBegin).count();
 		}
 
+		double localRecordEnqueueMs = 0.0;
+		double recordBackpressureMs = 0.0;
 		if (recording)
 		{
+			const auto recordBegin = std::chrono::steady_clock::now();
 			std::string recordError;
-			double recordBackpressureMs = 0.0;
 			bool recordOk = false;
 			if (m_localRecorder->wantsH264() && h264Ok)
 				recordOk = m_localRecorder->enqueueH264(h264Frame.payload.data(), h264Frame.payload.size(),
@@ -1280,6 +1290,8 @@ void TcpCommThread::sendFrameThreadFunc()
 			else recordError = "shared H264 encode failed";
 			if (!recordOk) std::cerr << "[LocalRecording][ERROR] reason=" << recordError << std::endl;
 			else ++m_recordFrameCounter;
+			localRecordEnqueueMs = std::chrono::duration<double, std::milli>(
+				std::chrono::steady_clock::now() - recordBegin).count();
 		}
 
 		encodedFrame.clearForReuse();
@@ -1311,14 +1323,19 @@ void TcpCommThread::sendFrameThreadFunc()
 				<< std::endl;
 
 #if defined(HWASIMIR_HAS_ZRDDS)
+		double annotationSerializeMs = 0.0;
+		double metaAnnotationPublishMs = 0.0;
 		if (ddsVideoPublished && m_pHwaSimIR)
 		{
 			const EncodedVideoFrame& annotationEncodedFrame = ddsH264 ? h264Frame : encodedFrame;
+			const auto annotationBegin = std::chrono::steady_clock::now();
 			const std::string ddsAnnotationJson = frame.annotationEnabled
 				? buildAnnotationJson(frame.annotationRecord, true, frame.width, frame.height,
 					frame.telemetry, logicalFrameSeq, IRPerfStats::wallTimeNs(), packetVersion,
 					ddsCodec, ddsH264 ? h264RequestedBackend : "raw", annotationEncodedFrame)
 				: std::string();
+			annotationSerializeMs = std::chrono::duration<double, std::milli>(
+				std::chrono::steady_clock::now() - annotationBegin).count();
 			DdsVideoFrameMeta meta;
 			meta.platID = m_localPlatID;
 			meta.sensorID = m_localSensorID;
@@ -1344,11 +1361,36 @@ void TcpCommThread::sendFrameThreadFunc()
 				annotationPtr = &annotation;
 			}
 			std::string auxError;
+			const auto auxBegin = std::chrono::steady_clock::now();
 			if (!m_pHwaSimIR->PublishDdsFrameProducts(meta, annotationPtr, auxError))
 			{
 				std::cerr << "[DdsFrameProducts][FATAL] round=" << frame.currentRound
 					<< " frameSeq=" << logicalFrameSeq << " reason=" << auxError << std::endl;
 			}
+			metaAnnotationPublishMs = std::chrono::duration<double, std::milli>(
+				std::chrono::steady_clock::now() - auxBegin).count();
+		}
+		if (productOrdinal <= 3 || (productOrdinal % 120) == 0)
+		{
+			const double frameTotalMs = std::chrono::duration<double, std::milli>(
+				std::chrono::steady_clock::now() - outputWorkBegin).count();
+			std::cout << std::fixed << std::setprecision(3)
+				<< "[VideoOutputPerf] channel=" << m_channel
+				<< " platID=" << m_localPlatID << " sensorID=" << m_localSensorID
+				<< " frame=" << productOrdinal
+				<< " bgrToNv12Ms=" << (h264Ok ? h264Frame.preprocessMs : 0.0)
+				<< " mppEncodeMs=" << (h264Ok ? h264Frame.encodeMs : 0.0)
+				<< " ddsPublishCallMs=" << ddsPublishCallMs
+				<< " ddsBackpressureMs=" << ddsBackpressureMs
+				<< " annotationMs=" << annotationSerializeMs
+				<< " metaAnnotationMs=" << metaAnnotationPublishMs
+				<< " localMp4EnqueueMs=" << localRecordEnqueueMs
+				<< " localMp4BackpressureMs=" << recordBackpressureMs
+				<< " frameTotalMs=" << frameTotalMs
+				<< " h264Encodes=" << (h264Ok ? 1 : 0)
+				<< " ddsFrames=" << (ddsVideoPublished ? 1 : 0)
+				<< " recordFrames=" << (recording ? 1 : 0)
+				<< std::endl;
 		}
 #endif
 		if (!m_bIsConnected) continue;

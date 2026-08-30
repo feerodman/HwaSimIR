@@ -684,9 +684,9 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
     const bool shouldLog = shownTimeNs - m_lastVideoPerfLogNs >= 2000000000LL;
     if (shouldLog)
     {
-        const double displayElapsedSec = qMax(
+        const double intervalElapsedSec = qMax(
             0.001,
-            static_cast<double>(shownTimeNs - m_videoPerfDisplayStartNs) / 1.0e9);
+            static_cast<double>(shownTimeNs - m_lastVideoPerfLogNs) / 1.0e9);
         const quint64 receivedFrameCount = this->receivedFrameCount();
         const quint64 receivedIntervalFrames = receivedFrameCount >= m_lastReceivedFrameCount
             ? receivedFrameCount - m_lastReceivedFrameCount
@@ -715,8 +715,8 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
                 .arg(m_sensorID)
                 .arg(m_pid);
         videoPerfLine += QString(" receiveFps=%1 displayFps=%2 decodeMsAvg=%3 queueDepth=%4 sourceSeqContinuous=%5 latencyAvgMs=%6 latencyP95Ms=%7 displayMsAvg=%8 tcpToReceiveMs=%9 sourceSeq=%10 discontinuities=%11 recordingEnqueueMsAvg=%12 recordingEnqueueMsMax=%13 decodedChannels=%14 imageFormat=%15 requestedCodec=%16 activeCodec=%17 decodeCodec=%18 h264En=%19 codecFallbackReason=%20 h264KeyFrameSeen=%21 h264DecodeErrors=%22 packetVersion=%23 flags=0x%24 codecId=%25 keyFrame=%26 outputOrdinal=%27 ptsMs=%28 hasAnnotation=%29 hasRealtimeData=%30")
-                .arg(static_cast<double>(receivedIntervalFrames) / displayElapsedSec, 0, 'f', 3)
-                .arg(static_cast<double>(m_videoPerfIntervalFrames) / displayElapsedSec, 0, 'f', 3)
+                .arg(static_cast<double>(receivedIntervalFrames) / intervalElapsedSec, 0, 'f', 3)
+                .arg(static_cast<double>(m_videoPerfIntervalFrames) / intervalElapsedSec, 0, 'f', 3)
                 .arg(m_decodeMsTotal / sampleCount, 0, 'f', 3)
                 .arg(queueDepth)
                 .arg(m_intervalSourceSeqContinuous ? 1 : 0)

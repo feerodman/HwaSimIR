@@ -31,6 +31,7 @@ struct Options
     int sensorID = -1;
     std::size_t queueMaxFrames = 120;
     std::uint64_t frames = 0;
+    bool publishRaw = true;
     std::string qos = "Config/DDS/ZRDDS_PROTOCOL_QOS.xml";
     std::string statusTopic = "HwaSimIR.VideoStatus";
     std::string channel = "precise";
@@ -57,6 +58,7 @@ static Options Parse(int argc, char** argv)
         else if (arg == "--queue-max-frames") o.queueMaxFrames =
             static_cast<std::size_t>(std::max(1, std::atoi(value.c_str())));
         else if (arg == "--frames") o.frames = std::strtoull(value.c_str(), nullptr, 10);
+        else if (arg == "--publish-raw") o.publishRaw = std::atoi(value.c_str()) != 0;
         else if (arg == "--timeout-sec") o.timeoutSec = std::atoi(value.c_str());
         else if (arg == "--ack-timeout-sec") o.ackTimeoutSec = std::atoi(value.c_str());
         else if (arg == "--shutdown-drain-ms") o.shutdownDrainMs = std::atoi(value.c_str());
@@ -107,9 +109,12 @@ public:
                 ? "HwaSimIR.Decoded." + std::to_string(s.platID) + "." +
                     std::to_string(s.sensorID) + ".RawGray8"
                 : o.decodedTopic;
-            rawWriterBase = DDSIF::PubTopic(participant, outputTopic.c_str(),
-                BytesTypeSupport::get_instance(), "hwasimir_reliable_writer", nullptr);
-            if (!rawWriterBase) { error = "gateway raw writer creation failed"; return false; }
+            if (o.publishRaw)
+            {
+                rawWriterBase = DDSIF::PubTopic(participant, outputTopic.c_str(),
+                    BytesTypeSupport::get_instance(), "hwasimir_reliable_writer", nullptr);
+                if (!rawWriterBase) { error = "gateway raw writer creation failed"; return false; }
+            }
             outputReady = true;
             workChanged.notify_all();
         }
@@ -177,9 +182,15 @@ public:
         const auto waitBegin = std::chrono::steady_clock::now();
         queueSpace.wait(lock, [this] { return stopRequested || workQueue.size() < o.queueMaxFrames; });
         if (stopRequested) return;
-        queueWaitMs += std::chrono::duration<double, std::milli>(
+        const double waitMs = std::chrono::duration<double, std::milli>(
             std::chrono::steady_clock::now() - waitBegin).count();
+        queueWaitMs += waitMs;
+        queueWaitMsMax = (std::max)(queueWaitMsMax, waitMs);
         callbackCopyMs += copyMs;
+        callbackCopyMsMax = (std::max)(callbackCopyMsMax, copyMs);
+        const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+        if (sourceAuCount == 0) firstSourceAt = now;
+        lastSourceAt = now;
         ++sourceAuCount;
         workQueue.push_back(std::move(item));
         maxQueueDepth = (std::max)(maxQueueDepth, workQueue.size());
@@ -201,7 +212,8 @@ public:
         std::unique_lock<std::mutex> lock(mutex);
         return changed.wait_for(lock, std::chrono::seconds(o.timeoutSec), [this] {
             if (o.frames > 0)
-                return rawPublished >= o.frames && sourceAuCount == decodedFrames;
+                return (o.publishRaw ? rawPublished : decodedFrames) >= o.frames &&
+                    sourceAuCount == decodedFrames;
             return stopped && sourceAuCount > 0 && sourceAuCount == decodedFrames;
         });
     }
@@ -221,6 +233,9 @@ public:
     int summary(bool complete)
     {
         std::lock_guard<std::mutex> lock(mutex);
+        const double sourceSeconds = IntervalSeconds(firstSourceAt, lastSourceAt, sourceAuCount);
+        const double decodeSeconds = IntervalSeconds(firstDecodedAt, lastDecodedAt, decodedFrames);
+        const double publishSeconds = IntervalSeconds(firstPublishedAt, lastPublishedAt, rawPublished);
         std::cout << std::fixed << std::setprecision(3)
             << "statusReceived=" << statusReceived
             << " sourceH264AUs=" << sourceAuCount
@@ -230,12 +245,36 @@ public:
             << " decodeFps=" << (decodeMsTotal > 0.0 ? decodedFrames * 1000.0 / decodeMsTotal : 0.0)
             << " decodeMsAvg=" << (sourceAuCount ? decodeMsTotal / sourceAuCount : 0.0)
             << " decodeMsMax=" << decodeMsMax
+            << " liveDecodedFrames=" << liveDecodedFrames
+            << " flushedFrames=" << flushedFrames
+            << " flushMs=" << flushMs
             << " callbackCopyMsAvg=" << (sourceAuCount ? callbackCopyMs / sourceAuCount : 0.0)
-            << " queueWaitMs=" << queueWaitMs << " maxQueueDepth=" << maxQueueDepth
+            << " callbackCopyMsMax=" << callbackCopyMsMax
+            << " queueWaitMs=" << queueWaitMs << " queueWaitMsMax=" << queueWaitMsMax
+            << " maxQueueDepth=" << maxQueueDepth
             << " decodedWidth=" << decodedWidth << " decodedHeight=" << decodedHeight
             << " decodeErrors=" << decodeErrors << " writerErrors=" << writerErrors
             << " ddsErrors=" << ddsErrors << " dropped=0" << std::endl;
-        return complete && sourceAuCount == decodedFrames && decodedFrames == rawPublished &&
+        std::cout << "[GatewayPerf]"
+            << " sourceCallbackFps=" << (sourceSeconds > 0.0 ? (sourceAuCount - 1) / sourceSeconds : 0.0)
+            << " callbackCopyMsAvg=" << (sourceAuCount ? callbackCopyMs / sourceAuCount : 0.0)
+            << " callbackCopyMsMax=" << callbackCopyMsMax
+            << " auQueueDepth=" << workQueue.size() << " auQueueMax=" << maxQueueDepth
+            << " decodeMsAvg=" << (sourceAuCount ? decodeMsTotal / sourceAuCount : 0.0)
+            << " decodeMsMax=" << decodeMsMax
+            << " liveDecodedFrames=" << liveDecodedFrames
+            << " flushedFrames=" << flushedFrames
+            << " flushMs=" << flushMs
+            << " decodeFps=" << (decodeSeconds > 0.0 ? (decodedFrames - 1) / decodeSeconds : 0.0)
+            << " rawFrameBytes=" << (rawPublished ? rawBytes / rawPublished : 0)
+            << " rawWriteMsAvg=" << (rawPublished ? rawWriteMsTotal / rawPublished : 0.0)
+            << " rawWriteMsMax=" << rawWriteMsMax
+            << " rawWriteBlockedMs=" << rawWriteMsTotal
+            << " rawPublishFps=" << (publishSeconds > 0.0 ? (rawPublished - 1) / publishSeconds : 0.0)
+            << " rawPublished=" << rawPublished
+            << " writerErrors=" << writerErrors << " dropped=0" << std::endl;
+        return complete && sourceAuCount == decodedFrames &&
+            (!o.publishRaw || decodedFrames == rawPublished) &&
             decodeErrors == 0 && writerErrors == 0 && ddsErrors == 0 ? 0 : 8;
     }
 
@@ -246,6 +285,12 @@ public:
 private:
     enum class WorkKind { None, Start, AccessUnit, Stop };
     struct WorkItem { WorkKind kind = WorkKind::None; std::vector<std::uint8_t> payload; };
+
+    static double IntervalSeconds(const std::chrono::steady_clock::time_point& first,
+        const std::chrono::steady_clock::time_point& last, std::uint64_t count)
+    {
+        return count > 1 ? std::chrono::duration<double>(last - first).count() : 0.0;
+    }
 
     void enqueueControl(WorkKind kind)
     {
@@ -315,6 +360,10 @@ private:
             if (!ok) ++decodeErrors;
         }
         if (!ok) std::cerr << "[Gateway][ERROR] decode=" << error << std::endl;
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            liveDecodedFrames += frames.size();
+        }
         publishFrames(frames);
     }
 
@@ -322,10 +371,18 @@ private:
     {
         std::vector<MppDecodedGrayFrame> frames;
         std::string error;
+        const std::chrono::steady_clock::time_point flushBegin =
+            std::chrono::steady_clock::now();
         if (!decoder.flush(frames, error))
         {
             std::lock_guard<std::mutex> lock(mutex);
             ++decodeErrors;
+        }
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            flushMs = std::chrono::duration<double, std::milli>(
+                std::chrono::steady_clock::now() - flushBegin).count();
+            flushedFrames += frames.size();
         }
         publishFrames(frames);
         drainRaw();
@@ -351,14 +408,30 @@ private:
                     (frame.width != snapshot.width || frame.height != snapshot.height))
                 { ++decodeErrors; continue; }
                 ++decodedFrames;
+                const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+                if (decodedFrames == 1) firstDecodedAt = now;
+                lastDecodedAt = now;
             }
+            if (!o.publishRaw) continue;
+            const std::chrono::steady_clock::time_point writeBegin =
+                std::chrono::steady_clock::now();
             const ReturnCode_t result = DDSIF::BytesWrite(o.domain,
                 const_cast<char*>(outputTopic.c_str()),
                 reinterpret_cast<const char*>(frame.gray8.data()),
                 static_cast<DDS_Long>(frame.gray8.size()));
+            const double writeMs = std::chrono::duration<double, std::milli>(
+                std::chrono::steady_clock::now() - writeBegin).count();
             std::lock_guard<std::mutex> lock(mutex);
+            rawWriteMsTotal += writeMs;
+            rawWriteMsMax = (std::max)(rawWriteMsMax, writeMs);
             if (result != RETCODE_OK) ++writerErrors;
-            else { ++rawPublished; rawBytes += frame.gray8.size(); }
+            else
+            {
+                ++rawPublished; rawBytes += frame.gray8.size();
+                const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+                if (rawPublished == 1) firstPublishedAt = now;
+                lastPublishedAt = now;
+            }
             changed.notify_all();
         }
     }
@@ -417,12 +490,19 @@ private:
     bool outputReady = false, stopRequested = false;
     bool decodedRunning = false, decoderFlushed = false, stopped = false;
     std::uint64_t statusReceived = 0, sourceAuCount = 0, decodedFrames = 0;
+    std::uint64_t liveDecodedFrames = 0, flushedFrames = 0;
     std::uint64_t rawPublished = 0, rawBytes = 0;
     std::uint64_t decodeErrors = 0, writerErrors = 0, ddsErrors = 0;
     std::size_t maxQueueDepth = 0;
     int decodedWidth = 0, decodedHeight = 0;
     double decodeMsTotal = 0.0, decodeMsMax = 0.0;
-    double callbackCopyMs = 0.0, queueWaitMs = 0.0;
+    double callbackCopyMs = 0.0, callbackCopyMsMax = 0.0;
+    double queueWaitMs = 0.0, queueWaitMsMax = 0.0;
+    double rawWriteMsTotal = 0.0, rawWriteMsMax = 0.0;
+    double flushMs = 0.0;
+    std::chrono::steady_clock::time_point firstSourceAt, lastSourceAt;
+    std::chrono::steady_clock::time_point firstDecodedAt, lastDecodedAt;
+    std::chrono::steady_clock::time_point firstPublishedAt, lastPublishedAt;
 };
 
 class StatusListener : public SimpleDataReaderListener<HwaSimIRDds::VideoStatusV1,
