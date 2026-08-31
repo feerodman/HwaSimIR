@@ -275,7 +275,8 @@ void DdsVideoReceiverWorker::doWork()
 		m_impl->reader = DDSIF::SubTopic(participant, topic.constData(),
 			BytesTypeSupport::get_instance(), "hwasimir_reliable_reader", &listener);
 	}
-	if (m_config.autoFromVideoStatus && m_config.platID >= 0 && m_config.sensorID >= 0)
+	if (m_config.receiveFrameProducts && m_config.autoFromVideoStatus &&
+		m_config.platID >= 0 && m_config.sensorID >= 0)
 	{
 		m_config.topicVideoMeta = QStringLiteral("HwaSimIR.VideoMeta.%1.%2")
 			.arg(m_config.platID).arg(m_config.sensorID);
@@ -290,13 +291,16 @@ void DdsVideoReceiverWorker::doWork()
 		HwaSimIRDds::InitCommandV1TypeSupport::get_instance(), "hwasimir_protocol_reader", &initListener);
 	m_impl->realtimeReader = DDSIF::SubTopic(participant, m_config.topicRealtime.toLatin1().constData(),
 		HwaSimIRDds::RealtimeDataV1TypeSupport::get_instance(), "hwasimir_protocol_reader", &realtimeListener);
-	m_impl->metaReader = DDSIF::SubTopic(participant, m_config.topicVideoMeta.toLatin1().constData(),
-		HwaSimIRDds::VideoFrameMetaV1TypeSupport::get_instance(), "hwasimir_protocol_reader", &metaListener);
-	m_impl->annotationReader = DDSIF::SubTopic(participant, m_config.topicAnnotation.toLatin1().constData(),
-		HwaSimIRDds::AnnotationFrameV1TypeSupport::get_instance(), "hwasimir_protocol_reader", &annotationListener);
+	if (m_config.receiveFrameProducts)
+	{
+		m_impl->metaReader = DDSIF::SubTopic(participant, m_config.topicVideoMeta.toLatin1().constData(),
+			HwaSimIRDds::VideoFrameMetaV1TypeSupport::get_instance(), "hwasimir_protocol_reader", &metaListener);
+		m_impl->annotationReader = DDSIF::SubTopic(participant, m_config.topicAnnotation.toLatin1().constData(),
+			HwaSimIRDds::AnnotationFrameV1TypeSupport::get_instance(), "hwasimir_protocol_reader", &annotationListener);
+	}
 	if ((!deferVideoReader && !m_impl->reader) || !m_impl->statusReader || !m_impl->controlReader ||
-		!m_impl->initReader || !m_impl->realtimeReader || !m_impl->metaReader ||
-		!m_impl->annotationReader)
+		!m_impl->initReader || !m_impl->realtimeReader ||
+		(m_config.receiveFrameProducts && (!m_impl->metaReader || !m_impl->annotationReader)))
 	{
 		const QString reason = QStringLiteral("DDS full reader creation failed video=%1 status=%2")
 			.arg(m_config.topic).arg(m_config.topicVideoStatus);
@@ -373,7 +377,8 @@ void DdsVideoReceiverWorker::doWork()
 					.arg(m_config.topic).arg(m_config.codec).arg(m_config.width).arg(m_config.height)
 					.arg(m_config.fps).arg(nextRound).arg(nextRunning ? 1 : 0);
 			}
-			if (m_config.autoFromVideoStatus && nextPlatID >= 0 && nextSensorID >= 0)
+			if (m_config.receiveFrameProducts && m_config.autoFromVideoStatus &&
+				nextPlatID >= 0 && nextSensorID >= 0)
 			{
 				const QString nextMeta = QStringLiteral("HwaSimIR.VideoMeta.%1.%2")
 					.arg(nextPlatID).arg(nextSensorID);
@@ -516,19 +521,22 @@ void DdsVideoReceiverWorker::logFrameSync(bool force)
 	if (!force && m_impl->syncVideo > 3 && (m_impl->syncVideo % 120) != 0) return;
 	quint64 pendingMeta = 0;
 	quint64 pendingAnnotation = 0;
-	for (std::set<quint32>::const_iterator it = m_impl->videoSeqs.begin();
-		it != m_impl->videoSeqs.end(); ++it)
+	if (m_config.receiveFrameProducts)
 	{
-		if (m_impl->metaSeqs.count(*it) == 0) ++pendingMeta;
-		if (m_impl->syncAnnotation > 0 && m_impl->annotationSeqs.count(*it) == 0)
-			++pendingAnnotation;
+		for (std::set<quint32>::const_iterator it = m_impl->videoSeqs.begin();
+			it != m_impl->videoSeqs.end(); ++it)
+		{
+			if (m_impl->metaSeqs.count(*it) == 0) ++pendingMeta;
+			if (m_impl->syncAnnotation > 0 && m_impl->annotationSeqs.count(*it) == 0)
+				++pendingAnnotation;
+		}
+		for (std::set<quint32>::const_iterator it = m_impl->metaSeqs.begin();
+			it != m_impl->metaSeqs.end(); ++it)
+			if (m_impl->videoSeqs.count(*it) == 0) ++pendingMeta;
+		for (std::set<quint32>::const_iterator it = m_impl->annotationSeqs.begin();
+			it != m_impl->annotationSeqs.end(); ++it)
+			if (m_impl->videoSeqs.count(*it) == 0) ++pendingAnnotation;
 	}
-	for (std::set<quint32>::const_iterator it = m_impl->metaSeqs.begin();
-		it != m_impl->metaSeqs.end(); ++it)
-		if (m_impl->videoSeqs.count(*it) == 0) ++pendingMeta;
-	for (std::set<quint32>::const_iterator it = m_impl->annotationSeqs.begin();
-		it != m_impl->annotationSeqs.end(); ++it)
-		if (m_impl->videoSeqs.count(*it) == 0) ++pendingAnnotation;
 	qInfo().noquote() << QStringLiteral(
 		"[DdsFrameSync] round=%1 video=%2 meta=%3 annotation=%4 lastFrameSeq=%5 pendingMeta=%6 pendingAnnotation=%7 mismatch=%8")
 		.arg(m_impl->syncRound).arg(m_impl->syncVideo).arg(m_impl->syncMeta)

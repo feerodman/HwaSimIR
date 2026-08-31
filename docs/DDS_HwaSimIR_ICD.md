@@ -38,7 +38,8 @@ DDS 与 Legacy 并列存在，不互相替换：
 | `HwaSimIR.Init` | `InitCommandV1` | `platID,sensorID` | 0x36 |
 | `HwaSimIR.Realtime` | `RealtimeDataV1` | `platID,sensorID` | 0x38 |
 | `HwaSimIR.InitAck` | `InitAckV1` | `platID,sensorID` | 0x37 |
-| `HwaSimIR.VideoStatus` | `VideoStatusV1` | `platID,sensorID` | DDS 状态 |
+| `HwaSimIR.VideoStatus` | `VideoStatusV1` | `platID,sensorID` | HwaSim_IR direct/source 状态 |
+| `HwaSimIR.DecodedVideoStatus` | `VideoStatusV1` | `platID,sensorID` | DecodeGateway decoded 状态 |
 
 正式 IDL 位于 `DDS/IDL/HwaSimIRProtocolV1.idl`，generated 文件位于 `DDS/Generated/HwaSimIRProtocolV1`。Legacy packed size 必须保持 24/385/506/17 bytes。
 
@@ -72,7 +73,7 @@ HwaSimIR.Video.1001.2.RawGray8
 HwaSimIR.Video.1001.3.RawBGR24
 ```
 
-`VideoStatusV1.videoTopic` 是接收端正式发现 Topic 的唯一事实源。VideoDisplay、Gateway 和 CustomerReceiver 先按 platID/sensorID 过滤共享 VideoStatus，再订阅其中的 videoTopic。`--video-topic` 仅是调试 override。
+`VideoStatusV1.videoTopic` 是接收端正式发现 Topic 的唯一事实源。Direct Receiver、默认 VideoDisplay 和 Gateway 源端只订阅 `HwaSimIR.VideoStatus`；Decoded Receiver（及 VideoDisplay 的 decoded 调试模式）只订阅 `HwaSimIR.DecodedVideoStatus`。两类 Writer 不再共享同一 Topic/Key。接收端按 platID/sensorID/channel 过滤后订阅 Status 中的 videoTopic，`--video-topic` 仅是调试 override。
 
 兼容模式 `TopicMode=legacy_channel` 保留 precise/coarse 六个历史 Topic，不删除老客户接口。
 
@@ -86,7 +87,7 @@ HwaSimIR.Video.1001.3.RawBGR24
 
 ## 6. VideoStatus、Meta 与 Annotation
 
-共享状态 Topic `HwaSimIR.VideoStatus` 携带 identity、running、codec、pixelFormat、videoTopic、width、height、fps、bitrate、GOP 和 round。
+`HwaSimIR.VideoStatus` 只描述 HwaSim_IR direct/source 流；`HwaSimIR.DecodedVideoStatus` 只描述 DecodeGateway 输出流。两者都使用冻结的 `VideoStatusV1`，携带 identity、running、codec、pixelFormat、videoTopic、width、height、fps、bitrate、GOP 和 round；F2.3 未修改 IDL。
 
 identity 模式的逐流辅助 Topic：
 
@@ -116,7 +117,7 @@ HwaSimIR.Video.<plat>.<sensor>.H264
   -> HwaSimIR.Decoded.<plat>.<sensor>.RawGray8
 ```
 
-Gateway callback 只复制 AU 并进入 bounded no-drop queue；worker 执行 MPP decode 和 WholeFrame Raw DDS publish。Gateway 先发布 decoded `running=false` VideoStatus，供客户预建 Reader；STOP 时 drain decoder、Raw writer，再发布 running=false。F2.1 不实现 VideoChunkV1。
+Gateway 订阅源状态 `HwaSimIR.VideoStatus`，callback 只复制 AU 并进入 bounded no-drop queue；worker 执行 MPP decode 和 WholeFrame Raw DDS publish。Gateway 的输出状态只发布到 `HwaSimIR.DecodedVideoStatus`。STOP 时先 drain decoder 和 Raw writer，再发布 decoded `running=false`，避免接收端提前结束而丢尾帧。F2.3 不实现 VideoChunkV1。
 
 ## 9. Legacy 与配置模式
 
@@ -134,4 +135,3 @@ UDP 与 DDS 都进入同一套业务 handler。both 模式按既有 semantic key
 2. `wait_for_acknowledgments()` 可能早于接收应用处理完末尾 Sample 返回。
 3. Trial runtime 会改写 licence；共享 licence 的本次 fan-out A/B 也可运行，但生产并发进程仍建议使用独立可写副本，避免并发改写风险。
 4. RK3588 显式绑定 `192.168.1.116` 时 discovery 异常；现场验收使用官方支持的 `tcpv4://default//0`。
-5. 800x800 WholeFrame RawGray8 在同板 Gateway RELIABLE loopback 实测约 20.46 FPS；可靠计数为零丢帧，但未达到 55 FPS。不得通过丢帧、BEST_EFFORT 或 VideoChunkV1 伪造性能。

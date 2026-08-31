@@ -21,6 +21,7 @@ struct Options
 {
     int domain = 150, platID = 1, sensorID = 1, simMode = 2, videoFps = 60;
     int width = 800, height = 800, duration = 5, realtimeHz = 60, rounds = 1;
+    long long realtimeSamples = 0;
     int startSettleMs = 250;
     int discoveryWaitMs = 2000, ackTimeoutMs = 30000, shutdownDrainMs = 5000;
     int interRoundWaitMs = 6000;
@@ -50,6 +51,8 @@ static bool Parse(int argc, char** argv, Options& o)
         else if (ReadValue(i, argc, argv, "--height", value)) o.height = std::atoi(value.c_str());
         else if (ReadValue(i, argc, argv, "--duration", value)) o.duration = std::atoi(value.c_str());
         else if (ReadValue(i, argc, argv, "--realtime-hz", value)) o.realtimeHz = std::atoi(value.c_str());
+        else if (ReadValue(i, argc, argv, "--realtime-samples", value))
+            o.realtimeSamples = std::strtoll(value.c_str(), 0, 10);
         else if (ReadValue(i, argc, argv, "--start-settle-ms", value)) o.startSettleMs = std::atoi(value.c_str());
         else if (ReadValue(i, argc, argv, "--rounds", value)) o.rounds = std::atoi(value.c_str());
         else if (ReadValue(i, argc, argv, "--discovery-wait-ms", value)) o.discoveryWaitMs = std::atoi(value.c_str());
@@ -79,7 +82,8 @@ static bool Parse(int argc, char** argv, Options& o)
         }
         else { std::cerr << "unknown/missing option: " << argv[i] << std::endl; return false; }
     }
-    return o.realtimeHz > 0 && o.duration >= 0 && o.rounds > 0 && o.width > 0 && o.height > 0 &&
+    return o.realtimeHz > 0 && o.duration >= 0 && o.realtimeSamples >= 0 &&
+        o.rounds > 0 && o.width > 0 && o.height > 0 &&
         o.startSettleMs >= 0 &&
         o.discoveryWaitMs >= 0 && o.ackTimeoutMs > 0 && o.shutdownDrainMs >= 0 &&
         o.interRoundWaitMs >= 0;
@@ -101,7 +105,9 @@ int main(int argc, char** argv)
         std::this_thread::sleep_for(std::chrono::milliseconds(options.discoveryWaitMs));
     }
 
-    const long long total = static_cast<long long>(options.duration) * options.realtimeHz;
+    const long long total = options.realtimeSamples > 0
+        ? options.realtimeSamples
+        : static_cast<long long>(options.duration) * options.realtimeHz;
     long long totalRealtime = 0;
     for (int round = 1; round <= options.rounds; ++round)
     {

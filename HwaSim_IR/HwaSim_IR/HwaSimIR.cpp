@@ -7817,8 +7817,10 @@ void HwaSimIR::LoadF1ProtocolConfig()
 		"DdsProtocol", "TopicRealtime", "HwaSimIRDdsTopicRealtime", "HwaSimIR.Realtime", 0);
 	m_ddsProtocolConfig.topicInitAck = m_runtimeConfig.getString(
 		"DdsProtocol", "TopicInitAck", "HwaSimIRDdsTopicInitAck", "HwaSimIR.InitAck", 0);
+	const std::string sourceVideoStatusTopic = m_runtimeConfig.getString(
+		"DdsVideo", "StatusTopic", "HwaSimIRDdsVideoStatusTopic", "HwaSimIR.VideoStatus", 0);
 	m_ddsProtocolConfig.topicVideoStatus = m_runtimeConfig.getString(
-		"DdsProtocol", "TopicVideoStatus", "HwaSimIRDdsTopicVideoStatus", "HwaSimIR.VideoStatus", 0);
+		"DdsProtocol", "TopicVideoStatus", "HwaSimIRDdsTopicVideoStatus", sourceVideoStatusTopic, 0);
 	if (m_ddsVideoConfig.topicMode == "identity")
 	{
 		const std::string metaPattern = m_runtimeConfig.getString(

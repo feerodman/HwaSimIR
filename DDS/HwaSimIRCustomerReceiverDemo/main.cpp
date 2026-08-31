@@ -26,7 +26,9 @@ struct Options
     int timeoutSec = 120;
     std::uint64_t frames = 0;
     std::string qos = "Config/DDS/ZRDDS_PROTOCOL_QOS.xml";
-    std::string statusTopic = "HwaSimIR.VideoStatus";
+    std::string streamRole = "direct";
+    std::string statusTopic;
+    bool statusTopicExplicit = false;
     std::string output = "received.h264";
     std::string channel = "precise";
     int platID = -1;
@@ -56,7 +58,12 @@ static Options Parse(int argc, char** argv)
         const std::string value(argv[++i]);
         if (arg == "--domain") o.domain = std::atoi(value.c_str());
         else if (arg == "--qos") o.qos = value;
-        else if (arg == "--status-topic") o.statusTopic = value;
+        else if (arg == "--stream-role") o.streamRole = value;
+        else if (arg == "--status-topic")
+        {
+            o.statusTopic = value;
+            o.statusTopicExplicit = true;
+        }
         else if (arg == "--output") o.output = value;
         else if (arg == "--frames") o.frames = std::strtoull(value.c_str(), 0, 10);
         else if (arg == "--timeout-sec") o.timeoutSec = std::atoi(value.c_str());
@@ -75,6 +82,12 @@ static Options Parse(int argc, char** argv)
     }
     if (o.decode != "none" && o.decode != "mpp")
         throw std::runtime_error("--decode must be none or mpp");
+    if (o.streamRole != "direct" && o.streamRole != "decoded")
+        throw std::runtime_error("--stream-role must be direct or decoded");
+    if (!o.statusTopicExplicit)
+        o.statusTopic = o.streamRole == "decoded"
+            ? "HwaSimIR.DecodedVideoStatus" : "HwaSimIR.VideoStatus";
+    if (o.statusTopic.empty()) throw std::runtime_error("status topic must not be empty");
     return o;
 }
 
@@ -121,6 +134,20 @@ public:
     void setStatus(const HwaSimIRDds::VideoStatusV1& s)
     {
         std::lock_guard<std::mutex> lock(mutex);
+        const std::string advertisedTopic = s.videoTopic ? s.videoTopic : "";
+        const bool correctRole = o.streamRole == "decoded"
+            ? advertisedTopic.find("HwaSimIR.Decoded.") == 0
+            : advertisedTopic.find("HwaSimIR.Video.") == 0;
+        if (!correctRole)
+        {
+            ++wrongTopicSelections;
+            std::cerr << "[StatusSelection][REJECT] streamRole=" << o.streamRole
+                      << " statusTopic=" << o.statusTopic
+                      << " advertisedTopic=" << advertisedTopic
+                      << " wrongTopicSelections=" << wrongTopicSelections << std::endl;
+            ready.notify_all();
+            return;
+        }
         const bool wasRunning = status.running;
         status.received = true;
         status.running = s.running != 0;
@@ -131,7 +158,7 @@ public:
         status.channel = s.channel ? s.channel : "";
         status.codec = s.codec ? s.codec : "";
         status.pixelFormat = s.pixelFormat ? s.pixelFormat : "";
-        status.topic = s.videoTopic ? s.videoTopic : "";
+        status.topic = advertisedTopic;
         ++statusCount;
         if (status.running && !wasRunning && o.decode == "mpp" && decoderFlushed)
         {
@@ -161,7 +188,11 @@ public:
     {
         std::unique_lock<std::mutex> lock(mutex);
         return ready.wait_for(lock, std::chrono::seconds(timeoutSec), [this] {
-            return status.received && !status.topic.empty();
+            if (!status.received || !status.running || status.topic.empty()) return false;
+            // KEEP_LAST may immediately deliver the previous round's status.
+            // An MPP receiver must wait for the source's H264 INIT/START status
+            // instead of treating a stale Raw status as a fatal discovery result.
+            return o.decode != "mpp" || status.codec == "h264";
         });
     }
 
@@ -262,8 +293,8 @@ public:
             // Decoder EOS flush is deliberately performed by the main thread
             // after this predicate.  Blocking MPP calls inside a ZRDDS callback
             // can starve the Meta/Annotation callbacks queued behind Status.
-            const bool decodeDone = o.frames == 0 || o.decode != "mpp" ||
-                decodedFrames >= videoSamples;
+            const bool decodeDone = o.decode != "mpp" || decodedFrames >= videoSamples ||
+                (roundStopped && videoDone);
             return videoDone && metaDone && annotationDone && decodeDone;
         });
     }
@@ -301,9 +332,14 @@ public:
             << " codec=" << status.codec << " pixelFormat=" << status.pixelFormat
             << " width=" << status.width << " height=" << status.height
             << " decodedWidth=" << decodedWidth << " decodedHeight=" << decodedHeight
+            << " streamRole=" << o.streamRole
+            << " statusTopic=" << o.statusTopic
+            << " selectedVideoTopic=" << status.topic
+            << " wrongTopicSelections=" << wrongTopicSelections
             << " ddsErrors=" << ddsErrors << std::endl;
         return complete && countsOk && geometryOk && ddsErrors == 0 && decodeErrors == 0 &&
-            syncMismatch == 0 && pendingMeta == 0 && pendingAnnotation == 0 ? 0 : 8;
+            syncMismatch == 0 && pendingMeta == 0 && pendingAnnotation == 0 &&
+            wrongTopicSelections == 0 ? 0 : 8;
     }
 
 private:
@@ -361,6 +397,7 @@ private:
     std::chrono::steady_clock::time_point first, last;
     std::uint64_t statusCount = 0, videoSamples = 0, videoBytes = 0;
     std::uint64_t decodedFrames = 0, decodeErrors = 0, ddsErrors = 0;
+    std::uint64_t wrongTopicSelections = 0;
     std::uint64_t metaCount = 0, annotationCount = 0, syncMismatch = 0;
     std::uint64_t pendingMeta = 0, pendingAnnotation = 0;
     std::uint32_t lastMetaSeq = 0, lastAnnotationSeq = 0;
@@ -471,7 +508,8 @@ int main(int argc, char** argv)
 		DataReader* videoReader = DDSIF::SubTopic(participant, selectedVideoTopic.c_str(),
 			BytesTypeSupport::get_instance(), "hwasimir_reliable_reader", videoListener.get());
 		if (!videoReader) throw std::runtime_error("video SubTopic failed: " + selectedVideoTopic);
-        std::cout << "receiverReady=1 statusTopic=" << o.statusTopic
+        std::cout << "receiverReady=1 streamRole=" << o.streamRole
+                  << " statusTopic=" << o.statusTopic
 				  << " autoVideoTopic=" << status.topic
 				  << " selectedPlatID=" << status.platID
 				  << " selectedSensorID=" << status.sensorID

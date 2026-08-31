@@ -33,7 +33,8 @@ struct Options
     std::uint64_t frames = 0;
     bool publishRaw = true;
     std::string qos = "Config/DDS/ZRDDS_PROTOCOL_QOS.xml";
-    std::string statusTopic = "HwaSimIR.VideoStatus";
+    std::string sourceStatusTopic = "HwaSimIR.VideoStatus";
+    std::string decodedStatusTopic = "HwaSimIR.DecodedVideoStatus";
     std::string channel = "precise";
     std::string sourceTopicOverride;
     std::string decodedTopic;
@@ -49,7 +50,9 @@ static Options Parse(int argc, char** argv)
         const std::string value(argv[++i]);
         if (arg == "--domain") o.domain = std::atoi(value.c_str());
         else if (arg == "--qos") o.qos = value;
-        else if (arg == "--status-topic") o.statusTopic = value;
+        else if (arg == "--source-status-topic" || arg == "--status-topic")
+            o.sourceStatusTopic = value;
+        else if (arg == "--decoded-status-topic") o.decodedStatusTopic = value;
         else if (arg == "--channel") o.channel = value;
         else if (arg == "--plat-id") o.platID = std::atoi(value.c_str());
         else if (arg == "--sensor-id") o.sensorID = std::atoi(value.c_str());
@@ -64,6 +67,12 @@ static Options Parse(int argc, char** argv)
         else if (arg == "--shutdown-drain-ms") o.shutdownDrainMs = std::atoi(value.c_str());
         else throw std::runtime_error("unknown option " + arg);
     }
+    if (o.sourceStatusTopic.empty())
+        throw std::runtime_error("--source-status-topic must not be empty");
+    if (o.decodedStatusTopic.empty())
+        throw std::runtime_error("--decoded-status-topic must not be empty");
+    if (o.sourceStatusTopic == o.decodedStatusTopic)
+        throw std::runtime_error("source and decoded status topics must be different");
     return o;
 }
 
@@ -92,7 +101,7 @@ public:
     bool initialize(DomainParticipant* participant, std::string& error)
     {
         if (!decoder.initialize(error)) return false;
-        statusWriterBase = DDSIF::PubTopic(participant, o.statusTopic.c_str(),
+        statusWriterBase = DDSIF::PubTopic(participant, o.decodedStatusTopic.c_str(),
             HwaSimIRDds::VideoStatusV1TypeSupport::get_instance(),
             "hwasimir_status_writer", nullptr);
         statusWriter = dynamic_cast<HwaSimIRDds::VideoStatusV1DataWriter*>(statusWriterBase);
@@ -462,7 +471,8 @@ private:
         if (statusWriter->write(sample, HANDLE_NIL_NATIVE) != RETCODE_OK)
         { std::lock_guard<std::mutex> lock(mutex); ++writerErrors; }
         HwaSimIRDds::VideoStatusV1Finalize(&sample);
-        std::cout << "[GatewayStatus] running=" << (running ? 1 : 0)
+        std::cout << "[GatewayStatus] statusTopic=" << o.decodedStatusTopic
+                  << " running=" << (running ? 1 : 0)
                   << " topic=" << topic << " width=" << statusWidth
                   << " height=" << statusHeight << " round=" << snapshot.currentRound << std::endl;
     }
@@ -537,7 +547,7 @@ int main(int argc, char** argv)
         std::string error;
         if (!state.initialize(participant, error)) throw std::runtime_error(error);
         StatusListener statusListener(state);
-        DataReader* statusReader = DDSIF::SubTopic(participant, o.statusTopic.c_str(),
+        DataReader* statusReader = DDSIF::SubTopic(participant, o.sourceStatusTopic.c_str(),
             HwaSimIRDds::VideoStatusV1TypeSupport::get_instance(),
             "hwasimir_status_reader", &statusListener);
         if (!statusReader) throw std::runtime_error("status SubTopic failed");
@@ -553,6 +563,8 @@ int main(int argc, char** argv)
         if (!sourceReader) throw std::runtime_error("source H264 SubTopic failed");
         std::cout << "gatewayReady=1 platID=" << source.platID
                   << " sensorID=" << source.sensorID << " channel=" << source.channel
+                  << " sourceStatusTopic=" << o.sourceStatusTopic
+                  << " decodedStatusTopic=" << o.decodedStatusTopic
                   << " sourceTopic=" << sourceTopic
                   << " decodedTopic=" << state.decodedTopic()
                   << " decoder=rkmpp callbackMode=enqueue_only" << std::endl;

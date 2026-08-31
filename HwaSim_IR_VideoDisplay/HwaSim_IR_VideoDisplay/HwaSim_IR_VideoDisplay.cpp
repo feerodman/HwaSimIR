@@ -32,8 +32,9 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
     const QString& networkConfigPath,
     const QString& channel,
     int platID,
-    int sensorID,
+	int sensorID,
 	const QString& receiveTransport,
+	const QString& streamRole,
 	const QString& ddsTopic,
 	const QString& ddsCodec,
 	const QString& ddsQos,
@@ -68,6 +69,17 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
 	{
 		qCritical().noquote() << QStringLiteral("[VideoInput][FATAL] invalid Transport=%1").arg(m_receiveTransport);
 		m_receiveTransport = QStringLiteral("tcp");
+	}
+	QString resolvedStreamRole = streamRole.trimmed().toLower();
+	if (resolvedStreamRole.isEmpty())
+		resolvedStreamRole = instanceSettings.value(QStringLiteral("DdsVideo/StreamRole"),
+			QStringLiteral("direct")).toString().trimmed().toLower();
+	if (resolvedStreamRole != QStringLiteral("direct") &&
+		resolvedStreamRole != QStringLiteral("decoded"))
+	{
+		qCritical().noquote() << QStringLiteral(
+			"[VideoInput][FATAL] invalid StreamRole=%1").arg(resolvedStreamRole);
+		resolvedStreamRole = QStringLiteral("direct");
 	}
     if (m_channel.isEmpty())
     {
@@ -145,8 +157,15 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
 			QStringLiteral("HwaSimIR.Realtime")).toString();
 		config.topicInitAck = instanceSettings.value(QStringLiteral("DdsProtocol/TopicInitAck"),
 			QStringLiteral("HwaSimIR.InitAck")).toString();
-		config.topicVideoStatus = instanceSettings.value(QStringLiteral("DdsProtocol/TopicVideoStatus"),
-			QStringLiteral("HwaSimIR.VideoStatus")).toString();
+		const QString defaultStatusTopic = resolvedStreamRole == QStringLiteral("decoded")
+			? QStringLiteral("HwaSimIR.DecodedVideoStatus")
+			: QStringLiteral("HwaSimIR.VideoStatus");
+		config.topicVideoStatus = resolvedStreamRole == QStringLiteral("decoded")
+			? instanceSettings.value(QStringLiteral("DdsGateway/DecodedStatusTopic"),
+				defaultStatusTopic).toString()
+			: instanceSettings.value(QStringLiteral("DdsVideo/StatusTopic"),
+				defaultStatusTopic).toString();
+		config.receiveFrameProducts = resolvedStreamRole == QStringLiteral("direct");
 		config.channel = instanceSettings.value(QStringLiteral("DdsVideo/Channel"),
 			config.topic.contains(QStringLiteral(".coarse."), Qt::CaseInsensitive)
 				? QStringLiteral("coarse") : QStringLiteral("precise")).toString().trimmed().toLower();
@@ -171,8 +190,10 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
 		connect(m_workerThread, &QThread::finished, m_ddsWorker, &QObject::deleteLater);
 		connect(m_workerThread, &QThread::started, m_ddsWorker, &DdsVideoReceiverWorker::doWork);
 		ui.dockWidget_dataShow->setWindowTitle(QStringLiteral("数据显示 - DDS full transport"));
-		qInfo().noquote() << QStringLiteral("[VideoInput] Transport=dds topic=%1 codec=%2 domain=%3")
-			.arg(config.topic).arg(config.codec).arg(config.domainId);
+		qInfo().noquote() << QStringLiteral(
+			"[VideoInput] Transport=dds streamRole=%1 statusTopic=%2 topic=%3 codec=%4 domain=%5")
+			.arg(resolvedStreamRole).arg(config.topicVideoStatus).arg(config.topic)
+			.arg(config.codec).arg(config.domainId);
 	}
 	else
 	{

@@ -9,7 +9,7 @@
 - 每个 DDS 进程使用独立、可写的 Trial licence 副本，不记录 licence 正文。
 - H264 一 AU 一 `DDS::Bytes` Sample；Raw 一整帧一 Sample，视频本体中没有自定义头。
 
-控制顺序是 RESET -> INIT -> InitAck -> START -> 60 Hz Realtime -> STOP。`HwaSimIR.VideoStatus` 告知通道、视频 Topic、codec、geometry 和 running。F2 的 Meta/Annotation 是独立 Topic。
+控制顺序是 RESET -> INIT -> InitAck -> START -> 60 Hz Realtime -> STOP。`HwaSimIR.VideoStatus` 只描述 HwaSim_IR direct/source 流，`HwaSimIR.DecodedVideoStatus` 只描述 Gateway Raw 输出。F2 的 Meta/Annotation 是独立 Topic。
 
 ## 2. 三条最常用命令
 
@@ -22,17 +22,17 @@ HwaSimIRStimDdsDemo --domain 150 --qos Config/DDS/ZRDDS_PROTOCOL_QOS.xml --plat-
 客户直接接收 H264 并用 RKMPP 解码：
 
 ```bash
-./HwaSimIRCustomerReceiverDemo --domain 150 --qos Config/DDS/ZRDDS_PROTOCOL_QOS.xml --channel precise --expect-codec h264 --output received.h264 --decode mpp --gray-output decoded.gray --receive-meta 1 --receive-annotation 1 --frames 300
+./HwaSimIRCustomerReceiverDemo --domain 150 --qos Config/DDS/ZRDDS_PROTOCOL_QOS.xml --stream-role direct --plat-id 1001 --sensor-id 2 --output received.h264 --decode mpp --gray-output decoded.gray --frames 300
 ```
 
 Gateway 转 Raw 后由客户接收：
 
 ```bash
-./HwaSimIRDecodeGatewayDemo --domain 150 --qos Config/DDS/ZRDDS_PROTOCOL_QOS.xml --channel precise --decoded-topic HwaSimIR.Decoded.precise.RawGray8 --frames 300
-./HwaSimIRCustomerReceiverDemo --domain 150 --qos Config/DDS/ZRDDS_PROTOCOL_QOS.xml --channel precise --expect-codec raw_gray8 --output decoded.raw --frames 300
+./HwaSimIRDecodeGatewayDemo --domain 150 --qos Config/DDS/ZRDDS_PROTOCOL_QOS.xml --plat-id 1001 --sensor-id 2 --channel precise --frames 0
+./HwaSimIRCustomerReceiverDemo --domain 150 --qos Config/DDS/ZRDDS_PROTOCOL_QOS.xml --stream-role decoded --plat-id 1001 --sensor-id 2 --output decoded.raw --frames 0
 ```
 
-启动顺序：Receiver -> Gateway（若使用）-> HwaSimIR -> Stim。停止时由 Stim 发 STOP，让发送端先 drain，再结束 Receiver。
+四种常见启动顺序均已验证；Receiver 会等待目标身份的 `running=true` Status。停止时由 Stim 发 STOP，让发送端先 drain，再结束 Receiver。正常命令不填写 `--video-topic`；该参数只用于故障调试。
 
 ## 3. 成功判据
 
@@ -56,7 +56,8 @@ Gateway 转 Raw 后由客户接收：
 | 最后几帧缺失 | 检查应用 queue、bounded drain 和双端计数，不能只看 ack API |
 | 绑定 192.168.1.116 无 discovery | 使用已验证的 `tcpv4://default//0` 并作为 vendor issue 留证 |
 | Gateway DDSIF::Init 失败 | 每个进程使用从已验证 SDK 复制的独立可写 Trial licence；失效或被并发改写的副本必须替换，禁止多个进程共享同一副本 |
-| 双 HwaSimIR 只有一路收到控制 | 分别检查两实例的 ProtocolIngress；当前 2.4.4 runtime 在同板共享协议 Topic 场景有已知广播/重连问题，不能把单路收到当成双路 PASS |
+| Receiver 选到错误流 | 检查 `--stream-role`：direct 只订阅 `HwaSimIR.VideoStatus`，decoded 只订阅 `HwaSimIR.DecodedVideoStatus`；`wrongTopicSelections` 必须为 0 |
+| 启动后停在旧 Raw/H264 Topic | 自动发现必须等待匹配 identity 的 `running=true` Status；确认没有用 `--status-topic`/`--video-topic` 覆盖正式选择 |
 
 ## 5. 交付物
 

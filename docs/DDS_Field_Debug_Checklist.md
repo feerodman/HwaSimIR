@@ -4,6 +4,10 @@ F2 已支持 DDS 全链 Control/Init/Realtime/Ack、VideoStatus、VideoMeta、An
 
 ## F2 帧同步与 Gateway
 
+- [ ] Direct Receiver 使用 `--stream-role direct`，Status Topic 为 `HwaSimIR.VideoStatus`
+- [ ] Decoded Receiver 使用 `--stream-role decoded`，Status Topic 为 `HwaSimIR.DecodedVideoStatus`
+- [ ] 正常运行未传 `--video-topic`，输出 `wrongTopicSelections=0`
+- [ ] 自动发现等待匹配 identity 的 `running=true` Status，未锁定启动期默认 Raw 历史状态
 - [ ] precise/coarse 的 Video、Meta、Annotation Topic 未串通道
 - [ ] 每个 START 首帧 `frameSeq=1`，同 round 连续且无重复
 - [ ] STOP 后 video==meta；标注开启时 video==annotation；pending=0

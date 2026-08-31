@@ -22,6 +22,7 @@ struct DdsVideoReceiverConfig
 	int fps = 60;
 	QString dumpFirstFramePath;
 	bool autoFromVideoStatus = true;
+	bool receiveFrameProducts = true;
 	QString topicControl = QStringLiteral("HwaSimIR.Control");
 	QString topicInit = QStringLiteral("HwaSimIR.Init");
 	QString topicRealtime = QStringLiteral("HwaSimIR.Realtime");

@@ -20,6 +20,7 @@ public:
 		int platID = -1,
 		int sensorID = -1,
 		const QString& receiveTransport = QString(),
+		const QString& streamRole = QString(),
 		const QString& ddsTopic = QString(),
 		const QString& ddsCodec = QString(),
 		const QString& ddsQos = QString(),
