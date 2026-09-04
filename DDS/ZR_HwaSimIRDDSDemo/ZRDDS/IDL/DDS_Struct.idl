@@ -1,0 +1,21 @@
+//RTPA业务管理逻辑代码至传输代理RTPB
+struct ServToProxy
+{
+	unsigned short SysIdx;
+	unsigned short ReqCmd;
+	unsigned long  evtype;
+	unsigned long  evtsub;
+	unsigned short HaveTimeOut;
+	unsigned short ValidLen;
+	octet ucData[256];
+};
+
+//传输代理RTPB至RTPA业务管理逻辑
+struct ProxyToServ
+{
+	unsigned short SysIdx;
+	unsigned short RespCmd;
+	unsigned short ValidLen;
+	octet ucData[256];
+};
+

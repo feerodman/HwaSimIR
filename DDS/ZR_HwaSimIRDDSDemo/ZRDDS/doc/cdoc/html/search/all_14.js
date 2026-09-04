@@ -1,0 +1,8 @@
+var searchData=
+[
+  ['user_5fdata',['user_data',['../struct_d_d_s___data_reader_qos.html#a531f64b804f33d6e8aceeb0d87498f60',1,'DDS_DataReaderQos::user_data()'],['../struct_d_d_s___data_writer_qos.html#a531f64b804f33d6e8aceeb0d87498f60',1,'DDS_DataWriterQos::user_data()'],['../struct_d_d_s___domain_participant_qos.html#a531f64b804f33d6e8aceeb0d87498f60',1,'DDS_DomainParticipantQos::user_data()'],['../struct_d_d_s___participant_builtin_topic_data.html#a531f64b804f33d6e8aceeb0d87498f60',1,'DDS_ParticipantBuiltinTopicData::user_data()'],['../struct_d_d_s___publication_builtin_topic_data.html#a531f64b804f33d6e8aceeb0d87498f60',1,'DDS_PublicationBuiltinTopicData::user_data()'],['../struct_d_d_s___subscription_builtin_topic_data.html#a531f64b804f33d6e8aceeb0d87498f60',1,'DDS_SubscriptionBuiltinTopicData::user_data()'],['../struct_d_d_s___listener.html#a0f53d287ac7c064d1a49d4bd93ca1cb9',1,'DDS_Listener::user_data()']]],
+  ['user_5fdata_5freceive_5fthread_5faffinity_5fmask',['user_data_receive_thread_affinity_mask',['../struct_d_d_s___thread_core_affinity_qos_policy.html#afbce65fa0fe2c38ab2bf69c67f143ab2',1,'DDS_ThreadCoreAffinityQosPolicy']]],
+  ['userbuffer',['userBuffer',['../struct_d_d_s___zero_copy_bytes.html#aa5a6051e8310a58ea8efb4cf71f2ea77',1,'DDS_ZeroCopyBytes']]],
+  ['userlength',['userLength',['../struct_d_d_s___zero_copy_bytes.html#a343be60bca31f14b518da68d944450f3',1,'DDS_ZeroCopyBytes']]],
+  ['usertraffic_5freceive_5faddresses',['usertraffic_receive_addresses',['../struct_d_d_s___domain_participant_qos.html#a0bad3c238a747a6475288349f162b303',1,'DDS_DomainParticipantQos']]]
+];

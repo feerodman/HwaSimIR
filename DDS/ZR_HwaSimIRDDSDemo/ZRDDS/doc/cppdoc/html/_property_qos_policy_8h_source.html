@@ -1,0 +1,207 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: PropertyQosPolicy.h 源文件</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>类</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('_property_qos_policy_8h_source.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">PropertyQosPolicy.h</div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#ifndef PropertyQosPolicy_h__</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#define PropertyQosPolicy_h__</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#include &quot;OsResource.h&quot;</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#include &quot;ZRDDSCommon.h&quot;</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="preprocessor">#include &quot;ZRSequence.h&quot;</span></div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#include &quot;ZRBuiltinTypes.h&quot;</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span></div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;{</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* __cplusplus */</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span>DDS_Property_t</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;{</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>* name;</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>* value;</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> propagate;</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> owned;</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;}DDS_Property_t;</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;DDS_SEQUENCE_CPP(DDS_PropertySeq, DDS_Property_t);</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;</div>
+<div class="line"><a name="l00049"></a><span class="lineno"><a class="line" href="struct_d_d_s___binary_property__t.html">   49</a></span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="struct_d_d_s___binary_property__t.html">DDS_BinaryProperty_t</a></div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;{</div>
+<div class="line"><a name="l00052"></a><span class="lineno"><a class="line" href="struct_d_d_s___binary_property__t.html#a8abfdb9c3aa82841e421124223755bbe">   52</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>* <a class="code" href="struct_d_d_s___binary_property__t.html#a8abfdb9c3aa82841e421124223755bbe">name</a>;</div>
+<div class="line"><a name="l00054"></a><span class="lineno"><a class="line" href="struct_d_d_s___binary_property__t.html#a40e17b1a8351518fc7451aa23df8eb4b">   54</a></span>&#160;    <a class="code" href="struct_d_d_s___octet_seq.html">DDS_OctetSeq</a> <a class="code" href="struct_d_d_s___binary_property__t.html#a40e17b1a8351518fc7451aa23df8eb4b">value</a>;</div>
+<div class="line"><a name="l00056"></a><span class="lineno"><a class="line" href="struct_d_d_s___binary_property__t.html#a89eeb5e9937f357cc1b97788b89d0b1b">   56</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> <a class="code" href="struct_d_d_s___binary_property__t.html#a89eeb5e9937f357cc1b97788b89d0b1b">propagate</a>;</div>
+<div class="line"><a name="l00058"></a><span class="lineno"><a class="line" href="struct_d_d_s___binary_property__t.html#abc38f93bdd1f098c4eab6ab086398247">   58</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> <a class="code" href="struct_d_d_s___binary_property__t.html#abc38f93bdd1f098c4eab6ab086398247">owned</a>;</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;}<a class="code" href="struct_d_d_s___binary_property__t.html">DDS_BinaryProperty_t</a>;</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;DDS_SEQUENCE_CPP(DDS_BinaryPropertySeq, <a class="code" href="struct_d_d_s___binary_property__t.html">DDS_BinaryProperty_t</a>);</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;</div>
+<div class="line"><a name="l00077"></a><span class="lineno"><a class="line" href="struct_d_d_s___property_qos_policy.html">   77</a></span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="struct_d_d_s___property_qos_policy.html">DDS_PropertyQosPolicy</a> </div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;{</div>
+<div class="line"><a name="l00080"></a><span class="lineno"><a class="line" href="struct_d_d_s___property_qos_policy.html#a08388c1d2d067effcf7b788d5bd75412">   80</a></span>&#160;    DDS_PropertySeq <a class="code" href="struct_d_d_s___property_qos_policy.html#a08388c1d2d067effcf7b788d5bd75412">value</a>;</div>
+<div class="line"><a name="l00082"></a><span class="lineno"><a class="line" href="struct_d_d_s___property_qos_policy.html#a7a14864175f9a0d58f311b6e2ed77883">   82</a></span>&#160;    DDS_BinaryPropertySeq <a class="code" href="struct_d_d_s___property_qos_policy.html#a7a14864175f9a0d58f311b6e2ed77883">binary_value</a>;</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;}<a class="code" href="struct_d_d_s___property_qos_policy.html">DDS_PropertyQosPolicy</a>;</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;DCPSDLL <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> DDS_PropertyQos_AppendProperty(<a class="code" href="struct_d_d_s___property_qos_policy.html">DDS_PropertyQosPolicy</a> * propertyQos,</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    <span class="keyword">const</span> <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>* name,</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    <span class="keyword">const</span> <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>* value,</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> propagate);</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;DCPSDLL <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> DDS_PropertyQos_AppendBinaryProperty(<a class="code" href="struct_d_d_s___property_qos_policy.html">DDS_PropertyQosPolicy</a> * propertyQos,</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    <span class="keyword">const</span> <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>* name,</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___octet_seq.html">DDS_OctetSeq</a>* value,</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> propagate);</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;DCPSDLL <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> DDS_PropertyQos_RemoveProperty(<a class="code" href="struct_d_d_s___property_qos_policy.html">DDS_PropertyQosPolicy</a> * propertyQos,</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;    <span class="keyword">const</span> <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>* name);</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;DCPSDLL <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> DDS_PropertyQos_RemoveBinaryProperty(<a class="code" href="struct_d_d_s___property_qos_policy.html">DDS_PropertyQosPolicy</a> * propertyQos,</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;    <span class="keyword">const</span> <a class="code" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a>* name);</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;<span class="preprocessor">#ifdef _ZRDDS_INCLUDE_DATA_COMPRESSION</span></div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;<span class="keyword">typedef</span> int(*CompressionFunc)(</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">char</span>* src,</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;    <span class="keywordtype">char</span>* dst,</div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;    <span class="keywordtype">int</span> src_size,</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;    <span class="keywordtype">int</span> dst_size);</div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;<span class="keyword">typedef</span> int(*DeCompressionFunc)(</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">char</span>* src,</div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;    <span class="keywordtype">char</span>* dst,</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;    <span class="keywordtype">int</span> compressed_size,</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    <span class="keywordtype">int</span> dst_capacity);</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;DCPSDLL <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> SetDataWriterCompression(<a class="code" href="struct_d_d_s___property_qos_policy.html">DDS_PropertyQosPolicy</a>* property, <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* dll_name, <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* compression_name, <span class="keywordtype">void</span>* compression_func);</div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;</div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;DCPSDLL <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> SetDataReaderCompression(<a class="code" href="struct_d_d_s___property_qos_policy.html">DDS_PropertyQosPolicy</a>* property, <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* dll_name, <a class="code" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a>* compression_name, <span class="keywordtype">void</span>* decompression_func);</div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;</div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;<span class="preprocessor">#endif // _ZRDDS_INCLUDE_DATA_COMPRESSION</span></div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;</div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;</div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;}</div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* __cplusplus */</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;</div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* PropertyQosPolicy_h__ */</span><span class="preprocessor"></span></div>
+<div class="ttc" id="struct_d_d_s___property_qos_policy_html_a7a14864175f9a0d58f311b6e2ed77883"><div class="ttname"><a href="struct_d_d_s___property_qos_policy.html#a7a14864175f9a0d58f311b6e2ed77883">DDS_PropertyQosPolicy::binary_value</a></div><div class="ttdeci">DDS_BinaryPropertySeq binary_value</div><div class="ttdoc">缓冲区值。 </div><div class="ttdef"><b>Definition:</b> PropertyQosPolicy.h:82</div></div>
+<div class="ttc" id="struct_d_d_s___binary_property__t_html"><div class="ttname"><a href="struct_d_d_s___binary_property__t.html">DDS_BinaryProperty_t</a></div><div class="ttdoc">二值的键值对。 </div><div class="ttdef"><b>Definition:</b> PropertyQosPolicy.h:49</div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga40aa7a1400d66542eba212ef019321bf"><div class="ttname"><a href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a></div><div class="ttdeci">ZR_BOOLEAN DDS_Boolean</div><div class="ttdoc">ZRDDS内置的true/false类型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:197</div></div>
+<div class="ttc" id="struct_d_d_s___property_qos_policy_html_a08388c1d2d067effcf7b788d5bd75412"><div class="ttname"><a href="struct_d_d_s___property_qos_policy.html#a08388c1d2d067effcf7b788d5bd75412">DDS_PropertyQosPolicy::value</a></div><div class="ttdeci">DDS_PropertySeq value</div><div class="ttdoc">字符串值。 </div><div class="ttdef"><b>Definition:</b> PropertyQosPolicy.h:80</div></div>
+<div class="ttc" id="struct_d_d_s___binary_property__t_html_abc38f93bdd1f098c4eab6ab086398247"><div class="ttname"><a href="struct_d_d_s___binary_property__t.html#abc38f93bdd1f098c4eab6ab086398247">DDS_BinaryProperty_t::owned</a></div><div class="ttdeci">DDS_Boolean owned</div><div class="ttdoc">区分内存空间是否由内部分配，true表明DDS内部管理内存空间，否则表明用户管理内存空间。 ...</div><div class="ttdef"><b>Definition:</b> PropertyQosPolicy.h:58</div></div>
+<div class="ttc" id="struct_d_d_s___octet_seq_html"><div class="ttname"><a href="struct_d_d_s___octet_seq.html">DDS_OctetSeq</a></div><div class="ttdoc">声明内置数据类型 DDS_Octet 的序列，参见核心接口序列相关数据类型 。 </div></div>
+<div class="ttc" id="struct_d_d_s___binary_property__t_html_a89eeb5e9937f357cc1b97788b89d0b1b"><div class="ttname"><a href="struct_d_d_s___binary_property__t.html#a89eeb5e9937f357cc1b97788b89d0b1b">DDS_BinaryProperty_t::propagate</a></div><div class="ttdeci">DDS_Boolean propagate</div><div class="ttdoc">是否需要传递给对端。 </div><div class="ttdef"><b>Definition:</b> PropertyQosPolicy.h:56</div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga07e4e24db44e921d6b33e916c4442dab"><div class="ttname"><a href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a></div><div class="ttdeci">char DDS_Char</div><div class="ttdoc">ZRDDS内置的1字节整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:218</div></div>
+<div class="ttc" id="struct_d_d_s___property_qos_policy_html"><div class="ttname"><a href="struct_d_d_s___property_qos_policy.html">DDS_PropertyQosPolicy</a></div><div class="ttdoc">属性配置。 </div><div class="ttdef"><b>Definition:</b> PropertyQosPolicy.h:77</div></div>
+<div class="ttc" id="struct_d_d_s___binary_property__t_html_a8abfdb9c3aa82841e421124223755bbe"><div class="ttname"><a href="struct_d_d_s___binary_property__t.html#a8abfdb9c3aa82841e421124223755bbe">DDS_BinaryProperty_t::name</a></div><div class="ttdeci">DDS_Char * name</div><div class="ttdoc">名称，由厂商自己约定。 </div><div class="ttdef"><b>Definition:</b> PropertyQosPolicy.h:52</div></div>
+<div class="ttc" id="struct_d_d_s___binary_property__t_html_a40e17b1a8351518fc7451aa23df8eb4b"><div class="ttname"><a href="struct_d_d_s___binary_property__t.html#a40e17b1a8351518fc7451aa23df8eb4b">DDS_BinaryProperty_t::value</a></div><div class="ttdeci">DDS_OctetSeq value</div><div class="ttdoc">名称对应的值。 </div><div class="ttdef"><b>Definition:</b> PropertyQosPolicy.h:54</div></div>
+<div class="ttc" id="group___core_base_struct_html_gacc550da50917f3aa72ed5229fed9bb41"><div class="ttname"><a href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a></div><div class="ttdeci">char ZR_INT8</div><div class="ttdoc">为屏蔽平台差异，定义在接口中使用的1个字节整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:51</div></div>
+<div class="ttc" id="group___core_base_struct_html_gab3de48fd32f773622806baa963567e20"><div class="ttname"><a href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a></div><div class="ttdeci">int ZR_INT32</div><div class="ttdoc">为屏蔽平台差异，定义在接口中使用的4个字节整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:91</div></div>
+</div><!-- fragment --></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="dir_0fc3f8f3ef96ce2d45d66d6e29832317.html">resources</a></li><li class="navelem"><a class="el" href="dir_cf9ceadfa18f25e608d16251156af657.html">zrdds</a></li><li class="navelem"><a class="el" href="dir_49213087373222e5c37cddb4e4d5f33e.html">src</a></li><li class="navelem"><a class="el" href="dir_53336e619d60bf3f94a9dfb5f5011ef0.html">ZRDDSCoreInterface</a></li><li class="navelem"><b>PropertyQosPolicy.h</b></li>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

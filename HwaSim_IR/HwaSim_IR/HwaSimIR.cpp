@@ -18,6 +18,7 @@
 #include "geomVertexFormat.h"
 #include "geomVertexWriter.h"
 #include "frameBufferProperties.h"
+#include "antialiasAttrib.h"
 #include "internalName.h"
 #include "perspectiveLens.h"
 #include "cullFaceAttrib.h"
@@ -146,7 +147,8 @@ GraphicsOutput* MakeStage6OffscreenOutput(
 	int height,
 	GraphicsStateGuardian* sharedGsg,
 	GraphicsOutput* host,
-	bool bindAllPlanes)
+	bool bindAllPlanes,
+	int multisamples)
 {
 	if (framework == nullptr)
 	{
@@ -165,7 +167,7 @@ GraphicsOutput* MakeStage6OffscreenOutput(
 	fbProps.set_depth_bits(24);
 	fbProps.set_back_buffers(0);
 	fbProps.set_stereo(false);
-	fbProps.set_multisamples(0);
+	fbProps.set_multisamples(multisamples);
 	fbProps.set_force_hardware(false);
 	fbProps.set_force_software(false);
 
@@ -177,7 +179,8 @@ GraphicsOutput* MakeStage6OffscreenOutput(
 	const int outputFlags = GraphicsPipe::BF_refuse_window |
 		(bindAllPlanes
 			? GraphicsPipe::BF_can_bind_every
-			: (GraphicsPipe::BF_fb_props_optional | GraphicsPipe::BF_can_bind_color));
+			: ((multisamples > 0 ? 0 : GraphicsPipe::BF_fb_props_optional) |
+				GraphicsPipe::BF_can_bind_color));
 
 	return engine->make_output(
 		pipe,
@@ -188,6 +191,20 @@ GraphicsOutput* MakeStage6OffscreenOutput(
 		outputFlags,
 		sharedGsg,
 		host);
+}
+
+void LogMsaaFramebufferResult(int requested, GraphicsOutput* output, const char* outputName)
+{
+	const int actual = output != nullptr ? output->get_fb_properties().get_multisamples() : 0;
+	const char* result = requested == 0
+		? "disabled"
+		: (actual == requested ? "enabled" : "fallback");
+	std::cout << "[MSAA]"
+		<< " requested=" << requested
+		<< " actual=" << actual
+		<< " output=" << (outputName != nullptr ? outputName : "unknown")
+		<< " result=" << result
+		<< std::endl;
 }
 
 double ClampStage5Double(double value, double low, double high)
@@ -1315,6 +1332,10 @@ HwaSimIR::HwaSimIR(int argc, char** argv, const HwaSimIRLaunchOptions& launchOpt
 			<< " visibleWindowCreated=0"
 			<< std::endl;
 	}
+	if (m_msaaSamples > 0)
+	{
+		m_renderRoot.set_antialias(AntialiasAttrib::M_multisample);
+	}
 
 	m_targetVideoFps.store(m_configuredVideoFps);
 	SetRenderMode(m_configuredSimMode == 1, static_cast<double>(m_configuredVideoFps));
@@ -1657,6 +1678,7 @@ void HwaSimIR::LoadRenderBackendConfig()
 	std::string forceSyncVideoSource;
 	std::string readbackModeSource;
 	std::string readbackEveryNSource;
+	std::string msaaSamplesSource;
 	const std::string requestedMode = m_runtimeConfig.getString(
 		"RenderBackend",
 		"PresentationMode",
@@ -1778,6 +1800,20 @@ void HwaSimIR::LoadRenderBackendConfig()
 		m_headlessReadbackEveryN = 1;
 	}
 	m_headlessReadbackEveryN = std::max(1, std::min(600, m_headlessReadbackEveryN));
+	m_msaaSamples = m_runtimeConfig.getInt(
+		"RenderBackend",
+		"MSAASamples",
+		"RenderMSAASamples",
+		0,
+		&msaaSamplesSource);
+	if (m_msaaSamples != 0 && m_msaaSamples != 2 && m_msaaSamples != 4)
+	{
+		std::cout << "[RenderBackend][WARN]"
+			<< " invalid MSAASamples=" << m_msaaSamples
+			<< " fallback=0"
+			<< std::endl;
+		m_msaaSamples = 0;
+	}
 	m_headlessCopyRamAttached = ShouldAttachStage6CopyRam();
 	if (m_headlessWidth <= 0)
 	{
@@ -1809,11 +1845,13 @@ void HwaSimIR::LoadRenderBackendConfig()
 		<< " HeadlessForceSyncVideoFalse=" << (m_headlessForceSyncVideoFalse ? "1" : "0")
 		<< " HeadlessReadbackMode=" << HeadlessReadbackModeText()
 		<< " HeadlessReadbackEveryN=" << m_headlessReadbackEveryN
+		<< " MSAASamples=" << m_msaaSamples
 		<< " copyRamAttached=" << (m_headlessCopyRamAttached ? "1" : "0")
 		<< " source=" << modeSource << "/" << previewSource << "/" << frameRateSource
 		<< "/" << widthSource << "/" << heightSource
 		<< "/" << fastDirectSource << "/" << imageProbeSource << "/" << renderPerfProbeSource
 		<< "/" << forceSyncVideoSource << "/" << readbackModeSource << "/" << readbackEveryNSource
+		<< "/" << msaaSamplesSource
 		<< std::endl;
 }
 
@@ -1911,6 +1949,7 @@ void HwaSimIR::LogRenderBackendConfig(const char* reason) const
 		<< " renderPerfProbe=" << (m_renderPerfProbe ? "1" : "0")
 		<< " readbackMode=" << HeadlessReadbackModeText()
 		<< " readbackEveryN=" << m_headlessReadbackEveryN
+		<< " msaaSamples=" << m_msaaSamples
 		<< " copyRamAttached=" << (m_headlessCopyRamAttached ? "1" : "0")
 		<< std::endl;
 }
@@ -2590,6 +2629,7 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 	const bool directFinal =
 		headlessMode &&
 		m_headlessFastDirectFinal &&
+		m_msaaSamples == 0 &&
 		finalPostprocessNoop &&
 		!volumetricCompositeRequired;
 	const std::string plannedRenderPath = directFinal ? "direct_final" : "dual_pass";
@@ -2755,7 +2795,9 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 			safeHeight,
 			nullptr,
 			nullptr,
-			false);
+			false,
+			0);
+		LogMsaaFramebufferResult(0, m_stage6FinalSensorBuffer, "Stage6FinalSensorBuffer");
 		if (m_stage6FinalSensorBuffer == nullptr)
 		{
 			m_stage6FinalPipelineReady = false;
@@ -2805,9 +2847,10 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 	m_stage6RawSceneTex->setup_2d_texture(safeWidth, safeHeight, Texture::T_unsigned_byte, Texture::F_rgb);
 	// eglGraphicsPipe on the RK3588 g6p0 X11 stack cannot create an
 	// all-bitplane texture buffer without an existing host/GSG.  Create the
-	// ordinary final color buffer first and use it as the host only for the
-	// volumetric path; the established Layered2_5D path keeps its old order.
-	if (IsHeadlessOffscreenMode() && volumetricCompositeRequired)
+	// ordinary final color buffer first and use it as the host for paths that
+	// require a concrete GSG (volumetric all-plane or multisample raw scene).
+	// The established Layered2_5D non-MSAA path keeps its old order.
+	if (IsHeadlessOffscreenMode() && (volumetricCompositeRequired || m_msaaSamples > 0))
 	{
 		m_stage6FinalSensorBuffer = MakeStage6OffscreenOutput(
 			m_pFramework,
@@ -2817,11 +2860,21 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 			safeHeight,
 			nullptr,
 			nullptr,
-			false);
+			false,
+			0);
 	}
 	if (IsVisibleWindowMode())
 	{
-		m_stage6RawSceneBuffer = m_pGraphicsWindow->make_texture_buffer("Stage6RawSceneBuffer", safeWidth, safeHeight, m_stage6RawSceneTex, false);
+		FrameBufferProperties rawSceneFbProps = FrameBufferProperties::get_default();
+		rawSceneFbProps.set_multisamples(m_msaaSamples);
+		m_stage6RawSceneBuffer = m_pGraphicsWindow->make_texture_buffer(
+			"Stage6RawSceneBuffer", safeWidth, safeHeight, m_stage6RawSceneTex, false, &rawSceneFbProps);
+		if (m_stage6RawSceneBuffer == nullptr && m_msaaSamples > 0)
+		{
+			rawSceneFbProps.set_multisamples(0);
+			m_stage6RawSceneBuffer = m_pGraphicsWindow->make_texture_buffer(
+				"Stage6RawSceneBuffer", safeWidth, safeHeight, m_stage6RawSceneTex, false, &rawSceneFbProps);
+		}
 		m_stage6PresentationOutput = m_pGraphicsWindow;
 	}
 	else
@@ -2834,12 +2887,27 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 			safeHeight,
 			m_stage6FinalSensorBuffer != nullptr ? m_stage6FinalSensorBuffer->get_gsg() : nullptr,
 			m_stage6FinalSensorBuffer,
-			volumetricCompositeRequired);
+			volumetricCompositeRequired,
+			m_msaaSamples);
+		if (m_stage6RawSceneBuffer == nullptr && m_msaaSamples > 0)
+		{
+			m_stage6RawSceneBuffer = MakeStage6OffscreenOutput(
+				m_pFramework,
+				"Stage6RawSceneBuffer",
+				-10,
+				safeWidth,
+				safeHeight,
+				m_stage6FinalSensorBuffer != nullptr ? m_stage6FinalSensorBuffer->get_gsg() : nullptr,
+				m_stage6FinalSensorBuffer,
+				volumetricCompositeRequired,
+				0);
+		}
 		if (m_stage6RawSceneBuffer != nullptr)
 		{
 			m_stage6RawSceneBuffer->add_render_texture(m_stage6RawSceneTex, GraphicsOutput::RTM_copy_texture);
 		}
 	}
+	LogMsaaFramebufferResult(m_msaaSamples, m_stage6RawSceneBuffer, "Stage6RawSceneBuffer");
 	if (m_stage6RawSceneBuffer == nullptr)
 	{
 		m_stage6FinalPipelineReady = false;
@@ -2894,7 +2962,8 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 				safeHeight,
 				m_stage6RawSceneBuffer != nullptr ? m_stage6RawSceneBuffer->get_gsg() : nullptr,
 				m_stage6RawSceneBuffer,
-				false);
+				false,
+				0);
 		}
 		if (m_stage6FinalSensorBuffer == nullptr)
 		{
@@ -5543,7 +5612,11 @@ void HwaSimIR::UpdateStage7SkyHorizon(const IRRuntimeEnvironment& environment, c
 		const bool volumeCompositeRequired = m_stage7VolumeCloudEnabled &&
 			(m_stage7CloudRenderMode == CloudRenderMode::StreamedWorld3D ||
 			 m_stage7CloudRenderMode == CloudRenderMode::Volumetric3D);
-		const bool directFinal = m_headlessFastDirectFinal && noOp && !volumeCompositeRequired;
+		const bool directFinal =
+			m_headlessFastDirectFinal &&
+			m_msaaSamples == 0 &&
+			noOp &&
+			!volumeCompositeRequired;
 		const std::string plannedPath = directFinal ? "direct_final" : "dual_pass";
 		if (plannedPath != m_stage6RenderPath)
 		{

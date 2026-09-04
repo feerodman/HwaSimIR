@@ -1,0 +1,19 @@
+INCLUDEPATH += $$PWD/include
+INCLUDEPATH += $$PWD/include/CPlusPlusInterface
+INCLUDEPATH += $$PWD/include/ZRDDSCoreInterface
+INCLUDEPATH += $$PWD/include/ZRDDSRPCInterface
+INCLUDEPATH += $$PWD/include/ZRDDSSecurityInterface
+
+#DEFINES += _ZRDDSCPPINTERFACE
+
+
+#win32 {
+#    LIBS += -lws2_32 -ladvapi32
+#        CONFIG(release, debug|release) {
+#            LIBS += -L"$$PWD/lib" -lZRDDSCppz
+#        } else {
+#            LIBS += -L"$$PWD/lib" -lZRDDSCppzd
+#        }
+#}
+
+

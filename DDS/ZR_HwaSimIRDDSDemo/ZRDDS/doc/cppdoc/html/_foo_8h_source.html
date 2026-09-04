@@ -1,0 +1,408 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: Foo.h 源文件</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>类</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('_foo_8h_source.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">Foo.h</div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#ifndef Foo_H_</span></div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#define Foo_H_</span></div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;</div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &quot;OsResource.h&quot;</span></div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &quot;ZRSequence.h&quot;</span></div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &quot;TypeCode.h&quot;</span></div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#include &quot;CDRStream.h&quot;</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#include &quot;ZRSeqTypeDefine.h&quot;</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="preprocessor">#include &quot;ZRDDSCppWrapper.h&quot;</span></div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="keyword">using namespace </span><a class="code" href="namespace_d_d_s.html">DDS</a>;</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span>ZRMemPool ZRMemPool;</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span></div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;{</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span>FooParent</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;{</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga41bfe9ef2e315331bb94579617fd53c9">DDS_Float</a> floatArr[32]; <span class="comment">// @ID(0)</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;} FooParent; <span class="comment">// @Extensibility(EXTENSIBLE)</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<a class="code" href="group___core_seq_struct.html#gaa26133b833e4be0b4c58791dde05b1b7">DDS_USER_SEQUENCE_CPP</a>(FooParentSeq, FooParent);</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="comment">// 用户使用接口</span></div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> FooParentInitialize(</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    FooParent* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> FooParentInitializeEx(</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    FooParent* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    ZRMemPool* pool,</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> allocateMemory);</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="keywordtype">void</span> FooParentFinalize(</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    FooParent* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="keywordtype">void</span> FooParentFinalizeEx(</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    FooParent* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    ZRMemPool* pool,</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> deletePointers);</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> FooParentCopy(</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    FooParent* dst,</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keyword">const</span> FooParent* src);</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> FooParentCopyEx(</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    FooParent* dst,</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keyword">const</span> FooParent* src,</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    ZRMemPool* pool);</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="keywordtype">void</span> FooParentPrintData(</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keyword">const</span> FooParent* sample);</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;TypeCode* FooParentGetTypeCode();</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="comment">// 底层使用函数</span></div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;FooParent* FooParentCreateSample(</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    ZRMemPool* pool,</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> allocMutable);</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="keywordtype">void</span> FooParentDestroySample(</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    ZRMemPool* pool,</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    FooParent* sample);</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;<a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> FooParentGetSerializedSampleMaxSize();</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> FooParentGetSerializedSampleSize(</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <span class="keyword">const</span> FooParent* sample,</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> currentAlignment);</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;<a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> FooParentSerialize(</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keyword">const</span> FooParent* sample,</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    CDRSerializer* cdr);</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;<a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> FooParentDeserialize(</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    FooParent* sample,</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    CDRDeserializer* cdr,</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    ZRMemPool* pool);</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;<a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> FooParentGetSerializedKeyMaxSize();</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;<a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> FooParentGetSerializedKeySize(</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <span class="keyword">const</span> FooParent* sample,</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> currentAlignment);</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;<a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> FooParentSerializeKey(</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    <span class="keyword">const</span> FooParent* sample,</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    CDRSerializer* cdr);</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;<a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> FooParentDeserializeKey(</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    FooParent* sample,</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    CDRDeserializer* cdr,</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    ZRMemPool* pool);</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;<a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> FooParentGetKeyHash(</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    <span class="keyword">const</span> FooParent* sample,</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    CDRSerializer* cdr,</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    <a class="code" href="struct_d_d_s___instance_handle__t.html">KeyHash_t</a>* result);</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;<a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> FooParentHasKey();</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;TypeCodeHeader* FooParentGetInnerTypeCode();</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span>InnerFoo</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;{</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    ZRINT8Seq charSeq; <span class="comment">// @ID(1) /* maximum length = (256) */</span></div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;} InnerFoo; <span class="comment">// @Extensibility(EXTENSIBLE)</span></div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;<a class="code" href="group___core_seq_struct.html#gaa26133b833e4be0b4c58791dde05b1b7">DDS_USER_SEQUENCE_CPP</a>(InnerFooSeq, InnerFoo);</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;<span class="comment">// 用户使用接口</span></div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;<a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> InnerFooInitialize(</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    InnerFoo* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;<a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> InnerFooInitializeEx(</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    InnerFoo* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    ZRMemPool* pool,</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> allocateMemory);</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;<span class="keywordtype">void</span> InnerFooFinalize(</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;    InnerFoo* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;<span class="keywordtype">void</span> InnerFooFinalizeEx(</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;    InnerFoo* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    ZRMemPool* pool,</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;    <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> deletePointers);</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;<a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> InnerFooCopy(</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;    InnerFoo* dst,</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;    <span class="keyword">const</span> InnerFoo* src);</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;<a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> InnerFooCopyEx(</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;    InnerFoo* dst,</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;    <span class="keyword">const</span> InnerFoo* src,</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;    ZRMemPool* pool);</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;<span class="keywordtype">void</span> InnerFooPrintData(</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;    <span class="keyword">const</span> InnerFoo* sample);</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;TypeCode* InnerFooGetTypeCode();</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;<span class="comment">// 底层使用函数</span></div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;InnerFoo* InnerFooCreateSample(</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;    ZRMemPool* pool,</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;    <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> allocMutable);</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;<span class="keywordtype">void</span> InnerFooDestroySample(</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;    ZRMemPool* pool,</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;    InnerFoo* sample);</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;<a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> InnerFooGetSerializedSampleMaxSize();</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;<a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> InnerFooGetSerializedSampleSize(</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;    <span class="keyword">const</span> InnerFoo* sample,</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;    <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> currentAlignment);</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;<a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> InnerFooSerialize(</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;    <span class="keyword">const</span> InnerFoo* sample,</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;    CDRSerializer* cdr);</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;<a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> InnerFooDeserialize(</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;    InnerFoo* sample,</div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;    CDRDeserializer* cdr,</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;    ZRMemPool* pool);</div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;<a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> InnerFooGetSerializedKeyMaxSize();</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;<a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> InnerFooGetSerializedKeySize(</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;    <span class="keyword">const</span> InnerFoo* sample,</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;    <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> currentAlignment);</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;</div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;<a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> InnerFooSerializeKey(</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;    <span class="keyword">const</span> InnerFoo* sample,</div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;    CDRSerializer* cdr);</div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;</div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;<a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> InnerFooDeserializeKey(</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;    InnerFoo* sample,</div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;    CDRDeserializer* cdr,</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;    ZRMemPool* pool);</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;</div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;<a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> InnerFooGetKeyHash(</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;    <span class="keyword">const</span> InnerFoo* sample,</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    CDRSerializer* cdr,</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;    <a class="code" href="struct_d_d_s___instance_handle__t.html">KeyHash_t</a>* result);</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;<a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> InnerFooHasKey();</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;TypeCodeHeader* InnerFooGetInnerTypeCode();</div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;</div>
+<div class="line"><a name="l00200"></a><span class="lineno"><a class="line" href="struct_foo.html">  200</a></span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="struct_foo.html">Foo</a> : <span class="keyword">public</span> FooParent</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;{</div>
+<div class="line"><a name="l00203"></a><span class="lineno"><a class="line" href="struct_foo.html#a6864364aac8516327f60918d392e1958">  203</a></span>&#160;    <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> <a class="code" href="struct_foo.html#a6864364aac8516327f60918d392e1958">x</a>;</div>
+<div class="line"><a name="l00205"></a><span class="lineno"><a class="line" href="struct_foo.html#afdb8f51467c6025c888750a49ab93431">  205</a></span>&#160;    <a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> <a class="code" href="struct_foo.html#afdb8f51467c6025c888750a49ab93431">y</a>;</div>
+<div class="line"><a name="l00207"></a><span class="lineno"><a class="line" href="struct_foo.html#a5a61711e294a7534c8db807fdcfcc366">  207</a></span>&#160;    InnerFoo <a class="code" href="struct_foo.html#a5a61711e294a7534c8db807fdcfcc366">complexMember</a>;</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;} <a class="code" href="struct_foo.html">Foo</a>; <span class="comment">// @Extensibility(EXTENSIBLE)</span></div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;<a class="code" href="group___core_seq_struct.html#gaa26133b833e4be0b4c58791dde05b1b7">DDS_USER_SEQUENCE_CPP</a>(<a class="code" href="struct_foo_seq.html">FooSeq</a>, <a class="code" href="struct_foo.html">Foo</a>);</div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;</div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;<span class="comment">// 用户使用接口</span></div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;<a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> FooInitialize(</div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;    <a class="code" href="struct_foo.html">Foo</a>* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;</div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;<a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> FooInitializeEx(</div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;    <a class="code" href="struct_foo.html">Foo</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;    ZRMemPool* pool,</div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;    <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> allocateMemory);</div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;</div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;<span class="keywordtype">void</span> FooFinalize(</div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;    <a class="code" href="struct_foo.html">Foo</a>* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;</div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;<span class="keywordtype">void</span> FooFinalizeEx(</div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;    <a class="code" href="struct_foo.html">Foo</a>* <span class="keyword">self</span>,</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;    ZRMemPool* pool,</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;    <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> deletePointers);</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;<a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> FooCopy(</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;    <a class="code" href="struct_foo.html">Foo</a>* dst,</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_foo.html">Foo</a>* src);</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;<a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> FooCopyEx(</div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;    <a class="code" href="struct_foo.html">Foo</a>* dst,</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_foo.html">Foo</a>* src,</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;    ZRMemPool* pool);</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;<span class="keywordtype">void</span> FooPrintData(</div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_foo.html">Foo</a>* sample);</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;TypeCode* FooGetTypeCode();</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;</div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;<span class="comment">// 底层使用函数</span></div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;<a class="code" href="struct_foo.html">Foo</a>* FooCreateSample(</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;    ZRMemPool* pool,</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;    <a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> allocMutable);</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;<span class="keywordtype">void</span> FooDestroySample(</div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;    ZRMemPool* pool,</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;    <a class="code" href="struct_foo.html">Foo</a>* sample);</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;<a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> FooGetSerializedSampleMaxSize();</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;</div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;<a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> FooGetSerializedSampleSize(</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_foo.html">Foo</a>* sample,</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;    <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> currentAlignment);</div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;<a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> FooSerialize(</div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_foo.html">Foo</a>* sample,</div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;    CDRSerializer* cdr);</div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;</div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;<a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> FooDeserialize(</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;    <a class="code" href="struct_foo.html">Foo</a>* sample,</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;    CDRDeserializer* cdr,</div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;    ZRMemPool* pool);</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;</div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;<a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> FooGetSerializedKeyMaxSize();</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;<a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> FooGetSerializedKeySize(</div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_foo.html">Foo</a>* sample,</div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;    <a class="code" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> currentAlignment);</div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;</div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;<a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> FooSerializeKey(</div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_foo.html">Foo</a>* sample,</div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;    CDRSerializer* cdr);</div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;</div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;<a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> FooDeserializeKey(</div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;    <a class="code" href="struct_foo.html">Foo</a>* sample,</div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    CDRDeserializer* cdr,</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;    ZRMemPool* pool);</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;</div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;<a class="code" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> FooGetKeyHash(</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_foo.html">Foo</a>* sample,</div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;    CDRSerializer* cdr,</div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;    <a class="code" href="struct_d_d_s___instance_handle__t.html">KeyHash_t</a>* result);</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;</div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;<a class="code" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> FooHasKey();</div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;</div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;TypeCodeHeader* FooGetInnerTypeCode();</div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;</div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;}</div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="ttc" id="struct_foo_html"><div class="ttname"><a href="struct_foo.html">Foo</a></div><div class="ttdoc">IDL映射到C++数据类型。 </div><div class="ttdef"><b>Definition:</b> Foo.h:200</div></div>
+<div class="ttc" id="struct_foo_html_a6864364aac8516327f60918d392e1958"><div class="ttname"><a href="struct_foo.html#a6864364aac8516327f60918d392e1958">Foo::x</a></div><div class="ttdeci">ZR_INT32 x</div><div class="ttdoc">自定义简单成员x </div><div class="ttdef"><b>Definition:</b> Foo.h:203</div></div>
+<div class="ttc" id="group___core_base_struct_html_ga79dbbaba1af8dfe2efe567fdcce2940b"><div class="ttname"><a href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a></div><div class="ttdeci">unsigned int ZR_UINT32</div><div class="ttdoc">为屏蔽平台差异，定义在接口中使用的4个字节无符号整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:101</div></div>
+<div class="ttc" id="struct_foo_html_afdb8f51467c6025c888750a49ab93431"><div class="ttname"><a href="struct_foo.html#afdb8f51467c6025c888750a49ab93431">Foo::y</a></div><div class="ttdeci">ZR_INT32 y</div><div class="ttdoc">自定义简单成员y </div><div class="ttdef"><b>Definition:</b> Foo.h:205</div></div>
+<div class="ttc" id="namespace_d_d_s_html"><div class="ttname"><a href="namespace_d_d_s.html">DDS</a></div><div class="ttdef"><b>Definition:</b> BuiltinDataDataReader.h:13</div></div>
+<div class="ttc" id="group___core_base_struct_html_ga41af8a0ee350bae22a2791d338ee89ea"><div class="ttname"><a href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a></div><div class="ttdeci">char ZR_BOOLEAN</div><div class="ttdoc">为屏蔽平台差异，定义在接口中使用bool类型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:27</div></div>
+<div class="ttc" id="struct_foo_html_a5a61711e294a7534c8db807fdcfcc366"><div class="ttname"><a href="struct_foo.html#a5a61711e294a7534c8db807fdcfcc366">Foo::complexMember</a></div><div class="ttdeci">InnerFoo complexMember</div><div class="ttdoc">自定义复杂数据类型 </div><div class="ttdef"><b>Definition:</b> Foo.h:207</div></div>
+<div class="ttc" id="struct_foo_seq_html"><div class="ttname"><a href="struct_foo_seq.html">FooSeq</a></div><div class="ttdoc">使用 DDS_USER_SEQUENCE_C 以及 DDS_USER_SEQUENCE_CPP 定义类型序列的等效代码的结构体部分。 ...</div><div class="ttdef"><b>Definition:</b> FooSeq.h:15</div></div>
+<div class="ttc" id="group___core_seq_struct_html_gaa26133b833e4be0b4c58791dde05b1b7"><div class="ttname"><a href="group___core_seq_struct.html#gaa26133b833e4be0b4c58791dde05b1b7">DDS_USER_SEQUENCE_CPP</a></div><div class="ttdeci">#define DDS_USER_SEQUENCE_CPP(TSeq, T)        </div><div class="ttdoc">宏定义实现C++序列模板，该宏用于声明T类型的序列类型TSeq及其支持方法，具体参见核心接口序列相关的函数 。...</div><div class="ttdef"><b>Definition:</b> ZRSequence.h:251</div></div>
+<div class="ttc" id="struct_d_d_s___instance_handle__t_html"><div class="ttname"><a href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a></div><div class="ttdoc">用来表示一个实体或者一个数据实例。 </div><div class="ttdef"><b>Definition:</b> InstanceHandle_t.h:24</div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga41bfe9ef2e315331bb94579617fd53c9"><div class="ttname"><a href="group___core_builtin_types.html#ga41bfe9ef2e315331bb94579617fd53c9">DDS_Float</a></div><div class="ttdeci">ZR_FLOAT32 DDS_Float</div><div class="ttdoc">ZRDDS内置的4字节单精度浮点型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:288</div></div>
+<div class="ttc" id="group___core_base_struct_html_gab3de48fd32f773622806baa963567e20"><div class="ttname"><a href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a></div><div class="ttdeci">int ZR_INT32</div><div class="ttdoc">为屏蔽平台差异，定义在接口中使用的4个字节整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:91</div></div>
+</div><!-- fragment --></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="dir_0fc3f8f3ef96ce2d45d66d6e29832317.html">resources</a></li><li class="navelem"><a class="el" href="dir_8d0508a2668a1a7de6381bce3cc50b39.html">docs</a></li><li class="navelem"><a class="el" href="dir_b319e0f10c5e47b3004d5b6bbb105086.html">online</a></li><li class="navelem"><a class="el" href="dir_3cd0f83dc04ff128ffa8e70917f161fd.html">cpp</a></li><li class="navelem"><a class="el" href="dir_39718d59669de6e912c347037bc1530e.html">extra</a></li><li class="navelem"><b>Foo.h</b></li>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

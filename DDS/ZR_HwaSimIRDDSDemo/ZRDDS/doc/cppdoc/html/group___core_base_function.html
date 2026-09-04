@@ -1,0 +1,2530 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: 核心接口基础类型支持函数</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>类</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('group___core_base_function.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="summary">
+<a href="#typedef-members">类型定义</a> &#124;
+<a href="#func-members">函数</a>  </div>
+  <div class="headertitle">
+<div class="title">核心接口基础类型支持函数<div class="ingroups"><a class="el" href="group___core_function.html">核心接口函数</a></div></div>  </div>
+</div><!--header-->
+<div class="contents">
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
+类型定义</h2></td></tr>
+<tr class="memitem:ga454c4fa4d88a04c1e39a626798372e72"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga454c4fa4d88a04c1e39a626798372e72">ZRPSCALLBACKFUN</a>) (const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *topicName, const <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> topicNo, void *buffer, <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> len)</td></tr>
+<tr class="memdesc:ga454c4fa4d88a04c1e39a626798372e72"><td class="mdescLeft">&#160;</td><td class="mdescRight">订阅端回调函数，参数如下：  <a href="#ga454c4fa4d88a04c1e39a626798372e72">更多...</a><br /></td></tr>
+<tr class="separator:ga454c4fa4d88a04c1e39a626798372e72"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaecb26d3e74537b3f35e5f56ad72233a7"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#gaecb26d3e74537b3f35e5f56ad72233a7">ZRPSBUILTINCALLBACKFUN</a>) (const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *topicName, <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> entityState, <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> entityKind, const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *entityId)</td></tr>
+<tr class="memdesc:gaecb26d3e74537b3f35e5f56ad72233a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">发现回调函数，参数如下：  <a href="#gaecb26d3e74537b3f35e5f56ad72233a7">更多...</a><br /></td></tr>
+<tr class="separator:gaecb26d3e74537b3f35e5f56ad72233a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
+函数</h2></td></tr>
+<tr class="memitem:gae7c5d69a8c6771568b1a733e38b122c4"><td class="memItemLeft" align="right" valign="top">DCPSDLL CDRSerializer *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#gae7c5d69a8c6771568b1a733e38b122c4">CDRSerializerInitialWBuf</a> (<a class="el" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a> *buffer, <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> length, <a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> littleEndian)</td></tr>
+<tr class="memdesc:gae7c5d69a8c6771568b1a733e38b122c4"><td class="mdescLeft">&#160;</td><td class="mdescRight">用户提供原始缓存创建一个序列化器，使用该接口必须调用 <a class="el" href="group___core_base_function.html#ga44bd67fa7de82cab6fa2565b32e4a6e3" title="回收由 CDRSerializerInitialWBuf 创建的内部空间。 ">CDRSerializerDestoryBuffer</a> 回收资源。  <a href="#gae7c5d69a8c6771568b1a733e38b122c4">更多...</a><br /></td></tr>
+<tr class="separator:gae7c5d69a8c6771568b1a733e38b122c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8c8f95d5cc3cad651e31f8a5e273e560"><td class="memItemLeft" align="right" valign="top">DCPSDLL CDRDeserializer *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga8c8f95d5cc3cad651e31f8a5e273e560">CDRDeserializerInitialWBuf</a> (<a class="el" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a> *buffer, <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> length, <a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> littleEndian)</td></tr>
+<tr class="memdesc:ga8c8f95d5cc3cad651e31f8a5e273e560"><td class="mdescLeft">&#160;</td><td class="mdescRight">用户提供原始缓存创建一个反序列化器，使用该接口必须调用 <a class="el" href="group___core_base_function.html#ga4ab7253a106969b6790e2de23c7cbacb" title="回收由 CDRDeserializerInitialWBuf 内部空间。 ">CDRDeserializerDestoryBuffer</a> 回收资源。  <a href="#ga8c8f95d5cc3cad651e31f8a5e273e560">更多...</a><br /></td></tr>
+<tr class="separator:ga8c8f95d5cc3cad651e31f8a5e273e560"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga888e82f554944fa311740bd265a7b7df"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga888e82f554944fa311740bd265a7b7df">CDRSerializerGetBufferSpace</a> (CDRSerializer *self)</td></tr>
+<tr class="memdesc:ga888e82f554944fa311740bd265a7b7df"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取指定序列化器还剩下的缓冲区大小。  <a href="#ga888e82f554944fa311740bd265a7b7df">更多...</a><br /></td></tr>
+<tr class="separator:ga888e82f554944fa311740bd265a7b7df"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf64d2bf33f5566b936d5485ffaaca0fb"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#gaf64d2bf33f5566b936d5485ffaaca0fb">CDRDeserializerGetBufferLength</a> (CDRDeserializer *self)</td></tr>
+<tr class="memdesc:gaf64d2bf33f5566b936d5485ffaaca0fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取反序列化器关联的缓冲区的剩余数据长度。  <a href="#gaf64d2bf33f5566b936d5485ffaaca0fb">更多...</a><br /></td></tr>
+<tr class="separator:gaf64d2bf33f5566b936d5485ffaaca0fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga44bd67fa7de82cab6fa2565b32e4a6e3"><td class="memItemLeft" align="right" valign="top">DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga44bd67fa7de82cab6fa2565b32e4a6e3">CDRSerializerDestoryBuffer</a> (CDRSerializer *self)</td></tr>
+<tr class="memdesc:ga44bd67fa7de82cab6fa2565b32e4a6e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">回收由 <a class="el" href="group___core_base_function.html#gae7c5d69a8c6771568b1a733e38b122c4" title="用户提供原始缓存创建一个序列化器，使用该接口必须调用 CDRSerializerDestoryBuffer 回收资源。 ...">CDRSerializerInitialWBuf</a> 创建的内部空间。  <a href="#ga44bd67fa7de82cab6fa2565b32e4a6e3">更多...</a><br /></td></tr>
+<tr class="separator:ga44bd67fa7de82cab6fa2565b32e4a6e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4ab7253a106969b6790e2de23c7cbacb"><td class="memItemLeft" align="right" valign="top">DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga4ab7253a106969b6790e2de23c7cbacb">CDRDeserializerDestoryBuffer</a> (CDRDeserializer *self)</td></tr>
+<tr class="memdesc:ga4ab7253a106969b6790e2de23c7cbacb"><td class="mdescLeft">&#160;</td><td class="mdescRight">回收由 <a class="el" href="group___core_base_function.html#ga8c8f95d5cc3cad651e31f8a5e273e560" title="用户提供原始缓存创建一个反序列化器，使用该接口必须调用 CDRDeserializerDestoryBuffer 回收资源。 ...">CDRDeserializerInitialWBuf</a> 内部空间。  <a href="#ga4ab7253a106969b6790e2de23c7cbacb">更多...</a><br /></td></tr>
+<tr class="separator:ga4ab7253a106969b6790e2de23c7cbacb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad59d415ae8e07af9d70d3a9d8bbf34e8"><td class="memItemLeft" align="right" valign="top">DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#gad59d415ae8e07af9d70d3a9d8bbf34e8">CDRSerializerInitial</a> (CDRSerializer *self, MessageBlock *tgaMsgBlock, <a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> littleEndian)</td></tr>
+<tr class="memdesc:gad59d415ae8e07af9d70d3a9d8bbf34e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">初始化一个CDR序列化器。  <a href="#gad59d415ae8e07af9d70d3a9d8bbf34e8">更多...</a><br /></td></tr>
+<tr class="separator:gad59d415ae8e07af9d70d3a9d8bbf34e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1b7f534ffd7eb2ec8ef4aaf2cec9f0d3"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga1b7f534ffd7eb2ec8ef4aaf2cec9f0d3">CDRSerializerPutString</a> (CDRSerializer *self, const <a class="el" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a> *value, const <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> length)</td></tr>
+<tr class="memdesc:ga1b7f534ffd7eb2ec8ef4aaf2cec9f0d3"><td class="mdescLeft">&#160;</td><td class="mdescRight">序列化字符串。  <a href="#ga1b7f534ffd7eb2ec8ef4aaf2cec9f0d3">更多...</a><br /></td></tr>
+<tr class="separator:ga1b7f534ffd7eb2ec8ef4aaf2cec9f0d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaccbd6714592dacacabdc46f1bb4bfab2"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#gaccbd6714592dacacabdc46f1bb4bfab2">CDRSerializerPutUntype</a> (CDRSerializer *self, const <a class="el" href="group___core_base_struct.html#gaeea16ef08d08e1ba99553e8904421a9d">ZR_UINT8</a> *val, <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> typeSize)</td></tr>
+<tr class="memdesc:gaccbd6714592dacacabdc46f1bb4bfab2"><td class="mdescLeft">&#160;</td><td class="mdescRight">序列化基本数据类型。  <a href="#gaccbd6714592dacacabdc46f1bb4bfab2">更多...</a><br /></td></tr>
+<tr class="separator:gaccbd6714592dacacabdc46f1bb4bfab2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5438ea71e2c3adc7f83fa27547483a26"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga5438ea71e2c3adc7f83fa27547483a26">CDRSerializerGetUntypeSize</a> (<a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> typeSize, <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> currentAlignment)</td></tr>
+<tr class="memdesc:ga5438ea71e2c3adc7f83fa27547483a26"><td class="mdescLeft">&#160;</td><td class="mdescRight">在指定对齐条件下，指定大小的数据类型序列化长度。  <a href="#ga5438ea71e2c3adc7f83fa27547483a26">更多...</a><br /></td></tr>
+<tr class="separator:ga5438ea71e2c3adc7f83fa27547483a26"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa4c9171407bcdf11acb4348b38c2a262"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#gaa4c9171407bcdf11acb4348b38c2a262">CDRSerializerGetUntypeArraySize</a> (<a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> typeSize, <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> arraySize, <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> currentAlignment)</td></tr>
+<tr class="memdesc:gaa4c9171407bcdf11acb4348b38c2a262"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取类型数组序列化长度的接口。  <a href="#gaa4c9171407bcdf11acb4348b38c2a262">更多...</a><br /></td></tr>
+<tr class="separator:gaa4c9171407bcdf11acb4348b38c2a262"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga979d192667cf92edc26a32a8301643ce"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga979d192667cf92edc26a32a8301643ce">CDRSerializerGetStringSize</a> (<a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> length, <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> currentAlignment)</td></tr>
+<tr class="memdesc:ga979d192667cf92edc26a32a8301643ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取序列化string类型所需的长度。  <a href="#ga979d192667cf92edc26a32a8301643ce">更多...</a><br /></td></tr>
+<tr class="separator:ga979d192667cf92edc26a32a8301643ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gace4e3ad46bbc75fd72fc0838de2ec7cc"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#gace4e3ad46bbc75fd72fc0838de2ec7cc">CDRSerializerPutUntypeArray</a> (CDRSerializer *self, const <a class="el" href="group___core_base_struct.html#gaeea16ef08d08e1ba99553e8904421a9d">ZR_UINT8</a> *arrayVal, <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> arraySize, <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> typeSize)</td></tr>
+<tr class="memdesc:gace4e3ad46bbc75fd72fc0838de2ec7cc"><td class="mdescLeft">&#160;</td><td class="mdescRight">序列化基本类型数组。  <a href="#gace4e3ad46bbc75fd72fc0838de2ec7cc">更多...</a><br /></td></tr>
+<tr class="separator:gace4e3ad46bbc75fd72fc0838de2ec7cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga916b13d646c6559ec08e451906692470"><td class="memItemLeft" align="right" valign="top">DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga916b13d646c6559ec08e451906692470">CDRDeserializerInitial</a> (CDRDeserializer *self, MessageBlock *srcMsg, <a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> useLittleEndian)</td></tr>
+<tr class="memdesc:ga916b13d646c6559ec08e451906692470"><td class="mdescLeft">&#160;</td><td class="mdescRight">初始化一个CDR反序列化器。  <a href="#ga916b13d646c6559ec08e451906692470">更多...</a><br /></td></tr>
+<tr class="separator:ga916b13d646c6559ec08e451906692470"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga66d8e69f678dfa6ca1f572a972e00bbc"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga66d8e69f678dfa6ca1f572a972e00bbc">CDRDeserializerGetString</a> (CDRDeserializer *self, <a class="el" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a> *value, <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> *length)</td></tr>
+<tr class="memdesc:ga66d8e69f678dfa6ca1f572a972e00bbc"><td class="mdescLeft">&#160;</td><td class="mdescRight">从缓冲区中获取字符串。  <a href="#ga66d8e69f678dfa6ca1f572a972e00bbc">更多...</a><br /></td></tr>
+<tr class="separator:ga66d8e69f678dfa6ca1f572a972e00bbc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1a42345af4a4938b59b0f302ab3678ae"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga1a42345af4a4938b59b0f302ab3678ae">CDRDeserializerGetUntype</a> (CDRDeserializer *self, <a class="el" href="group___core_base_struct.html#gaeea16ef08d08e1ba99553e8904421a9d">ZR_UINT8</a> *value, <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> typeSize)</td></tr>
+<tr class="memdesc:ga1a42345af4a4938b59b0f302ab3678ae"><td class="mdescLeft">&#160;</td><td class="mdescRight">从缓冲区中获取基本数据类型。  <a href="#ga1a42345af4a4938b59b0f302ab3678ae">更多...</a><br /></td></tr>
+<tr class="separator:ga1a42345af4a4938b59b0f302ab3678ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga11511761f578cd5b7dff8daaeeb48a21"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga11511761f578cd5b7dff8daaeeb48a21">CDRDeserializerLoanContiguousByte</a> (CDRDeserializer *self, <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> length)</td></tr>
+<tr class="memdesc:ga11511761f578cd5b7dff8daaeeb48a21"><td class="mdescLeft">&#160;</td><td class="mdescRight">从缓冲区中获取字符串，不拷贝。  <a href="#ga11511761f578cd5b7dff8daaeeb48a21">更多...</a><br /></td></tr>
+<tr class="separator:ga11511761f578cd5b7dff8daaeeb48a21"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0aa62fe3009f43d6df6c61565595b903"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga0aa62fe3009f43d6df6c61565595b903">CDRDeserializerAheadLength</a> (CDRDeserializer *self, <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> beginIndex, <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> length)</td></tr>
+<tr class="memdesc:ga0aa62fe3009f43d6df6c61565595b903"><td class="mdescLeft">&#160;</td><td class="mdescRight">跳过指定个数字符。  <a href="#ga0aa62fe3009f43d6df6c61565595b903">更多...</a><br /></td></tr>
+<tr class="separator:ga0aa62fe3009f43d6df6c61565595b903"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8d1a0e426433ced480882615cf5febf5"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga8d1a0e426433ced480882615cf5febf5">ParameterHeaderSerialize</a> (CDRSerializer *cdr, <a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> useExtended, <a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> mustUnderstand, <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> memberId)</td></tr>
+<tr class="memdesc:ga8d1a0e426433ced480882615cf5febf5"><td class="mdescLeft">&#160;</td><td class="mdescRight">序列化参数头，用于扩展CDR.  <a href="#ga8d1a0e426433ced480882615cf5febf5">更多...</a><br /></td></tr>
+<tr class="separator:ga8d1a0e426433ced480882615cf5febf5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac9ddb5da29b30bb53831ad6c997ac612"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#gac9ddb5da29b30bb53831ad6c997ac612">ParameterHeaderDeserialize</a> (CDRDeserializer *cdr, <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> *memberId, <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> *length, <a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> *useExtend, <a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> *mustUnderstand)</td></tr>
+<tr class="memdesc:gac9ddb5da29b30bb53831ad6c997ac612"><td class="mdescLeft">&#160;</td><td class="mdescRight">反序列化参数头。  <a href="#gac9ddb5da29b30bb53831ad6c997ac612">更多...</a><br /></td></tr>
+<tr class="separator:gac9ddb5da29b30bb53831ad6c997ac612"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga89101229556472543617a96e15ceb408"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga89101229556472543617a96e15ceb408">CDRSerializeGetKeyHash</a> (CDRSerializer *cdr, <a class="el" href="group___core_base_struct.html#gaeea16ef08d08e1ba99553e8904421a9d">ZR_UINT8</a> *keyHash, <a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> needMd5)</td></tr>
+<tr class="memdesc:ga89101229556472543617a96e15ceb408"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取关联的md5hash值。  <a href="#ga89101229556472543617a96e15ceb408">更多...</a><br /></td></tr>
+<tr class="separator:ga89101229556472543617a96e15ceb408"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab87d9d7549000d2a58e092b5b550f468"><td class="memItemLeft" align="right" valign="top">DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#gab87d9d7549000d2a58e092b5b550f468">CDRDeserializerPushState</a> (CDRDeserializer *cdr)</td></tr>
+<tr class="memdesc:gab87d9d7549000d2a58e092b5b550f468"><td class="mdescLeft">&#160;</td><td class="mdescRight">保存反序列化器的状态。  <a href="#gab87d9d7549000d2a58e092b5b550f468">更多...</a><br /></td></tr>
+<tr class="separator:gab87d9d7549000d2a58e092b5b550f468"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga353ad8a7bf04cc143164e65eee1f2b6a"><td class="memItemLeft" align="right" valign="top">DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga353ad8a7bf04cc143164e65eee1f2b6a">CDRDeserializerPopState</a> (CDRDeserializer *cdr)</td></tr>
+<tr class="memdesc:ga353ad8a7bf04cc143164e65eee1f2b6a"><td class="mdescLeft">&#160;</td><td class="mdescRight">重新加载反序列化器的状态。  <a href="#ga353ad8a7bf04cc143164e65eee1f2b6a">更多...</a><br /></td></tr>
+<tr class="separator:ga353ad8a7bf04cc143164e65eee1f2b6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5d7280e3092bdd8a4be415b0bf1b3a5b"><td class="memItemLeft" align="right" valign="top">DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga5d7280e3092bdd8a4be415b0bf1b3a5b">DDS_DefaultDomainParticipantFactoryQosInitial</a> (<a class="el" href="struct_d_d_s___domain_participant_factory_qos.html">DDS_DomainParticipantFactoryQos</a> *self)</td></tr>
+<tr class="memdesc:ga5d7280e3092bdd8a4be415b0bf1b3a5b"><td class="mdescLeft">&#160;</td><td class="mdescRight">初始化指定 <a class="el" href="struct_d_d_s___domain_participant_factory_qos.html" title="定义域参与者工厂的QoS。 ">DDS_DomainParticipantFactoryQos</a> 为DDS默认的值。  <a href="#ga5d7280e3092bdd8a4be415b0bf1b3a5b">更多...</a><br /></td></tr>
+<tr class="separator:ga5d7280e3092bdd8a4be415b0bf1b3a5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac2281f15a585591329f26f24ccd75ecd"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#gac2281f15a585591329f26f24ccd75ecd">DDS_DefaultDomainParticipantQosInitial</a> (<a class="el" href="struct_d_d_s___domain_participant_qos.html">DDS_DomainParticipantQos</a> *self)</td></tr>
+<tr class="memdesc:gac2281f15a585591329f26f24ccd75ecd"><td class="mdescLeft">&#160;</td><td class="mdescRight">初始化指定 <a class="el" href="struct_d_d_s___domain_participant_qos.html" title="定义域参与者的QoS配置。 ">DDS_DomainParticipantQos</a> 为DDS默认的值。  <a href="#gac2281f15a585591329f26f24ccd75ecd">更多...</a><br /></td></tr>
+<tr class="separator:gac2281f15a585591329f26f24ccd75ecd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga329c3779a981934b398e32128a1b282b"><td class="memItemLeft" align="right" valign="top">DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga329c3779a981934b398e32128a1b282b">DDS_DefaultPublisherQosInitial</a> (<a class="el" href="struct_d_d_s___publisher_qos.html">DDS_PublisherQos</a> *self)</td></tr>
+<tr class="memdesc:ga329c3779a981934b398e32128a1b282b"><td class="mdescLeft">&#160;</td><td class="mdescRight">初始化指定 <a class="el" href="struct_d_d_s___publisher_qos.html" title="发布者QoS配置 ">DDS_PublisherQos</a> 为DDS默认的值。  <a href="#ga329c3779a981934b398e32128a1b282b">更多...</a><br /></td></tr>
+<tr class="separator:ga329c3779a981934b398e32128a1b282b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga77cefe82d88e84bccd9706a424d2ac3f"><td class="memItemLeft" align="right" valign="top">DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga77cefe82d88e84bccd9706a424d2ac3f">DDS_DefaultSubscriberQosInitial</a> (<a class="el" href="struct_d_d_s___subscriber_qos.html">DDS_SubscriberQos</a> *self)</td></tr>
+<tr class="memdesc:ga77cefe82d88e84bccd9706a424d2ac3f"><td class="mdescLeft">&#160;</td><td class="mdescRight">初始化指定 <a class="el" href="struct_d_d_s___publisher_qos.html" title="发布者QoS配置 ">DDS_PublisherQos</a> 为DDS默认的值。  <a href="#ga77cefe82d88e84bccd9706a424d2ac3f">更多...</a><br /></td></tr>
+<tr class="separator:ga77cefe82d88e84bccd9706a424d2ac3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0c9060a5f0e6c41440343b497c12789d"><td class="memItemLeft" align="right" valign="top">DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga0c9060a5f0e6c41440343b497c12789d">DDS_DefaultDataWriterQosInitial</a> (<a class="el" href="struct_d_d_s___data_writer_qos.html">DDS_DataWriterQos</a> *self)</td></tr>
+<tr class="memdesc:ga0c9060a5f0e6c41440343b497c12789d"><td class="mdescLeft">&#160;</td><td class="mdescRight">初始化指定 <a class="el" href="struct_d_d_s___publisher_qos.html" title="发布者QoS配置 ">DDS_PublisherQos</a> 为DDS默认的值。  <a href="#ga0c9060a5f0e6c41440343b497c12789d">更多...</a><br /></td></tr>
+<tr class="separator:ga0c9060a5f0e6c41440343b497c12789d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae636003898b32772c42fe868e1e56250"><td class="memItemLeft" align="right" valign="top">DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#gae636003898b32772c42fe868e1e56250">DDS_DefaultDataReaderQosInitial</a> (<a class="el" href="struct_d_d_s___data_reader_qos.html">DDS_DataReaderQos</a> *self)</td></tr>
+<tr class="memdesc:gae636003898b32772c42fe868e1e56250"><td class="mdescLeft">&#160;</td><td class="mdescRight">初始化指定 <a class="el" href="struct_d_d_s___publisher_qos.html" title="发布者QoS配置 ">DDS_PublisherQos</a> 为DDS默认的值。  <a href="#gae636003898b32772c42fe868e1e56250">更多...</a><br /></td></tr>
+<tr class="separator:gae636003898b32772c42fe868e1e56250"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6a531cab50b06ba3303ea8b07bae739b"><td class="memItemLeft" align="right" valign="top">DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga6a531cab50b06ba3303ea8b07bae739b">DDS_DefaultTopicQosInitial</a> (<a class="el" href="struct_d_d_s___topic_qos.html">DDS_TopicQos</a> *self)</td></tr>
+<tr class="memdesc:ga6a531cab50b06ba3303ea8b07bae739b"><td class="mdescLeft">&#160;</td><td class="mdescRight">初始化指定 <a class="el" href="struct_d_d_s___publisher_qos.html" title="发布者QoS配置 ">DDS_PublisherQos</a> 为DDS默认的值。  <a href="#ga6a531cab50b06ba3303ea8b07bae739b">更多...</a><br /></td></tr>
+<tr class="separator:ga6a531cab50b06ba3303ea8b07bae739b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga302ceac0469ca06cdd617714aa91e6e7"><td class="memItemLeft" align="right" valign="top">DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga302ceac0469ca06cdd617714aa91e6e7">DDS_DomainParticipantFactoryQosDestroy</a> (<a class="el" href="struct_d_d_s___domain_participant_factory_qos.html">DDS_DomainParticipantFactoryQos</a> *self)</td></tr>
+<tr class="memdesc:ga302ceac0469ca06cdd617714aa91e6e7"><td class="mdescLeft">&#160;</td><td class="mdescRight">释放 <a class="el" href="struct_d_d_s___domain_participant_factory_qos.html" title="定义域参与者工厂的QoS。 ">DDS_DomainParticipantFactoryQos</a> 的空间。  <a href="#ga302ceac0469ca06cdd617714aa91e6e7">更多...</a><br /></td></tr>
+<tr class="separator:ga302ceac0469ca06cdd617714aa91e6e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7572e45b35ed5f4eb31a2e2fc721add4"><td class="memItemLeft" align="right" valign="top">DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga7572e45b35ed5f4eb31a2e2fc721add4">DDS_DomainParticipantQosDestroy</a> (<a class="el" href="struct_d_d_s___domain_participant_qos.html">DDS_DomainParticipantQos</a> *self)</td></tr>
+<tr class="memdesc:ga7572e45b35ed5f4eb31a2e2fc721add4"><td class="mdescLeft">&#160;</td><td class="mdescRight">释放 <a class="el" href="struct_d_d_s___domain_participant_qos.html" title="定义域参与者的QoS配置。 ">DDS_DomainParticipantQos</a> 的空间。  <a href="#ga7572e45b35ed5f4eb31a2e2fc721add4">更多...</a><br /></td></tr>
+<tr class="separator:ga7572e45b35ed5f4eb31a2e2fc721add4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf462fcb5c3219d2a0d45c4ad16c824d9"><td class="memItemLeft" align="right" valign="top">DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#gaf462fcb5c3219d2a0d45c4ad16c824d9">DDS_PublisherQosDestroy</a> (<a class="el" href="struct_d_d_s___publisher_qos.html">DDS_PublisherQos</a> *self)</td></tr>
+<tr class="memdesc:gaf462fcb5c3219d2a0d45c4ad16c824d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">释放 <a class="el" href="struct_d_d_s___publisher_qos.html" title="发布者QoS配置 ">DDS_PublisherQos</a> 的空间。  <a href="#gaf462fcb5c3219d2a0d45c4ad16c824d9">更多...</a><br /></td></tr>
+<tr class="separator:gaf462fcb5c3219d2a0d45c4ad16c824d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3556278d68963d9cc47fef43f8c0139b"><td class="memItemLeft" align="right" valign="top">DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga3556278d68963d9cc47fef43f8c0139b">DDS_SubscriberQosDestroy</a> (<a class="el" href="struct_d_d_s___subscriber_qos.html">DDS_SubscriberQos</a> *self)</td></tr>
+<tr class="memdesc:ga3556278d68963d9cc47fef43f8c0139b"><td class="mdescLeft">&#160;</td><td class="mdescRight">释放 <a class="el" href="struct_d_d_s___subscriber_qos.html" title="定义订阅者的QoS配置。 ">DDS_SubscriberQos</a> 的空间。  <a href="#ga3556278d68963d9cc47fef43f8c0139b">更多...</a><br /></td></tr>
+<tr class="separator:ga3556278d68963d9cc47fef43f8c0139b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2a51a024b18065d489637a99f13ef4dc"><td class="memItemLeft" align="right" valign="top">DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga2a51a024b18065d489637a99f13ef4dc">DDS_DataWriterQosDestroy</a> (<a class="el" href="struct_d_d_s___data_writer_qos.html">DDS_DataWriterQos</a> *self)</td></tr>
+<tr class="memdesc:ga2a51a024b18065d489637a99f13ef4dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">释放 <a class="el" href="struct_d_d_s___data_writer_qos.html" title="定义数据写者的QoS ">DDS_DataWriterQos</a> 的空间。  <a href="#ga2a51a024b18065d489637a99f13ef4dc">更多...</a><br /></td></tr>
+<tr class="separator:ga2a51a024b18065d489637a99f13ef4dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga208855949d834e6dd6e76fe5a8283324"><td class="memItemLeft" align="right" valign="top">DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga208855949d834e6dd6e76fe5a8283324">DDS_DataReaderQosDestroy</a> (<a class="el" href="struct_d_d_s___data_reader_qos.html">DDS_DataReaderQos</a> *self)</td></tr>
+<tr class="memdesc:ga208855949d834e6dd6e76fe5a8283324"><td class="mdescLeft">&#160;</td><td class="mdescRight">释放 <a class="el" href="struct_d_d_s___data_reader_qos.html" title="定义数据读者的QoS配置。 ">DDS_DataReaderQos</a> 的空间。  <a href="#ga208855949d834e6dd6e76fe5a8283324">更多...</a><br /></td></tr>
+<tr class="separator:ga208855949d834e6dd6e76fe5a8283324"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7ca59324b9a4af59d5a35a5b49fa97b8"><td class="memItemLeft" align="right" valign="top">DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga7ca59324b9a4af59d5a35a5b49fa97b8">DDS_TopicQosDestroy</a> (<a class="el" href="struct_d_d_s___topic_qos.html">DDS_TopicQos</a> *self)</td></tr>
+<tr class="memdesc:ga7ca59324b9a4af59d5a35a5b49fa97b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">释放 <a class="el" href="struct_d_d_s___topic_qos.html" title="主题实体的QoS配置。 ">DDS_TopicQos</a> 的空间。  <a href="#ga7ca59324b9a4af59d5a35a5b49fa97b8">更多...</a><br /></td></tr>
+<tr class="separator:ga7ca59324b9a4af59d5a35a5b49fa97b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga844b6e9cb108f37b3710f3f5eae7e4be"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="struct_d_d_s___duration__t.html">DDS_Duration_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga844b6e9cb108f37b3710f3f5eae7e4be">DurationAdd</a> (const <a class="el" href="struct_d_d_s___duration__t.html">DDS_Duration_t</a> *self, const <a class="el" href="struct_d_d_s___duration__t.html">DDS_Duration_t</a> *right)</td></tr>
+<tr class="memdesc:ga844b6e9cb108f37b3710f3f5eae7e4be"><td class="mdescLeft">&#160;</td><td class="mdescRight">两个 <a class="el" href="struct_d_d_s___duration__t.html" title="用来表明一段时间段，协议规定至少有毫微秒的分辨率。 ">DDS_Duration_t</a> 相加返回一个新的结果。  <a href="#ga844b6e9cb108f37b3710f3f5eae7e4be">更多...</a><br /></td></tr>
+<tr class="separator:ga844b6e9cb108f37b3710f3f5eae7e4be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaecdfddab7a29ff7e84249e63ee238102"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="struct_d_d_s___duration__t.html">DDS_Duration_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#gaecdfddab7a29ff7e84249e63ee238102">DurationFromSec</a> (<a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> seconds)</td></tr>
+<tr class="memdesc:gaecdfddab7a29ff7e84249e63ee238102"><td class="mdescLeft">&#160;</td><td class="mdescRight">从秒数转换为等价的 <a class="el" href="struct_d_d_s___duration__t.html" title="用来表明一段时间段，协议规定至少有毫微秒的分辨率。 ">DDS_Duration_t</a> 。  <a href="#gaecdfddab7a29ff7e84249e63ee238102">更多...</a><br /></td></tr>
+<tr class="separator:gaecdfddab7a29ff7e84249e63ee238102"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab66f3ae0a660f197ecf4094274270bd4"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="struct_d_d_s___duration__t.html">DDS_Duration_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#gab66f3ae0a660f197ecf4094274270bd4">DurationFromMillis</a> (<a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> milliseconds)</td></tr>
+<tr class="memdesc:gab66f3ae0a660f197ecf4094274270bd4"><td class="mdescLeft">&#160;</td><td class="mdescRight">从毫秒数转换为等价的 <a class="el" href="struct_d_d_s___duration__t.html" title="用来表明一段时间段，协议规定至少有毫微秒的分辨率。 ">DDS_Duration_t</a> 。  <a href="#gab66f3ae0a660f197ecf4094274270bd4">更多...</a><br /></td></tr>
+<tr class="separator:gab66f3ae0a660f197ecf4094274270bd4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa706f3a744875b8c148baffa5d9dc2f1"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="struct_d_d_s___duration__t.html">DDS_Duration_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#gaa706f3a744875b8c148baffa5d9dc2f1">DurationFromMicros</a> (<a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> microseconds)</td></tr>
+<tr class="memdesc:gaa706f3a744875b8c148baffa5d9dc2f1"><td class="mdescLeft">&#160;</td><td class="mdescRight">从微秒数转换为等价的 <a class="el" href="struct_d_d_s___duration__t.html" title="用来表明一段时间段，协议规定至少有毫微秒的分辨率。 ">DDS_Duration_t</a> 。  <a href="#gaa706f3a744875b8c148baffa5d9dc2f1">更多...</a><br /></td></tr>
+<tr class="separator:gaa706f3a744875b8c148baffa5d9dc2f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gabec2be3212e1a1b1d285decb3b771b86"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="struct_d_d_s___duration__t.html">DDS_Duration_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#gabec2be3212e1a1b1d285decb3b771b86">DurationFromNanos</a> (<a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> nanoseconds)</td></tr>
+<tr class="memdesc:gabec2be3212e1a1b1d285decb3b771b86"><td class="mdescLeft">&#160;</td><td class="mdescRight">从纳秒数转换为等价的 <a class="el" href="struct_d_d_s___duration__t.html" title="用来表明一段时间段，协议规定至少有毫微秒的分辨率。 ">DDS_Duration_t</a> 。  <a href="#gabec2be3212e1a1b1d285decb3b771b86">更多...</a><br /></td></tr>
+<tr class="separator:gabec2be3212e1a1b1d285decb3b771b86"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac3143d1857d72324d63067973a1bd012"><td class="memItemLeft" align="right" valign="top">DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#gac3143d1857d72324d63067973a1bd012">ZRGetNowTime</a> (<a class="el" href="group___core_base_struct.html#gaac564c46e01ef19c09738d4c9d703480">DDS_Time_t</a> *nowTime)</td></tr>
+<tr class="memdesc:gac3143d1857d72324d63067973a1bd012"><td class="mdescLeft">&#160;</td><td class="mdescRight">返回调用该函数时的UTC标准时间。  <a href="#gac3143d1857d72324d63067973a1bd012">更多...</a><br /></td></tr>
+<tr class="separator:gac3143d1857d72324d63067973a1bd012"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9aad30bed023c6fb6c0d00cb55a48c79"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga9aad30bed023c6fb6c0d00cb55a48c79">DDS_InstanceHandle_t_Compare</a> (const <a class="el" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a> *handle1, const <a class="el" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a> *handle2)</td></tr>
+<tr class="memdesc:ga9aad30bed023c6fb6c0d00cb55a48c79"><td class="mdescLeft">&#160;</td><td class="mdescRight">C风格的 <a class="el" href="struct_d_d_s___instance_handle__t.html" title="用来表示一个实体或者一个数据实例。 ">DDS_InstanceHandle_t</a> 比较函数。  <a href="#ga9aad30bed023c6fb6c0d00cb55a48c79">更多...</a><br /></td></tr>
+<tr class="separator:ga9aad30bed023c6fb6c0d00cb55a48c79"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga079a4dd22880bb4a4d371633ac8ee64b"><td class="memItemLeft" align="right" valign="top">DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga079a4dd22880bb4a4d371633ac8ee64b">DDS_ParticipantBuiltinTopicDataInitial</a> (<a class="el" href="struct_d_d_s___participant_builtin_topic_data.html">DDS_ParticipantBuiltinTopicData</a> *self)</td></tr>
+<tr class="memdesc:ga079a4dd22880bb4a4d371633ac8ee64b"><td class="mdescLeft">&#160;</td><td class="mdescRight">初始化 <a class="el" href="struct_d_d_s___participant_builtin_topic_data.html" title="用于抽象给用户呈现的远端域参与者信息。 ">DDS_ParticipantBuiltinTopicData</a> 对象。  <a href="#ga079a4dd22880bb4a4d371633ac8ee64b">更多...</a><br /></td></tr>
+<tr class="separator:ga079a4dd22880bb4a4d371633ac8ee64b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0ed4ad605c957f568ff5aac096ee961d"><td class="memItemLeft" align="right" valign="top">DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga0ed4ad605c957f568ff5aac096ee961d">DDS_ParticipantBuiltinTopicDataDestroy</a> (<a class="el" href="struct_d_d_s___participant_builtin_topic_data.html">DDS_ParticipantBuiltinTopicData</a> *self)</td></tr>
+<tr class="memdesc:ga0ed4ad605c957f568ff5aac096ee961d"><td class="mdescLeft">&#160;</td><td class="mdescRight">清理 <a class="el" href="struct_d_d_s___participant_builtin_topic_data.html" title="用于抽象给用户呈现的远端域参与者信息。 ">DDS_ParticipantBuiltinTopicData</a> 对象空间，但不释放 <a class="el" href="struct_d_d_s___participant_builtin_topic_data.html" title="用于抽象给用户呈现的远端域参与者信息。 ">DDS_ParticipantBuiltinTopicData</a> 自身空间。  <a href="#ga0ed4ad605c957f568ff5aac096ee961d">更多...</a><br /></td></tr>
+<tr class="separator:ga0ed4ad605c957f568ff5aac096ee961d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae5bf9deac89bea7c7c266854fda2cc7f"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#gae5bf9deac89bea7c7c266854fda2cc7f">DDS_ParticipantBuiltinTopicDataCopy</a> (<a class="el" href="struct_d_d_s___participant_builtin_topic_data.html">DDS_ParticipantBuiltinTopicData</a> *dst, const <a class="el" href="struct_d_d_s___participant_builtin_topic_data.html">DDS_ParticipantBuiltinTopicData</a> *src)</td></tr>
+<tr class="memdesc:gae5bf9deac89bea7c7c266854fda2cc7f"><td class="mdescLeft">&#160;</td><td class="mdescRight">拷贝 <a class="el" href="struct_d_d_s___participant_builtin_topic_data.html" title="用于抽象给用户呈现的远端域参与者信息。 ">DDS_ParticipantBuiltinTopicData</a> 对象。  <a href="#gae5bf9deac89bea7c7c266854fda2cc7f">更多...</a><br /></td></tr>
+<tr class="separator:gae5bf9deac89bea7c7c266854fda2cc7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafff7124575197e9707db3bebf159393d"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#gafff7124575197e9707db3bebf159393d">DDS_PropertyInitial</a> (<a class="el" href="group___core_base_struct.html#ga5cdce72fff431360458f048426ed34f6">DDS_Property</a> *self, const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *name, const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *value)</td></tr>
+<tr class="memdesc:gafff7124575197e9707db3bebf159393d"><td class="mdescLeft">&#160;</td><td class="mdescRight">初始化属性键值对，申请空间。  <a href="#gafff7124575197e9707db3bebf159393d">更多...</a><br /></td></tr>
+<tr class="separator:gafff7124575197e9707db3bebf159393d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga196bb59b5d7940eedead4d1a02685bb9"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga196bb59b5d7940eedead4d1a02685bb9">DDS_PropertyClear</a> (<a class="el" href="group___core_base_struct.html#ga5cdce72fff431360458f048426ed34f6">DDS_Property</a> *self)</td></tr>
+<tr class="memdesc:ga196bb59b5d7940eedead4d1a02685bb9"><td class="mdescLeft">&#160;</td><td class="mdescRight">清理键值对空间。  <a href="#ga196bb59b5d7940eedead4d1a02685bb9">更多...</a><br /></td></tr>
+<tr class="separator:ga196bb59b5d7940eedead4d1a02685bb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaae5d1a504188aaa78cce904356640f68"><td class="memItemLeft" align="right" valign="top">DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#gaae5d1a504188aaa78cce904356640f68">DDS_PropertyListInitial</a> (<a class="el" href="struct_d_d_s___property_list.html">DDS_PropertyList</a> *self)</td></tr>
+<tr class="memdesc:gaae5d1a504188aaa78cce904356640f68"><td class="mdescLeft">&#160;</td><td class="mdescRight">初始化一个空的列表。  <a href="#gaae5d1a504188aaa78cce904356640f68">更多...</a><br /></td></tr>
+<tr class="separator:gaae5d1a504188aaa78cce904356640f68"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae8651e73fad595322c26a56f2472d01a"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#gae8651e73fad595322c26a56f2472d01a">DDS_PropertyListInsert</a> (<a class="el" href="struct_d_d_s___property_list.html">DDS_PropertyList</a> *self, const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *name, const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *value, <a class="el" href="group___core_base_struct.html#ga5cdce72fff431360458f048426ed34f6">DDS_Property</a> *newPro)</td></tr>
+<tr class="memdesc:gae8651e73fad595322c26a56f2472d01a"><td class="mdescLeft">&#160;</td><td class="mdescRight">插入指定参数的Property到列表中。  <a href="#gae8651e73fad595322c26a56f2472d01a">更多...</a><br /></td></tr>
+<tr class="separator:gae8651e73fad595322c26a56f2472d01a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga57951a0f6881328d2aa5ea1792931de0"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga57951a0f6881328d2aa5ea1792931de0">DDS_PropertyListCopy</a> (<a class="el" href="struct_d_d_s___property_list.html">DDS_PropertyList</a> *self, const <a class="el" href="struct_d_d_s___property_list.html">DDS_PropertyList</a> *right)</td></tr>
+<tr class="memdesc:ga57951a0f6881328d2aa5ea1792931de0"><td class="mdescLeft">&#160;</td><td class="mdescRight">拷贝PropertyList。  <a href="#ga57951a0f6881328d2aa5ea1792931de0">更多...</a><br /></td></tr>
+<tr class="separator:ga57951a0f6881328d2aa5ea1792931de0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8940548be0f1f19a33ebb89fa50b5d45"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#ga5cdce72fff431360458f048426ed34f6">DDS_Property</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga8940548be0f1f19a33ebb89fa50b5d45">DDS_PropertyListGet</a> (<a class="el" href="struct_d_d_s___property_list.html">DDS_PropertyList</a> *self, const char *name)</td></tr>
+<tr class="memdesc:ga8940548be0f1f19a33ebb89fa50b5d45"><td class="mdescLeft">&#160;</td><td class="mdescRight">查找Property。  <a href="#ga8940548be0f1f19a33ebb89fa50b5d45">更多...</a><br /></td></tr>
+<tr class="separator:ga8940548be0f1f19a33ebb89fa50b5d45"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gacf42b3f48f4cd4c0add212af144f3025"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#gacf42b3f48f4cd4c0add212af144f3025">DDS_PropertyListClear</a> (<a class="el" href="struct_d_d_s___property_list.html">DDS_PropertyList</a> *self)</td></tr>
+<tr class="memdesc:gacf42b3f48f4cd4c0add212af144f3025"><td class="mdescLeft">&#160;</td><td class="mdescRight">清空列表并回收空间。  <a href="#gacf42b3f48f4cd4c0add212af144f3025">更多...</a><br /></td></tr>
+<tr class="separator:gacf42b3f48f4cd4c0add212af144f3025"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9926409a77886bd9006fb9e40de11871"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_base_struct.html#ga5cdce72fff431360458f048426ed34f6">DDS_Property</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga9926409a77886bd9006fb9e40de11871">DDS_PropertyListAt</a> (<a class="el" href="struct_d_d_s___property_list.html">DDS_PropertyList</a> *self, <a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> index)</td></tr>
+<tr class="memdesc:ga9926409a77886bd9006fb9e40de11871"><td class="mdescLeft">&#160;</td><td class="mdescRight">下标操作函数。  <a href="#ga9926409a77886bd9006fb9e40de11871">更多...</a><br /></td></tr>
+<tr class="separator:ga9926409a77886bd9006fb9e40de11871"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad514441af1d0fe96e52862c1e3162934"><td class="memItemLeft" align="right" valign="top">DCPSDLL void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#gad514441af1d0fe96e52862c1e3162934">ZRMalloc</a> (ZRMemPool *pool, <a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> size)</td></tr>
+<tr class="memdesc:gad514441af1d0fe96e52862c1e3162934"><td class="mdescLeft">&#160;</td><td class="mdescRight">从内存池中分配指定长度的空间。  <a href="#gad514441af1d0fe96e52862c1e3162934">更多...</a><br /></td></tr>
+<tr class="separator:gad514441af1d0fe96e52862c1e3162934"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga945837c6919907e0aa3c390929f1710c"><td class="memItemLeft" align="right" valign="top">DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga945837c6919907e0aa3c390929f1710c">ZRDealloc</a> (ZRMemPool *pool, void *mem)</td></tr>
+<tr class="memdesc:ga945837c6919907e0aa3c390929f1710c"><td class="mdescLeft">&#160;</td><td class="mdescRight">在内存池中释放指定的空间。  <a href="#ga945837c6919907e0aa3c390929f1710c">更多...</a><br /></td></tr>
+<tr class="separator:ga945837c6919907e0aa3c390929f1710c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1476c751c6412f10c5bed03999695a62"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ga1476c751c6412f10c5bed03999695a62"></a>
+DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga1476c751c6412f10c5bed03999695a62">ZRInitialGlobalMemPool</a> ()</td></tr>
+<tr class="memdesc:ga1476c751c6412f10c5bed03999695a62"><td class="mdescLeft">&#160;</td><td class="mdescRight">初始化全局内存空间。 <br /></td></tr>
+<tr class="separator:ga1476c751c6412f10c5bed03999695a62"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8edd3acff0be411d7bdc986c47c8eeb3"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ga8edd3acff0be411d7bdc986c47c8eeb3"></a>
+DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga8edd3acff0be411d7bdc986c47c8eeb3">ZRFinalizeGlobalMemPool</a> ()</td></tr>
+<tr class="memdesc:ga8edd3acff0be411d7bdc986c47c8eeb3"><td class="mdescLeft">&#160;</td><td class="mdescRight">析构全局数据空间。 <br /></td></tr>
+<tr class="separator:ga8edd3acff0be411d7bdc986c47c8eeb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga956277ae25a8b1558e41eb7b7ae4a6ba"><td class="memItemLeft" align="right" valign="top">DCPSDLL const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga956277ae25a8b1558e41eb7b7ae4a6ba">ZRPSInterface_GetEntityId</a> (const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *topicName, <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> entityKind)</td></tr>
+<tr class="memdesc:ga956277ae25a8b1558e41eb7b7ae4a6ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取指定主题名关联的数据写者或者数据读者的接口。  <a href="#ga956277ae25a8b1558e41eb7b7ae4a6ba">更多...</a><br /></td></tr>
+<tr class="separator:ga956277ae25a8b1558e41eb7b7ae4a6ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga087b7ba6e8c49bd5bd8d23d591af669b"><td class="memItemLeft" align="right" valign="top">DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga087b7ba6e8c49bd5bd8d23d591af669b">ZRPSInterface_Init</a> (<a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> domain_id)</td></tr>
+<tr class="memdesc:ga087b7ba6e8c49bd5bd8d23d591af669b"><td class="mdescLeft">&#160;</td><td class="mdescRight">初始化接口，在使用该接口之前调用。  <a href="#ga087b7ba6e8c49bd5bd8d23d591af669b">更多...</a><br /></td></tr>
+<tr class="separator:ga087b7ba6e8c49bd5bd8d23d591af669b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga639bd581b193c3a9a5a5164d4c03d9fb"><td class="memItemLeft" align="right" valign="top">DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga639bd581b193c3a9a5a5164d4c03d9fb">ZRPSInterface_SetBuiltinCallBack</a> (<a class="el" href="group___core_base_function.html#gaecb26d3e74537b3f35e5f56ad72233a7">ZRPSBUILTINCALLBACKFUN</a> callback)</td></tr>
+<tr class="memdesc:ga639bd581b193c3a9a5a5164d4c03d9fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">注册发现接口.  <a href="#ga639bd581b193c3a9a5a5164d4c03d9fb">更多...</a><br /></td></tr>
+<tr class="separator:ga639bd581b193c3a9a5a5164d4c03d9fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae3626018ed2914d9c583ef473d610eed"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#gae3626018ed2914d9c583ef473d610eed">ZRPSInterface_Publish</a> (const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *topicName)</td></tr>
+<tr class="memdesc:gae3626018ed2914d9c583ef473d610eed"><td class="mdescLeft">&#160;</td><td class="mdescRight">向中间件注册与某个主题相关的发布者。  <a href="#gae3626018ed2914d9c583ef473d610eed">更多...</a><br /></td></tr>
+<tr class="separator:gae3626018ed2914d9c583ef473d610eed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga818305d589b768312f0247ea171639d6"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga818305d589b768312f0247ea171639d6">ZRPSInterface_Publish_WConfig</a> (const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *topicName, <a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> strongReliable)</td></tr>
+<tr class="memdesc:ga818305d589b768312f0247ea171639d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">向中间件注册与某个主题相关的发布者，并携带可靠性配置。  <a href="#ga818305d589b768312f0247ea171639d6">更多...</a><br /></td></tr>
+<tr class="separator:ga818305d589b768312f0247ea171639d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga087e39c27b8580ac7e901c566fc862cf"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga087e39c27b8580ac7e901c566fc862cf">ZRPSInterface_UnPublish</a> (const <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> topicNo)</td></tr>
+<tr class="memdesc:ga087e39c27b8580ac7e901c566fc862cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">向中间件注销某个主题的发布者。  <a href="#ga087e39c27b8580ac7e901c566fc862cf">更多...</a><br /></td></tr>
+<tr class="separator:ga087e39c27b8580ac7e901c566fc862cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab181a0b3bba99ea582c03308c9454d7f"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#gab181a0b3bba99ea582c03308c9454d7f">ZRPSInterface_SendData</a> (void *buffer, <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> len, const <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> topicNo)</td></tr>
+<tr class="memdesc:gab181a0b3bba99ea582c03308c9454d7f"><td class="mdescLeft">&#160;</td><td class="mdescRight">发布者发布消息。  <a href="#gab181a0b3bba99ea582c03308c9454d7f">更多...</a><br /></td></tr>
+<tr class="separator:gab181a0b3bba99ea582c03308c9454d7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gacca25147929c79cb3ada130ad9f261cf"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#gacca25147929c79cb3ada130ad9f261cf">ZRPSInterface_Subscribe</a> (const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *topicName, <a class="el" href="group___core_base_function.html#ga454c4fa4d88a04c1e39a626798372e72">ZRPSCALLBACKFUN</a> callBackFun, <a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> reliable)</td></tr>
+<tr class="memdesc:gacca25147929c79cb3ada130ad9f261cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">向中间件注册与某个主题相关的订阅者。  <a href="#gacca25147929c79cb3ada130ad9f261cf">更多...</a><br /></td></tr>
+<tr class="separator:gacca25147929c79cb3ada130ad9f261cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga848afcc57b0aa56a52884f2fe81ae977"><td class="memItemLeft" align="right" valign="top">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga848afcc57b0aa56a52884f2fe81ae977">ZRPSInterface_UnSubscribe</a> (<a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> topicNo)</td></tr>
+<tr class="memdesc:ga848afcc57b0aa56a52884f2fe81ae977"><td class="mdescLeft">&#160;</td><td class="mdescRight">向中间件注销某个主题的订阅者。  <a href="#ga848afcc57b0aa56a52884f2fe81ae977">更多...</a><br /></td></tr>
+<tr class="separator:ga848afcc57b0aa56a52884f2fe81ae977"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga737809bd5eb3caabb2fddd0ad389fe62"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ga737809bd5eb3caabb2fddd0ad389fe62"></a>
+DCPSDLL void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___core_base_function.html#ga737809bd5eb3caabb2fddd0ad389fe62">ZRPSInterface_Destory</a> ()</td></tr>
+<tr class="memdesc:ga737809bd5eb3caabb2fddd0ad389fe62"><td class="mdescLeft">&#160;</td><td class="mdescRight">注销接口，不再使用ZRPSSystemInterface接口时，调用释放资源。 <br /></td></tr>
+<tr class="separator:ga737809bd5eb3caabb2fddd0ad389fe62"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<p>本模块定义核心接口定义的基础类型支持函数接口。 </p>
+<h2 class="groupheader">类型定义说明</h2>
+<a class="anchor" id="gaecb26d3e74537b3f35e5f56ad72233a7"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void(* ZRPSBUILTINCALLBACKFUN)(const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *topicName, <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> entityState, <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> entityKind, const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *entityId)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>发现回调函数，参数如下： </p>
+<ul>
+<li>topicName: 数据所属主题名称，当表示为NULL时表示发现的为域参与者；</li>
+<li>entityState: 该实体的状态，1表示上线，0表示下线；</li>
+<li>entityKind: 实体的类型a:<ul>
+<li>0表示域参与者；</li>
+<li>1表示数据写者；</li>
+<li>2表示订阅者；</li>
+</ul>
+</li>
+<li>entityId: 该实体的唯一标识的字符串。 </li>
+</ul>
+
+</div>
+</div>
+<a class="anchor" id="ga454c4fa4d88a04c1e39a626798372e72"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void(* ZRPSCALLBACKFUN)(const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *topicName, const <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> topicNo, void *buffer, <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> len)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>订阅端回调函数，参数如下： </p>
+<ul>
+<li>topicName: 数据所属主题名称</li>
+<li>topicNo: 数据所属主题号</li>
+<li>buffer: 接收到的数据内容</li>
+<li>len: 接收到的数据长度。 </li>
+</ul>
+
+</div>
+</div>
+<h2 class="groupheader">函数说明</h2>
+<a class="anchor" id="ga0aa62fe3009f43d6df6c61565595b903"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> CDRDeserializerAheadLength </td>
+          <td>(</td>
+          <td class="paramtype">CDRDeserializer *&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td>
+          <td class="paramname"><em>beginIndex</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td>
+          <td class="paramname"><em>length</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>跳过指定个数字符。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标反序列化器。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">beginIndex</td><td>起始位置。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">length</td><td>需要跳过的长度。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>0表示成功，小于0表示失败。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga4ab7253a106969b6790e2de23c7cbacb"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL void CDRDeserializerDestoryBuffer </td>
+          <td>(</td>
+          <td class="paramtype">CDRDeserializer *&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>回收由 <a class="el" href="group___core_base_function.html#ga8c8f95d5cc3cad651e31f8a5e273e560" title="用户提供原始缓存创建一个反序列化器，使用该接口必须调用 CDRDeserializerDestoryBuffer 回收资源。 ...">CDRDeserializerInitialWBuf</a> 内部空间。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="gaf64d2bf33f5566b936d5485ffaaca0fb"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> CDRDeserializerGetBufferLength </td>
+          <td>(</td>
+          <td class="paramtype">CDRDeserializer *&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>获取反序列化器关联的缓冲区的剩余数据长度。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>关联的缓冲区剩余数据长度。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga66d8e69f678dfa6ca1f572a972e00bbc"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> CDRDeserializerGetString </td>
+          <td>(</td>
+          <td class="paramtype">CDRDeserializer *&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a> *&#160;</td>
+          <td class="paramname"><em>value</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> *&#160;</td>
+          <td class="paramname"><em>length</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>从缓冲区中获取字符串。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明反序列化器。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">value</td><td>反序列化结果字符串首地址。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">length</td><td>反序列化结果字符串长度。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>0表示成功，小于0表示失败。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga1a42345af4a4938b59b0f302ab3678ae"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> CDRDeserializerGetUntype </td>
+          <td>(</td>
+          <td class="paramtype">CDRDeserializer *&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#gaeea16ef08d08e1ba99553e8904421a9d">ZR_UINT8</a> *&#160;</td>
+          <td class="paramname"><em>value</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td>
+          <td class="paramname"><em>typeSize</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>从缓冲区中获取基本数据类型。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标反序列化器。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">value</td><td>反序列化结果存储地址。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">typeSize</td><td>指明反序列化类型长度。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>0表示成功，小于0表示失败。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga916b13d646c6559ec08e451906692470"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void CDRDeserializerInitial </td>
+          <td>(</td>
+          <td class="paramtype">CDRDeserializer *&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">MessageBlock *&#160;</td>
+          <td class="paramname"><em>srcMsg</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a>&#160;</td>
+          <td class="paramname"><em>useLittleEndian</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>初始化一个CDR反序列化器。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>初始化目标。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">srcMsg</td><td>指明反序列化源地址。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">useLittleEndian</td><td>指明解码方式。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="ga8c8f95d5cc3cad651e31f8a5e273e560"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL CDRDeserializer * CDRDeserializerInitialWBuf </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a> *&#160;</td>
+          <td class="paramname"><em>buffer</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td>
+          <td class="paramname"><em>length</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a>&#160;</td>
+          <td class="paramname"><em>littleEndian</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>用户提供原始缓存创建一个反序列化器，使用该接口必须调用 <a class="el" href="group___core_base_function.html#ga4ab7253a106969b6790e2de23c7cbacb" title="回收由 CDRDeserializerInitialWBuf 内部空间。 ">CDRDeserializerDestoryBuffer</a> 回收资源。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">buffer</td><td>用户提供的空间。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">length</td><td>用户提供的空间长度。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">littleEndian</td><td>是否使用小端序列化，true表示小端，false表示大端。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>NULL表示失败，否则返回新创建的反序列化器。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga11511761f578cd5b7dff8daaeeb48a21"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a> * CDRDeserializerLoanContiguousByte </td>
+          <td>(</td>
+          <td class="paramtype">CDRDeserializer *&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td>
+          <td class="paramname"><em>length</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>从缓冲区中获取字符串，不拷贝。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明反序列化器。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">length</td><td>反序列化结果字符串长度。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>NULL表示失败，否则指向头指针。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga353ad8a7bf04cc143164e65eee1f2b6a"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL void CDRDeserializerPopState </td>
+          <td>(</td>
+          <td class="paramtype">CDRDeserializer *&#160;</td>
+          <td class="paramname"><em>cdr</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>重新加载反序列化器的状态。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">cdr</td><td>指明反序列化器。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="gab87d9d7549000d2a58e092b5b550f468"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL void CDRDeserializerPushState </td>
+          <td>(</td>
+          <td class="paramtype">CDRDeserializer *&#160;</td>
+          <td class="paramname"><em>cdr</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>保存反序列化器的状态。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">cdr</td><td>指明反序列化器。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="ga89101229556472543617a96e15ceb408"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> CDRSerializeGetKeyHash </td>
+          <td>(</td>
+          <td class="paramtype">CDRSerializer *&#160;</td>
+          <td class="paramname"><em>cdr</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#gaeea16ef08d08e1ba99553e8904421a9d">ZR_UINT8</a> *&#160;</td>
+          <td class="paramname"><em>keyHash</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a>&#160;</td>
+          <td class="paramname"><em>needMd5</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>获取关联的md5hash值。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">cdr</td><td>指明目标。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">keyHash</td><td>获取的结果。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">needMd5</td><td>是否需要做MD5。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>0表示成功，小于0表示失败。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga44bd67fa7de82cab6fa2565b32e4a6e3"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL void CDRSerializerDestoryBuffer </td>
+          <td>(</td>
+          <td class="paramtype">CDRSerializer *&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>回收由 <a class="el" href="group___core_base_function.html#gae7c5d69a8c6771568b1a733e38b122c4" title="用户提供原始缓存创建一个序列化器，使用该接口必须调用 CDRSerializerDestoryBuffer 回收资源。 ...">CDRSerializerInitialWBuf</a> 创建的内部空间。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="ga888e82f554944fa311740bd265a7b7df"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> CDRSerializerGetBufferSpace </td>
+          <td>(</td>
+          <td class="paramtype">CDRSerializer *&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>获取指定序列化器还剩下的缓冲区大小。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>关联缓冲区的剩余空间大小。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga979d192667cf92edc26a32a8301643ce"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> CDRSerializerGetStringSize </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td>
+          <td class="paramname"><em>length</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td>
+          <td class="paramname"><em>currentAlignment</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>获取序列化string类型所需的长度。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">length</td><td>字符串长度(包括\0)。 </td></tr>
+    <tr><td class="paramname">currentAlignment</td><td>当前对齐的偏移量。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>考虑了对齐的序列化大小。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="gaa4c9171407bcdf11acb4348b38c2a262"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> CDRSerializerGetUntypeArraySize </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td>
+          <td class="paramname"><em>typeSize</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td>
+          <td class="paramname"><em>arraySize</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td>
+          <td class="paramname"><em>currentAlignment</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>获取类型数组序列化长度的接口。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">typeSize</td><td>指明类型长度。 </td></tr>
+    <tr><td class="paramname">arraySize</td><td>指明数组规模。 </td></tr>
+    <tr><td class="paramname">currentAlignment</td><td>当前对齐的偏移量。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>考虑了对齐的序列化大小。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga5438ea71e2c3adc7f83fa27547483a26"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> CDRSerializerGetUntypeSize </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td>
+          <td class="paramname"><em>typeSize</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td>
+          <td class="paramname"><em>currentAlignment</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>在指定对齐条件下，指定大小的数据类型序列化长度。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">typeSize</td><td>指明类型长度。 </td></tr>
+    <tr><td class="paramname">currentAlignment</td><td>当前的对齐偏移量。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>考虑了对齐的序列化大小。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="gad59d415ae8e07af9d70d3a9d8bbf34e8"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void CDRSerializerInitial </td>
+          <td>(</td>
+          <td class="paramtype">CDRSerializer *&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">MessageBlock *&#160;</td>
+          <td class="paramname"><em>tgaMsgBlock</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a>&#160;</td>
+          <td class="paramname"><em>littleEndian</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>初始化一个CDR序列化器。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>需要初始化的目标。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">tgaMsgBlock</td><td>关联的目标缓存。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">littleEndian</td><td>使用的编码方式，true表示小端，false表示大端。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="gae7c5d69a8c6771568b1a733e38b122c4"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL CDRSerializer * CDRSerializerInitialWBuf </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a> *&#160;</td>
+          <td class="paramname"><em>buffer</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td>
+          <td class="paramname"><em>length</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a>&#160;</td>
+          <td class="paramname"><em>littleEndian</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>用户提供原始缓存创建一个序列化器，使用该接口必须调用 <a class="el" href="group___core_base_function.html#ga44bd67fa7de82cab6fa2565b32e4a6e3" title="回收由 CDRSerializerInitialWBuf 创建的内部空间。 ">CDRSerializerDestoryBuffer</a> 回收资源。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">buffer</td><td>用户提供的空间。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">length</td><td>用户提供的空间长度。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">littleEndian</td><td>是否使用小端序列化，true表示小端，false表示大端。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>NULL表示创建失败，否则指向新创建的序列化器。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga1b7f534ffd7eb2ec8ef4aaf2cec9f0d3"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> CDRSerializerPutString </td>
+          <td>(</td>
+          <td class="paramtype">CDRSerializer *&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a> *&#160;</td>
+          <td class="paramname"><em>value</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td>
+          <td class="paramname"><em>length</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>序列化字符串。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>目标序列化器。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">value</td><td>序列化目标值。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">length</td><td>序列化目标值长度，需要包括结尾符。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>true表示成功，false表示失败。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="gaccbd6714592dacacabdc46f1bb4bfab2"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> CDRSerializerPutUntype </td>
+          <td>(</td>
+          <td class="paramtype">CDRSerializer *&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___core_base_struct.html#gaeea16ef08d08e1ba99553e8904421a9d">ZR_UINT8</a> *&#160;</td>
+          <td class="paramname"><em>val</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td>
+          <td class="paramname"><em>typeSize</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>序列化基本数据类型。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标序列化器。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">val</td><td>需要序列化的值地址。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">typeSize</td><td>需要序列化的值的长度。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>true表示成功，false表示失败。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="gace4e3ad46bbc75fd72fc0838de2ec7cc"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> CDRSerializerPutUntypeArray </td>
+          <td>(</td>
+          <td class="paramtype">CDRSerializer *&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___core_base_struct.html#gaeea16ef08d08e1ba99553e8904421a9d">ZR_UINT8</a> *&#160;</td>
+          <td class="paramname"><em>arrayVal</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td>
+          <td class="paramname"><em>arraySize</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td>
+          <td class="paramname"><em>typeSize</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>序列化基本类型数组。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标序列化器。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">arrayVal</td><td>需要序列化的数组首地址。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">arraySize</td><td>需要序列化的数组规模。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">typeSize</td><td>需要序列化的数组元素的长度。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>true表示成功，false表示失败。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga208855949d834e6dd6e76fe5a8283324"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL void DDS_DataReaderQosDestroy </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___data_reader_qos.html">DDS_DataReaderQos</a> *&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>释放 <a class="el" href="struct_d_d_s___data_reader_qos.html" title="定义数据读者的QoS配置。 ">DDS_DataReaderQos</a> 的空间。 </p>
+<dl class="section pre"><dt>前置条件</dt><dd>self为有效的DDS_DataReaderQos的指针。</dd></dl>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="ga2a51a024b18065d489637a99f13ef4dc"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL void DDS_DataWriterQosDestroy </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___data_writer_qos.html">DDS_DataWriterQos</a> *&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>释放 <a class="el" href="struct_d_d_s___data_writer_qos.html" title="定义数据写者的QoS ">DDS_DataWriterQos</a> 的空间。 </p>
+<dl class="section pre"><dt>前置条件</dt><dd>self为有效的DDS_DataWriterQos的指针。</dd></dl>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="gae636003898b32772c42fe868e1e56250"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL void DDS_DefaultDataReaderQosInitial </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___data_reader_qos.html">DDS_DataReaderQos</a> *&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>初始化指定 <a class="el" href="struct_d_d_s___publisher_qos.html" title="发布者QoS配置 ">DDS_PublisherQos</a> 为DDS默认的值。 </p>
+<dl class="section pre"><dt>前置条件</dt><dd>self为有效的DDS_PublisherQos的指针。</dd></dl>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="ga0c9060a5f0e6c41440343b497c12789d"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL void DDS_DefaultDataWriterQosInitial </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___data_writer_qos.html">DDS_DataWriterQos</a> *&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>初始化指定 <a class="el" href="struct_d_d_s___publisher_qos.html" title="发布者QoS配置 ">DDS_PublisherQos</a> 为DDS默认的值。 </p>
+<dl class="section pre"><dt>前置条件</dt><dd>self为有效的DDS_PublisherQos的指针。</dd></dl>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="ga5d7280e3092bdd8a4be415b0bf1b3a5b"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL void DDS_DefaultDomainParticipantFactoryQosInitial </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___domain_participant_factory_qos.html">DDS_DomainParticipantFactoryQos</a> *&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>初始化指定 <a class="el" href="struct_d_d_s___domain_participant_factory_qos.html" title="定义域参与者工厂的QoS。 ">DDS_DomainParticipantFactoryQos</a> 为DDS默认的值。 </p>
+<dl class="section pre"><dt>前置条件</dt><dd>self为有效的DDS_DomainParticipantFactoryQos的指针。</dd></dl>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="gac2281f15a585591329f26f24ccd75ecd"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> DDS_DefaultDomainParticipantQosInitial </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___domain_participant_qos.html">DDS_DomainParticipantQos</a> *&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>初始化指定 <a class="el" href="struct_d_d_s___domain_participant_qos.html" title="定义域参与者的QoS配置。 ">DDS_DomainParticipantQos</a> 为DDS默认的值。 </p>
+<dl class="section pre"><dt>前置条件</dt><dd>self为有效的DDS_DomainParticipantQos的指针。</dd></dl>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>0表示初始化成功，否则表示初始化失败，原因可能为内存空间不足。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga329c3779a981934b398e32128a1b282b"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL void DDS_DefaultPublisherQosInitial </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___publisher_qos.html">DDS_PublisherQos</a> *&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>初始化指定 <a class="el" href="struct_d_d_s___publisher_qos.html" title="发布者QoS配置 ">DDS_PublisherQos</a> 为DDS默认的值。 </p>
+<dl class="section pre"><dt>前置条件</dt><dd>self为有效的DDS_PublisherQos的指针。</dd></dl>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="ga77cefe82d88e84bccd9706a424d2ac3f"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL void DDS_DefaultSubscriberQosInitial </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___subscriber_qos.html">DDS_SubscriberQos</a> *&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>初始化指定 <a class="el" href="struct_d_d_s___publisher_qos.html" title="发布者QoS配置 ">DDS_PublisherQos</a> 为DDS默认的值。 </p>
+<dl class="section pre"><dt>前置条件</dt><dd>self为有效的DDS_PublisherQos的指针。</dd></dl>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="ga6a531cab50b06ba3303ea8b07bae739b"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL void DDS_DefaultTopicQosInitial </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___topic_qos.html">DDS_TopicQos</a> *&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>初始化指定 <a class="el" href="struct_d_d_s___publisher_qos.html" title="发布者QoS配置 ">DDS_PublisherQos</a> 为DDS默认的值。 </p>
+<dl class="section pre"><dt>前置条件</dt><dd>self为有效的DDS_PublisherQos的指针。</dd></dl>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="ga302ceac0469ca06cdd617714aa91e6e7"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL void DDS_DomainParticipantFactoryQosDestroy </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___domain_participant_factory_qos.html">DDS_DomainParticipantFactoryQos</a> *&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>释放 <a class="el" href="struct_d_d_s___domain_participant_factory_qos.html" title="定义域参与者工厂的QoS。 ">DDS_DomainParticipantFactoryQos</a> 的空间。 </p>
+<dl class="section pre"><dt>前置条件</dt><dd>self为有效的DDS_DomainParticipantFactoryQos的指针。</dd></dl>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="ga7572e45b35ed5f4eb31a2e2fc721add4"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL void DDS_DomainParticipantQosDestroy </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___domain_participant_qos.html">DDS_DomainParticipantQos</a> *&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>释放 <a class="el" href="struct_d_d_s___domain_participant_qos.html" title="定义域参与者的QoS配置。 ">DDS_DomainParticipantQos</a> 的空间。 </p>
+<dl class="section pre"><dt>前置条件</dt><dd>self为有效的DDS_DomainParticipantQos的指针。</dd></dl>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="ga9aad30bed023c6fb6c0d00cb55a48c79"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> DDS_InstanceHandle_t_Compare </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a> *&#160;</td>
+          <td class="paramname"><em>handle1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="struct_d_d_s___instance_handle__t.html">DDS_InstanceHandle_t</a> *&#160;</td>
+          <td class="paramname"><em>handle2</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>C风格的 <a class="el" href="struct_d_d_s___instance_handle__t.html" title="用来表示一个实体或者一个数据实例。 ">DDS_InstanceHandle_t</a> 比较函数。 </p>
+<p>比较规则：所有无效的DDS_InstanceHandle_t均相等，且小于所有有效 <a class="el" href="struct_d_d_s___instance_handle__t.html" title="用来表示一个实体或者一个数据实例。 ">DDS_InstanceHandle_t</a> 。</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">handle1</td><td>操作数1。 </td></tr>
+    <tr><td class="paramname">handle2</td><td>操作数2。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>0表示相等，1表示handle1 &gt; handle2，-1表示handle1 &lt; handle2。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="gae5bf9deac89bea7c7c266854fda2cc7f"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> DDS_ParticipantBuiltinTopicDataCopy </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___participant_builtin_topic_data.html">DDS_ParticipantBuiltinTopicData</a> *&#160;</td>
+          <td class="paramname"><em>dst</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="struct_d_d_s___participant_builtin_topic_data.html">DDS_ParticipantBuiltinTopicData</a> *&#160;</td>
+          <td class="paramname"><em>src</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>拷贝 <a class="el" href="struct_d_d_s___participant_builtin_topic_data.html" title="用于抽象给用户呈现的远端域参与者信息。 ">DDS_ParticipantBuiltinTopicData</a> 对象。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">dst</td><td>指明拷贝的目的对象。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">src</td><td>指明拷贝源对象。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>true表示拷贝成功，false表示拷贝失败，原因可能为空间不足。</dd></dl>
+<dl class="section pre"><dt>前置条件</dt><dd>dst以及src为有效的 <a class="el" href="struct_d_d_s___participant_builtin_topic_data.html" title="用于抽象给用户呈现的远端域参与者信息。 ">DDS_ParticipantBuiltinTopicData</a> 对象。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga0ed4ad605c957f568ff5aac096ee961d"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL void DDS_ParticipantBuiltinTopicDataDestroy </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___participant_builtin_topic_data.html">DDS_ParticipantBuiltinTopicData</a> *&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>清理 <a class="el" href="struct_d_d_s___participant_builtin_topic_data.html" title="用于抽象给用户呈现的远端域参与者信息。 ">DDS_ParticipantBuiltinTopicData</a> 对象空间，但不释放 <a class="el" href="struct_d_d_s___participant_builtin_topic_data.html" title="用于抽象给用户呈现的远端域参与者信息。 ">DDS_ParticipantBuiltinTopicData</a> 自身空间。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section pre"><dt>前置条件</dt><dd>self为有效的 <a class="el" href="struct_d_d_s___participant_builtin_topic_data.html" title="用于抽象给用户呈现的远端域参与者信息。 ">DDS_ParticipantBuiltinTopicData</a> 对象。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga079a4dd22880bb4a4d371633ac8ee64b"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL void DDS_ParticipantBuiltinTopicDataInitial </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___participant_builtin_topic_data.html">DDS_ParticipantBuiltinTopicData</a> *&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>初始化 <a class="el" href="struct_d_d_s___participant_builtin_topic_data.html" title="用于抽象给用户呈现的远端域参与者信息。 ">DDS_ParticipantBuiltinTopicData</a> 对象。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指名目标。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section pre"><dt>前置条件</dt><dd>self为有效的 <a class="el" href="struct_d_d_s___participant_builtin_topic_data.html" title="用于抽象给用户呈现的远端域参与者信息。 ">DDS_ParticipantBuiltinTopicData</a> 对象。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga196bb59b5d7940eedead4d1a02685bb9"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> DDS_PropertyClear </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga5cdce72fff431360458f048426ed34f6">DDS_Property</a> *&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>清理键值对空间。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>总是返回0表示成功。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="gafff7124575197e9707db3bebf159393d"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> DDS_PropertyInitial </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga5cdce72fff431360458f048426ed34f6">DDS_Property</a> *&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *&#160;</td>
+          <td class="paramname"><em>name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *&#160;</td>
+          <td class="paramname"><em>value</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>初始化属性键值对，申请空间。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">name</td><td>名称。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">value</td><td>值。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>0表示成功，-1表示失败。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga9926409a77886bd9006fb9e40de11871"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_base_struct.html#ga5cdce72fff431360458f048426ed34f6">DDS_Property</a> * DDS_PropertyListAt </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___property_list.html">DDS_PropertyList</a> *&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>&#160;</td>
+          <td class="paramname"><em>index</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>下标操作函数。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">index</td><td>指明下标。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>NULL表示超出范围，否则为有效的属性列表。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="gacf42b3f48f4cd4c0add212af144f3025"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> DDS_PropertyListClear </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___property_list.html">DDS_PropertyList</a> *&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>清空列表并回收空间。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指定目标。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>0表示成功，小于0表示失败。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga57951a0f6881328d2aa5ea1792931de0"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> DDS_PropertyListCopy </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___property_list.html">DDS_PropertyList</a> *&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="struct_d_d_s___property_list.html">DDS_PropertyList</a> *&#160;</td>
+          <td class="paramname"><em>right</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>拷贝PropertyList。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标,会清除原有的内容。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">right</td><td>指明拷贝源。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>0表示成功，小于0表示失败。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga8940548be0f1f19a33ebb89fa50b5d45"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_base_struct.html#ga5cdce72fff431360458f048426ed34f6">DDS_Property</a> * DDS_PropertyListGet </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___property_list.html">DDS_PropertyList</a> *&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>name</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>查找Property。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">name</td><td>需要查找的属性名。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>成功返回查找的Property，否则返回NULL。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="gaae5d1a504188aaa78cce904356640f68"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL void DDS_PropertyListInitial </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___property_list.html">DDS_PropertyList</a> *&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>初始化一个空的列表。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="gae8651e73fad595322c26a56f2472d01a"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> DDS_PropertyListInsert </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___property_list.html">DDS_PropertyList</a> *&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *&#160;</td>
+          <td class="paramname"><em>name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *&#160;</td>
+          <td class="paramname"><em>value</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga5cdce72fff431360458f048426ed34f6">DDS_Property</a> *&#160;</td>
+          <td class="paramname"><em>newPro</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>插入指定参数的Property到列表中。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指定插入目标。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">name</td><td>Property字符串型的名称，以NULL结尾。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">value</td><td>Property缓冲区型的值，可以不以NULL结尾。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">newPro</td><td>新的Property的空间，为空时使用name/value指定。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>0表示成功，小于0表示失败。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="gaf462fcb5c3219d2a0d45c4ad16c824d9"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL void DDS_PublisherQosDestroy </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___publisher_qos.html">DDS_PublisherQos</a> *&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>释放 <a class="el" href="struct_d_d_s___publisher_qos.html" title="发布者QoS配置 ">DDS_PublisherQos</a> 的空间。 </p>
+<dl class="section pre"><dt>前置条件</dt><dd>self为有效的DDS_PublisherQos的指针。</dd></dl>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="ga3556278d68963d9cc47fef43f8c0139b"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL void DDS_SubscriberQosDestroy </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___subscriber_qos.html">DDS_SubscriberQos</a> *&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>释放 <a class="el" href="struct_d_d_s___subscriber_qos.html" title="定义订阅者的QoS配置。 ">DDS_SubscriberQos</a> 的空间。 </p>
+<dl class="section pre"><dt>前置条件</dt><dd>self为有效的DDS_SubscriberQos的指针。</dd></dl>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="ga7ca59324b9a4af59d5a35a5b49fa97b8"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL void DDS_TopicQosDestroy </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_d_d_s___topic_qos.html">DDS_TopicQos</a> *&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>释放 <a class="el" href="struct_d_d_s___topic_qos.html" title="主题实体的QoS配置。 ">DDS_TopicQos</a> 的空间。 </p>
+<dl class="section pre"><dt>前置条件</dt><dd>self为有效的DDS_TopicQos的指针。</dd></dl>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">self</td><td>指明目标。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="ga844b6e9cb108f37b3710f3f5eae7e4be"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="struct_d_d_s___duration__t.html">DDS_Duration_t</a> DurationAdd </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="struct_d_d_s___duration__t.html">DDS_Duration_t</a> *&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="struct_d_d_s___duration__t.html">DDS_Duration_t</a> *&#160;</td>
+          <td class="paramname"><em>right</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>两个 <a class="el" href="struct_d_d_s___duration__t.html" title="用来表明一段时间段，协议规定至少有毫微秒的分辨率。 ">DDS_Duration_t</a> 相加返回一个新的结果。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">self</td><td>左加数。 </td></tr>
+    <tr><td class="paramname">right</td><td>右加数。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>返回的结果。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="gaa706f3a744875b8c148baffa5d9dc2f1"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="struct_d_d_s___duration__t.html">DDS_Duration_t</a> DurationFromMicros </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>&#160;</td>
+          <td class="paramname"><em>microseconds</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>从微秒数转换为等价的 <a class="el" href="struct_d_d_s___duration__t.html" title="用来表明一段时间段，协议规定至少有毫微秒的分辨率。 ">DDS_Duration_t</a> 。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">microseconds</td><td>毫秒数。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>与microseconds相等的 <a class="el" href="struct_d_d_s___duration__t.html" title="用来表明一段时间段，协议规定至少有毫微秒的分辨率。 ">DDS_Duration_t</a> 时间段。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="gab66f3ae0a660f197ecf4094274270bd4"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="struct_d_d_s___duration__t.html">DDS_Duration_t</a> DurationFromMillis </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>&#160;</td>
+          <td class="paramname"><em>milliseconds</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>从毫秒数转换为等价的 <a class="el" href="struct_d_d_s___duration__t.html" title="用来表明一段时间段，协议规定至少有毫微秒的分辨率。 ">DDS_Duration_t</a> 。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">milliseconds</td><td>毫秒数。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>与milliseconds相等的 <a class="el" href="struct_d_d_s___duration__t.html" title="用来表明一段时间段，协议规定至少有毫微秒的分辨率。 ">DDS_Duration_t</a> 时间段。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="gabec2be3212e1a1b1d285decb3b771b86"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="struct_d_d_s___duration__t.html">DDS_Duration_t</a> DurationFromNanos </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>&#160;</td>
+          <td class="paramname"><em>nanoseconds</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>从纳秒数转换为等价的 <a class="el" href="struct_d_d_s___duration__t.html" title="用来表明一段时间段，协议规定至少有毫微秒的分辨率。 ">DDS_Duration_t</a> 。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">nanoseconds</td><td>纳秒数。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>与nanoseconds相等的 <a class="el" href="struct_d_d_s___duration__t.html" title="用来表明一段时间段，协议规定至少有毫微秒的分辨率。 ">DDS_Duration_t</a> 时间段。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="gaecdfddab7a29ff7e84249e63ee238102"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="struct_d_d_s___duration__t.html">DDS_Duration_t</a> DurationFromSec </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>&#160;</td>
+          <td class="paramname"><em>seconds</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>从秒数转换为等价的 <a class="el" href="struct_d_d_s___duration__t.html" title="用来表明一段时间段，协议规定至少有毫微秒的分辨率。 ">DDS_Duration_t</a> 。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">seconds</td><td>秒数。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>与seconds相等的 <a class="el" href="struct_d_d_s___duration__t.html" title="用来表明一段时间段，协议规定至少有毫微秒的分辨率。 ">DDS_Duration_t</a> 时间段。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="gac9ddb5da29b30bb53831ad6c997ac612"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_base_struct.html#gab3de48fd32f773622806baa963567e20">ZR_INT32</a> ParameterHeaderDeserialize </td>
+          <td>(</td>
+          <td class="paramtype">CDRDeserializer *&#160;</td>
+          <td class="paramname"><em>cdr</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> *&#160;</td>
+          <td class="paramname"><em>memberId</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a> *&#160;</td>
+          <td class="paramname"><em>length</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> *&#160;</td>
+          <td class="paramname"><em>useExtend</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a> *&#160;</td>
+          <td class="paramname"><em>mustUnderstand</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>反序列化参数头。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">cdr</td><td>指明反序列化器。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">memberId</td><td>反序列化出来的memberId。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">length</td><td>反序列化出来的length。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">useExtend</td><td>反序列化出来是否使用的PID_EXTENDED. </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">mustUnderstand</td><td>反序列化出来是否必须理解该成员。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>0表示成功，小于0表示失败。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga8d1a0e426433ced480882615cf5febf5"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_base_struct.html#gacc550da50917f3aa72ed5229fed9bb41">ZR_INT8</a> * ParameterHeaderSerialize </td>
+          <td>(</td>
+          <td class="paramtype">CDRSerializer *&#160;</td>
+          <td class="paramname"><em>cdr</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a>&#160;</td>
+          <td class="paramname"><em>useExtended</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga41af8a0ee350bae22a2791d338ee89ea">ZR_BOOLEAN</a>&#160;</td>
+          <td class="paramname"><em>mustUnderstand</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#ga79dbbaba1af8dfe2efe567fdcce2940b">ZR_UINT32</a>&#160;</td>
+          <td class="paramname"><em>memberId</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>序列化参数头，用于扩展CDR. </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">cdr</td><td>指定序列化器。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">useExtended</td><td>是否使用PID_EXTENDED. </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">mustUnderstand</td><td>是否必须理解该参数。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">memberId</td><td>参数对应的成员的memberId.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>NULL表示失败，否则表示回填的长度的地址。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga945837c6919907e0aa3c390929f1710c"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL extern void ZRDealloc </td>
+          <td>(</td>
+          <td class="paramtype">ZRMemPool *&#160;</td>
+          <td class="paramname"><em>pool</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>mem</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>在内存池中释放指定的空间。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">pool</td><td>指定内存池。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">mem</td><td>指定需要释放的空间。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="gac3143d1857d72324d63067973a1bd012"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL void ZRGetNowTime </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_base_struct.html#gaac564c46e01ef19c09738d4c9d703480">DDS_Time_t</a> *&#160;</td>
+          <td class="paramname"><em>nowTime</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>返回调用该函数时的UTC标准时间。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">nowTime</td><td>出口参数，当前时间戳。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="gad514441af1d0fe96e52862c1e3162934"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL extern void * ZRMalloc </td>
+          <td>(</td>
+          <td class="paramtype">ZRMemPool *&#160;</td>
+          <td class="paramname"><em>pool</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>&#160;</td>
+          <td class="paramname"><em>size</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>从内存池中分配指定长度的空间。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">pool</td><td>指定内存池。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">size</td><td>指定大小。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>NULL表示分配失败，否则指向分配成功的空间。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga956277ae25a8b1558e41eb7b7ae4a6ba"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> * ZRPSInterface_GetEntityId </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *&#160;</td>
+          <td class="paramname"><em>topicName</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a>&#160;</td>
+          <td class="paramname"><em>entityKind</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>获取指定主题名关联的数据写者或者数据读者的接口。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">topicName</td><td>主题名称. </td></tr>
+    <tr><td class="paramname">entityKind</td><td>1表示数据写者，2表示数据读者。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>NULL表示查找失败，否则返回对应的唯一标识的字符串。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga087b7ba6e8c49bd5bd8d23d591af669b"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL void ZRPSInterface_Init </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a>&#160;</td>
+          <td class="paramname"><em>domain_id</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>初始化接口，在使用该接口之前调用。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">domain_id</td><td>所属域。 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="gae3626018ed2914d9c583ef473d610eed"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> ZRPSInterface_Publish </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *&#160;</td>
+          <td class="paramname"><em>topicName</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>向中间件注册与某个主题相关的发布者。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">topicName</td><td>该发布者关联的主题名。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>中间件返回的主题号。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga818305d589b768312f0247ea171639d6"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> ZRPSInterface_Publish_WConfig </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *&#160;</td>
+          <td class="paramname"><em>topicName</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a>&#160;</td>
+          <td class="paramname"><em>strongReliable</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>向中间件注册与某个主题相关的发布者，并携带可靠性配置。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">topicName</td><td>该发布者关联的主题名。 </td></tr>
+    <tr><td class="paramname">strongReliable</td><td>是否具备强可靠配置。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>中间件返回的主题号。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="gab181a0b3bba99ea582c03308c9454d7f"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> ZRPSInterface_SendData </td>
+          <td>(</td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>buffer</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a>&#160;</td>
+          <td class="paramname"><em>len</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a>&#160;</td>
+          <td class="paramname"><em>topicNo</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>发布者发布消息。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">buffer</td><td>数据内容。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">len</td><td>数据长度。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">topicNo</td><td>发布数据关联的主题号。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>成功返回0，否则返回-1。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga639bd581b193c3a9a5a5164d4c03d9fb"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL void ZRPSInterface_SetBuiltinCallBack </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_base_function.html#gaecb26d3e74537b3f35e5f56ad72233a7">ZRPSBUILTINCALLBACKFUN</a>&#160;</td>
+          <td class="paramname"><em>callback</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>注册发现接口. </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">callback</td><td>发现接口函数. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="gacca25147929c79cb3ada130ad9f261cf"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> ZRPSInterface_Subscribe </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___core_builtin_types.html#ga07e4e24db44e921d6b33e916c4442dab">DDS_Char</a> *&#160;</td>
+          <td class="paramname"><em>topicName</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_base_function.html#ga454c4fa4d88a04c1e39a626798372e72">ZRPSCALLBACKFUN</a>&#160;</td>
+          <td class="paramname"><em>callBackFun</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a>&#160;</td>
+          <td class="paramname"><em>reliable</em> = <code>true</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>向中间件注册与某个主题相关的订阅者。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">topicName</td><td>该订阅者关联的主题名。 </td></tr>
+    <tr><td class="paramname">callBackFun</td><td>订阅者接收回调函数。 </td></tr>
+    <tr><td class="paramname">reliable</td><td>该主题是否需要可靠（可能导致发布端阻塞），默认为可靠。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>中间件返回的主题号。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga087e39c27b8580ac7e901c566fc862cf"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> ZRPSInterface_UnPublish </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a>&#160;</td>
+          <td class="paramname"><em>topicNo</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>向中间件注销某个主题的发布者。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">topicNo</td><td>与该发布者关联的主题号。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>成功返回0，否则返回-1。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ga848afcc57b0aa56a52884f2fe81ae977"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DCPSDLL <a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a> ZRPSInterface_UnSubscribe </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___core_builtin_types.html#ga7ebc41ac14e48dd9ee0b7b83acec714c">DDS_Long</a>&#160;</td>
+          <td class="paramname"><em>topicNo</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>向中间件注销某个主题的订阅者。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">topicNo</td><td>与该订阅者关联的主题号。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>成功返回0，否则返回-1。 </dd></dl>
+
+</div>
+</div>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

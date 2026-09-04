@@ -1,0 +1,22 @@
+var searchData=
+[
+  ['sample_5fcount',['sample_count',['../struct_d_d_s___link_quality_evaluation_info.html#ad2fe24bf7032a3327040f6c51bf85d3e',1,'DDS_LinkQualityEvaluationInfo']]],
+  ['sample_5frank',['sample_rank',['../struct_d_d_s___sample_info.html#abf3bc3f09f97de07e1bf1f167907d579',1,'DDS_SampleInfo']]],
+  ['sample_5fsize',['sample_size',['../struct_d_d_s___link_quality_evaluation_info.html#abc599fda62c80109e0b6298687736312',1,'DDS_LinkQualityEvaluationInfo']]],
+  ['sample_5fstate',['sample_state',['../struct_d_d_s___sample_info.html#adef712790b067d235c7d7b273cc9748f',1,'DDS_SampleInfo']]],
+  ['sec',['sec',['../struct_d_d_s___duration__t.html#ae49cecac7d30fa480bbebc80794a1742',1,'DDS_Duration_t']]],
+  ['security_5finfo',['security_info',['../struct_d_d_s___participant_builtin_topic_data.html#a043a2b8ef5a9aa911da53628697773b6',1,'DDS_ParticipantBuiltinTopicData::security_info()'],['../struct_d_d_s___publication_builtin_topic_data.html#a78302349049156d202578df95625b057',1,'DDS_PublicationBuiltinTopicData::security_info()'],['../struct_d_d_s___subscription_builtin_topic_data.html#a78302349049156d202578df95625b057',1,'DDS_SubscriptionBuiltinTopicData::security_info()']]],
+  ['security_5fplugins',['security_plugins',['../struct_d_d_s___security_plugin_qos_policy.html#ab1fc9113e8f472163cf36d5f7db33c6e',1,'DDS_SecurityPluginQosPolicy']]],
+  ['securityexception',['SecurityException',['../struct_security_exception.html',1,'']]],
+  ['send_5faddresses',['send_addresses',['../struct_d_d_s___data_writer_qos.html#a94b47cfc27b7fa9593a28d2e222ff0ca',1,'DDS_DataWriterQos']]],
+  ['send_5flocators',['send_locators',['../struct_d_d_s___publication_send_status.html#a3a9b4018be894c19c9158e4663cf7f77',1,'DDS_PublicationSendStatus']]],
+  ['send_5fperiod',['send_period',['../struct_d_d_s___msg_statistics_info_qos_policy.html#a0a33f97da515462d9b38983ada242b51',1,'DDS_MsgStatisticsInfoQosPolicy']]],
+  ['service_5fcleanup_5fdelay',['service_cleanup_delay',['../struct_d_d_s___durability_service_qos_policy.html#a7cddcc9f36ef4b091aa143a1e14e31ec',1,'DDS_DurabilityServiceQosPolicy']]],
+  ['size',['size',['../struct_d_d_s___property_list.html#a97e897a6b95dd54f97f1ed4d014348e4',1,'DDS_PropertyList']]],
+  ['source_5ftimestamp',['source_timestamp',['../struct_d_d_s___sample_info.html#aa3f9c0ec9911b7eeccd05aa6b2693836',1,'DDS_SampleInfo']]],
+  ['source_5ftimestamp_5fresolution',['source_timestamp_resolution',['../struct_d_d_s___batch_qos_policy.html#a398c782dab0f375d3a51abf834e86b8d',1,'DDS_BatchQosPolicy']]],
+  ['start_5fseq',['start_seq',['../struct_d_d_s___sample_lost_status.html#a95fcb49f1ed071a810af748e04194d43',1,'DDS_SampleLostStatus']]],
+  ['subscriberlistener',['subscriberlistener',['../struct_d_d_s___domain_participant_listener.html#a3070b7fa20beb55f7c7ec5ee77c60859',1,'DDS_DomainParticipantListener']]],
+  ['subscriberlistenerdataonreaderscallback',['SubscriberListenerDataOnReadersCallback',['../group___c_listener.html#ga93a3778219b02af7eb9af8a31d01473a',1,'SubscriberListener.h']]],
+  ['subscription_5fhandle',['subscription_handle',['../struct_d_d_s___publication_send_status.html#aee375e8311ba90c33d5cabc0c7cbc35f',1,'DDS_PublicationSendStatus']]]
+];

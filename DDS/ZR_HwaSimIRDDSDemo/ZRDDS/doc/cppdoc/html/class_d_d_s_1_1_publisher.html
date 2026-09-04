@@ -1,0 +1,1127 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: DDS::Publisher类 参考</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li class="current"><a href="annotated.html"><span>类</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+  <div id="navrow2" class="tabs2">
+    <ul class="tablist">
+      <li><a href="annotated.html"><span>类列表</span></a></li>
+      <li><a href="classes.html"><span>类索引</span></a></li>
+      <li><a href="hierarchy.html"><span>类继承关系</span></a></li>
+      <li><a href="functions.html"><span>类成员</span></a></li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('class_d_d_s_1_1_publisher.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public 成员函数</a> &#124;
+<a href="class_d_d_s_1_1_publisher-members.html">所有成员列表</a>  </div>
+  <div class="headertitle">
+<div class="title">DDS::Publisher类 参考<span class="mlabels"><span class="mlabel">abstract</span></span><div class="ingroups"><a class="el" href="group___cpp_interface.html">C++用户接口</a> &raquo; <a class="el" href="group___cpp_publication.html">发布模块</a></div></div>  </div>
+</div><!--header-->
+<div class="contents">
+
+<p>ZRDDS提供的发布者接口，应用创建发布者表示自身想向指定的域内提供数据；  
+ <a href="class_d_d_s_1_1_publisher.html#details">更多...</a></p>
+
+<p><code>#include &lt;<a class="el" href="_publisher_8h_source.html">Publisher.h</a>&gt;</code></p>
+<div class="dynheader">
+类 DDS::Publisher 继承关系图:</div>
+<div class="dyncontent">
+ <div class="center">
+  <img src="class_d_d_s_1_1_publisher.png" usemap="#DDS::Publisher_map" alt=""/>
+  <map id="DDS::Publisher_map" name="DDS::Publisher_map">
+<area href="class_d_d_s_1_1_domain_entity.html" title="该类是所有域参与者子实体的父类，没有实际意义，仅仅根据协议定义。 " alt="DDS::DomainEntity" shape="rect" coords="0,56,117,80"/>
+<area href="class_d_d_s_1_1_entity.html" title="实体（实体) 作为所有实体（包括域参与者、主题、发布者、订阅者、数据读者、数据写者）的基类，抽象实体的�..." alt="DDS::Entity" shape="rect" coords="0,0,117,24"/>
+</map>
+ </div></div>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
+Public 成员函数</h2></td></tr>
+<tr class="memitem:a9fa826e5947e935aab51298077a72cf7"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_publisher.html#a9fa826e5947e935aab51298077a72cf7">set_default_datawriter_qos_with_profile</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *profile_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_name)=0</td></tr>
+<tr class="memdesc:a9fa826e5947e935aab51298077a72cf7"><td class="mdescLeft">&#160;</td><td class="mdescRight">从QoS仓库中获取数据写者QoS并将其设为默认数据写者QoS  <a href="#a9fa826e5947e935aab51298077a72cf7">更多...</a><br /></td></tr>
+<tr class="separator:a9fa826e5947e935aab51298077a72cf7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0c013342bb00604551deb8833c4a7fc5"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_publisher.html#a0c013342bb00604551deb8833c4a7fc5">set_qos_with_profile</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *profile_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_name)=0</td></tr>
+<tr class="memdesc:a0c013342bb00604551deb8833c4a7fc5"><td class="mdescLeft">&#160;</td><td class="mdescRight">从QoS仓库中获取发布者QoS并将其设置到发布者中  <a href="#a0c013342bb00604551deb8833c4a7fc5">更多...</a><br /></td></tr>
+<tr class="separator:a0c013342bb00604551deb8833c4a7fc5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9789cf2c9f0fd6d9c2abe4df91455e8b"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_data_writer.html">DataWriter</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_publisher.html#a9789cf2c9f0fd6d9c2abe4df91455e8b">create_datawriter_with_qos_profile</a> (<a class="el" href="class_d_d_s_1_1_topic.html">Topic</a> *topic, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *profile_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_name, <a class="el" href="class_d_d_s_1_1_data_writer_listener.html">DataWriterListener</a> *dw_listener, <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> mask)=0</td></tr>
+<tr class="memdesc:a9789cf2c9f0fd6d9c2abe4df91455e8b"><td class="mdescLeft">&#160;</td><td class="mdescRight">从QoS仓库中获取数据写者QoS并用其创建数据写者  <a href="#a9789cf2c9f0fd6d9c2abe4df91455e8b">更多...</a><br /></td></tr>
+<tr class="separator:a9789cf2c9f0fd6d9c2abe4df91455e8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae5bb51444857767eaf2ce62bdde0c8b4"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_data_writer.html">DataWriter</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_publisher.html#ae5bb51444857767eaf2ce62bdde0c8b4">create_datawriter_with_topic_and_qos_profile</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *topicName, <a class="el" href="class_d_d_s_1_1_type_support.html">TypeSupport</a> *typeSupport, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *profile_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_name, <a class="el" href="class_d_d_s_1_1_data_writer_listener.html">DataWriterListener</a> *dw_listener, <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> mask)=0</td></tr>
+<tr class="memdesc:ae5bb51444857767eaf2ce62bdde0c8b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">创建指定主题名称的数据写者，当主题名称关联的主题未创建时，将自动创建， 否则将利用已经创建的主题创建数据写者。  <a href="#ae5bb51444857767eaf2ce62bdde0c8b4">更多...</a><br /></td></tr>
+<tr class="separator:ae5bb51444857767eaf2ce62bdde0c8b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a04c18041cc57db814400926da3df4bdd"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_data_writer.html">DataWriter</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_publisher.html#a04c18041cc57db814400926da3df4bdd">create_datawriter</a> (<a class="el" href="class_d_d_s_1_1_topic.html">Topic</a> *the_topic, const <a class="el" href="group___cpp_core_struct.html#gabef03998e5a399f1053057c068dbcacb">DataWriterQos</a> &amp;qoslist, <a class="el" href="class_d_d_s_1_1_data_writer_listener.html">DataWriterListener</a> *a_listener, const <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> &amp;mask)=0</td></tr>
+<tr class="memdesc:a04c18041cc57db814400926da3df4bdd"><td class="mdescLeft">&#160;</td><td class="mdescRight">创建DataWriter。  <a href="#a04c18041cc57db814400926da3df4bdd">更多...</a><br /></td></tr>
+<tr class="separator:a04c18041cc57db814400926da3df4bdd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a638462bd712d57d1ef855b924e50675a"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_publisher.html#a638462bd712d57d1ef855b924e50675a">delete_datawriter</a> (<a class="el" href="class_d_d_s_1_1_data_writer.html">DataWriter</a> *a_writer)=0</td></tr>
+<tr class="memdesc:a638462bd712d57d1ef855b924e50675a"><td class="mdescLeft">&#160;</td><td class="mdescRight">删除一个数据写者。  <a href="#a638462bd712d57d1ef855b924e50675a">更多...</a><br /></td></tr>
+<tr class="separator:a638462bd712d57d1ef855b924e50675a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af6304ae08a670b90e4efd7dda2db1f11"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_data_writer.html">DataWriter</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_publisher.html#af6304ae08a670b90e4efd7dda2db1f11">lookup_datawriter</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *topic_name)=0</td></tr>
+<tr class="memdesc:af6304ae08a670b90e4efd7dda2db1f11"><td class="mdescLeft">&#160;</td><td class="mdescRight">根据主题名查找对应的数据写者。  <a href="#af6304ae08a670b90e4efd7dda2db1f11">更多...</a><br /></td></tr>
+<tr class="separator:af6304ae08a670b90e4efd7dda2db1f11"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa840bee3ecee76a54e5142ac7ce3c2d6"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_publisher.html#aa840bee3ecee76a54e5142ac7ce3c2d6">suspend_publications</a> ()=0</td></tr>
+<tr class="memdesc:aa840bee3ecee76a54e5142ac7ce3c2d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">挂起数据发布。  <a href="#aa840bee3ecee76a54e5142ac7ce3c2d6">更多...</a><br /></td></tr>
+<tr class="separator:aa840bee3ecee76a54e5142ac7ce3c2d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a49405891c5d0b6c37be81e4b9770690e"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_publisher.html#a49405891c5d0b6c37be81e4b9770690e">resume_publications</a> ()=0</td></tr>
+<tr class="memdesc:a49405891c5d0b6c37be81e4b9770690e"><td class="mdescLeft">&#160;</td><td class="mdescRight">恢复数据发布，与 <a class="el" href="class_d_d_s_1_1_publisher.html#aa840bee3ecee76a54e5142ac7ce3c2d6" title="挂起数据发布。 ">suspend_publications</a> 配对使用。  <a href="#a49405891c5d0b6c37be81e4b9770690e">更多...</a><br /></td></tr>
+<tr class="separator:a49405891c5d0b6c37be81e4b9770690e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3d5610aa3be55409bbfe74d8f0803fc9"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_publisher.html#a3d5610aa3be55409bbfe74d8f0803fc9">begin_coherent_changes</a> ()=0</td></tr>
+<tr class="memdesc:a3d5610aa3be55409bbfe74d8f0803fc9"><td class="mdescLeft">&#160;</td><td class="mdescRight">开始进行“连续”的修改。  <a href="#a3d5610aa3be55409bbfe74d8f0803fc9">更多...</a><br /></td></tr>
+<tr class="separator:a3d5610aa3be55409bbfe74d8f0803fc9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac82611bbf5352f5eab945948a61942cb"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_publisher.html#ac82611bbf5352f5eab945948a61942cb">end_coherent_changes</a> ()=0</td></tr>
+<tr class="memdesc:ac82611bbf5352f5eab945948a61942cb"><td class="mdescLeft">&#160;</td><td class="mdescRight">结束“连续”的修改，使接收端可以访问修改的值，必须在 <a class="el" href="class_d_d_s_1_1_publisher.html#a3d5610aa3be55409bbfe74d8f0803fc9" title="开始进行“连续”的修改。 ">begin_coherent_changes</a> 调用之后调用。  <a href="#ac82611bbf5352f5eab945948a61942cb">更多...</a><br /></td></tr>
+<tr class="separator:ac82611bbf5352f5eab945948a61942cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1e6f6bae4f914d31b60f071c2866c568"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_publisher.html#a1e6f6bae4f914d31b60f071c2866c568">wait_for_acknowledgments</a> (const <a class="el" href="group___cpp_core_struct.html#gae56b310fa579905cdf4947b3455cbda3">Duration_t</a> &amp;max_wait)=0</td></tr>
+<tr class="memdesc:a1e6f6bae4f914d31b60f071c2866c568"><td class="mdescLeft">&#160;</td><td class="mdescRight">阻塞调用该函数的线程直到该发布者创建的数据写者发送的所有数据都被接收端所响应或者超时。  <a href="#a1e6f6bae4f914d31b60f071c2866c568">更多...</a><br /></td></tr>
+<tr class="separator:a1e6f6bae4f914d31b60f071c2866c568"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a94cde7b907be3fe99720db29b6cc610b"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_domain_participant.html">DomainParticipant</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_publisher.html#a94cde7b907be3fe99720db29b6cc610b">get_participant</a> ()=0</td></tr>
+<tr class="memdesc:a94cde7b907be3fe99720db29b6cc610b"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取创建该发布者的域参与者。  <a href="#a94cde7b907be3fe99720db29b6cc610b">更多...</a><br /></td></tr>
+<tr class="separator:a94cde7b907be3fe99720db29b6cc610b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af0631af8fba225cc6fa86319854a6ed8"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_publisher.html#af0631af8fba225cc6fa86319854a6ed8">delete_contained_entities</a> ()=0</td></tr>
+<tr class="memdesc:af0631af8fba225cc6fa86319854a6ed8"><td class="mdescLeft">&#160;</td><td class="mdescRight">删除Publisher所包含的所有DataWriter。  <a href="#af0631af8fba225cc6fa86319854a6ed8">更多...</a><br /></td></tr>
+<tr class="separator:af0631af8fba225cc6fa86319854a6ed8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeaf9fded08f6a8019434878da64944e8"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_publisher.html#aeaf9fded08f6a8019434878da64944e8">set_default_datawriter_qos</a> (const <a class="el" href="group___cpp_core_struct.html#gabef03998e5a399f1053057c068dbcacb">DataWriterQos</a> &amp;qoslist)=0</td></tr>
+<tr class="memdesc:aeaf9fded08f6a8019434878da64944e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">设置数据写者的默认QoS。  <a href="#aeaf9fded08f6a8019434878da64944e8">更多...</a><br /></td></tr>
+<tr class="separator:aeaf9fded08f6a8019434878da64944e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a72038edc95365090ef8b9e3ac829677e"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_publisher.html#a72038edc95365090ef8b9e3ac829677e">get_default_datawriter_qos</a> (<a class="el" href="group___cpp_core_struct.html#gabef03998e5a399f1053057c068dbcacb">DataWriterQos</a> &amp;qoslist)=0</td></tr>
+<tr class="memdesc:a72038edc95365090ef8b9e3ac829677e"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取由 <a class="el" href="class_d_d_s_1_1_publisher.html#aeaf9fded08f6a8019434878da64944e8" title="设置数据写者的默认QoS。 ">set_default_datawriter_qos</a> 设置的DataWriterQos。  <a href="#a72038edc95365090ef8b9e3ac829677e">更多...</a><br /></td></tr>
+<tr class="separator:a72038edc95365090ef8b9e3ac829677e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae7c0e6c7401eacd6a1120ba6d5d72464"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_publisher.html#ae7c0e6c7401eacd6a1120ba6d5d72464">copy_from_topic_qos</a> (<a class="el" href="group___cpp_core_struct.html#gabef03998e5a399f1053057c068dbcacb">DataWriterQos</a> &amp;a_datawriter_qos, const <a class="el" href="group___cpp_core_struct.html#ga0144c9733462be0674d60638a514b47b">TopicQos</a> &amp;a_topic_qos)=0</td></tr>
+<tr class="memdesc:ae7c0e6c7401eacd6a1120ba6d5d72464"><td class="mdescLeft">&#160;</td><td class="mdescRight">使用TopicQos中的对应项赋值DataWriterQos。  <a href="#ae7c0e6c7401eacd6a1120ba6d5d72464">更多...</a><br /></td></tr>
+<tr class="separator:ae7c0e6c7401eacd6a1120ba6d5d72464"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acfee65074d21480fb3dd562f7fc40dc6"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_publisher.html#acfee65074d21480fb3dd562f7fc40dc6">set_qos</a> (const <a class="el" href="group___cpp_core_struct.html#ga31118461559792596bffbd78d90d5bb1">PublisherQos</a> &amp;qoslist)=0</td></tr>
+<tr class="memdesc:acfee65074d21480fb3dd562f7fc40dc6"><td class="mdescLeft">&#160;</td><td class="mdescRight">设置发布者QoS。  <a href="#acfee65074d21480fb3dd562f7fc40dc6">更多...</a><br /></td></tr>
+<tr class="separator:acfee65074d21480fb3dd562f7fc40dc6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a06f49bf071037323608d18ad36c146ac"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_publisher.html#a06f49bf071037323608d18ad36c146ac">get_qos</a> (<a class="el" href="group___cpp_core_struct.html#ga31118461559792596bffbd78d90d5bb1">PublisherQos</a> &amp;qoslist)=0</td></tr>
+<tr class="memdesc:a06f49bf071037323608d18ad36c146ac"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取发布者QoS。  <a href="#a06f49bf071037323608d18ad36c146ac">更多...</a><br /></td></tr>
+<tr class="separator:a06f49bf071037323608d18ad36c146ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a297490f10a23bbe0fabfb41eca151a90"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_publisher.html#a297490f10a23bbe0fabfb41eca151a90">set_listener</a> (<a class="el" href="class_d_d_s_1_1_publisher_listener.html">PublisherListener</a> *a_listener, const <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> &amp;mask)=0</td></tr>
+<tr class="memdesc:a297490f10a23bbe0fabfb41eca151a90"><td class="mdescLeft">&#160;</td><td class="mdescRight">设置发布者的监听器。  <a href="#a297490f10a23bbe0fabfb41eca151a90">更多...</a><br /></td></tr>
+<tr class="separator:a297490f10a23bbe0fabfb41eca151a90"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0d9e52b633926c26f1e65071856e2dd8"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_publisher_listener.html">PublisherListener</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_publisher.html#a0d9e52b633926c26f1e65071856e2dd8">get_listener</a> ()=0</td></tr>
+<tr class="memdesc:a0d9e52b633926c26f1e65071856e2dd8"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取发布者当前的监听器。  <a href="#a0d9e52b633926c26f1e65071856e2dd8">更多...</a><br /></td></tr>
+<tr class="separator:a0d9e52b633926c26f1e65071856e2dd8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_methods_class_d_d_s_1_1_entity"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_class_d_d_s_1_1_entity')"><img src="closed.png" alt="-"/>&#160;Public 成员函数 继承自 <a class="el" href="class_d_d_s_1_1_entity.html">DDS::Entity</a></td></tr>
+<tr class="memitem:aa2bbb1f4eb6fcb40efeaee0a8ea56fad inherit pub_methods_class_d_d_s_1_1_entity"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_status_condition.html">StatusCondition</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_entity.html#aa2bbb1f4eb6fcb40efeaee0a8ea56fad">get_statuscondition</a> ()=0</td></tr>
+<tr class="memdesc:aa2bbb1f4eb6fcb40efeaee0a8ea56fad inherit pub_methods_class_d_d_s_1_1_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">返回该实体关联的状态条件。  <a href="#aa2bbb1f4eb6fcb40efeaee0a8ea56fad">更多...</a><br /></td></tr>
+<tr class="separator:aa2bbb1f4eb6fcb40efeaee0a8ea56fad inherit pub_methods_class_d_d_s_1_1_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abfefe5840f713c729630757a57c494af inherit pub_methods_class_d_d_s_1_1_entity"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_entity.html#abfefe5840f713c729630757a57c494af">get_status_changes</a> ()=0</td></tr>
+<tr class="memdesc:abfefe5840f713c729630757a57c494af inherit pub_methods_class_d_d_s_1_1_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取该实体从上一次获取任意状态后的状态变化。  <a href="#abfefe5840f713c729630757a57c494af">更多...</a><br /></td></tr>
+<tr class="separator:abfefe5840f713c729630757a57c494af inherit pub_methods_class_d_d_s_1_1_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acaf66ba087d9c1c5d716eda0756f2254 inherit pub_methods_class_d_d_s_1_1_entity"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_entity.html#acaf66ba087d9c1c5d716eda0756f2254">enable</a> ()=0</td></tr>
+<tr class="memdesc:acaf66ba087d9c1c5d716eda0756f2254 inherit pub_methods_class_d_d_s_1_1_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">手动使能该实体，参见<a class="el" href="index.html#entity-enable">实体使能</a> 。  <a href="#acaf66ba087d9c1c5d716eda0756f2254">更多...</a><br /></td></tr>
+<tr class="separator:acaf66ba087d9c1c5d716eda0756f2254 inherit pub_methods_class_d_d_s_1_1_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aef72ffc167d867c1f3d2a8ef594b0011 inherit pub_methods_class_d_d_s_1_1_entity"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___cpp_core_struct.html#gaae82c770a3728c269105d92e8f368cfe">InstanceHandle_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_entity.html#aef72ffc167d867c1f3d2a8ef594b0011">get_instance_handle</a> ()=0</td></tr>
+<tr class="memdesc:aef72ffc167d867c1f3d2a8ef594b0011 inherit pub_methods_class_d_d_s_1_1_entity"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取该实体的唯一标识。  <a href="#aef72ffc167d867c1f3d2a8ef594b0011">更多...</a><br /></td></tr>
+<tr class="separator:aef72ffc167d867c1f3d2a8ef594b0011 inherit pub_methods_class_d_d_s_1_1_entity"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock"><p>ZRDDS提供的发布者接口，应用创建发布者表示自身想向指定的域内提供数据； </p>
+<p>发布者主要完成以下几个功能：</p><ul>
+<li>实体功能；</li>
+<li>作为数据写者的工厂；</li>
+<li>统一处理数据写者的数据样本发送； </li>
+</ul>
+</div><h2 class="groupheader">成员函数说明</h2>
+<a class="anchor" id="a3d5610aa3be55409bbfe74d8f0803fc9"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::Publisher::begin_coherent_changes </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>开始进行“连续”的修改。 </p>
+<p>当该数据写者所属的发布者的QoS <a class="el" href="struct_d_d_s___presentation_qos_policy.html#a6882e12b1b9dc671540818bd6a8f3321" title="开启一致性访问。 ">DDS_PresentationQosPolicy::coherent_access</a> == true，使用此函数开始进行“原子”操作。 在该函数调用之后直到 <a class="el" href="class_d_d_s_1_1_publisher.html#ac82611bbf5352f5eab945948a61942cb" title="结束“连续”的修改，使接收端可以访问修改的值，必须在 begin_coherent_changes 调用之后调用。 ...">end_coherent_changes</a> 被调用之前发布的所有数据会被接收端一次性访问到。 亦即在 <a class="el" href="class_d_d_s_1_1_publisher.html#ac82611bbf5352f5eab945948a61942cb" title="结束“连续”的修改，使接收端可以访问修改的值，必须在 begin_coherent_changes 调用之后调用。 ...">end_coherent_changes</a> 被调用之前，所有提交的数据对于接收端来说都是不可访问的。 而在 <a class="el" href="class_d_d_s_1_1_publisher.html#ac82611bbf5352f5eab945948a61942cb" title="结束“连续”的修改，使接收端可以访问修改的值，必须在 begin_coherent_changes 调用之后调用。 ...">end_coherent_changes</a> 调用之后，接收端会收到一批数据。</p>
+<dl class="section return"><dt>返回</dt><dd>可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a2e310a02f1ef7b8a7e5b5f5029b154f9" title="实体未使能，不能进行该操作。 ">DDS_RETCODE_NOT_ENABLED</a> 发布者未使能；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> 未归类错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ae7c0e6c7401eacd6a1120ba6d5d72464"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::Publisher::copy_from_topic_qos </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gabef03998e5a399f1053057c068dbcacb">DataWriterQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>a_datawriter_qos</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga0144c9733462be0674d60638a514b47b">TopicQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>a_topic_qos</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>使用TopicQos中的对应项赋值DataWriterQos。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir"></td><td class="paramname">a_topic_qos</td><td>主题QoS，作为拷贝的数据源。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">a_datawriter_qos</td><td>数据写者QoS，保存拷贝结果。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> 未归类错误；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> 设置成功。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a04c18041cc57db814400926da3df4bdd"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_d_d_s_1_1_data_writer.html">DataWriter</a> * DDS::Publisher::create_datawriter </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_topic.html">Topic</a> *&#160;</td>
+          <td class="paramname"><em>the_topic</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gabef03998e5a399f1053057c068dbcacb">DataWriterQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qoslist</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_data_writer_listener.html">DataWriterListener</a> *&#160;</td>
+          <td class="paramname"><em>a_listener</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> &amp;&#160;</td>
+          <td class="paramname"><em>mask</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>创建DataWriter。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">the_topic</td><td>用于关联DataWriter的Topic实例指针。 </td></tr>
+    <tr><td class="paramname">qoslist</td><td>DataWriter的QoS配置。 </td></tr>
+    <tr><td class="paramname">a_listener</td><td>需要安装到DataWriter的Listener。 </td></tr>
+    <tr><td class="paramname">mask</td><td>状态掩码，指明需要被Listener捕获的状态。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>可能的返回值如下：<ul>
+<li>NULL创建数据写者失败；</li>
+<li>创建的数据写者。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a9789cf2c9f0fd6d9c2abe4df91455e8b"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_d_d_s_1_1_data_writer.html">DataWriter</a> * DDS::Publisher::create_datawriter_with_qos_profile </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_topic.html">Topic</a> *&#160;</td>
+          <td class="paramname"><em>topic</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>profile_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_data_writer_listener.html">DataWriterListener</a> *&#160;</td>
+          <td class="paramname"><em>dw_listener</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a>&#160;</td>
+          <td class="paramname"><em>mask</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>从QoS仓库中获取数据写者QoS并用其创建数据写者 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">topic</td><td>数据写者关联的主题 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">library_name</td><td>QoS库的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">profile_name</td><td>QoS配置的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">qos_name</td><td>QoS的名字，允许为NULL，将转换为default字符串。 </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">dw_listener</td><td>用户提供的监听器对象 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">mask</td><td>状态掩码，指明需要被监听器捕获的状态</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>可能的返回值如下：<ul>
+<li>NULL创建数据写者失败；</li>
+<li>创建的数据写者。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ae5bb51444857767eaf2ce62bdde0c8b4"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_d_d_s_1_1_data_writer.html">DataWriter</a> * DDS::Publisher::create_datawriter_with_topic_and_qos_profile </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>topicName</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_type_support.html">TypeSupport</a> *&#160;</td>
+          <td class="paramname"><em>typeSupport</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>profile_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_data_writer_listener.html">DataWriterListener</a> *&#160;</td>
+          <td class="paramname"><em>dw_listener</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a>&#160;</td>
+          <td class="paramname"><em>mask</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>创建指定主题名称的数据写者，当主题名称关联的主题未创建时，将自动创建， 否则将利用已经创建的主题创建数据写者。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir"></td><td class="paramname">topicName</td><td>数据写者关联的主题名称。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">typeSupport</td><td>数据写者关联的数据类型的类型支持单例，例如零拷贝类型： ZeroCopyBytesTypeSupport::get_instance() 。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">library_name</td><td>QoS库的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">profile_name</td><td>QoS配置的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">qos_name</td><td>QoS的名字，允许为NULL，将转换为default字符串。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">dw_listener</td><td>数据写者的监听器。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">mask</td><td>监听器掩码。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>NULL表示失败，否则返回数据写者指针。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="af0631af8fba225cc6fa86319854a6ed8"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::Publisher::delete_contained_entities </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>删除Publisher所包含的所有DataWriter。 </p>
+<dl class="section return"><dt>返回</dt><dd>可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> 未归类错误；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> 删除成功。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a638462bd712d57d1ef855b924e50675a"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::Publisher::delete_datawriter </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_data_writer.html">DataWriter</a> *&#160;</td>
+          <td class="paramname"><em>a_writer</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>删除一个数据写者。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">a_writer</td><td>需要被删除的数据写者。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> 传入的参数有误；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a3a638871d5b4174c32c8d2880f1f6770" title="调用操作的前置条件未满足。 ">DDS_RETCODE_PRECONDITION_NOT_MET</a> 传入的数据写者有误；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> 未归类错误；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> 删除成功。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ac82611bbf5352f5eab945948a61942cb"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::Publisher::end_coherent_changes </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>结束“连续”的修改，使接收端可以访问修改的值，必须在 <a class="el" href="class_d_d_s_1_1_publisher.html#a3d5610aa3be55409bbfe74d8f0803fc9" title="开始进行“连续”的修改。 ">begin_coherent_changes</a> 调用之后调用。 </p>
+<dl class="section return"><dt>返回</dt><dd>可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a2e310a02f1ef7b8a7e5b5f5029b154f9" title="实体未使能，不能进行该操作。 ">DDS_RETCODE_NOT_ENABLED</a> 发布者未使能。</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a3a638871d5b4174c32c8d2880f1f6770" title="调用操作的前置条件未满足。 ">DDS_RETCODE_PRECONDITION_NOT_MET</a> 发布者未调用过 <a class="el" href="class_d_d_s_1_1_publisher.html#a3d5610aa3be55409bbfe74d8f0803fc9" title="开始进行“连续”的修改。 ">begin_coherent_changes</a> 。</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> 未归类错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a72038edc95365090ef8b9e3ac829677e"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::Publisher::get_default_datawriter_qos </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gabef03998e5a399f1053057c068dbcacb">DataWriterQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qoslist</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>获取由 <a class="el" href="class_d_d_s_1_1_publisher.html#aeaf9fded08f6a8019434878da64944e8" title="设置数据写者的默认QoS。 ">set_default_datawriter_qos</a> 设置的DataWriterQos。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">qoslist</td><td>获取到的数据写者QoS</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> 未归类错误；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> 获取成功。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a0d9e52b633926c26f1e65071856e2dd8"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_d_d_s_1_1_publisher_listener.html">PublisherListener</a> * DDS::Publisher::get_listener </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>获取发布者当前的监听器。 </p>
+<dl class="section return"><dt>返回</dt><dd>可能的返回值如下：<ul>
+<li>NULL表示未设置监听器；</li>
+<li>非空表示应用通过 <a class="el" href="class_d_d_s_1_1_publisher.html#a297490f10a23bbe0fabfb41eca151a90" title="设置发布者的监听器。 ">set_listener</a> 或者在创建时设置的监听器对象。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a94cde7b907be3fe99720db29b6cc610b"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_d_d_s_1_1_domain_participant.html">DomainParticipant</a> * DDS::Publisher::get_participant </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>获取创建该发布者的域参与者。 </p>
+<dl class="section return"><dt>返回</dt><dd>可能的返回值如下：<ul>
+<li>创建该Publisher的DomainParticipant。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a06f49bf071037323608d18ad36c146ac"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::Publisher::get_qos </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga31118461559792596bffbd78d90d5bb1">PublisherQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qoslist</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>获取发布者QoS。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">qoslist</td><td>保存获取到的发布者QoS值。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> 获取成功，</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> 未归类错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="af6304ae08a670b90e4efd7dda2db1f11"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_d_d_s_1_1_data_writer.html">DataWriter</a> * DDS::Publisher::lookup_datawriter </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>topic_name</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>根据主题名查找对应的数据写者。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">topic_name</td><td>关联到数据写者主题的主题名称。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>可能的返回值如下：<ul>
+<li>NULL未查找到数据写者；</li>
+<li>查到到的首个数据写者。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a49405891c5d0b6c37be81e4b9770690e"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::Publisher::resume_publications </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>恢复数据发布，与 <a class="el" href="class_d_d_s_1_1_publisher.html#aa840bee3ecee76a54e5142ac7ce3c2d6" title="挂起数据发布。 ">suspend_publications</a> 配对使用。 </p>
+<dl class="section return"><dt>返回</dt><dd>可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a2e310a02f1ef7b8a7e5b5f5029b154f9" title="实体未使能，不能进行该操作。 ">DDS_RETCODE_NOT_ENABLED</a> 该发布者未被使能；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a3a638871d5b4174c32c8d2880f1f6770" title="调用操作的前置条件未满足。 ">DDS_RETCODE_PRECONDITION_NOT_MET</a> 该发布者未调用过 <a class="el" href="class_d_d_s_1_1_publisher.html#aa840bee3ecee76a54e5142ac7ce3c2d6" title="挂起数据发布。 ">suspend_publications</a> ；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> 操作成功。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="aeaf9fded08f6a8019434878da64944e8"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::Publisher::set_default_datawriter_qos </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gabef03998e5a399f1053057c068dbcacb">DataWriterQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qoslist</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>设置数据写者的默认QoS。 </p>
+<p>当创建数据写者时可以使用 DDS::DATAWRITER_QOS_DEFAULT 值作为DataWriterQoS传入。 如果用户使用了 DDS::DATAWRITER_QOS_DEFAULT ，具体的QoS配置将由该函数调用时传入的QoS决定。</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">qoslist</td><td>需要设置的数据写者QoS，如果使用DEFAULT_DATAWRITER_QOS作为参数调用该函数，设置的默认QoS将被重置。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>参见 <a class="el" href="class_d_d_s_1_1_data_writer.html#a9644030bd4276847eeab26d903014373" title="设置DataWriterQoS。 ">DDS::DataWriter::set_qos</a> 。 </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a9fa826e5947e935aab51298077a72cf7"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::Publisher::set_default_datawriter_qos_with_profile </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>profile_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_name</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>从QoS仓库中获取数据写者QoS并将其设为默认数据写者QoS </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">library_name</td><td>QoS库的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramname">profile_name</td><td>QoS配置的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramname">qos_name</td><td>QoS的名字，允许为NULL，将转换为default字符串。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示设置成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未知错误导致的设置错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a297490f10a23bbe0fabfb41eca151a90"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::Publisher::set_listener </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_publisher_listener.html">PublisherListener</a> *&#160;</td>
+          <td class="paramname"><em>a_listener</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> &amp;&#160;</td>
+          <td class="paramname"><em>mask</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>设置发布者的监听器。 </p>
+<p>设置新的监听器不会使原有的监听器被释放，用户需要自己管理监听器对象的分配和释放。</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">a_listener</td><td>用户提供的监听器对象，可以传入NULL解除监听。 </td></tr>
+    <tr><td class="paramname">mask</td><td>状态掩码，指明需要被监听器捕获的状态。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> 设置成功。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="acfee65074d21480fb3dd562f7fc40dc6"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::Publisher::set_qos </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga31118461559792596bffbd78d90d5bb1">PublisherQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qoslist</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>设置发布者QoS。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">qoslist</td><td>待设置的发布者QoS，可以使用 DDS::PUBLISHER_QOS_DEFAULT 作为参数以使用在域参与者中保存的默认发布者QoS</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a6e50f4433cf3e47737f4d317d0a4a707" title="试图修改使能后不能修改的Qos。 ">DDS_RETCODE_IMMUTABLE_POLICY</a> 不可在使能后修改的QoS；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac62550b4d2270c012813c14da6aa33a1" title="不一致的Qos。 ">DDS_RETCODE_INCONSISTENT</a> QoS存在冲突；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> QoS存在不合法的值；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> 未归类错误；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> 设置成功。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a0c013342bb00604551deb8833c4a7fc5"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::Publisher::set_qos_with_profile </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>profile_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_name</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>从QoS仓库中获取发布者QoS并将其设置到发布者中 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">library_name</td><td>QoS库的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramname">profile_name</td><td>QoS配置的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramname">qos_name</td><td>QoS的名字，允许为NULL，将转换为default字符串。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示设置成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未知错误导致的设置错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="aa840bee3ecee76a54e5142ac7ce3c2d6"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::Publisher::suspend_publications </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>挂起数据发布。 </p>
+<p>当数据发布被挂起之后，该发布者创建的所有数据写者发布的数据都不再被发出。 直到挂起被完全取消之后才会继续发出数据。 该函数可以被多次调用，但是取消挂起也需要配对使用，亦即如果该函数被多次调用之后，必须取消相同次数才能重新开始发布数据。</p>
+<dl class="section return"><dt>返回</dt><dd>可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a2e310a02f1ef7b8a7e5b5f5029b154f9" title="实体未使能，不能进行该操作。 ">DDS_RETCODE_NOT_ENABLED</a> 该发布者未被使能；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> 操作成功。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a1e6f6bae4f914d31b60f071c2866c568"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::Publisher::wait_for_acknowledgments </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#gae56b310fa579905cdf4947b3455cbda3">Duration_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>max_wait</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>阻塞调用该函数的线程直到该发布者创建的数据写者发送的所有数据都被接收端所响应或者超时。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">max_wait</td><td>该函数的最长阻塞时间。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a2e310a02f1ef7b8a7e5b5f5029b154f9" title="实体未使能，不能进行该操作。 ">DDS_RETCODE_NOT_ENABLED</a> 发布者未使能。</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a9e9b16cc5337664c6c6bbd4a9ed01bcb" title="操作超时。 ">DDS_RETCODE_TIMEOUT</a> 等待超时。</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> 未归类错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<hr/>该类的文档由以下文件生成:<ul>
+<li><a class="el" href="_publisher_8h_source.html">Publisher.h</a></li>
+</ul>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><b>DDS</b></li><li class="navelem"><a class="el" href="class_d_d_s_1_1_publisher.html">Publisher</a></li>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

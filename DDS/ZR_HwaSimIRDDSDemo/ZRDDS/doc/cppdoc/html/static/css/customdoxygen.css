@@ -1,0 +1,265 @@
+div.line {
+    font-family: consolas, fixed !important;
+    font-size: 13px;
+    min-height: 13px;
+    line-height: 1.5;
+    text-wrap: unrestricted;
+    white-space: -moz-pre-wrap; /* Moz */
+    white-space: -pre-wrap;     /* Opera 4-6 */
+    white-space: -o-pre-wrap;   /* Opera 7 */
+    white-space: pre-wrap;      /* CSS3  */
+    word-wrap: break-word;      /* IE 5.5+ */
+    text-indent: -53px;
+    padding-left: 53px;
+    padding-bottom: 0px;
+    margin: 0px;
+    -webkit-transition-property: background-color, box-shadow;
+    -webkit-transition-duration: 0.5s;
+    -moz-transition-property: background-color, box-shadow;
+    -moz-transition-duration: 0.5s;
+    -ms-transition-property: background-color, box-shadow;
+    -ms-transition-duration: 0.5s;
+    -o-transition-property: background-color, box-shadow;
+    -o-transition-duration: 0.5s;
+    transition-property: background-color, box-shadow;
+    transition-duration: 0.5s;
+}
+
+/*div.line.glow {*/
+    /*background-color: cyan;*/
+    /*box-shadow: 0 0 10px cyan;*/
+/*}*/
+
+
+/*span.lineno {*/
+    /*padding-right: 4px;*/
+    /*text-align: right;*/
+    /*border-right: 2px solid #0F0;*/
+    /*background-color: #E8E8E8;*/
+    /*white-space: pre;*/
+/*}*/
+/*span.lineno a {*/
+    /*background-color: #D8D8D8;*/
+/*}*/
+
+/*span.lineno a:hover {*/
+    /*background-color: #C8C8C8;*/
+/*}*/
+
+/*div.groupHeader {*/
+    /*margin-left: 16px;*/
+    /*margin-top: 12px;*/
+    /*font-weight: bold;*/
+/*}*/
+
+/*div.groupText {*/
+    /*margin-left: 16px;*/
+    /*font-style: italic;*/
+/*}*/
+
+/*!* @group Code Colorization *!*/
+
+/*span.keyword {*/
+    /*color: #008000;*/
+    /*font-family: Source Code Pro Medium !important;*/
+/*}*/
+
+/*span.keywordtype {*/
+    /*color: #604020;*/
+    /*font-family: Source Code Pro Medium !important;*/
+/*}*/
+
+/*span.keywordflow {*/
+    /*color: #e08000;*/
+    /*font-family: Source Code Pro Medium !important;*/
+/*}*/
+
+/*span.comment {*/
+    /*font-family: Source Code Pro Medium, fixed !important;*/
+    /*color: #800000*/
+/*}*/
+
+/*span.preprocessor {*/
+    /*color: #806020*/
+/*}*/
+
+/*span.stringliteral {*/
+    /*color: #002080*/
+/*}*/
+
+/*span.charliteral {*/
+    /*color: #008080*/
+/*}*/
+
+/*span.vhdldigit {*/
+    /*color: #ff00ff*/
+/*}*/
+
+/*span.vhdlchar {*/
+    /*color: #000000*/
+/*}*/
+
+/*span.vhdlkeyword {*/
+    /*color: #700070*/
+/*}*/
+
+/*span.vhdllogic {*/
+    /*color: #ff0000*/
+/*}*/
+
+/*blockquote {*/
+    /*background-color: #F7F8FB;*/
+    /*border-left: 2px solid #9CAFD4;*/
+    /*margin: 0 24px 0 4px;*/
+    /*padding: 0 12px 0 16px;*/
+/*}*/
+
+/*!* Google Custom Search Engine Tweaks  START *!*/
+/*input.gsc-input,*/
+/*.gsc-input-box,*/
+/*.gsc-input-box-hover,*/
+/*.gsc-input-box-focus,*/
+/*.gsc-search-button {*/
+  /*box-sizing: content-box;*/
+  /*line-height: normal;*/
+/*}*/
+
+/*.gsc-table-result,*/
+/*.gsc-thumbnail-inside,*/
+/*.gsc-url-top {*/
+  /*padding-left: 0px !important;*/
+/*}*/
+
+/*.gsc-selected-option-container {*/
+  /*width: inherit !important;*/
+/*}*/
+
+/*.reset-box-sizing,*/
+/*.reset-box-sizing * {*/
+  /*-webkit-box-sizing: content-box;*/
+  /*-moz-box-sizing: content-box;*/
+  /*box-sizing: content-box;*/
+/*}*/
+
+/*@media (min-width: 768px) {*/
+  /*.google-cse {*/
+    /*top: 50px;*/
+  /*}*/
+/*}*/
+/*@media (max-width: 767px) {*/
+  /*.google-cse {*/
+    /*top: 391px;*/
+  /*}*/
+/*}*/
+
+/*.google-cse {*/
+  /*width: 100%;*/
+  /*left: 0px;*/
+  /*z-index: 9999;*/
+  /*background-color: #222;*/
+/*}*/
+/*!* Google Custom Search Engine Tweaks  END *!*/
+/*!* add by hzy *!*/
+.table-captain {
+    text-align: center;
+    font-weight: bold;
+}
+
+/*.label-info-h1 {*/
+    /*font-size: 45% !important;*/
+/*}*/
+
+.merged-table-cell {
+    vertical-align: middle !important;
+}
+
+.custom-img {
+    max-width:100%
+}
+.exceed-custom-table {
+    word-break: break-all;
+}
+
+.larger-mlabel {
+    font-size: 12px !important;
+}
+
+/*.top-nav {*/
+    /*background-color: #F8F8F8;*/
+/*}*/
+
+h1 {
+    /* font-size: 20px; */
+    font-size: 142%;
+    /* counter-reset: level_2; */
+}
+
+h2 {
+    /* font-size: 19px; */
+    font-size: 135%;
+    /* counter-reset: level_3; */
+}
+
+h3 {
+    /* font-size: 18px; */
+    font-size: 128%;
+    /* counter-reset: level_4; */
+}
+
+h4 {
+    /* font-size: 17px; */
+    font-size: 121%;
+    /* counter-reset: level_5; */
+}
+
+h5 {
+    /* font-size: 16px; */
+    font-size: 114%;
+    /* counter-reset: level_6; */
+}
+
+h6 {
+    /* font-size: 15px; */
+    font-size: 107%;
+    /* counter-reset: level_7; */
+}
+
+
+/* 多级标题自动编号 */
+/* body {
+    counter-reset: level_1;
+}
+
+h1::before {
+    counter-increment: level_1;
+    content: counter(level_1)".";
+}
+
+h2::before {
+    counter-increment: level_2;
+    content: counter(level_1) "." counter(level_2) ".";
+}
+
+h3::before {
+    counter-increment: level_3;
+    content: counter(level_1) "." counter(level_2) "." counter(level_3) ".";
+}
+
+h4::before {
+    counter-increment: level_4;
+    content: counter(level_1) "." counter(level_2) "." counter(level_3) "." counter(level_4) ".";
+}
+
+h5::before {
+    counter-increment: level_5;
+    content: counter(level_1) "." counter(level_2) "." counter(level_3) "." counter(level_4) "." counter(level_5) ".";
+}
+
+h6::before {
+    counter-increment: level_6;
+    content: counter(level_1) "." counter(level_2) "." counter(level_3) "." counter(level_4) "." counter(level_5) "." counter(level_6) ".";
+} */
+
+.qos_change {
+    color: rgb(153, 241, 88);
+}

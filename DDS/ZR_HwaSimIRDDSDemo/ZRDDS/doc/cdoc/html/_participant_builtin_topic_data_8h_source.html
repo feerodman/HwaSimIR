@@ -1,0 +1,207 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: ParticipantBuiltinTopicData.h 源文件</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>结构体</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('_participant_builtin_topic_data_8h_source.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">ParticipantBuiltinTopicData.h</div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#ifndef ParticipantBuiltinTopicData_h__</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#define ParticipantBuiltinTopicData_h__</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#include &quot;OsResource.h&quot;</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#include &quot;BuiltinTopicKey_t.h&quot;</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="preprocessor">#include &quot;UserDataQosPolicy.h&quot;</span></div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#include &quot;PropertyList.h&quot;</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="preprocessor">#include &quot;SRIOPass_t.h&quot;</span></div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="preprocessor">#include &quot;ZRSequence.h&quot;</span></div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="preprocessor">#include &quot;Duration_t.h&quot;</span></div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="preprocessor">#ifdef _ZRDDSSECURITY</span></div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="preprocessor">#include &quot;DDSBuiltinSecurityCommon.h&quot;</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;{</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;</div>
+<div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="struct_d_d_s___participant_builtin_topic_data.html">   35</a></span>&#160;<span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="struct_d_d_s___participant_builtin_topic_data.html">DDS_ParticipantBuiltinTopicData</a></div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;{</div>
+<div class="line"><a name="l00038"></a><span class="lineno"><a class="line" href="struct_d_d_s___participant_builtin_topic_data.html#a8e253bece5931d309816e4b378bbb2b6">   38</a></span>&#160;    <a class="code" href="group___core_base_struct.html#gaf0cc5d62632cda1735f44b806fe8a8e0">DDS_BuiltinTopicKey_t</a> <a class="code" href="struct_d_d_s___participant_builtin_topic_data.html#a8e253bece5931d309816e4b378bbb2b6">key</a>;</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="preprocessor">#ifdef _ZRDDS_INCLUDE_USER_DATA_QOS</span></div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;</div>
+<div class="line"><a name="l00041"></a><span class="lineno"><a class="line" href="struct_d_d_s___participant_builtin_topic_data.html#a531f64b804f33d6e8aceeb0d87498f60">   41</a></span>&#160;    <a class="code" href="struct_d_d_s___user_data_qos_policy.html">DDS_UserDataQosPolicy</a> <a class="code" href="struct_d_d_s___participant_builtin_topic_data.html#a531f64b804f33d6e8aceeb0d87498f60">user_data</a>;</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* _ZRDDS_INCLUDE_USER_DATA_QOS */</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;</div>
+<div class="line"><a name="l00044"></a><span class="lineno"><a class="line" href="struct_d_d_s___participant_builtin_topic_data.html#a8e11012456a94e90b002d4af3014dcc7">   44</a></span>&#160;    <a class="code" href="struct_d_d_s___property_list.html">DDS_PropertyList</a> <a class="code" href="struct_d_d_s___participant_builtin_topic_data.html#a8e11012456a94e90b002d4af3014dcc7">property_list</a>;</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<span class="preprocessor">#ifdef _ZRDDS_MPORT_SRIO</span></div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <a class="code" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> recv_sub_wnd_size;</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="preprocessor">#ifdef _ZRDDS_MPORT_FPGA_SRIO</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <a class="code" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> srio_id;</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    SRIOConfigList_t configList;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="preprocessor">#endif // _ZRDDS_MPORT_FPGA_SRIO</span></div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="preprocessor">#endif // _ZRDDS_MPORT_SRIO</span></div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;</div>
+<div class="line"><a name="l00056"></a><span class="lineno"><a class="line" href="struct_d_d_s___participant_builtin_topic_data.html#ad45d7cfadd4c8157ab706c9e2360fcb9">   56</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a> <a class="code" href="struct_d_d_s___participant_builtin_topic_data.html#ad45d7cfadd4c8157ab706c9e2360fcb9">domain_id</a>;</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="preprocessor">#ifdef _ZRDDSSECURITY</span></div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;</div>
+<div class="line"><a name="l00059"></a><span class="lineno"><a class="line" href="struct_d_d_s___participant_builtin_topic_data.html#ad8297bbf367640645e89623aa86ea4fe">   59</a></span>&#160;    <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> <a class="code" href="struct_d_d_s___participant_builtin_topic_data.html#ad8297bbf367640645e89623aa86ea4fe">contains_security_data</a>;</div>
+<div class="line"><a name="l00061"></a><span class="lineno"><a class="line" href="struct_d_d_s___participant_builtin_topic_data.html#adb66a71a6a9b3276a4f750912f3af2e4">   61</a></span>&#160;    <a class="code" href="struct_d_d_s___data_holder.html">IdentityToken</a> <a class="code" href="struct_d_d_s___participant_builtin_topic_data.html#adb66a71a6a9b3276a4f750912f3af2e4">identity_token</a>;</div>
+<div class="line"><a name="l00063"></a><span class="lineno"><a class="line" href="struct_d_d_s___participant_builtin_topic_data.html#a5d46296d3ac96d95bf44f05940d9c8d1">   63</a></span>&#160;    <a class="code" href="struct_d_d_s___data_holder.html">PermissionsToken</a> <a class="code" href="struct_d_d_s___participant_builtin_topic_data.html#a5d46296d3ac96d95bf44f05940d9c8d1">permissions_token</a>;</div>
+<div class="line"><a name="l00065"></a><span class="lineno"><a class="line" href="struct_d_d_s___participant_builtin_topic_data.html#a043a2b8ef5a9aa911da53628697773b6">   65</a></span>&#160;    ParticipantSecurityInfo <a class="code" href="struct_d_d_s___participant_builtin_topic_data.html#a043a2b8ef5a9aa911da53628697773b6">security_info</a>;</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;</div>
+<div class="line"><a name="l00068"></a><span class="lineno"><a class="line" href="struct_d_d_s___participant_builtin_topic_data.html#a28518beaebd63bec9eb71d4f7ba97129">   68</a></span>&#160;    <a class="code" href="struct_d_d_s___duration__t.html">DDS_Duration_t</a> <a class="code" href="struct_d_d_s___participant_builtin_topic_data.html#a28518beaebd63bec9eb71d4f7ba97129">create_time</a>;</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;}<a class="code" href="struct_d_d_s___participant_builtin_topic_data.html">DDS_ParticipantBuiltinTopicData</a>;</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;DCPSDLL <span class="keywordtype">void</span> <a class="code" href="group___core_base_function.html#ga079a4dd22880bb4a4d371633ac8ee64b">DDS_ParticipantBuiltinTopicDataInitial</a>(</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <a class="code" href="struct_d_d_s___participant_builtin_topic_data.html">DDS_ParticipantBuiltinTopicData</a>* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;DCPSDLL <span class="keywordtype">void</span> <a class="code" href="group___core_base_function.html#ga0ed4ad605c957f568ff5aac096ee961d">DDS_ParticipantBuiltinTopicDataDestroy</a>(</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    <a class="code" href="struct_d_d_s___participant_builtin_topic_data.html">DDS_ParticipantBuiltinTopicData</a>* <span class="keyword">self</span>);</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;DCPSDLL <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> <a class="code" href="group___core_base_function.html#gae5bf9deac89bea7c7c266854fda2cc7f">DDS_ParticipantBuiltinTopicDataCopy</a>(</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    <a class="code" href="struct_d_d_s___participant_builtin_topic_data.html">DDS_ParticipantBuiltinTopicData</a>* dst,</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___participant_builtin_topic_data.html">DDS_ParticipantBuiltinTopicData</a>* src);</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;<span class="comment">/* 定义sequence结构*/</span></div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;DDS_SEQUENCE_CPP(<a class="code" href="struct_d_d_s___participant_builtin_topic_data_seq.html">DDS_ParticipantBuiltinTopicDataSeq</a>, <a class="code" href="struct_d_d_s___participant_builtin_topic_data.html">DDS_ParticipantBuiltinTopicData</a>);</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;<span class="preprocessor">#ifdef _ZRDDSSECURITY</span></div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;<span class="keyword">typedef</span> <a class="code" href="struct_d_d_s___participant_builtin_topic_data.html">DDS_ParticipantBuiltinTopicData</a> <a class="code" href="struct_d_d_s___participant_builtin_topic_data.html">DDS_ParticipantBuiltinTopicDataSecure</a>;</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* _ZRDDSSECURITY */</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;}</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* ParticipantBuiltinTopicData_h__*/</span><span class="preprocessor"></span></div>
+<div class="ttc" id="struct_d_d_s___participant_builtin_topic_data_html"><div class="ttname"><a href="struct_d_d_s___participant_builtin_topic_data.html">DDS_ParticipantBuiltinTopicData</a></div><div class="ttdoc">用于抽象给用户呈现的远端域参与者信息。 </div><div class="ttdef"><b>Definition:</b> ParticipantBuiltinTopicData.h:35</div></div>
+<div class="ttc" id="struct_d_d_s___user_data_qos_policy_html"><div class="ttname"><a href="struct_d_d_s___user_data_qos_policy.html">DDS_UserDataQosPolicy</a></div><div class="ttdoc">实体携带数据。 </div><div class="ttdef"><b>Definition:</b> UserDataQosPolicy.h:35</div></div>
+<div class="ttc" id="group___core_base_function_html_ga079a4dd22880bb4a4d371633ac8ee64b"><div class="ttname"><a href="group___core_base_function.html#ga079a4dd22880bb4a4d371633ac8ee64b">DDS_ParticipantBuiltinTopicDataInitial</a></div><div class="ttdeci">DCPSDLL void DDS_ParticipantBuiltinTopicDataInitial(DDS_ParticipantBuiltinTopicData *self)</div><div class="ttdoc">初始化 DDS_ParticipantBuiltinTopicData 对象。 </div></div>
+<div class="ttc" id="struct_d_d_s___participant_builtin_topic_data_html_a8e253bece5931d309816e4b378bbb2b6"><div class="ttname"><a href="struct_d_d_s___participant_builtin_topic_data.html#a8e253bece5931d309816e4b378bbb2b6">DDS_ParticipantBuiltinTopicData::key</a></div><div class="ttdeci">DDS_BuiltinTopicKey_t key</div><div class="ttdoc">用于唯一标识该域参与者。 </div><div class="ttdef"><b>Definition:</b> ParticipantBuiltinTopicData.h:38</div></div>
+<div class="ttc" id="struct_d_d_s___participant_builtin_topic_data_html_a5d46296d3ac96d95bf44f05940d9c8d1"><div class="ttname"><a href="struct_d_d_s___participant_builtin_topic_data.html#a5d46296d3ac96d95bf44f05940d9c8d1">DDS_ParticipantBuiltinTopicData::permissions_token</a></div><div class="ttdeci">PermissionsToken permissions_token</div><div class="ttdoc">The permissions token. </div><div class="ttdef"><b>Definition:</b> ParticipantBuiltinTopicData.h:63</div></div>
+<div class="ttc" id="group___core_base_function_html_gae5bf9deac89bea7c7c266854fda2cc7f"><div class="ttname"><a href="group___core_base_function.html#gae5bf9deac89bea7c7c266854fda2cc7f">DDS_ParticipantBuiltinTopicDataCopy</a></div><div class="ttdeci">DCPSDLL DDS_Boolean DDS_ParticipantBuiltinTopicDataCopy(DDS_ParticipantBuiltinTopicData *dst, const DDS_ParticipantBuiltinTopicData *src)</div><div class="ttdoc">拷贝 DDS_ParticipantBuiltinTopicData 对象。 </div></div>
+<div class="ttc" id="struct_d_d_s___participant_builtin_topic_data_html_a531f64b804f33d6e8aceeb0d87498f60"><div class="ttname"><a href="struct_d_d_s___participant_builtin_topic_data.html#a531f64b804f33d6e8aceeb0d87498f60">DDS_ParticipantBuiltinTopicData::user_data</a></div><div class="ttdeci">DDS_UserDataQosPolicy user_data</div><div class="ttdoc">该域参与者设置的 DDS_UserDataQosPolicy 。 </div><div class="ttdef"><b>Definition:</b> ParticipantBuiltinTopicData.h:41</div></div>
+<div class="ttc" id="struct_d_d_s___participant_builtin_topic_data_html_ad45d7cfadd4c8157ab706c9e2360fcb9"><div class="ttname"><a href="struct_d_d_s___participant_builtin_topic_data.html#ad45d7cfadd4c8157ab706c9e2360fcb9">DDS_ParticipantBuiltinTopicData::domain_id</a></div><div class="ttdeci">DDS_ULong domain_id</div><div class="ttdoc">该域参与者所属的域，用于RTPX协议，参见 DDS_DomainParticipantQos::domain_destination_addresses 。 ...</div><div class="ttdef"><b>Definition:</b> ParticipantBuiltinTopicData.h:56</div></div>
+<div class="ttc" id="struct_d_d_s___participant_builtin_topic_data_html_a8e11012456a94e90b002d4af3014dcc7"><div class="ttname"><a href="struct_d_d_s___participant_builtin_topic_data.html#a8e11012456a94e90b002d4af3014dcc7">DDS_ParticipantBuiltinTopicData::property_list</a></div><div class="ttdeci">DDS_PropertyList property_list</div><div class="ttdoc">该域参与者所属节点的属性列表。 </div><div class="ttdef"><b>Definition:</b> ParticipantBuiltinTopicData.h:44</div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga40aa7a1400d66542eba212ef019321bf"><div class="ttname"><a href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a></div><div class="ttdeci">ZR_BOOLEAN DDS_Boolean</div><div class="ttdoc">ZRDDS内置的true/false类型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:197</div></div>
+<div class="ttc" id="group___core_base_function_html_ga0ed4ad605c957f568ff5aac096ee961d"><div class="ttname"><a href="group___core_base_function.html#ga0ed4ad605c957f568ff5aac096ee961d">DDS_ParticipantBuiltinTopicDataDestroy</a></div><div class="ttdeci">DCPSDLL void DDS_ParticipantBuiltinTopicDataDestroy(DDS_ParticipantBuiltinTopicData *self)</div><div class="ttdoc">清理 DDS_ParticipantBuiltinTopicData 对象空间，但不释放 DDS_ParticipantBuiltinTopicData 自身空间。 ...</div></div>
+<div class="ttc" id="struct_d_d_s___duration__t_html"><div class="ttname"><a href="struct_d_d_s___duration__t.html">DDS_Duration_t</a></div><div class="ttdoc">用来表明一段时间段，协议规定至少有毫微秒的分辨率。 </div><div class="ttdef"><b>Definition:</b> Duration_t.h:40</div></div>
+<div class="ttc" id="struct_d_d_s___participant_builtin_topic_data_html_ad8297bbf367640645e89623aa86ea4fe"><div class="ttname"><a href="struct_d_d_s___participant_builtin_topic_data.html#ad8297bbf367640645e89623aa86ea4fe">DDS_ParticipantBuiltinTopicData::contains_security_data</a></div><div class="ttdeci">DDS_Boolean contains_security_data</div><div class="ttdoc">指明该Participant内置主题数据中是否包含安全相关数据。 </div><div class="ttdef"><b>Definition:</b> ParticipantBuiltinTopicData.h:59</div></div>
+<div class="ttc" id="struct_d_d_s___participant_builtin_topic_data_seq_html"><div class="ttname"><a href="struct_d_d_s___participant_builtin_topic_data_seq.html">DDS_ParticipantBuiltinTopicDataSeq</a></div><div class="ttdoc">声明内置数据类型 DDS_ParticipantBuiltinTopicData 的序列。 </div></div>
+<div class="ttc" id="group___core_builtin_types_html_gab598f8f664dfec10ab367e753dc68419"><div class="ttname"><a href="group___core_builtin_types.html#gab598f8f664dfec10ab367e753dc68419">DDS_ULong</a></div><div class="ttdeci">ZR_UINT32 DDS_ULong</div><div class="ttdoc">ZRDDS内置的4字节无符号整型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:258</div></div>
+<div class="ttc" id="struct_d_d_s___property_list_html"><div class="ttname"><a href="struct_d_d_s___property_list.html">DDS_PropertyList</a></div><div class="ttdoc"><名称-值>键值对列表封装。 </div><div class="ttdef"><b>Definition:</b> PropertyList.h:46</div></div>
+<div class="ttc" id="struct_d_d_s___data_holder_html"><div class="ttname"><a href="struct_d_d_s___data_holder.html">DDS_DataHolder</a></div><div class="ttdoc">用来存储一般性的数据，包括多样的属性来存储不同类型与格式的数据，作为其他类型的组成部分，例如Token、Ge...</div><div class="ttdef"><b>Definition:</b> DDSBuiltinSecurityCommon.h:84</div></div>
+<div class="ttc" id="struct_d_d_s___participant_builtin_topic_data_html_adb66a71a6a9b3276a4f750912f3af2e4"><div class="ttname"><a href="struct_d_d_s___participant_builtin_topic_data.html#adb66a71a6a9b3276a4f750912f3af2e4">DDS_ParticipantBuiltinTopicData::identity_token</a></div><div class="ttdeci">IdentityToken identity_token</div><div class="ttdoc">The identity token. </div><div class="ttdef"><b>Definition:</b> ParticipantBuiltinTopicData.h:61</div></div>
+<div class="ttc" id="struct_d_d_s___participant_builtin_topic_data_html_a28518beaebd63bec9eb71d4f7ba97129"><div class="ttname"><a href="struct_d_d_s___participant_builtin_topic_data.html#a28518beaebd63bec9eb71d4f7ba97129">DDS_ParticipantBuiltinTopicData::create_time</a></div><div class="ttdeci">DDS_Duration_t create_time</div><div class="ttdoc">该域参与者创建时间。 </div><div class="ttdef"><b>Definition:</b> ParticipantBuiltinTopicData.h:68</div></div>
+<div class="ttc" id="struct_d_d_s___participant_builtin_topic_data_html_a043a2b8ef5a9aa911da53628697773b6"><div class="ttname"><a href="struct_d_d_s___participant_builtin_topic_data.html#a043a2b8ef5a9aa911da53628697773b6">DDS_ParticipantBuiltinTopicData::security_info</a></div><div class="ttdeci">ParticipantSecurityInfo security_info</div><div class="ttdoc">Information describing the participant security. </div><div class="ttdef"><b>Definition:</b> ParticipantBuiltinTopicData.h:65</div></div>
+<div class="ttc" id="group___core_base_struct_html_gaf0cc5d62632cda1735f44b806fe8a8e0"><div class="ttname"><a href="group___core_base_struct.html#gaf0cc5d62632cda1735f44b806fe8a8e0">DDS_BuiltinTopicKey_t</a></div><div class="ttdeci">DDS_ULong DDS_BuiltinTopicKey_t[4]</div><div class="ttdoc">在内置数据类型中唯一标识该内置数据代表的远程实体（域参与者、数据读者、数据写者），本质上与远程实体的�...</div><div class="ttdef"><b>Definition:</b> BuiltinTopicKey_t.h:21</div></div>
+</div><!-- fragment --></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="dir_0fc3f8f3ef96ce2d45d66d6e29832317.html">resources</a></li><li class="navelem"><a class="el" href="dir_cf9ceadfa18f25e608d16251156af657.html">zrdds</a></li><li class="navelem"><a class="el" href="dir_49213087373222e5c37cddb4e4d5f33e.html">src</a></li><li class="navelem"><a class="el" href="dir_53336e619d60bf3f94a9dfb5f5011ef0.html">ZRDDSCoreInterface</a></li><li class="navelem"><b>ParticipantBuiltinTopicData.h</b></li>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

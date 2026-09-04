@@ -1,0 +1,302 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: 大包零拷贝（&gt;=v2.4.0）</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li class="current"><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>类</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('md_resources_docs_online_cpp_required_udp_large_package_zerocopy.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">大包零拷贝（&gt;=v2.4.0） </div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><p>ZRDDS为用户提供的零拷贝内置数据类型，使用零拷贝数据类型，可通过减少拷贝次数而提高传输性能。但由于零拷贝数据类型不支持数据分片，无法应用于UDP大包传输。为解决此问题，ZRDDS提供了大包零拷贝的特性。 注意：大包零拷贝模式下只能使用尽力而为(BEST_EFFORT_RELIABILITY_QOS)的通信方式，无法使用可靠(RELIABLE_RELIABILITY_QOS)通信方式。可通过配合使用UDP报文时延功能降低数据丢包率，提高可靠性。当前此特性只支持C、C++版本。</p>
+<h2>配置大包零拷贝</h2>
+<h3>配置说明</h3>
+<h4>发送端配置说明</h4>
+<table class="doxtable">
+<tr>
+<th>所属实体 </th><th>配置项 </th><th>默认值  </th></tr>
+<tr>
+<td>dw </td><td>sysctl.dw.align_payload </td><td>0 </td></tr>
+</table>
+<ul>
+<li>sysctl.dw.align_payload 负载对齐长度。发送端会添加指定大小的pad包，使用户数据之前的数据大小对齐sysctl.dw.align_payload所设定值,一般可设置为64或128。此值需保证与接收端sysctl.dr.align_payload所设置值相同。</li>
+</ul>
+<h4>接收端配置说明</h4>
+<table class="doxtable">
+<tr>
+<th>所属实体 </th><th>配置项 </th><th>默认值  </th></tr>
+<tr>
+<td>dr </td><td>sysctl.dr.align_payload </td><td>0 </td></tr>
+<tr>
+<td>^ </td><td>sysctl.dr.recv_buffer_count </td><td>1 </td></tr>
+<tr>
+<td>^ </td><td>sysctl.dr.max_sample_size </td><td>64 * 1024 </td></tr>
+<tr>
+<td>^ </td><td>receive_addresses </td><td>N/A </td></tr>
+</table>
+<ul>
+<li><p class="startli">sysctl.dr.align_payload</p>
+<p class="startli">负载对齐长度。接收端此值需保证与发送端sysctl.dw.align_payload所设置值相同。</p>
+</li>
+<li><p class="startli">sysctl.dr.recv_buffer_count</p>
+<p class="startli">底层接收缓冲区数量，当前仅支持1、2，为2时将会启动非零拷贝的租借反序列化。</p>
+</li>
+<li><p class="startli">sysctl.dr.max_sample_size</p>
+<p class="startli">数据接收缓冲区总大小。</p>
+</li>
+<li><p class="startli">receive_addresses</p>
+<p class="startli">底层传输协议配置与使用IP地址配置，当设置sysctl.dr.recv_buffer_count为2时，必须指定此配置项。</p>
+</li>
+</ul>
+<h3>配置示例</h3>
+<h4>发送端配置示例</h4>
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;&lt;<span class="keywordtype">datawriter_qos</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;best_effort_writer&quot;</span>&gt;</div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;  &lt;<span class="keywordtype">reliability</span>&gt;</div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;    &lt;<span class="keywordtype">kind</span>&gt;<span class="keyword">BEST_EFFORT_RELIABILITY_QOS</span>&lt;/<span class="keywordtype">kind</span>&gt;</div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;  &lt;/<span class="keywordtype">reliability</span>&gt;</div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;  &lt;<span class="keywordtype">property</span>&gt;</div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;    &lt;<span class="keywordtype">value</span>&gt;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;      &lt;<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;        &lt;<span class="keywordtype">name</span>&gt;<span class="keyword">sysctl.dw.align_payload</span>&lt;/<span class="keywordtype">name</span>&gt;</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;        &lt;<span class="keywordtype">value</span>&gt;128&lt;/<span class="keywordtype">value</span>&gt;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;      &lt;/<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;    &lt;/<span class="keywordtype">value</span>&gt;</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;  &lt;/<span class="keywordtype">property</span>&gt;</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;&lt;/<span class="keywordtype">datawriter_qos</span>&gt;</div>
+</div><!-- fragment --><h4>接收端配置示例</h4>
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;&lt;<span class="keywordtype">datareader_qos</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;best_effort_reader&quot;</span>&gt;</div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;  &lt;<span class="keywordtype">reliability</span>&gt;</div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;    &lt;<span class="keywordtype">kind</span>&gt;<span class="keyword">BEST_EFFORT_RELIABILITY_QOS</span>&lt;/<span class="keywordtype">kind</span>&gt;</div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;  &lt;/<span class="keywordtype">reliability</span>&gt;</div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;  &lt;<span class="keywordtype">receive_addresses</span>&gt;</div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;    &lt;<span class="keywordtype">addresses</span>&gt;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;      &lt;<span class="keywordtype">element</span>&gt;<span class="keyword">udpv4:</span>//192.168.31.0//65536&lt;/<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;    &lt;/<span class="keywordtype">addresses</span>&gt;</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;  &lt;/<span class="keywordtype">receive_addresses</span>&gt;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;  &lt;<span class="keywordtype">property</span>&gt;</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;    &lt;<span class="keywordtype">value</span>&gt;</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;      &lt;<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;        &lt;<span class="keywordtype">name</span>&gt;<span class="keyword">sysctl.dr.align_payload</span>&lt;/<span class="keywordtype">name</span>&gt;</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;        &lt;<span class="keywordtype">value</span>&gt;128&lt;/<span class="keywordtype">value</span>&gt;</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;      &lt;/<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;      &lt;<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;        &lt;<span class="keywordtype">name</span>&gt;<span class="keyword">sysctl.dr.recv_buffer_count</span>&lt;/<span class="keywordtype">name</span>&gt;</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;        &lt;<span class="keywordtype">value</span>&gt;2&lt;/<span class="keywordtype">value</span>&gt;</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;      &lt;/<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;      &lt;<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;        &lt;<span class="keywordtype">name</span>&gt;<span class="keyword">sysctl.dr.max_sample_size</span>&lt;/<span class="keywordtype">name</span>&gt;</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;        &lt;<span class="keywordtype">value</span>&gt;2100004&lt;/<span class="keywordtype">value</span>&gt;</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;      &lt;/<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    &lt;/<span class="keywordtype">value</span>&gt;</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;  &lt;/<span class="keywordtype">property</span>&gt;</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;&lt;/<span class="keywordtype">datareader_qos</span>&gt;</div>
+</div><!-- fragment --><h2>UDP报文时延</h2>
+<p>使用大包零拷贝时，由于其无法保证可靠性，可能会存在丢包问题。因此，需通过配置UDP报文时延进行流量控制，从而减少丢包率。此特性与大包零拷贝特性相互独立，在普通的UDP传输中也可使用。</p>
+<h3>配置说明</h3>
+<table class="doxtable">
+<tr>
+<th>所属实体 </th><th>配置项 </th><th>默认值  </th></tr>
+<tr>
+<td>dpf </td><td>sysctl.global.net.delay_count </td><td>0 </td></tr>
+<tr>
+<td>^ </td><td>sysctl.global.net.delay_time </td><td>10 </td></tr>
+<tr>
+<td>^ </td><td>sysctl.global.net.delay_size </td><td>60 * 1024 </td></tr>
+<tr>
+<td>^ </td><td>sysctl.global.net.delay_mode </td><td>0 </td></tr>
+</table>
+<ul>
+<li><p class="startli">sysctl.global.net.delay_count</p>
+<p class="startli">UDP时延报文个数阈值。当超过sysctl.global.net.delay_size所规定大小的报文发送数量到达此值时进行时延。</p>
+</li>
+<li><p class="startli">sysctl.global.net.delay_time</p>
+<p class="startli">UDP时延时间，单位为微秒。</p>
+</li>
+<li><p class="startli">sysctl.global.net.delay_size</p>
+<p class="startli">UDP报文大小阈值。当报文大小超过此阈值时，才计入发送个数，当发送个数大于sysctl.global.net.delay_count时进行时延。</p>
+</li>
+<li><p class="startli">sysctl.global.net.delay_mode</p>
+<p class="startli">延时方式，0为sleep，1为同步时延，2为for循环时延，此项通常不需要配置。</p>
+</li>
+</ul>
+<h3>配置示例</h3>
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;&lt;<span class="keywordtype">zrdds_qos</span> <span class="keyword">xmlns</span>=<span class="stringliteral">&quot;http://www.omg.org/dds/&quot;</span>&gt;</div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;  &lt;<span class="keywordtype">qos_library</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;default_lib&quot;</span>&gt;</div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;    &lt;<span class="keywordtype">qos_profile</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;default_profile&quot;</span>&gt;</div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;      &lt;<span class="keywordtype">participantfactory_qos</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;non_rio&quot;</span>&gt;</div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;        &lt;<span class="keywordtype">property</span>&gt;</div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;          &lt;<span class="keywordtype">value</span>&gt;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;            &lt;<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;              &lt;<span class="keywordtype">name</span>&gt;<span class="keyword">sysctl.global.net.delay_count</span>&lt;/<span class="keywordtype">name</span>&gt;</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;              &lt;<span class="keywordtype">value</span>&gt;2&lt;/<span class="keywordtype">value</span>&gt;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;            &lt;/<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;            &lt;<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;              &lt;<span class="keywordtype">name</span>&gt;<span class="keyword">sysctl.global.net.delay_time</span>&lt;/<span class="keywordtype">name</span>&gt;</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;              &lt;<span class="keywordtype">value</span>&gt;10&lt;/<span class="keywordtype">value</span>&gt;</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;            &lt;/<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;            &lt;<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;              &lt;<span class="keywordtype">name</span>&gt;<span class="keyword">sysctl.global.net.delay_size</span>&lt;/<span class="keywordtype">name</span>&gt;</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;              &lt;<span class="keywordtype">value</span>&gt;60 * 1024&lt;/<span class="keywordtype">value</span>&gt;</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;            &lt;/<span class="keywordtype">element</span>&gt;</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;          &lt;/<span class="keywordtype">value</span>&gt;</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;        &lt;/<span class="keywordtype">property</span>&gt;</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;   &lt;/<span class="keywordtype">participantfactory_qos</span>&gt;</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    &lt;/<span class="keywordtype">qos_profile</span>&gt;</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;  &lt;/<span class="keywordtype">qos_library</span>&gt;</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;&lt;/<span class="keywordtype">zrdds_qos</span>&gt;</div>
+</div><!-- fragment --><h2>on_data_arrived</h2>
+<p>直接通知数据到达的回调函数，需用户手动设置监听器并编写回调函数处理逻辑。当且仅当设置sysctl.dr.use_data_arrived为true时，会触发on_data_arrived回调函数，否则不会触发。若同时设置on_data_arrived与on_data_available函数，将优先调用on_data_arrived，此时在on_data_available中无需再做处理。具体使用方式可参照代码示例。</p>
+<h3>配置说明</h3>
+<table class="doxtable">
+<tr>
+<th>所属实体 </th><th>配置项 </th><th>默认值  </th></tr>
+<tr>
+<td>dr </td><td>sysctl.dr.use_data_arrived </td><td>false </td></tr>
+</table>
+<h3>代码示例</h3>
+<div class="fragment"><div class="line"><span class="keyword">class  </span>Mylistener : <span class="keyword">public</span> <a class="code" href="class_d_d_s_1_1_data_reader_listener.html">DDS::DataReaderListener</a></div>
+<div class="line">{</div>
+<div class="line">    <span class="keywordtype">void</span> <a class="code" href="class_d_d_s_1_1_data_reader_listener.html#a0a3130af625539989bf1a56fad8a24db">on_data_arrived</a>(DataReader* reader, <span class="keywordtype">void</span>* curSample, <span class="keyword">const</span> <a class="code" href="group___cpp_core_struct.html#ga7836a2fa552fc2e4dc177df88a910eb6">SampleInfo</a>&amp; curInfo)</div>
+<div class="line">    {</div>
+<div class="line">        <a class="code" href="group___cpp_core_struct.html#gafdd0fc07a89eabc9fd6b60e7c18a8109">Bytes</a>* sample = (<a class="code" href="group___cpp_core_struct.html#gafdd0fc07a89eabc9fd6b60e7c18a8109">Bytes</a>*)curSample;</div>
+<div class="line">        <span class="comment">// 通过该语句获取收到的样本所属主题名称</span></div>
+<div class="line">        <span class="keyword">const</span> <span class="keywordtype">char</span>* topicName = reader-&gt;get_topicdescription()-&gt;get_name();</div>
+<div class="line">        <span class="comment">// 非零拷贝（缓冲区类型）按照如下语句获取缓冲区指针与长度</span></div>
+<div class="line">        <span class="keyword">const</span> <span class="keywordtype">char</span>* buffer = (<span class="keyword">const</span> <span class="keywordtype">char</span>*)sample-&gt;<a class="code" href="struct_d_d_s___bytes.html#a23d2dad740c4ee872e2efa141f8efa4c">value</a>.get_contiguous_buffer();</div>
+<div class="line">        <span class="keyword">const</span> <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> length = sample-&gt;value.length();</div>
+<div class="line">        <span class="comment">// TODO 在此填写业务处理</span></div>
+<div class="line">        printf(<span class="stringliteral">&quot;received data(%s) length(%u) from topic(%s)\n&quot;</span>, buffer, length, topicName);</div>
+<div class="line">    }</div>
+<div class="line">};</div>
+<div class="line"></div>
+<div class="line"></div>
+<div class="line"><span class="keywordtype">int</span> ZRDDSDemoModulesInitial()</div>
+<div class="line">{</div>
+<div class="line">    <span class="comment">// 获取入口，并指明QoS配置</span></div>
+<div class="line">    DomainParticipantFactory* factory = DDSIF::Init(NULL, <span class="stringliteral">&quot;non_rio&quot;</span>);</div>
+<div class="line">    <span class="keywordflow">if</span> (factory == NULL) { printf(<span class="stringliteral">&quot;DDSIF::Initialize failed.\n&quot;</span>); <span class="keywordflow">return</span> -1; }</div>
+<div class="line">    <span class="comment">// 初始化使用udp的域参与者</span></div>
+<div class="line">    DomainParticipant* udpDp = DDSIF::CreateDP(150, <span class="stringliteral">&quot;udp_dp&quot;</span>);</div>
+<div class="line">    <span class="keywordflow">if</span> (NULL == udpDp) { printf(<span class="stringliteral">&quot;DDSIF::CreateDP failed.\n&quot;</span>); <span class="keywordflow">return</span> -2; }</div>
+<div class="line">    <span class="comment">// 创建非零拷贝（缓冲区类型）数据读者，并设置监听器</span></div>
+<div class="line">    g_zrddsModule.m_listener = <span class="keyword">new</span> Mylistener();</div>
+<div class="line">    DataReader* airTrackDr = DDSIF::SubTopic(</div>
+<div class="line">        udpDp, <span class="stringliteral">&quot;AirTrack&quot;</span>, BytesTypeSupport::get_instance(), <span class="stringliteral">&quot;best_effort_reader&quot;</span>, g_zrddsModule.m_listener);</div>
+<div class="line">    <span class="keywordflow">if</span> (NULL == airTrackDr) { printf(<span class="stringliteral">&quot;DDSIF::SubscribeTopic failed.\n&quot;</span>); <span class="keywordflow">return</span> -4; }</div>
+<div class="line">    <span class="keywordflow">return</span> 0;</div>
+<div class="line">}</div>
+<div class="line"></div>
+<div class="line"><span class="keywordtype">int</span> main()</div>
+<div class="line">{</div>
+<div class="line">    <span class="keywordflow">if</span> (ZRDDSDemoModulesInitial() &lt; 0) { getchar(); <span class="keywordflow">return</span> -1; }</div>
+<div class="line">    getchar();</div>
+<div class="line">    DDSIF::Finalize();</div>
+<div class="line">    <span class="keywordflow">return</span> 0;</div>
+<div class="line">}</div>
+</div><!-- fragment --><p>具体示例如下：</p>
+<ul>
+<li>QoS配置文件示例参见 <a class="el" href="_u_d_p_large_package_zero_copy_2_z_r_d_d_s__q_o_s__p_r_o_f_i_l_e_s_8xml-example.html">UDPLargePackageZeroCopy/ZRDDS_QOS_PROFILES.xml</a></li>
+<li>发送端代码参见 <a class="el" href="_u_d_p_large_package_zero_copy_2_simple_interface_bytes_type_pub_8cpp-example.html">UDPLargePackageZeroCopy/SimpleInterfaceBytesTypePub.cpp</a></li>
+<li>接收端代码参见 <a class="el" href="_u_d_p_large_package_zero_copy_2_simple_interface_bytes_type_sub_8cpp-example.html">UDPLargePackageZeroCopy/SimpleInterfaceBytesTypeSub.cpp</a> </li>
+</ul>
+</div></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

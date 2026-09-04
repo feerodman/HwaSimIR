@@ -1,0 +1,34 @@
+#INCLUDEPATH += $$PWD/include
+#INCLUDEPATH += $$PWD/include/CPlusPlusInterface
+#INCLUDEPATH += $$PWD/include/ZRDDSCoreInterface
+#INCLUDEPATH += $$PWD/include/ZRDDSRPCInterface
+#INCLUDEPATH += $$PWD/include/ZRDDSSecurityInterface
+
+#DEFINES += _ZRDDSCPPINTERFACE
+
+
+#win32 {
+#    LIBS += -lws2_32 -ladvapi32
+#        CONFIG(release, debug|release) {
+#            LIBS += -L"$$PWD/lib" -lZRDDSCppz
+#        } else {
+#            LIBS += -L"$$PWD/lib" -lZRDDSCppzd
+#        }
+#}
+
+
+DEFINES += _ZRDDSCPPINTERFACE
+
+INCLUDEPATH += $$quote($$PWD/include/ZRDDSCoreInterface)
+INCLUDEPATH += $$quote($$PWD/include/CPlusPlusInterface)
+INCLUDEPATH += $$quote($$PWD/include/ZRDDSRPCInterface)
+INCLUDEPATH += $$quote($$PWD/include/ZRDDSSecurityInterface)
+
+CONFIG(debug, debug|release) {
+     LIBS += -L$$quote($$PWD/lib) -lZRDDSCppzd -lws2_32 -lwsock32 -liphlpapi
+}
+
+CONFIG(release, debug|release) {
+     LIBS += -L$$quote($$PWD/lib) -lZRDDSCppz -lws2_32 -lwsock32 -liphlpapi
+}
+

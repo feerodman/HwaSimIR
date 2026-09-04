@@ -1,0 +1,321 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: ZRDDS日志调试使用说明</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li class="current"><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>类</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('zrdds_log.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">ZRDDS日志调试使用说明 </div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><p>DDS日志模块主要分为以下几个部分：</p>
+<ul>
+<li>DDS中间件日志控制，用于控制DDS中间件底层的日志输出，用于定位DDS中间件的故障以及错误；</li>
+<li>用户日志输出与控制，DDS日志模块开放接口给应用程序使用，用于输出应用日志信息并提供与DDS中间件自身相同的输出控制能力；</li>
+<li>分布式日志功能，将本地的日志信息通过主题数据的方式发布到DDS网络中，通过日志服务查看，或者应用手动创建主题使用获取；</li>
+<li>自定义日志插件（&gt;=v2.3.0）</li>
+</ul>
+<h2>DDS中间件日志控制</h2>
+<p>DDS日志可以输出到以下通道：</p>
+<ul>
+<li>控制台，控制台中红色代表 ZRLOG_ERROR 级别的错误日志，黄色的代表 ZRLOG_WARNING 级别的警告日志，绿色代表 ZRLOG_ADMIN_INFO 级别的调试日志，以及默认颜色的 ZRLOG_USER_INFO 级别的用户信息日志；</li>
+<li>日志文件，日志文件默认在程序运行目录中的“应用程序名称.ddslog”，日志文件的写入模式为如果不存在则创建，如果存在则移除其内容并从头开始写，故而用户在发生故障时，在重新启动程序前应及时保存日志文件避免被覆盖，也可通过配置日志同名备份模式，将原有的同名日志自动备份到追加时间戳的日志文件。若用户日志过多或过大，也可设定根据时间或根据日志大小上限进行备份（备份功能支持版本&gt;=v2.3.1）。此外还可以指定日志文件的输出路径与文件名。</li>
+<li>分布式日志，将日志信息封装成日志主题（主题名rti/distlog，类型名称 DDSLogMessage ）发布出去；</li>
+</ul>
+<p>DDS日志所有级别均包含以下信息，DDS支持日志级别的控制，即用户可自定义哪些级别的日志输出到哪些通道。</p>
+<ul>
+<li>日志的时间；</li>
+<li>日志的级别；</li>
+<li>日志的位置信息，包括文件、函数、行号；</li>
+<li>日志的内容；</li>
+</ul>
+<p>日志级别对应掩码如下，可通过按位或指定多个级别 </p><table class="doxtable">
+<tr>
+<th>掩码值（十进制） </th><th>掩码值（十六进制） </th><th>使能级别  </th></tr>
+<tr>
+<td>2 </td><td>0x02 </td><td>错误信息 </td></tr>
+<tr>
+<td>4 </td><td>0x04 </td><td>调试信息 </td></tr>
+<tr>
+<td>8 </td><td>0x08 </td><td>用户信息 </td></tr>
+<tr>
+<td>16 </td><td>0x10 </td><td>警告信息 </td></tr>
+</table>
+<p>此处提供一些常用的掩码值 </p><table class="doxtable">
+<tr>
+<th>掩码值（十进制） </th><th>掩码值（十六进制） </th><th>使能级别  </th></tr>
+<tr>
+<td>0 </td><td>0x00 </td><td>不输出任何日志 </td></tr>
+<tr>
+<td>2 </td><td>0x02 </td><td>仅输出错误日志 </td></tr>
+<tr>
+<td>18 </td><td>0x12 </td><td>输出错误日志与警告日志 </td></tr>
+<tr>
+<td>30 </td><td>0x1E </td><td>输出所有日志 </td></tr>
+</table>
+<p>以上所提及的日志级别控制，日志文件输出路径与备份方式控制，都可通过 <a class="el" href="struct_d_d_s___log_qos_policy.html" title="DDS的日志系统配置QoS。 ">DDS_LogQosPolicy</a> 来配置。 若日志中调试信息数量太多，为方便调试，包含额外的其他属性，对于每一个属性均可以通过接口或者调试文件中调试命令的形式进行控制该条（类）日志是否输出，调试信息包含的额外信息参见下表：</p>
+<table class="doxtable">
+<tr>
+<th>属性 </th><th>开启接口 </th><th>关闭接口 </th><th>开启编号 </th><th>关闭编号 </th><th>说明  </th></tr>
+<tr>
+<td>主题名称 </td><td><a class="el" href="group___z_r_d_d_s_log.html#ga363f7585daa21ebbb1626962b4fa081e" title="使能指定主题数据的日志。 ">ZRLogDebugMaskEnableTopicName()</a> </td><td><a class="el" href="group___z_r_d_d_s_log.html#gaaa45a8a7f6a45f05a993d8f095ad0384" title="取消使能指定主题数据的日志。 ">ZRLogDebugMaskDisableTopicName()</a> </td><td>2 </td><td>3 </td><td>可以指定某条日志与指定的主题名称相关 </td></tr>
+<tr>
+<td>实体标识 </td><td><a class="el" href="group___z_r_d_d_s_log.html#gad46b71314d6875d6b283eb2e27483db6" title="使能指定实体的日志。 ">ZRLogDebugMaskEnableEntityId()</a> </td><td><a class="el" href="group___z_r_d_d_s_log.html#ga9fffaf4f56aebd984d6b8e0136bf81cd" title="使能指定实体的日志。 ">ZRLogDebugMaskDisableEntityId()</a> </td><td>4 </td><td>5 </td><td>可以指定某条日志与指定的实体ID相关 </td></tr>
+<tr>
+<td>编号 </td><td><a class="el" href="group___z_r_d_d_s_log.html#ga4d8855305f33b8ff1a85bf260d2db84e" title="使能调试信息范围。 ">ZRLogDebugMaskEnableRange()</a> </td><td><a class="el" href="group___z_r_d_d_s_log.html#ga2c869fccd1b742323c0721ee6b685267" title="取消调试信息范围。 ">ZRLogDebugMaskDisableRange()</a> </td><td>0 </td><td>1 </td><td>可以为日志赋予整型的编号，编号最大支持65536 </td></tr>
+</table>
+<p>为方便了解使用方式，此处提供一个简单的<code>xml</code>配置示例：</p>
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;&lt;<span class="keywordtype">zrdds_qos</span> <span class="keyword">xmlns</span>=<span class="stringliteral">&quot;http://www.omg.org/dds/&quot;</span>&gt;</div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;    &lt;<span class="keywordtype">qos_library</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;default_lib&quot;</span>&gt;</div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;        &lt;<span class="keywordtype">qos_profile</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;default_profile&quot;</span>&gt;</div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;            &lt;<span class="keywordtype">participantfactory_qos</span> <span class="keyword">name</span>=<span class="stringliteral">&quot;ExampleApp&quot;</span>&gt;</div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;                  &lt;<span class="keywordtype">dds_log</span>&gt;</div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;                    </div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;                    &lt;<span class="keywordtype">console_mask</span>&gt;18&lt;/<span class="keywordtype">console_mask</span>&gt;</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;                    </div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;                    &lt;<span class="keywordtype">file_mask</span>&gt;30&lt;/<span class="keywordtype">file_mask</span>&gt;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;                    </div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;                    &lt;<span class="keywordtype">enable_distributed_log</span>&gt;<span class="keyword">false</span>&lt;/<span class="keywordtype">enable_distributed_log</span>&gt;</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;                    </div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;                    &lt;<span class="keywordtype">distributed_log_writer_domain_id</span>&gt;1&lt;<span class="keywordtype">distributed_log_writer_domain_id</span>&gt;</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;                    </div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;                    &lt;<span class="keywordtype">distributed_log_level_mask</span>&gt;2&lt;/<span class="keywordtype">distributed_log_level_mask</span>&gt;</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;                    </div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;                    &lt;<span class="keywordtype">file_dir</span>&gt;/<span class="keyword">tmp</span>&lt;/<span class="keywordtype">file_dir</span>&gt;</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;                    </div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;                    &lt;<span class="keywordtype">file_name</span>&gt;<span class="keyword">Logtest</span>&lt;/<span class="keywordtype">file_name</span>&gt;</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;                    </div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;                    &lt;<span class="keywordtype">file_backup_kind</span>&gt;<span class="keyword">DDS_LOG_BACKUP_FILE_SIZE_QOS</span>&lt;/<span class="keywordtype">file_backup_kind</span>&gt;</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;                    </div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;                    &lt;<span class="keywordtype">file_backup_param</span>&gt;1024&lt;/<span class="keywordtype">file_backup_param</span>&gt;</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;                &lt;/<span class="keywordtype">dds_log</span>&gt;  </div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;            &lt;/<span class="keywordtype">participantfactory_qos</span>&gt;</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;        &lt;/<span class="keywordtype">qos_profile</span>&gt;</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    &lt;/<span class="keywordtype">qos_library</span>&gt;</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;&lt;/<span class="keywordtype">zrdds_qos</span>&gt;</div>
+</div><!-- fragment --><h3>日志输出风格</h3>
+<h4>标准风格（&gt;=2.2.3）</h4>
+<p>标准风格为默认的风格，每条日志均包含在前缀<code>*************** 时间（精确到毫秒） ***************</code>以及后缀<code>**************************************************************</code>中，第一条日志一定为当前DDS版本的信息以及生成时间，后续日志第一行为级别，第二行为日志所在文件名，第三行为日志所在函数以及行号，最后一行或多行为日志的内容。</p>
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;***************    Fri Mar 05 10:18:58:479 2021    ***************</div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;Current ZRDDS version(2.2.7) was compiled at Mar  4 2021 18:05:42</div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;**************************************************************</div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;</div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;***************    Fri Mar 05 10:18:58:527 2021    ***************</div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;LEVEL: 16</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;FILE: e:\my_project\zrdds\zrdds_c\src\zrddscoreimplement\domainparticipantfactoryimpl.cpp</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;FUNC: DomainParticipantFactoryReloadQosProfiles(LINE: 1796)</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;File &quot;ZRDDS_QOS_PROFILES.xml&quot; not existed.</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;**************************************************************</div>
+</div><!-- fragment --><h4>极简风格（&gt;=2.3.0）</h4>
+<p>极简风格不展示文件名，函数名以及行号等内容，只展示时间，日志级别与用户所关注的日志具体信息，输出模式如下，相对于标准风格，此模式更为简约，对内容展示更为清晰。</p>
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;[2021-05-05 18:33:41:666][ERROR]inconsistent Qos Policies: DataWriterQos.resource_limits.max_samples and DataWriterQos.resource_limits max_samples.per_instance  </div>
+</div><!-- fragment --><h3>调试文件控制（&gt;=v2.2.6）</h3>
+<p>DDS提供调试文件控制日志的输出，调试文件名称为“zrdds_debug_file.zrdebug”，调试文件生效时机包含两个：</p>
+<ul>
+<li>创建域参与者工厂的时候；</li>
+<li>DDS周期性检查（100ms）到调试文件发生修改的时候；</li>
+</ul>
+<p>调试文件由多条单行的调试命令组成，调试命令的格式为：<code>debug_cmd 命令编号 命令参数</code>，其中调试命令编号及其参数参见下表，注意满足调试命令格式的行将被简单的忽略：</p>
+<table class="doxtable">
+<tr>
+<th>命令编号 </th><th>命令类型 </th><th>命令参数  </th></tr>
+<tr>
+<td>0 </td><td>使能指定调试编号范围 </td><td>开始编号 结束编号 </td></tr>
+<tr>
+<td>1 </td><td>取消使能指定调试编号范围 </td><td>开始编号 结束编号 </td></tr>
+<tr>
+<td>2 </td><td>使能指定主题调试信息 </td><td>主题名(无需引号，特殊值参见上表) </td></tr>
+<tr>
+<td>3 </td><td>取消使能指定主题调试信息 </td><td>主题名(无需引号，特殊值参见上表) </td></tr>
+<tr>
+<td>4 </td><td>使能指定实体调试信息 </td><td>InstanceHandle的16进制串 </td></tr>
+<tr>
+<td>5 </td><td>取消使能指定实体调试信息 </td><td>InstanceHandle的16进制串 </td></tr>
+<tr>
+<td>6 </td><td>设置日志级别 </td><td>控制台掩码（16进制整型） 文件掩码（16进制整型） 分布式日志掩码（16进制整型） </td></tr>
+</table>
+<p>调试日志支持特殊的主题名称，参见下表：</p>
+<table class="doxtable">
+<tr>
+<th>主题名称 </th><th>含义  </th></tr>
+<tr>
+<td>ZRDDS_NETWORK_TOPIC </td><td>网络相关操作 </td></tr>
+<tr>
+<td>ZRDDS_DOMAINPARTICIPANT_TOPIC </td><td>域参与者相关调试信息 </td></tr>
+<tr>
+<td>ZRDDS_DOMAINPARTICIPANTFACTORY_TOPIC </td><td>域参与者工厂调试信息 </td></tr>
+<tr>
+<td>ZRDDS_MPORT_TOPIC </td><td>MPORT实现的RIO调试信息 </td></tr>
+<tr>
+<td>ZRDDS_VALIDATOR_TOPIC </td><td>License验证相关调试信息 </td></tr>
+<tr>
+<td>ZRDDS_INTERACTIVECMD_TOPIC </td><td>交互式命令相关调试信息 </td></tr>
+<tr>
+<td>ZRDDS_ANY_LOG_TOPIC_NAME___ </td><td>任意主题的调试信息 </td></tr>
+</table>
+<h4>调试文件实例</h4>
+<div class="fragment"><div class="line"><span class="comment">// 开启任意主题相关的调试日志（特别注意：此处为3个&quot;_&quot;）</span></div>
+<div class="line">debug_cmd 2 ZRDDS_ANY_LOG_TOPIC_NAME___</div>
+<div class="line"><span class="comment">// 开启任务实体ID的调试日志，共32个0</span></div>
+<div class="line">debug_cmd 4 00000000000000000000000000000000</div>
+<div class="line"><span class="comment">// 取消使能编号为100到200范围的调试日志（更改为&quot;debug_cmd 0&quot;表示使能）</span></div>
+<div class="line">debug_cmd 1 100 200</div>
+<div class="line"><span class="comment">//收到报文时，更新其它域参与者的存活状态</span></div>
+<div class="line">debug_cmd 1 59 59</div>
+<div class="line"><span class="comment">//周期性检查其它节点的存活状态</span></div>
+<div class="line">debug_cmd 1 61 62</div>
+<div class="line"><span class="comment">//数据读者收到数据写者信息时，打印其地址</span></div>
+<div class="line">debug_cmd 1 175 176</div>
+<div class="line"><span class="comment">//数据读者匹配到数据写者</span></div>
+<div class="line">debug_cmd 1 178 178</div>
+<div class="line"><span class="comment">//数据写者匹配到数据读者</span></div>
+<div class="line">debug_cmd 1 197 197</div>
+<div class="line"><span class="comment">//数据读者与数据写者解除匹配</span></div>
+<div class="line">debug_cmd 1 183 183</div>
+<div class="line"><span class="comment">//数据写者与数据读者解除匹配</span></div>
+<div class="line">debug_cmd 1 196 196</div>
+<div class="line"><span class="comment">//数据写者发送心跳的心跳范围</span></div>
+<div class="line">debug_cmd 1 791 791</div>
+<div class="line"><span class="comment">//数据写者进入waitForAllAcked的状态</span></div>
+<div class="line">debug_cmd 1 890 890</div>
+<div class="line"><span class="comment">//数据写者收到数据读者的ACKNACK消息</span></div>
+<div class="line">debug_cmd 1 1290 1290</div>
+<div class="line"><span class="comment">//数据写者重发DATA</span></div>
+<div class="line">debug_cmd 1 1293 1293</div>
+<div class="line"><span class="comment">//数据写者重发DATA_FRAG</span></div>
+<div class="line">debug_cmd 1 1313 1313</div>
+<div class="line"><span class="comment">//数据写者在某些数据被ACKED后释放已经不存活的实例</span></div>
+<div class="line">debug_cmd 1 776 776</div>
+<div class="line"><span class="comment">//数据读者收到数据写者的心跳，打印</span></div>
+<div class="line">debug_cmd 1 474 474</div>
+<div class="line"><span class="comment">//数据读者将数据标为已被接收</span></div>
+<div class="line">debug_cmd 1 773 773</div>
+<div class="line"><span class="comment">//收到报文，打印报文长度及来源端口</span></div>
+<div class="line">debug_cmd 1 275 275</div>
+<div class="line"><span class="comment">//数据读者收到数据后通知用户</span></div>
+<div class="line">debug_cmd 1 466 466</div>
+<div class="line"><span class="comment">//数据读者收到数据写者的心跳后，构建ACKNACK</span></div>
+<div class="line">debug_cmd 1 590 590</div>
+</div><!-- fragment --><h2>用户日志输出与控制</h2>
+<p>DDS日志模块提供日志输出接口，支持的接口参见下表：</p>
+<table class="doxtable">
+<tr>
+<th>接口 </th><th>形式 </th><th>说明 </th><th>版本  </th></tr>
+<tr>
+<td>ZRLogInitial() </td><td>函数调用 </td><td>初始化日志模块接口，在初始化域参与者工厂时将自动初始化日志模块 </td><td>&gt;= v2.4.0 </td></tr>
+<tr>
+<td>ZRLogDestroy() </td><td>函数调用 </td><td>回收日志接口 </td><td>&gt;= v2.4.0 </td></tr>
+<tr>
+<td><a class="el" href="group___z_r_d_d_s_log.html#ga99b55d26d803db2cca6d0935b1ad286f" title="输出日志的宏。 ">ZRLOG()</a> </td><td>宏调用 </td><td>输出指定级别的日志 </td><td>&gt;= v2.2.3 </td></tr>
+<tr>
+<td><a class="el" href="group___z_r_d_d_s_log.html#ga203645629eec385d4c656fb4bb0a3b10" title="输出调试信息宏。 ">ZRLOG_DEBUG()</a> </td><td>宏调用 </td><td>输出调试日志 </td><td>&gt;= v2.2.3 </td></tr>
+<tr>
+<td><a class="el" href="group___z_r_d_d_s_log.html#ga87d4110b2da4f7dd9b7de6c6edae5cca" title="输出调试信息宏，并携带位置信息。 ">ZRLOG_DEBUG_W_POS()</a> </td><td>宏调用 </td><td>输出调试日志并携带自定义位置信息 </td><td>&gt;=v2.2.3 </td></tr>
+<tr>
+<td><a class="el" href="group___z_r_d_d_s_log.html#ga18af0c93d609e76fe44d4beff2e1388a" title="输出用户信息宏。 ">ZRLOG_USER()</a> </td><td>宏调用 </td><td>输出用户信息日志 </td><td>&gt;= v2.2.3 </td></tr>
+<tr>
+<td><a class="el" href="group___z_r_d_d_s_log.html#gab178dea1db7f92f5a540e5e76097b63f" title="输出用户信息宏。 ">ZRLOG_USER_W_POS()</a> </td><td>宏调用 </td><td>输出用户信息日志并携带自定义位置信息 </td><td>&gt;=v2.2.3 </td></tr>
+<tr>
+<td><a class="el" href="group___z_r_d_d_s_log.html#ga8bfdedfd86c3480da9662278eef1f0d8" title="输出调试信息宏，在输出前后分别执行指定表达式。 ">ZRLOG_DEBUG_W_EXP()</a> </td><td>宏调用 </td><td>输出调试信息宏，在输出前后分别执行指定表达式。 </td><td>&gt;= v2.2.3 </td></tr>
+</table>
+</div></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

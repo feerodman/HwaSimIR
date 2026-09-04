@@ -1,0 +1,283 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: DataReceiveByListener/main_sub.c</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>结构体</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('_data_receive_by_listener_2main_sub_8c-example.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">DataReceiveByListener/main_sub.c</div>  </div>
+</div><!--header-->
+<div class="contents">
+<p>该程序展示了典型的基于异步回调（设置Listener）的数据订阅流程。</p>
+<div class="fragment"><div class="line"></div>
+<div class="line"><span class="preprocessor">#include &quot;DomainParticipantFactory.h&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &quot;DomainParticipant.h&quot;</span> </div>
+<div class="line"><span class="preprocessor">#include &quot;Topic.h&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &quot;Subscriber.h&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &quot;DefaultQos.h&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &quot;ZRSleep.h&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &quot;StatusKind.h&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &quot;ShapeType.h&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &quot;ShapeTypeTypeSupport.h&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &quot;ShapeTypeDataReader.h&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
+<div class="line"><span class="preprocessor">#include &lt;string.h&gt;</span></div>
+<div class="line"></div>
+<div class="line"><span class="keywordtype">void</span> drListener_on_data_available(<a name="_a0"></a><a class="code" href="struct_d_d_s___data_reader.html">DDS_DataReader</a> *reader)</div>
+<div class="line">{</div>
+<div class="line">    ShapeTypeDataReader* dr;</div>
+<div class="line">    ShapeTypeSeq dataSeq;</div>
+<div class="line">    <a name="_a1"></a><a class="code" href="struct_d_d_s___sample_info_seq.html">DDS_SampleInfoSeq</a> infoSeq;</div>
+<div class="line">    <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> rtn;</div>
+<div class="line">    <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> i;</div>
+<div class="line"></div>
+<div class="line">    dr = (ShapeTypeDataReader*)(reader);</div>
+<div class="line"></div>
+<div class="line">    ShapeTypeSeq_initialize(&amp;dataSeq);</div>
+<div class="line">    DDS_SampleInfoSeq_initialize(&amp;infoSeq);</div>
+<div class="line"></div>
+<div class="line">    <span class="comment">// 取出接收数据</span></div>
+<div class="line">    rtn = ShapeTypeDataReader_take(</div>
+<div class="line">        dr, </div>
+<div class="line">        &amp;dataSeq, </div>
+<div class="line">        &amp;infoSeq, </div>
+<div class="line">        <a name="a2"></a><a class="code" href="group___core_macro.html#gab7c0f5ed964b737c67a2424342e9902a">LENGTH_UNLIMITED</a>, </div>
+<div class="line">        <a name="a3"></a><a class="code" href="group___core_macro.html#ga5e04489490ba7af47777a324003d7b1e">DDS_ANY_SAMPLE_STATE</a>, </div>
+<div class="line">        <a name="a4"></a><a class="code" href="group___core_macro.html#ga5c19adef721389d74f6871d43849e588">DDS_ANY_VIEW_STATE</a>, </div>
+<div class="line">        <a name="a5"></a><a class="code" href="group___core_macro.html#ga300c5bf2a8d288b7cc5813b97e097693">DDS_ANY_INSTANCE_STATE</a>);</div>
+<div class="line">    <span class="keywordflow">if</span> (rtn != <a name="a6"></a><a class="code" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f">DDS_RETCODE_OK</a>)</div>
+<div class="line">    {</div>
+<div class="line">        printf(<span class="stringliteral">&quot;take data failed\n&quot;</span>);</div>
+<div class="line">    }</div>
+<div class="line"></div>
+<div class="line">    <span class="comment">// 遍历读取接收数据</span></div>
+<div class="line">    <span class="keywordflow">for</span> (i = 0; i &lt; DDS_SampleInfoSeq_get_length(&amp;infoSeq); ++i)</div>
+<div class="line">    {</div>
+<div class="line">        <span class="comment">// 在使用数据之前，应检查数据的有效性</span></div>
+<div class="line">        <span class="keywordflow">if</span> (!DDS_SampleInfoSeq_get_reference(&amp;infoSeq, i)-&gt;valid_data)</div>
+<div class="line">        {</div>
+<div class="line">            <span class="keywordflow">continue</span>;</div>
+<div class="line">        }</div>
+<div class="line"></div>
+<div class="line">        <span class="comment">// 打印接收数据</span></div>
+<div class="line">        ShapeTypePrintData(ShapeTypeSeq_get_reference(&amp;dataSeq, i));</div>
+<div class="line">    }</div>
+<div class="line"></div>
+<div class="line">    <span class="comment">// 返还数据空间</span></div>
+<div class="line">    rtn = ShapeTypeDataReader_return_loan(dr, &amp;dataSeq, &amp;infoSeq);</div>
+<div class="line">    <span class="keywordflow">if</span> (rtn != <a class="code" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f">DDS_RETCODE_OK</a>)</div>
+<div class="line">    {</div>
+<div class="line">        printf(<span class="stringliteral">&quot;return loan failed\n&quot;</span>);</div>
+<div class="line">        <span class="keywordflow">return</span>;</div>
+<div class="line">    }</div>
+<div class="line">}</div>
+<div class="line"></div>
+<div class="line"><span class="keywordtype">int</span> main(<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span>** argv)</div>
+<div class="line">{</div>
+<div class="line">    <span class="comment">// 域号</span></div>
+<div class="line">    <span class="keyword">const</span> <span class="keywordtype">int</span> domain_id = 80;</div>
+<div class="line">    <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> rtn;</div>
+<div class="line">    <a name="_a7"></a><a class="code" href="struct_d_d_s___domain_participant_factory.html">DDS_DomainParticipantFactory</a>* factory;</div>
+<div class="line">    <a name="_a8"></a><a class="code" href="struct_d_d_s___domain_participant.html">DDS_DomainParticipant</a>* dp;</div>
+<div class="line">    <a name="_a9"></a><a class="code" href="struct_d_d_s___topic.html">DDS_Topic</a>* tp;</div>
+<div class="line">    <a name="_a10"></a><a class="code" href="struct_d_d_s___subscriber.html">DDS_Subscriber</a>* sub;</div>
+<div class="line">    <a name="_a11"></a><a class="code" href="struct_d_d_s___data_reader_listener.html">DDS_DataReaderListener</a> tlistener;</div>
+<div class="line">    <a class="code" href="struct_d_d_s___data_reader.html">DDS_DataReader</a>* dr;</div>
+<div class="line"></div>
+<div class="line">    <span class="comment">//获取域参与者单例</span></div>
+<div class="line">    factory = <a name="a12"></a><a class="code" href="group___c_domain.html#gaa6d38b19e1439ca914ccaadcc7d28a09">DDS_DomainParticipantFactory_get_instance</a>();</div>
+<div class="line">    <span class="keywordflow">if</span>(factory == NULL)</div>
+<div class="line">    {</div>
+<div class="line">        printf(<span class="stringliteral">&quot;get instance failed\n&quot;</span>);</div>
+<div class="line">        <span class="keywordflow">return</span> -1;</div>
+<div class="line">    }</div>
+<div class="line"></div>
+<div class="line"></div>
+<div class="line">    <span class="comment">// 创建域参与者</span></div>
+<div class="line">    dp = <a name="a13"></a><a class="code" href="group___c_domain.html#ga4271b297dbcde6fe3a2299079a77ea8c">DDS_DomainParticipantFactory_create_participant</a>(</div>
+<div class="line">        factory, domain_id, &amp;<a name="a14"></a><a class="code" href="group___core_var.html#gae2d56c523173b4f7751754e51f94d77d">DDS_DOMAINPARTICIPANT_QOS_DEFAULT</a>, NULL, <a name="a15"></a><a class="code" href="group___core_macro.html#ga125113479c894d4d62b9c27ceac4e03c">DDS_STATUS_MASK_NONE</a>);</div>
+<div class="line">    <span class="keywordflow">if</span> (dp == NULL)</div>
+<div class="line">    {</div>
+<div class="line">        printf(<span class="stringliteral">&quot;create dp failed\n&quot;</span>);</div>
+<div class="line">        <span class="keywordflow">return</span> -1;</div>
+<div class="line">    }</div>
+<div class="line"></div>
+<div class="line">    <span class="comment">// 注册数据类型</span></div>
+<div class="line">    rtn = ShapeTypeTypeSupport_register_type(dp, NULL);</div>
+<div class="line">    <span class="keywordflow">if</span> (rtn != <a class="code" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f">DDS_RETCODE_OK</a>)</div>
+<div class="line">    {</div>
+<div class="line">        printf(<span class="stringliteral">&quot;register type failed\n&quot;</span>);</div>
+<div class="line">        <span class="keywordflow">return</span> -1;</div>
+<div class="line">    }</div>
+<div class="line"></div>
+<div class="line">    <span class="comment">// 创建主题</span></div>
+<div class="line">    tp = <a name="a16"></a><a class="code" href="group___c_domain.html#ga029bb3b20eb0a6bfbec8e9a76556f507">DDS_DomainParticipant_create_topic</a>(</div>
+<div class="line">        dp, </div>
+<div class="line">        <span class="stringliteral">&quot;DATARECEIVEBYLISTENER&quot;</span>, </div>
+<div class="line">        ShapeTypeTypeSupport_get_type_name(), </div>
+<div class="line">        &amp;<a name="a17"></a><a class="code" href="group___core_var.html#gaecd2b9416cccf4d5cc3883c757b1fffe">DDS_TOPIC_QOS_DEFAULT</a>, </div>
+<div class="line">        NULL, </div>
+<div class="line">        <a class="code" href="group___core_macro.html#ga125113479c894d4d62b9c27ceac4e03c">DDS_STATUS_MASK_NONE</a>);</div>
+<div class="line">    <span class="keywordflow">if</span> (tp == NULL)</div>
+<div class="line">    {</div>
+<div class="line">        printf(<span class="stringliteral">&quot;create tp failed\n&quot;</span>);</div>
+<div class="line">        <span class="keywordflow">return</span> -1;</div>
+<div class="line">    }</div>
+<div class="line"></div>
+<div class="line">    <span class="comment">// 创建订阅者</span></div>
+<div class="line">    sub = <a name="a18"></a><a class="code" href="group___c_domain.html#gaec8205fcf276d0f7c338af4c216c566f">DDS_DomainParticipant_create_subscriber</a>(</div>
+<div class="line">        dp, &amp;<a name="a19"></a><a class="code" href="group___core_var.html#ga8c72234b0700e4160642c4c9bf985a84">DDS_SUBSCRIBER_QOS_DEFAULT</a>, NULL, <a class="code" href="group___core_macro.html#ga125113479c894d4d62b9c27ceac4e03c">DDS_STATUS_MASK_NONE</a>);</div>
+<div class="line">    <span class="keywordflow">if</span> (sub == NULL)</div>
+<div class="line">    {</div>
+<div class="line">        printf(<span class="stringliteral">&quot;create sub failed\n&quot;</span>);</div>
+<div class="line">        <span class="keywordflow">return</span> -1;</div>
+<div class="line">    }</div>
+<div class="line"></div>
+<div class="line">    <span class="comment">// 创建监听器</span></div>
+<div class="line">    <a name="a20"></a><a class="code" href="group___c_listener.html#ga07c09b63c045f40a8da751650728c317">DDS_DataReaderListener_initial</a>(&amp;tlistener);</div>
+<div class="line">    tlistener.<a name="a21"></a><a class="code" href="struct_d_d_s___data_reader_listener.html#a22e978fcd2ba56b995d1a912da3a77f0">on_data_available</a> = drListener_on_data_available;</div>
+<div class="line"></div>
+<div class="line">    <span class="comment">// 创建数据读者</span></div>
+<div class="line">    dr = <a name="a22"></a><a class="code" href="group___c_subscription.html#ga41d017b34f28a1c2b5398b1bfdd3aa68">DDS_Subscriber_create_datareader</a>(</div>
+<div class="line">        sub, </div>
+<div class="line">        tp, </div>
+<div class="line">        &amp;<a name="a23"></a><a class="code" href="group___core_var.html#ga70e3a5de35eac7b0859a0ea92dbc57a1">DDS_DATAREADER_QOS_DEFAULT</a>, </div>
+<div class="line">        &amp;tlistener, </div>
+<div class="line">        <a name="a24"></a><a class="code" href="group___core_status_struct.html#ggaa99b5585ecdf8c5f93ac3108439ad26fa9d2d926d515abd0ddd0b537efd42f03e">DDS_DATA_AVAILABLE_STATUS</a>);</div>
+<div class="line">    <span class="keywordflow">if</span> (dr == NULL)</div>
+<div class="line">    {</div>
+<div class="line">        printf(<span class="stringliteral">&quot;create dr failed\n&quot;</span>);</div>
+<div class="line">        <span class="keywordflow">return</span> -1;</div>
+<div class="line">    }</div>
+<div class="line"></div>
+<div class="line">    <span class="comment">// 阻塞主线程，通过Listener监听数据到达</span></div>
+<div class="line">    <span class="keywordflow">while</span> (<span class="keyword">true</span>)</div>
+<div class="line">    {</div>
+<div class="line">        <a name="a25"></a><a class="code" href="group___core_utility_function.html#ga6d25dbbee8d153971007f695de2a85d6">ZRSleep</a>(5000);</div>
+<div class="line">        printf(<span class="stringliteral">&quot;wait for receive data\n&quot;</span>);</div>
+<div class="line">    }</div>
+<div class="line"></div>
+<div class="line">    <span class="comment">// 释放DDS资源</span></div>
+<div class="line">    rtn = <a name="a26"></a><a class="code" href="group___c_domain.html#ga4799e428c8a39915598af9d3eae907ca">DDS_DomainParticipant_delete_contained_entities</a>(dp);</div>
+<div class="line">    <span class="keywordflow">if</span> (rtn != <a class="code" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f">DDS_RETCODE_OK</a>)</div>
+<div class="line">    {</div>
+<div class="line">        printf(<span class="stringliteral">&quot;dp delete contained entities failed\n&quot;</span>);</div>
+<div class="line">        <span class="keywordflow">return</span> -1;</div>
+<div class="line">    }</div>
+<div class="line"></div>
+<div class="line">    rtn = <a name="a27"></a><a class="code" href="group___c_domain.html#gae7dba12f2597d39908d276657b000d08">DDS_DomainParticipantFactory_delete_participant</a>(factory, dp);</div>
+<div class="line">    <span class="keywordflow">if</span> (rtn != <a class="code" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f">DDS_RETCODE_OK</a>)</div>
+<div class="line">    {</div>
+<div class="line">        printf(<span class="stringliteral">&quot;dpf delete dp failed\n&quot;</span>);</div>
+<div class="line">        <span class="keywordflow">return</span> -1;</div>
+<div class="line">    }</div>
+<div class="line"></div>
+<div class="line">    rtn = <a name="a28"></a><a class="code" href="group___c_domain.html#gaa3ba21be62d480201406dc363edd1d85">DDS_DomainParticipantFactory_finalize_instance</a>();</div>
+<div class="line">    <span class="keywordflow">if</span> (rtn != <a class="code" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f">DDS_RETCODE_OK</a>)</div>
+<div class="line">    {</div>
+<div class="line">        printf(<span class="stringliteral">&quot;dpf finalize instance failed\n&quot;</span>);</div>
+<div class="line">        <span class="keywordflow">return</span> -1;</div>
+<div class="line">    }</div>
+<div class="line">    <span class="keywordflow">return</span> 0;</div>
+<div class="line">}</div>
+</div><!-- fragment --> </div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

@@ -1,0 +1,1844 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: DDS::DomainParticipantFactory类 参考</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li class="current"><a href="annotated.html"><span>类</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+  <div id="navrow2" class="tabs2">
+    <ul class="tablist">
+      <li><a href="annotated.html"><span>类列表</span></a></li>
+      <li><a href="classes.html"><span>类索引</span></a></li>
+      <li><a href="hierarchy.html"><span>类继承关系</span></a></li>
+      <li><a href="functions.html"><span>类成员</span></a></li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('class_d_d_s_1_1_domain_participant_factory.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public 成员函数</a> &#124;
+<a href="#pub-static-methods">静态 Public 成员函数</a> &#124;
+<a href="class_d_d_s_1_1_domain_participant_factory-members.html">所有成员列表</a>  </div>
+  <div class="headertitle">
+<div class="title">DDS::DomainParticipantFactory类 参考<span class="mlabels"><span class="mlabel">abstract</span></span><div class="ingroups"><a class="el" href="group___cpp_interface.html">C++用户接口</a> &raquo; <a class="el" href="group___cpp_domain.html">域模块</a></div></div>  </div>
+</div><!--header-->
+<div class="contents">
+
+<p>域参与者工厂接口的核心功能在于是创建以及销毁域参与者实体，即作为域参与者实体的工厂，域参与者工厂是一个单例类。  
+ <a href="class_d_d_s_1_1_domain_participant_factory.html#details">更多...</a></p>
+
+<p><code>#include &lt;<a class="el" href="_domain_participant_factory_8h_source.html">DomainParticipantFactory.h</a>&gt;</code></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
+Public 成员函数</h2></td></tr>
+<tr class="memitem:a101c7bf7ac678082696191db2172a844"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#a101c7bf7ac678082696191db2172a844">reload_qos_profiles</a> ()=0</td></tr>
+<tr class="memdesc:a101c7bf7ac678082696191db2172a844"><td class="mdescLeft">&#160;</td><td class="mdescRight">根据QosProfileQosPolicy（有关QoS配置的配置）配置重新加载QoS配置到库中，在DomainParticipantFactory初始化时隐式调用， 异常处理逻辑：  <a href="#a101c7bf7ac678082696191db2172a844">更多...</a><br /></td></tr>
+<tr class="separator:a101c7bf7ac678082696191db2172a844"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a795cd39b1452443d5b8d3f6efc2fdd21"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a795cd39b1452443d5b8d3f6efc2fdd21"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#a795cd39b1452443d5b8d3f6efc2fdd21">unload_qos_profiles</a> ()=0</td></tr>
+<tr class="memdesc:a795cd39b1452443d5b8d3f6efc2fdd21"><td class="mdescLeft">&#160;</td><td class="mdescRight">卸载所有的QoS配置 <br /></td></tr>
+<tr class="separator:a795cd39b1452443d5b8d3f6efc2fdd21"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5d957358754992e31e11c44798efae9c"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#a5d957358754992e31e11c44798efae9c">set_qos_with_profile</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *profile_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_name)=0</td></tr>
+<tr class="memdesc:a5d957358754992e31e11c44798efae9c"><td class="mdescLeft">&#160;</td><td class="mdescRight">从QoS仓库获取QoS配置并设置到域参与者工厂  <a href="#a5d957358754992e31e11c44798efae9c">更多...</a><br /></td></tr>
+<tr class="separator:a5d957358754992e31e11c44798efae9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad1248b01616306d1172df8740a6ce44b"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#ad1248b01616306d1172df8740a6ce44b">set_default_participant_qos_with_profile</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *profile_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_name)=0</td></tr>
+<tr class="memdesc:ad1248b01616306d1172df8740a6ce44b"><td class="mdescLeft">&#160;</td><td class="mdescRight">从QoS仓库获取域参与者QoS并将其设为默认域参与者QoS  <a href="#ad1248b01616306d1172df8740a6ce44b">更多...</a><br /></td></tr>
+<tr class="separator:ad1248b01616306d1172df8740a6ce44b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7b05e3794ed2b63f810de68109e3b67b"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#a7b05e3794ed2b63f810de68109e3b67b">get_participant_factory_qos_from_profile</a> (<a class="el" href="group___cpp_core_struct.html#ga2800f34c8dbe5343e1e51891dbaf42e7">DomainParticipantFactoryQos</a> &amp;qos, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *profile_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_name)=0</td></tr>
+<tr class="memdesc:a7b05e3794ed2b63f810de68109e3b67b"><td class="mdescLeft">&#160;</td><td class="mdescRight">从QoS仓库获取域参与者工厂QoS的配置  <a href="#a7b05e3794ed2b63f810de68109e3b67b">更多...</a><br /></td></tr>
+<tr class="separator:a7b05e3794ed2b63f810de68109e3b67b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa63b584126d8c3698ad8a4b2d2bb76af"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#aa63b584126d8c3698ad8a4b2d2bb76af">get_participant_qos_from_profile</a> (<a class="el" href="group___cpp_core_struct.html#ga16f667f9768aae75a20bb5ac372b00b7">DomainParticipantQos</a> &amp;qos, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *profile_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_name)=0</td></tr>
+<tr class="memdesc:aa63b584126d8c3698ad8a4b2d2bb76af"><td class="mdescLeft">&#160;</td><td class="mdescRight">从QoS仓库获取域参与者QoS的配置  <a href="#aa63b584126d8c3698ad8a4b2d2bb76af">更多...</a><br /></td></tr>
+<tr class="separator:aa63b584126d8c3698ad8a4b2d2bb76af"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af734ca71f0ea00d4fda61bcacfbafe3a"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#af734ca71f0ea00d4fda61bcacfbafe3a">get_publisher_qos_from_profile</a> (<a class="el" href="group___cpp_core_struct.html#ga31118461559792596bffbd78d90d5bb1">PublisherQos</a> &amp;qos, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *profile_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_name)=0</td></tr>
+<tr class="memdesc:af734ca71f0ea00d4fda61bcacfbafe3a"><td class="mdescLeft">&#160;</td><td class="mdescRight">从QoS仓库获取发布者QoS的配置  <a href="#af734ca71f0ea00d4fda61bcacfbafe3a">更多...</a><br /></td></tr>
+<tr class="separator:af734ca71f0ea00d4fda61bcacfbafe3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a777e29f315a725e657e5c65f0fdccfde"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#a777e29f315a725e657e5c65f0fdccfde">get_subscriber_qos_from_profile</a> (<a class="el" href="group___cpp_core_struct.html#ga520dd7eb30d45597c5166df1ad347d26">SubscriberQos</a> &amp;qos, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *profile_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_name)=0</td></tr>
+<tr class="memdesc:a777e29f315a725e657e5c65f0fdccfde"><td class="mdescLeft">&#160;</td><td class="mdescRight">从QoS仓库获取订阅者QoS的配置  <a href="#a777e29f315a725e657e5c65f0fdccfde">更多...</a><br /></td></tr>
+<tr class="separator:a777e29f315a725e657e5c65f0fdccfde"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa0ca10fcd62fa3620aa09a36fb81e752"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#aa0ca10fcd62fa3620aa09a36fb81e752">get_topic_qos_from_profile</a> (<a class="el" href="group___cpp_core_struct.html#ga0144c9733462be0674d60638a514b47b">TopicQos</a> &amp;qos, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *profile_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_name)=0</td></tr>
+<tr class="memdesc:aa0ca10fcd62fa3620aa09a36fb81e752"><td class="mdescLeft">&#160;</td><td class="mdescRight">从QoS仓库获取主题QoS的配置  <a href="#aa0ca10fcd62fa3620aa09a36fb81e752">更多...</a><br /></td></tr>
+<tr class="separator:aa0ca10fcd62fa3620aa09a36fb81e752"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a47d15bd1eb2dc6fca340e4356fed74d4"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#a47d15bd1eb2dc6fca340e4356fed74d4">get_datawriter_qos_from_profile</a> (<a class="el" href="group___cpp_core_struct.html#gabef03998e5a399f1053057c068dbcacb">DataWriterQos</a> &amp;qos, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *profile_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_name)=0</td></tr>
+<tr class="memdesc:a47d15bd1eb2dc6fca340e4356fed74d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">从QoS仓库获取数据写者QoS的配置  <a href="#a47d15bd1eb2dc6fca340e4356fed74d4">更多...</a><br /></td></tr>
+<tr class="separator:a47d15bd1eb2dc6fca340e4356fed74d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7f2a99fa50fa420f85e68a0cb8f21127"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#a7f2a99fa50fa420f85e68a0cb8f21127">get_datareader_qos_from_profile</a> (<a class="el" href="group___cpp_core_struct.html#gad83aa7a026df24ee5f13b43a754fc972">DataReaderQos</a> &amp;qos, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *profile_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_name)=0</td></tr>
+<tr class="memdesc:a7f2a99fa50fa420f85e68a0cb8f21127"><td class="mdescLeft">&#160;</td><td class="mdescRight">从QoS仓库获取数据读者QoS的配置  <a href="#a7f2a99fa50fa420f85e68a0cb8f21127">更多...</a><br /></td></tr>
+<tr class="separator:a7f2a99fa50fa420f85e68a0cb8f21127"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa81f1fb6d643ecac3bcf0a03258a5620"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_domain_participant.html">DomainParticipant</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#aa81f1fb6d643ecac3bcf0a03258a5620">create_participant_with_qos_profile</a> (const <a class="el" href="group___cpp_core_struct.html#ga7c395f878d56b544140dc610c3bd83c8">DomainId_t</a> domainId, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *profile_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_name, <a class="el" href="class_d_d_s_1_1_domain_participant_listener.html">DomainParticipantListener</a> *listener, <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> mask)=0</td></tr>
+<tr class="memdesc:aa81f1fb6d643ecac3bcf0a03258a5620"><td class="mdescLeft">&#160;</td><td class="mdescRight">从QoS仓库获取QoS配置并用其创建域参与者  <a href="#aa81f1fb6d643ecac3bcf0a03258a5620">更多...</a><br /></td></tr>
+<tr class="separator:aa81f1fb6d643ecac3bcf0a03258a5620"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af83b84bfb2fcbd3c340ce0324ad52551"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#af83b84bfb2fcbd3c340ce0324ad52551">add_qos_library</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *xml_representation)=0</td></tr>
+<tr class="memdesc:af83b84bfb2fcbd3c340ce0324ad52551"><td class="mdescLeft">&#160;</td><td class="mdescRight">添加一个QoS库  <a href="#af83b84bfb2fcbd3c340ce0324ad52551">更多...</a><br /></td></tr>
+<tr class="separator:af83b84bfb2fcbd3c340ce0324ad52551"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2595cb77a6607b37942c30074085c340"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#a2595cb77a6607b37942c30074085c340">remove_qos_library</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_library_name)=0</td></tr>
+<tr class="memdesc:a2595cb77a6607b37942c30074085c340"><td class="mdescLeft">&#160;</td><td class="mdescRight">删除一个QoS库  <a href="#a2595cb77a6607b37942c30074085c340">更多...</a><br /></td></tr>
+<tr class="separator:a2595cb77a6607b37942c30074085c340"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4e79a5c0c1d236b8cc95a79e7f6272e7"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#a4e79a5c0c1d236b8cc95a79e7f6272e7">add_qos_profile</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *xml_representation)=0</td></tr>
+<tr class="memdesc:a4e79a5c0c1d236b8cc95a79e7f6272e7"><td class="mdescLeft">&#160;</td><td class="mdescRight">在指定QoS库中添加一个QoS配置  <a href="#a4e79a5c0c1d236b8cc95a79e7f6272e7">更多...</a><br /></td></tr>
+<tr class="separator:a4e79a5c0c1d236b8cc95a79e7f6272e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a168be5b37e31cad9fc2ae4a9d6346cba"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#a168be5b37e31cad9fc2ae4a9d6346cba">remove_qos_profile</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_profile_name)=0</td></tr>
+<tr class="memdesc:a168be5b37e31cad9fc2ae4a9d6346cba"><td class="mdescLeft">&#160;</td><td class="mdescRight">从指定QoS库中移除一个QoS配置  <a href="#a168be5b37e31cad9fc2ae4a9d6346cba">更多...</a><br /></td></tr>
+<tr class="separator:a168be5b37e31cad9fc2ae4a9d6346cba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a42ed9452cce6642bedeabd94dcdd880d"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#a42ed9452cce6642bedeabd94dcdd880d">qos_library_to_xml</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&amp;result)=0</td></tr>
+<tr class="memdesc:a42ed9452cce6642bedeabd94dcdd880d"><td class="mdescLeft">&#160;</td><td class="mdescRight">将QoS库转换为XML  <a href="#a42ed9452cce6642bedeabd94dcdd880d">更多...</a><br /></td></tr>
+<tr class="separator:a42ed9452cce6642bedeabd94dcdd880d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeb3678aad934309c19a03149db8a29ef"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#aeb3678aad934309c19a03149db8a29ef">qos_profile_to_xml</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_profile_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&amp;result)=0</td></tr>
+<tr class="memdesc:aeb3678aad934309c19a03149db8a29ef"><td class="mdescLeft">&#160;</td><td class="mdescRight">将一个QoS配置转换为XML  <a href="#aeb3678aad934309c19a03149db8a29ef">更多...</a><br /></td></tr>
+<tr class="separator:aeb3678aad934309c19a03149db8a29ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac5744171c0af8cead67645a4fc23094a"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#ac5744171c0af8cead67645a4fc23094a">lookup_qos_libraries</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *pattern, <a class="el" href="group___cpp_core_struct.html#ga17edac9ffccff75d0705a8365f8a438d">StringSeq</a> &amp;qos_library_names)=0</td></tr>
+<tr class="memdesc:ac5744171c0af8cead67645a4fc23094a"><td class="mdescLeft">&#160;</td><td class="mdescRight">查找名称符合pattern限定的QoS库  <a href="#ac5744171c0af8cead67645a4fc23094a">更多...</a><br /></td></tr>
+<tr class="separator:ac5744171c0af8cead67645a4fc23094a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f8e6b043cc6b259e2e20ceaa96164cd"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#a9f8e6b043cc6b259e2e20ceaa96164cd">lookup_qos_profiles</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qos_library_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *pattern, <a class="el" href="group___cpp_core_struct.html#ga17edac9ffccff75d0705a8365f8a438d">StringSeq</a> &amp;qos_profile_names)=0</td></tr>
+<tr class="memdesc:a9f8e6b043cc6b259e2e20ceaa96164cd"><td class="mdescLeft">&#160;</td><td class="mdescRight">在指定QoS库中查找名字符合pattern的QoS配置  <a href="#a9f8e6b043cc6b259e2e20ceaa96164cd">更多...</a><br /></td></tr>
+<tr class="separator:a9f8e6b043cc6b259e2e20ceaa96164cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a67cee171a35fe248f9f069c3ebaf6eb9"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_domain_participant.html">DomainParticipant</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#a67cee171a35fe248f9f069c3ebaf6eb9">create_participant</a> (const <a class="el" href="group___cpp_core_struct.html#ga7c395f878d56b544140dc610c3bd83c8">DomainId_t</a> &amp;domainId, const <a class="el" href="group___cpp_core_struct.html#ga16f667f9768aae75a20bb5ac372b00b7">DomainParticipantQos</a> &amp;qoslist, <a class="el" href="class_d_d_s_1_1_domain_participant_listener.html">DomainParticipantListener</a> *a_listener, const <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> &amp;mask)=0</td></tr>
+<tr class="memdesc:a67cee171a35fe248f9f069c3ebaf6eb9"><td class="mdescLeft">&#160;</td><td class="mdescRight">创建一个新的域参与者实体，并设置QoS以及监听器，域参与者的创建表明应用程序打算加入<em>domainId</em> 指定的域中进行通信。  <a href="#a67cee171a35fe248f9f069c3ebaf6eb9">更多...</a><br /></td></tr>
+<tr class="separator:a67cee171a35fe248f9f069c3ebaf6eb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1144ca83c9f8d4e972bf1a8d94dc0119"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#a1144ca83c9f8d4e972bf1a8d94dc0119">delete_participant</a> (<a class="el" href="class_d_d_s_1_1_domain_participant.html">DomainParticipant</a> *a_dp)=0</td></tr>
+<tr class="memdesc:a1144ca83c9f8d4e972bf1a8d94dc0119"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法删除指定的域参与者。在调用该方法之前需要保证该域参与者的所有子实体都已经被删除。否则将会返回错误  <a href="#a1144ca83c9f8d4e972bf1a8d94dc0119">更多...</a><br /></td></tr>
+<tr class="separator:a1144ca83c9f8d4e972bf1a8d94dc0119"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5ca8fe4eb0421c07e5eded689d087d6f"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#a5ca8fe4eb0421c07e5eded689d087d6f">delete_contained_entities</a> ()=0</td></tr>
+<tr class="memdesc:a5ca8fe4eb0421c07e5eded689d087d6f"><td class="mdescLeft">&#160;</td><td class="mdescRight">删除所有的域参与者及其子实体，该函数将尝试删除所有满足删除条件的子实体。  <a href="#a5ca8fe4eb0421c07e5eded689d087d6f">更多...</a><br /></td></tr>
+<tr class="separator:a5ca8fe4eb0421c07e5eded689d087d6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a961d598592a4fd8eef4d8b29539e74fa"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="class_d_d_s_1_1_domain_participant.html">DomainParticipant</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#a961d598592a4fd8eef4d8b29539e74fa">lookup_participant</a> (const <a class="el" href="group___cpp_core_struct.html#ga7c395f878d56b544140dc610c3bd83c8">DomainId_t</a> &amp;domainId)=0</td></tr>
+<tr class="memdesc:a961d598592a4fd8eef4d8b29539e74fa"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法在指定域<em>domainId</em> 下查找域参与者，如果有多个域参与者，则返回其中一个。  <a href="#a961d598592a4fd8eef4d8b29539e74fa">更多...</a><br /></td></tr>
+<tr class="separator:a961d598592a4fd8eef4d8b29539e74fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9e8b49fcfc73b7687039f0658cd965fc"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#a9e8b49fcfc73b7687039f0658cd965fc">set_default_participant_qos</a> (const <a class="el" href="group___cpp_core_struct.html#ga16f667f9768aae75a20bb5ac372b00b7">DomainParticipantQos</a> &amp;qoslist)=0</td></tr>
+<tr class="memdesc:a9e8b49fcfc73b7687039f0658cd965fc"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法设置该工厂为域参与者保存的默认QoS配置。  <a href="#a9e8b49fcfc73b7687039f0658cd965fc">更多...</a><br /></td></tr>
+<tr class="separator:a9e8b49fcfc73b7687039f0658cd965fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a938f5d6e51b1fbfb05b6c172fe47f3e4"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#a938f5d6e51b1fbfb05b6c172fe47f3e4">get_default_participant_qos</a> (<a class="el" href="group___cpp_core_struct.html#ga16f667f9768aae75a20bb5ac372b00b7">DomainParticipantQos</a> &amp;qoslist)=0</td></tr>
+<tr class="memdesc:a938f5d6e51b1fbfb05b6c172fe47f3e4"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法获取该工厂为域参与者保存的默认QoS配置。  <a href="#a938f5d6e51b1fbfb05b6c172fe47f3e4">更多...</a><br /></td></tr>
+<tr class="separator:a938f5d6e51b1fbfb05b6c172fe47f3e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aea6dff518d8ae2ea75980a2637f6893d"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#aea6dff518d8ae2ea75980a2637f6893d">set_qos</a> (const <a class="el" href="group___cpp_core_struct.html#ga2800f34c8dbe5343e1e51891dbaf42e7">DomainParticipantFactoryQos</a> &amp;qoslist)=0</td></tr>
+<tr class="memdesc:aea6dff518d8ae2ea75980a2637f6893d"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法设置域参与者工厂本身的QoS，特殊的值 DDS::DOMAINPARTICIPANT_FACTORY_QOS_DEFAULT 表示设置为默认值。  <a href="#aea6dff518d8ae2ea75980a2637f6893d">更多...</a><br /></td></tr>
+<tr class="separator:aea6dff518d8ae2ea75980a2637f6893d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a827024810f2ee4f8841d610e14f6cff2"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#a827024810f2ee4f8841d610e14f6cff2">get_qos</a> (<a class="el" href="group___cpp_core_struct.html#ga2800f34c8dbe5343e1e51891dbaf42e7">DomainParticipantFactoryQos</a> &amp;qoslist)=0</td></tr>
+<tr class="memdesc:a827024810f2ee4f8841d610e14f6cff2"><td class="mdescLeft">&#160;</td><td class="mdescRight">该方法获取为域参与者工厂设置的QoS。  <a href="#a827024810f2ee4f8841d610e14f6cff2">更多...</a><br /></td></tr>
+<tr class="separator:a827024810f2ee4f8841d610e14f6cff2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abcafb1b11b576ba1dd3d9f174869c2e7"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#abcafb1b11b576ba1dd3d9f174869c2e7">load_security_plugin</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *plugin_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *file_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *retrieve_instance_func_name, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *finalize_instance_func_name)=0</td></tr>
+<tr class="memdesc:abcafb1b11b576ba1dd3d9f174869c2e7"><td class="mdescLeft">&#160;</td><td class="mdescRight">加载安全插件  <a href="#abcafb1b11b576ba1dd3d9f174869c2e7">更多...</a><br /></td></tr>
+<tr class="separator:abcafb1b11b576ba1dd3d9f174869c2e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
+静态 Public 成员函数</h2></td></tr>
+<tr class="memitem:adac89594487009cc55e98469e7320738"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="class_d_d_s_1_1_domain_participant_factory.html">DomainParticipantFactory</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#adac89594487009cc55e98469e7320738">get_instance_w_profile</a> (const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qosFilePath, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *libName, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *profileName, const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *qosName)</td></tr>
+<tr class="memdesc:adac89594487009cc55e98469e7320738"><td class="mdescLeft">&#160;</td><td class="mdescRight">以指定参数初始化DDS域参与者工厂。  <a href="#adac89594487009cc55e98469e7320738">更多...</a><br /></td></tr>
+<tr class="separator:adac89594487009cc55e98469e7320738"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aac93dd83a14bb246001d86b74ad48071"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="class_d_d_s_1_1_domain_participant_factory.html">DomainParticipantFactory</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#aac93dd83a14bb246001d86b74ad48071">get_instance</a> ()</td></tr>
+<tr class="memdesc:aac93dd83a14bb246001d86b74ad48071"><td class="mdescLeft">&#160;</td><td class="mdescRight">获取域参与者工厂单例对象， <a class="el" href="group___cpp_domain.html#ga880940ef2eeeac2320d322023363f612" title="该宏作为 DDS::DomainParticipantFactory::get_instance 的缩写。 ">TheParticipantFactory</a> 宏为该函数的简写。  <a href="#aac93dd83a14bb246001d86b74ad48071">更多...</a><br /></td></tr>
+<tr class="separator:aac93dd83a14bb246001d86b74ad48071"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a539a8f97ae4728192e772e1fdaa0dace"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="class_d_d_s_1_1_domain_participant_factory.html">DomainParticipantFactory</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#a539a8f97ae4728192e772e1fdaa0dace">get_instance_w_qos</a> (const <a class="el" href="group___cpp_core_struct.html#ga2800f34c8dbe5343e1e51891dbaf42e7">DomainParticipantFactoryQos</a> &amp;qoslist)</td></tr>
+<tr class="memdesc:a539a8f97ae4728192e772e1fdaa0dace"><td class="mdescLeft">&#160;</td><td class="mdescRight">使用指定的DomainParticipantFactoryQos来获取域参与者工厂的单例对象.  <a href="#a539a8f97ae4728192e772e1fdaa0dace">更多...</a><br /></td></tr>
+<tr class="separator:a539a8f97ae4728192e772e1fdaa0dace"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abd43aa3275d32e1adb2ad08948cd8b1d"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#abd43aa3275d32e1adb2ad08948cd8b1d">finalize_instance</a> ()</td></tr>
+<tr class="memdesc:abd43aa3275d32e1adb2ad08948cd8b1d"><td class="mdescLeft">&#160;</td><td class="mdescRight">析构单例，该方法同样是线程不安全的，多个线程同时调用该函数，可能会出问题。  <a href="#abd43aa3275d32e1adb2ad08948cd8b1d">更多...</a><br /></td></tr>
+<tr class="separator:abd43aa3275d32e1adb2ad08948cd8b1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">详细描述</h2>
+<div class="textblock"><p>域参与者工厂接口的核心功能在于是创建以及销毁域参与者实体，即作为域参与者实体的工厂，域参与者工厂是一个单例类。 </p>
+<dl><dt><b>示例: </b></dt><dd><a class="el" href="_extend_interface_2app1_8cpp-example.html#_a9">ExtendInterface/app1.cpp</a>, <a class="el" href="_extend_interface_2app2_8cpp-example.html#_a8">ExtendInterface/app2.cpp</a>, <a class="el" href="_extend_interface_2app3_8cpp-example.html#_a2">ExtendInterface/app3.cpp</a>, <a class="el" href="_security_example_2ac_example_pub_8cpp-example.html#_a0">SecurityExample/ac_example_pub.cpp</a>, <a class="el" href="_security_example_2ac_example_sub_8cpp-example.html#_a7">SecurityExample/ac_example_sub.cpp</a>, <a class="el" href="_security_example_2auth_example_pub_8cpp-example.html#_a0">SecurityExample/auth_example_pub.cpp</a>, <a class="el" href="_security_example_2auth_example_sub_8cpp-example.html#_a7">SecurityExample/auth_example_sub.cpp</a>, <a class="el" href="_security_example_2encry_example_pub_8cpp-example.html#_a0">SecurityExample/encry_example_pub.cpp</a>, <a class="el" href="_security_example_2encry_example_sub_8cpp-example.html#_a7">SecurityExample/encry_example_sub.cpp</a>, <a class="el" href="_simple_interface_2_simple_interface_bytes_type_pub_8cpp-example.html#_a2">SimpleInterface/SimpleInterfaceBytesTypePub.cpp</a>, <a class="el" href="_simple_interface_2_simple_interface_bytes_type_sub_8cpp-example.html#_a8">SimpleInterface/SimpleInterfaceBytesTypeSub.cpp</a>, <a class="el" href="_simple_interface_2_simple_interface_zero_copy_pub_8cpp-example.html#_a1">SimpleInterface/SimpleInterfaceZeroCopyPub.cpp</a>, <a class="el" href="_simple_interface_2_simple_interface_zero_copy_sub_8cpp-example.html#_a10">SimpleInterface/SimpleInterfaceZeroCopySub.cpp</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_bytes_type_pub_8cpp-example.html#_a2">TCPConcurrentTransmission/SimpleInterfaceBytesTypePub.cpp</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_bytes_type_sub_8cpp-example.html#_a8">TCPConcurrentTransmission/SimpleInterfaceBytesTypeSub.cpp</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_zero_copy_pub_8cpp-example.html#_a1">TCPConcurrentTransmission/SimpleInterfaceZeroCopyPub.cpp</a>, <a class="el" href="_t_c_p_concurrent_transmission_2_simple_interface_zero_copy_sub_8cpp-example.html#_a10">TCPConcurrentTransmission/SimpleInterfaceZeroCopySub.cpp</a>, <a class="el" href="_u_d_p_large_package_zero_copy_2_simple_interface_bytes_type_pub_8cpp-example.html#_a2">UDPLargePackageZeroCopy/SimpleInterfaceBytesTypePub.cpp</a> , 以及 <a class="el" href="_u_d_p_large_package_zero_copy_2_simple_interface_bytes_type_sub_8cpp-example.html#_a7">UDPLargePackageZeroCopy/SimpleInterfaceBytesTypeSub.cpp</a>.</dd>
+</dl></div><h2 class="groupheader">成员函数说明</h2>
+<a class="anchor" id="af83b84bfb2fcbd3c340ce0324ad52551"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipantFactory::add_qos_library </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>xml_representation</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>添加一个QoS库 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">xml_representation</td><td>以XML字符串表示的QoS库。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示添加成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :表示参数存在错误，如缺失参数；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示添加失败。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a4e79a5c0c1d236b8cc95a79e7f6272e7"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipantFactory::add_qos_profile </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>xml_representation</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>在指定QoS库中添加一个QoS配置 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">qos_library_name</td><td>需要添加QoS配置的QoS库。 </td></tr>
+    <tr><td class="paramname">xml_representation</td><td>以XML表示的QoS配置内容。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示添加成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :表示参数存在错误，如缺失参数；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示添加失败。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a67cee171a35fe248f9f069c3ebaf6eb9"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_d_d_s_1_1_domain_participant.html">DomainParticipant</a> * DDS::DomainParticipantFactory::create_participant </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga7c395f878d56b544140dc610c3bd83c8">DomainId_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>domainId</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga16f667f9768aae75a20bb5ac372b00b7">DomainParticipantQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qoslist</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_domain_participant_listener.html">DomainParticipantListener</a> *&#160;</td>
+          <td class="paramname"><em>a_listener</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a> &amp;&#160;</td>
+          <td class="paramname"><em>mask</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>创建一个新的域参与者实体，并设置QoS以及监听器，域参与者的创建表明应用程序打算加入<em>domainId</em> 指定的域中进行通信。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir"></td><td class="paramname">domainId</td><td>表明需要加入的域号，取值范围为[0-232]。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">qoslist</td><td>表示为该域参与者设置的QoS，::DOMAINPARTICIPANT_QOS_DEFAULT 表明使用域参与者工厂中保存的默认的QoS。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">a_listener</td><td>为该域参与者设置的监听器。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">mask</td><td>设置应用程序感兴趣的状态，只有应用程序感兴趣的状态发生变化时，才会通知应用程序。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>创建成功指向创建成功的域参与者实体对象，否则返回NULL，失败的原因可能为：<ul>
+<li>分配空间失败或者初始化资源失败，具体的错误信息参见日志；</li>
+<li><em>qoslist</em> 含有无效值或者含有不一致的QoS。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="aa81f1fb6d643ecac3bcf0a03258a5620"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_d_d_s_1_1_domain_participant.html">DomainParticipant</a> * DDS::DomainParticipantFactory::create_participant_with_qos_profile </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga7c395f878d56b544140dc610c3bd83c8">DomainId_t</a>&#160;</td>
+          <td class="paramname"><em>domainId</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>profile_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_domain_participant_listener.html">DomainParticipantListener</a> *&#160;</td>
+          <td class="paramname"><em>listener</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga8542fec7ab88de317610a49f93f69233">StatusKindMask</a>&#160;</td>
+          <td class="paramname"><em>mask</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>从QoS仓库获取QoS配置并用其创建域参与者 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir"></td><td class="paramname">domainId</td><td>域Id </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">library_name</td><td>QoS库的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">profile_name</td><td>QoS配置的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">qos_name</td><td>QoS的名字，允许为NULL，将转换为default字符串。 </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">listener</td><td>为该域参与者设置的监听器。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">mask</td><td>设置应用程序感兴趣的状态，只有应用程序感兴趣的状态发生变化时，才会通知应用程序。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li>非空表示创建域参与者成功；</li>
+<li>NULL表示创建失败。 </li>
+</ul>
+</dd></dl>
+<dl><dt><b>示例: </b></dt><dd><a class="el" href="_extend_interface_2app1_8cpp-example.html#a11">ExtendInterface/app1.cpp</a>, <a class="el" href="_extend_interface_2app2_8cpp-example.html#a10">ExtendInterface/app2.cpp</a> , 以及 <a class="el" href="_extend_interface_2app3_8cpp-example.html#a4">ExtendInterface/app3.cpp</a>.</dd>
+</dl>
+</div>
+</div>
+<a class="anchor" id="a5ca8fe4eb0421c07e5eded689d087d6f"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipantFactory::delete_contained_entities </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>删除所有的域参与者及其子实体，该函数将尝试删除所有满足删除条件的子实体。 </p>
+<dl class="section return"><dt>返回</dt><dd>可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示删除成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a3a638871d5b4174c32c8d2880f1f6770" title="调用操作的前置条件未满足。 ">DDS_RETCODE_PRECONDITION_NOT_MET</a> :某些域参与者不满足删除条件，即还有子实体未删除；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :指明的域参与者不是由工厂创建。 </li>
+</ul>
+</dd></dl>
+<dl><dt><b>示例: </b></dt><dd><a class="el" href="_extend_interface_2app1_8cpp-example.html#a14">ExtendInterface/app1.cpp</a>, <a class="el" href="_extend_interface_2app2_8cpp-example.html#a12">ExtendInterface/app2.cpp</a> , 以及 <a class="el" href="_extend_interface_2app3_8cpp-example.html#a7">ExtendInterface/app3.cpp</a>.</dd>
+</dl>
+</div>
+</div>
+<a class="anchor" id="a1144ca83c9f8d4e972bf1a8d94dc0119"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipantFactory::delete_participant </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="class_d_d_s_1_1_domain_participant.html">DomainParticipant</a> *&#160;</td>
+          <td class="paramname"><em>a_dp</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>该方法删除指定的域参与者。在调用该方法之前需要保证该域参与者的所有子实体都已经被删除。否则将会返回错误 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">a_dp</td><td>指明需要删除的域参与者实体。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示删除成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :用户提供的参数不是有效的域参与者对象，包括NULL值；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a3a638871d5b4174c32c8d2880f1f6770" title="调用操作的前置条件未满足。 ">DDS_RETCODE_PRECONDITION_NOT_MET</a> :指明的域参与者不满足删除条件，即还有子实体未删除；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :指明的域参与者不是由工厂创建。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="abd43aa3275d32e1adb2ad08948cd8b1d"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static <a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipantFactory::finalize_instance </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>析构单例，该方法同样是线程不安全的，多个线程同时调用该函数，可能会出问题。 </p>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示析构成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a3a638871d5b4174c32c8d2880f1f6770" title="调用操作的前置条件未满足。 ">DDS_RETCODE_PRECONDITION_NOT_MET</a> :由该域参与者工厂创建的域参与者未删除完； </li>
+</ul>
+</dd></dl>
+<dl><dt><b>示例: </b></dt><dd><a class="el" href="_extend_interface_2app1_8cpp-example.html#a15">ExtendInterface/app1.cpp</a>, <a class="el" href="_extend_interface_2app2_8cpp-example.html#a13">ExtendInterface/app2.cpp</a> , 以及 <a class="el" href="_extend_interface_2app3_8cpp-example.html#a8">ExtendInterface/app3.cpp</a>.</dd>
+</dl>
+</div>
+</div>
+<a class="anchor" id="a7f2a99fa50fa420f85e68a0cb8f21127"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipantFactory::get_datareader_qos_from_profile </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gad83aa7a026df24ee5f13b43a754fc972">DataReaderQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qos</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>profile_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_name</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>从QoS仓库获取数据读者QoS的配置 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">qos</td><td>获取到的QoS </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">library_name</td><td>QoS库的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">profile_name</td><td>QoS配置的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">qos_name</td><td>QoS的名字，允许为NULL，将转换为default字符串。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示设置成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未知错误导致的设置错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a47d15bd1eb2dc6fca340e4356fed74d4"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipantFactory::get_datawriter_qos_from_profile </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#gabef03998e5a399f1053057c068dbcacb">DataWriterQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qos</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>profile_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_name</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>从QoS仓库获取数据写者QoS的配置 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">qos</td><td>获取到的QoS </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">library_name</td><td>QoS库的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">profile_name</td><td>QoS配置的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">qos_name</td><td>QoS的名字，允许为NULL，将转换为default字符串。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示设置成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未知错误导致的设置错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a938f5d6e51b1fbfb05b6c172fe47f3e4"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipantFactory::get_default_participant_qos </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga16f667f9768aae75a20bb5ac372b00b7">DomainParticipantQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qoslist</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>该方法获取该工厂为域参与者保存的默认QoS配置。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">qoslist</td><td>出口参数表示获取的结果.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前的返回值类型：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示设置成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示失败，例如复制QoS时发生错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="aac93dd83a14bb246001d86b74ad48071"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static <a class="el" href="class_d_d_s_1_1_domain_participant_factory.html">DomainParticipantFactory</a> * DDS::DomainParticipantFactory::get_instance </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>获取域参与者工厂单例对象， <a class="el" href="group___cpp_domain.html#ga880940ef2eeeac2320d322023363f612" title="该宏作为 DDS::DomainParticipantFactory::get_instance 的缩写。 ">TheParticipantFactory</a> 宏为该函数的简写。 </p>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值：<ul>
+<li>NULL表示创建单例对象失败，可能的原因：<ul>
+<li>初始化资源失败，详细参见日志；</li>
+<li>Mac或者时间验证失败；</li>
+</ul>
+</li>
+<li>获取成功的单例对象指针；</li>
+</ul>
+</dd></dl>
+<dl class="section note"><dt>注解</dt><dd>该方法线程不安全，多个线程同时创建实例不安全，获取实例安全。 </dd></dl>
+<dl><dt><b>示例: </b></dt><dd><a class="el" href="_extend_interface_2app1_8cpp-example.html#a13">ExtendInterface/app1.cpp</a>, <a class="el" href="_extend_interface_2app2_8cpp-example.html#a11">ExtendInterface/app2.cpp</a> , 以及 <a class="el" href="_extend_interface_2app3_8cpp-example.html#a6">ExtendInterface/app3.cpp</a>.</dd>
+</dl>
+</div>
+</div>
+<a class="anchor" id="adac89594487009cc55e98469e7320738"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html">DomainParticipantFactory</a> * DDS::DomainParticipantFactory::get_instance_w_profile </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qosFilePath</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>libName</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>profileName</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qosName</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>以指定参数初始化DDS域参与者工厂。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">qosFilePath</td><td>qos配置文件路径，当为NULL时，将默认使用运行目录的 ZRDDS_QOS_PROFILES.xml 文件。 </td></tr>
+    <tr><td class="paramname">libName</td><td>Qos库名称，不允许为NULL。 </td></tr>
+    <tr><td class="paramname">profileName</td><td>Qos配置名称，不允许为NULL。 </td></tr>
+    <tr><td class="paramname">qosName</td><td>Qos名称，允许为空，将转化为default字符串。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>NULL表示失败，否则返回单例指针。 </dd></dl>
+<dl><dt><b>示例: </b></dt><dd><a class="el" href="_extend_interface_2app1_8cpp-example.html#a10">ExtendInterface/app1.cpp</a>, <a class="el" href="_extend_interface_2app2_8cpp-example.html#a9">ExtendInterface/app2.cpp</a> , 以及 <a class="el" href="_extend_interface_2app3_8cpp-example.html#a3">ExtendInterface/app3.cpp</a>.</dd>
+</dl>
+</div>
+</div>
+<a class="anchor" id="a539a8f97ae4728192e772e1fdaa0dace"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static <a class="el" href="class_d_d_s_1_1_domain_participant_factory.html">DomainParticipantFactory</a> * DDS::DomainParticipantFactory::get_instance_w_qos </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga2800f34c8dbe5343e1e51891dbaf42e7">DomainParticipantFactoryQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qoslist</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>使用指定的DomainParticipantFactoryQos来获取域参与者工厂的单例对象. </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">qoslist</td><td>指定的DomainParticipantFactoryQos.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值：<ul>
+<li>NULL表示创建单例对象失败，可能的原因：<ul>
+<li>初始化资源失败，详细参见日志；</li>
+<li>Mac或者时间验证失败；</li>
+</ul>
+</li>
+<li>获取成功的单例对象指针；</li>
+</ul>
+</dd></dl>
+<dl class="section note"><dt>注解</dt><dd>该方法线程不安全，多个线程同时创建实例不安全，获取实例安全。. </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a7b05e3794ed2b63f810de68109e3b67b"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipantFactory::get_participant_factory_qos_from_profile </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga2800f34c8dbe5343e1e51891dbaf42e7">DomainParticipantFactoryQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qos</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>profile_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_name</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>从QoS仓库获取域参与者工厂QoS的配置 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">qos</td><td>获取到的QoS </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">library_name</td><td>QoS库的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">profile_name</td><td>QoS配置的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">qos_name</td><td>QoS的名字，允许为NULL，将转换为default字符串。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示设置成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未知错误导致的设置错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="aa63b584126d8c3698ad8a4b2d2bb76af"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipantFactory::get_participant_qos_from_profile </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga16f667f9768aae75a20bb5ac372b00b7">DomainParticipantQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qos</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>profile_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_name</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>从QoS仓库获取域参与者QoS的配置 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">qos</td><td>获取到的QoS </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">library_name</td><td>QoS库的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">profile_name</td><td>QoS配置的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">qos_name</td><td>QoS的名字，允许为NULL，将转换为default字符串。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示设置成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未知错误导致的设置错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="af734ca71f0ea00d4fda61bcacfbafe3a"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipantFactory::get_publisher_qos_from_profile </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga31118461559792596bffbd78d90d5bb1">PublisherQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qos</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>profile_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_name</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>从QoS仓库获取发布者QoS的配置 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">qos</td><td>获取到的QoS </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">library_name</td><td>QoS库的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">profile_name</td><td>QoS配置的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">qos_name</td><td>QoS的名字，允许为NULL，将转换为default字符串。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示设置成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未知错误导致的设置错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a827024810f2ee4f8841d610e14f6cff2"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipantFactory::get_qos </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga2800f34c8dbe5343e1e51891dbaf42e7">DomainParticipantFactoryQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qoslist</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>该方法获取为域参与者工厂设置的QoS。 </p>
+<p>如果调用该方法之前未调用过 <a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#aea6dff518d8ae2ea75980a2637f6893d" title="该方法设置域参与者工厂本身的QoS，特殊的值 DDS::DOMAINPARTICIPANT_FACTORY_QOS_DEFAULT 表示设置为默认值...">set_qos</a> ，则返回系统默认的QoS配置，否则返回 <a class="el" href="class_d_d_s_1_1_domain_participant_factory.html#aea6dff518d8ae2ea75980a2637f6893d" title="该方法设置域参与者工厂本身的QoS，特殊的值 DDS::DOMAINPARTICIPANT_FACTORY_QOS_DEFAULT 表示设置为默认值...">set_qos</a> 的结果。</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">qoslist</td><td>出口参数，存储获取的结果。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前的返回值类型：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示设置成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示失败，例如复制QoS时发生错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a777e29f315a725e657e5c65f0fdccfde"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipantFactory::get_subscriber_qos_from_profile </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga520dd7eb30d45597c5166df1ad347d26">SubscriberQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qos</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>profile_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_name</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>从QoS仓库获取订阅者QoS的配置 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">qos</td><td>获取到的QoS </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">library_name</td><td>QoS库的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">profile_name</td><td>QoS配置的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">qos_name</td><td>QoS的名字，允许为NULL，将转换为default字符串。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示设置成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未知错误导致的设置错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="aa0ca10fcd62fa3620aa09a36fb81e752"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipantFactory::get_topic_qos_from_profile </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga0144c9733462be0674d60638a514b47b">TopicQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qos</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>profile_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_name</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>从QoS仓库获取主题QoS的配置 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">qos</td><td>获取到的QoS </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">library_name</td><td>QoS库的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">profile_name</td><td>QoS配置的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">qos_name</td><td>QoS的名字，允许为NULL，将转换为default字符串。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示设置成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未知错误导致的设置错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="abcafb1b11b576ba1dd3d9f174869c2e7"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipantFactory::load_security_plugin </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>plugin_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>file_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>retrieve_instance_func_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>finalize_instance_func_name</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>加载安全插件 </p>
+<ul>
+<li>在Windows和Linux内核系统中，安全插件以动态库的形式提供（Windows：.dll，Linux：.so）， 可以在运行时通过调用该函数加载。<ul>
+<li>在VxWorks和ReWorks中，安全插件以开发库的形式提供（.a），必须在开发应用时一同编译到应用中， 并在需要使用安全插件之前调用该函数。此时的调用 <em>file_name</em> 参数不起作用。 注意：由于ReWorks的基础开发环境ReDe在编译时未被直接引用的符号会在编译过程中被删除， 因此需要在使用安全插件的应用中放置一个函数，在函数中调用安全插件获取实例和删除实例的函数， 避免这两个函数被编译器优化。</li>
+</ul>
+</li>
+</ul>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">plugin_name</td><td>为当前加载的安全插件赋予的名称，用于在创建域参与者时引用安全插件。 </td></tr>
+    <tr><td class="paramname">file_name</td><td>安全插件的文件名称，在Windows中是动态链接库（dll），Linux中是动态库（so），VxWorks和ReWorks中此参数不起作用。 </td></tr>
+    <tr><td class="paramname">retrieve_instance_func_name</td><td>安全插件中获取实例的函数名称，需要参考安全插件的使用手册获知。 </td></tr>
+    <tr><td class="paramname">finalize_instance_func_name</td><td>安全插件中删除实例的函数名称，需要参考安全插件的使用手册获知。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示加载成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示加载失败，失败的原因包含：插件文件不存在、加载文件失败、获取安全插件中的函数失败、获取实例失败，详见运行时日志信息。 </li>
+</ul>
+</dd></dl>
+<dl><dt><b>示例: </b></dt><dd><a class="el" href="_security_example_2ac_example_pub_8cpp-example.html#a2">SecurityExample/ac_example_pub.cpp</a>, <a class="el" href="_security_example_2ac_example_sub_8cpp-example.html#a9">SecurityExample/ac_example_sub.cpp</a>, <a class="el" href="_security_example_2auth_example_pub_8cpp-example.html#a2">SecurityExample/auth_example_pub.cpp</a>, <a class="el" href="_security_example_2auth_example_sub_8cpp-example.html#a9">SecurityExample/auth_example_sub.cpp</a>, <a class="el" href="_security_example_2encry_example_pub_8cpp-example.html#a2">SecurityExample/encry_example_pub.cpp</a> , 以及 <a class="el" href="_security_example_2encry_example_sub_8cpp-example.html#a9">SecurityExample/encry_example_sub.cpp</a>.</dd>
+</dl>
+</div>
+</div>
+<a class="anchor" id="a961d598592a4fd8eef4d8b29539e74fa"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_d_d_s_1_1_domain_participant.html">DomainParticipant</a> * DDS::DomainParticipantFactory::lookup_participant </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga7c395f878d56b544140dc610c3bd83c8">DomainId_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>domainId</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>该方法在指定域<em>domainId</em> 下查找域参与者，如果有多个域参与者，则返回其中一个。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">domainId</td><td>需要查找的域。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值：<ul>
+<li>NULL表示查找失败，即本地在该域下当前没有域参与者；</li>
+<li>非空表示查找的结果，返回的结果为该域下域参与者指针最小的域参与者。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ac5744171c0af8cead67645a4fc23094a"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipantFactory::lookup_qos_libraries </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>pattern</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga17edac9ffccff75d0705a8365f8a438d">StringSeq</a> &amp;&#160;</td>
+          <td class="paramname"><em>qos_library_names</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>查找名称符合pattern限定的QoS库 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir"></td><td class="paramname">pattern</td><td>查找模式，可以支持*及?，*代表任意数量的任意字符，?代表任意单个字符。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">qos_library_names</td><td>查找得到的QoS库名字列表。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示查找成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :表示参数存在错误，如缺失参数；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示查找失败。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a9f8e6b043cc6b259e2e20ceaa96164cd"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipantFactory::lookup_qos_profiles </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>pattern</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___cpp_core_struct.html#ga17edac9ffccff75d0705a8365f8a438d">StringSeq</a> &amp;&#160;</td>
+          <td class="paramname"><em>qos_profile_names</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>在指定QoS库中查找名字符合pattern的QoS配置 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir"></td><td class="paramname">qos_library_name</td><td>QoS库的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">pattern</td><td>查找模式，可以支持*及?，*代表任意数量的任意字符，?代表任意单个字符 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">qos_profile_names</td><td>查找得到的QoS配置名字列表</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示查找成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :表示参数存在错误，如缺失参数；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示查找失败。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a42ed9452cce6642bedeabd94dcdd880d"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipantFactory::qos_library_to_xml </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&amp;&#160;</td>
+          <td class="paramname"><em>result</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>将QoS库转换为XML </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir"></td><td class="paramname">qos_library_name</td><td>QoS库的名称。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">result</td><td>转换得到的结果。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示转换成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示转换失败。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="aeb3678aad934309c19a03149db8a29ef"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipantFactory::qos_profile_to_xml </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_profile_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&amp;&#160;</td>
+          <td class="paramname"><em>result</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>将一个QoS配置转换为XML </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir"></td><td class="paramname">qos_library_name</td><td>QoS库的名称。 </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">qos_profile_name</td><td>QoS配置的名称。 </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">result</td><td>转换得到的结果。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示转换成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示转换失败。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a101c7bf7ac678082696191db2172a844"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipantFactory::reload_qos_profiles </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>根据QosProfileQosPolicy（有关QoS配置的配置）配置重新加载QoS配置到库中，在DomainParticipantFactory初始化时隐式调用， 异常处理逻辑： </p>
+<ul>
+<li>当配置的路径不存在时，忽略该条并提示用户，返回RETCODE_OK</li>
+<li>当配置的XML存在不可忽略的错误时（XML格式错误等）,提示用户，并返回RETCODE_ERROR 其中的UserData、GroupData、TopicData可以支持使用String方式和Sequence方式设置</li>
+<li>String方式为将字符串直接作为value节点的text</li>
+<li>Sequence方式为将value当成Sequence使用（即设置其sequenceMaxLength属性），并将每个元素作为element写入</li>
+</ul>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示设置成功或配置的路径不存在；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> ：表示参数不正确导致的添加QoS库错误</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示XML存在错误导致QoS库添加失败； </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a2595cb77a6607b37942c30074085c340"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipantFactory::remove_qos_library </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_library_name</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>删除一个QoS库 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">qos_library_name</td><td>需要被移除的QoS库的名称</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示移除成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :表示参数存在错误，如缺失参数；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示移除失败。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a168be5b37e31cad9fc2ae4a9d6346cba"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipantFactory::remove_qos_profile </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_profile_name</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>从指定QoS库中移除一个QoS配置 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">qos_library_name</td><td>QoS库的名称。 </td></tr>
+    <tr><td class="paramname">qos_profile_name</td><td>QoS配置的名称。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示移除成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :表示参数存在错误，如缺失参数；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示移除失败。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a9e8b49fcfc73b7687039f0658cd965fc"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipantFactory::set_default_participant_qos </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga16f667f9768aae75a20bb5ac372b00b7">DomainParticipantQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qoslist</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>该方法设置该工厂为域参与者保存的默认QoS配置。 </p>
+<p>默认的QoS在创建新的域参与者时指定QoS参数为 DDS::DOMAINPARTICIPANT_QOS_DEFAULT 时使用的QoS配置， 使用特殊的值 DDS::DOMAINPARTICIPANT_QOS_DEFAULT 域参与者QoS中的各个配置的设置为默认值。</p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">qoslist</td><td>指明QoS配置。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示设置成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :表示<em>qoslist为空，或者<em>qoslist</em> 具有无效值；</em> </li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac62550b4d2270c012813c14da6aa33a1" title="不一致的Qos。 ">DDS_RETCODE_INCONSISTENT</a> :表示<em>qoslist</em> 中具有不相容的配置；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示失败，例如复制QoS时发生错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="ad1248b01616306d1172df8740a6ce44b"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipantFactory::set_default_participant_qos_with_profile </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>profile_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_name</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>从QoS仓库获取域参与者QoS并将其设为默认域参与者QoS </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">library_name</td><td>QoS库的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramname">profile_name</td><td>QoS配置的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramname">qos_name</td><td>QoS的名字，允许为NULL，将转换为default字符串。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示设置成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未知错误导致的设置错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="aea6dff518d8ae2ea75980a2637f6893d"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipantFactory::set_qos </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga2800f34c8dbe5343e1e51891dbaf42e7">DomainParticipantFactoryQos</a> &amp;&#160;</td>
+          <td class="paramname"><em>qoslist</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>该方法设置域参与者工厂本身的QoS，特殊的值 DDS::DOMAINPARTICIPANT_FACTORY_QOS_DEFAULT 表示设置为默认值。 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">qoslist</td><td>指明目标QoS。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示设置成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ad8661c51c31806806aaf10dca3c80f6c" title="不正确的参数。 ">DDS_RETCODE_BAD_PARAMETER</a> :表示<em>qoslist为空，或者<em>qoslist</em> 具有无效值；</em> </li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac62550b4d2270c012813c14da6aa33a1" title="不一致的Qos。 ">DDS_RETCODE_INCONSISTENT</a> :表示<em>qoslist</em> 中具有不相容的配置；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示失败，例如复制QoS时发生错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a5d957358754992e31e11c44798efae9c"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">ReturnCode_t</a> DDS::DomainParticipantFactory::set_qos_with_profile </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>library_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>profile_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group___cpp_core_struct.html#ga60402b2ec7acab8228cd7ffddcff7fb3">Char</a> *&#160;</td>
+          <td class="paramname"><em>qos_name</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>从QoS仓库获取QoS配置并设置到域参与者工厂 </p>
+<dl class="params"><dt>参数</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">library_name</td><td>QoS库的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramname">profile_name</td><td>QoS配置的名字，不允许为NULL。 </td></tr>
+    <tr><td class="paramname">qos_name</td><td>QoS的名字，允许为NULL，将转换为default字符串。</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>返回</dt><dd>当前可能的返回值如下：<ul>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91a4f3bc70d86031a38bba356c4b534979f" title="执行成功。 ">DDS_RETCODE_OK</a> :表示设置成功；</li>
+<li><a class="el" href="group___core_base_struct.html#gga73f148aaf96b5f6f9fc630b7cfeb0c91ac47a8e813f6e5d652f67dbc551b9f62e" title="执行出错。 ">DDS_RETCODE_ERROR</a> :表示未知错误导致的设置错误。 </li>
+</ul>
+</dd></dl>
+
+</div>
+</div>
+<hr/>该类的文档由以下文件生成:<ul>
+<li><a class="el" href="_domain_participant_factory_8h_source.html">DomainParticipantFactory.h</a></li>
+</ul>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><b>DDS</b></li><li class="navelem"><a class="el" href="class_d_d_s_1_1_domain_participant_factory.html">DomainParticipantFactory</a></li>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>

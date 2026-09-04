@@ -1,0 +1,214 @@
+<!-- HTML header for doxygen 1.8.10-->
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="generator" content="Doxygen 1.8.10" />
+    <title>ZRDDS: Condition.h 源文件</title>
+    <link href="tabs.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="dynsections.js"></script>
+    <link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript">
+  $(document).ready(initResizable);
+  $(window).load(resizeHeight);
+</script>
+    <link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() { init_search(); });
+</script>
+    <link href="doxygen.css" rel="stylesheet" type="text/css" />
+    <link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
+    <link href="static/css/bootstrap.css" rel="stylesheet" />
+    <!-- <link href="static/css/sticky-footer-navbar.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/bootstrap.js"></script> -->
+    <script type="text/javascript" src="static/js/doxy-boot.js"></script>
+</head>
+<body>
+    <div id="top">
+        <!-- do not remove this div, it is closed by doxygen! -->
+        <!-- end header part --><!-- 制作者 Doxygen 1.8.10 -->
+<script type="text/javascript">
+var searchBox = new SearchBox("searchBox", "search",false,'搜索');
+</script>
+  <div id="navrow1" class="tabs">
+    <ul class="tablist">
+      <li><a href="index.html"><span>首页</span></a></li>
+      <li><a href="pages.html"><span>相关页面</span></a></li>
+      <li><a href="modules.html"><span>模块</span></a></li>
+      <li><a href="annotated.html"><span>结构体</span></a></li>
+      <li><a href="examples.html"><span>示例</span></a></li>
+      <li>
+        <div id="MSearchBox" class="MSearchBoxInactive">
+        <span class="left">
+          <img id="MSearchSelect" src="search/mag_sel.png"
+               onmouseover="return searchBox.OnSearchSelectShow()"
+               onmouseout="return searchBox.OnSearchSelectHide()"
+               alt=""/>
+          <input type="text" id="MSearchField" value="搜索" accesskey="S"
+               onfocus="searchBox.OnSearchFieldFocus(true)" 
+               onblur="searchBox.OnSearchFieldFocus(false)" 
+               onkeyup="searchBox.OnSearchFieldChange(event)"/>
+          </span><span class="right">
+            <a id="MSearchClose" href="javascript:searchBox.CloseResultsWindow()"><img id="MSearchCloseImg" border="0" src="search/close.png" alt=""/></a>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+$(document).ready(function(){initNavTree('_condition_8h_source.html','');});
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
+
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<iframe src="javascript:void(0)" frameborder="0" 
+        name="MSearchResults" id="MSearchResults">
+</iframe>
+</div>
+
+<div class="header">
+  <div class="headertitle">
+<div class="title">Condition.h</div>  </div>
+</div><!--header-->
+<div class="contents">
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#ifndef Condition_h__</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#define Condition_h__</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="preprocessor">#include &quot;ZRDDSCommon.h&quot;</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="preprocessor">#include &quot;OsResource.h&quot;</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="preprocessor">#include &quot;ReturnCode_t.h&quot;</span></div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#include &quot;ViewStateMask.h&quot;</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="preprocessor">#include &quot;SampleStateMask.h&quot;</span></div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="preprocessor">#include &quot;InstanceStateMask.h&quot;</span></div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="preprocessor">#include &quot;ZRSequence.h&quot;</span></div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="preprocessor">#include &quot;StatusKindMask.h&quot;</span></div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="preprocessor">#include &quot;ZRDDSCWrapper.h&quot;</span></div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;{</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;DCPSDLL <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> <a class="code" href="group___c_infrastruct.html#ga46ffd35f05dfa9cedf43d7653e85674d">DDS_StatusCondition_get_trigger_value</a>(</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___status_condition.html">DDS_StatusCondition</a>* conditon);</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;DCPSDLL <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_infrastruct.html#gae146694c5917451b70e8bf0900c22923">DDS_StatusCondition_set_enabled_statuses</a>(</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <a class="code" href="struct_d_d_s___status_condition.html">DDS_StatusCondition</a>* conditon, </div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <a class="code" href="group___core_status_struct.html#gad13adc9414bb231ac1bf3d872bee9c67">DDS_StatusKindMask</a> enabledStatuses);</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;DCPSDLL <a class="code" href="group___core_status_struct.html#gad13adc9414bb231ac1bf3d872bee9c67">DDS_StatusKindMask</a> <a class="code" href="group___c_infrastruct.html#ga9e99468a1637d80bed2ca082bccbe57c">DDS_StatusCondition_get_enabled_statuses</a>(</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___status_condition.html">DDS_StatusCondition</a>* conditon);</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;DCPSDLL <a class="code" href="struct_d_d_s___entity.html">DDS_Entity</a>* <a class="code" href="group___c_infrastruct.html#ga95cd03bd06c444a9f81d03cbf4d09810">DDS_StatusCondition_get_entity</a>(</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <a class="code" href="struct_d_d_s___status_condition.html">DDS_StatusCondition</a>* condition);</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;<span class="preprocessor">#ifdef _ZRDDS_INCLUDE_GUARD_CONDITION</span></div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;DCPSDLL <a class="code" href="struct_d_d_s___guard_condition.html">DDS_GuardCondition</a>* <a class="code" href="group___c_infrastruct.html#ga2acab95318e3a7858cb911fa8782b32a">DDS_GuardCondition_new</a>();</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;DCPSDLL <span class="keywordtype">void</span> <a class="code" href="group___c_infrastruct.html#gab098d70c18954e01008b207f15e41309">DDS_GuardCondition_delete</a>(</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    <a class="code" href="struct_d_d_s___guard_condition.html">DDS_GuardCondition</a>* condition);</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;DCPSDLL <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> <a class="code" href="group___c_infrastruct.html#gafeda720e29d9008a7786f982578ca036">DDS_GuardCondition_get_trigger_value</a>(</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___guard_condition.html">DDS_GuardCondition</a>* conditon);</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;DCPSDLL <a class="code" href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a> <a class="code" href="group___c_infrastruct.html#gae1b3466530cde9f4855d2c6c30cefd34">DDS_GuardCondition_set_trigger_value</a>(</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;    <a class="code" href="struct_d_d_s___guard_condition.html">DDS_GuardCondition</a>* conditon, </div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;    <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> value);</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* _ZRDDS_INCLUDE_GUARD_CONDITION */</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;<span class="preprocessor">#ifdef _ZRDDS_INCLUDE_READ_CONDITION</span></div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;DCPSDLL <a class="code" href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a> <a class="code" href="group___c_subscription.html#gaba69814eec01d3be11c6c141abee2f2f">DDS_ReadCondition_get_trigger_value</a>(</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___read_condition.html">DDS_ReadCondition</a>* conditon);</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;</div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;DCPSDLL <a class="code" href="struct_d_d_s___data_reader.html">DDS_DataReader</a>* DDS_ReadCondition_get_datareader(</div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;    <a class="code" href="struct_d_d_s___read_condition.html">DDS_ReadCondition</a>* condition);</div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;</div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;DCPSDLL <a class="code" href="group___core_base_struct.html#gad190942b4a711766f423b9ca601d8a48">DDS_SampleStateMask</a> <a class="code" href="group___c_subscription.html#ga950c2e11378836ae2e945440194bba73">DDS_ReadCondition_get_sample_state_mask</a>(</div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___read_condition.html">DDS_ReadCondition</a>* condition);</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;DCPSDLL <a class="code" href="group___core_base_struct.html#ga7cb49e1fe3e060a90e04159969d8f7ea">DDS_ViewStateMask</a> <a class="code" href="group___c_subscription.html#gafc1193fb2e824937fc28dc3b1098618c">DDS_ReadCondition_get_view_state_mask</a>(</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___read_condition.html">DDS_ReadCondition</a>* condition);</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;</div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;DCPSDLL <a class="code" href="group___core_base_struct.html#ga21c130ceeaa8189638bb46c494b59574">DDS_InstanceStateMask</a> <a class="code" href="group___c_subscription.html#gade3a3496450f0535350f7a41a699b648">DDS_ReadCondition_get_instance_state_mask</a>(</div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;    <span class="keyword">const</span> <a class="code" href="struct_d_d_s___read_condition.html">DDS_ReadCondition</a>* condition);</div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;</div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* _ZRDDS_INCLUDE_READ_CONDITION */</span><span class="preprocessor"></span></div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;</div>
+<div class="line"><a name="l00235"></a><span class="lineno"><a class="line" href="group___c_infrastruct.html#ga7fde92c296d60d98d17c1da1a6a73484">  235</a></span>&#160;<span class="keyword">typedef</span> <a class="code" href="struct_d_d_s___condition.html">DDS_Condition</a>* <a class="code" href="group___c_infrastruct.html#ga7fde92c296d60d98d17c1da1a6a73484">ConditionPtr</a>;</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;DDS_SEQUENCE_C(<a class="code" href="struct_d_d_s___condition_seq.html">DDS_ConditionSeq</a>, ConditionPtr);</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;}</div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;<span class="preprocessor">#endif </span><span class="comment">/* Condition_h__*/</span><span class="preprocessor"></span></div>
+<div class="ttc" id="group___core_base_struct_html_ga7cb49e1fe3e060a90e04159969d8f7ea"><div class="ttname"><a href="group___core_base_struct.html#ga7cb49e1fe3e060a90e04159969d8f7ea">DDS_ViewStateMask</a></div><div class="ttdeci">DDS_ULong DDS_ViewStateMask</div><div class="ttdoc">DDS_ViewStateKind 的掩码表示多个 DDS_ViewStateKind 的状态的集合。 </div><div class="ttdef"><b>Definition:</b> ViewStateMask.h:20</div></div>
+<div class="ttc" id="group___c_subscription_html_gafc1193fb2e824937fc28dc3b1098618c"><div class="ttname"><a href="group___c_subscription.html#gafc1193fb2e824937fc28dc3b1098618c">DDS_ReadCondition_get_view_state_mask</a></div><div class="ttdeci">DCPSDLL DDS_ViewStateMask DDS_ReadCondition_get_view_state_mask(const DDS_ReadCondition *condition)</div><div class="ttdoc">获取创建时传入的视图状态掩码。 </div></div>
+<div class="ttc" id="group___core_status_struct_html_gad13adc9414bb231ac1bf3d872bee9c67"><div class="ttname"><a href="group___core_status_struct.html#gad13adc9414bb231ac1bf3d872bee9c67">DDS_StatusKindMask</a></div><div class="ttdeci">DDS_ULong DDS_StatusKindMask</div><div class="ttdoc">DDS_StatusKind 的掩码表示多个 DDS_StatusKind 的状态的集合。 </div><div class="ttdef"><b>Definition:</b> StatusKindMask.h:29</div></div>
+<div class="ttc" id="group___c_infrastruct_html_ga95cd03bd06c444a9f81d03cbf4d09810"><div class="ttname"><a href="group___c_infrastruct.html#ga95cd03bd06c444a9f81d03cbf4d09810">DDS_StatusCondition_get_entity</a></div><div class="ttdeci">DCPSDLL DDS_Entity * DDS_StatusCondition_get_entity(DDS_StatusCondition *condition)</div><div class="ttdoc">获取状态条件所属的实体。 </div></div>
+<div class="ttc" id="struct_d_d_s___entity_html"><div class="ttname"><a href="struct_d_d_s___entity.html">DDS_Entity</a></div><div class="ttdoc">该类型用于表示所有实体（实体) 包括域参与者、主题、发布者、订阅者、数据读者、数据写者的“基类”。 ...</div></div>
+<div class="ttc" id="struct_d_d_s___guard_condition_html"><div class="ttname"><a href="struct_d_d_s___guard_condition.html">DDS_GuardCondition</a></div><div class="ttdoc">监视条件用于手动控制等待条件。 </div></div>
+<div class="ttc" id="group___c_infrastruct_html_ga46ffd35f05dfa9cedf43d7653e85674d"><div class="ttname"><a href="group___c_infrastruct.html#ga46ffd35f05dfa9cedf43d7653e85674d">DDS_StatusCondition_get_trigger_value</a></div><div class="ttdeci">DCPSDLL DDS_Boolean DDS_StatusCondition_get_trigger_value(const DDS_StatusCondition *conditon)</div><div class="ttdoc">获取状态条件当前的触发状态。 </div></div>
+<div class="ttc" id="group___core_builtin_types_html_ga40aa7a1400d66542eba212ef019321bf"><div class="ttname"><a href="group___core_builtin_types.html#ga40aa7a1400d66542eba212ef019321bf">DDS_Boolean</a></div><div class="ttdeci">ZR_BOOLEAN DDS_Boolean</div><div class="ttdoc">ZRDDS内置的true/false类型。 </div><div class="ttdef"><b>Definition:</b> OsResource.h:197</div></div>
+<div class="ttc" id="group___core_base_struct_html_gad190942b4a711766f423b9ca601d8a48"><div class="ttname"><a href="group___core_base_struct.html#gad190942b4a711766f423b9ca601d8a48">DDS_SampleStateMask</a></div><div class="ttdeci">DDS_ULong DDS_SampleStateMask</div><div class="ttdoc">DDS_SampleStateKind 的掩码表示多个 DDS_SampleStateKind 的状态。 </div><div class="ttdef"><b>Definition:</b> SampleStateMask.h:20</div></div>
+<div class="ttc" id="group___c_infrastruct_html_gae146694c5917451b70e8bf0900c22923"><div class="ttname"><a href="group___c_infrastruct.html#gae146694c5917451b70e8bf0900c22923">DDS_StatusCondition_set_enabled_statuses</a></div><div class="ttdeci">DCPSDLL DDS_ReturnCode_t DDS_StatusCondition_set_enabled_statuses(DDS_StatusCondition *conditon, DDS_StatusKindMask enabledStatuses)</div><div class="ttdoc">以掩码的方式设置状态条件中用户关心的状态。 </div></div>
+<div class="ttc" id="group___c_subscription_html_gaba69814eec01d3be11c6c141abee2f2f"><div class="ttname"><a href="group___c_subscription.html#gaba69814eec01d3be11c6c141abee2f2f">DDS_ReadCondition_get_trigger_value</a></div><div class="ttdeci">DCPSDLL DDS_Boolean DDS_ReadCondition_get_trigger_value(const DDS_ReadCondition *conditon)</div><div class="ttdoc">获取读取条件当前的触发状态。 </div></div>
+<div class="ttc" id="struct_d_d_s___status_condition_html"><div class="ttname"><a href="struct_d_d_s___status_condition.html">DDS_StatusCondition</a></div><div class="ttdoc">实体状态条件，该条件用于获取实体状态改变。 </div></div>
+<div class="ttc" id="struct_d_d_s___data_reader_html"><div class="ttname"><a href="struct_d_d_s___data_reader.html">DDS_DataReader</a></div><div class="ttdoc">表示ZRDDS中的数据读者。 </div></div>
+<div class="ttc" id="struct_d_d_s___read_condition_html"><div class="ttname"><a href="struct_d_d_s___read_condition.html">DDS_ReadCondition</a></div><div class="ttdoc">该类型用于表示ZRDDS中的读取条件条件-等待 。 </div></div>
+<div class="ttc" id="group___c_infrastruct_html_gafeda720e29d9008a7786f982578ca036"><div class="ttname"><a href="group___c_infrastruct.html#gafeda720e29d9008a7786f982578ca036">DDS_GuardCondition_get_trigger_value</a></div><div class="ttdeci">DCPSDLL DDS_Boolean DDS_GuardCondition_get_trigger_value(const DDS_GuardCondition *conditon)</div><div class="ttdoc">获取监视条件当前的触发状态。 </div></div>
+<div class="ttc" id="struct_d_d_s___condition_seq_html"><div class="ttname"><a href="struct_d_d_s___condition_seq.html">DDS_ConditionSeq</a></div><div class="ttdoc">声明 ConditionPtr 的序列类型，参见 DDS_USER_SEQUENCE_C 。 </div></div>
+<div class="ttc" id="group___c_infrastruct_html_ga7fde92c296d60d98d17c1da1a6a73484"><div class="ttname"><a href="group___c_infrastruct.html#ga7fde92c296d60d98d17c1da1a6a73484">ConditionPtr</a></div><div class="ttdeci">DDS_Condition * ConditionPtr</div><div class="ttdoc">定义 DDS_Condition 指针的别名。 </div><div class="ttdef"><b>Definition:</b> Condition.h:235</div></div>
+<div class="ttc" id="group___c_subscription_html_ga950c2e11378836ae2e945440194bba73"><div class="ttname"><a href="group___c_subscription.html#ga950c2e11378836ae2e945440194bba73">DDS_ReadCondition_get_sample_state_mask</a></div><div class="ttdeci">DCPSDLL DDS_SampleStateMask DDS_ReadCondition_get_sample_state_mask(const DDS_ReadCondition *condition)</div><div class="ttdoc">获取创建时传入的样本状态掩码。 </div></div>
+<div class="ttc" id="group___c_subscription_html_gade3a3496450f0535350f7a41a699b648"><div class="ttname"><a href="group___c_subscription.html#gade3a3496450f0535350f7a41a699b648">DDS_ReadCondition_get_instance_state_mask</a></div><div class="ttdeci">DCPSDLL DDS_InstanceStateMask DDS_ReadCondition_get_instance_state_mask(const DDS_ReadCondition *condition)</div><div class="ttdoc">获取创建时传入的实例状态掩码。 </div></div>
+<div class="ttc" id="struct_d_d_s___condition_html"><div class="ttname"><a href="struct_d_d_s___condition.html">DDS_Condition</a></div><div class="ttdoc">ZRDDS中条件的“基类”。 </div></div>
+<div class="ttc" id="group___core_base_struct_html_ga21c130ceeaa8189638bb46c494b59574"><div class="ttname"><a href="group___core_base_struct.html#ga21c130ceeaa8189638bb46c494b59574">DDS_InstanceStateMask</a></div><div class="ttdeci">DDS_ULong DDS_InstanceStateMask</div><div class="ttdoc">DDS_InstanceStateKind 的掩码表示多个 DDS_InstanceStateKind 的状态。 </div><div class="ttdef"><b>Definition:</b> InstanceStateMask.h:19</div></div>
+<div class="ttc" id="group___c_infrastruct_html_ga9e99468a1637d80bed2ca082bccbe57c"><div class="ttname"><a href="group___c_infrastruct.html#ga9e99468a1637d80bed2ca082bccbe57c">DDS_StatusCondition_get_enabled_statuses</a></div><div class="ttdeci">DCPSDLL DDS_StatusKindMask DDS_StatusCondition_get_enabled_statuses(const DDS_StatusCondition *conditon)</div><div class="ttdoc">获取前一次用户通过 DDS_StatusCondition_set_enabled_statuses 方法设置的关心的状态。 ...</div></div>
+<div class="ttc" id="group___c_infrastruct_html_gab098d70c18954e01008b207f15e41309"><div class="ttname"><a href="group___c_infrastruct.html#gab098d70c18954e01008b207f15e41309">DDS_GuardCondition_delete</a></div><div class="ttdeci">DCPSDLL void DDS_GuardCondition_delete(DDS_GuardCondition *condition)</div><div class="ttdoc">删除指定监视条件。 </div></div>
+<div class="ttc" id="group___c_infrastruct_html_ga2acab95318e3a7858cb911fa8782b32a"><div class="ttname"><a href="group___c_infrastruct.html#ga2acab95318e3a7858cb911fa8782b32a">DDS_GuardCondition_new</a></div><div class="ttdeci">DCPSDLL DDS_GuardCondition * DDS_GuardCondition_new()</div><div class="ttdoc">默认构造处于非触发状态的监视条件。 </div></div>
+<div class="ttc" id="group___core_base_struct_html_ga73f148aaf96b5f6f9fc630b7cfeb0c91"><div class="ttname"><a href="group___core_base_struct.html#ga73f148aaf96b5f6f9fc630b7cfeb0c91">DDS_ReturnCode_t</a></div><div class="ttdeci">DDS_ReturnCode_t</div><div class="ttdoc">ZRDDS接口的返回值类型。 </div><div class="ttdef"><b>Definition:</b> ReturnCode_t.h:18</div></div>
+<div class="ttc" id="group___c_infrastruct_html_gae1b3466530cde9f4855d2c6c30cefd34"><div class="ttname"><a href="group___c_infrastruct.html#gae1b3466530cde9f4855d2c6c30cefd34">DDS_GuardCondition_set_trigger_value</a></div><div class="ttdeci">DCPSDLL DDS_ReturnCode_t DDS_GuardCondition_set_trigger_value(DDS_GuardCondition *conditon, DDS_Boolean value)</div><div class="ttdoc">手动设置监控类的触发状态。 </div></div>
+</div><!-- fragment --></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.8.10-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="dir_0fc3f8f3ef96ce2d45d66d6e29832317.html">resources</a></li><li class="navelem"><a class="el" href="dir_cf9ceadfa18f25e608d16251156af657.html">zrdds</a></li><li class="navelem"><a class="el" href="dir_49213087373222e5c37cddb4e4d5f33e.html">src</a></li><li class="navelem"><a class="el" href="dir_a789ccf0f178fa94fb7fe735f25025ab.html">CInterface</a></li><li class="navelem"><b>Condition.h</b></li>
+    <li class="footer">
+      <a href="http://www.zrtechnology.com">&copy; Copyright (c) 2018 ZhenRong Technology, Inc. All rights reserved.</a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>
