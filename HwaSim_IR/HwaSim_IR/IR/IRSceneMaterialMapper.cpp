@@ -141,13 +141,15 @@ double ClampLocal(double value, double low, double high)
 LVecBase4f MaterialToShaderParamsLocal(const IRMaterial& material)
 {
 	double emissivity = ClampLocal(material.thermalEmissivity, 0.01, 1.0);
-	double reflectance = ClampLocal(1.0 - material.solarAbsorptivity - material.transmissivity, 0.02, 0.95);
-	double solarAbsorptivity = ClampLocal(material.solarAbsorptivity, 0.0, 1.0);
+	// M1 has no measured per-material NIR SRF database yet.  Keep this explicit
+	// Kirchhoff-style fallback separate from visible texture luminance.
+	double reflectance = ClampLocal(1.0 - material.thermalEmissivity - material.transmissivity, 0.0, 1.0);
+	double transmissivity = ClampLocal(material.transmissivity, 0.0, 1.0);
 	double roughness = ClampLocal(material.roughness, 0.0, 1.0);
 	return LVecBase4f(
 		static_cast<float>(emissivity),
 		static_cast<float>(reflectance),
-		static_cast<float>(solarAbsorptivity),
+		static_cast<float>(transmissivity),
 		static_cast<float>(roughness));
 }
 }
@@ -247,6 +249,8 @@ IRSceneMaterialBinding IRSceneMaterialMapper::bindPlatformNode(NodePath& node, c
 		<< " materialMap=" << (binding.hasMaterialMap ? "OK" : "fallback")
 		<< " entries=" << binding.entries.size()
 		<< " default=" << binding.defaultMaterialName
+		<< " nirReflectanceSource=fallback"
+		<< " nirReflectanceFormula=1-emissivity-transmissivity"
 		<< std::endl;
 
 	return binding;

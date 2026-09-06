@@ -364,7 +364,7 @@ double IRAtmosphereModel::transmittanceForRange(const IRModtranTauQuery& query) 
 		double newTauForLog = result.found ? result.tauUp : legacyTau;
 		double diff = newTauForLog - legacyTau;
 		std::cout << "[Stage3][MODTRAN Tau Debug]"
-			<< " source=" << (result.found ? "band_lut.csv" : "transmittance_0.3_15.txt")
+			<< " source=" << (result.found ? "band_lut_si.csv" : "transmittance_0.3_15.txt")
 			<< " path=" << (result.found ? m_modtranTauLut.loadedPath() : "fallback")
 			<< " band=" << IRBandName(query.band)
 			<< " obs_km=" << query.observerAltKm

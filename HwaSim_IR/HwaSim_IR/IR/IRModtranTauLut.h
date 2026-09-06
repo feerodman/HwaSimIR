@@ -1,8 +1,8 @@
 #pragma once
 
 #include <string>
-#include <vector>
 
+#include "IRModtranRadianceLut.h"
 #include "IRTypes.h"
 
 struct IRModtranTauQuery
@@ -30,6 +30,9 @@ struct IRModtranTauResult
 	IRModtranTauResult();
 };
 
+// Compatibility facade for the Stage3 atmosphere API. The formal M1 LUT has
+// one LOS tau_up field; parsing and interpolation are delegated to the same
+// SI-only LUT used by the radiance chain.
 class IRModtranTauLut
 {
 public:
@@ -39,23 +42,5 @@ public:
 	IRModtranTauResult query(const IRModtranTauQuery& query) const;
 
 private:
-	struct Entry
-	{
-		IRBand band;
-		double observerAltKm;
-		double targetAltKm;
-		double rangeKm;
-		double visibilityKm;
-		double solarZenithDeg;
-		double tauUp;
-		double tauDown;
-	};
-
-	static bool bandFromName(const std::string& value, IRBand& band);
-	static double clampTau(double value);
-	static double opticalDepthToTau(double opticalDepth);
-	static double normalizedDistance(const Entry& entry, const IRModtranTauQuery& query);
-
-	std::vector<Entry> m_entries;
-	std::string m_loadedPath;
+	IRModtranRadianceLut m_formalSiLut;
 };

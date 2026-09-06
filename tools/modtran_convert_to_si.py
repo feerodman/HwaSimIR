@@ -179,9 +179,14 @@ def main() -> int:
     ap.add_argument("--mode", required=True, choices=["transmittance", "radiance", "solar", "flux"])
     ap.add_argument("--output", required=True, type=Path)
     ap.add_argument("--case-id", default="")
+    ap.add_argument("--target-alt-km", type=float, default=5.0,
+                    help="Target altitude used to select the requested .flx level")
     args = ap.parse_args()
-    parser = {"transmittance": parse_transmittance, "radiance": parse_radiance, "solar": parse_solar, "flux": parse_flux}[args.mode]
-    rows = parser(args.input)
+    if args.mode == "flux":
+        rows = parse_flux(args.input, args.target_alt_km)
+    else:
+        parser = {"transmittance": parse_transmittance, "radiance": parse_radiance, "solar": parse_solar}[args.mode]
+        rows = parser(args.input)
     for row in rows:
         for key, value in row.items():
             if isinstance(value, float) and not math.isfinite(value):

@@ -194,6 +194,7 @@
     <ClInclude Include="IR\IRRadianceModelV2.h" />
     <ClInclude Include="IR\IRRuntimeConfig.h" />
     <ClInclude Include="IR\IRSceneMaterialMapper.h" />
+    <ClInclude Include="IR\IRSolarPosition.h" />
     <ClInclude Include="IR\IRSensorModel.h" />
     <ClInclude Include="IR\IRSensorPostProcess.h" />
     <ClInclude Include="IR\IRTemperatureModel.h" />
@@ -229,6 +230,7 @@
     <ClCompile Include="IR\IRRadianceModelV2.cpp" />
     <ClCompile Include="IR\IRRuntimeConfig.cpp" />
     <ClCompile Include="IR\IRSceneMaterialMapper.cpp" />
+    <ClCompile Include="IR\IRSolarPosition.cpp" />
     <ClCompile Include="IR\IRSensorModel.cpp" />
     <ClCompile Include="IR\IRSensorPostProcess.cpp" />
     <ClCompile Include="IR\IRTemperatureModel.cpp" />

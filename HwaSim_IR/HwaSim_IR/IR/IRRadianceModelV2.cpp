@@ -74,6 +74,16 @@ IRRadianceModelV2Input::IRRadianceModelV2Input()
 	modtranSkyRadiance(0.0),
 	modtranSolarIrradiance(0.0),
 	modtranRadianceValid(false),
+	useM1Physics(false),
+	m1RuntimeAffectsImage(false),
+	m1TauUp(1.0),
+	directSolarIrradiance(0.0),
+	skyDiffuseIrradiance(0.0),
+	pathScatteringRadiance(0.0),
+	pathThermalRadiance(0.0),
+	sunVisibility(1.0),
+	skyVisibility(1.0),
+	reflectanceSource("fallback"),
 	materialName("unknown"),
 	pathRadianceSource("disabled"),
 	modtranFallbackReason("not_queried"),
@@ -139,6 +149,18 @@ IRRadianceComponents::IRRadianceComponents()
 	modtranSkyRadiance(0.0),
 	modtranSolarIrradiance(0.0),
 	modtranRadianceValid(false),
+	solarReflectedRadiance(0.0),
+	skyReflectedRadiance(0.0),
+	m1SurfaceRadiance(0.0),
+	m1SensorRadiance(0.0),
+	m1TauUp(1.0),
+	directSolarIrradiance(0.0),
+	skyDiffuseIrradiance(0.0),
+	pathScatteringRadiance(0.0),
+	pathThermalRadiance(0.0),
+	sunVisibility(1.0),
+	skyVisibility(1.0),
+	reflectanceSource("fallback"),
 	pathRadianceSource("disabled"),
 	modtranFallbackReason("not_queried"),
 	modtranInterpolationMode("none"),
@@ -257,7 +279,7 @@ IRRadianceComponents IRRadianceModelV2::evaluateComponents(const IRRadianceModel
 	components.modtranPathRadiance = modtranPathRadiance;
 	components.modtranPathRaw = modtranPathRaw;
 	components.modtranPathScaled = modtranPathScaled;
-	components.modtranPathUnitMode = input.modtranPathUnitMode.empty() ? "Native" : input.modtranPathUnitMode;
+	components.modtranPathUnitMode = input.modtranPathUnitMode.empty() ? "SI" : input.modtranPathUnitMode;
 	components.modtranPathScale = input.modtranPathScale;
 	components.modtranPathOffset = input.modtranPathOffset;
 	components.modtranPathBlend = clamp(input.modtranPathBlend, 0.0, 1.0);
@@ -287,6 +309,20 @@ IRRadianceComponents IRRadianceModelV2::evaluateComponents(const IRRadianceModel
 	components.modtranSkyRadiance = modtranSkyRadiance;
 	components.modtranSolarIrradiance = modtranSolarIrradiance;
 	components.modtranRadianceValid = input.modtranRadianceValid;
+	components.directSolarIrradiance = std::max(0.0, input.directSolarIrradiance);
+	components.skyDiffuseIrradiance = std::max(0.0, input.skyDiffuseIrradiance);
+	components.pathScatteringRadiance = std::max(0.0, input.pathScatteringRadiance);
+	components.pathThermalRadiance = std::max(0.0, input.pathThermalRadiance);
+	components.sunVisibility = clamp(input.sunVisibility, 0.0, 1.0);
+	components.skyVisibility = clamp(input.skyVisibility, 0.0, 1.0);
+	components.reflectanceSource = input.reflectanceSource.empty() ? "fallback" : input.reflectanceSource;
+	components.m1TauUp = (std::isfinite(input.m1TauUp) && input.m1TauUp >= 0.0 && input.m1TauUp <= 1.0)
+		? input.m1TauUp : 1.0;
+	const double pi = 3.14159265358979323846;
+	components.solarReflectedRadiance = reflectance / pi * components.directSolarIrradiance *
+		ndotl * components.sunVisibility;
+	components.skyReflectedRadiance = reflectance / pi * components.skyDiffuseIrradiance *
+		components.skyVisibility;
 	components.pathRadianceSource = input.pathRadianceSource.empty() ? "disabled" : input.pathRadianceSource;
 	components.modtranFallbackReason = input.modtranFallbackReason.empty() ? "not_queried" : input.modtranFallbackReason;
 	components.modtranInterpolationMode = input.modtranInterpolationMode.empty() ? "none" : input.modtranInterpolationMode;
@@ -312,8 +348,25 @@ IRRadianceComponents IRRadianceModelV2::evaluateComponents(const IRRadianceModel
 		? components.bodyRadianceWithAero / components.bodyRadianceNoAero
 		: 1.0;
 	components.sensorInputLegacy = tauUp * surfaceRadiance + components.legacyPathRadiance;
-	components.sensorInputModtran = tauUp * surfaceRadiance + components.modtranPathScaled;
-	components.sensorInputRadiance = tauUp * surfaceRadiance + components.pathRadiance;
+	if (input.useM1Physics && input.band == IRBand::NearInfrared)
+	{
+		components.m1SurfaceRadiance = components.solarReflectedRadiance + components.skyReflectedRadiance;
+		components.m1SensorRadiance = components.m1TauUp * components.m1SurfaceRadiance + components.pathScatteringRadiance;
+	}
+	else if (input.useM1Physics && input.band == IRBand::MidWaveInfrared)
+	{
+		components.m1SurfaceRadiance = surfaceRadiance;
+		components.m1SensorRadiance = components.m1TauUp * components.m1SurfaceRadiance + components.pathThermalRadiance;
+	}
+	else
+	{
+		components.m1SurfaceRadiance = surfaceRadiance;
+		components.m1SensorRadiance = tauUp * surfaceRadiance + components.modtranPathRadiance;
+	}
+	components.sensorInputModtran = components.m1SensorRadiance;
+	components.sensorInputRadiance = input.m1RuntimeAffectsImage
+		? components.m1SensorRadiance
+		: tauUp * surfaceRadiance + components.pathRadiance;
 	double bodyPreview = applyToneMap(
 		tauUp * components.bodyRadiance,
 		input.debugConfig.bodyRadianceScale,

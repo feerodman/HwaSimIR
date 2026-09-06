@@ -51,6 +51,7 @@
 #include "IR/IRModtranRadianceLut.h"
 #include "IR/IRPerfStats.h"
 #include "IR/IRSceneMaterialMapper.h"
+#include "IR/IRSolarPosition.h"
 #include "IR/IRRadianceModelV2.h"
 #include "IR/IRRuntimeConfig.h"
 #include "IR/IRSensorModel.h"
@@ -251,6 +252,8 @@ private:
 	IRRadianceModelV2 m_irRadianceModelV2;                  // Stage5A minimal body/hotspot/brightspot radiance debug model
 	IRAeroThermalModel m_stage5AeroThermalModel;            // Stage4A: log-only / A-B aerodynamic heating components
 	IRModtranRadianceLut m_stage5ModtranRadianceLut;        // Stage5 3B: MODTRAN path/sky/solar log-only source
+	IRSolarPosition m_m1SolarPosition;
+	IRSolarPositionOutput m_m1SolarState;
 	IRSensorModel m_irSensorModel;                          // Stage6A sensor geometry and output size model
 	IRSensorPostProcess m_irSensorPostProcess;              // Stage6B minimal display output postprocess
 	IRSensorProfileDatabase m_irSensorProfiles;             // SensorWave传感器配置
@@ -393,6 +396,17 @@ private:
 	int m_stage5ModtranLogEveryFrames = 120;
 	bool m_stage5ModtranRadianceReady = false;
 	std::string m_stage5ModtranRadiancePath;
+	bool m_m1CompareOnly = false;
+	bool m_m1RuntimeEnabled = false;
+	bool m_m1NirRuntimeEnabled = false;
+	bool m_m1MwirRuntimeEnabled = false;
+	std::string m_m1FallbackUtcDate = "2026-09-06";
+	std::string m_m1AtmosphereModel = "Mid-Latitude Summer";
+	std::string m_m1AerosolModel = "Rural";
+	std::string m_m1HumidityProfile = "default";
+	double m_m1SunVisibility = 1.0;
+	double m_m1SkyVisibility = 1.0;
+	std::string m_lastM1SolarLogState;
 	std::string m_effectiveRuntimeConfigSources;
 	std::string m_stage5DebugToneMapName = "asinh";
 	IRRadianceModelV2DebugConfig m_stage5DebugConfig;
@@ -678,6 +692,7 @@ private:
 	void LogActiveIRSensorProfile(int protocolBand, const char* reason, bool forceLog);
 	double CurrentSimulationHour() const;                   // 从实时数据时间换算当前仿真小时，无实时数据时使用正午profile
 	IRRuntimeEnvironment BuildRuntimeEnvironment() const;   // 阶段3：按 UDP > profile > 默认值合成环境状态
+	void UpdateM1SolarPosition(IRRuntimeEnvironment& environment, bool forceLog);
 	void LogActiveIREnvironment(const IRRuntimeEnvironment& environment, const char* reason, bool forceLog);
 
 															// 异步任务：每帧刷新着色器动态参数

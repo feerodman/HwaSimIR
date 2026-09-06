@@ -87,6 +87,9 @@
     <ClInclude Include="IR\IRSceneMaterialMapper.h">
       <Filter>头文件\IR</Filter>
     </ClInclude>
+    <ClInclude Include="IR\IRSolarPosition.h">
+      <Filter>头文件\IR</Filter>
+    </ClInclude>
     <ClInclude Include="IR\IRSensorModel.h">
       <Filter>头文件\IR</Filter>
     </ClInclude>
@@ -176,6 +179,9 @@
       <Filter>源文件\IR</Filter>
     </ClCompile>
     <ClCompile Include="IR\IRSceneMaterialMapper.cpp">
+      <Filter>源文件\IR</Filter>
+    </ClCompile>
+    <ClCompile Include="IR\IRSolarPosition.cpp">
       <Filter>源文件\IR</Filter>
     </ClCompile>
     <ClCompile Include="IR\IRSensorModel.cpp">
