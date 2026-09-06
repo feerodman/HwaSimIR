@@ -1,0 +1,213 @@
+module HwaSimIRDds
+{
+    struct SpatialStateV1
+    {
+        double lat;
+        double lon;
+        double alt;
+        double yaw;
+        double pitch;
+        double roll;
+        double speed;
+    };
+
+    struct TrackerSensorParamV1
+    {
+        boolean h264En;
+        boolean noiseEn;
+        double trackerSensorNoise;
+        boolean realtimeAnnotation;
+        boolean saveMP4En;
+
+        long trackerSensorBand;
+        long trackerSensorWidth;
+        long trackerSensorHeight;
+        long trackerSensorViewMin;
+        long trackerSensorViewMax;
+        double trackerSensorPixelAngle;
+
+        double trackerX;
+        double trackerY;
+        double trackerZ;
+        double trackerPitch;
+        double trackerYaw;
+        double trackerRoll;
+
+        double illuminatorX;
+        double illuminatorY;
+        double illuminatorZ;
+        double illuminatorPitch;
+        double illuminatorYaw;
+        double illuminatorRoll;
+
+        double illuminatorAngle;
+        double illuminatorSpotRad;
+
+        long emitterSpotRadius;
+        double emitterSpotRad;
+    };
+
+    struct InitObjectTrackingParamV1
+    {
+        boolean enable;
+        long envTerrain;
+        long envSky;
+
+        double envMaxHeightRain;
+        double envTransHeightRain;
+        double envMaxHeightSnow;
+        double envTransHeightSnow;
+        double envRainSnowSpeedScale;
+
+        double envRadScaleTerrain;
+        double envRadScaleSky;
+        double envTemp;
+        double envHumidity;
+        double envVisibility;
+        double envWindV;
+        double envWindDir;
+
+        long simMode;
+        long videoFps;
+
+        TrackerSensorParamV1 trackerSensor[1];
+    };
+
+    struct PlatParamPakV1
+    {
+        long id;
+        long type;
+        SpatialStateV1 spatial;
+    };
+
+    struct WeaponStateV1
+    {
+        long targetType;
+        long targetPlatID;
+        long targetID;
+        double xxOutAng[2];
+        boolean lookatEn;
+        boolean illuminatorEn;
+        double offsetAng[2];
+        boolean viewValid;
+        long damageFlag;
+        boolean strikeFlag;
+        long strikePart;
+    };
+
+    struct TargetStateV1
+    {
+        long targetType;
+        long targetPlatID;
+        long targetID;
+        boolean engineState;
+        boolean viewValid;
+        SpatialStateV1 targetLoc;
+        long targetState;
+    };
+
+    struct ControlCommandV1
+    {
+        long flag;
+        long JB;
+        long platID; //@key
+        long simCommand;
+        long roundCut;
+        long currentRound;
+    };
+
+    struct InitCommandV1
+    {
+        long flag;
+        long JB;
+        long platID;   //@key
+        long sensorID; //@key
+
+        PlatParamPakV1 platParamInit;
+        InitObjectTrackingParamV1 trackingInit;
+
+        long MissileMaxCount120;
+        long MissileMaxCount9;
+        long MissileMaxCountMMD;
+        long MissileMaxCountF35;
+        long MissileMaxCountF22;
+        long MissileMaxCountResv1;
+        long MissileMaxCountResv2;
+    };
+
+    struct RealtimeDataV1
+    {
+        long flag;
+        long platID;   //@key
+        long sensorID; //@key
+        double time;
+
+        SpatialStateV1 platLoc;
+        WeaponStateV1 weaponState;
+
+        long targetNumValid;
+        TargetStateV1 targetState[5];
+    };
+
+    struct InitAckV1
+    {
+        long flag;
+        long JB;
+        long platID;   //@key
+        long sensorID; //@key
+        boolean trackingReady;
+    };
+
+    struct VideoStatusV1
+    {
+        long platID;   //@key
+        long sensorID; //@key
+        string<16> channel;
+
+        boolean running;
+
+        string<24> codec;
+        string<24> pixelFormat;
+        string<128> videoTopic;
+
+        long width;
+        long height;
+        long fps;
+
+        long bitrateKbps;
+        long gopFrames;
+
+        boolean compressed;
+        long currentRound;
+    };
+
+    struct VideoFrameMetaV1
+    {
+        long platID;   //@key
+        long sensorID; //@key
+        string<16> channel;
+
+        unsigned long frameSeq;
+        long currentRound;
+
+        double ptsMs;
+        boolean keyFrame;
+
+        string<24> codec;
+        long width;
+        long height;
+    };
+
+    struct AnnotationFrameV1
+    {
+        long platID;   //@key
+        long sensorID; //@key
+        string<16> channel;
+
+        unsigned long frameSeq;
+        long currentRound;
+
+        double ptsMs;
+        string<32768> json;
+    };
+};

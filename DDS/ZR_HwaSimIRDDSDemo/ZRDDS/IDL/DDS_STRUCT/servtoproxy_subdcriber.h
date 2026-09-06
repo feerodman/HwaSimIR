@@ -26,9 +26,11 @@ class ServToProxy_subscriber : public QObject
 {
     Q_OBJECT
 public:
-    explicit ServToProxy_subscriber(uint dId, ServToProxy_RX::ProcessDataCallBack callBack, const QString &topicName = "ServToProxy", QObject *parent = nullptr);
+    explicit ServToProxy_subscriber(DDS::DomainParticipantFactory* factory, uint dId, ServToProxy_RX::ProcessDataCallBack callBack, const QString &topicName = "ServToProxy", QObject *parent = nullptr);
     virtual ~ServToProxy_subscriber();
+    bool isReady() const { return m_reader != nullptr; }
 private:
+    DDS::DomainParticipantFactory* m_factory = nullptr;
     ServToProxyDataReader *m_reader = nullptr;
     MylistenerServToProxy *m_listener = nullptr;
     DDS::DomainParticipant *participant = nullptr;

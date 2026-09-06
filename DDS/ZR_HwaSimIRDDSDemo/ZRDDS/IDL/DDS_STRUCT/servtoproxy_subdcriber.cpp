@@ -52,16 +52,17 @@ public:
 };
 
 
-ServToProxy_subscriber::ServToProxy_subscriber(uint dId, ServToProxy_RX::ProcessDataCallBack callBack, const QString &topicName, QObject *parent)
+ServToProxy_subscriber::ServToProxy_subscriber(DDS::DomainParticipantFactory* factory, uint dId, ServToProxy_RX::ProcessDataCallBack callBack, const QString &topicName, QObject *parent)
     : QObject{parent}
+    , m_factory(factory)
 {
     // 设置域号
     DDS::DomainId_t domainId = dId;
     // 获取参与者工厂实例
-    DDS::DomainParticipantFactory* factory = DDS::DomainParticipantFactory::get_instance();
+    // 工厂由 DdsRuntime 预先加载 QoS；本模块不再次初始化。
     if (factory == NULL)
     {
-        getchar();
+        return;
     }
     // 域参与者
     DDS::DomainParticipantQos dpQos;
@@ -77,7 +78,7 @@ ServToProxy_subscriber::ServToProxy_subscriber(uint dId, ServToProxy_RX::Process
     if (participant == NULL)
     {
         printf("create participant failed.\n");
-        getchar();
+        return;
     }
     // 注册数据类型
     const DDS_Char* typeName = ServToProxyTypeSupport::get_instance()->get_type_name();
@@ -87,7 +88,7 @@ ServToProxy_subscriber::ServToProxy_subscriber(uint dId, ServToProxy_RX::Process
     if (rtn != DDS::RETCODE_OK)
     {
         printf("register type failed.\n");
-        getchar();
+        return;
     }
 
     // 创建主题
@@ -100,7 +101,7 @@ ServToProxy_subscriber::ServToProxy_subscriber(uint dId, ServToProxy_RX::Process
     if (topic == NULL)
     {
         printf("create topic failed.\n");
-        getchar();
+        return;
     }
     // 创建订阅者
     DDS::Subscriber *subscriber = participant->create_subscriber(
@@ -110,7 +111,7 @@ ServToProxy_subscriber::ServToProxy_subscriber(uint dId, ServToProxy_RX::Process
     if (subscriber == NULL)
     {
         printf("create subscriber failed.\n");
-        getchar();
+        return;
     }
     // 监听器
     m_listener = new MylistenerServToProxy;
@@ -132,29 +133,26 @@ ServToProxy_subscriber::ServToProxy_subscriber(uint dId, ServToProxy_RX::Process
     if(m_reader == NULL)
     {
         printf("create datareader failed.\n");
-        getchar();
+        return;
     }
 }
 
 ServToProxy_subscriber::~ServToProxy_subscriber()
 {
     //回收DDS资源
-    m_reader->set_listener(NULL,  DDS::STATUS_MASK_NONE);
+    if (m_reader) m_reader->set_listener(NULL, DDS::STATUS_MASK_NONE);
     delete m_listener;
     m_listener = NULL;
+    if (!participant) return;
     if(participant->delete_contained_entities() != DDS::RETCODE_OK)
     {
         printf("DomainParticipant delete contained entities failed");
-        getchar();
+        return;
     }
-    if(DDS::DomainParticipantFactory::get_instance()->delete_participant(participant) != DDS::RETCODE_OK)
+    if(m_factory->delete_participant(participant) != DDS::RETCODE_OK)
     {
         printf("DomainParticipantFactory delete DomainParticipant failed");
-        getchar();
+        return;
     }
-    if(DDS::DomainParticipantFactory::get_instance()->finalize_instance() != DDS::RETCODE_OK)
-    {
-        printf("DomainParticipantFactory finalize instance failed");
-        getchar();
-    }
+    // 不释放公共 Factory，另一套 DDS 仍可能使用它。
 }

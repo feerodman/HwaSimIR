@@ -1,48 +1,26 @@
-QT       += core gui
-
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
-
+QT += core gui widgets
 CONFIG += c++11
 INCLUDEPATH += $$PWD
 
-# You can make your code fail to compile if it uses deprecated APIs.
-# In order to do so, uncomment the following line.
-#DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
-
 SOURCES += \
+    DdsRuntime.cpp \
     demo.cpp \
+    demo2.cpp \
     main.cpp \
     mainwindow.cpp
 
 HEADERS += \
+    DdsRuntime.h \
     demo.h \
+    demo2.h \
     mainwindow.h
 
-FORMS += \
-    mainwindow.ui
-
-include($$PWD/ZRDDS/IDL/DDS_STRUCT/DDS_STRUCT.pri)
+FORMS += mainwindow.ui
 
 include($$PWD/ZRDDS/zrdds.prf)
-#include($$PWD/dds/dds.prf)
+include($$PWD/ZRDDS/IDL/DDS_STRUCT/DDS_STRUCT.pri)
+include($$PWD/ZRDDS/IDL/HwaSimIRProtocolV1/HwaSimIRProtocolV1.pri)
 
-# Default rules for deployment.
-qnx: target.path = /tmp/$${TARGET}/bin
-else: unix:!android: target.path = /opt/$${TARGET}/bin
-!isEmpty(target.path): INSTALLS += target
-
-
-#DEFINES += _ZRDDSCPPINTERFACE
-
-#INCLUDEPATH += $$quote($$PWD/dds/include/ZRDDSCoreInterface)
-#INCLUDEPATH += $$quote($$PWD/dds/include/CPlusPlusInterface)
-
-#CONFIG(debug, debug|release) {
-#     LIBS += -L$$quote($$PWD/dds/lib) -lZRDDSCppzd -lws2_32 -lwsock32 -liphlpapi
-#}
-
-#CONFIG(release, debug|release) {
-#     LIBS += -L$$quote($$PWD/dds/lib) -lZRDDSCppz -lws2_32 -lwsock32 -liphlpapi
-#}
-
-
+DISTFILES += \
+    $$PWD/Config/ZRDDS_PROTOCOL_QOS.xml \
+    $$PWD/HwaSimIR_DDS_Integration.md

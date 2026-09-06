@@ -1,12 +1,15 @@
 #include "demo.h"
+#include "DdsRuntime.h"
 //#include <functional>
 
 demo::demo()
 {
 //    ServToProxy_RX::ProcessDataCallBack callBackStatus_OD = std::bind(&demo::getinf, this, std::placeholders::_1, std::placeholders::_2,std::placeholders::_3);
-//    track_data_recv.reset(new ServToProxy_subscriber(6, callBackStatus_OD, "TOPIC_ABREQ_CMD"));
+//    track_data_recv.reset(new ServToProxy_subscriber(DdsRuntime::factory(), 6, callBackStatus_OD, "TOPIC_ABREQ_CMD"));
 
-    servToProxy__writer  = new ServToProxy_publiser(6,"TOPIC_ABREQ_CMD");
+    // 第一个业务 Participant：保留原 ZR Domain/Topic/默认 QoS。
+    servToProxy__writer.reset(new ServToProxy_publiser(DdsRuntime::factory(), 6,"TOPIC_ABREQ_CMD"));
+    if (!isReady()) return;
     ZRSleep(5000);
     sendinf();
 }
@@ -30,6 +33,8 @@ void demo::sendinf()
 
 void demo::getinf(const ServToProxy *data, uint did, const QString &topicName)
 {
+    Q_UNUSED(did);
+    Q_UNUSED(topicName);
     qDebug()<<"Receive TRACK DATA Success"<<data->ValidLen;
     qDebug()<<data->ucData[0]<<data->ucData[1]<<data->ucData[2]<<data->ucData[3]<<data->ucData[4];
 }

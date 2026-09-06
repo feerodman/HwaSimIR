@@ -1,26 +1,35 @@
-//#include "mainwindow.h"
 #include <QCoreApplication>
+#include <QDebug>
+#include "DdsRuntime.h"
 #include "demo.h"
+#include "demo2.h"
 
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
-    demo d;
-//    MainWindow w;
-//    w.show();
+    const QByteArray qosFile = (QCoreApplication::applicationDirPath() +
+        "/Config/ZRDDS_PROTOCOL_QOS.xml").toLocal8Bit();
+    if (!DdsRuntime::init(qosFile.constData()))
+        return 1;
 
-//    ServToProxy_RX::ProcessDataCallBack callBackStatus_OD = std::bind(recvServToProxy, this, std::placeholders::_1, std::placeholders::_2,std::placeholders::_3);
-//    od_guide_recv.reset(new PHOTO_ELECTRIC_GUIDANCE_PARAM_subscriber(1, callBackStatus_OD, "PHOTO_ELECTRIC_GUIDANCE_PARAM"));
-
-
-
-
-
-
-    return a.exec();
+    int result = 0;
+    {
+        // 公共 Factory 已准备好；必须先 ZR，后 HwaSimIR 业务 Participant。
+        demo d;
+        demo2 d2;
+        if (!d.isReady() || !d2.initDds())
+        {
+            qCritical() << "DDS business initialization failed";
+            result = 2;
+        }
+        else
+        {
+            // HwaSimIR 的 Reset/Init/Start/Realtime/Stop 在各自业务位置调用，
+            // 不在这里自动执行完整回合。原 demo 的发送调用保持不变。
+            result = a.exec();
+        }
+    } // 先 d2 的 Reader/Participant，再 d 的原 ZR Participant。
+    if (!DdsRuntime::shutdown())
+        result = 3;
+    return result;
 }
-
-
-//inline void recvServToProxy(){
-
-//}

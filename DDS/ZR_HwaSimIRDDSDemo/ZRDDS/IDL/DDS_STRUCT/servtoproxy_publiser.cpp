@@ -1,17 +1,18 @@
 #include "servtoproxy_publiser.h"
 
-ServToProxy_publiser::ServToProxy_publiser(uint dId, const QString &topicName, QObject *parent)
+ServToProxy_publiser::ServToProxy_publiser(DDS::DomainParticipantFactory* factory, uint dId, const QString &topicName, QObject *parent)
     : QObject{parent}
+    , m_factory(factory)
     , m_did(dId)
     , m_topic(topicName)
 {
     // 设置域号
     DDS::DomainId_t domainId = dId;
     // 获取参与者工厂实例
-    DDS::DomainParticipantFactory* factory = DDS::DomainParticipantFactory::get_instance();
+    // 工厂由 DdsRuntime 预先加载 QoS；本模块不再次初始化。
     if (factory == NULL)
     {
-        getchar();
+        return;
     }
     // 域参与者
     DDS::DomainParticipantQos dpQos;
@@ -26,8 +27,9 @@ ServToProxy_publiser::ServToProxy_publiser(uint dId, const QString &topicName, Q
     if (participant == NULL)
     {
         printf("create participant failed.\n");
-        getchar();
+        return;
     }
+    qInfo() << "[ZR] Participant created, domain=" << domainId << "factory=" << factory;
     // 注册数据类型
     const DDS_Char* typeName = ServToProxyTypeSupport::get_instance()->get_type_name();
     DDS::ReturnCode_t rtn = ServToProxyTypeSupport::get_instance()->register_type(
@@ -36,7 +38,7 @@ ServToProxy_publiser::ServToProxy_publiser(uint dId, const QString &topicName, Q
     if (rtn != DDS::RETCODE_OK)
     {
         printf("register type failed.\n");
-        getchar();
+        return;
     }
     // 创建主题
     DDS::Topic *topic = participant->create_topic(
@@ -48,7 +50,7 @@ ServToProxy_publiser::ServToProxy_publiser(uint dId, const QString &topicName, Q
     if (topic == NULL)
     {
         printf("create topic failed.\n");
-        getchar();
+        return;
     }
     // 创建发布者
     DDS::Publisher *publisher = participant->create_publisher(
@@ -58,7 +60,7 @@ ServToProxy_publiser::ServToProxy_publiser(uint dId, const QString &topicName, Q
     if (publisher == NULL)
     {
         printf("create publisher failed.\n");
-        getchar();
+        return;
     }
     // 创建数据写者
     DDS::DataWriterQos writerQos;
@@ -75,32 +77,31 @@ ServToProxy_publiser::ServToProxy_publiser(uint dId, const QString &topicName, Q
     if (m_writer == NULL)
     {
         printf("create datawriter failed.\n");
-        getchar();
+        return;
     }
 }
 
 ServToProxy_publiser::~ServToProxy_publiser()
 {
     //回收DDS资源
+    if (!participant) return;
     if(participant->delete_contained_entities() != DDS::RETCODE_OK)
     {
         printf("DomainParticipant delete contained entities failed");
-        getchar();
+        return;
     }
-    if(DDS::DomainParticipantFactory::get_instance()->delete_participant(participant) != DDS::RETCODE_OK)
+    if(m_factory->delete_participant(participant) != DDS::RETCODE_OK)
     {
         printf("DomainParticipantFactory delete DomainParticipant failed");
-        getchar();
+        return;
     }
-    if(DDS::DomainParticipantFactory::get_instance()->finalize_instance() != DDS::RETCODE_OK)
-    {
-        printf("DomainParticipantFactory finalize instance failed");
-        getchar();
-    }
+    qInfo() << "[ZR] Participant deleted";
+    // 不释放公共 Factory，另一套 DDS 仍可能使用它。
 }
 
 void ServToProxy_publiser::pubData(ServToProxy data)
 {
+    if (!m_writer) return;
     // 创建数据样本
     // ELINT_AOA_DETECTION_DATA data;
     // ELINT_AOA_DETECTION_DATAInitialize(&data);

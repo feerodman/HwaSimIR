@@ -15,7 +15,7 @@ SOURCES += \
     $$PWD/servtoproxy_subdcriber.cpp
 
 DISTFILES += \
-    $$PWD/ELINT_AOA_CROSS_LOCATION_DATA.idl
+    $$PWD/DDS_Struct.idl
 
 
 

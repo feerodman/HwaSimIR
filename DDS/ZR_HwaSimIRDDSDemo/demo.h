@@ -8,10 +8,11 @@ class demo
 {
 public:
     demo();
+    bool isReady() const { return servToProxy__writer && servToProxy__writer->isReady(); }
 
     void sendinf();
     std::shared_ptr<ServToProxy_subscriber> track_data_recv;
-    ServToProxy_publiser *servToProxy__writer;
+    std::unique_ptr<ServToProxy_publiser> servToProxy__writer;
 public slots:
     void getinf(const ServToProxy *data, uint did, const QString &topicName);
     void callBakePro();

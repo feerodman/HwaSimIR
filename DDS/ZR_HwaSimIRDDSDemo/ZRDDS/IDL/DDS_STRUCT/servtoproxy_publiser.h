@@ -20,13 +20,15 @@ class ServToProxy_publiser : public QObject
 {
     Q_OBJECT
 public:
-    explicit ServToProxy_publiser(uint dId, const QString &topicName = "TOPIC_ABREQ_CMD", QObject *parent = nullptr);
+    explicit ServToProxy_publiser(DDS::DomainParticipantFactory* factory, uint dId, const QString &topicName = "TOPIC_ABREQ_CMD", QObject *parent = nullptr);
     virtual ~ServToProxy_publiser();
+    bool isReady() const { return m_writer != nullptr; }
 
     void pubData(ServToProxy data);
 signals:
 
 private:
+    DDS::DomainParticipantFactory* m_factory = nullptr;
     uint m_did;
     QString m_topic;
     DDS::DomainParticipant *participant = nullptr;
