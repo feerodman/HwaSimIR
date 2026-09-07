@@ -21,6 +21,12 @@ int main(int argc, char *argv[])
 	int sensorBand = -1;
 	double sensorPixelAngleUrad = -1.0;
 	double utcHour = -1.0;
+	double illuminatorAngleMrad = -1.0;
+	double illuminatorSpotRad = -1.0;
+	int illuminatorEnabled = 0;
+	double illuminatorOnStartSec = -1.0;
+	double illuminatorOnEndSec = -1.0;
+	bool freezeGeometry = false;
 	bool initOnly = false;
 	QString networkConfigPath;
 	QString channel;
@@ -126,9 +132,46 @@ int main(int argc, char *argv[])
 			const double value = argument.mid(utcHourPrefix.size()).toDouble(&ok);
 			if (ok) utcHour = qBound(0.0, value, 23.999999);
 		}
+		const QString illuminatorAnglePrefix = QStringLiteral("--illuminator-angle-mrad=");
+		if (argument.startsWith(illuminatorAnglePrefix))
+		{
+			bool ok = false;
+			const double value = argument.mid(illuminatorAnglePrefix.size()).toDouble(&ok);
+			if (ok) illuminatorAngleMrad = qBound(0.0, value, 1000.0);
+		}
+		const QString illuminatorSpotPrefix = QStringLiteral("--illuminator-spot-rad=");
+		if (argument.startsWith(illuminatorSpotPrefix))
+		{
+			bool ok = false;
+			const double value = argument.mid(illuminatorSpotPrefix.size()).toDouble(&ok);
+			if (ok) illuminatorSpotRad = qMax(0.0, value);
+		}
+		const QString illuminatorEnablePrefix = QStringLiteral("--illuminator-en=");
+		if (argument.startsWith(illuminatorEnablePrefix))
+		{
+			illuminatorEnabled = argument.mid(illuminatorEnablePrefix.size()).toInt() != 0 ? 1 : 0;
+		}
+		const QString illuminatorStartPrefix = QStringLiteral("--illuminator-on-start-sec=");
+		if (argument.startsWith(illuminatorStartPrefix))
+		{
+			bool ok = false;
+			const double value = argument.mid(illuminatorStartPrefix.size()).toDouble(&ok);
+			if (ok) illuminatorOnStartSec = qMax(0.0, value);
+		}
+		const QString illuminatorEndPrefix = QStringLiteral("--illuminator-on-end-sec=");
+		if (argument.startsWith(illuminatorEndPrefix))
+		{
+			bool ok = false;
+			const double value = argument.mid(illuminatorEndPrefix.size()).toDouble(&ok);
+			if (ok) illuminatorOnEndSec = qMax(0.0, value);
+		}
 		if (argument == QStringLiteral("--init-only"))
 		{
 			initOnly = true;
+		}
+		if (argument == QStringLiteral("--freeze-geometry"))
+		{
+			freezeGeometry = true;
 		}
 		const QString networkConfigPrefix = QStringLiteral("--network-config=");
 		if (argument.startsWith(networkConfigPrefix))
@@ -180,6 +223,11 @@ int main(int argc, char *argv[])
 	w.configureEnvironmentForTest(envSky, sensorBand);
 	w.setSensorPixelAngleForTest(sensorPixelAngleUrad);
 	w.setUtcHourForTest(utcHour);
+	w.setFreezeGeometryForTest(freezeGeometry);
+	qInfo().noquote() << QStringLiteral("[StimGeometry] freezeGeometry=%1 protocolLayoutUnchanged=1")
+		.arg(freezeGeometry ? 1 : 0);
+	w.configureIlluminatorForTest(illuminatorAngleMrad, illuminatorSpotRad,
+		illuminatorEnabled, illuminatorOnStartSec, illuminatorOnEndSec);
     w.configurePhase4cAeroMachTest(phase4cAeroMach, aeroAltitudeKm, aeroMach);
 	if (initOnly)
 	{

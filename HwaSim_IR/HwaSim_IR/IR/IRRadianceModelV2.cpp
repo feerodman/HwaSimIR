@@ -81,6 +81,10 @@ IRRadianceModelV2Input::IRRadianceModelV2Input()
 	skyDiffuseIrradiance(0.0),
 	pathScatteringRadiance(0.0),
 	pathThermalRadiance(0.0),
+	activeSurfaceRadiance(0.0),
+	activeSensorRadiance(0.0),
+	activeContributionEnabled(false),
+	activeFallbackReason("disabled"),
 	sunVisibility(1.0),
 	skyVisibility(1.0),
 	reflectanceSource("fallback"),
@@ -158,6 +162,11 @@ IRRadianceComponents::IRRadianceComponents()
 	skyDiffuseIrradiance(0.0),
 	pathScatteringRadiance(0.0),
 	pathThermalRadiance(0.0),
+	activeIlluminatorRadiance(0.0),
+	activeSurfaceRadiance(0.0),
+	activeSensorRadiance(0.0),
+	activeContributionEnabled(false),
+	activeFallbackReason("disabled"),
 	sunVisibility(1.0),
 	skyVisibility(1.0),
 	reflectanceSource("fallback"),
@@ -313,6 +322,11 @@ IRRadianceComponents IRRadianceModelV2::evaluateComponents(const IRRadianceModel
 	components.skyDiffuseIrradiance = std::max(0.0, input.skyDiffuseIrradiance);
 	components.pathScatteringRadiance = std::max(0.0, input.pathScatteringRadiance);
 	components.pathThermalRadiance = std::max(0.0, input.pathThermalRadiance);
+	components.activeSurfaceRadiance = std::max(0.0, input.activeSurfaceRadiance);
+	components.activeSensorRadiance = std::max(0.0, input.activeSensorRadiance);
+	components.activeIlluminatorRadiance = components.activeSensorRadiance;
+	components.activeContributionEnabled = input.activeContributionEnabled && components.activeSensorRadiance > 0.0;
+	components.activeFallbackReason = input.activeFallbackReason.empty() ? "disabled" : input.activeFallbackReason;
 	components.sunVisibility = clamp(input.sunVisibility, 0.0, 1.0);
 	components.skyVisibility = clamp(input.skyVisibility, 0.0, 1.0);
 	components.reflectanceSource = input.reflectanceSource.empty() ? "fallback" : input.reflectanceSource;
@@ -350,13 +364,17 @@ IRRadianceComponents IRRadianceModelV2::evaluateComponents(const IRRadianceModel
 	components.sensorInputLegacy = tauUp * surfaceRadiance + components.legacyPathRadiance;
 	if (input.useM1Physics && input.band == IRBand::NearInfrared)
 	{
-		components.m1SurfaceRadiance = components.solarReflectedRadiance + components.skyReflectedRadiance;
-		components.m1SensorRadiance = components.m1TauUp * components.m1SurfaceRadiance + components.pathScatteringRadiance;
+		components.m1SurfaceRadiance = components.solarReflectedRadiance + components.skyReflectedRadiance +
+			components.activeSurfaceRadiance;
+		components.m1SensorRadiance = components.m1TauUp *
+			(components.solarReflectedRadiance + components.skyReflectedRadiance) +
+			components.pathScatteringRadiance + components.activeSensorRadiance;
 	}
 	else if (input.useM1Physics && input.band == IRBand::MidWaveInfrared)
 	{
 		components.m1SurfaceRadiance = surfaceRadiance;
-		components.m1SensorRadiance = components.m1TauUp * components.m1SurfaceRadiance + components.pathThermalRadiance;
+		components.m1SensorRadiance = components.m1TauUp * components.m1SurfaceRadiance +
+			components.pathThermalRadiance + components.activeSensorRadiance;
 	}
 	else
 	{

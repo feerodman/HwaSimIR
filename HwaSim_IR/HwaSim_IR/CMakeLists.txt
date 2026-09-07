@@ -158,6 +158,7 @@ add_executable(HwaSim_IR
         Annotation/AnnotationProjector.cpp
 
         IR/IRConfig.cpp
+		IR/IRActiveIlluminator.cpp
         IR/IREnginePlumeModel.cpp
         IR/IRModtranRadianceLut.cpp
         IR/IRModtranTauLut.cpp

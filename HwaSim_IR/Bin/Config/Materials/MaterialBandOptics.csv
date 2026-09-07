@@ -1,0 +1,6 @@
+Material,NIRReflectance,MWIRReflectance,Source,Notes
+BM_METAL-ALUMINIUM,,,project_fallback_only,No traceable band measurement was found locally; resolve from SolarAbsorptivity or ThermalEmissivity
+BM_METAL,,,project_fallback_only,No traceable band measurement was found locally; resolve from SolarAbsorptivity or ThermalEmissivity
+BM_METAL-IRON,,,project_fallback_only,No traceable band measurement was found locally; resolve from SolarAbsorptivity or ThermalEmissivity
+BM_PAINT,,,project_fallback_only,No traceable band measurement was found locally; resolve from SolarAbsorptivity or ThermalEmissivity
+BM_GLASS,,,project_fallback_only,No traceable band measurement was found locally; resolve from SolarAbsorptivity or ThermalEmissivity

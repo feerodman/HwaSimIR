@@ -92,6 +92,10 @@ struct IRRadianceModelV2Input
 	double skyDiffuseIrradiance;
 	double pathScatteringRadiance;
 	double pathThermalRadiance;
+	double activeSurfaceRadiance;
+	double activeSensorRadiance;
+	bool activeContributionEnabled;
+	std::string activeFallbackReason;
 	double sunVisibility;
 	double skyVisibility;
 	std::string reflectanceSource;
@@ -172,6 +176,11 @@ struct IRRadianceComponents
 	double skyDiffuseIrradiance;
 	double pathScatteringRadiance;
 	double pathThermalRadiance;
+	double activeIlluminatorRadiance;
+	double activeSurfaceRadiance;
+	double activeSensorRadiance;
+	bool activeContributionEnabled;
+	std::string activeFallbackReason;
 	double sunVisibility;
 	double skyVisibility;
 	std::string reflectanceSource;

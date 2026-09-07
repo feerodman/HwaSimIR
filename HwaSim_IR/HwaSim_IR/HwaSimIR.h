@@ -46,6 +46,7 @@
 #include "AttitudeTransform.h"
 #include "IRSimulation.h"
 #include "IR/IRAeroThermalModel.h"
+#include "IR/IRActiveIlluminator.h"
 #include "IR/IRConfig.h"
 #include "IR/IREnginePlumeModel.h"
 #include "IR/IRModtranRadianceLut.h"
@@ -260,6 +261,8 @@ private:
 	IRMaterialBandOptics m_l1MaterialBandOptics;
 	IRSolarHeatingLut m_l1SolarHeatingLut;
 	IRMaterialThermalModel m_l1MaterialThermalModel;
+	IRActiveIlluminator m_l2ActiveIlluminator;
+	IRActiveIlluminatorConfig m_l2ActiveIlluminatorConfig;
 	IRSensorModel m_irSensorModel;                          // Stage6A sensor geometry and output size model
 	IRSensorPostProcess m_irSensorPostProcess;              // Stage6B minimal display output postprocess
 	IRSensorProfileDatabase m_irSensorProfiles;             // SensorWave传感器配置
@@ -431,6 +434,11 @@ private:
 	std::map<std::string, double> m_l1LastThermalUpdateTime;
 	std::map<std::string, std::pair<double, double> > m_l1SunVisibilityByTarget;
 	double m_l1LastShadowUpdateTime = -1.0;
+	std::string m_l2AngleInterpretation = "FullCone";
+	double m_l2ShadowUpdateHz = 30.0;
+	std::map<std::string, double> m_l2ActiveVisibilityByTarget;
+	double m_l2LastVisibilityUpdateTime = -1.0;
+	std::map<std::string, std::string> m_l2LastActiveLogState;
 	std::string m_effectiveRuntimeConfigSources;
 	std::string m_stage5DebugToneMapName = "asinh";
 	IRRadianceModelV2DebugConfig m_stage5DebugConfig;
@@ -720,6 +728,14 @@ private:
 	void UpdateL1GeometricSunVisibility(double currentTime);
 	std::pair<double, double> L1SunVisibilityForTarget(const std::string& targetKey) const;
 	LVecBase3f L1SunDirectionLocal(const TargetPlatformData& targetPlat) const;
+	void UpdateL2ActiveVisibility(double currentTime);
+	double L2ActiveVisibilityForTarget(const std::string& targetKey) const;
+	IRActiveIlluminatorOutput EvaluateL2ActiveIlluminator(
+		const TargetPlatformData& targetPlat,
+		const std::string& targetKey,
+		IRBand sensorBand,
+		const IRBandReflectance& reflectance,
+		const IRModtranRadianceResult& modtranRadiance);
 	void UpdateL1MaterialThermalState(TargetPlatformData& targetPlat, const std::string& targetKey,
 		const IRRuntimeEnvironment& environment, const IRAeroThermalOutput& aeroOutput,
 		double baseTempK, float dtSec);

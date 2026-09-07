@@ -65,6 +65,9 @@ public:
 	void configureEnvironmentForTest(int envSky, int sensorBand);
 	void setSensorPixelAngleForTest(double pixelAngleUrad);
 	void setUtcHourForTest(double utcHour) { m_testUtcHour = utcHour; }
+	void setFreezeGeometryForTest(bool enabled) { m_freezeGeometryForTest = enabled; }
+	void configureIlluminatorForTest(double angleMrad, double spotRad, int forceEnabled,
+		double onStartSec, double onEndSec);
 
 signals:
 	void initAckReceived();
@@ -181,6 +184,12 @@ private:
 	double m_phase4cSpeedMps = 0.0;
 	double m_phase4cSpeedKmh = 0.0;
 	double m_testUtcHour = -1.0;
+	double m_protocolIlluminatorAngleMrad = 2.0;
+	double m_protocolIlluminatorSpotRad = 1.0;
+	int m_protocolIlluminatorForceEnabled = 0;
+	double m_protocolIlluminatorOnStartSec = -1.0;
+	double m_protocolIlluminatorOnEndSec = -1.0;
+	bool m_freezeGeometryForTest = false;
 
 	// Current Position
 	double m_currentLat;

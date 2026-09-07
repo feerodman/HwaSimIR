@@ -96,6 +96,16 @@ param(
     [string]$NaturalSolarEnableOpticalShadow = "false",
     [string]$NaturalSolarEnableSolarThermal = "false",
     [string]$NaturalSolarDebugLog = "false"
+	,[string]$ActiveIlluminatorEnable = "false"
+	,[ValidateSet("NIR", "MWIR", "FollowSensor")][string]$ActiveIlluminatorBand = "NIR"
+	,[ValidateSet("LegacyNormalized", "BandIrradianceAtReference")][string]$ActiveIlluminatorIntensityMode = "LegacyNormalized"
+	,[double]$ActiveIlluminatorCenterWavelengthUm = 0.85
+	,[double]$ActiveIlluminatorBandwidthUm = 0.05
+	,[double]$ActiveIlluminatorReferenceRangeM = 1000.0
+	,[double]$ActiveIlluminatorReferenceIrradianceWm2 = 1.0
+	,[double]$ActiveIlluminatorLegacyMaxReferenceIrradianceWm2 = 1.0
+	,[string]$ActiveIlluminatorDebugLog = "false"
+	,[string]$AnnotationOverlayInSensorImage = "true"
 )
 
 $ErrorActionPreference = "Stop"
@@ -348,6 +358,16 @@ try {
     $runtimeText = Set-IniSectionValue $runtimeText "NaturalSolar" "EnableOpticalShadow" $NaturalSolarEnableOpticalShadow
     $runtimeText = Set-IniSectionValue $runtimeText "NaturalSolar" "EnableSolarThermal" $NaturalSolarEnableSolarThermal
     $runtimeText = Set-IniSectionValue $runtimeText "NaturalSolar" "DebugLog" $NaturalSolarDebugLog
+	$runtimeText = Set-IniSectionValue $runtimeText "ActiveIlluminator" "Enable" $ActiveIlluminatorEnable
+	$runtimeText = Set-IniSectionValue $runtimeText "ActiveIlluminator" "Band" $ActiveIlluminatorBand
+	$runtimeText = Set-IniSectionValue $runtimeText "ActiveIlluminator" "IntensityMode" $ActiveIlluminatorIntensityMode
+	$runtimeText = Set-IniSectionValue $runtimeText "ActiveIlluminator" "CenterWavelengthUm" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $ActiveIlluminatorCenterWavelengthUm))
+	$runtimeText = Set-IniSectionValue $runtimeText "ActiveIlluminator" "BandwidthUm" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $ActiveIlluminatorBandwidthUm))
+	$runtimeText = Set-IniSectionValue $runtimeText "ActiveIlluminator" "ReferenceRangeM" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $ActiveIlluminatorReferenceRangeM))
+	$runtimeText = Set-IniSectionValue $runtimeText "ActiveIlluminator" "ReferenceIrradianceWm2" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $ActiveIlluminatorReferenceIrradianceWm2))
+	$runtimeText = Set-IniSectionValue $runtimeText "ActiveIlluminator" "LegacyMaxReferenceIrradianceWm2" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $ActiveIlluminatorLegacyMaxReferenceIrradianceWm2))
+	$runtimeText = Set-IniSectionValue $runtimeText "ActiveIlluminator" "DebugLog" $ActiveIlluminatorDebugLog
+	$runtimeText = Set-IniSectionValue $runtimeText "Annotation" "OverlayInSensorImage" $AnnotationOverlayInSensorImage
     [IO.File]::WriteAllText($runtimeIni, $runtimeText, $utf8)
 
     $env:QT_FORCE_STDERR_LOGGING = "1"
@@ -408,6 +428,9 @@ finally {
 $stimText = Get-Content -LiteralPath (Join-Path $logRoot "stim.err.log") -Raw
 $hwaText = Get-Content -LiteralPath (Join-Path $logRoot "hwa.out.log") -Raw
 $videoText = Get-Content -LiteralPath (Join-Path $logRoot "video.err.log") -Raw
+$l2ActiveValues = @(Get-NumericValues $hwaText "L2 ActiveIlluminator" "activeSensorWm2SrUm")
+$l2ProtocolStates = @((Get-NumericValues $hwaText "L2 ActiveIlluminator" "protocolEnabled") |
+    Sort-Object -Unique)
 $round = Get-ChildItem -LiteralPath $mp4Root -Directory |
     Where-Object { $_.LastWriteTime -ge $caseStart.AddSeconds(-2) } |
     Sort-Object LastWriteTime -Descending |
@@ -492,6 +515,15 @@ $summary = [pscustomobject]@{
         naturalSolarEnableOpticalShadow = $NaturalSolarEnableOpticalShadow
         naturalSolarEnableSolarThermal = $NaturalSolarEnableSolarThermal
         naturalSolarDebugLog = $NaturalSolarDebugLog
+		activeIlluminatorEnable = $ActiveIlluminatorEnable
+		activeIlluminatorBand = $ActiveIlluminatorBand
+		activeIlluminatorIntensityMode = $ActiveIlluminatorIntensityMode
+		activeIlluminatorCenterWavelengthUm = $ActiveIlluminatorCenterWavelengthUm
+		activeIlluminatorBandwidthUm = $ActiveIlluminatorBandwidthUm
+		activeSensorRadianceMaxWm2SrUm = [math]::Round((Get-Maximum $l2ActiveValues), 9)
+		activePositiveSampleCount = @($l2ActiveValues | Where-Object { $_ -gt 0.0 }).Count
+		activeProtocolStates = ($l2ProtocolStates -join ",")
+		annotationOverlayInSensorImage = $AnnotationOverlayInSensorImage
     modtranPathRuntimeMode = $ModtranPathRuntimeMode
     useModtranPathRuntime = $UseModtranPathRuntime
     modtranPathScale = $ModtranPathScale

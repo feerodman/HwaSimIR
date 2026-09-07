@@ -284,6 +284,22 @@ void MainWindow::configureProtocolForTest(int platID, int sensorID, int simMode,
 			.arg(m_h264Enabled ? 1 : 0);
 }
 
+void MainWindow::configureIlluminatorForTest(double angleMrad, double spotRad,
+	int forceEnabled, double onStartSec, double onEndSec)
+{
+	if (angleMrad >= 0.0) m_protocolIlluminatorAngleMrad = angleMrad;
+	if (spotRad >= 0.0) m_protocolIlluminatorSpotRad = spotRad;
+	m_protocolIlluminatorForceEnabled = forceEnabled > 0 ? 1 : 0;
+	m_protocolIlluminatorOnStartSec = onStartSec;
+	m_protocolIlluminatorOnEndSec = onEndSec;
+	qInfo().noquote() << QStringLiteral("[StimIlluminatorConfig] angleMrad=%1 spotRad=%2 forceEnabled=%3 onStartSec=%4 onEndSec=%5 protocolLayoutUnchanged=1")
+		.arg(m_protocolIlluminatorAngleMrad, 0, 'f', 6)
+		.arg(m_protocolIlluminatorSpotRad, 0, 'f', 6)
+		.arg(m_protocolIlluminatorForceEnabled)
+		.arg(m_protocolIlluminatorOnStartSec, 0, 'f', 3)
+		.arg(m_protocolIlluminatorOnEndSec, 0, 'f', 3);
+}
+
 void MainWindow::configureEnvironmentForTest(int envSky, int sensorBand)
 {
 	if (envSky >= 0 && envSky <= 5)
@@ -736,6 +752,8 @@ void MainWindow::sendInitCommand()
     cmd.trackingInit.trackerSensor[0].trackerSensorViewMin = 1;
     cmd.trackingInit.trackerSensor[0].trackerSensorViewMax = 200000;
     cmd.trackingInit.trackerSensor[0].trackerSensorPixelAngle = m_protocolSensorPixelAngleUrad;
+	cmd.trackingInit.trackerSensor[0].illuminatorAngle = m_protocolIlluminatorAngleMrad;
+	cmd.trackingInit.trackerSensor[0].illuminatorSpotRad = m_protocolIlluminatorSpotRad;
     //2.18166
 
     cmd.trackingInit.trackerSensor[0].realtimeAnnotation = true;
@@ -842,7 +860,13 @@ void MainWindow::sendRealTimeData()
 	data.weaponState.xxOutAng[0] = 0.0;
 	data.weaponState.xxOutAng[1] = 0.0;
 	data.weaponState.lookatEn = true;
-//	data.weaponState.illuminatorEn = true;
+	bool illuminatorEnabled = m_protocolIlluminatorForceEnabled != 0;
+	if (m_protocolIlluminatorOnStartSec >= 0.0)
+	{
+		illuminatorEnabled = current_time >= m_protocolIlluminatorOnStartSec &&
+			(m_protocolIlluminatorOnEndSec < 0.0 || current_time < m_protocolIlluminatorOnEndSec);
+	}
+	data.weaponState.illuminatorEn = illuminatorEnabled;
 //    if(current_time > 5){
 //        //5秒后發動機熄火
 //        data.weaponState.strikeFlag = true;
@@ -1293,29 +1317,38 @@ bool MainWindow::step(BYHWICD::CartesianCoordinate& plane_pos, BYHWICD::Euler& p
 //	double dy = fabs(missile_pos.y - plane_pos.y);
 //	double dz = fabs(missile_pos.z - plane_pos.z);
 
-    plane_pos.x = realTimeData.at(dataNum).platPos.lat;
-    plane_pos.y = realTimeData.at(dataNum).platPos.lon;
-    plane_pos.z = realTimeData.at(dataNum).platPos.alt;
-    plane_att.pitch = realTimeData.at(dataNum).platEul.pitch;
-    plane_att.yaw = realTimeData.at(dataNum).platEul.yaw;
-    plane_att.roll = realTimeData.at(dataNum).platEul.roll;
+	if (m_freezeGeometryForTest)
+	{
+		plane_pos = plane_init_pos;
+		plane_att = plane_init_attitude;
+		missile_pos = missile_init_pos;
+		missile_att = missile_init_attitude;
+	}
+	else
+	{
+		plane_pos.x = realTimeData.at(dataNum).platPos.lat;
+		plane_pos.y = realTimeData.at(dataNum).platPos.lon;
+		plane_pos.z = realTimeData.at(dataNum).platPos.alt;
+		plane_att.pitch = realTimeData.at(dataNum).platEul.pitch;
+		plane_att.yaw = realTimeData.at(dataNum).platEul.yaw;
+		plane_att.roll = realTimeData.at(dataNum).platEul.roll;
 
-    missile_pos.x = realTimeData.at(dataNum).tarPos.lat;
-    missile_pos.y = realTimeData.at(dataNum).tarPos.lon;
-    missile_pos.z = realTimeData.at(dataNum).tarPos.alt;
-    missile_att.pitch = realTimeData.at(dataNum).tarEul.pitch;
-    missile_att.yaw = realTimeData.at(dataNum).tarEul.yaw;
-    missile_att.roll = realTimeData.at(dataNum).tarEul.roll;
+		missile_pos.x = realTimeData.at(dataNum).tarPos.lat;
+		missile_pos.y = realTimeData.at(dataNum).tarPos.lon;
+		missile_pos.z = realTimeData.at(dataNum).tarPos.alt;
+		missile_att.pitch = realTimeData.at(dataNum).tarEul.pitch;
+		missile_att.yaw = realTimeData.at(dataNum).tarEul.yaw;
+		missile_att.roll = realTimeData.at(dataNum).tarEul.roll;
 
-    if (dataNum >= (realTimeData.size()-1)) {
-		is_collided = true;
-        std::cout << "===== data is over =====" << std::endl;
+		if (dataNum >= (realTimeData.size()-1)) {
+			is_collided = true;
+			std::cout << "===== data is over =====" << std::endl;
+		}
+		dataNum++;
 	}
 
 	// 更新时间步
 	current_time += 1.0 / static_cast<double>(qMax(1, m_targetVideoFps));
-    dataNum++;
-
 	return is_collided;
 }
 

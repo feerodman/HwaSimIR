@@ -186,6 +186,7 @@
     <ClInclude Include="GeoTransform.h" />
     <ClInclude Include="HwaSimIR.h" />
     <ClInclude Include="IR\IRAeroThermalModel.h" />
+	<ClInclude Include="IR\IRActiveIlluminator.h" />
 	<ClInclude Include="IR\IRMaterialBandOptics.h" />
 	<ClInclude Include="IR\IRMaterialThermalState.h" />
     <ClInclude Include="IR\IRConfig.h" />
@@ -225,6 +226,7 @@
     <ClCompile Include="GeoTransform.cpp" />
     <ClCompile Include="HwaSimIR.cpp" />
     <ClCompile Include="IR\IRAeroThermalModel.cpp" />
+	<ClCompile Include="IR\IRActiveIlluminator.cpp" />
 	<ClCompile Include="IR\IRMaterialBandOptics.cpp" />
 	<ClCompile Include="IR\IRMaterialThermalState.cpp" />
     <ClCompile Include="IR\IRConfig.cpp" />
