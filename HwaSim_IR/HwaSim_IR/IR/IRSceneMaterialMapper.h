@@ -4,6 +4,7 @@
 
 #include "../Common/CommonDefine.h"
 #include "../IRSimulation.h"
+#include "IRMaterialBandOptics.h"
 
 #include <string>
 #include <vector>
@@ -13,6 +14,9 @@ struct IRMaterialIdEntry
 	int materialId;              // 材质ID纹理中的像素编号，按0-255灰度值归一化送入shader
 	std::string materialName;    // 对应MaterialDatabase.csv中的真实物理材质名
 	std::string semanticName;    // XML中的复合材质语义名，便于日志和后续人工校核
+	double effectiveThicknessM;  // Primary_Substrate Thickness，单位 m
+	std::string thicknessSource; // model_xml / fallback
+	IRBandReflectance bandReflectance;
 
 	IRMaterialIdEntry();
 };
@@ -35,8 +39,12 @@ class IRSceneMaterialMapper
 {
 public:
 	// 将基础目标资产的材质ID纹理、材质表和物理参数数组绑定到Panda3D节点
-	IRSceneMaterialBinding bindPlatformNode(NodePath& node, const PlatformResPath& res, const IRMaterialDatabase& materialDb) const;
+	IRSceneMaterialBinding bindPlatformNode(NodePath& node, const PlatformResPath& res,
+		const IRMaterialDatabase& materialDb, const IRMaterialBandOptics& bandOptics,
+		double fallbackThicknessM) const;
 
 private:
-	bool parseCompositeMaterialXml(const std::string& filePath, const IRMaterialDatabase& materialDb, std::vector<IRMaterialIdEntry>& entries) const;
+	bool parseCompositeMaterialXml(const std::string& filePath, const IRMaterialDatabase& materialDb,
+		const IRMaterialBandOptics& bandOptics, double fallbackThicknessM,
+		std::vector<IRMaterialIdEntry>& entries) const;
 };

@@ -17,6 +17,7 @@ from pathlib import Path
 
 DEFAULT_ROOT = Path("HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/raw/audit_mwir_standard_20260906")
 M1_ROOT = Path("HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/raw/m1_nir_mwir_20260906")
+L1_SOLAR_ROOT = Path("HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/raw/l1_solar_heating_20260907")
 ALTITUDE_PAIRS = [
     (3.0, 3.0), (5.0, 5.0), (10.0, 10.0), (15.0, 15.0), (20.0, 20.0),
     (5.0, 3.0), (10.0, 5.0), (15.0, 10.0), (20.0, 10.0),
@@ -25,6 +26,9 @@ ALTITUDE_PAIRS = [
 RANGES_KM = [1.0, 2.0, 5.0, 10.0, 20.0, 35.0, 50.0]
 VISIBILITIES_KM = [2.0, 5.0, 10.0, 23.0, 50.0]
 NIR_SOLAR_ZENITH_DEG = [20.0, 45.0, 70.0]
+L1_SOLAR_TARGET_ALTITUDES_KM = [3.0, 5.0, 10.0, 15.0, 20.0]
+L1_SOLAR_VISIBILITIES_KM = [5.0, 23.0, 50.0]
+L1_SOLAR_ZENITH_DEG = [20.0, 45.0, 70.0]
 
 
 def sha256(path: Path) -> str:
@@ -102,6 +106,39 @@ def solar_lines_for_band(target_alt_km: float, sza_deg: float, visibility_km: fl
     ]
 
 
+def shortwave_solar_lines(target_alt_km: float, sza_deg: float,
+                          visibility_km: float, increment_cm1: float = 10.0) -> list[str]:
+    # 0.30--2.50 um -> 4000--33333.3333 cm^-1.  SOL TR is the target-level
+    # direct beam; the TOA SOLAR diagnostic column is never integrated.
+    return [
+        "T F 2    2    3    0    0    0    0    0    0    0    0    0    0   0.0000.00000",
+        "fFF  2   0   360.000  0.000000  0.0000000F F F F F               0.000     0.000     0.000     0.000         0",
+        f"    1    0    1    0    0    0{visibility_km:10.3f}     0.000     0.000     0.000     0.000",
+        f"{target_alt_km:10.3f}     0.000{sza_deg:10.3f}  172          0.000    0     0.000",
+        f"{4000.0:10.3f}{33333.3333:10.3f}{increment_cm1:10.3f}{increment_cm1:10.3f} W        W1         0     0.000",
+        "    0",
+    ]
+
+
+def shortwave_flux_lines(target_alt_km: float, sza_deg: float,
+                         visibility_km: float, increment_cm1: float = 10.0) -> list[str]:
+    # The local MODTRAN .flx table exposes separate UPWARD, DOWNWARD and
+    # DIRECT columns.  Only DOWNWARD is used as diffuse; DIRECT is retained
+    # for QC and is not added to it.
+    return [
+        "T F 2    2    2    1    0    0    0    0    0    0    0    0    0   0.000   0.40",
+        "tFF  4   0   330.000  1.000000     1.0000F T                     0.000     0.000     0.000     0.000         0",
+        "01_2009",
+        f"    1    0    1    0   18    0{visibility_km:10.3f}     0.000     0.000     0.000     0.000",
+        "   0.000   0.000   0.000",
+        f"{target_alt_km:10.3f}     0.000   180.000   0.00000     0.000     0.000    0          0.000     0.000",
+        "    2    2    1    0",
+        f"     0.000 {sza_deg:9.3f}     0.000     0.000     0.000     0.000     0.000     0.000",
+        f"{4000.0:10.3f}{33333.3333:10.3f}{increment_cm1:10.3f}{max(20.0, increment_cm1):10.3f}RN              T    0     0.000",
+        "    0",
+    ]
+
+
 def write_case(case_root: Path, case_id: str, mode: str, lines: list[str],
                observer_alt_km: float | None, target_alt_km: float,
                range_km: float | None, visibility_km: float,
@@ -173,16 +210,70 @@ def generate_m1_nir_grid(root: Path) -> Path:
     return manifest
 
 
+def generate_l1_solar_heating_grid(root: Path) -> Path:
+    root.mkdir(parents=True, exist_ok=True)
+    rows: list[dict[str, object]] = []
+    increment = 10.0
+    for target in L1_SOLAR_TARGET_ALTITUDES_KM:
+        for visibility in L1_SOLAR_VISIBILITIES_KM:
+            for sza in L1_SOLAR_ZENITH_DEG:
+                for mode, suffix, lines in [
+                    ("DirectSolarIrradiance", "direct", shortwave_solar_lines(target, sza, visibility, increment)),
+                    ("SpectralFlux", "flux", shortwave_flux_lines(target, sza, visibility, increment)),
+                ]:
+                    case_id = (f"SWHEAT_{suffix}_tar{target:g}_vis{visibility:g}_"
+                               f"aerRural_humdefault_sza{sza:g}")
+                    case_dir = root / case_id
+                    case_dir.mkdir(parents=True, exist_ok=True)
+                    input_path = case_dir / f"{case_id}.tp5"
+                    input_path.write_text("\n".join(lines) + "\n", encoding="ascii")
+                    rows.append({
+                        "case_id": case_id,
+                        "mode": mode,
+                        "band": "SOLAR_SHORTWAVE",
+                        "atmosphere_model": "Mid-Latitude Summer",
+                        "aerosol_model": "Rural",
+                        "humidity_profile": "default",
+                        "visibility_km": f"{visibility:g}",
+                        "observer_alt_km": "",
+                        "target_alt_km": f"{target:g}",
+                        "range_km": "",
+                        "solar_zenith_deg": f"{sza:g}",
+                        "wavelength_low_um": "0.30",
+                        "wavelength_high_um": "2.50",
+                        "wavenumber_increment_cm1": f"{increment:g}",
+                        "fwhm_cm1": f"{increment:g}" if mode != "SpectralFlux" else "20",
+                        "response_mode": "BroadbandIntegral",
+                        "input_file": str(input_path.resolve()),
+                        "input_sha256": sha256(input_path),
+                    })
+    manifest = root / "case_manifest.csv"
+    with manifest.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=list(rows[0]))
+        writer.writeheader()
+        writer.writerows(rows)
+    (root / "case_manifest.json").write_text(
+        json.dumps(rows, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    return manifest
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--output-root", type=Path, default=DEFAULT_ROOT)
     ap.add_argument("--include-qc-grid", action="store_true")
     ap.add_argument("--m1-nir-runtime-grid", action="store_true")
+    ap.add_argument("--l1-solar-heating-grid", action="store_true")
     args = ap.parse_args()
     if args.m1_nir_runtime_grid:
         root = args.output_root if args.output_root != DEFAULT_ROOT else M1_ROOT
         manifest = generate_m1_nir_grid(root)
         print(f"Generated M1 NIR cases under {root.resolve()}")
+        print(manifest.resolve())
+        return 0
+    if args.l1_solar_heating_grid:
+        root = args.output_root if args.output_root != DEFAULT_ROOT else L1_SOLAR_ROOT
+        manifest = generate_l1_solar_heating_grid(root)
+        print(f"Generated L1 shortwave solar-heating cases under {root.resolve()}")
         print(manifest.resolve())
         return 0
     root = args.output_root

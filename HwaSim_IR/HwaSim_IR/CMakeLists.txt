@@ -164,9 +164,12 @@ add_executable(HwaSim_IR
         IR/IRPerfStats.cpp
         IR/IRRadianceModelV2.cpp
         IR/IRAeroThermalModel.cpp
+		IR/IRMaterialBandOptics.cpp
+		IR/IRMaterialThermalState.cpp
         IR/IRRuntimeConfig.cpp
         IR/IRSceneMaterialMapper.cpp
         IR/IRSolarPosition.cpp
+		IR/IRSolarHeatingLut.cpp
         IR/IRSensorModel.cpp
         IR/IRSensorPostProcess.cpp
         IR/IRTemperatureModel.cpp

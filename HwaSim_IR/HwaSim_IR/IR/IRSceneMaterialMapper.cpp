@@ -133,29 +133,39 @@ std::string ExtractPreferredMaterialNameLocal(const std::string& compositeBlock)
 	return ExtractTagValueLocal(compositeBlock, "Name");
 }
 
+double ExtractEffectiveThicknessLocal(const std::string& compositeBlock, double fallback)
+{
+	const std::string primary = ExtractSectionLocal(compositeBlock, "Primary_Substrate");
+	const std::string text = primary.empty() ? std::string() : ExtractTagValueLocal(primary, "Thickness");
+	if (text.empty()) return fallback;
+	try
+	{
+		const double value = std::stod(text);
+		return value > 1.0e-6 ? value : fallback;
+	}
+	catch (...) { return fallback; }
+}
+
 double ClampLocal(double value, double low, double high)
 {
 	return std::max(low, std::min(high, value));
 }
 
-LVecBase4f MaterialToShaderParamsLocal(const IRMaterial& material)
+LVecBase4f MaterialToShaderParamsLocal(const IRMaterial& material, const IRBandReflectance& reflectance)
 {
 	double emissivity = ClampLocal(material.thermalEmissivity, 0.01, 1.0);
-	// M1 has no measured per-material NIR SRF database yet.  Keep this explicit
-	// Kirchhoff-style fallback separate from visible texture luminance.
-	double reflectance = ClampLocal(1.0 - material.thermalEmissivity - material.transmissivity, 0.0, 1.0);
 	double transmissivity = ClampLocal(material.transmissivity, 0.0, 1.0);
 	double roughness = ClampLocal(material.roughness, 0.0, 1.0);
 	return LVecBase4f(
 		static_cast<float>(emissivity),
-		static_cast<float>(reflectance),
+		static_cast<float>(reflectance.nir),
 		static_cast<float>(transmissivity),
 		static_cast<float>(roughness));
 }
 }
 
 IRMaterialIdEntry::IRMaterialIdEntry()
-	: materialId(0)
+	: materialId(0), effectiveThicknessM(0.02), thicknessSource("fallback")
 {
 }
 
@@ -174,7 +184,9 @@ std::string IRSceneMaterialBinding::primaryMaterialName() const
 	return defaultMaterialName;
 }
 
-IRSceneMaterialBinding IRSceneMaterialMapper::bindPlatformNode(NodePath& node, const PlatformResPath& res, const IRMaterialDatabase& materialDb) const
+IRSceneMaterialBinding IRSceneMaterialMapper::bindPlatformNode(NodePath& node, const PlatformResPath& res,
+	const IRMaterialDatabase& materialDb, const IRMaterialBandOptics& bandOptics,
+	double fallbackThicknessM) const
 {
 	IRSceneMaterialBinding binding;
 	binding.displayName = res.displayName;
@@ -189,11 +201,13 @@ IRSceneMaterialBinding IRSceneMaterialMapper::bindPlatformNode(NodePath& node, c
 
 	if (!binding.materialMapPath.empty())
 	{
-		binding.hasMaterialMap = parseCompositeMaterialXml(binding.materialMapPath, materialDb, binding.entries);
+		binding.hasMaterialMap = parseCompositeMaterialXml(binding.materialMapPath, materialDb,
+			bandOptics, fallbackThicknessM, binding.entries);
 	}
 
 	PTA_float materialIds;
 	PTA_LVecBase4f materialParams;
+	PTA_LVecBase4f materialBandReflectance;
 	size_t shaderCount = std::min(binding.entries.size(), static_cast<size_t>(kMaxShaderMaterialParams));
 	for (int i = 0; i < kMaxShaderMaterialParams; ++i)
 	{
@@ -202,13 +216,18 @@ IRSceneMaterialBinding IRSceneMaterialMapper::bindPlatformNode(NodePath& node, c
 			const IRMaterialIdEntry& entry = binding.entries[i];
 			const IRMaterial& material = materialDb.get(entry.materialName);
 			materialIds.push_back(static_cast<float>(ClampLocal(static_cast<double>(entry.materialId) / 255.0, 0.0, 1.0)));
-			materialParams.push_back(MaterialToShaderParamsLocal(material));
+			materialParams.push_back(MaterialToShaderParamsLocal(material, entry.bandReflectance));
+			materialBandReflectance.push_back(LVecBase4f(static_cast<float>(entry.bandReflectance.nir),
+				static_cast<float>(entry.bandReflectance.mwir), 0.0f, 0.0f));
 		}
 		else
 		{
 			const IRMaterial& material = materialDb.get(binding.defaultMaterialName);
+			const IRBandReflectance reflectance = bandOptics.resolve(material);
 			materialIds.push_back(0.0f);
-			materialParams.push_back(MaterialToShaderParamsLocal(material));
+			materialParams.push_back(MaterialToShaderParamsLocal(material, reflectance));
+			materialBandReflectance.push_back(LVecBase4f(static_cast<float>(reflectance.nir),
+				static_cast<float>(reflectance.mwir), 0.0f, 0.0f));
 		}
 	}
 
@@ -216,6 +235,7 @@ IRSceneMaterialBinding IRSceneMaterialMapper::bindPlatformNode(NodePath& node, c
 	node.set_shader_input("u_material_param_count", LVecBase2i(static_cast<int>(shaderCount), 0));
 	node.set_shader_input("u_material_ids", materialIds);
 	node.set_shader_input("u_material_params", materialParams);
+	node.set_shader_input("u_material_band_reflectance", materialBandReflectance);
 
 	if (!binding.materialIdTexturePath.empty() && FileExistsLocal(binding.materialIdTexturePath))
 	{
@@ -249,14 +269,26 @@ IRSceneMaterialBinding IRSceneMaterialMapper::bindPlatformNode(NodePath& node, c
 		<< " materialMap=" << (binding.hasMaterialMap ? "OK" : "fallback")
 		<< " entries=" << binding.entries.size()
 		<< " default=" << binding.defaultMaterialName
-		<< " nirReflectanceSource=fallback"
-		<< " nirReflectanceFormula=1-emissivity-transmissivity"
 		<< std::endl;
+	for (size_t i = 0; i < binding.entries.size(); ++i)
+	{
+		const IRMaterialIdEntry& entry = binding.entries[i];
+		std::cout << "[L1 MaterialOptics] material=" << entry.materialName
+			<< " materialId=" << entry.materialId
+			<< " nirReflectance=" << entry.bandReflectance.nir
+			<< " nirReflectanceSource=" << entry.bandReflectance.nirSource
+			<< " mwirReflectance=" << entry.bandReflectance.mwir
+			<< " mwirReflectanceSource=" << entry.bandReflectance.mwirSource
+			<< " effectiveThicknessM=" << entry.effectiveThicknessM
+			<< " thicknessSource=" << entry.thicknessSource << std::endl;
+	}
 
 	return binding;
 }
 
-bool IRSceneMaterialMapper::parseCompositeMaterialXml(const std::string& filePath, const IRMaterialDatabase& materialDb, std::vector<IRMaterialIdEntry>& entries) const
+bool IRSceneMaterialMapper::parseCompositeMaterialXml(const std::string& filePath, const IRMaterialDatabase& materialDb,
+	const IRMaterialBandOptics& bandOptics, double fallbackThicknessM,
+	std::vector<IRMaterialIdEntry>& entries) const
 {
 	entries.clear();
 	if (!FileExistsLocal(filePath))
@@ -301,6 +333,11 @@ bool IRSceneMaterialMapper::parseCompositeMaterialXml(const std::string& filePat
 			entry.materialId = std::atoi(indexText.c_str());
 			entry.materialName = materialName;
 			entry.semanticName = semanticName;
+			entry.effectiveThicknessM = ExtractEffectiveThicknessLocal(block, fallbackThicknessM);
+			entry.thicknessSource = ExtractSectionLocal(block, "Primary_Substrate").empty() ||
+				ExtractTagValueLocal(ExtractSectionLocal(block, "Primary_Substrate"), "Thickness").empty()
+				? "fallback" : "model_xml";
+			entry.bandReflectance = bandOptics.resolve(materialDb.get(entry.materialName));
 			if (!materialDb.empty() && !materialDb.contains(entry.materialName))
 			{
 				std::cerr << "[Stage2] 材质库未找到 " << entry.materialName << "，该ID将使用默认材质参数：" << filePath << std::endl;

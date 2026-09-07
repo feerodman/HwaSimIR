@@ -10,6 +10,10 @@
 namespace
 {
 const double kAxisEpsilon = 1.0e-8;
+// Protocol geodetic/ECEF round trips produce centimetre-level altitude noise.
+// Treat queries within one metre of an audited grid plane as that plane instead
+// of opening an almost-zero interpolation branch into a geometrically invalid cell.
+const double kAltitudeGridSnapKm = 1.0e-3;
 
 std::string Trim(const std::string& value)
 {
@@ -286,7 +290,9 @@ bool IRModtranRadianceLut::interpolate(const std::vector<const Entry*>& entries,
 	double high = values.back();
 	for (size_t i = 0; i < values.size(); ++i)
 	{
-		if (Same(values[i], requested)) { low = high = values[i]; break; }
+		const double snapTolerance = (axisName(axisIndex, nir) == std::string("targetAltKm") ||
+			axisName(axisIndex, nir) == std::string("observerAltKm")) ? kAltitudeGridSnapKm : kAxisEpsilon;
+		if (std::abs(values[i] - requested) <= snapTolerance) { low = high = values[i]; break; }
 		if (values[i] < requested) low = values[i];
 		if (values[i] > requested) { high = values[i]; break; }
 	}

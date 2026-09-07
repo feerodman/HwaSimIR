@@ -186,6 +186,8 @@
     <ClInclude Include="GeoTransform.h" />
     <ClInclude Include="HwaSimIR.h" />
     <ClInclude Include="IR\IRAeroThermalModel.h" />
+	<ClInclude Include="IR\IRMaterialBandOptics.h" />
+	<ClInclude Include="IR\IRMaterialThermalState.h" />
     <ClInclude Include="IR\IRConfig.h" />
     <ClInclude Include="IR\IREnginePlumeModel.h" />
     <ClInclude Include="IR\IRModtranRadianceLut.h" />
@@ -195,6 +197,7 @@
     <ClInclude Include="IR\IRRuntimeConfig.h" />
     <ClInclude Include="IR\IRSceneMaterialMapper.h" />
     <ClInclude Include="IR\IRSolarPosition.h" />
+	<ClInclude Include="IR\IRSolarHeatingLut.h" />
     <ClInclude Include="IR\IRSensorModel.h" />
     <ClInclude Include="IR\IRSensorPostProcess.h" />
     <ClInclude Include="IR\IRTemperatureModel.h" />
@@ -222,6 +225,8 @@
     <ClCompile Include="GeoTransform.cpp" />
     <ClCompile Include="HwaSimIR.cpp" />
     <ClCompile Include="IR\IRAeroThermalModel.cpp" />
+	<ClCompile Include="IR\IRMaterialBandOptics.cpp" />
+	<ClCompile Include="IR\IRMaterialThermalState.cpp" />
     <ClCompile Include="IR\IRConfig.cpp" />
     <ClCompile Include="IR\IREnginePlumeModel.cpp" />
     <ClCompile Include="IR\IRModtranRadianceLut.cpp" />
@@ -231,6 +236,7 @@
     <ClCompile Include="IR\IRRuntimeConfig.cpp" />
     <ClCompile Include="IR\IRSceneMaterialMapper.cpp" />
     <ClCompile Include="IR\IRSolarPosition.cpp" />
+	<ClCompile Include="IR\IRSolarHeatingLut.cpp" />
     <ClCompile Include="IR\IRSensorModel.cpp" />
     <ClCompile Include="IR\IRSensorPostProcess.cpp" />
     <ClCompile Include="IR\IRTemperatureModel.cpp" />

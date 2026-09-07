@@ -49,9 +49,12 @@
 #include "IR/IRConfig.h"
 #include "IR/IREnginePlumeModel.h"
 #include "IR/IRModtranRadianceLut.h"
+#include "IR/IRMaterialBandOptics.h"
+#include "IR/IRMaterialThermalState.h"
 #include "IR/IRPerfStats.h"
 #include "IR/IRSceneMaterialMapper.h"
 #include "IR/IRSolarPosition.h"
+#include "IR/IRSolarHeatingLut.h"
 #include "IR/IRRadianceModelV2.h"
 #include "IR/IRRuntimeConfig.h"
 #include "IR/IRSensorModel.h"
@@ -254,6 +257,9 @@ private:
 	IRModtranRadianceLut m_stage5ModtranRadianceLut;        // Stage5 3B: MODTRAN path/sky/solar log-only source
 	IRSolarPosition m_m1SolarPosition;
 	IRSolarPositionOutput m_m1SolarState;
+	IRMaterialBandOptics m_l1MaterialBandOptics;
+	IRSolarHeatingLut m_l1SolarHeatingLut;
+	IRMaterialThermalModel m_l1MaterialThermalModel;
 	IRSensorModel m_irSensorModel;                          // Stage6A sensor geometry and output size model
 	IRSensorPostProcess m_irSensorPostProcess;              // Stage6B minimal display output postprocess
 	IRSensorProfileDatabase m_irSensorProfiles;             // SensorWave传感器配置
@@ -407,6 +413,24 @@ private:
 	double m_m1SunVisibility = 1.0;
 	double m_m1SkyVisibility = 1.0;
 	std::string m_lastM1SolarLogState;
+	bool m_l1NaturalSolarEnabled = false;
+	bool m_l1OpticalShadowEnabled = false;
+	bool m_l1SolarThermalEnabled = false;
+	bool m_l1DebugLog = false;
+	double m_l1ShadowUpdateHz = 10.0;
+	double m_l1ThermalUpdateHz = 10.0;
+	double m_l1DefaultEffectiveThicknessM = 0.02;
+	IRMaterialThermalOptions m_l1ThermalOptions;
+	std::string m_l1MaterialBandOpticsPath;
+	std::string m_l1SolarHeatingLutPath;
+	bool m_l1MaterialBandOpticsReady = false;
+	bool m_l1SolarHeatingReady = false;
+	std::string m_l1DebugView = "Off";
+	std::map<int, IRSceneMaterialBinding> m_l1MaterialBindingsByType;
+	std::map<std::string, std::vector<IRMaterialThermalState> > m_l1ThermalStates;
+	std::map<std::string, double> m_l1LastThermalUpdateTime;
+	std::map<std::string, std::pair<double, double> > m_l1SunVisibilityByTarget;
+	double m_l1LastShadowUpdateTime = -1.0;
 	std::string m_effectiveRuntimeConfigSources;
 	std::string m_stage5DebugToneMapName = "asinh";
 	IRRadianceModelV2DebugConfig m_stage5DebugConfig;
@@ -693,6 +717,12 @@ private:
 	double CurrentSimulationHour() const;                   // 从实时数据时间换算当前仿真小时，无实时数据时使用正午profile
 	IRRuntimeEnvironment BuildRuntimeEnvironment() const;   // 阶段3：按 UDP > profile > 默认值合成环境状态
 	void UpdateM1SolarPosition(IRRuntimeEnvironment& environment, bool forceLog);
+	void UpdateL1GeometricSunVisibility(double currentTime);
+	std::pair<double, double> L1SunVisibilityForTarget(const std::string& targetKey) const;
+	LVecBase3f L1SunDirectionLocal(const TargetPlatformData& targetPlat) const;
+	void UpdateL1MaterialThermalState(TargetPlatformData& targetPlat, const std::string& targetKey,
+		const IRRuntimeEnvironment& environment, const IRAeroThermalOutput& aeroOutput,
+		double baseTempK, float dtSec);
 	void LogActiveIREnvironment(const IRRuntimeEnvironment& environment, const char* reason, bool forceLog);
 
 															// 异步任务：每帧刷新着色器动态参数

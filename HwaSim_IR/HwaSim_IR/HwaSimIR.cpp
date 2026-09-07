@@ -6980,7 +6980,9 @@ NodePath HwaSimIR::LoadPlatformAssetNode(PLATFORM_TYPE type, const PlatformResPa
 
 	// 先挂红外 shader，再绑定材质 ID 纹理和材质参数数组，确保 shader input 已声明可用。
 	ApplyInfraredShader(modelNode, false);
-	m_irSceneMaterialMapper.bindPlatformNode(modelNode, res, m_irMaterialDatabase);
+	const IRSceneMaterialBinding l1Binding = m_irSceneMaterialMapper.bindPlatformNode(modelNode, res,
+		m_irMaterialDatabase, m_l1MaterialBandOptics, m_l1DefaultEffectiveThicknessM);
+	m_l1MaterialBindingsByType[static_cast<int>(type)] = l1Binding;
 	return modelNode;
 }
 
@@ -8956,6 +8958,17 @@ void HwaSimIR::InitInfraredSimulation()
 		"../materials/MaterialDatabase.csv",
 		"../../materials/MaterialDatabase.csv"
 	});
+	std::string materialBandOpticsPath = FirstExistingPath({
+		"materials/MaterialBandOptics.csv",
+		"../materials/MaterialBandOptics.csv",
+		"../../materials/MaterialBandOptics.csv"
+	});
+	std::string solarHeatingLutPath = FirstExistingPath({
+		"Config/Atmosphere/MODTRAN/processed/solar_heating_lut_si.csv",
+		"../Bin/Config/Atmosphere/MODTRAN/processed/solar_heating_lut_si.csv",
+		"HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed/solar_heating_lut_si.csv",
+		"../HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed/solar_heating_lut_si.csv"
+	});
 	std::string transmittancePath = FirstExistingPath({
 		"transmittance/transmittance_0.3_15.txt",
 		"../transmittance/transmittance_0.3_15.txt",
@@ -8978,6 +8991,8 @@ void HwaSimIR::InitInfraredSimulation()
 	sensorWaveDirs.push_back("HwaSim_IR/Bin/Config/SensorWave");
 	sensorWaveDirs.push_back("../HwaSim_IR/Bin/Config/SensorWave");
 	materialPath = AbsolutePathForLog(materialPath);
+	materialBandOpticsPath = AbsolutePathForLog(materialBandOpticsPath);
+	solarHeatingLutPath = AbsolutePathForLog(solarHeatingLutPath);
 	transmittancePath = AbsolutePathForLog(transmittancePath);
 	modtranBandLutPath = AbsolutePathForLog(modtranBandLutPath);
 	weatherPath = AbsolutePathForLog(weatherPath);
@@ -9014,6 +9029,25 @@ void HwaSimIR::InitInfraredSimulation()
 	m_m1HumidityProfile = m_runtimeConfig.getString("M1NirMwirPhysics", "HumidityProfile", "M1HumidityProfile", "default", nullptr);
 	m_m1SunVisibility = ClampStage5Double(m_runtimeConfig.getDouble("M1NirMwirPhysics", "SunVisibility", "M1SunVisibility", 1.0, nullptr), 0.0, 1.0);
 	m_m1SkyVisibility = ClampStage5Double(m_runtimeConfig.getDouble("M1NirMwirPhysics", "SkyVisibility", "M1SkyVisibility", 1.0, nullptr), 0.0, 1.0);
+	m_l1NaturalSolarEnabled = m_runtimeConfig.getBool("NaturalSolar", "Enable", "NaturalSolarEnable", false, nullptr);
+	m_l1OpticalShadowEnabled = m_runtimeConfig.getBool("NaturalSolar", "EnableOpticalShadow", "NaturalSolarEnableOpticalShadow", false, nullptr);
+	m_l1SolarThermalEnabled = m_runtimeConfig.getBool("NaturalSolar", "EnableSolarThermal", "NaturalSolarEnableSolarThermal", false, nullptr);
+	m_l1ShadowUpdateHz = ClampStage5Double(m_runtimeConfig.getDouble("NaturalSolar", "ShadowUpdateHz", "NaturalSolarShadowUpdateHz", 10.0, nullptr), 1.0, 30.0);
+	m_l1ThermalUpdateHz = ClampStage5Double(m_runtimeConfig.getDouble("NaturalSolar", "ThermalUpdateHz", "NaturalSolarThermalUpdateHz", 10.0, nullptr), 1.0, 30.0);
+	m_l1DefaultEffectiveThicknessM = ClampStage5Double(m_runtimeConfig.getDouble("NaturalSolar", "DefaultEffectiveThicknessM", "NaturalSolarDefaultEffectiveThicknessM", 0.02, nullptr), 0.001, 1.0);
+	m_l1ThermalOptions.enabled = m_l1NaturalSolarEnabled && m_l1SolarThermalEnabled;
+	m_l1ThermalOptions.defaultEffectiveThicknessM = m_l1DefaultEffectiveThicknessM;
+	m_l1ThermalOptions.convectionBaseWm2K = std::max(0.0, m_runtimeConfig.getDouble("NaturalSolar", "ConvectionBaseWm2K", "NaturalSolarConvectionBaseWm2K", 8.0, nullptr));
+	m_l1ThermalOptions.convectionSpeedCoeffWm2KPerSqrtMps = std::max(0.0, m_runtimeConfig.getDouble("NaturalSolar", "ConvectionSpeedCoeffWm2KPerSqrtMps", "NaturalSolarConvectionSpeedCoeff", 2.5, nullptr));
+	m_l1ThermalOptions.coreRelaxationWm2K = std::max(0.0, m_runtimeConfig.getDouble("NaturalSolar", "CoreRelaxationWm2K", "NaturalSolarCoreRelaxationWm2K", 12.0, nullptr));
+	m_l1ThermalOptions.skyFactor = ClampStage5Double(m_runtimeConfig.getDouble("NaturalSolar", "SkyFactor", "NaturalSolarSkyFactor", 0.5, nullptr), 0.0, 1.0);
+	m_l1ThermalOptions.maxSolarDeltaK = std::max(0.0, m_runtimeConfig.getDouble("NaturalSolar", "MaxSolarDeltaK", "NaturalSolarMaxSolarDeltaK", 120.0, nullptr));
+	m_l1DebugLog = m_runtimeConfig.getBool("NaturalSolar", "DebugLog", "NaturalSolarDebugLog", false, nullptr);
+	m_l1DebugView = m_runtimeConfig.getString("NaturalSolar", "DebugView", "NaturalSolarDebugView", "Off", nullptr);
+	const std::string configuredBandOptics = m_runtimeConfig.getString("NaturalSolar", "MaterialBandOptics", "NaturalSolarMaterialBandOptics", materialBandOpticsPath, nullptr);
+	const std::string configuredSolarLut = m_runtimeConfig.getString("NaturalSolar", "BroadbandSolarLut", "NaturalSolarBroadbandSolarLut", solarHeatingLutPath, nullptr);
+	m_l1MaterialBandOpticsPath = AbsolutePathForLog(FirstExistingPath({configuredBandOptics, materialBandOpticsPath}));
+	m_l1SolarHeatingLutPath = AbsolutePathForLog(FirstExistingPath({configuredSolarLut, solarHeatingLutPath}));
 	if (m_m1HumidityProfile != "default")
 	{
 		std::cout << "[M1 Physics][WARN] humidity_profile=" << m_m1HumidityProfile
@@ -9021,6 +9055,19 @@ void HwaSimIR::InitInfraredSimulation()
 		m_m1HumidityProfile = "default";
 	}
 	m_irMaterialReady = m_irMaterialDatabase.load(materialPath);
+	m_l1MaterialBandOpticsReady = m_l1MaterialBandOptics.load(m_l1MaterialBandOpticsPath);
+	m_l1SolarHeatingReady = m_l1SolarHeatingLut.load(m_l1SolarHeatingLutPath);
+	std::cout << "[L1 NaturalSolarConfig] Enable=" << (m_l1NaturalSolarEnabled ? 1 : 0)
+		<< " EnableOpticalShadow=" << (m_l1OpticalShadowEnabled ? 1 : 0)
+		<< " EnableSolarThermal=" << (m_l1SolarThermalEnabled ? 1 : 0)
+		<< " ShadowUpdateHz=" << m_l1ShadowUpdateHz << " ThermalUpdateHz=" << m_l1ThermalUpdateHz
+		<< " MaterialBandOptics=" << m_l1MaterialBandOpticsPath << " loaded=" << (m_l1MaterialBandOpticsReady ? 1 : 0)
+		<< " BroadbandSolarLut=" << m_l1SolarHeatingLutPath << " loaded=" << (m_l1SolarHeatingReady ? 1 : 0)
+		<< " solarRows=" << m_l1SolarHeatingLut.entryCount()
+		<< " DefaultEffectiveThicknessM=" << m_l1DefaultEffectiveThicknessM
+		<< " DebugView=" << m_l1DebugView
+		<< " productionGate=" << ((m_l1NaturalSolarEnabled && m_l1MaterialBandOpticsReady && m_l1SolarHeatingReady) ? "requested" : "controlled_off")
+		<< std::endl;
 	m_irAtmosphereReady = m_irAtmosphereModel.loadTransmissionTable(transmittancePath);
 	bool modtranTauLutReady = m_irAtmosphereModel.loadModtranBandLut(modtranBandLutPath);
 	std::string stage3TauDebugSource;
@@ -10417,10 +10464,10 @@ void HwaSimIR::InitInfraredSimulation()
 		<< " EnableRuntime=" << (m_m1RuntimeEnabled ? 1 : 0)
 		<< " EnableNIRRuntime=" << (m_m1NirRuntimeEnabled ? 1 : 0)
 		<< " EnableMWIRRuntime=" << (m_m1MwirRuntimeEnabled ? 1 : 0)
-		<< " productionOutput=" << (m_m1RuntimeEnabled ? "M1_requested" : "legacy")
+		<< " productionOutput=" << (m_m1RuntimeEnabled && !m_m1CompareOnly ? "M1_requested" : "legacy")
 		<< " responseMode=RectangularBand"
 		<< " humidity_profile=" << m_m1HumidityProfile
-		<< " shadowVisibility=not_implemented"
+		<< " shadowVisibility=" << (m_l1OpticalShadowEnabled ? "shared_target_volume_plus_per_pixel_ndotl" : "controlled_gate_off")
 		<< " sunVisibility=" << m_m1SunVisibility << " skyVisibility=" << m_m1SkyVisibility
 		<< " lut=" << AbsolutePathForLog(m_stage5ModtranRadiancePath)
 		<< std::endl;
@@ -11179,6 +11226,12 @@ void HwaSimIR::InitInfraredShader() {
     uniform int u_material_param_count;
     uniform float u_material_ids[8];
     uniform vec4 u_material_params[8];
+	uniform vec4 u_material_band_reflectance[8]; // x=NIR, y=MWIR; formal band optics/fallback only
+	uniform vec4 u_l1_solar_delta_pos_K[8];      // +X,+Y,+Z directional temperature history
+	uniform vec4 u_l1_solar_delta_neg_K[8];      // -X,-Y,-Z directional temperature history
+	uniform int u_l1_solar_thermal_en;
+	uniform float u_l1_sun_visibility_optical;
+	uniform float u_l1_sun_visibility_thermal;
     uniform int u_stage4_visual_debug; // 阶段4可视化诊断：默认0，只在排查Hotspot/BrightSpot接线时打开
     uniform int u_stage5_radiance_debug_en; // Stage5A minimal radiance debug switch, default 0
     uniform int u_stage5_debug_view_mode;   // 0 Off, 1 Body, 2 Reflected, 3 RearHotspot, 4 Plume, 5 BrightSpot, 6 Atmosphere, 7 SensorInput
@@ -11337,6 +11390,9 @@ void HwaSimIR::InitInfraredShader() {
         return Stage6DisplayColor(safe_gray, alpha);
     }
 
+    )";
+	fragment_shader += R"(
+
     float ApplyStage7WeatherDisplay(float gray)
     {
         float safe_gray = clamp(gray, 0.0, 1.0);
@@ -11483,6 +11539,9 @@ void HwaSimIR::InitInfraredShader() {
     )";
 	fragment_shader += R"(
         vec4 surface_param = vec4(u_emissivity, u_reflectance, 0.0, 0.5);
+		vec4 band_reflectance = vec4(surface_param.y, surface_param.y, 0.0, 0.0);
+		vec4 solar_delta_pos_K = vec4(0.0);
+		vec4 solar_delta_neg_K = vec4(0.0);
         float material_id = texture2D(p3d_Texture1, texcoord).r;
         if (u_material_id_ready == 1) {
             if (u_debug_material_id == 1) {
@@ -11493,12 +11552,17 @@ void HwaSimIR::InitInfraredShader() {
                 if (i < u_material_param_count) {
                     float hit = 1.0 - step(0.006, abs(material_id - u_material_ids[i]));
                     surface_param = mix(surface_param, u_material_params[i], hit);
+					band_reflectance = mix(band_reflectance, u_material_band_reflectance[i], hit);
+					solar_delta_pos_K = mix(solar_delta_pos_K, u_l1_solar_delta_pos_K[i], hit);
+					solar_delta_neg_K = mix(solar_delta_neg_K, u_l1_solar_delta_neg_K[i], hit);
                 }
             }
         }
 
         float surface_emissivity = clamp(surface_param.x, 0.01, 1.0);
-        float surface_reflectance = clamp(surface_param.y, 0.02, 0.95);
+		float surface_reflectance = (u_ir_band_index == 1)
+			? clamp(band_reflectance.x, 0.0, 1.0)
+			: ((u_ir_band_index == 3) ? clamp(band_reflectance.y, 0.0, 1.0) : clamp(surface_param.y, 0.0, 1.0));
 		// 计算基础热辐射与范围热源
         float current_temp = u_base_temperature;
         float stage4_debug_mask = 0.0;
@@ -11576,13 +11640,28 @@ void HwaSimIR::InitInfraredShader() {
             if (u_m1_physics_runtime_en == 1 && u_ir_band_index == 1) {
 				float m1_ndotl = max(dot(normalize(v_stage5_world_normal), normalize(u_m1_sun_direction_world)), 0.0);
 				float m1_surface = surface_reflectance / 3.14159265 *
-					(u_m1_direct_solar_irradiance * m1_ndotl * u_m1_sun_visibility +
+					(u_m1_direct_solar_irradiance * m1_ndotl * u_l1_sun_visibility_optical +
 					 u_m1_sky_diffuse_irradiance * u_m1_sky_visibility);
 				float m1_sensor = u_m1_tau_up * m1_surface + u_m1_path_radiance;
 				stage5_intensity = pow(clamp(m1_sensor * u_m1_display_scale + u_m1_display_offset, 0.0, 1.0),
 					1.0 / max(u_m1_display_gamma, 0.1));
 			} else if (u_m1_physics_runtime_en == 1 && u_ir_band_index == 3) {
-				stage5_intensity = sensor_input_debug;
+				vec3 local_n = normalize(v_stage5_normal);
+				vec3 normal_weight = abs(local_n);
+				normal_weight /= max(normal_weight.x + normal_weight.y + normal_weight.z, 0.0001);
+				vec3 directional_delta = vec3(
+					local_n.x >= 0.0 ? solar_delta_pos_K.x : solar_delta_neg_K.x,
+					local_n.y >= 0.0 ? solar_delta_pos_K.y : solar_delta_neg_K.y,
+					local_n.z >= 0.0 ? solar_delta_pos_K.z : solar_delta_neg_K.z);
+				float solar_delta_K = (u_l1_solar_thermal_en == 1) ? dot(normal_weight, directional_delta) : 0.0;
+				float surface_temp_K = max(120.0, u_material_temp_K + solar_delta_K);
+				float inv_exp = exp(-3596.94219 / surface_temp_K);
+				// Spectral radiance at 4 um in W/(m^2 sr um); path thermal uses the same per-um unit.
+				float planck_4um = 116312.6953125 * inv_exp / max(1.0 - inv_exp, 0.000001);
+				float m1_surface = surface_emissivity * planck_4um;
+				float m1_sensor = u_m1_tau_up * m1_surface + u_m1_path_radiance;
+				stage5_intensity = pow(clamp(m1_sensor * u_m1_display_scale + u_m1_display_offset, 0.0, 1.0),
+					1.0 / max(u_m1_display_gamma, 0.1));
             } else if (u_stage5_use_sensor_input_for_display == 1) {
                 stage5_intensity = sensor_input_debug;
             } else if (u_stage5_debug_view_mode == 1) {
@@ -11663,16 +11742,26 @@ void HwaSimIR::ApplyInfraredShader(NodePath& node, bool isBackground) {
 	// 阶段2材质映射默认值：没有材质ID纹理时仍按整目标默认材质稳定渲染。
 	PTA_float defaultMaterialIds;
 	PTA_LVecBase4f defaultMaterialParams;
+	PTA_LVecBase4f defaultBandReflectance;
+	PTA_LVecBase4f defaultSolarDelta;
 	for (int i = 0; i < 8; ++i)
 	{
 		defaultMaterialIds.push_back(0.0f);
 		defaultMaterialParams.push_back(LVecBase4f(0.85f, 0.15f, 0.40f, 0.50f));
+		defaultBandReflectance.push_back(LVecBase4f(0.15f, 0.15f, 0.0f, 0.0f));
+		defaultSolarDelta.push_back(LVecBase4f(0.0f));
 	}
 	node.set_shader_input("u_material_id_ready", LVecBase2i(0, 0));
 	node.set_shader_input("u_debug_material_id", LVecBase2i(0, 0));
 	node.set_shader_input("u_material_param_count", LVecBase2i(0, 0));
 	node.set_shader_input("u_material_ids", defaultMaterialIds);
 	node.set_shader_input("u_material_params", defaultMaterialParams);
+	node.set_shader_input("u_material_band_reflectance", defaultBandReflectance);
+	node.set_shader_input("u_l1_solar_delta_pos_K", defaultSolarDelta);
+	node.set_shader_input("u_l1_solar_delta_neg_K", defaultSolarDelta);
+	node.set_shader_input("u_l1_solar_thermal_en", LVecBase2i(0, 0));
+	node.set_shader_input("u_l1_sun_visibility_optical", LVecBase2f(1.0f, 0.0f));
+	node.set_shader_input("u_l1_sun_visibility_thermal", LVecBase2f(1.0f, 0.0f));
 	node.set_shader_input("u_stage4_visual_debug", LVecBase2i(0, 0)); // 默认关闭阶段4可视化诊断
 	node.set_shader_input("u_stage5_radiance_debug_en", LVecBase2i(0, 0)); // 默认关闭Stage5A最小辐射debug
 	node.set_shader_input("u_stage5_debug_view_mode", LVecBase2i(0, 0));
@@ -12744,7 +12833,7 @@ void HwaSimIR::LogStage5ModtranRadianceCompare(const TargetPlatformData& targetP
 		<< " legacySensor=" << components.sensorInputLegacy
 		<< " m1Sensor=" << components.m1SensorRadiance
 		<< " reflectanceSource=" << components.reflectanceSource
-		<< " shadowVisibility=not_implemented"
+		<< " shadowVisibility=" << (m_l1OpticalShadowEnabled ? "shared_target_volume_plus_per_pixel_ndotl" : "controlled_gate_off")
 		<< " valid=" << (modtranResult.valid ? "1" : "0")
 		<< " fallbackReason=" << components.modtranFallbackReason
 		<< " fallbackAxis=" << modtranResult.fallbackAxis
@@ -13013,7 +13102,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	const bool sensorInputDisplayBandAllowed = stage5Band == m_stage5SensorInputDisplayBand;
 	const bool useSensorInputForDisplayEffective =
 		m_stage5UseSensorInputForDisplay && sensorInputDisplayBandAllowed;
-	const bool m1RuntimeRequested = m_m1RuntimeEnabled &&
+	const bool m1RuntimeRequested = !m_m1CompareOnly && m_m1RuntimeEnabled &&
 		((stage5Band == IRBand::NearInfrared && m_m1NirRuntimeEnabled) ||
 		 (stage5Band == IRBand::MidWaveInfrared && m_m1MwirRuntimeEnabled));
 	const bool stage5DisplayUsesSensorInput = useSensorInputForDisplayEffective || m_enableStage5RadianceDebug || m1RuntimeRequested;
@@ -13034,9 +13123,11 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	stage5Input.materialTemperatureK = radiance.temperatureK;
 	stage5Input.materialEmissivity = radiance.emissivity;
 	const IRMaterial& m1Material = m_irMaterialDatabase.get(stage5Input.materialName);
-	stage5Input.materialReflectance = ClampStage5Double(
-		1.0 - static_cast<double>(radiance.emissivity) - m1Material.transmissivity, 0.0, 1.0);
-	stage5Input.reflectanceSource = "fallback";
+	const IRBandReflectance m1BandReflectance = m_l1MaterialBandOptics.resolve(m1Material);
+	stage5Input.materialReflectance = stage5Band == IRBand::NearInfrared
+		? m1BandReflectance.nir : m1BandReflectance.mwir;
+	stage5Input.reflectanceSource = stage5Band == IRBand::NearInfrared
+		? m1BandReflectance.nirSource : m1BandReflectance.mwirSource;
 	const double rawTauUp = static_cast<double>(radiance.tauUp);
 	double selectedTauUp = rawTauUp;
 	std::string selectedTauSource = m_irAtmosphereModel.useModtranTauForAtmosphere()
@@ -13078,6 +13169,8 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	stage5Input.hotspotIntensity = rearEnabledForShader ? std::max(0.0f, rearIntensityForShader) : 0.0f;
 	stage5Input.brightspotIntensity = brightSpot.enabled ? std::max(0.0f, brightSpot.intensity) : 0.0f;
 	const IRAeroThermalOutput aeroOutput = EvaluateStage5AeroThermal(targetPlat, stage5Band, dtSec, environment, targetKey);
+	UpdateL1MaterialThermalState(targetPlat, targetKey, environment, aeroOutput,
+		static_cast<double>(radiance.temperatureK), dtSec);
 	stage5Input.altitudeM = aeroOutput.altitudeM;
 	stage5Input.speedRawKmh = aeroOutput.speedRawKmh;
 	stage5Input.speedSource = aeroOutput.selectedSpeedSource;
@@ -13149,12 +13242,17 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	stage5Input.skyDiffuseIrradiance = modtranRadiance.valid ? modtranRadiance.downwardSkyDiffuseIrradianceWm2Um : 0.0;
 	stage5Input.pathScatteringRadiance = modtranRadiance.valid ? modtranRadiance.pathScatteringRadianceWm2SrUm : 0.0;
 	stage5Input.pathThermalRadiance = modtranRadiance.valid ? modtranRadiance.pathThermalWm2SrUm : 0.0;
-	stage5Input.sunVisibility = m_m1SunVisibility;
+	if (!m_m1SolarState.valid || m_m1SolarState.elevationDeg <= 0.0)
+	{
+		stage5Input.directSolarIrradiance = 0.0;
+	}
+	const std::pair<double, double> l1SunVisibility = L1SunVisibilityForTarget(targetKey);
+	stage5Input.sunVisibility = m_l1NaturalSolarEnabled ? l1SunVisibility.first : m_m1SunVisibility;
 	stage5Input.skyVisibility = m_m1SkyVisibility;
 	const bool m1BandRuntimeEnabled =
 		(stage5Band == IRBand::NearInfrared && m_m1NirRuntimeEnabled) ||
 		(stage5Band == IRBand::MidWaveInfrared && m_m1MwirRuntimeEnabled);
-	stage5Input.m1RuntimeAffectsImage = m_m1RuntimeEnabled && m1BandRuntimeEnabled && modtranRadiance.valid;
+	stage5Input.m1RuntimeAffectsImage = !m_m1CompareOnly && m_m1RuntimeEnabled && m1BandRuntimeEnabled && modtranRadiance.valid;
 	stage5Input.modtranRadianceValid = modtranRadiance.valid;
 	stage5Input.modtranInterpolationMode = modtranRadiance.interpolationMode;
 	stage5Input.modtranFallbackReason = modtranRadiance.fallbackReason;
@@ -13321,6 +13419,8 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	SetShaderInputCached(targetPlat.nodePath, "u_m1_direct_solar_irradiance", LVecBase2f(static_cast<float>(components.directSolarIrradiance), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_m1_sky_diffuse_irradiance", LVecBase2f(static_cast<float>(components.skyDiffuseIrradiance), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_m1_sun_visibility", LVecBase2f(static_cast<float>(components.sunVisibility), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_l1_sun_visibility_optical", LVecBase2f(static_cast<float>(l1SunVisibility.first), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_l1_sun_visibility_thermal", LVecBase2f(static_cast<float>(l1SunVisibility.second), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_m1_sky_visibility", LVecBase2f(static_cast<float>(components.skyVisibility), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_m1_sun_direction_world", LVecBase3f(
 		static_cast<float>(m_m1SolarState.east), static_cast<float>(m_m1SolarState.north), static_cast<float>(m_m1SolarState.up)));
@@ -13333,7 +13433,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_reflected_gray", LVecBase2f(static_cast<float>(stage5.reflectedGray), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_reflectance_band", LVecBase2f(static_cast<float>(stage5Input.materialReflectance), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_solar_weight", LVecBase2f(static_cast<float>(stage5Input.solarReflectanceWeight), 0.0f));
-	SetShaderInputCached(targetPlat.nodePath, "u_stage5_sun_dir_local", Stage5SunDirectionLocal(environment.sunAzimuthDeg, environment.sunElevationDeg));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_sun_dir_local", L1SunDirectionLocal(targetPlat));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_hotspot_gray", LVecBase2f(static_cast<float>(stage5.hotspotGray), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_brightspot_gray", LVecBase2f(static_cast<float>(stage5.brightspotGray), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_final_gray_debug", LVecBase2f(static_cast<float>(finalGrayDebugDisplay), 0.0f));
@@ -13873,6 +13973,184 @@ void HwaSimIR::LogActiveIREnvironment(const IRRuntimeEnvironment& environment, c
 	m_lastLoggedEnvironmentWeather = environment.weatherCode;
 }
 
+void HwaSimIR::UpdateL1GeometricSunVisibility(double currentTime)
+{
+	const double interval = 1.0 / std::max(1.0, m_l1ShadowUpdateHz);
+	if (m_l1LastShadowUpdateTime >= 0.0 && currentTime - m_l1LastShadowUpdateTime < interval) return;
+	m_l1LastShadowUpdateTime = currentTime;
+	m_l1SunVisibilityByTarget.clear();
+	const LVecBase3f sun(static_cast<float>(m_m1SolarState.east), static_cast<float>(m_m1SolarState.north), static_cast<float>(m_m1SolarState.up));
+	const bool daylight = m_m1SolarState.valid && m_m1SolarState.elevationDeg > 0.0 && sun.length_squared() > 1.0e-8f;
+	struct Volume { std::string key; LPoint3f center; float radius; };
+	std::vector<Volume> volumes;
+	for (size_t i = 0; i < m_targetPlatformList.size(); ++i)
+	{
+		const TargetPlatformData& target = m_targetPlatformList[i];
+		if (!target.isExist || target.nodePath.is_empty()) continue;
+		LPoint3f localMin, localMax;
+		LPoint3f center = target.nodePath.get_pos(m_renderRoot);
+		float radius = 1.0f;
+		if (target.nodePath.calc_tight_bounds(localMin, localMax, target.nodePath))
+		{
+			const LPoint3f localCenter = (localMin + localMax) * 0.5f;
+			center = m_renderRoot.get_relative_point(target.nodePath, localCenter);
+			const LPoint3f worldCorner = m_renderRoot.get_relative_point(target.nodePath, localMax);
+			radius = std::max(0.1f, (worldCorner - center).length());
+		}
+		const std::string visibilityKey = Stage4PlatformName(target.type)
+			+ "#plat" + std::to_string(target.targetState.targetPlatID)
+			+ "#target" + std::to_string(target.targetState.targetID);
+		volumes.push_back(Volume{visibilityKey, center, radius});
+	}
+	LVecBase3f sunDir = daylight ? sun : LVecBase3f(0.0f, 0.0f, 1.0f);
+	if (daylight) sunDir.normalize();
+	for (size_t i = 0; i < volumes.size(); ++i)
+	{
+		double geometricVisibility = daylight ? 1.0 : 0.0;
+		if (daylight && m_l1NaturalSolarEnabled && (m_l1OpticalShadowEnabled || m_l1SolarThermalEnabled))
+		{
+			for (size_t j = 0; j < volumes.size(); ++j)
+			{
+				if (i == j) continue;
+				const LVecBase3f toOccluder = volumes[j].center - volumes[i].center;
+				const float along = toOccluder.dot(sunDir);
+				if (along <= volumes[i].radius) continue;
+				const float perpendicular = (toOccluder - sunDir * along).length();
+				if (perpendicular < volumes[j].radius)
+				{
+					geometricVisibility = 0.0;
+					break;
+				}
+			}
+		}
+		// Optical and thermal visibility are separate interfaces.  L1 uses one shared
+		// low-frequency geometric occlusion result; per-pixel self shadow remains NdotL.
+		const double opticalVisibility = daylight ? (m_l1OpticalShadowEnabled ? geometricVisibility : 1.0) : 0.0;
+		const double thermalVisibility = daylight ? (m_l1SolarThermalEnabled ? geometricVisibility : 1.0) : 0.0;
+		m_l1SunVisibilityByTarget[volumes[i].key] = std::make_pair(opticalVisibility, thermalVisibility);
+	}
+}
+
+std::pair<double, double> HwaSimIR::L1SunVisibilityForTarget(const std::string& targetKey) const
+{
+	if (!m_m1SolarState.valid || m_m1SolarState.elevationDeg <= 0.0) return std::make_pair(0.0, 0.0);
+	const std::map<std::string, std::pair<double, double> >::const_iterator it = m_l1SunVisibilityByTarget.find(targetKey);
+	if (it != m_l1SunVisibilityByTarget.end()) return it->second;
+	return std::make_pair(m_l1OpticalShadowEnabled ? 0.0 : 1.0, m_l1SolarThermalEnabled ? 0.0 : 1.0);
+}
+
+LVecBase3f HwaSimIR::L1SunDirectionLocal(const TargetPlatformData& targetPlat) const
+{
+	const LVecBase3f worldSun(static_cast<float>(m_m1SolarState.east), static_cast<float>(m_m1SolarState.north), static_cast<float>(m_m1SolarState.up));
+	if (targetPlat.nodePath.is_empty() || worldSun.length_squared() <= 1.0e-8f) return LVecBase3f(0.0f, 0.0f, 1.0f);
+	const LVecBase3f local = targetPlat.nodePath.get_relative_vector(m_renderRoot, worldSun);
+	if (local.length_squared() <= 1.0e-8f) return LVecBase3f(0.0f, 0.0f, 1.0f);
+	LVecBase3f normalizedLocal = local;
+	normalizedLocal.normalize();
+	return normalizedLocal;
+}
+
+void HwaSimIR::UpdateL1MaterialThermalState(TargetPlatformData& targetPlat, const std::string& targetKey,
+	const IRRuntimeEnvironment& environment, const IRAeroThermalOutput& aeroOutput,
+	double baseTempK, float dtSec)
+{
+	const std::map<int, IRSceneMaterialBinding>::const_iterator bindingIt = m_l1MaterialBindingsByType.find(static_cast<int>(targetPlat.type));
+	if (bindingIt == m_l1MaterialBindingsByType.end()) return;
+	const IRSceneMaterialBinding& binding = bindingIt->second;
+	const size_t count = std::min(static_cast<size_t>(8), std::max(static_cast<size_t>(1), binding.entries.size()));
+	std::vector<IRMaterialThermalState>& states = m_l1ThermalStates[targetKey];
+	if (states.size() != count) states.resize(count);
+	const double now = ClockObject::get_global_clock()->get_frame_time();
+	double thermalDt = dtSec;
+	const std::map<std::string, double>::const_iterator lastIt = m_l1LastThermalUpdateTime.find(targetKey);
+	if (lastIt != m_l1LastThermalUpdateTime.end()) thermalDt = now - lastIt->second;
+	const bool due = lastIt == m_l1LastThermalUpdateTime.end() || thermalDt >= 1.0 / std::max(1.0, m_l1ThermalUpdateHz);
+	IRSolarHeatingResult solar;
+	const std::pair<double, double> visibility = L1SunVisibilityForTarget(targetKey);
+	if (due && m_l1NaturalSolarEnabled && m_l1SolarThermalEnabled && m_l1SolarHeatingReady && m_m1SolarState.elevationDeg > 0.0)
+	{
+		IRSolarHeatingQuery query;
+		query.atmosphereModel = m_m1AtmosphereModel;
+		query.aerosolModel = m_m1AerosolModel;
+		query.humidityProfile = m_m1HumidityProfile;
+		query.targetAltKm = IsReasonableAltitudeMeters(targetPlat.targetState.targetLoc.alt) ? targetPlat.targetState.targetLoc.alt / 1000.0 : 5.0;
+		query.visibilityKm = std::max(0.001, environment.visibilityMeters / 1000.0);
+		query.solarZenithDeg = m_m1SolarState.zenithDeg;
+		solar = m_l1SolarHeatingLut.query(query);
+		if (!solar.valid)
+		{
+			std::cout << "[L1 SolarHeatingLut][WARN] target=" << targetKey
+				<< " axis=" << solar.fallbackAxis << " query=" << solar.fallbackQuery
+				<< " min=" << solar.fallbackMin << " max=" << solar.fallbackMax
+				<< " fallbackReason=" << solar.fallbackReason << " action=no_solar_heating" << std::endl;
+		}
+	}
+	const LVecBase3f localSun = L1SunDirectionLocal(targetPlat);
+	PTA_LVecBase4f positive;
+	PTA_LVecBase4f negative;
+	for (size_t i = 0; i < 8; ++i)
+	{
+		std::array<double, 6> delta = {{0,0,0,0,0,0}};
+		IRMaterialThermalOutput output;
+		std::string materialName = binding.defaultMaterialName;
+		if (i < count && i < binding.entries.size()) materialName = binding.entries[i].materialName;
+		if (i < count && due)
+		{
+			const IRMaterial& material = m_irMaterialDatabase.get(materialName);
+			IRMaterialThermalProperties properties;
+			properties.solarAbsorptivity = material.solarAbsorptivity;
+			properties.thermalEmissivity = material.thermalEmissivity;
+			properties.densityKgM3 = material.density;
+			properties.specificHeatJkgK = material.specificHeat * 1000.0; // database w-sec/gm/K == kJ/(kg K)
+			properties.conductivityWmK = material.conductivity;
+			if (i < binding.entries.size())
+			{
+				properties.effectiveThicknessM = binding.entries[i].effectiveThicknessM;
+				properties.thicknessSource = binding.entries[i].thicknessSource;
+			}
+			else
+			{
+				properties.effectiveThicknessM = m_l1DefaultEffectiveThicknessM;
+				properties.thicknessSource = "fallback";
+			}
+			IRMaterialThermalInput input;
+			input.dtSec = std::min(1.0, std::max(0.0, thermalDt));
+			input.baseTempK = baseTempK;
+			input.aeroDeltaK = (m_stage5ApplyAeroToRadiance && aeroOutput.valid) ? std::max(0.0, aeroOutput.bodyAeroDeltaK * m_stage5AeroApplyScale) : 0.0;
+			input.airTempK = environment.airTemperatureC + 273.15;
+			input.environmentTempK = input.airTempK;
+			input.targetSpeedMps = aeroOutput.speedMps;
+			input.directIrradianceWm2 = solar.valid ? solar.directIrradianceWm2 : 0.0;
+			input.diffuseIrradianceWm2 = solar.valid ? solar.diffuseDownIrradianceWm2 : 0.0;
+			input.sunVisibilityThermal = visibility.second;
+			input.sunDirectionLocal = {{localSun.get_x(), localSun.get_y(), localSun.get_z()}};
+			output = m_l1MaterialThermalModel.update(input, properties, m_l1ThermalOptions, &states[i]);
+			if (m_l1DebugLog && output.valid)
+			{
+				std::cout << "[L1 MaterialThermal] target=" << targetKey << " material=" << materialName
+					<< " baseTempK=" << baseTempK << " aeroDeltaK=" << input.aeroDeltaK
+					<< " solarDeltaK=" << output.representativeSolarDeltaK
+					<< " finalSurfaceTempK=" << baseTempK + input.aeroDeltaK + output.representativeSolarDeltaK
+					<< " directWm2=" << input.directIrradianceWm2 << " diffuseWm2=" << input.diffuseIrradianceWm2
+					<< " sunVisibilityOptical=" << visibility.first << " sunVisibilityThermal=" << visibility.second
+					<< " arealHeatCapacityJm2K=" << output.arealHeatCapacityJm2K
+					<< " thicknessM=" << properties.effectiveThicknessM << " thicknessSource=" << properties.thicknessSource
+					<< std::endl;
+			}
+		}
+		if (i < states.size()) delta = states[i].solarDeltaK;
+		positive.push_back(LVecBase4f(static_cast<float>(delta[0]), static_cast<float>(delta[2]), static_cast<float>(delta[4]), 0.0f));
+		negative.push_back(LVecBase4f(static_cast<float>(delta[1]), static_cast<float>(delta[3]), static_cast<float>(delta[5]), 0.0f));
+	}
+	if (due)
+	{
+		m_l1LastThermalUpdateTime[targetKey] = now;
+		targetPlat.nodePath.set_shader_input("u_l1_solar_delta_pos_K", positive);
+		targetPlat.nodePath.set_shader_input("u_l1_solar_delta_neg_K", negative);
+	}
+	SetShaderInputCached(targetPlat.nodePath, "u_l1_solar_thermal_en", LVecBase2i(m_l1ThermalOptions.enabled ? 1 : 0, 0));
+}
+
 // 动态更新红外状态
 void HwaSimIR::UpdatePlatformIRStatus() {
 	const auto updateBegin = std::chrono::steady_clock::now();
@@ -13905,6 +14183,7 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 
 	IRRuntimeEnvironment environment = BuildRuntimeEnvironment();
 	UpdateM1SolarPosition(environment, false);
+	UpdateL1GeometricSunVisibility(current_time);
 	const float ambientTempK = static_cast<float>(environment.airTemperatureC + 273.15);
 	int protocolBand = (m_sensorParam.trackerSensorBand >= 0 && m_sensorParam.trackerSensorBand <= 4)
 		? m_sensorParam.trackerSensorBand : 2;

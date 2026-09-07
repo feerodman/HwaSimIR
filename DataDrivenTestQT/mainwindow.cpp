@@ -813,7 +813,17 @@ void MainWindow::sendRealTimeData()
 	data.flag = 0x38;
 	data.platID = m_protocolPlatID;
 	data.sensorID = m_protocolSensorID;
-	data.time = QDateTime::currentMSecsSinceEpoch();
+	if (m_testUtcHour >= 0.0)
+	{
+		QDateTime utc = QDateTime::currentDateTimeUtc();
+		const int totalMs = qBound(0, static_cast<int>(m_testUtcHour * 3600000.0), 86399999);
+		utc.setTime(QTime(0, 0).addMSecs(totalMs));
+		data.time = utc.toMSecsSinceEpoch();
+	}
+	else
+	{
+		data.time = QDateTime::currentMSecsSinceEpoch();
+	}
 
 
 	// 使用当前累积位置（关键：发送前使用当前值）

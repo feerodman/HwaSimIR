@@ -79,7 +79,23 @@ param(
     [string]$H264FallbackToJpeg = "true",
     [string]$H264ForceKeyFrameOnStart = "true",
     [string]$StimH264En = "0",
-    [string[]]$StimExtraArgs = @()
+    [string[]]$StimExtraArgs = @(),
+	[ValidateSet(1, 2)]
+	[int]$StimSimMode = 1,
+	[ValidateRange(0, 4)]
+	[int]$StimSensorBand = 2,
+	[ValidateRange(-1.0, 23.999999)]
+	[double]$StimUtcHour = -1.0,
+    [string]$EnablePerfLog = "true",
+    [int]$PostStimulusWaitSeconds = -1,
+    [string]$M1CompareOnly = "false",
+    [string]$M1EnableRuntime = "false",
+    [string]$M1EnableNIRRuntime = "false",
+    [string]$M1EnableMWIRRuntime = "false",
+    [string]$NaturalSolarEnable = "false",
+    [string]$NaturalSolarEnableOpticalShadow = "false",
+    [string]$NaturalSolarEnableSolarThermal = "false",
+    [string]$NaturalSolarDebugLog = "false"
 )
 
 $ErrorActionPreference = "Stop"
@@ -113,6 +129,23 @@ function Set-IniValue {
         return [regex]::Replace($Text, $pattern, "$Key=$Value")
     }
     return $Text + "`r`n$Key=$Value`r`n"
+}
+
+function Set-IniSectionValue {
+    param([string]$Text, [string]$Section, [string]$Key, [string]$Value)
+    $pattern = "(?ms)(^\[" + [regex]::Escape($Section) + "\]\s*.*?)(?=^\[|\z)"
+    $match = [regex]::Match($Text, $pattern)
+    if (-not $match.Success) {
+        return $Text + "`r`n[$Section]`r`n$Key=$Value`r`n"
+    }
+    $block = $match.Groups[1].Value
+    $keyPattern = "(?m)^" + [regex]::Escape($Key) + "=.*$"
+    if ($block -match $keyPattern) {
+        $updated = [regex]::Replace($block, $keyPattern, "$Key=$Value")
+    } else {
+        $updated = $block.TrimEnd() + "`r`n$Key=$Value`r`n"
+    }
+    return $Text.Substring(0, $match.Index) + $updated + $Text.Substring($match.Index + $match.Length)
 }
 
 function Get-NumericValues {
@@ -226,6 +259,9 @@ try {
     $runtimeText = Set-IniValue $runtimeText "H264ForceKeyFrameOnStart" $H264ForceKeyFrameOnStart
     $runtimeText = Set-IniValue $runtimeText "JpegPerfABTest" "false"
     $runtimeText = Set-IniValue $runtimeText "LegacyEngineBodyHeating" "false"
+    $runtimeText = Set-IniValue $runtimeText "EnablePerfLog" $EnablePerfLog
+	$runtimeText = Set-IniValue $runtimeText "ConfiguredSimMode" ([string]$StimSimMode)
+	$runtimeText = Set-IniValue $runtimeText "ConfiguredVideoFps" "60"
     $runtimeText = Set-IniValue $runtimeText "EnableIRVerboseLog" "0"
     $runtimeText = Set-IniValue $runtimeText "DebugView" "Off"
     $runtimeText = Set-IniValue $runtimeText "LogComponents" $Stage5LogComponents
@@ -304,6 +340,14 @@ try {
     $runtimeText = Set-IniValue $runtimeText "AeroApplyClampBodyDeltaK" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AeroApplyClampBodyDeltaK))
     $runtimeText = Set-IniValue $runtimeText "AeroApplyOnlyBand" $AeroApplyOnlyBand
     $runtimeText = Set-IniValue $runtimeText "AeroDebugLog" $AeroDebugLog
+    $runtimeText = Set-IniValue $runtimeText "CompareOnly" $M1CompareOnly
+    $runtimeText = Set-IniValue $runtimeText "EnableRuntime" $M1EnableRuntime
+    $runtimeText = Set-IniValue $runtimeText "EnableNIRRuntime" $M1EnableNIRRuntime
+    $runtimeText = Set-IniValue $runtimeText "EnableMWIRRuntime" $M1EnableMWIRRuntime
+    $runtimeText = Set-IniSectionValue $runtimeText "NaturalSolar" "Enable" $NaturalSolarEnable
+    $runtimeText = Set-IniSectionValue $runtimeText "NaturalSolar" "EnableOpticalShadow" $NaturalSolarEnableOpticalShadow
+    $runtimeText = Set-IniSectionValue $runtimeText "NaturalSolar" "EnableSolarThermal" $NaturalSolarEnableSolarThermal
+    $runtimeText = Set-IniSectionValue $runtimeText "NaturalSolar" "DebugLog" $NaturalSolarDebugLog
     [IO.File]::WriteAllText($runtimeIni, $runtimeText, $utf8)
 
     $env:QT_FORCE_STDERR_LOGGING = "1"
@@ -317,8 +361,13 @@ try {
     Start-Sleep -Seconds 5
     $stimArgs = @(
         "--phase1b-auto-seconds=$Seconds",
-        "--phase1d-h264=$StimH264En"
+		"--phase1d-h264=$StimH264En",
+		"--sim-mode=$StimSimMode",
+		"--sensor-band=$StimSensorBand"
     )
+	if ($StimUtcHour -ge 0.0) {
+		$stimArgs += "--utc-hour=$([string]::Format([Globalization.CultureInfo]::InvariantCulture, '{0:R}', $StimUtcHour))"
+	}
     if ($StimExtraArgs -and $StimExtraArgs.Count -gt 0) {
         $stimArgs += $StimExtraArgs
     }
@@ -329,7 +378,12 @@ try {
     if (-not $stim.WaitForExit(($Seconds + 30) * 1000)) {
         throw "Stimulus timeout"
     }
-    Start-Sleep -Seconds ([math]::Max(10, [math]::Ceiling($Seconds / 3.0)))
+    $postWait = if ($PostStimulusWaitSeconds -ge 0) {
+        $PostStimulusWaitSeconds
+    } else {
+        [math]::Max(10, [math]::Ceiling($Seconds / 3.0))
+    }
+    if ($postWait -gt 0) { Start-Sleep -Seconds $postWait }
 }
 finally {
     Stop-TestProcess $stim
@@ -425,6 +479,19 @@ $summary = [pscustomobject]@{
     stage6AgcApplyMs = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage6AgcApplyMs")), 6)
     stage5ModtranCacheHitCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage5ModtranCacheHitCount")), 3)
     stage5ModtranCacheMissCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage5ModtranCacheMissCount")), 3)
+    enablePerfLog = $EnablePerfLog
+    postStimulusWaitSeconds = $PostStimulusWaitSeconds
+    m1CompareOnly = $M1CompareOnly
+    m1EnableRuntime = $M1EnableRuntime
+    m1EnableNIRRuntime = $M1EnableNIRRuntime
+        m1EnableMWIRRuntime = $M1EnableMWIRRuntime
+		stimSimMode = $StimSimMode
+		stimSensorBand = $StimSensorBand
+		stimUtcHour = $StimUtcHour
+        naturalSolarEnable = $NaturalSolarEnable
+        naturalSolarEnableOpticalShadow = $NaturalSolarEnableOpticalShadow
+        naturalSolarEnableSolarThermal = $NaturalSolarEnableSolarThermal
+        naturalSolarDebugLog = $NaturalSolarDebugLog
     modtranPathRuntimeMode = $ModtranPathRuntimeMode
     useModtranPathRuntime = $UseModtranPathRuntime
     modtranPathScale = $ModtranPathScale

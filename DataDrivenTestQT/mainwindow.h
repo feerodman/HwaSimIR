@@ -64,6 +64,7 @@ public:
 	void configureProtocolForTest(int platID, int sensorID, int simMode, int videoFps);
 	void configureEnvironmentForTest(int envSky, int sensorBand);
 	void setSensorPixelAngleForTest(double pixelAngleUrad);
+	void setUtcHourForTest(double utcHour) { m_testUtcHour = utcHour; }
 
 signals:
 	void initAckReceived();
@@ -179,6 +180,7 @@ private:
 	double m_phase4cMach = 1.0;
 	double m_phase4cSpeedMps = 0.0;
 	double m_phase4cSpeedKmh = 0.0;
+	double m_testUtcHour = -1.0;
 
 	// Current Position
 	double m_currentLat;

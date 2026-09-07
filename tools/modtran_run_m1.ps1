@@ -8,9 +8,12 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$expectedRoot = [IO.Path]::GetFullPath("D:\HwaSimIR\HwaSim_IR\Bin\Config\Atmosphere\MODTRAN\raw\m1_nir_mwir_20260906")
+$expectedRoots = @(
+    [IO.Path]::GetFullPath("D:\HwaSimIR\HwaSim_IR\Bin\Config\Atmosphere\MODTRAN\raw\m1_nir_mwir_20260906"),
+    [IO.Path]::GetFullPath("D:\HwaSimIR\HwaSim_IR\Bin\Config\Atmosphere\MODTRAN\raw\l1_solar_heating_20260907")
+)
 $resolvedRoot = [IO.Path]::GetFullPath($CaseRoot)
-if ($resolvedRoot -ne $expectedRoot) { throw "Refusing unexpected CaseRoot: $resolvedRoot" }
+if ($expectedRoots -notcontains $resolvedRoot) { throw "Refusing unexpected CaseRoot: $resolvedRoot" }
 $resolvedBin = [IO.Path]::GetFullPath($PcModBin)
 if ($resolvedBin -ne [IO.Path]::GetFullPath("F:\Programs\PcModWin5\Bin")) {
     throw "Refusing unexpected PcModBin: $resolvedBin"

@@ -20,6 +20,7 @@ int main(int argc, char *argv[])
 	int envSky = -1;
 	int sensorBand = -1;
 	double sensorPixelAngleUrad = -1.0;
+	double utcHour = -1.0;
 	bool initOnly = false;
 	QString networkConfigPath;
 	QString channel;
@@ -118,6 +119,13 @@ int main(int argc, char *argv[])
 				sensorPixelAngleUrad = value;
 			}
 		}
+		const QString utcHourPrefix = QStringLiteral("--utc-hour=");
+		if (argument.startsWith(utcHourPrefix))
+		{
+			bool ok = false;
+			const double value = argument.mid(utcHourPrefix.size()).toDouble(&ok);
+			if (ok) utcHour = qBound(0.0, value, 23.999999);
+		}
 		if (argument == QStringLiteral("--init-only"))
 		{
 			initOnly = true;
@@ -171,6 +179,7 @@ int main(int argc, char *argv[])
     w.configureProtocolForTest(platID, sensorID, simMode, videoFps);
 	w.configureEnvironmentForTest(envSky, sensorBand);
 	w.setSensorPixelAngleForTest(sensorPixelAngleUrad);
+	w.setUtcHourForTest(utcHour);
     w.configurePhase4cAeroMachTest(phase4cAeroMach, aeroAltitudeKm, aeroMach);
 	if (initOnly)
 	{
