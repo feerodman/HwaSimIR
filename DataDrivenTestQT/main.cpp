@@ -31,7 +31,8 @@ int main(int argc, char *argv[])
 	QString networkConfigPath;
 	QString channel;
 	QString inputDataPath;
-	QString controlTransport = QStringLiteral("udp");
+	QString controlTransport = QStringLiteral("dds");
+	bool controlTransportExplicit = false;
 	int ddsDiscoveryWaitMs = 12000;
     const QStringList arguments = a.arguments();
 	for (int argumentIndex = 0; argumentIndex < arguments.size(); ++argumentIndex)
@@ -201,10 +202,14 @@ int main(int argc, char *argv[])
 			inputDataPath = arguments.at(++argumentIndex).trimmed();
 		}
 		const QString transportPrefix = QStringLiteral("--control-transport=");
-		if (argument.startsWith(transportPrefix))
+		if (argument.startsWith(transportPrefix)) {
 			controlTransport = argument.mid(transportPrefix.size()).trimmed().toLower();
-		else if (argument == QStringLiteral("--control-transport") && argumentIndex + 1 < arguments.size())
+			controlTransportExplicit = true;
+		}
+		else if (argument == QStringLiteral("--control-transport") && argumentIndex + 1 < arguments.size()) {
 			controlTransport = arguments.at(++argumentIndex).trimmed().toLower();
+			controlTransportExplicit = true;
+		}
 		const QString discoveryPrefix = QStringLiteral("--dds-discovery-wait-ms=");
 		if (argument.startsWith(discoveryPrefix))
 			ddsDiscoveryWaitMs = qMax(0, argument.mid(discoveryPrefix.size()).toInt());
@@ -215,6 +220,9 @@ int main(int argc, char *argv[])
             .arg(sizeof(BYHWICD::InitP2cObjectTrackingCmd))
             .arg(sizeof(BYHWICD::DisplayC2cObjTrackingData))
             .arg(sizeof(BYHWICD::InitAckC2pObjectTrackingCmd));
+	qInfo().noquote() << QStringLiteral("[StimTransportConfig] ControlTransport=%1 source=%2")
+		.arg(controlTransport)
+		.arg(controlTransportExplicit ? QStringLiteral("command_line") : QStringLiteral("production_default"));
 	MainWindow w(networkConfigPath, channel, inputDataPath, controlTransport);
 	w.show();
     w.setH264EnabledForTest(h264Enabled);

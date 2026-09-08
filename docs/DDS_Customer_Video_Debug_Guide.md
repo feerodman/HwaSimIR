@@ -1,5 +1,7 @@
 # HwaSimIR DDS 视频客户现场调试指南
 
+> **历史文档（D2，已被 F1/A1 取代）**：本文的 video-only/UDP 控制说明只适用于 D2。F1 已实现 typed DDS 控制、初始化、实时数据与应答，A1 将 DDS 设为三程序生产默认。当前操作以 `docs/HwaSimIR_A1_DDS_Production_Integration_Acceptance.md` 和 `docs/DDS_HwaSimIR_ICD.md` 为准；下文仅保留 D2 兼容排障信息。
+
 本文面向第一次接触 DDS 的现场工程师。当前交付中的 DDS **只传视频**；RESET、INIT、START、STOP、Realtime 和 InitAck 仍走原有 UDP。不要等待 DDS 上出现控制、初始化、实时数据或标注，也不要为这些数据创建 IDL。
 
 ## 1. 双方分别做什么

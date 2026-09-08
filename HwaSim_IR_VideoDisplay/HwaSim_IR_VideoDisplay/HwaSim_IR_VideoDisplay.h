@@ -75,7 +75,7 @@ private:
     QThread* m_workerThread = nullptr;
     TcpServerWorker* m_worker = nullptr;
 	DdsVideoReceiverWorker* m_ddsWorker = nullptr;
-	QString m_receiveTransport = QStringLiteral("tcp");
+	QString m_receiveTransport = QStringLiteral("dds");
     AsyncVideoRecorder* m_recorder = nullptr;
     bool m_saveMP4Requested = false;
     QString m_networkConfigPath;

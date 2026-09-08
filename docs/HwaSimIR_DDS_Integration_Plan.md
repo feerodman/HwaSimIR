@@ -1,5 +1,7 @@
 # HwaSimIR ZRDDS 视频传输与板端本地录像集成方案
 
+> **历史方案（视频 DDS 阶段，已被 F1/A1 取代）**：本文的“DDS 只传视频”是早期约束，不代表当前实现。当前生产默认已包含 typed DDS RESET/INIT/InitAck/START/Realtime/STOP 和 DDS 视频；以 `docs/DDS_HwaSimIR_ICD.md` 与 `docs/HwaSimIR_A1_DDS_Production_Integration_Acceptance.md` 为准。
+
 > 基线提交：`3528e02b12f3e3193a443a40a33b012a91b27544`（DDS许可修改_20260825_1547）  
 > ZRDDS：2.4.5  
 > Windows SDK：`F:\Programs\ZRDDS\ZRDDS-2.4.5`  

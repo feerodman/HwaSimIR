@@ -1062,9 +1062,17 @@ void TcpCommThread::sendFrameThreadFunc()
 
 	while (m_bIsRunning)
 	{
+		const bool legacyTcpEnabled = m_packetVersion.load() == 2 ||
+			m_sendVideo.load() || m_sendAnnotation.load() ||
+			m_sendRealtimeData.load() || m_forwardInitControl.load();
 		const bool independentOutput = m_ddsEnabled.load() ||
 			(m_localRecorder && m_localRecorder->effectiveEnabled());
-		if (!m_bIsConnected && std::chrono::steady_clock::now() >= nextTcpConnectAttempt)
+		if (!legacyTcpEnabled && m_bIsConnected)
+		{
+			disconnectFromServer();
+		}
+		if (legacyTcpEnabled && !m_bIsConnected &&
+			std::chrono::steady_clock::now() >= nextTcpConnectAttempt)
 		{
 			nextTcpConnectAttempt = std::chrono::steady_clock::now() + std::chrono::seconds(1);
 			if (connectToServer())
@@ -1079,7 +1087,11 @@ void TcpCommThread::sendFrameThreadFunc()
 				continue;
 			}
 		}
-		if (!m_bIsConnected && !independentOutput) continue;
+		if (!m_bIsConnected && !independentOutput)
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			continue;
+		}
 
 		PendingFrame frame;
 		int queueDepth = 0;

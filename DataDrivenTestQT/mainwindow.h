@@ -55,7 +55,7 @@ public:
 		const QString& networkConfigPath = QString(),
 		const QString& channel = QString(),
 		const QString& inputDataPath = QString(),
-		const QString& controlTransport = QStringLiteral("udp"),
+		const QString& controlTransport = QStringLiteral("dds"),
 		QWidget *parent = nullptr);
 	~MainWindow();
 	void setH264EnabledForTest(bool enabled) { m_h264Enabled = enabled; }
@@ -105,7 +105,7 @@ private:
 	QString m_networkConfigPath;
 	QString m_inputDataPath;
 	QString m_channel = QStringLiteral("unknown");
-	QString m_controlTransport = QStringLiteral("udp");
+	QString m_controlTransport = QStringLiteral("dds");
 	int m_protocolPlatID = 1001;
 	int m_protocolSensorID = 2;
 	int m_protocolSimMode = 2;

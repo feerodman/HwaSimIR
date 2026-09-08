@@ -64,11 +64,11 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
 	m_receiveTransport = receiveTransport.trimmed().toLower();
 	if (m_receiveTransport.isEmpty())
 		m_receiveTransport = instanceSettings.value(QStringLiteral("VideoInput/Transport"),
-			QStringLiteral("tcp")).toString().trimmed().toLower();
+			QStringLiteral("dds")).toString().trimmed().toLower();
 	if (m_receiveTransport != QStringLiteral("tcp") && m_receiveTransport != QStringLiteral("dds"))
 	{
-		qCritical().noquote() << QStringLiteral("[VideoInput][FATAL] invalid Transport=%1").arg(m_receiveTransport);
-		m_receiveTransport = QStringLiteral("tcp");
+		qFatal("[VideoInput][FATAL] invalid Transport=%s; expected dds|tcp",
+			qPrintable(m_receiveTransport));
 	}
 	QString resolvedStreamRole = streamRole.trimmed().toLower();
 	if (resolvedStreamRole.isEmpty())
@@ -132,7 +132,7 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
 		DdsVideoReceiverConfig config;
 		config.domainId = instanceSettings.value(QStringLiteral("DdsVideo/DomainId"), 150).toInt();
 		config.qosFile = instanceSettings.value(QStringLiteral("DdsVideo/QosFile"),
-			QStringLiteral("Config/DDS/ZRDDS_QOS_PROFILES.xml")).toString();
+			QStringLiteral("Config/DDS/ZRDDS_PROTOCOL_QOS.xml")).toString();
 		config.topic = instanceSettings.value(QStringLiteral("DdsVideo/Topic"),
 			QStringLiteral("HwaSimIR.Video.precise.H264")).toString();
 		config.codec = instanceSettings.value(QStringLiteral("DdsVideo/Codec"), QStringLiteral("h264")).toString();

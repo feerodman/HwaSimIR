@@ -7821,7 +7821,7 @@ bool HwaSimIR::PreflightDdsVideoConfig()
 
 void HwaSimIR::LoadD2VideoOutputConfig()
 {
-	m_ddsVideoConfig.enabled = m_runtimeConfig.getBool("DdsVideo", "Enable", "HwaSimIRDdsVideoEnable", false, 0);
+	m_ddsVideoConfig.enabled = m_runtimeConfig.getBool("DdsVideo", "Enable", "HwaSimIRDdsVideoEnable", true, 0);
 	m_ddsVideoConfig.codec = ToLowerAscii(m_runtimeConfig.getString("DdsVideo", "Codec", "HwaSimIRDdsVideoCodec", "auto", 0));
 	m_ddsVideoConfig.rawPixelFormat = ToLowerAscii(m_runtimeConfig.getString(
 		"DdsVideo", "RawPixelFormat", "HwaSimIRDdsVideoRawPixelFormat", "gray8", 0));
@@ -7901,7 +7901,7 @@ void HwaSimIR::LoadD2VideoOutputConfig()
 void HwaSimIR::LoadF1ProtocolConfig()
 {
 	m_commandTransportInput = ToLowerAscii(m_runtimeConfig.getString(
-		"CommandTransport", "Input", "HwaSimIRCommandTransportInput", "udp", 0));
+		"CommandTransport", "Input", "HwaSimIRCommandTransportInput", "dds", 0));
 	m_commandTransportAck = ToLowerAscii(m_runtimeConfig.getString(
 		"CommandTransport", "Ack", "HwaSimIRCommandTransportAck", "match_input", 0));
 	if (m_commandTransportInput != "udp" && m_commandTransportInput != "dds" &&
@@ -7921,7 +7921,7 @@ void HwaSimIR::LoadF1ProtocolConfig()
 		m_startupSucceeded = false;
 	}
 	m_ddsProtocolEnabled = m_runtimeConfig.getBool(
-		"DdsProtocol", "Enable", "HwaSimIRDdsProtocolEnable", false, 0);
+		"DdsProtocol", "Enable", "HwaSimIRDdsProtocolEnable", true, 0);
 	m_ddsProtocolConfig.enabled = m_ddsProtocolEnabled &&
 		(m_commandTransportInput == "dds" || m_commandTransportInput == "both" ||
 		 m_ddsVideoConfig.enabled);
@@ -8462,6 +8462,7 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		m_lastStage4InputState.clear();
 		m_l2ActiveVisibilityByTarget.clear();
 		m_l2LastActiveLogState.clear();
+		m_a1ActiveDisplayTraceState.clear();
 		m_l2LastVisibilityUpdateTime = -1.0;
 		RefreshStage6DisplayShaderInputs();
 
@@ -8639,6 +8640,7 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 	m_lastStage4InputState.clear();
 	m_l2ActiveVisibilityByTarget.clear();
 	m_l2LastActiveLogState.clear();
+	m_a1ActiveDisplayTraceState.clear();
 	m_l2LastVisibilityUpdateTime = -1.0;
 	m_stage6AgcGain = 1.0;
 	m_stage6AgcOffset = 0.0;
@@ -9995,25 +9997,25 @@ void HwaSimIR::InitInfraredSimulation()
 		"TcpPayload",
 		"SendVideo",
 		"TcpSendVideo",
-		true,
+		false,
 		&tcpSendVideoSource);
 	m_tcpSendAnnotation = m_runtimeConfig.getBool(
 		"TcpPayload",
 		"SendAnnotation",
 		"TcpSendAnnotation",
-		true,
+		false,
 		&tcpSendAnnotationSource);
 	m_tcpSendRealtimeData = m_runtimeConfig.getBool(
 		"TcpPayload",
 		"SendRealtimeData",
 		"TcpSendRealtimeData",
-		true,
+		false,
 		&tcpSendRealtimeSource);
 	m_tcpForwardInitControl = m_runtimeConfig.getBool(
 		"TcpPayload",
 		"ForwardInitControl",
 		"TcpForwardInitControl",
-		true,
+		false,
 		&tcpForwardInitControlSource);
 	if (m_pTcpThread)
 	{
@@ -11374,6 +11376,8 @@ void HwaSimIR::InitInfraredShader() {
 	uniform int u_l2_active_beam_profile; // 0 Gaussian, 1 TopHat
 	uniform vec3 u_l2_active_source_pos_world;
 	uniform vec3 u_l2_active_source_dir_world;
+	uniform vec3 u_l2_active_source_pos_local;
+	uniform vec3 u_l2_active_source_dir_local;
 	uniform float u_l2_active_half_angle_rad;
 	uniform float u_l2_active_reference_range_m;
 	uniform float u_l2_active_reference_irradiance_Wm2;
@@ -11381,6 +11385,7 @@ void HwaSimIR::InitInfraredShader() {
 	uniform float u_l2_active_tau_inbound;
 	uniform float u_l2_active_visibility;
 	uniform float u_l2_active_overlap_width_um;
+	uniform float u_l2_active_center_sensor_radiance;
     uniform float u_body_radiance_scale;
     uniform float u_stage5_body_gray;
     uniform float u_stage5_reflected_radiance;
@@ -11764,10 +11769,15 @@ void HwaSimIR::InitInfraredShader() {
             float stage5_intensity = 0.0;
 			float l2_active_sensor = 0.0;
 			if (u_l2_active_en == 1) {
-				vec3 source_to_fragment = v_stage5_world_pos - u_l2_active_source_pos_world;
+				// Evaluate the beam in object-local coordinates.  Panda's generated
+				// p3d_ModelMatrix world space differs between VisibleWindow and the
+				// standalone HeadlessOffscreen render root; mixing it with CPU values
+				// relative to m_renderRoot made the cone test silently evaluate to zero.
+				// Source position, direction, vertex and normal now share one frame.
+				vec3 source_to_fragment = v_local_pos - u_l2_active_source_pos_local;
 				float active_range_m = max(length(source_to_fragment), 0.001);
 				vec3 beam_ray = source_to_fragment / active_range_m;
-				float beam_angle_rad = acos(clamp(dot(normalize(u_l2_active_source_dir_world), beam_ray), -1.0, 1.0));
+				float beam_angle_rad = acos(clamp(dot(normalize(u_l2_active_source_dir_local), beam_ray), -1.0, 1.0));
 				float beam_factor = 0.0;
 				if (beam_angle_rad <= u_l2_active_half_angle_rad && u_l2_active_half_angle_rad > 0.0) {
 					if (u_l2_active_beam_profile == 1) {
@@ -11778,14 +11788,24 @@ void HwaSimIR::InitInfraredShader() {
 					}
 				}
 				vec3 fragment_to_source = -beam_ray;
-				float active_ndotl = max(dot(normalize(v_stage5_world_normal), fragment_to_source), 0.0);
-				float inverse_square = u_l2_active_reference_range_m / active_range_m;
-				inverse_square *= inverse_square;
-				float active_incident_Wm2 = u_l2_active_reference_irradiance_Wm2 * inverse_square *
-					beam_factor * u_l2_active_tau_outbound * active_ndotl * u_l2_active_visibility;
-				float active_surface_Wm2Sr = surface_reflectance / 3.14159265 * active_incident_Wm2;
-				l2_active_sensor = u_l2_active_tau_inbound * active_surface_Wm2Sr /
-					max(u_l2_active_overlap_width_um, 0.000001);
+				vec3 active_normal = normalize(v_stage5_normal);
+				// The illuminator is co-located with the sensor.  A rasterized visible
+				// face must therefore use the normal hemisphere facing the source.  A
+				// few imported OBJ assets contain reversed vertex normals; orienting the
+				// shading normal here repairs that asset convention without turning an
+				// occluded/back-facing surface into a visible one (depth/cull still apply).
+				if (dot(active_normal, fragment_to_source) < 0.0) {
+					active_normal = -active_normal;
+				}
+				float active_ndotl = max(dot(active_normal, fragment_to_source), 0.0);
+				// The CPU center sample owns all quantities whose units are metres or SI:
+				// inverse-square range, two-way MODTRAN tau, band reflectance and spectral
+				// width.  Object-local distance is intentionally used only to form ray
+				// directions because imported model nodes may carry a non-metre scale.
+				// Reapplying (Rref/Rlocal)^2 here silently attenuated the active term by
+				// the model scale.  The fragment stage supplies only the directional
+				// beam and incidence factors missing from the target-center calculation.
+				l2_active_sensor = u_l2_active_center_sensor_radiance * beam_factor * active_ndotl;
 			}
             if (u_m1_physics_runtime_en == 1 && u_ir_band_index == 1) {
 				float m1_ndotl = max(dot(normalize(v_stage5_world_normal), normalize(u_m1_sun_direction_world)), 0.0);
@@ -11941,6 +11961,8 @@ void HwaSimIR::ApplyInfraredShader(NodePath& node, bool isBackground) {
 	SetShaderInputCached(node, "u_l2_active_beam_profile", LVecBase2i(0, 0));
 	SetShaderInputCached(node, "u_l2_active_source_pos_world", LVecBase3f(0.0f, 0.0f, 0.0f));
 	SetShaderInputCached(node, "u_l2_active_source_dir_world", LVecBase3f(0.0f, 1.0f, 0.0f));
+	SetShaderInputCached(node, "u_l2_active_source_pos_local", LVecBase3f(0.0f, 0.0f, 0.0f));
+	SetShaderInputCached(node, "u_l2_active_source_dir_local", LVecBase3f(0.0f, 1.0f, 0.0f));
 	SetShaderInputCached(node, "u_l2_active_half_angle_rad", LVecBase2f(0.0f, 0.0f));
 	SetShaderInputCached(node, "u_l2_active_reference_range_m", LVecBase2f(1000.0f, 0.0f));
 	SetShaderInputCached(node, "u_l2_active_reference_irradiance_Wm2", LVecBase2f(0.0f, 0.0f));
@@ -11948,6 +11970,7 @@ void HwaSimIR::ApplyInfraredShader(NodePath& node, bool isBackground) {
 	SetShaderInputCached(node, "u_l2_active_tau_inbound", LVecBase2f(1.0f, 0.0f));
 	SetShaderInputCached(node, "u_l2_active_visibility", LVecBase2f(0.0f, 0.0f));
 	SetShaderInputCached(node, "u_l2_active_overlap_width_um", LVecBase2f(1.0f, 0.0f));
+	SetShaderInputCached(node, "u_l2_active_center_sensor_radiance", LVecBase2f(0.0f, 0.0f));
 	node.set_shader_input("u_body_radiance_scale", LVecBase2f(0.0f, 0.0f));
 	node.set_shader_input("u_stage5_body_gray", LVecBase2f(0.0f, 0.0f));
 	node.set_shader_input("u_stage5_reflected_radiance", LVecBase2f(0.0f, 0.0f));
@@ -13413,7 +13436,13 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 			l2Atmosphere.interpolationMode += "+active_tau_solar_independent_slice_sza45";
 		}
 	}
-	stage5Input.useM1Physics = (modtranRadiance.valid || (l2ProtocolRequested && l2Atmosphere.valid)) &&
+	// Below the horizon, the formal NIR natural terms are a defined zero boundary,
+	// not a reason to switch the target back to the legacy display chain.  Keeping
+	// the M1 route stable prevents illuminatorEn from changing the baseline mapping.
+	const bool nirNightBoundary = stage5Band == IRBand::NearInfrared &&
+		m_m1SolarState.valid && m_m1SolarState.elevationDeg <= 0.0;
+	stage5Input.useM1Physics = (modtranRadiance.valid || nirNightBoundary ||
+		(l2ProtocolRequested && l2Atmosphere.valid)) &&
 		(stage5Band == IRBand::NearInfrared || stage5Band == IRBand::MidWaveInfrared);
 	stage5Input.m1TauUp = modtranRadiance.valid ? modtranRadiance.tauUp :
 		(l2Atmosphere.valid ? l2Atmosphere.tauUp : 1.0);
@@ -13432,10 +13461,11 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 		(stage5Band == IRBand::NearInfrared && m_m1NirRuntimeEnabled) ||
 		(stage5Band == IRBand::MidWaveInfrared && m_m1MwirRuntimeEnabled);
 	stage5Input.m1RuntimeAffectsImage = !m_m1CompareOnly && m_m1RuntimeEnabled && m1BandRuntimeEnabled &&
-		(modtranRadiance.valid || (l2ProtocolRequested && l2Atmosphere.valid));
+		(modtranRadiance.valid || nirNightBoundary || (l2ProtocolRequested && l2Atmosphere.valid));
 	stage5Input.modtranRadianceValid = modtranRadiance.valid;
 	stage5Input.modtranInterpolationMode = modtranRadiance.interpolationMode;
-	stage5Input.modtranFallbackReason = modtranRadiance.fallbackReason;
+	stage5Input.modtranFallbackReason = nirNightBoundary && !modtranRadiance.valid
+		? "night_boundary_zero_natural" : modtranRadiance.fallbackReason;
 	const IRActiveIlluminatorOutput l2Active = EvaluateL2ActiveIlluminator(
 		targetPlat, targetKey, stage5Band, m1BandReflectance, l2Atmosphere);
 	stage5Input.activeSurfaceRadiance = l2Active.activeSurfaceRadianceWm2SrUm;
@@ -13641,6 +13671,22 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 		l2SourcePosition[0], l2SourcePosition[1], l2SourcePosition[2]));
 	SetShaderInputCached(targetPlat.nodePath, "u_l2_active_source_dir_world", LVecBase3f(
 		l2SourceDirection[0], l2SourceDirection[1], l2SourceDirection[2]));
+	const LPoint3f l2SourcePositionLocal = targetPlat.nodePath.get_relative_point(
+		m_renderRoot, l2SourcePosition);
+	LVecBase3f l2SourceDirectionLocal = targetPlat.nodePath.get_relative_vector(
+		m_renderRoot, l2SourceDirection);
+	if (l2SourceDirectionLocal.length_squared() > 1.0e-8f)
+	{
+		l2SourceDirectionLocal.normalize();
+	}
+	else
+	{
+		l2SourceDirectionLocal = LVecBase3f(0.0f, 1.0f, 0.0f);
+	}
+	SetShaderInputCached(targetPlat.nodePath, "u_l2_active_source_pos_local", LVecBase3f(
+		l2SourcePositionLocal[0], l2SourcePositionLocal[1], l2SourcePositionLocal[2]));
+	SetShaderInputCached(targetPlat.nodePath, "u_l2_active_source_dir_local", LVecBase3f(
+		l2SourceDirectionLocal[0], l2SourceDirectionLocal[1], l2SourceDirectionLocal[2]));
 	SetShaderInputCached(targetPlat.nodePath, "u_l2_active_half_angle_rad", LVecBase2f(static_cast<float>(l2Active.halfAngleRad), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_l2_active_reference_range_m", LVecBase2f(static_cast<float>(m_l2ActiveIlluminatorConfig.referenceRangeM), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_l2_active_reference_irradiance_Wm2", LVecBase2f(static_cast<float>(l2Active.referenceIrradianceWm2), 0.0f));
@@ -13648,6 +13694,8 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	SetShaderInputCached(targetPlat.nodePath, "u_l2_active_tau_inbound", LVecBase2f(static_cast<float>(l2Active.tauInbound), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_l2_active_visibility", LVecBase2f(static_cast<float>(l2Active.activeVisibility), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_l2_active_overlap_width_um", LVecBase2f(static_cast<float>(std::max(1.0e-6, l2Active.spectralOverlapWidthUm)), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_l2_active_center_sensor_radiance", LVecBase2f(
+		static_cast<float>(l2ShaderActiveEnabled ? l2Active.activeSensorRadianceWm2SrUm : 0.0), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_body_radiance_scale", LVecBase2f(static_cast<float>(stage5.bodyGrayBeforeFloor), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_body_gray", LVecBase2f(static_cast<float>(stage5.bodyGrayAfterFloor), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_reflected_radiance", LVecBase2f(static_cast<float>(stage5.reflectedRadiance), 0.0f));
@@ -13703,6 +13751,49 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	const bool logStage5 =
 		m_enableIRVerboseLog ||
 		((m_stage5LogComponents || m_enableStage5RadianceDebug) && stage5LogDue);
+	const std::string a1TraceState =
+		std::to_string(stage5Input.m1RuntimeAffectsImage ? 1 : 0) + ":" +
+		std::to_string(components.activeContributionEnabled ? 1 : 0) + ":" +
+		Stage5ModtranCacheDouble(components.activeSensorRadiance) + ":" +
+		Stage5ModtranCacheDouble(components.m1SensorRadiance);
+	const bool a1TraceStateChanged = m_a1ActiveDisplayTraceState[targetKey] != a1TraceState;
+	m_a1ActiveDisplayTraceState[targetKey] = a1TraceState;
+	if (stage5Band == IRBand::NearInfrared &&
+		(a1TraceStateChanged || frameSeq <= 3 || (frameSeq % 120) == 0))
+	{
+		const IRSensorPostProcessConfig display = m_stage6DisplayConfigReady
+			? m_stage6DisplayConfig : IRSensorPostProcessConfig();
+		const double stage5PhysicalGray = MapSensorInputToDisplayGray(components.m1SensorRadiance);
+		const double stage6PreAgcGray = clamp01(stage5PhysicalGray * display.displayGain +
+			display.displayOffset / 255.0);
+		const bool agcEffective = IsStage6AgcEffective();
+		const double stage6PostAgcGray = agcEffective
+			? clamp01(stage6PreAgcGray * m_stage6AgcGain + m_stage6AgcOffset)
+			: stage6PreAgcGray;
+		const double finalWhiteHotGray = display.whiteHot
+			? stage6PostAgcGray : (1.0 - stage6PostAgcGray);
+		std::cout << "[A1 ActiveDisplayTrace]"
+			<< " sourceSeq=" << frameSeq
+			<< " targetKey=" << targetKey
+			<< " reference=target_center_cpu_equivalent"
+			<< " route=" << (stage5Input.m1RuntimeAffectsImage ? "M1" : "legacy")
+			<< " nightBoundary=" << (nirNightBoundary ? 1 : 0)
+			<< " activeEnabled=" << (components.activeContributionEnabled ? 1 : 0)
+			<< " activeSensorRadiance=" << components.activeSensorRadiance
+			<< " totalSensorRadiance=" << components.m1SensorRadiance
+			<< " stage5ShaderInputRadiance=" << components.m1SensorRadiance
+			<< " stage5PhysicalOutputGray=" << stage5PhysicalGray
+			<< " stage6PreAgcGray=" << stage6PreAgcGray
+			<< " agcEnabled=" << (agcEffective ? 1 : 0)
+			<< " agcGain=" << (agcEffective ? m_stage6AgcGain : 1.0)
+			<< " agcOffset=" << (agcEffective ? m_stage6AgcOffset : 0.0)
+			<< " stage6PostAgcGray=" << stage6PostAgcGray
+			<< " whiteHot=" << (display.whiteHot ? 1 : 0)
+			<< " finalGray=" << finalWhiteHotGray
+			<< " weatherMappingMonotonic=1"
+			<< " fallbackReason=" << stage5Input.modtranFallbackReason
+			<< std::endl;
+	}
 	if (modtranCompareEnabled && stage5LogDue)
 	{
 		std::cout << "[M1 Compare]"
@@ -14375,8 +14466,9 @@ IRActiveIlluminatorOutput HwaSimIR::EvaluateL2ActiveIlluminator(
 		const LVecBase3f targetDirection = sourceToTarget / static_cast<float>(input.rangeM);
 		input.beamAngleRad = std::acos(ClampStage5Double(sourceDirection.dot(targetDirection), -1.0, 1.0));
 	}
-	// CPU output is a boresight-facing reference for logs/QC.  The formal shader
-	// evaluates per-fragment world normal, range, and cone factor.
+	// CPU output is a boresight-facing SI center sample for logs/QC and owns the
+	// metre-based range attenuation.  The shader adds per-fragment normal and
+	// cone factors without reinterpreting model-local distances as metres.
 	input.surfaceNdotL = 1.0;
 	IRActiveIlluminatorOutput output = m_l2ActiveIlluminator.evaluate(m_l2ActiveIlluminatorConfig, input);
 

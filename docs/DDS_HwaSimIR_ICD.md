@@ -2,9 +2,10 @@
 
 ## 1. 总体架构
 
-DDS 与 Legacy 并列存在，不互相替换：
+DDS 是 A1 生产默认；Legacy 作为显式配置可恢复的兼容链保留，两套协议布局均未删除：
 
-- Legacy 控制面继续使用 UDP 0x41/0x36/0x38/0x37，视频继续支持 TCP Packet v3。
+- 默认普通启动使用 typed DDS 控制/初始化/实时/应答以及 DDS 视频，不启动旧 UDP/TCP 业务链。
+- 显式 legacy 配置下，控制面仍可使用 UDP 0x41/0x36/0x38/0x37，视频仍支持 TCP Packet v3。
 - DDS 控制面使用共享 Topic 和 `platID/sensorID` 应用层路由。
 - DDS 视频面默认使用每个传感器独立的 identity Topic。
 - DDS 视频 Sample 仍只包含视频本体，不包含 frameSeq、PTS、geometry、annotation 或自定义头。

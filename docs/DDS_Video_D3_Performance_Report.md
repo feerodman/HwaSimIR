@@ -1,5 +1,7 @@
 # HwaSimIR DDS 视频 D3 性能与可靠性报告
 
+> **历史阶段报告（D3，已被 F1/A1 取代）**：本文的 video-only 范围和结论只描述 D3。F1 已完成 typed DDS 控制/初始化/实时/应答，A1 已把 DDS 设为三程序生产默认；当前状态以 `docs/DDS_HwaSimIR_ICD.md` 和 `docs/HwaSimIR_A1_DDS_Production_Integration_Acceptance.md` 为准。
+
 ## 1. 结论
 
 D3 在基线 `b46458b781e9943667305a4e7341c7f3acd8789d` 上完成。H264 生产主链、Raw 完整帧、双通道、多 Reader、20 回合 STOP 尾帧、共享 H264 MP4 和 Windows/VM/RK3588 构建均有实测证据。所有正常消费者用例满足 `sentSamples == receivedSamples`、应用 dropped=0、writer/reader error=0。

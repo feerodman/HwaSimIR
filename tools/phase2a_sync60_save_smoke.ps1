@@ -115,6 +115,11 @@ $logRoot = Join-Path $root "logs\phase2a-final-$stamp"
 New-Item -ItemType Directory -Force -Path $logRoot | Out-Null
 
 $hwaExe = Join-Path $root "HwaSim_IR\Bin\HwaSim_IR.exe"
+if (-not (Test-Path -LiteralPath $hwaExe)) {
+    # MSBuild's checked-in project places the Release binary in the nested
+    # project Bin directory while runtime resources remain in HwaSim_IR/Bin.
+    $hwaExe = Join-Path $root "HwaSim_IR\HwaSim_IR\Bin\HwaSim_IR.exe"
+}
 $hwaWork = Join-Path $root "HwaSim_IR\Bin"
 $videoExe = Join-Path $root "HwaSim_IR_VideoDisplay\x64\Release\HwaSim_IR_VideoDisplay.exe"
 $videoWork = Split-Path -Parent $videoExe
@@ -249,7 +254,7 @@ try {
         $utf8)
     [IO.File]::WriteAllText(
         $videoNetwork,
-        "[Identity]`r`nchannel=precise`r`nplatID=1001`r`nsensorID=2`r`n`r`n[Network]`r`nip=127.0.0.1`r`nport=5555`r`n`r`n[Recorder]`r`nMaxRecordingQueueFrames=180`r`nFlushTimeoutMs=10000`r`n",
+        "[Identity]`r`nchannel=precise`r`nplatID=1001`r`nsensorID=2`r`n`r`n[VideoInput]`r`nTransport=tcp`r`n`r`n[Network]`r`nip=127.0.0.1`r`nport=5555`r`n`r`n[Recorder]`r`nMaxRecordingQueueFrames=180`r`nFlushTimeoutMs=10000`r`n",
         $utf8)
     [IO.File]::WriteAllText(
         $stimNetwork,
@@ -367,11 +372,21 @@ try {
 	$runtimeText = Set-IniSectionValue $runtimeText "ActiveIlluminator" "ReferenceIrradianceWm2" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $ActiveIlluminatorReferenceIrradianceWm2))
 	$runtimeText = Set-IniSectionValue $runtimeText "ActiveIlluminator" "LegacyMaxReferenceIrradianceWm2" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $ActiveIlluminatorLegacyMaxReferenceIrradianceWm2))
 	$runtimeText = Set-IniSectionValue $runtimeText "ActiveIlluminator" "DebugLog" $ActiveIlluminatorDebugLog
-	$runtimeText = Set-IniSectionValue $runtimeText "Annotation" "OverlayInSensorImage" $AnnotationOverlayInSensorImage
+    $runtimeText = Set-IniSectionValue $runtimeText "Annotation" "OverlayInSensorImage" $AnnotationOverlayInSensorImage
+    # This harness is the explicit legacy compatibility regression.  A1 made
+    # DDS the production default, so every legacy transport must be requested
+    # here rather than relying on the application's fallback behavior.
+    $runtimeText = Set-IniSectionValue $runtimeText "CommandTransport" "Input" "udp"
+    $runtimeText = Set-IniSectionValue $runtimeText "DdsProtocol" "Enable" "false"
+    $runtimeText = Set-IniSectionValue $runtimeText "DdsVideo" "Enable" "false"
+    $runtimeText = Set-IniSectionValue $runtimeText "TcpPayload" "SendVideo" "true"
+    $runtimeText = Set-IniSectionValue $runtimeText "TcpPayload" "SendAnnotation" "true"
+    $runtimeText = Set-IniSectionValue $runtimeText "TcpPayload" "SendRealtimeData" "true"
+    $runtimeText = Set-IniSectionValue $runtimeText "TcpPayload" "ForwardInitControl" "true"
     [IO.File]::WriteAllText($runtimeIni, $runtimeText, $utf8)
 
     $env:QT_FORCE_STDERR_LOGGING = "1"
-    $video = Start-Process -FilePath $videoExe -WorkingDirectory $videoWork -WindowStyle Hidden -PassThru `
+    $video = Start-Process -FilePath $videoExe -ArgumentList @("--receive-transport=tcp") -WorkingDirectory $videoWork -WindowStyle Hidden -PassThru `
         -RedirectStandardOutput (Join-Path $logRoot "video.out.log") `
         -RedirectStandardError (Join-Path $logRoot "video.err.log")
     Start-Sleep -Seconds 2
@@ -381,6 +396,7 @@ try {
     Start-Sleep -Seconds 5
     $stimArgs = @(
         "--phase1b-auto-seconds=$Seconds",
+		"--control-transport=udp",
 		"--phase1d-h264=$StimH264En",
 		"--sim-mode=$StimSimMode",
 		"--sensor-band=$StimSensorBand"

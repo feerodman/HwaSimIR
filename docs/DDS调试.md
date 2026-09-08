@@ -1,3 +1,5 @@
+> **历史文档（D2，已被 F1/A1 取代）**：本文描述的“DDS 仅承载视频、控制仍走 UDP”只适用于 2026-08-26 的 D2 基线。当前实现已由 F1 full DDS supersede：RESET/INIT/InitAck/START/Realtime/STOP、VideoStatus/Meta/Annotation 和视频均可走 DDS；A1 生产默认见 `docs/HwaSimIR_A1_DDS_Production_Integration_Acceptance.md`。以下内容仅保留作历史排障记录，不代表当前默认通信方式。
+
 # 1. D2 现在能不能直接 DDS 发送不压缩视频？
 
 **能，而且已经是正式代码，不只是 Demo。**
