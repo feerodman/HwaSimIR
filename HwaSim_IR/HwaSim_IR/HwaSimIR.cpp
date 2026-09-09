@@ -1939,9 +1939,10 @@ bool HwaSimIR::ShouldLogQuiet(std::uint64_t counter, std::uint64_t sourceSeq) co
 	}
 	if (sourceSeq > 0)
 	{
-		return sourceSeq <= 3 || (sourceSeq % 120) == 0;
+		return (sourceSeq > 0 && sourceSeq <= 3) ||
+			(sourceSeq > 0 && (sourceSeq % 3600) == 0);
 	}
-	return counter <= 3 || (counter % 120) == 0;
+	return counter <= 3 || (counter % 3600) == 0;
 }
 
 void HwaSimIR::ApplyRenderBackendPrcConfig(const char* reason)
@@ -3378,7 +3379,7 @@ void HwaSimIR::LogStage6MtfBlur(std::uint64_t sourceSeq, double renderMs)
 	const std::string stateKey = state.str();
 	const bool stateChanged = stateKey != m_lastStage6MtfLogState;
 	const bool sampleDue =
-		sourceSeq <= 3 ||
+		(sourceSeq > 0 && sourceSeq <= 3) ||
 		(m_stage6MtfLogEveryFrames > 0 && sourceSeq > 0 &&
 			(sourceSeq % static_cast<std::uint64_t>(m_stage6MtfLogEveryFrames)) == 0);
 	if (!m_stage6MtfDebugLog && !m_enableIRVerboseLog && !stateChanged && !sampleDue)
@@ -3431,7 +3432,7 @@ void HwaSimIR::LogStage6DetectorNoise(std::uint64_t sourceSeq, double renderMs)
 	const std::string stateKey = state.str();
 	const bool stateChanged = stateKey != m_lastStage6NoiseLogState;
 	const bool sampleDue =
-		sourceSeq <= 3 ||
+		(sourceSeq > 0 && sourceSeq <= 3) ||
 		(m_stage6NoiseLogEveryFrames > 0 && sourceSeq > 0 &&
 			(sourceSeq % static_cast<std::uint64_t>(m_stage6NoiseLogEveryFrames)) == 0);
 	if (!m_stage6NoiseDebugLog && !m_enableIRVerboseLog && !stateChanged && !sampleDue)
@@ -3707,7 +3708,7 @@ void HwaSimIR::LogStage6Agc(std::uint64_t sourceSeq, bool forceLog)
 	const std::string stateKey = state.str();
 	const bool stateChanged = stateKey != m_lastStage6AgcLogState;
 	const bool sampleDue =
-		sourceSeq <= 3 ||
+		(sourceSeq > 0 && sourceSeq <= 3) ||
 		(m_stage6AgcLogEveryFrames > 0 && sourceSeq > 0 &&
 			(sourceSeq % static_cast<std::uint64_t>(m_stage6AgcLogEveryFrames)) == 0);
 	if (!forceLog && !m_stage6AgcDebugLog && !m_enableIRVerboseLog && !stateChanged && !sampleDue)
@@ -4180,7 +4181,14 @@ void HwaSimIR::InitStage7CloudRenderer()
 	{
 		return;
 	}
-	const int sliceCount = m_stage7CloudRenderMode == CloudRenderMode::World2D
+	// StreamedWorld3D is a hybrid renderer: one far-field world slice plus the
+	// target-centred streamed volume pool.  Treating it like Layered2_5D drew
+	// two redundant full-area slices even when no local cloud volume was in the
+	// camera frustum, which is particularly expensive on the RK3588 tile GPU.
+	const bool singleFarFieldSlice =
+		m_stage7CloudRenderMode == CloudRenderMode::World2D ||
+		m_stage7CloudRenderMode == CloudRenderMode::StreamedWorld3D;
+	const int sliceCount = singleFarFieldSlice
 		? 1
 		: std::max(2, std::min(3, m_stage7CloudLayerCount));
 	const LPoint3f cameraPos = m_cameraNode.is_empty()
@@ -6188,9 +6196,10 @@ void HwaSimIR::RefreshAnnotationOverlay(const BYHWICD::DisplayC2cObjTrackingData
 	{
 		const std::uint64_t updateStride = static_cast<std::uint64_t>(
 			std::max(1.0, std::floor(targetFps / std::max(1.0, m_annotationUpdateHz) + 0.5)));
-		updateProjection = sourceSeq <= 3 ||
+		updateProjection = sourceSeq > 0 && (
+			sourceSeq <= 3 ||
 			m_annotationLastProjectionSourceSeq == 0 ||
-			sourceSeq >= m_annotationLastProjectionSourceSeq + updateStride;
+			sourceSeq >= m_annotationLastProjectionSourceSeq + updateStride);
 		if (updateProjection)
 		{
 			++m_annotationBBoxUpdateCount;
@@ -7534,6 +7543,7 @@ void HwaSimIR::ProcessAddRemoveTargetPlatform()
 			}
 		}
 		m_targetPlatformList.clear();
+		m_irTargetLocalBoundsCache.clear();
 	}
 }
 
@@ -11296,8 +11306,10 @@ void HwaSimIR::InitInfraredShader() {
     varying vec2 texcoord;
     varying vec3 v_local_pos; // 传递模型局部坐标系下的三维坐标
     varying vec3 v_stage5_normal;
+#if P1_M1_L1_L2_SHADER_FEATURES
     varying vec3 v_stage5_world_normal;
 	varying vec3 v_stage5_world_pos;
+#endif
     varying vec2 v_cloud_world_uv;
 
     void main() {
@@ -11305,9 +11317,13 @@ void HwaSimIR::InitInfraredShader() {
         texcoord = p3d_MultiTexCoord0;
         v_local_pos = p3d_Vertex.xyz; // 提取局部坐标
         v_stage5_normal = p3d_Normal;
+#if P1_M1_L1_L2_SHADER_FEATURES
 		v_stage5_world_normal = normalize(mat3(p3d_ModelMatrix) * p3d_Normal);
+#endif
         vec4 world_pos = p3d_ModelMatrix * p3d_Vertex;
+#if P1_M1_L1_L2_SHADER_FEATURES
 		v_stage5_world_pos = world_pos.xyz;
+#endif
         v_cloud_world_uv = world_pos.xy * u_cloud_world_uv_reciprocal.x;
     }
     )";
@@ -11479,8 +11495,10 @@ void HwaSimIR::InitInfraredShader() {
     varying vec2 texcoord;
     varying vec3 v_local_pos;
     varying vec3 v_stage5_normal;
+#if P1_M1_L1_L2_SHADER_FEATURES
     varying vec3 v_stage5_world_normal;
 	varying vec3 v_stage5_world_pos;
+#endif
     varying vec2 v_cloud_world_uv;
 
     float Stage6Noise(vec2 pixel)
@@ -11768,6 +11786,7 @@ void HwaSimIR::InitInfraredShader() {
             float sensor_input_debug = clamp(u_stage5_sensor_input_display_gray, 0.0, 1.0);
             float stage5_intensity = 0.0;
 			float l2_active_sensor = 0.0;
+#if P1_M1_L1_L2_SHADER_FEATURES
 			if (u_l2_active_en == 1) {
 				// Evaluate the beam in object-local coordinates.  Panda's generated
 				// p3d_ModelMatrix world space differs between VisibleWindow and the
@@ -11832,7 +11851,9 @@ void HwaSimIR::InitInfraredShader() {
 				float m1_sensor = u_m1_tau_up * m1_surface + u_m1_path_radiance + l2_active_sensor;
 				stage5_intensity = pow(clamp(m1_sensor * u_m1_display_scale + u_m1_display_offset, 0.0, 1.0),
 					1.0 / max(u_m1_display_gamma, 0.1));
-            } else if (u_stage5_use_sensor_input_for_display == 1) {
+			} else
+#endif
+			if (u_stage5_use_sensor_input_for_display == 1) {
                 stage5_intensity = sensor_input_debug;
             } else if (u_stage5_debug_view_mode == 1) {
                 stage5_intensity = body_debug;
@@ -11875,6 +11896,24 @@ void HwaSimIR::InitInfraredShader() {
         gl_FragColor = vec4(final_intensity, final_intensity, final_intensity, texColor.a);
     }
     )";
+
+	// P1 diagnostic variant: the preprocessor removes M1/L1/L2 varyings and
+	// fragment math from the compiled shader, rather than relying on a uniform
+	// branch.  Full remains the production default; LegacyMinimal is A/B only.
+	const char* p1ShaderVariantEnv = std::getenv("P1IRShaderVariant");
+	const bool p1LegacyMinimal = p1ShaderVariantEnv != nullptr &&
+		ToLowerAscii(p1ShaderVariantEnv) == "legacyminimal";
+	const std::string p1FeatureDefine = std::string("#define P1_M1_L1_L2_SHADER_FEATURES ") +
+		(p1LegacyMinimal ? "0\n" : "1\n");
+	const std::string::size_type vertexVersion = vertex_shader.find("#version 100");
+	const std::string::size_type fragmentVersion = fragment_shader.find("#version 100");
+	const std::string::size_type vertexVersionEnd = vertex_shader.find('\n', vertexVersion);
+	const std::string::size_type fragmentVersionEnd = fragment_shader.find('\n', fragmentVersion);
+	if (vertexVersionEnd != std::string::npos) vertex_shader.insert(vertexVersionEnd + 1, p1FeatureDefine);
+	if (fragmentVersionEnd != std::string::npos) fragment_shader.insert(fragmentVersionEnd + 1, p1FeatureDefine);
+	std::cout << "[P1 ShaderVariant] variant=" << (p1LegacyMinimal ? "LegacyMinimal" : "Full")
+		<< " m1L1L2Compiled=" << (p1LegacyMinimal ? 0 : 1)
+		<< " source=" << (p1ShaderVariantEnv != nullptr ? "env" : "production_default") << std::endl;
 
 	m_irShader = Shader::make(Shader::SL_GLSL, vertex_shader, fragment_shader);
 	if (!m_irShader) {
@@ -12961,8 +13000,10 @@ void HwaSimIR::LogStage5ModtranRadianceCompare(const TargetPlatformData& targetP
 	}
 	const std::uint64_t frameSeq = m_currentFrameTelemetry.sourceSeq > 0
 		? m_currentFrameTelemetry.sourceSeq : m_stage0DisplayFrameCount;
+	const std::uint64_t logEvery = static_cast<std::uint64_t>(m_quietPerfMode
+		? std::max(3600, m_stage5ModtranLogEveryFrames) : m_stage5ModtranLogEveryFrames);
 	const bool sampleDue = frameSeq <= 3 ||
-		(m_stage5ModtranLogEveryFrames > 0 && (frameSeq % static_cast<std::uint64_t>(m_stage5ModtranLogEveryFrames)) == 0);
+		(logEvery > 0 && (frameSeq % logEvery) == 0);
 	if (!sampleDue && !m_enableIRVerboseLog)
 	{
 		return;
@@ -13053,8 +13094,10 @@ void HwaSimIR::LogStage5ModtranPathAB(const TargetPlatformData& targetPlat, cons
 	}
 	const std::uint64_t frameSeq = m_currentFrameTelemetry.sourceSeq > 0
 		? m_currentFrameTelemetry.sourceSeq : m_stage0DisplayFrameCount;
+	const std::uint64_t logEvery = static_cast<std::uint64_t>(m_quietPerfMode
+		? std::max(3600, m_stage5ModtranLogEveryFrames) : m_stage5ModtranLogEveryFrames);
 	const bool sampleDue = frameSeq <= 3 ||
-		(m_stage5ModtranLogEveryFrames > 0 && (frameSeq % static_cast<std::uint64_t>(m_stage5ModtranLogEveryFrames)) == 0);
+		(logEvery > 0 && (frameSeq % logEvery) == 0);
 	if (!sampleDue && !m_enableIRVerboseLog)
 	{
 		return;
@@ -13641,61 +13684,67 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_path_radiance", LVecBase2f(static_cast<float>(components.pathRadiance), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_sensor_input_radiance", LVecBase2f(static_cast<float>(components.sensorInputRadiance), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_sensor_input_display_gray", LVecBase2f(static_cast<float>(sensorInputDisplayGray), 0.0f));
-	SetShaderInputCached(targetPlat.nodePath, "u_m1_physics_runtime_en", LVecBase2i(stage5Input.m1RuntimeAffectsImage ? 1 : 0, 0));
-	SetShaderInputCached(targetPlat.nodePath, "u_m1_tau_up", LVecBase2f(static_cast<float>(components.m1TauUp), 0.0f));
-	SetShaderInputCached(targetPlat.nodePath, "u_m1_path_radiance", LVecBase2f(static_cast<float>(
-		stage5Band == IRBand::NearInfrared ? components.pathScatteringRadiance : components.pathThermalRadiance), 0.0f));
-	SetShaderInputCached(targetPlat.nodePath, "u_m1_direct_solar_irradiance", LVecBase2f(static_cast<float>(components.directSolarIrradiance), 0.0f));
-	SetShaderInputCached(targetPlat.nodePath, "u_m1_sky_diffuse_irradiance", LVecBase2f(static_cast<float>(components.skyDiffuseIrradiance), 0.0f));
-	SetShaderInputCached(targetPlat.nodePath, "u_m1_sun_visibility", LVecBase2f(static_cast<float>(components.sunVisibility), 0.0f));
-	SetShaderInputCached(targetPlat.nodePath, "u_l1_sun_visibility_optical", LVecBase2f(static_cast<float>(l1SunVisibility.first), 0.0f));
-	SetShaderInputCached(targetPlat.nodePath, "u_l1_sun_visibility_thermal", LVecBase2f(static_cast<float>(l1SunVisibility.second), 0.0f));
-	SetShaderInputCached(targetPlat.nodePath, "u_m1_sky_visibility", LVecBase2f(static_cast<float>(components.skyVisibility), 0.0f));
-	SetShaderInputCached(targetPlat.nodePath, "u_m1_sun_direction_world", LVecBase3f(
-		static_cast<float>(m_m1SolarState.east), static_cast<float>(m_m1SolarState.north), static_cast<float>(m_m1SolarState.up)));
-	SetShaderInputCached(targetPlat.nodePath, "u_m1_display_scale", LVecBase2f(static_cast<float>(m_stage5SensorInputDisplayScale), 0.0f));
-	SetShaderInputCached(targetPlat.nodePath, "u_m1_display_offset", LVecBase2f(static_cast<float>(m_stage5SensorInputDisplayOffset), 0.0f));
-	SetShaderInputCached(targetPlat.nodePath, "u_m1_display_gamma", LVecBase2f(static_cast<float>(m_stage5SensorInputDisplayGamma), 0.0f));
-	const LPoint3f l2SourcePosition = m_cameraNode.is_empty()
-		? LPoint3f(0.0f, 0.0f, 0.0f) : m_cameraNode.get_pos(m_renderRoot);
-	LVecBase3f l2SourceDirection(0.0f, 1.0f, 0.0f);
-	if (!m_cameraNode.is_empty())
+	if (stage5Input.m1RuntimeAffectsImage)
 	{
-		l2SourceDirection = m_renderRoot.get_relative_vector(m_cameraNode, LVecBase3f(0.0f, 1.0f, 0.0f));
-		if (l2SourceDirection.length_squared() > 1.0e-8f) l2SourceDirection.normalize();
+		SetShaderInputCached(targetPlat.nodePath, "u_m1_physics_runtime_en", LVecBase2i(1, 0));
+		SetShaderInputCached(targetPlat.nodePath, "u_m1_tau_up", LVecBase2f(static_cast<float>(components.m1TauUp), 0.0f));
+		SetShaderInputCached(targetPlat.nodePath, "u_m1_path_radiance", LVecBase2f(static_cast<float>(
+			stage5Band == IRBand::NearInfrared ? components.pathScatteringRadiance : components.pathThermalRadiance), 0.0f));
+		SetShaderInputCached(targetPlat.nodePath, "u_m1_direct_solar_irradiance", LVecBase2f(static_cast<float>(components.directSolarIrradiance), 0.0f));
+		SetShaderInputCached(targetPlat.nodePath, "u_m1_sky_diffuse_irradiance", LVecBase2f(static_cast<float>(components.skyDiffuseIrradiance), 0.0f));
+		SetShaderInputCached(targetPlat.nodePath, "u_m1_sun_visibility", LVecBase2f(static_cast<float>(components.sunVisibility), 0.0f));
+		SetShaderInputCached(targetPlat.nodePath, "u_l1_sun_visibility_optical", LVecBase2f(static_cast<float>(l1SunVisibility.first), 0.0f));
+		SetShaderInputCached(targetPlat.nodePath, "u_l1_sun_visibility_thermal", LVecBase2f(static_cast<float>(l1SunVisibility.second), 0.0f));
+		SetShaderInputCached(targetPlat.nodePath, "u_m1_sky_visibility", LVecBase2f(static_cast<float>(components.skyVisibility), 0.0f));
+		SetShaderInputCached(targetPlat.nodePath, "u_m1_sun_direction_world", LVecBase3f(
+			static_cast<float>(m_m1SolarState.east), static_cast<float>(m_m1SolarState.north), static_cast<float>(m_m1SolarState.up)));
+		SetShaderInputCached(targetPlat.nodePath, "u_m1_display_scale", LVecBase2f(static_cast<float>(m_stage5SensorInputDisplayScale), 0.0f));
+		SetShaderInputCached(targetPlat.nodePath, "u_m1_display_offset", LVecBase2f(static_cast<float>(m_stage5SensorInputDisplayOffset), 0.0f));
+		SetShaderInputCached(targetPlat.nodePath, "u_m1_display_gamma", LVecBase2f(static_cast<float>(m_stage5SensorInputDisplayGamma), 0.0f));
 	}
-	SetShaderInputCached(targetPlat.nodePath, "u_l2_active_en", LVecBase2i(l2ShaderActiveEnabled ? 1 : 0, 0));
-	SetShaderInputCached(targetPlat.nodePath, "u_l2_active_beam_profile", LVecBase2i(
-		m_l2ActiveIlluminatorConfig.beamProfile == IRActiveBeamProfile::TopHat ? 1 : 0, 0));
-	SetShaderInputCached(targetPlat.nodePath, "u_l2_active_source_pos_world", LVecBase3f(
-		l2SourcePosition[0], l2SourcePosition[1], l2SourcePosition[2]));
-	SetShaderInputCached(targetPlat.nodePath, "u_l2_active_source_dir_world", LVecBase3f(
-		l2SourceDirection[0], l2SourceDirection[1], l2SourceDirection[2]));
-	const LPoint3f l2SourcePositionLocal = targetPlat.nodePath.get_relative_point(
-		m_renderRoot, l2SourcePosition);
-	LVecBase3f l2SourceDirectionLocal = targetPlat.nodePath.get_relative_vector(
-		m_renderRoot, l2SourceDirection);
-	if (l2SourceDirectionLocal.length_squared() > 1.0e-8f)
+	if (m_l2ActiveIlluminatorConfig.enabled)
 	{
-		l2SourceDirectionLocal.normalize();
+		const LPoint3f l2SourcePosition = m_cameraNode.is_empty()
+			? LPoint3f(0.0f, 0.0f, 0.0f) : m_cameraNode.get_pos(m_renderRoot);
+		LVecBase3f l2SourceDirection(0.0f, 1.0f, 0.0f);
+		if (!m_cameraNode.is_empty())
+		{
+			l2SourceDirection = m_renderRoot.get_relative_vector(m_cameraNode, LVecBase3f(0.0f, 1.0f, 0.0f));
+			if (l2SourceDirection.length_squared() > 1.0e-8f) l2SourceDirection.normalize();
+		}
+		SetShaderInputCached(targetPlat.nodePath, "u_l2_active_en", LVecBase2i(l2ShaderActiveEnabled ? 1 : 0, 0));
+		SetShaderInputCached(targetPlat.nodePath, "u_l2_active_beam_profile", LVecBase2i(
+			m_l2ActiveIlluminatorConfig.beamProfile == IRActiveBeamProfile::TopHat ? 1 : 0, 0));
+		SetShaderInputCached(targetPlat.nodePath, "u_l2_active_source_pos_world", LVecBase3f(
+			l2SourcePosition[0], l2SourcePosition[1], l2SourcePosition[2]));
+		SetShaderInputCached(targetPlat.nodePath, "u_l2_active_source_dir_world", LVecBase3f(
+			l2SourceDirection[0], l2SourceDirection[1], l2SourceDirection[2]));
+		const LPoint3f l2SourcePositionLocal = targetPlat.nodePath.get_relative_point(
+			m_renderRoot, l2SourcePosition);
+		LVecBase3f l2SourceDirectionLocal = targetPlat.nodePath.get_relative_vector(
+			m_renderRoot, l2SourceDirection);
+		if (l2SourceDirectionLocal.length_squared() > 1.0e-8f)
+		{
+			l2SourceDirectionLocal.normalize();
+		}
+		else
+		{
+			l2SourceDirectionLocal = LVecBase3f(0.0f, 1.0f, 0.0f);
+		}
+		SetShaderInputCached(targetPlat.nodePath, "u_l2_active_source_pos_local", LVecBase3f(
+			l2SourcePositionLocal[0], l2SourcePositionLocal[1], l2SourcePositionLocal[2]));
+		SetShaderInputCached(targetPlat.nodePath, "u_l2_active_source_dir_local", LVecBase3f(
+			l2SourceDirectionLocal[0], l2SourceDirectionLocal[1], l2SourceDirectionLocal[2]));
+		SetShaderInputCached(targetPlat.nodePath, "u_l2_active_half_angle_rad", LVecBase2f(static_cast<float>(l2Active.halfAngleRad), 0.0f));
+		SetShaderInputCached(targetPlat.nodePath, "u_l2_active_reference_range_m", LVecBase2f(static_cast<float>(m_l2ActiveIlluminatorConfig.referenceRangeM), 0.0f));
+		SetShaderInputCached(targetPlat.nodePath, "u_l2_active_reference_irradiance_Wm2", LVecBase2f(static_cast<float>(l2Active.referenceIrradianceWm2), 0.0f));
+		SetShaderInputCached(targetPlat.nodePath, "u_l2_active_tau_outbound", LVecBase2f(static_cast<float>(l2Active.tauOutbound), 0.0f));
+		SetShaderInputCached(targetPlat.nodePath, "u_l2_active_tau_inbound", LVecBase2f(static_cast<float>(l2Active.tauInbound), 0.0f));
+		SetShaderInputCached(targetPlat.nodePath, "u_l2_active_visibility", LVecBase2f(static_cast<float>(l2Active.activeVisibility), 0.0f));
+		SetShaderInputCached(targetPlat.nodePath, "u_l2_active_overlap_width_um", LVecBase2f(static_cast<float>(std::max(1.0e-6, l2Active.spectralOverlapWidthUm)), 0.0f));
+		SetShaderInputCached(targetPlat.nodePath, "u_l2_active_center_sensor_radiance", LVecBase2f(
+			static_cast<float>(l2ShaderActiveEnabled ? l2Active.activeSensorRadianceWm2SrUm : 0.0), 0.0f));
 	}
-	else
-	{
-		l2SourceDirectionLocal = LVecBase3f(0.0f, 1.0f, 0.0f);
-	}
-	SetShaderInputCached(targetPlat.nodePath, "u_l2_active_source_pos_local", LVecBase3f(
-		l2SourcePositionLocal[0], l2SourcePositionLocal[1], l2SourcePositionLocal[2]));
-	SetShaderInputCached(targetPlat.nodePath, "u_l2_active_source_dir_local", LVecBase3f(
-		l2SourceDirectionLocal[0], l2SourceDirectionLocal[1], l2SourceDirectionLocal[2]));
-	SetShaderInputCached(targetPlat.nodePath, "u_l2_active_half_angle_rad", LVecBase2f(static_cast<float>(l2Active.halfAngleRad), 0.0f));
-	SetShaderInputCached(targetPlat.nodePath, "u_l2_active_reference_range_m", LVecBase2f(static_cast<float>(m_l2ActiveIlluminatorConfig.referenceRangeM), 0.0f));
-	SetShaderInputCached(targetPlat.nodePath, "u_l2_active_reference_irradiance_Wm2", LVecBase2f(static_cast<float>(l2Active.referenceIrradianceWm2), 0.0f));
-	SetShaderInputCached(targetPlat.nodePath, "u_l2_active_tau_outbound", LVecBase2f(static_cast<float>(l2Active.tauOutbound), 0.0f));
-	SetShaderInputCached(targetPlat.nodePath, "u_l2_active_tau_inbound", LVecBase2f(static_cast<float>(l2Active.tauInbound), 0.0f));
-	SetShaderInputCached(targetPlat.nodePath, "u_l2_active_visibility", LVecBase2f(static_cast<float>(l2Active.activeVisibility), 0.0f));
-	SetShaderInputCached(targetPlat.nodePath, "u_l2_active_overlap_width_um", LVecBase2f(static_cast<float>(std::max(1.0e-6, l2Active.spectralOverlapWidthUm)), 0.0f));
-	SetShaderInputCached(targetPlat.nodePath, "u_l2_active_center_sensor_radiance", LVecBase2f(
-		static_cast<float>(l2ShaderActiveEnabled ? l2Active.activeSensorRadianceWm2SrUm : 0.0), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_body_radiance_scale", LVecBase2f(static_cast<float>(stage5.bodyGrayBeforeFloor), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_body_gray", LVecBase2f(static_cast<float>(stage5.bodyGrayAfterFloor), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_reflected_radiance", LVecBase2f(static_cast<float>(stage5.reflectedRadiance), 0.0f));
@@ -13744,9 +13793,11 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	const bool componentStateChanged =
 		m_lastStage5RadianceComponentLogState[componentLogKey] != componentLogState;
 	m_lastStage5RadianceComponentLogState[componentLogKey] = componentLogState;
+	const std::uint64_t componentLogEvery = static_cast<std::uint64_t>(m_quietPerfMode
+		? std::max(3600, m_stage5ComponentLogEveryFrames) : m_stage5ComponentLogEveryFrames);
 	const bool stage5LogDue =
 		frameSeq <= 3 ||
-		(m_stage5ComponentLogEveryFrames > 0 && (frameSeq % static_cast<std::uint64_t>(m_stage5ComponentLogEveryFrames)) == 0) ||
+		(componentLogEvery > 0 && (frameSeq % componentLogEvery) == 0) ||
 		componentStateChanged;
 	const bool logStage5 =
 		m_enableIRVerboseLog ||
@@ -13759,7 +13810,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	const bool a1TraceStateChanged = m_a1ActiveDisplayTraceState[targetKey] != a1TraceState;
 	m_a1ActiveDisplayTraceState[targetKey] = a1TraceState;
 	if (stage5Band == IRBand::NearInfrared &&
-		(a1TraceStateChanged || frameSeq <= 3 || (frameSeq % 120) == 0))
+		(a1TraceStateChanged || frameSeq <= 3 || (frameSeq % (m_quietPerfMode ? 3600 : 120)) == 0))
 	{
 		const IRSensorPostProcessConfig display = m_stage6DisplayConfigReady
 			? m_stage6DisplayConfig : IRSensorPostProcessConfig();
@@ -14244,12 +14295,17 @@ void HwaSimIR::UpdateM1SolarPosition(IRRuntimeEnvironment& environment, bool for
 		environment.sunElevationDeg = m_m1SolarState.elevationDeg;
 		environment.sunStrength = WeatherSunStrength(environment.weatherCode, environment.sunElevationDeg);
 	}
+	// Solar position is updated at the shared IR cadence, but its production audit
+	// log must not turn platform motion into a 30 Hz synchronous stdout workload.
+	// The major state key catches UTC-minute/validity transitions; the sequence
+	// heartbeat preserves a low-frequency trace while the platform is moving.
 	std::ostringstream state;
 	state << input.utcYear << '-' << input.utcMonth << '-' << input.utcDay << ':'
 		<< static_cast<int>(std::floor(input.utcHour * 60.0)) << ':'
-		<< std::fixed << std::setprecision(4) << input.latitudeDeg << ':' << input.longitudeDeg << ':'
-		<< (m_m1SolarState.valid ? 1 : 0);
-	if (!forceLog && state.str() == m_lastM1SolarLogState)
+		<< (m_m1SolarState.valid ? 1 : 0) << ':' << positionSource;
+	const std::uint64_t sourceSeq = m_currentFrameTelemetry.sourceSeq;
+	const bool periodicLog = sourceSeq > 0 && (sourceSeq % (m_quietPerfMode ? 3600 : 120)) == 0;
+	if (!forceLog && state.str() == m_lastM1SolarLogState && !periodicLog)
 	{
 		return;
 	}
@@ -14289,8 +14345,36 @@ void HwaSimIR::LogActiveIREnvironment(const IRRuntimeEnvironment& environment, c
 	m_lastLoggedEnvironmentWeather = environment.weatherCode;
 }
 
+bool HwaSimIR::ResolveCachedTargetVolume(const TargetPlatformData& targetPlat,
+	const std::string& targetKey, LPoint3f& worldCenter, float& worldRadius)
+{
+	worldCenter = targetPlat.nodePath.get_pos(m_renderRoot);
+	worldRadius = 1.0f;
+	std::map<std::string, std::pair<LPoint3f, LPoint3f> >::const_iterator cached =
+		m_irTargetLocalBoundsCache.find(targetKey);
+	if (cached == m_irTargetLocalBoundsCache.end())
+	{
+		LPoint3f localMin, localMax;
+		if (!targetPlat.nodePath.calc_tight_bounds(localMin, localMax, targetPlat.nodePath)) return false;
+		m_irTargetLocalBoundsCache[targetKey] = std::make_pair(localMin, localMax);
+		cached = m_irTargetLocalBoundsCache.find(targetKey);
+	}
+	const LPoint3f localCenter = (cached->second.first + cached->second.second) * 0.5f;
+	worldCenter = m_renderRoot.get_relative_point(targetPlat.nodePath, localCenter);
+	const LPoint3f worldCorner = m_renderRoot.get_relative_point(targetPlat.nodePath, cached->second.second);
+	worldRadius = std::max(0.1f, (worldCorner - worldCenter).length());
+	return true;
+}
+
 void HwaSimIR::UpdateL1GeometricSunVisibility(double currentTime)
 {
+	// With NaturalSolar disabled there is no L1 consumer.  In particular, avoid
+	// calc_tight_bounds() for every target at 30 Hz on the Mali production path.
+	if (!m_l1NaturalSolarEnabled || (!m_l1OpticalShadowEnabled && !m_l1SolarThermalEnabled))
+	{
+		if (!m_l1SunVisibilityByTarget.empty()) m_l1SunVisibilityByTarget.clear();
+		return;
+	}
 	const double interval = 1.0 / std::max(1.0, m_l1ShadowUpdateHz);
 	if (m_l1LastShadowUpdateTime >= 0.0 && currentTime - m_l1LastShadowUpdateTime < interval) return;
 	m_l1LastShadowUpdateTime = currentTime;
@@ -14303,19 +14387,12 @@ void HwaSimIR::UpdateL1GeometricSunVisibility(double currentTime)
 	{
 		const TargetPlatformData& target = m_targetPlatformList[i];
 		if (!target.isExist || target.nodePath.is_empty()) continue;
-		LPoint3f localMin, localMax;
-		LPoint3f center = target.nodePath.get_pos(m_renderRoot);
-		float radius = 1.0f;
-		if (target.nodePath.calc_tight_bounds(localMin, localMax, target.nodePath))
-		{
-			const LPoint3f localCenter = (localMin + localMax) * 0.5f;
-			center = m_renderRoot.get_relative_point(target.nodePath, localCenter);
-			const LPoint3f worldCorner = m_renderRoot.get_relative_point(target.nodePath, localMax);
-			radius = std::max(0.1f, (worldCorner - center).length());
-		}
 		const std::string visibilityKey = Stage4PlatformName(target.type)
 			+ "#plat" + std::to_string(target.targetState.targetPlatID)
 			+ "#target" + std::to_string(target.targetState.targetID);
+		LPoint3f center;
+		float radius = 1.0f;
+		ResolveCachedTargetVolume(target, visibilityKey, center, radius);
 		volumes.push_back(Volume{visibilityKey, center, radius});
 	}
 	LVecBase3f sunDir = daylight ? sun : LVecBase3f(0.0f, 0.0f, 1.0f);
@@ -14357,6 +14434,13 @@ std::pair<double, double> HwaSimIR::L1SunVisibilityForTarget(const std::string& 
 
 void HwaSimIR::UpdateL2ActiveVisibility(double currentTime)
 {
+	// L2 visibility is a distinct semantic, but it has no work when the production
+	// feature is disabled or geometric occlusion is not requested.
+	if (!m_l2ActiveIlluminatorConfig.enabled || !m_l2ActiveIlluminatorConfig.useGeometricOcclusion)
+	{
+		if (!m_l2ActiveVisibilityByTarget.empty()) m_l2ActiveVisibilityByTarget.clear();
+		return;
+	}
 	const double interval = 1.0 / std::max(1.0, m_l2ShadowUpdateHz);
 	if (m_l2LastVisibilityUpdateTime >= 0.0 && currentTime - m_l2LastVisibilityUpdateTime < interval) return;
 	m_l2LastVisibilityUpdateTime = currentTime;
@@ -14369,19 +14453,12 @@ void HwaSimIR::UpdateL2ActiveVisibility(double currentTime)
 	{
 		const TargetPlatformData& target = m_targetPlatformList[i];
 		if (!target.isExist || target.nodePath.is_empty()) continue;
-		LPoint3f localMin, localMax;
-		LPoint3f center = target.nodePath.get_pos(m_renderRoot);
-		float radius = 1.0f;
-		if (target.nodePath.calc_tight_bounds(localMin, localMax, target.nodePath))
-		{
-			const LPoint3f localCenter = (localMin + localMax) * 0.5f;
-			center = m_renderRoot.get_relative_point(target.nodePath, localCenter);
-			const LPoint3f worldCorner = m_renderRoot.get_relative_point(target.nodePath, localMax);
-			radius = std::max(0.1f, (worldCorner - center).length());
-		}
 		const std::string key = Stage4PlatformName(target.type)
 			+ "#plat" + std::to_string(target.targetState.targetPlatID)
 			+ "#target" + std::to_string(target.targetState.targetID);
+		LPoint3f center;
+		float radius = 1.0f;
+		ResolveCachedTargetVolume(target, key, center, radius);
 		volumes.push_back(Volume{key, center, radius});
 	}
 
@@ -14433,6 +14510,14 @@ IRActiveIlluminatorOutput HwaSimIR::EvaluateL2ActiveIlluminator(
 	IRActiveIlluminatorInput input;
 	input.protocolEnabled = m_realTimeSceneData.weaponState.illuminatorEn;
 	input.sensorBand = sensorBand;
+	if (!m_l2ActiveIlluminatorConfig.enabled)
+	{
+		// Preserve the formal disabled result without resolving sensor profiles,
+		// target bounds or source geometry.  The full calculation is unchanged
+		// when L2 is enabled.
+		input.activeVisibility = 0.0;
+		return m_l2ActiveIlluminator.evaluate(m_l2ActiveIlluminatorConfig, input);
+	}
 	const IRSensorProfile& sensorProfile = m_irSensorProfiles.profileForBand(sensorBand);
 	input.sensorLowUm = sensorProfile.spectralLowUm;
 	input.sensorHighUm = sensorProfile.spectralHighUm;
@@ -14445,12 +14530,9 @@ IRActiveIlluminatorOutput HwaSimIR::EvaluateL2ActiveIlluminator(
 	input.bandReflectance = sensorBand == IRBand::NearInfrared ? reflectance.nir : reflectance.mwir;
 	input.reflectanceSource = sensorBand == IRBand::NearInfrared ? reflectance.nirSource : reflectance.mwirSource;
 
-	LPoint3f targetCenter = targetPlat.nodePath.get_pos(m_renderRoot);
-	LPoint3f localMin, localMax;
-	if (targetPlat.nodePath.calc_tight_bounds(localMin, localMax, targetPlat.nodePath))
-	{
-		targetCenter = m_renderRoot.get_relative_point(targetPlat.nodePath, (localMin + localMax) * 0.5f);
-	}
+	LPoint3f targetCenter;
+	float targetRadius = 1.0f;
+	ResolveCachedTargetVolume(targetPlat, targetKey, targetCenter, targetRadius);
 	const LPoint3f sourcePosition = m_cameraNode.is_empty()
 		? LPoint3f(0.0f, 0.0f, 0.0f) : m_cameraNode.get_pos(m_renderRoot);
 	LVecBase3f sourceDirection(0.0f, 1.0f, 0.0f);
@@ -14481,7 +14563,8 @@ IRActiveIlluminatorOutput HwaSimIR::EvaluateL2ActiveIlluminator(
 	m_l2LastActiveLogState[targetKey] = state.str();
 	const std::uint64_t seq = m_currentFrameTelemetry.sourceSeq > 0
 		? m_currentFrameTelemetry.sourceSeq : m_stage0DisplayFrameCount;
-	if (stateChanged || m_l2ActiveIlluminatorConfig.debugLog || seq <= 3 || (seq % 120) == 0)
+	if (stateChanged || m_l2ActiveIlluminatorConfig.debugLog || seq <= 3 ||
+		(seq % (m_quietPerfMode ? 3600 : 120)) == 0)
 	{
 		std::cout << "[L2 ActiveIlluminator] sourceSeq=" << seq
 			<< " targetKey=" << targetKey
@@ -14535,6 +14618,14 @@ void HwaSimIR::UpdateL1MaterialThermalState(TargetPlatformData& targetPlat, cons
 	const IRRuntimeEnvironment& environment, const IRAeroThermalOutput& aeroOutput,
 	double baseTempK, float dtSec)
 {
+	if (!m_l1NaturalSolarEnabled || !m_l1SolarThermalEnabled)
+	{
+		// The uniform is initialized to zero when the shader is attached.  A cached
+		// write here also handles a controlled runtime transition without allocating
+		// per-material vectors or touching thermal histories on the disabled path.
+		SetShaderInputCached(targetPlat.nodePath, "u_l1_solar_thermal_en", LVecBase2i(0, 0));
+		return;
+	}
 	const std::map<int, IRSceneMaterialBinding>::const_iterator bindingIt = m_l1MaterialBindingsByType.find(static_cast<int>(targetPlat.type));
 	if (bindingIt == m_l1MaterialBindingsByType.end()) return;
 	const IRSceneMaterialBinding& binding = bindingIt->second;
@@ -14663,7 +14754,12 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 	m_lastStage4UpdateTime = current_time;
 
 	IRRuntimeEnvironment environment = BuildRuntimeEnvironment();
-	UpdateM1SolarPosition(environment, false);
+	const bool m1SolarConsumerEnabled = Stage5ModtranRadianceCompareEnabled() ||
+		m_l1NaturalSolarEnabled || m_l2ActiveIlluminatorConfig.enabled;
+	if (m1SolarConsumerEnabled)
+	{
+		UpdateM1SolarPosition(environment, false);
+	}
 	UpdateL1GeometricSunVisibility(current_time);
 	UpdateL2ActiveVisibility(current_time);
 	const float ambientTempK = static_cast<float>(environment.airTemperatureC + 273.15);
@@ -15152,9 +15248,10 @@ AsyncTask::DoneStatus HwaSimIR::shader_update_task(GenericAsyncTask* task, void*
 		}
 		const std::string stateKey = state.str();
 		const bool stateChanged = stateKey != self->m_lastIrUpdateState;
-		const bool updateDue = sourceSeq <= 3 ||
+		const bool updateDue = sourceSeq > 0 && (
+			sourceSeq <= 3 ||
 			self->m_lastIrUpdateSourceSeq == 0 ||
-			sourceSeq >= self->m_lastIrUpdateSourceSeq + updateStride;
+			sourceSeq >= self->m_lastIrUpdateSourceSeq + updateStride);
 		if (stateChanged || updateDue)
 		{
 			const auto begin = std::chrono::steady_clock::now();

@@ -732,7 +732,11 @@ void MainWindow::sendInitCommand()
     // 传感器参数（简化配置）
     cmd.trackingInit.enable = true;
     cmd.trackingInit.envTerrain = 0; // 戈壁
-    cmd.trackingInit.envSky = 5;
+    // P1 weather A/B must honor the existing protocol field selected by the
+    // CLI/UI test control.  The previous hard-coded Overcast value made every
+    // --env-sky run exercise the same weather and invalidated Clear/Cloudy
+    // performance comparisons without changing the packet layout.
+    cmd.trackingInit.envSky = m_protocolEnvSky;
     cmd.trackingInit.envTemp = 25.0;
 	cmd.trackingInit.simMode = m_protocolSimMode;
 	cmd.trackingInit.videoFps = targetVideoFps();

@@ -433,6 +433,10 @@ private:
 	std::map<std::string, std::vector<IRMaterialThermalState> > m_l1ThermalStates;
 	std::map<std::string, double> m_l1LastThermalUpdateTime;
 	std::map<std::string, std::pair<double, double> > m_l1SunVisibilityByTarget;
+	// Local model bounds are immutable after a target model is loaded.  L1/L2
+	// transform this cached volume into world space instead of traversing every
+	// GeomNode with calc_tight_bounds() at each shadow update.
+	std::map<std::string, std::pair<LPoint3f, LPoint3f> > m_irTargetLocalBoundsCache;
 	double m_l1LastShadowUpdateTime = -1.0;
 	std::string m_l2AngleInterpretation = "FullCone";
 	double m_l2ShadowUpdateHz = 30.0;
@@ -727,6 +731,8 @@ private:
 	IRRuntimeEnvironment BuildRuntimeEnvironment() const;   // 阶段3：按 UDP > profile > 默认值合成环境状态
 	void UpdateM1SolarPosition(IRRuntimeEnvironment& environment, bool forceLog);
 	void UpdateL1GeometricSunVisibility(double currentTime);
+	bool ResolveCachedTargetVolume(const TargetPlatformData& targetPlat, const std::string& targetKey,
+		LPoint3f& worldCenter, float& worldRadius);
 	std::pair<double, double> L1SunVisibilityForTarget(const std::string& targetKey) const;
 	LVecBase3f L1SunDirectionLocal(const TargetPlatformData& targetPlat) const;
 	void UpdateL2ActiveVisibility(double currentTime);
