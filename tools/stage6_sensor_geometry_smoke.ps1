@@ -140,6 +140,7 @@ function Invoke-HwaStage6Run {
     try {
         Normalize-ProcessPathEnvironment
         [Environment]::SetEnvironmentVariable("EnableStage5RadianceDebug", "0", "Process")
+		[Environment]::SetEnvironmentVariable("Stage6DiagnosticsEnable", "1", "Process")
 
         $process = Start-Process -FilePath $hwaExe -WorkingDirectory $hwaWorkDir -PassThru -WindowStyle Hidden -RedirectStandardOutput $stdout -RedirectStandardError $stderr
         Start-Sleep -Seconds 3
@@ -154,6 +155,7 @@ function Invoke-HwaStage6Run {
         Start-Sleep -Milliseconds ([Math]::Max($DelayMs * 4, 2500))
     }
     finally {
+		[Environment]::SetEnvironmentVariable("Stage6DiagnosticsEnable", $null, "Process")
         if ($udp) {
             $udp.Dispose()
         }

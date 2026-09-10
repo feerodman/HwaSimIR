@@ -160,7 +160,7 @@ public:
 
 	void ProcessRealSimSceneInitData();
 
-	void ProcessRealSimSceneDrivenData();
+	void ProcessRealSimSceneDrivenData(const BYHWICD::DisplayC2cObjTrackingData& currentData);
 
 	//void ProcessAddRemovePlatData();
 
@@ -203,7 +203,8 @@ private:
 	void ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd);
 	void ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCmd& cmd,
 		const std::string& ingressTransport = "udp");
-	void ProcessDisplayDataOnMainThread(const BYHWICD::DisplayC2cObjTrackingData& data);
+	void ProcessDisplayDataOnMainThread(const BYHWICD::DisplayC2cObjTrackingData& data,
+		const std::string& ingressTransport = "udp");
 	bool AcceptProtocolIngress(const std::string& transport, const std::string& type,
 		const std::string& semanticKey, int platID, int sensorID);
 #if defined(HWASIMIR_HAS_ZRDDS)
@@ -219,6 +220,7 @@ private:
 	{
 		BYHWICD::DisplayC2cObjTrackingData data{};
 		IRFrameTelemetry telemetry;
+		bool ddsIngress = false;
 	};
 
 	struct ShaderInputCachedValue
@@ -694,7 +696,7 @@ private:
 	TargetPlatformData* FindTargetPlatformByTargetState(const BYHWICD::TargetState& targetState);
 	TargetPlatformData* FindTargetPlatformByWeaponState(const BYHWICD::WeaponState& weaponState);
 	TargetPlatformData* FindOrMapTargetPlatform(const BYHWICD::TargetState& targetState, int targetStateIndex);
-	void ApplyWeaponCameraControl(BYHWICD::DisplayC2cObjTrackingData& currentData, TargetPlatformData* lookAtTarget);
+	void ApplyWeaponCameraControl(const BYHWICD::DisplayC2cObjTrackingData& currentData, TargetPlatformData* lookAtTarget);
 	std::string Stage4PlatformName(PLATFORM_TYPE type) const;
 	bool Stage4WeaponAppliesToTarget(const BYHWICD::WeaponState& weaponState, const TargetPlatformData& targetPlat) const;
 	bool ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHWICD::WeaponState& weaponState, float dtSec, float ambientTempK, const IRObjectRadianceOutput& radiance, bool applyNodeInputs);
@@ -848,6 +850,9 @@ private:
 	int m_annotationFastPathLogCounter = 0;
 	std::uint64_t m_annotationLastProjectionSourceSeq = 0;
 	std::uint64_t m_inputQueueBackpressureLogCount = 0;
+	int m_asyncInputQueueMaxFrames = 16;
+	int m_asyncInputBackpressureMaxWaitMs = 250;
+	int m_asyncCatchUpMaxBurst = 4;
 	bool m_targetUpdateCullInvisible = false;
 	bool m_quietPerfMode = false;
 	int m_targetUpdateCullLogCounter = 0;
@@ -859,6 +864,7 @@ private:
 	bool m_measureShaderInputApplyTime = false;
 
 	bool m_stage6AgcEnabled = false;
+	bool m_stage6DiagnosticsEnabled = false;
 	std::string m_stage6AgcMode = "Percentile";
 	int m_stage6AgcModeCode = 1;
 	std::string m_stage6AgcApplyTo = "final_display";

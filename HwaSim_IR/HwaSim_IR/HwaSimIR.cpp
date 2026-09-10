@@ -1385,6 +1385,10 @@ HwaSimIR::HwaSimIR(int argc, char** argv, const HwaSimIRLaunchOptions& launchOpt
 		<< " effectiveVideoFps=" << m_configuredVideoFps
 		<< " source=startup_config"
 		<< " asyncInputPolicy=" << m_asyncInputPolicy
+		<< " asyncInputQueueMaxFrames=" << m_asyncInputQueueMaxFrames
+		<< " asyncInputBackpressureMaxWaitMs=" << m_asyncInputBackpressureMaxWaitMs
+		<< " asyncCatchUpMaxBurst=" << m_asyncCatchUpMaxBurst
+		<< " stage6Diagnostics=" << (m_stage6DiagnosticsEnabled ? "1" : "0")
 		<< std::endl;
 
 	LogRenderBackendConfig("startup");
@@ -1508,6 +1512,9 @@ void HwaSimIR::run() {
 	Thread* current_thread = Thread::get_current_thread();
 	bool asyncDeadlineActive = false;
 	int asyncDeadlineFps = 0;
+	int asyncCatchUpBurst = 0;
+	bool asyncQueueRecoveryActive = false;
+	std::chrono::steady_clock::time_point asyncQueueRecoveryBegin;
 	std::chrono::steady_clock::time_point asyncDeadline = std::chrono::steady_clock::now();
 
 	// 接管主循环
@@ -1521,11 +1528,41 @@ void HwaSimIR::run() {
 			!m_bSyncRenderMode.load() && m_isSimRunning.load() && requestedAsyncFps > 0;
 		if (useAsyncDeadline)
 		{
+			int queuedRealtime = 0;
+			{
+				std::lock_guard<std::mutex> lock(m_mtx);
+				queuedRealtime = static_cast<int>(m_pendingDisplayFrames.size());
+			}
 			const std::chrono::steady_clock::duration framePeriod =
 				std::chrono::duration_cast<std::chrono::steady_clock::duration>(
 					std::chrono::duration<double>(1.0 / static_cast<double>(requestedAsyncFps)));
 			const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
-			if (!asyncDeadlineActive || asyncDeadlineFps != requestedAsyncFps)
+			const bool orderedCatchUp =
+				m_asyncInputPolicy == "OrderedQueue" && queuedRealtime > 1;
+			if (orderedCatchUp)
+			{
+				if (!asyncQueueRecoveryActive)
+				{
+					asyncQueueRecoveryActive = true;
+					asyncQueueRecoveryBegin = now;
+				}
+				++asyncCatchUpBurst;
+				m_perfStats.recordCatchUpFrame(asyncCatchUpBurst);
+				// A DDS batch is staging. Consume exactly one oldest sample this frame,
+				// but use the render budget headroom instead of adding another full sleep.
+				// The FIFO capacity bounds the recovery work.  Yield at a small quantum
+				// so encoder/DDS workers remain schedulable, but never inject a complete
+				// 60 Hz period while an ordered backlog still exists.
+				if (asyncCatchUpBurst >= m_asyncCatchUpMaxBurst)
+				{
+					std::this_thread::yield();
+					asyncCatchUpBurst = 0;
+				}
+				asyncDeadline = now;
+				asyncDeadlineActive = true;
+				asyncDeadlineFps = requestedAsyncFps;
+			}
+			else if (!asyncDeadlineActive || asyncDeadlineFps != requestedAsyncFps)
 			{
 				asyncDeadline = now;
 				asyncDeadlineActive = true;
@@ -1545,11 +1582,23 @@ void HwaSimIR::run() {
 					asyncDeadline = now;
 				}
 			}
+			if (!orderedCatchUp)
+			{
+				asyncCatchUpBurst = 0;
+				if (asyncQueueRecoveryActive && queuedRealtime <= 1)
+				{
+					m_perfStats.recordQueueRecovery(std::chrono::duration<double, std::milli>(
+						now - asyncQueueRecoveryBegin).count());
+					asyncQueueRecoveryActive = false;
+				}
+			}
 		}
 		else
 		{
 			asyncDeadlineActive = false;
 			asyncDeadlineFps = 0;
+			asyncCatchUpBurst = 0;
+			asyncQueueRecoveryActive = false;
 		}
 
 		ProcessPendingNetworkCommands();
@@ -1569,10 +1618,11 @@ void HwaSimIR::run() {
 
 		ProcessPendingNetworkCommands();
 
+		int remainingInputQueueDepth = 0;
 		{
 			std::unique_lock<std::mutex> lock(m_mtx);
 			if (!m_pendingDisplayFrames.empty()) {
-				if (m_bSyncRenderMode.load())
+				if (m_bSyncRenderMode.load() || m_asyncInputPolicy == "OrderedQueue")
 				{
 					pendingFrame = m_pendingDisplayFrames.front();
 				}
@@ -1581,21 +1631,31 @@ void HwaSimIR::run() {
 					pendingFrame = m_pendingDisplayFrames.back();
 				}
 				m_pendingDisplayFrames.pop_front();
-				if (!m_bSyncRenderMode.load())
+				if (!m_bSyncRenderMode.load() && m_asyncInputPolicy == "Latest")
 				{
+					std::uint64_t ddsOverwritten = 0;
+					for (const PendingDisplayFrame& frame : m_pendingDisplayFrames)
+						if (frame.ddsIngress) ++ddsOverwritten;
+					m_perfStats.recordDdsRealtimeOverwritten(ddsOverwritten);
 					m_pendingDisplayFrames.clear();
 				}
 				pendingFrame.telemetry.processStartTimeNs = IRPerfStats::steadyTimeNs();
 				m_currentFrameTelemetry = pendingFrame.telemetry;
 				m_realTimeSceneData = pendingFrame.data;
 				hasDisplayFrame = true;
-				m_perfStats.recordInputQueueDepth(static_cast<int>(m_pendingDisplayFrames.size()));
+				remainingInputQueueDepth = static_cast<int>(m_pendingDisplayFrames.size());
 			}
 		}
 		if (hasDisplayFrame) {
+			// Do not hold the application FIFO mutex while updating telemetry.  On the
+			// ordered DDS path the reader callback may be waiting for this exact slot.
+			m_perfStats.recordAppRealtimeConsumed(
+				pendingFrame.telemetry.sourceSeq,
+				pendingFrame.ddsIngress,
+				remainingInputQueueDepth);
 			m_cvDisplayQueueSpace.notify_one();
 			const auto sceneBegin = std::chrono::steady_clock::now();
-			ProcessRealSimSceneDrivenData();
+			ProcessRealSimSceneDrivenData(pendingFrame.data);
 			m_perfStats.recordSceneUpdate(std::chrono::duration<double, std::milli>(
 				std::chrono::steady_clock::now() - sceneBegin).count());
 		}
@@ -1604,6 +1664,10 @@ void HwaSimIR::run() {
 		const auto renderBegin = std::chrono::steady_clock::now();
 		if (!m_pFramework->do_frame(current_thread)) {
 			break;
+		}
+		if (!m_bSyncRenderMode.load() && m_isSimRunning.load())
+		{
+			m_perfStats.recordOutputInputUsage(hasDisplayFrame);
 		}
 		if (!m_gpuBackendLogged)
 		{
@@ -2002,7 +2066,7 @@ void HwaSimIR::resize_window(int new_width, int new_height) {
 			m_renderTex->setup_2d_texture(safeWidth, safeHeight, Texture::T_unsigned_byte, Texture::F_rgb);
 		}
 		SetupStage6FinalPipeline(safeWidth, safeHeight, "resize-headless");
-		std::cout << "[Stage6 Resize]"
+		if (m_stage6DiagnosticsEnabled) std::cout << "[Stage6 Resize]"
 			<< " renderMode=" << m_renderPresentationModeName
 			<< " finalSensorSize=" << safeWidth << "x" << safeHeight
 			<< " renderTexture=Stage6FinalSensorTex"
@@ -2031,7 +2095,7 @@ void HwaSimIR::resize_window(int new_width, int new_height) {
 		m_renderTex->setup_2d_texture(new_width, new_height, Texture::T_unsigned_byte, Texture::F_rgb);
 	}
 
-	std::cout << "[Stage6 Resize]"
+	if (m_stage6DiagnosticsEnabled) std::cout << "[Stage6 Resize]"
 		<< " oldWindow=" << old_width << "x" << old_height
 		<< " newWindow=" << new_width << "x" << new_height
 		<< " renderTexture=" << new_width << "x" << new_height
@@ -2060,7 +2124,7 @@ void HwaSimIR::ApplySensorOutputConfig(const IRSensorDisplayConfig& config, cons
 void HwaSimIR::LogStage6SensorGeometry(const IRSensorDisplayConfig& config, const char* reason) const
 {
 	const char* safeReason = (reason != nullptr) ? reason : "unknown";
-	std::cout << "[Stage6 SensorGeometry]"
+	if (m_stage6DiagnosticsEnabled) std::cout << "[Stage6 SensorGeometry]"
 		<< " reason=" << safeReason
 		<< " width=" << config.width
 		<< " height=" << config.height
@@ -2162,6 +2226,7 @@ void HwaSimIR::ApplyStage6DisplayConfig(const BYHWICD::trackerSensorParam& senso
 
 void HwaSimIR::LogStage6DisplayConfig(const IRSensorPostProcessConfig& config, const char* reason) const
 {
+	if (!m_stage6DiagnosticsEnabled) return;
 	const char* safeReason = (reason != nullptr) ? reason : "unknown";
 	std::cout << "[Stage6 Display]"
 		<< " reason=" << safeReason
@@ -2185,6 +2250,7 @@ void HwaSimIR::LogStage6DisplayConfig(const IRSensorPostProcessConfig& config, c
 
 void HwaSimIR::LogStage6DisplayRoute(const IRSensorPostProcessConfig& config, const char* reason) const
 {
+	if (!m_stage6DiagnosticsEnabled) return;
 	const char* safeReason = (reason != nullptr) ? reason : "unknown";
 	std::cout << "[Stage6 DisplayRoute]"
 		<< " reason=" << safeReason
@@ -3292,6 +3358,7 @@ void HwaSimIR::ApplyStage6FinalPostprocessInputs()
 
 void HwaSimIR::LogStage6FinalPipeline(const char* reason)
 {
+	if (!m_stage6DiagnosticsEnabled) return;
 	if (!m_stage6FinalPipelineReady)
 	{
 		return;
@@ -3366,6 +3433,7 @@ void HwaSimIR::LogStage6FinalPipeline(const char* reason)
 
 void HwaSimIR::LogStage6MtfBlur(std::uint64_t sourceSeq, double renderMs)
 {
+	if (!m_stage6DiagnosticsEnabled) return;
 	std::ostringstream state;
 	state << (m_stage6MtfBlurEnabled ? 1 : 0)
 		<< ":" << m_stage6MtfBlurMode
@@ -3414,6 +3482,7 @@ void HwaSimIR::LogStage6MtfBlur(std::uint64_t sourceSeq, double renderMs)
 
 void HwaSimIR::LogStage6DetectorNoise(std::uint64_t sourceSeq, double renderMs)
 {
+	if (!m_stage6DiagnosticsEnabled) return;
 	std::ostringstream state;
 	state << (m_stage6DetectorNoiseEnabled ? 1 : 0)
 		<< ":" << m_stage6DetectorNoiseApplyTo
@@ -3695,6 +3764,7 @@ void HwaSimIR::UpdateStage6AgcFromFrame(const unsigned char* frameData, int fram
 
 void HwaSimIR::LogStage6Agc(std::uint64_t sourceSeq, bool forceLog)
 {
+	if (!m_stage6DiagnosticsEnabled) return;
 	std::ostringstream state;
 	state << (m_stage6AgcEnabled ? 1 : 0)
 		<< ":" << m_stage6AgcMode
@@ -3745,6 +3815,7 @@ void HwaSimIR::LogStage6Agc(std::uint64_t sourceSeq, bool forceLog)
 
 void HwaSimIR::LogStage6ViewportDiag(const char* reason) const
 {
+	if (!m_stage6DiagnosticsEnabled) return;
 	GraphicsOutput* presentationOutput = m_stage6PresentationOutput;
 	const int presentationW = presentationOutput != nullptr ? presentationOutput->get_x_size() : 0;
 	const int presentationH = presentationOutput != nullptr ? presentationOutput->get_y_size() : 0;
@@ -5958,10 +6029,10 @@ void HwaSimIR::LogStage6FrameDiag(const BYHWICD::DisplayC2cObjTrackingData& curr
 		<< ":" << (displayConfig.noiseEnable ? 1 : 0)
 		<< ":" << static_cast<int>(displayConfig.noiseSigmaGray * 100.0);
 	const std::string stateKey = state.str();
-	const bool shouldLog = m_enableIRVerboseLog ||
+	const bool shouldLog = m_stage6DiagnosticsEnabled && (m_enableIRVerboseLog ||
 		(m_stage6FrameDiagLogCounter <= 3) ||
 		((m_stage6FrameDiagLogCounter % 120) == 0) ||
-		(m_stage6LastFrameDiagState != stateKey);
+		(m_stage6LastFrameDiagState != stateKey));
 	if (shouldLog)
 	{
 		std::cout << "[Stage6 FrameDiag]"
@@ -6618,7 +6689,8 @@ void HwaSimIR::ProcessRealSimSceneInitData()
 		<< " 仿真回合=" << m_currentRound << std::endl;
 }
 
-void HwaSimIR::ProcessRealSimSceneDrivenData()
+void HwaSimIR::ProcessRealSimSceneDrivenData(
+	const BYHWICD::DisplayC2cObjTrackingData& currentData)
 {
 	// 仿真未运行时不处理
 	if (!m_isSimRunning.load())
@@ -6627,12 +6699,8 @@ void HwaSimIR::ProcessRealSimSceneDrivenData()
 	}
 	const auto processBegin = std::chrono::steady_clock::now();
 
-	// ================= 新增：局部拷贝当前帧数据，防止在计算过程中被 UDP 线程覆盖 =================
-	BYHWICD::DisplayC2cObjTrackingData currentData;
-	{
-		std::lock_guard<std::mutex> lock(m_mtx);
-		currentData = m_realTimeSceneData;
-	}
+	// The render thread owns this immutable FIFO sample for the complete scene
+	// update.  Passing it directly avoids a second mutex acquisition and copy.
 	const std::uint64_t frameSeq = m_currentFrameTelemetry.sourceSeq > 0
 		? m_currentFrameTelemetry.sourceSeq : m_stage0DisplayFrameCount;
 	m_lastVisibilityHideCalls = 0;
@@ -7097,7 +7165,7 @@ void HwaSimIR::ProcessAddRemovePakPlatform()
 				m_isCameraAttached = true;
 				std::cout << "相机已绑定到第一个PlatParamPak平台（ID=" << platParam.id << "），偏移：(0, 0, -8)" << std::endl;
 				if (m_sensorDisplayConfigReady) {
-					std::cout << "相机视场角(Stage6 SensorGeometry)："
+					if (m_stage6DiagnosticsEnabled) std::cout << "相机视场角(Stage6 SensorGeometry)："
 						<< m_sensorDisplayConfig.horizontalFovDeg << ","
 						<< m_sensorDisplayConfig.verticalFovDeg << std::endl;
 				}
@@ -7163,7 +7231,7 @@ void HwaSimIR::ProcessAddRemovePakPlatform()
 			m_isCameraAttached = true;
 			std::cout << "相机已绑定到第一个PlatParamPak平台（ID=" << platParam.id << "），偏移：(0, 0, -8)" << std::endl;
 			if (m_sensorDisplayConfigReady) {
-				std::cout << "相机视场角(Stage6 SensorGeometry)："
+				if (m_stage6DiagnosticsEnabled) std::cout << "相机视场角(Stage6 SensorGeometry)："
 					<< m_sensorDisplayConfig.horizontalFovDeg << ","
 					<< m_sensorDisplayConfig.verticalFovDeg << std::endl;
 			}
@@ -7673,13 +7741,29 @@ void HwaSimIR::LoadRenderControlConfig()
 	m_enforceMinRealtimeFps = m_runtimeConfig.getBool(
 		"RenderControl", "EnforceMinRealtimeFps", "", true);
 	const std::string inputPolicy = ToLowerAscii(m_runtimeConfig.getString(
-		"RenderControl", "AsyncInputPolicy", "", "Latest"));
-	m_asyncInputPolicy = "Latest";
-	if (inputPolicy != "latest")
+		"RenderControl", "AsyncInputPolicy", "AsyncInputPolicy", "OrderedQueue"));
+	if (inputPolicy == "orderedqueue" || inputPolicy == "ordered_queue")
+	{
+		m_asyncInputPolicy = "OrderedQueue";
+	}
+	else if (inputPolicy == "latest")
+	{
+		m_asyncInputPolicy = "Latest";
+	}
+	else
 	{
 		std::cerr << "[RenderControl][WARN] unsupported AsyncInputPolicy=" << inputPolicy
-			<< " fallback=Latest" << std::endl;
+			<< " fallback=OrderedQueue" << std::endl;
+		m_asyncInputPolicy = "OrderedQueue";
 	}
+	m_asyncInputQueueMaxFrames = std::max(1, std::min(256, m_runtimeConfig.getInt(
+		"RenderControl", "AsyncInputQueueMaxFrames", "AsyncInputQueueMaxFrames", 16)));
+	m_asyncInputBackpressureMaxWaitMs = std::max(1, std::min(5000, m_runtimeConfig.getInt(
+		"RenderControl", "AsyncInputBackpressureMaxWaitMs", "AsyncInputBackpressureMaxWaitMs", 250)));
+	m_asyncCatchUpMaxBurst = std::max(1, std::min(16, m_runtimeConfig.getInt(
+		"RenderControl", "AsyncCatchUpMaxBurst", "AsyncCatchUpMaxBurst", 4)));
+	m_stage6DiagnosticsEnabled = m_runtimeConfig.getBool(
+		"Stage6Diagnostics", "Enable", "Stage6DiagnosticsEnable", false);
 	if (m_enforceMinRealtimeFps && m_configuredVideoFps < m_minRealtimeFps)
 	{
 		std::cerr << "[RenderControl][WARN] ConfiguredVideoFps=" << m_configuredVideoFps
@@ -8239,6 +8323,30 @@ void HwaSimIR::ProcessPendingNetworkCommands()
 	{
 		if (it->type == PendingNetworkCommandType::Control)
 		{
+			// DDS STOP may be delivered while the last small Realtime burst is still
+			// staged in the ordered FIFO.  Defer STOP (and every command after it) so
+			// each accepted sample is rendered exactly once before the round closes.
+			if (it->controlCmd.simCommand == 3 &&
+				m_asyncInputPolicy == "OrderedQueue" && !m_bSyncRenderMode.load())
+			{
+				bool hasPendingRealtime = false;
+				{
+					std::lock_guard<std::mutex> lock(m_mtx);
+					hasPendingRealtime = !m_pendingDisplayFrames.empty();
+					if (hasPendingRealtime)
+					{
+						// Reverse push_front keeps the original command order and remains
+						// compatible with the project's VS2015 STL implementation.
+						std::deque<PendingNetworkCommand>::const_iterator deferred = pendingCommands.end();
+						while (deferred != it)
+						{
+							--deferred;
+							m_pendingNetworkCommands.push_front(*deferred);
+						}
+					}
+				}
+				if (hasPendingRealtime) break;
+			}
 			std::cout << "[Stage0] Processing queued control command on render thread"
 				<< " command=" << it->controlCmd.simCommand
 				<< " round=" << it->controlCmd.currentRound << "/" << it->controlCmd.roundCut
@@ -8256,7 +8364,7 @@ void HwaSimIR::ProcessPendingNetworkCommands()
 		}
 		else
 		{
-			ProcessDisplayDataOnMainThread(it->realtimeData);
+			ProcessDisplayDataOnMainThread(it->realtimeData, it->transport);
 		}
 	}
 #if defined(HWASIMIR_HAS_ZRDDS)
@@ -8749,15 +8857,7 @@ void HwaSimIR::handleDisplayData(const BYHWICD::DisplayC2cObjTrackingData& data)
 	std::ostringstream key;
 	key << data.platID << ':' << data.sensorID << ':' << std::setprecision(17) << data.time;
 	if (!AcceptProtocolIngress("udp", "realtime", key.str(), data.platID, data.sensorID)) return;
-	PendingNetworkCommand pending;
-	pending.type = PendingNetworkCommandType::Realtime;
-	pending.transport = "udp";
-	pending.realtimeData = data;
-	{
-		std::lock_guard<std::mutex> lock(m_mtx);
-		m_pendingNetworkCommands.push_back(pending);
-	}
-	m_cvNewData.notify_one();
+	ProcessDisplayDataOnMainThread(data, "udp");
 }
 
 #if defined(HWASIMIR_HAS_ZRDDS)
@@ -8766,25 +8866,30 @@ void HwaSimIR::handleDdsDisplayData(const BYHWICD::DisplayC2cObjTrackingData& da
 	std::ostringstream key;
 	key << data.platID << ':' << data.sensorID << ':' << std::setprecision(17) << data.time;
 	if (!AcceptProtocolIngress("dds", "realtime", key.str(), data.platID, data.sensorID)) return;
-	PendingNetworkCommand pending;
-	pending.type = PendingNetworkCommandType::Realtime;
-	pending.transport = "dds";
-	pending.realtimeData = data;
-	{
-		std::lock_guard<std::mutex> lock(m_mtx);
-		m_pendingNetworkCommands.push_back(pending);
-	}
-	m_cvNewData.notify_one();
+	ProcessDisplayDataOnMainThread(data, "dds");
 }
 #endif
 
 // 处理实时成像数据包
-void HwaSimIR::ProcessDisplayDataOnMainThread(const BYHWICD::DisplayC2cObjTrackingData& data) {
+// This ingress method intentionally performs no Panda Scene Graph work.  DDS/UDP
+// callbacks only copy one accepted sample into the bounded application FIFO.
+void HwaSimIR::ProcessDisplayDataOnMainThread(
+	const BYHWICD::DisplayC2cObjTrackingData& data,
+	const std::string& ingressTransport) {
 	const std::int64_t receiveTimeNs = IRPerfStats::wallTimeNs();
+	const bool ddsIngress = ingressTransport == "dds";
+	if (ddsIngress)
+		m_perfStats.recordDdsRealtimeIngress(IRPerfStats::steadyTimeNs());
 	std::unique_lock<std::mutex> lock(m_mtx);
 	++m_stage0DisplayFrameCount;
 	const std::uint64_t udpSeq = ++m_udpSequence;
 	m_perfStats.recordUdpFrame();
+	// Production ingress must stay a copy-only hot path.  The legacy Stage0 /
+	// Stage4 audit block remains available when QuietPerfMode is explicitly
+	// disabled for diagnostics, but it performs no string construction or I/O
+	// in the production configuration.
+	if (!m_quietPerfMode)
+	{
 	if (m_stage0DisplayFrameCount <= 3 || (m_stage0DisplayFrameCount % 120) == 0)
 	{
 		std::cout << "[Stage0] Display packet #" << m_stage0DisplayFrameCount
@@ -8960,17 +9065,22 @@ void HwaSimIR::ProcessDisplayDataOnMainThread(const BYHWICD::DisplayC2cObjTracki
 		std::cout << "处理实时成像数据..." << std::endl;
 	}
 	// TODO: 更新传感器姿态、目标位置、渲染红外图像等
+	}
 
 	PendingDisplayFrame pending;
 	pending.data = data;
+	pending.ddsIngress = ddsIngress;
 	m_latestUdpSourceSeq.store(udpSeq);
 	pending.telemetry.sourceSeq = udpSeq;
 	pending.telemetry.udpReceiveTimeNs = receiveTimeNs;
-	if (m_bSyncRenderMode.load())
+	const bool orderedQueue = m_bSyncRenderMode.load() || m_asyncInputPolicy == "OrderedQueue";
+	if (orderedQueue)
 	{
-		if (m_pendingDisplayFrames.size() >= kMaxPendingDisplayFrames)
+		const std::size_t queueCapacity = static_cast<std::size_t>(
+			std::max(1, m_asyncInputQueueMaxFrames));
+		if (m_pendingDisplayFrames.size() >= queueCapacity)
 		{
-			m_perfStats.recordSyncOverrun();
+			if (m_bSyncRenderMode.load()) m_perfStats.recordSyncOverrun();
 			++m_inputQueueBackpressureLogCount;
 			if (m_enableIRVerboseLog ||
 				m_inputQueueBackpressureLogCount <= 3 ||
@@ -8980,17 +9090,51 @@ void HwaSimIR::ProcessDisplayDataOnMainThread(const BYHWICD::DisplayC2cObjTracki
 					<< " sourceSeq=" << udpSeq
 					<< " backpressureCount=" << m_inputQueueBackpressureLogCount
 					<< " queueDepth=" << m_pendingDisplayFrames.size()
-					<< " queueCapacity=" << kMaxPendingDisplayFrames
-					<< " action=wait_for_space"
+					<< " queueCapacity=" << queueCapacity
+					<< " action=bounded_wait_for_space"
 					<< std::endl;
 			}
 			m_cvNewData.notify_one();
-			m_cvDisplayQueueSpace.wait(lock, [this] {
-				return m_pendingDisplayFrames.size() < kMaxPendingDisplayFrames ||
-					m_requestExit.load();
-			});
-			if (m_requestExit.load())
+			const auto waitBegin = std::chrono::steady_clock::now();
+			const auto failFastDeadline = waitBegin + std::chrono::milliseconds(
+				std::max(5000, m_asyncInputBackpressureMaxWaitMs * 20));
+			bool hasSpace = false;
+			do
 			{
+				const auto waitSliceBegin = std::chrono::steady_clock::now();
+				hasSpace = m_cvDisplayQueueSpace.wait_for(
+					lock,
+					std::chrono::milliseconds(m_asyncInputBackpressureMaxWaitMs),
+					[this, queueCapacity] {
+						return m_pendingDisplayFrames.size() < queueCapacity ||
+							m_requestExit.load();
+					});
+				const double waitSliceMs = std::chrono::duration<double, std::milli>(
+					std::chrono::steady_clock::now() - waitSliceBegin).count();
+				m_perfStats.recordInputBackpressure(waitSliceMs);
+				if (m_requestExit.load()) return;
+				// Packet-driven sync must preserve 1 input -> 1 frame.  Allow its DDS
+				// reader to exert bounded, observable backpressure instead of dropping.
+				// Async production gets only one short wait; a persistently full FIFO is
+				// a scheduling failure, not permission to revert to Latest semantics.
+				if (!m_bSyncRenderMode.load() || std::chrono::steady_clock::now() >= failFastDeadline)
+					break;
+			} while (!hasSpace);
+			if (!hasSpace)
+			{
+				const double waitMs = std::chrono::duration<double, std::milli>(
+					std::chrono::steady_clock::now() - waitBegin).count();
+				m_perfStats.recordInputQueueOverflow();
+				std::cerr << "[RealtimeIngress][ERROR] inputQueueOverflow=1"
+					<< " sourceSeq=" << udpSeq
+					<< " queueDepth=" << m_pendingDisplayFrames.size()
+					<< " queueCapacity=" << queueCapacity
+					<< " waitedMs=" << waitMs
+					<< " action=fail_fast_without_overwrite"
+					<< std::endl;
+				m_requestExit.store(true);
+				m_cvNewData.notify_all();
+				m_cvDisplayQueueSpace.notify_all();
 				return;
 			}
 		}
@@ -8999,11 +9143,16 @@ void HwaSimIR::ProcessDisplayDataOnMainThread(const BYHWICD::DisplayC2cObjTracki
 	{
 		m_perfStats.recordInputOverwrite(
 			static_cast<std::uint64_t>(m_pendingDisplayFrames.size()));
+		std::uint64_t ddsOverwritten = 0;
+		for (const PendingDisplayFrame& frame : m_pendingDisplayFrames)
+			if (frame.ddsIngress) ++ddsOverwritten;
+		m_perfStats.recordDdsRealtimeOverwritten(ddsOverwritten);
 		m_pendingDisplayFrames.clear();
 	}
 	pending.telemetry.inputQueueDepth = static_cast<int>(m_pendingDisplayFrames.size() + 1);
 	m_pendingDisplayFrames.push_back(pending);
-	m_perfStats.recordInputQueueDepth(static_cast<int>(m_pendingDisplayFrames.size()));
+	m_perfStats.recordAppRealtimeQueued(
+		udpSeq, ddsIngress, static_cast<int>(m_pendingDisplayFrames.size()));
 
 	// 通知主线程，有新数据到达
 	m_cvNewData.notify_one();
@@ -9354,7 +9503,7 @@ void HwaSimIR::InitInfraredSimulation()
 	{
 		m_pTcpThread->setFlipVertical(m_stage6FlipInTcpThread);
 	}
-	std::cout << "[Stage6 CaptureConfig]"
+	if (m_stage6DiagnosticsEnabled) std::cout << "[Stage6 CaptureConfig]"
 		<< " FlipInShader=" << (m_stage6FlipInShader ? "1" : "0")
 		<< " FlipInTcpThread=" << (m_stage6FlipInTcpThread ? "1" : "0")
 		<< " source=" << stage6FlipShaderSource << "/" << stage6FlipTcpSource
@@ -9447,7 +9596,7 @@ void HwaSimIR::InitInfraredSimulation()
 		"MTFLogEveryFrames",
 		120,
 		&stage6MtfLogEverySource));
-	std::cout << "[Stage6 MTFConfig]"
+	if (m_stage6DiagnosticsEnabled) std::cout << "[Stage6 MTFConfig]"
 		<< " EnableMTFBlur=" << (m_stage6MtfBlurEnabled ? "1" : "0")
 		<< " MTFBlurMode=" << m_stage6MtfBlurMode
 		<< " effectiveMode=" << m_stage6MtfBlurEffectiveMode
@@ -9605,7 +9754,7 @@ void HwaSimIR::InitInfraredSimulation()
 		&stage6NoiseLogEverySource));
 	m_stage6NoiseLogCounter = 0;
 	m_lastStage6NoiseLogState.clear();
-	std::cout << "[Stage6 NoiseConfig]"
+	if (m_stage6DiagnosticsEnabled) std::cout << "[Stage6 NoiseConfig]"
 		<< " EnableDetectorNoise=" << (m_stage6DetectorNoiseEnabled ? "1" : "0")
 		<< " NoiseApplyTo=" << m_stage6DetectorNoiseApplyTo
 		<< " NoisePosition=" << m_stage6DetectorNoisePosition
@@ -9827,7 +9976,7 @@ void HwaSimIR::InitInfraredSimulation()
 	m_stage6AgcLastUpdateSourceSeq = 0;
 	m_stage6AgcLogCounter = 0;
 	m_lastStage6AgcLogState.clear();
-	std::cout << "[Stage6 AGCConfig]"
+	if (m_stage6DiagnosticsEnabled) std::cout << "[Stage6 AGCConfig]"
 		<< " EnableAGC=" << (m_stage6AgcEnabled ? "1" : "0")
 		<< " AGCMode=" << m_stage6AgcMode
 		<< " AGCApplyTo=" << m_stage6AgcApplyTo
@@ -12346,14 +12495,14 @@ TargetPlatformData* HwaSimIR::FindOrMapTargetPlatform(const BYHWICD::TargetState
 	return nullptr;
 }
 
-void HwaSimIR::ApplyWeaponCameraControl(BYHWICD::DisplayC2cObjTrackingData& currentData, TargetPlatformData* lookAtTarget)
+void HwaSimIR::ApplyWeaponCameraControl(const BYHWICD::DisplayC2cObjTrackingData& currentData, TargetPlatformData* lookAtTarget)
 {
 	if (m_cameraNode.is_empty())
 	{
 		return;
 	}
 
-	BYHWICD::WeaponState& weaponState = currentData.weaponState;
+	const BYHWICD::WeaponState& weaponState = currentData.weaponState;
 	const std::uint64_t frameSeq = m_currentFrameTelemetry.sourceSeq > 0
 		? m_currentFrameTelemetry.sourceSeq : m_stage0DisplayFrameCount;
 	if (weaponState.lookatEn)
@@ -15100,6 +15249,9 @@ void HwaSimIR::ApplyRenderControl(
 		<< " minRealtimeFps=" << m_minRealtimeFps
 		<< " minFpsEnforced=" << (minFpsEnforced ? "1" : "0")
 		<< " asyncInputPolicy=" << m_asyncInputPolicy
+		<< " asyncInputQueueMaxFrames=" << m_asyncInputQueueMaxFrames
+		<< " asyncInputBackpressureMaxWaitMs=" << m_asyncInputBackpressureMaxWaitMs
+		<< " asyncCatchUpMaxBurst=" << m_asyncCatchUpMaxBurst
 		<< std::endl;
 }
 
@@ -15307,7 +15459,7 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 	{
 		self->m_lastReadbackMs = 0.0;
 		++self->m_stage6CaptureLogCounter;
-		if (self->ShouldLogQuiet(self->m_stage6CaptureLogCounter))
+		if (self->m_stage6DiagnosticsEnabled && self->ShouldLogQuiet(self->m_stage6CaptureLogCounter))
 		{
 			std::cout << "[Stage6 Capture]"
 				<< " diagnostic_only=1"
@@ -15341,7 +15493,7 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 			++self->m_stage6CaptureLogCounter;
 			if (self->ShouldLogQuiet(self->m_stage6CaptureLogCounter))
 			{
-				std::cout << "[Stage6 Capture]"
+				std::cout << "[Stage6 Capture][WARN]"
 					<< " diagnostic_only=0"
 					<< " noTcpFrame=1"
 					<< " reason=EveryN_no_cached_frame"
@@ -15370,7 +15522,7 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 			++self->m_stage6CaptureLogCounter;
 			if (self->ShouldLogQuiet(self->m_stage6CaptureLogCounter))
 			{
-				std::cout << "[Stage6 Capture]"
+				std::cout << "[Stage6 Capture][WARN]"
 					<< " diagnostic_only=0"
 					<< " noTcpFrame=1"
 					<< " reason=render_texture_ram_image_unavailable"

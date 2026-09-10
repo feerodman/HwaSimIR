@@ -68,6 +68,36 @@ void IRPerfStats::reset()
 	m_inputOverwriteCount = 0;
 	m_outputOverwriteCount = 0;
 	m_lastLoggedOutputFrames = 0;
+	m_realtimeIngressLastLogNs = steadyTimeNs();
+	m_lastDdsCallbackNs = 0;
+	m_ddsRealtimeReceived = 0;
+	m_ddsRealtimeCallbackCount = 0;
+	m_appRealtimeQueued = 0;
+	m_appRealtimeConsumed = 0;
+	m_ddsRealtimeConsumed = 0;
+	m_ddsRealtimeOverwritten = 0;
+	m_ddsRealtimePending = 0;
+	m_firstSourceSeq = 0;
+	m_lastSourceSeq = 0;
+	m_consumedSourceSeq = 0;
+	m_sourceSeqGapCount = 0;
+	m_callbackGapSamples = 0;
+	m_arrivalGapLe1msCount = 0;
+	m_callbackGapUsTotal = 0.0;
+	m_callbackGapUsMax = 0.0;
+	m_currentCallbackBurst = 0;
+	m_burstSize1 = 0;
+	m_burstSize2 = 0;
+	m_burstSize3 = 0;
+	m_burstSize4Plus = 0;
+	m_inputBackpressureCount = 0;
+	m_inputBackpressureWaitMs = 0.0;
+	m_maxInputBackpressureWaitMs = 0.0;
+	m_catchUpFrames = 0;
+	m_maxCatchUpBurst = 0;
+	m_queueRecoveryMs = 0.0;
+	m_uniqueInputFrames = 0;
+	m_repeatedStateOutputFrames = 0;
 	resetIntervalLocked(steadyTimeNs());
 }
 
@@ -205,6 +235,107 @@ void IRPerfStats::recordInputOverwrite(std::uint64_t count)
 	m_inputOverwriteCount += count;
 }
 
+void IRPerfStats::recordDdsRealtimeIngress(std::int64_t callbackSteadyNs)
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	++m_ddsRealtimeCallbackCount;
+	if (m_lastDdsCallbackNs > 0 && callbackSteadyNs >= m_lastDdsCallbackNs)
+	{
+		const double gapUs = static_cast<double>(callbackSteadyNs - m_lastDdsCallbackNs) / 1000.0;
+		m_callbackGapUsTotal += gapUs;
+		m_callbackGapUsMax = std::max(m_callbackGapUsMax, gapUs);
+		++m_callbackGapSamples;
+		if (gapUs <= 1000.0)
+		{
+			++m_arrivalGapLe1msCount;
+			++m_currentCallbackBurst;
+		}
+		else
+		{
+			if (m_currentCallbackBurst == 1) ++m_burstSize1;
+			else if (m_currentCallbackBurst == 2) ++m_burstSize2;
+			else if (m_currentCallbackBurst == 3) ++m_burstSize3;
+			else if (m_currentCallbackBurst >= 4) ++m_burstSize4Plus;
+			m_currentCallbackBurst = 1;
+		}
+	}
+	else
+	{
+		m_currentCallbackBurst = 1;
+	}
+	m_lastDdsCallbackNs = callbackSteadyNs;
+}
+
+void IRPerfStats::recordAppRealtimeQueued(std::uint64_t sourceSeq, bool ddsIngress, int queueDepth)
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	++m_appRealtimeQueued;
+	if (ddsIngress)
+	{
+		// Count an accepted DDS sample and its pending application copy in one
+		// critical section.  A callback blocked by bounded backpressure is not yet
+		// accepted, so the published conservation equation stays exact.
+		++m_ddsRealtimeReceived;
+		++m_ddsRealtimePending;
+		if (m_firstSourceSeq == 0) m_firstSourceSeq = sourceSeq;
+		m_lastSourceSeq = sourceSeq;
+	}
+	m_inputQueueDepth = std::max(0, queueDepth);
+	m_inputQueueDepthMax = std::max(m_inputQueueDepthMax, m_inputQueueDepth);
+}
+
+void IRPerfStats::recordAppRealtimeConsumed(std::uint64_t sourceSeq, bool ddsIngress, int queueDepth)
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	++m_appRealtimeConsumed;
+	if (ddsIngress)
+	{
+		++m_ddsRealtimeConsumed;
+		if (m_ddsRealtimePending > 0) --m_ddsRealtimePending;
+		if (m_consumedSourceSeq != 0 && sourceSeq != m_consumedSourceSeq + 1)
+			++m_sourceSeqGapCount;
+		m_consumedSourceSeq = sourceSeq;
+	}
+	m_inputQueueDepth = std::max(0, queueDepth);
+	m_inputQueueDepthMax = std::max(m_inputQueueDepthMax, m_inputQueueDepth);
+}
+
+void IRPerfStats::recordDdsRealtimeOverwritten(std::uint64_t count)
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	m_ddsRealtimeOverwritten += count;
+	m_ddsRealtimePending = count >= m_ddsRealtimePending ? 0 : m_ddsRealtimePending - count;
+}
+
+void IRPerfStats::recordInputBackpressure(double waitMs)
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	++m_inputBackpressureCount;
+	m_inputBackpressureWaitMs += std::max(0.0, waitMs);
+	m_maxInputBackpressureWaitMs = std::max(m_maxInputBackpressureWaitMs, std::max(0.0, waitMs));
+}
+
+void IRPerfStats::recordCatchUpFrame(int burstLength)
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	++m_catchUpFrames;
+	m_maxCatchUpBurst = std::max(m_maxCatchUpBurst,
+		static_cast<std::uint64_t>(std::max(0, burstLength)));
+}
+
+void IRPerfStats::recordQueueRecovery(double recoveryMs)
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	m_queueRecoveryMs = std::max(0.0, recoveryMs);
+}
+
+void IRPerfStats::recordOutputInputUsage(bool uniqueInput)
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	if (uniqueInput) ++m_uniqueInputFrames;
+	else ++m_repeatedStateOutputFrames;
+}
+
 void IRPerfStats::recordCapture(double readbackMs, double resizeMs, double copyMs, int tcpQueueDepth)
 {
 	std::lock_guard<std::mutex> lock(m_mutex);
@@ -265,19 +396,83 @@ void IRPerfStats::recordInputQueueOverflow()
 void IRPerfStats::maybeLog()
 {
 	std::string message;
+	std::string ingressMessage;
 	{
 		std::lock_guard<std::mutex> lock(m_mutex);
+		const std::int64_t nowNs = steadyTimeNs();
+		if (nowNs - m_realtimeIngressLastLogNs >= 1000000000LL)
+		{
+			std::uint64_t burst1 = m_burstSize1;
+			std::uint64_t burst2 = m_burstSize2;
+			std::uint64_t burst3 = m_burstSize3;
+			std::uint64_t burst4 = m_burstSize4Plus;
+			if (m_currentCallbackBurst == 1) ++burst1;
+			else if (m_currentCallbackBurst == 2) ++burst2;
+			else if (m_currentCallbackBurst == 3) ++burst3;
+			else if (m_currentCallbackBurst >= 4) ++burst4;
+			const std::int64_t conservation = static_cast<std::int64_t>(m_ddsRealtimeReceived)
+				- static_cast<std::int64_t>(m_ddsRealtimeConsumed)
+				- static_cast<std::int64_t>(m_ddsRealtimeOverwritten)
+				- static_cast<std::int64_t>(m_ddsRealtimePending);
+			std::ostringstream ingress;
+			ingress << std::fixed << std::setprecision(3)
+				<< "[RealtimeIngress]"
+				<< " ddsRealtimeReceived=" << m_ddsRealtimeReceived
+				<< " ddsRealtimeCallbackCount=" << m_ddsRealtimeCallbackCount
+				<< " appRealtimeQueued=" << m_appRealtimeQueued
+				<< " appRealtimeConsumed=" << m_appRealtimeConsumed
+				<< " inputOverwritten=" << m_inputOverwriteCount
+				<< " inputQueueOverflow=" << m_inputQueueOverflowCount
+				<< " currentQueueDepth=" << m_inputQueueDepth
+				<< " maxQueueDepth=" << m_inputQueueDepthMax
+				<< " firstSourceSeq=" << m_firstSourceSeq
+				<< " lastSourceSeq=" << m_lastSourceSeq
+				<< " consumedSourceSeq=" << m_consumedSourceSeq
+				<< " sourceSeqGapCount=" << m_sourceSeqGapCount
+				<< " callbackInterArrivalUs=" << Average(m_callbackGapUsTotal, m_callbackGapSamples)
+				<< " callbackInterArrivalUsMax=" << m_callbackGapUsMax
+				<< " arrivalGapLe1ms=" << m_arrivalGapLe1msCount
+				<< " burstSize1=" << burst1
+				<< " burstSize2=" << burst2
+				<< " burstSize3=" << burst3
+				<< " burstSize4Plus=" << burst4
+				<< " inputBackpressureCount=" << m_inputBackpressureCount
+				<< " inputBackpressureWaitMs=" << m_inputBackpressureWaitMs
+				<< " maxInputBackpressureWaitMs=" << m_maxInputBackpressureWaitMs
+				<< " catchUpFrames=" << m_catchUpFrames
+				<< " maxCatchUpBurst=" << m_maxCatchUpBurst
+				<< " queueRecoveryMs=" << m_queueRecoveryMs
+				<< " uniqueInputFrames=" << m_uniqueInputFrames
+				<< " repeatedStateOutputFrames=" << m_repeatedStateOutputFrames
+				<< " receivedMinusConsumedOverwrittenPending=" << conservation;
+			ingressMessage = ingress.str();
+			m_realtimeIngressLastLogNs = nowNs;
+			m_callbackGapSamples = 0;
+			m_arrivalGapLe1msCount = 0;
+			m_callbackGapUsTotal = 0.0;
+			m_callbackGapUsMax = 0.0;
+			m_currentCallbackBurst = 0;
+			m_burstSize1 = 0;
+			m_burstSize2 = 0;
+			m_burstSize3 = 0;
+			m_burstSize4Plus = 0;
+			m_lastDdsCallbackNs = 0;
+		}
 		if (!m_enabled)
 		{
-			return;
+			message.clear();
 		}
-		const std::int64_t nowNs = steadyTimeNs();
+		if (m_enabled)
+		{
 		const double elapsedSec = std::max(0.001, static_cast<double>(nowNs - m_intervalStartNs) / 1.0e9);
 		const bool firstOutput = m_totalOutputFrames > 0 && m_lastLoggedOutputFrames == 0;
 		const bool frameInterval = m_intervalRenderFrames >= 120 || m_intervalOutputFrames >= 120;
 		const bool timeInterval = elapsedSec >= 2.0;
 		if (!firstOutput && !frameInterval && !timeInterval)
 		{
+			// The ingress audit has its own one-second cadence and must not be
+			// suppressed by the less frequent detailed performance cadence.
+			if (!ingressMessage.empty()) std::cout << ingressMessage << std::endl;
 			return;
 		}
 
@@ -430,8 +625,10 @@ void IRPerfStats::maybeLog()
 		message = out.str();
 		m_lastLoggedOutputFrames = m_totalOutputFrames;
 		resetIntervalLocked(nowNs);
+		}
 	}
-	std::cout << message << std::endl;
+	if (!ingressMessage.empty()) std::cout << ingressMessage << std::endl;
+	if (!message.empty()) std::cout << message << std::endl;
 }
 
 double IRPerfStats::videoFpsTarget() const

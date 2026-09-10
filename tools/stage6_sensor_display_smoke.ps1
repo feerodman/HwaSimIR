@@ -172,7 +172,7 @@ function Stop-HwaProcessGracefully {
 }
 
 function Clear-Stage6DisplayEnvironment {
-    foreach ($name in @("Stage6WhiteHot", "Stage6DisplayGain", "Stage6DisplayOffset", "Stage6NoiseEnable", "Stage6NoiseSigmaGray", "Stage6DisplayApplyToWindow", "Stage6BackgroundDisplayEnable", "EnableStage5RadianceDebug", "HwaSimIRExitOnStop")) {
+    foreach ($name in @("Stage6WhiteHot", "Stage6DisplayGain", "Stage6DisplayOffset", "Stage6NoiseEnable", "Stage6NoiseSigmaGray", "Stage6DisplayApplyToWindow", "Stage6BackgroundDisplayEnable", "EnableStage5RadianceDebug", "HwaSimIRExitOnStop", "Stage6DiagnosticsEnable")) {
         [Environment]::SetEnvironmentVariable($name, $null, "Process")
     }
 }
@@ -182,6 +182,7 @@ function Set-ScenarioEnvironment {
     Clear-Stage6DisplayEnvironment
     [Environment]::SetEnvironmentVariable("EnableStage5RadianceDebug", "0", "Process")
     [Environment]::SetEnvironmentVariable("HwaSimIRExitOnStop", "1", "Process")
+	[Environment]::SetEnvironmentVariable("Stage6DiagnosticsEnable", "1", "Process")
     foreach ($key in $Values.Keys) {
         [Environment]::SetEnvironmentVariable($key, [string]$Values[$key], "Process")
     }
