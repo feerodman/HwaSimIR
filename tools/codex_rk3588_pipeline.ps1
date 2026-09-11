@@ -157,64 +157,27 @@ try {
     Invoke-Ssh $vmTarget "file $buildDir/HwaSim_IR && aarch64-linux-gnu-readelf -d $buildDir/HwaSim_IR | grep librockchip_mpp.so.1"
 
     if (-not $SkipDeploy) {
-        Write-Host '[Pipeline] Deploying the AArch64 binary through Windows after a board-side backup'
+        Write-Host '[Pipeline] Downloading the AArch64 binary for atomic ELF + full Config deployment'
         $localElf = Join-Path $logDir 'HwaSim_IR.aarch64'
         Invoke-Scp "$vmTarget`:$buildDir/HwaSim_IR" $localElf
-        Invoke-Ssh $boardTarget "pkill -TERM -x HwaSim_IR || true; cd $BoardRoot && cp -p HwaSim_IR HwaSim_IR.before_codex_$stamp"
-        Invoke-Scp $localElf "$boardTarget`:$BoardRoot/HwaSim_IR.codex_new"
-        Invoke-Ssh $boardTarget "cd $BoardRoot && chmod +x HwaSim_IR.codex_new && mv HwaSim_IR.codex_new HwaSim_IR && file HwaSim_IR && ldd HwaSim_IR"
-        Write-Host '[Pipeline] Deploying DDS runtime configuration and the validated RK3588 launcher'
-        Invoke-Ssh $boardTarget "mkdir -p $BoardRoot/Config"
-        Invoke-Scp (Join-Path $RepoRoot 'HwaSim_IR\Bin\Config\DDS') "$boardTarget`:$BoardRoot/Config/" -Recursive
-        $boardBoundQos = Join-Path $RepoRoot 'tools\dds_d1_qos\ZRDDS_QOS_RK3588_192.168.1.116.xml'
-        if (Test-Path -LiteralPath $boardBoundQos) {
-            Invoke-Scp $boardBoundQos "$boardTarget`:$BoardRoot/Config/DDS/"
+        $deployScript = Join-Path $RepoRoot 'tools\rk3588_deploy_atomic.ps1'
+        $deployArgs = @{
+            ElfPath = $localElf
+            RepoRoot = $RepoRoot
+            BoardHost = $BoardHost
+            BoardUser = $BoardUser
+            BoardRoot = $BoardRoot
+            LogDirectory = (Join-Path $logDir 'atomic-deploy')
         }
-        Invoke-Scp (Join-Path $RepoRoot 'tools\rk3588_run_hwasimir_precise.sh') "$boardTarget`:$BoardRoot/run_precise.sh"
-        Invoke-Ssh $boardTarget "chmod +x $BoardRoot/run_precise.sh && test -f $BoardRoot/Config/DDS/ZRDDS_QOS_PROFILES.xml"
+        if ($SshKey) { $deployArgs.SshKey = $SshKey }
+        & $deployScript @deployArgs
+        if ($LASTEXITCODE -ne 0) { throw "Atomic RK3588 deployment failed: $deployScript" }
     }
 
     Invoke-Ssh $boardTarget "test -x $BoardRoot/HwaSim_IR && test -f $BoardRoot/Config/NetworkConfig_precise.ini && test -f $BoardRoot/Config/HwaSimIRRuntime.ini && test -f $BoardRoot/Config/DDS/ZRDDS_QOS_PROFILES.xml && test -d $BoardRoot/Config/Weather && test -d $BoardRoot/Config/TargetLib && test -d $BoardRoot/Config/SensorWave && test -d $BoardRoot/Config/IRRadiance && echo '[DeploymentManifest] result=PASS'"
     Invoke-Ssh $boardTarget "test -x $BoardRoot/run_precise.sh; test -f $BoardRoot/Config/DDS/ZRDDS_QOS_RK3588_192.168.1.116.xml; ps -ef | grep '[X]org :0' >/dev/null; if pgrep -x HwaSim_IR >/dev/null; then echo '[PipelinePreflight][FATAL] stale_hwasimir_process' >&2; exit 21; fi; if ss -H -lunp 2>/dev/null | awk '`$4 ~ /:8888`$/ { found=1 } END { exit !found }'; then echo '[PipelinePreflight][FATAL] udp_8888_in_use' >&2; ss -lunp | grep ':8888' >&2 || true; exit 22; fi; echo '[PipelinePreflight] process=PASS udp8888=PASS xorg=PASS qos=PASS'"
 
-    Write-Host '[Pipeline] Creating temporary direct-link configs and starting all three endpoints'
-    Invoke-Ssh $boardTarget "cp -p $BoardRoot/Config/HwaSimIRRuntime.ini $boardConfigBackup"
-    $boardConfigWasBackedUp = $true
-    $localBefore = Join-Path $logDir 'HwaSimIRRuntime.before.ini'
-    Invoke-Scp "$boardTarget`:$BoardRoot/Config/HwaSimIRRuntime.ini" $localBefore
-    $configLines = @(Get-Content -LiteralPath $localBefore)
-    $settings = @(
-        @('TcpOutput','Codec','auto'),
-        @('TcpOutput','EnableH264Experimental','true'),
-        @('TcpOutput','H264Encoder','mpp'),
-        @('TcpOutput','H264BitrateKbps','4000'),
-        @('TcpOutput','H264GopFrames','30'),
-        @('TcpOutput','H264LowLatency','true'),
-        @('TcpOutput','H264FallbackToJpeg','false'),
-        @('TcpOutput','H264ForceKeyFrameOnStart','true'),
-        @('TcpPayload','PacketVersion','3'),
-        @('TcpPayload','SendVideo','true'),
-        @('TcpPayload','SendAnnotation','true'),
-        @('TcpPayload','SendRealtimeData','true'),
-        @('TcpPayload','ForwardInitControl','true'),
-        @('Performance','EnablePerfLog','1'),
-        @('Performance','QuietPerfMode','true')
-    )
-    if ($DdsH264Smoke) {
-        $settings += @(
-            @('DdsVideo','Enable','true'),
-            @('DdsVideo','Codec','auto'),
-            @('DdsVideo','QosFile','Config/DDS/ZRDDS_QOS_RK3588_192.168.1.116.xml'),
-            @('LocalRecording','Enable','false'),
-            @('TcpPayload','SendVideo','false')
-        )
-    }
-    foreach ($setting in $settings) {
-        $configLines = @(Set-IniValue $configLines $setting[0] $setting[1] $setting[2])
-    }
-    $localTestConfig = Join-Path $logDir 'HwaSimIRRuntime.test.ini'
-    [IO.File]::WriteAllLines($localTestConfig, $configLines, (New-Object Text.UTF8Encoding($false)))
-    Invoke-Scp $localTestConfig "$boardTarget`:$BoardRoot/Config/HwaSimIRRuntime.ini"
+    Write-Host '[Pipeline] Using immutable atomically deployed Config; smoke overrides are environment-only'
 
     $videoExe = Find-LatestReleaseExe 'HwaSim_IR_VideoDisplay.exe'
     $stimExe = Find-LatestReleaseExe 'DataDrivenTestQT.exe'
