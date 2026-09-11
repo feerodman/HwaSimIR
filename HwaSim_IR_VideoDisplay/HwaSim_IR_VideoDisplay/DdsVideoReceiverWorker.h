@@ -21,6 +21,7 @@ struct DdsVideoReceiverConfig
 	int height = 800;
 	int fps = 60;
 	QString dumpFirstFramePath;
+	int dumpFrameIndex = 1;
 	bool autoFromVideoStatus = true;
 	bool receiveFrameProducts = true;
 	QString topicControl = QStringLiteral("HwaSimIR.Control");

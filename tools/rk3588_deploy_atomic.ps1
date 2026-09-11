@@ -89,6 +89,7 @@ $requiredConfig = @(
     'TargetLib/Targets.json',
     'Weather/weather_profiles.json',
     'Weather/weather_textures.json',
+    'IRHotspots/target_hotspots.json',
     'IRRadiance/stage5_debug_display.json',
     'IRPlume/engine_plume_profiles.json',
     'Annotation/annotation_profiles.json'
@@ -165,7 +166,7 @@ $remotePerformanceBackup = "$BoardRoot/rk3588_hwasimir_performance_mode.sh.befor
 Invoke-Scp $archive $remoteArchive
 
 $requiredTests = ($requiredConfig | ForEach-Object { "test -f '$remoteConfigNew/$_'" }) -join ' && '
-$prepare = "set -eu; mkdir -p '$remoteConfigNew'; tar -xzf '$remoteArchive' -C '$remoteConfigNew' --strip-components=1; cd '$remoteConfigNew'; sha256sum -c deployment_manifest.sha256 >/tmp/hwasimir_config_verify_$stamp.log; $requiredTests; test `$(sha256sum deployment_manifest.sha256 | awk '{print `$1}') = '$manifestSha'; test `$(sha256sum '$boardElfNew' | awk '{print `$1}') = '$elfSha'; echo '[DeploymentVerify] result=PASS configManifestSha256=$manifestSha elfSha256=$elfSha buildId=$buildId staging=$remoteConfigNew'"
+$prepare = "set -eu; mkdir -p '$remoteConfigNew'; tar --warning=no-timestamp -xzf '$remoteArchive' -C '$remoteConfigNew' --strip-components=1; cd '$remoteConfigNew'; sha256sum -c deployment_manifest.sha256 >/tmp/hwasimir_config_verify_$stamp.log; $requiredTests; test `$(sha256sum deployment_manifest.sha256 | awk '{print `$1}') = '$manifestSha'; test `$(sha256sum '$boardElfNew' | awk '{print `$1}') = '$elfSha'; echo '[DeploymentVerify] result=PASS configManifestSha256=$manifestSha elfSha256=$elfSha buildId=$buildId staging=$remoteConfigNew'"
 Invoke-Ssh $prepare
 
 $switch = "set -eu; pkill -TERM -x HwaSim_IR 2>/dev/null || true; for n in 1 2 3 4 5; do pgrep -x HwaSim_IR >/dev/null || break; sleep 1; done; ! pgrep -x HwaSim_IR >/dev/null; cd '$BoardRoot'; cp -p HwaSim_IR '$remoteElfBackup'; cp -p run_precise.sh '$remoteLauncherBackup'; if [ -f rk3588_hwasimir_performance_mode.sh ]; then cp -p rk3588_hwasimir_performance_mode.sh '$remotePerformanceBackup'; fi; mv Config '$remoteConfigBackup'; if mv '$remoteConfigNew' Config && mv '$boardElfNew' HwaSim_IR && mv '$boardLauncherNew' run_precise.sh && mv '$boardPerformanceNew' rk3588_hwasimir_performance_mode.sh; then chmod 755 HwaSim_IR run_precise.sh rk3588_hwasimir_performance_mode.sh; rm -f '$remoteArchive'; echo '[DeploymentSwitch] result=PASS backupConfig=$remoteConfigBackup backupElf=$remoteElfBackup'; else rm -rf Config; mv '$remoteConfigBackup' Config; cp -p '$remoteElfBackup' HwaSim_IR; cp -p '$remoteLauncherBackup' run_precise.sh; [ ! -f '$remotePerformanceBackup' ] || cp -p '$remotePerformanceBackup' rk3588_hwasimir_performance_mode.sh; echo '[DeploymentSwitch][ERROR] reason=atomic_switch_failed action=rollback' >&2; exit 31; fi"

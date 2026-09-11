@@ -1,14 +1,14 @@
 {
   "version": 1,
-  "notes": "Stage4 ThermalHotspot is physical engine/plume heat. BrightSpot is strikeFlag/strikePart controlled special radiation intensity.",
+  "notes": "Stage4 ThermalHotspot is physical engine/plume heat. BrightSpot is strikeFlag/strikePart controlled special radiation intensity. F35 local coordinates are geometry-derived engineering regions from F35C.obj, not measured thermal data.",
   "platforms": {
     "F35": {
       "engineRear": {
         "enabledByEngineState": true,
         "shape": "Sphere",
-        "localPos": [0.0, -3.8, 0.0],
+        "localPos": [0.0, -7.5, 1.2],
         "localDir": [0.0, -1.0, 0.0],
-        "size": [0.85, 0.85, 0.85],
+        "size": [1.10, 1.10, 1.10],
         "targetTempK": 900.0,
         "heatTauSec": 1.2,
         "coolTauSec": 8.0,
@@ -16,13 +16,13 @@
       },
       "brightspots": {
         "head": {
-          "localPos": [0.0, 2.8, 0.0],
-          "radius": 0.28,
+          "localPos": [0.0, 6.5, 0.9],
+          "radius": 0.45,
           "intensity": 1.0
         },
         "mid": {
-          "localPos": [0.0, 0.0, 0.0],
-          "radius": 0.34,
+          "localPos": [0.0, 0.0, 2.05],
+          "radius": 0.90,
           "intensity": 0.8
         }
       }

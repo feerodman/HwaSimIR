@@ -258,7 +258,7 @@ IRRadianceComponents IRRadianceModelV2::evaluateComponents(const IRRadianceModel
 
 	const double referenceRadiance = std::max(
 		1.0e-12,
-		planckRadianceWm2SrUm(wavelengthCenterUm, referenceTemperatureK(input.band)));
+		bandAveragePlanckRadianceWm2SrUm(input.band, referenceTemperatureK(input.band)));
 
 	components.materialTempK = materialTemperatureK;
 	components.emissivity = emissivity;
@@ -267,7 +267,7 @@ IRRadianceComponents IRRadianceModelV2::evaluateComponents(const IRRadianceModel
 	components.tauUpSource = input.tauUpSource.empty() ? "legacy_atmosphere" : input.tauUpSource;
 	components.tauUpValid = tauUpValid;
 	components.tauFallbackReason = tauFallbackReason;
-	components.bodyRadiance = emissivity * planckRadianceWm2SrUm(wavelengthCenterUm, materialTemperatureK);
+	components.bodyRadiance = emissivity * bandAveragePlanckRadianceWm2SrUm(input.band, materialTemperatureK);
 	components.reflectedRadiance =
 		reflectance *
 		solarStrength *
@@ -277,7 +277,7 @@ IRRadianceComponents IRRadianceModelV2::evaluateComponents(const IRRadianceModel
 	components.rearHotspotRadiance =
 		hotspotIntensity *
 		hotspotBandWeight(input.band) *
-		planckRadianceWm2SrUm(wavelengthCenterUm, hotspotTemperatureK);
+		bandAveragePlanckRadianceWm2SrUm(input.band, hotspotTemperatureK);
 	components.plumeRadiance = plumeRadiance;
 	components.brightspotRadiance =
 		brightspotIntensity *
@@ -347,7 +347,7 @@ IRRadianceComponents IRRadianceModelV2::evaluateComponents(const IRRadianceModel
 		components.plumeRadiance +
 		components.brightspotRadiance;
 	components.surfaceRadiance = surfaceRadiance;
-	components.bodyRadianceNoAero = emissivity * planckRadianceWm2SrUm(wavelengthCenterUm, baseMaterialTemperatureK);
+	components.bodyRadianceNoAero = emissivity * bandAveragePlanckRadianceWm2SrUm(input.band, baseMaterialTemperatureK);
 	components.bodyRadianceWithAero = components.bodyRadiance;
 	const double nonBodySurfaceRadiance =
 		components.reflectedRadiance +
@@ -372,7 +372,14 @@ IRRadianceComponents IRRadianceModelV2::evaluateComponents(const IRRadianceModel
 	}
 	else if (input.useM1Physics && input.band == IRBand::MidWaveInfrared)
 	{
-		components.m1SurfaceRadiance = surfaceRadiance;
+		// The engine plume is rendered by its own geometry and must not also be
+		// folded into the aircraft body.  CPU target-centre state has no fragment
+		// position, so the two local-source values remain explicit peak/reference
+		// components and are NOT added as if they covered the whole aircraft.
+		// The GPU applies them only where the rear/bright masks are non-zero.
+		components.m1SurfaceRadiance =
+			components.bodyRadiance +
+			components.reflectedRadiance;
 		components.m1SensorRadiance = components.m1TauUp * components.m1SurfaceRadiance +
 			components.pathThermalRadiance + components.activeSensorRadiance;
 	}
@@ -516,6 +523,24 @@ double IRRadianceModelV2::planckRadianceWm2SrUm(double wavelengthUm, double temp
 		return 0.0;
 	}
 	return c1 / denominator;
+}
+
+double IRRadianceModelV2::bandAveragePlanckRadianceWm2SrUm(IRBand band, double temperatureK)
+{
+	if (band != IRBand::MidWaveInfrared)
+	{
+		return planckRadianceWm2SrUm(bandCenterUm(band), temperatureK);
+	}
+
+	// Composite Simpson integration of the rectangular 3--5 um response at
+	// 0.5 um spacing.  Dividing the integral by the 2 um bandwidth produces the
+	// same W/(m^2 sr um) band-mean unit used by the MODTRAN LUT.
+	const double b30 = planckRadianceWm2SrUm(3.0, temperatureK);
+	const double b35 = planckRadianceWm2SrUm(3.5, temperatureK);
+	const double b40 = planckRadianceWm2SrUm(4.0, temperatureK);
+	const double b45 = planckRadianceWm2SrUm(4.5, temperatureK);
+	const double b50 = planckRadianceWm2SrUm(5.0, temperatureK);
+	return (b30 + 4.0 * b35 + 2.0 * b40 + 4.0 * b45 + b50) / 12.0;
 }
 
 double IRRadianceModelV2::applyToneMap(double radiance, double scale, IRStage5ToneMap toneMap)

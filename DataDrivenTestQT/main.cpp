@@ -28,6 +28,11 @@ int main(int argc, char *argv[])
 	double illuminatorOnEndSec = -1.0;
 	bool freezeGeometry = false;
 	bool initOnly = false;
+	double pauseStartSec = -1.0;
+	double pauseDurationSec = 0.0;
+	int engineState = 1;
+	int strikeFlag = 0;
+	int strikePart = 2;
 	QString networkConfigPath;
 	QString channel;
 	QString inputDataPath;
@@ -174,7 +179,36 @@ int main(int argc, char *argv[])
 		{
 			freezeGeometry = true;
 		}
+		const QString pauseStartPrefix = QStringLiteral("--pause-start-sec=");
+		if (argument.startsWith(pauseStartPrefix))
+		{
+			bool ok = false;
+			const double value = argument.mid(pauseStartPrefix.size()).toDouble(&ok);
+			if (ok) pauseStartSec = qMax(0.0, value);
+		}
+		const QString pauseDurationPrefix = QStringLiteral("--pause-duration-sec=");
+		if (argument.startsWith(pauseDurationPrefix))
+		{
+			bool ok = false;
+			const double value = argument.mid(pauseDurationPrefix.size()).toDouble(&ok);
+			if (ok) pauseDurationSec = qMax(0.0, value);
+		}
 		const QString networkConfigPrefix = QStringLiteral("--network-config=");
+		const QString engineStatePrefix = QStringLiteral("--engine-state=");
+		if (argument.startsWith(engineStatePrefix))
+		{
+			engineState = argument.mid(engineStatePrefix.size()).toInt() != 0 ? 1 : 0;
+		}
+		const QString strikeFlagPrefix = QStringLiteral("--strike-flag=");
+		if (argument.startsWith(strikeFlagPrefix))
+		{
+			strikeFlag = argument.mid(strikeFlagPrefix.size()).toInt() != 0 ? 1 : 0;
+		}
+		const QString strikePartPrefix = QStringLiteral("--strike-part=");
+		if (argument.startsWith(strikePartPrefix))
+		{
+			strikePart = qBound(0, argument.mid(strikePartPrefix.size()).toInt(), 2);
+		}
 		if (argument.startsWith(networkConfigPrefix))
 		{
 			networkConfigPath = argument.mid(networkConfigPrefix.size());
@@ -232,10 +266,14 @@ int main(int argc, char *argv[])
 	w.setSensorPixelAngleForTest(sensorPixelAngleUrad);
 	w.setUtcHourForTest(utcHour);
 	w.setFreezeGeometryForTest(freezeGeometry);
+	w.configureRealtimePauseForTest(pauseStartSec, pauseDurationSec);
 	qInfo().noquote() << QStringLiteral("[StimGeometry] freezeGeometry=%1 protocolLayoutUnchanged=1")
 		.arg(freezeGeometry ? 1 : 0);
 	w.configureIlluminatorForTest(illuminatorAngleMrad, illuminatorSpotRad,
 		illuminatorEnabled, illuminatorOnStartSec, illuminatorOnEndSec);
+	w.configureTargetThermalFeaturesForTest(engineState, strikeFlag, strikePart);
+	qInfo().noquote() << QStringLiteral("[StimTargetThermalFeatures] engineState=%1 strikeFlag=%2 strikePart=%3 protocolLayoutUnchanged=1")
+		.arg(engineState).arg(strikeFlag).arg(strikePart);
     w.configurePhase4cAeroMachTest(phase4cAeroMach, aeroAltitudeKm, aeroMach);
 	if (initOnly)
 	{

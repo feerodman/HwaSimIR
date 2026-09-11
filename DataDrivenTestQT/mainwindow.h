@@ -66,8 +66,17 @@ public:
 	void setSensorPixelAngleForTest(double pixelAngleUrad);
 	void setUtcHourForTest(double utcHour) { m_testUtcHour = utcHour; }
 	void setFreezeGeometryForTest(bool enabled) { m_freezeGeometryForTest = enabled; }
+	void configureRealtimePauseForTest(double startSec, double durationSec) {
+		m_pauseStartSec = startSec;
+		m_pauseDurationSec = durationSec;
+	}
 	void configureIlluminatorForTest(double angleMrad, double spotRad, int forceEnabled,
 		double onStartSec, double onEndSec);
+	void configureTargetThermalFeaturesForTest(int engineState, int strikeFlag, int strikePart) {
+		m_testEngineState = engineState != 0;
+		m_testStrikeFlag = strikeFlag != 0;
+		m_testStrikePart = strikePart;
+	}
 
 signals:
 	void initAckReceived();
@@ -189,7 +198,14 @@ private:
 	int m_protocolIlluminatorForceEnabled = 0;
 	double m_protocolIlluminatorOnStartSec = -1.0;
 	double m_protocolIlluminatorOnEndSec = -1.0;
+	bool m_testEngineState = true;
+	bool m_testStrikeFlag = false;
+	int m_testStrikePart = 2;
 	bool m_freezeGeometryForTest = false;
+	double m_pauseStartSec = -1.0;
+	double m_pauseDurationSec = 0.0;
+	bool m_pauseActiveLogged = false;
+	bool m_pauseResumeLogged = false;
 
 	// Current Position
 	double m_currentLat;

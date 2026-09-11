@@ -570,17 +570,15 @@ double IRWeatherEffects::cloudEmissionGray(IRBand band,
 		return Clamp(background * 0.82 + 0.10 * diffuse, 0.14, 0.76);
 	case IRBand::MidWaveInfrared:
 	{
-		const double wavelengthUm = IRRadianceModelV2::bandCenterUm(band);
-		const double ratio = IRRadianceModelV2::planckRadianceWm2SrUm(wavelengthUm, temperature) /
-			std::max(1.0e-12, IRRadianceModelV2::planckRadianceWm2SrUm(wavelengthUm, 300.0));
+		const double ratio = IRRadianceModelV2::bandAveragePlanckRadianceWm2SrUm(band, temperature) /
+			std::max(1.0e-12, IRRadianceModelV2::bandAveragePlanckRadianceWm2SrUm(band, 300.0));
 		const double thermalGray = 0.16 + 0.48 * std::sqrt(Clamp(ratio, 0.0, 1.5));
 		return Clamp(thermalGray * 0.82 + background * 0.18, 0.12, 0.72);
 	}
 	case IRBand::LongWaveInfrared:
 	{
-		const double wavelengthUm = IRRadianceModelV2::bandCenterUm(band);
-		const double ratio = IRRadianceModelV2::planckRadianceWm2SrUm(wavelengthUm, temperature) /
-			std::max(1.0e-12, IRRadianceModelV2::planckRadianceWm2SrUm(wavelengthUm, 300.0));
+		const double ratio = IRRadianceModelV2::bandAveragePlanckRadianceWm2SrUm(band, temperature) /
+			std::max(1.0e-12, IRRadianceModelV2::bandAveragePlanckRadianceWm2SrUm(band, 300.0));
 		const double thermalGray = 0.12 + 0.66 * Clamp(ratio, 0.0, 1.25);
 		return Clamp(thermalGray * 0.90 + background * 0.10, 0.14, 0.82);
 	}

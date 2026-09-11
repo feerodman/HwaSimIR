@@ -228,6 +228,10 @@ public:
 
 	static double bandCenterUm(IRBand band);
 	static double planckRadianceWm2SrUm(double wavelengthUm, double temperatureK);
+	// Rectangular-band mean spectral radiance.  MWIR is integrated over the
+	// formal SensorWave interval 3.00--5.00 um; bands without a formal response
+	// curve retain their documented centre-wavelength fallback.
+	static double bandAveragePlanckRadianceWm2SrUm(IRBand band, double temperatureK);
 
 private:
 	static double applyToneMap(double radiance, double scale, IRStage5ToneMap toneMap);

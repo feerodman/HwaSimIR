@@ -338,7 +338,29 @@ void MainWindow::onSendRealTimeData()
 
 
 //    }
-    sendRealTimeData();
+	const double elapsedSec = m_sendClock.isValid()
+		? static_cast<double>(m_sendClock.nsecsElapsed()) / 1.0e9 : 0.0;
+	const bool pauseWindow = m_pauseStartSec >= 0.0 && m_pauseDurationSec > 0.0 &&
+		elapsedSec >= m_pauseStartSec && elapsedSec < m_pauseStartSec + m_pauseDurationSec;
+	if (pauseWindow)
+	{
+		if (!m_pauseActiveLogged)
+		{
+			m_pauseActiveLogged = true;
+			qInfo().noquote() << QStringLiteral("[StimPause] state=paused startSec=%1 durationSec=%2 sentFrames=%3")
+				.arg(m_pauseStartSec, 0, 'f', 3).arg(m_pauseDurationSec, 0, 'f', 3).arg(m_sentFrameCount);
+		}
+	}
+	else
+	{
+		if (m_pauseActiveLogged && !m_pauseResumeLogged)
+		{
+			m_pauseResumeLogged = true;
+			qInfo().noquote() << QStringLiteral("[StimPause] state=resumed elapsedSec=%1 sentFrames=%2 catchUpBurst=0")
+				.arg(elapsedSec, 0, 'f', 3).arg(m_sentFrameCount);
+		}
+		sendRealTimeData();
+	}
 
 	if (m_isRealtimeSending)
 	{
@@ -878,7 +900,8 @@ void MainWindow::sendRealTimeData()
 //    }else{
 //        data.weaponState.strikeFlag = false;
 //    }
-    data.weaponState.strikeFlag = false;
+	data.weaponState.strikeFlag = m_testStrikeFlag;
+	data.weaponState.strikePart = m_testStrikePart;
     data.weaponState.viewValid = 1/*realTimeData.at(dataNum-1).viewValid*/;
 
 
@@ -889,7 +912,7 @@ void MainWindow::sendRealTimeData()
 	data.targetState[0].targetID = 3;
 //    if(current_time > 5){
 //        //5秒后發動機熄火
-        data.targetState[0].engineState = true;
+		data.targetState[0].engineState = m_testEngineState;
 //    }else{
 //        data.targetState[0].engineState = false;
 //    }
@@ -1257,6 +1280,8 @@ void MainWindow::onStartButtonClicked()
 		m_isRealtimeSending = true;
 		m_sentFrameCount = 0;
 		m_sendDeadlineIndex = 0;
+		m_pauseActiveLogged = false;
+		m_pauseResumeLogged = false;
 		m_sendClock.restart();
 		m_lastSendPerfLogNs = 0;
 		m_lastSendPerfFrameCount = 0;

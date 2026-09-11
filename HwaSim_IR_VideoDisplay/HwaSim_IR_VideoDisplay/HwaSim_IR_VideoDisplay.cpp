@@ -43,6 +43,7 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
 	int ddsHeight,
 	int ddsFps,
 	const QString& ddsDumpFirstFrame,
+	int ddsDumpFrameIndex,
     QWidget *parent)
     : QWidget(parent),
       m_networkConfigPath(networkConfigPath.trimmed()),
@@ -147,6 +148,7 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
 		if (ddsHeight > 0) config.height = ddsHeight;
 		if (ddsFps > 0) config.fps = ddsFps;
 		config.dumpFirstFramePath = ddsDumpFirstFrame.trimmed();
+		config.dumpFrameIndex = qMax(1, ddsDumpFrameIndex);
 		config.autoFromVideoStatus = ddsTopic.trimmed().isEmpty() && ddsCodec.trimmed().isEmpty() &&
 			ddsWidth <= 0 && ddsHeight <= 0 && ddsFps <= 0;
 		config.topicControl = instanceSettings.value(QStringLiteral("DdsProtocol/TopicControl"),

@@ -672,7 +672,8 @@ void DdsVideoReceiverWorker::processSample(const char* data, int size)
 				.arg(std::sqrt(variance), 0, 'f', 3)
 				.arg(pixelCount ? static_cast<double>(nonZero) / pixelCount : 0.0, 0, 'f', 6);
 		}
-		if (!m_dumpAttempted && !m_config.dumpFirstFramePath.trimmed().isEmpty())
+		if (!m_dumpAttempted && !m_config.dumpFirstFramePath.trimmed().isEmpty() &&
+			static_cast<int>(sampleIndex + 1) >= m_config.dumpFrameIndex)
 		{
 			m_dumpAttempted = true;
 			const QFileInfo dumpInfo(m_config.dumpFirstFramePath);

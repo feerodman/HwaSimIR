@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
     int platID = -1;
     int sensorID = -1;
 	QString receiveTransport, streamRole, ddsTopic, ddsCodec, ddsQos, ddsDumpFirstFrame;
-	int ddsDomain = -1, ddsWidth = -1, ddsHeight = -1, ddsFps = -1;
+	int ddsDomain = -1, ddsWidth = -1, ddsHeight = -1, ddsFps = -1, ddsDumpFrameIndex = 1;
 	int acceptanceExitMs = 0;
     const QStringList arguments = app.arguments();
     for (int argumentIndex = 0; argumentIndex < arguments.size(); ++argumentIndex)
@@ -74,6 +74,7 @@ int main(int argc, char *argv[])
 		if (intOption(QStringLiteral("--dds-width"), ddsWidth)) continue;
 		if (intOption(QStringLiteral("--dds-height"), ddsHeight)) continue;
 		if (intOption(QStringLiteral("--dds-fps"), ddsFps)) continue;
+		if (intOption(QStringLiteral("--dds-dump-frame-index"), ddsDumpFrameIndex)) continue;
 		if (intOption(QStringLiteral("--acceptance-exit-ms"), acceptanceExitMs)) continue;
     }
     qInfo().noquote()
@@ -88,7 +89,7 @@ int main(int argc, char *argv[])
             .arg(sizeof(BYHWICD::InitAckC2pObjectTrackingCmd));
 	HwaSim_IR_VideoDisplay window(networkConfigPath, channel, platID, sensorID,
 		receiveTransport, streamRole, ddsTopic, ddsCodec, ddsQos, ddsDomain, ddsWidth, ddsHeight, ddsFps,
-		ddsDumpFirstFrame);
+		ddsDumpFirstFrame, ddsDumpFrameIndex);
     window.show();
 	if (acceptanceExitMs > 0)
 	{

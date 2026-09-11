@@ -153,7 +153,7 @@ public:
 
 	// VisibleWindow UI初始化（键盘、背景、帧率显示等）
 	void InitVisibleWindowUi();
-	// 公共捕获任务初始化（Stage6FinalSensorTex + CaptureTask）
+	// 公共捕获初始化；主循环在 Panda do_frame 返回后执行实际捕获。
 	void InitCommonCaptureTask();
 	// 模型初始化
 	void InitPlatformModels();
@@ -377,6 +377,20 @@ private:
 	double m_stage5SensorInputDisplayClampMin = 0.0;
 	double m_stage5SensorInputDisplayClampMax = 1.0;
 	double m_stage5SensorInputDisplayGamma = 1.0;
+	// Public, per-band physical radiance windows used before the common Stage6
+	// display/AGC path.  These are scene-wide exposure ranges, never per-target gains.
+	double m_m1NirDisplayRadianceMin = 0.0;
+	double m_m1NirDisplayRadianceMax = 350.0;
+	double m_m1MwirDisplayRadianceMin = 0.0;
+	double m_m1MwirDisplayRadianceMax = 2.5;
+	// Scene-wide MWIR environment proxies share the same physical 3--5 um
+	// radiance window as targets.  Values are explicit configuration data,
+	// not target-specific gains or measured scene truth.
+	double m_m1MwirSkyEffectiveTempK = 255.0;
+	double m_m1MwirSkyEmissivity = 0.98;
+	double m_m1MwirGroundEffectiveTempK = 288.0;
+	double m_m1MwirGroundEmissivity = 0.95;
+	double m_m1MwirCloudEmissivity = 0.98;
 	IRBand m_stage5SensorInputDisplayBand = IRBand::MidWaveInfrared;
 	std::string m_stage5SensorInputDisplayBandName = "MWIR";
 	bool m_stage5AeroThermalEnabled = true;
@@ -799,6 +813,13 @@ private:
 	int m_headlessLastTextureWidth = 0;
 	int m_headlessLastTextureHeight = 0;
 	bool m_headlessLastTextureCropApplied = false;
+	std::uint64_t m_frameRenderImageSeqBefore = 0;
+	std::uint64_t m_frameRenderImageSeqAfter = 0;
+	bool m_frameRenderImageAdvanced = false;
+	std::uint64_t m_invalidRenderedFrameCount = 0;
+	bool m_frameOutputHealthy = true;
+	std::int64_t m_startupBeginTimeNs = 0;
+	bool m_firstValidVideoFrameLogged = false;
 	bool m_renderBackendReady = false;
 	bool m_startupSucceeded = true;
 	int m_startupExitCode = 0;
@@ -911,6 +932,10 @@ private:
 	unsigned long long m_stage0DisplayFrameCount;            // 阶段0基线诊断：实时数据包计数
 	std::uint64_t m_udpSequence = 0;
 	std::atomic<std::uint64_t> m_latestUdpSourceSeq{ 0 };
+	// Steady-clock timestamp of the most recently accepted realtime sample.
+	// Used only to close a DDS round after cross-topic STOP/realtime delivery
+	// has gone quiet; it never changes the wire protocol or sample ordering.
+	std::atomic<std::int64_t> m_lastRealtimeIngressSteadyNs{ 0 };
 	IRFrameTelemetry m_currentFrameTelemetry;
 	std::uint64_t m_lastCapturedSourceSeq = 0;
 	std::atomic<std::uint64_t> m_lastOutputSourceSeq{ 0 };

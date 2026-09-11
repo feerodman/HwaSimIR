@@ -29,6 +29,7 @@ public:
 		int ddsHeight = -1,
 		int ddsFps = -1,
 		const QString& ddsDumpFirstFrame = QString(),
+		int ddsDumpFrameIndex = 1,
         QWidget *parent = nullptr);
     ~HwaSim_IR_VideoDisplay();
 
