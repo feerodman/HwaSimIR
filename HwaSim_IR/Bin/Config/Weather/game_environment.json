@@ -1,0 +1,26 @@
+{
+  "SchemaVersion": 1,
+  "Revision": "P6A-game-3-existing-alpha-weather",
+  "Scope": "ordinary_test_only; uncalibrated artistic linear values",
+  "Cloud": {
+    "RadiusXYM": 240,
+    "RadiusZM": 180,
+    "RaySteps": 8,
+    "Density": 1.4,
+    "OpticalDepth": 2.5,
+    "LinearSourceNIR": 0.48,
+    "LinearSourceMWIR": 0.34,
+    "ShapeTextures": {
+      "Template0": "Weather/Textures/cloud3d_001.png",
+      "Template1": "Weather/Textures/cloud3d_002.png",
+      "Template2": "Weather/Textures/cloud3d_014.png",
+      "Template3": "Weather/Textures/cloud3d_020.png"
+    }
+  },
+  "Sheet": {
+    "Texture": "Weather/Textures/cloud_scattered.png",
+    "MaskChannel": "alpha",
+    "WorldSizeM": 9000,
+    "OpticalDepthScale": 2.0
+  }
+}

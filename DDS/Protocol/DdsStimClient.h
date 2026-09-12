@@ -21,6 +21,11 @@ struct DdsStimConfig
     std::string topicInitAck = "HwaSimIR.InitAck";
     std::string writerProfile = "hwasimir_protocol_writer";
     std::string readerProfile = "hwasimir_protocol_reader";
+    // Optional application completion observation; uses the existing status topic.
+    bool observeStopStatus = false;
+    std::string topicVideoStatus = "HwaSimIR.VideoStatus";
+    std::string statusReaderProfile = "hwasimir_status_reader";
+    std::string channel;
 };
 
 // Shared by DataDrivenTestQT and the customer command-line stimulator. The
@@ -41,6 +46,7 @@ public:
     bool waitForInitAcks(int timeoutMs, std::size_t expectedCount,
         std::vector<BYHWICD::InitAckC2pObjectTrackingCmd>& values);
     bool waitForAcknowledgments(int timeoutMs, std::string& error);
+    bool waitForStopStatus(int timeoutMs, std::string& error);
     void setAckCallback(const std::function<void(const BYHWICD::InitAckC2pObjectTrackingCmd&)>& callback);
     unsigned long long ackCount() const;
     int runtimeInitCount() const;

@@ -4,6 +4,10 @@
 
 #include "HwaSimIR.h"
 #include "IR/IRGameSpriteBatch.h"
+#include "IR/IRJson.h"
+#include "IR/IRNozzleAttachments.h"
+#include "executionEnvironment.h"
+#include "pfmFile.h"
 #include "ProtocolRoute.h"
 #include "VideoTopicResolver.h"
 #include "lvecBase4.h"
@@ -35,6 +39,7 @@
 #include <iomanip>
 #include <sstream>
 #include <thread>
+#include "IR/IRLinearReadback.h"
 
 #if defined(_WIN32)
 #include <process.h>
@@ -555,7 +560,7 @@ PT(PandaNode) CreateStage5EnginePlumeBillboardNode()
 {
 	// Explicit diagnostic comparison only; production uses soft sprite batches.
 	const char* legacy = std::getenv("P5LegacyVisuals");
-	if (!legacy || std::string(legacy) != "1") return IRGameSpriteBatch::makeGeometry();
+	if (!legacy || std::string(legacy) != "1") return IRGameSpriteBatch::makeGeometry(2);
 	PT(GeomVertexData) data = new GeomVertexData(
 		"Stage5EnginePlumeData",
 		GeomVertexFormat::get_v3n3t2(),
@@ -2206,9 +2211,33 @@ void HwaSimIR::ApplyStage6DisplayConfig(const BYHWICD::trackerSensorParam& senso
 	std::string noiseSigmaSource;
 	const bool protocolNoisePresent = sensor.noiseEn || sensor.trackerSensorNoise > 0.0;
 
-	config.whiteHot = m_runtimeConfig.getBool("Stage6Display", "WhiteHot", "Stage6WhiteHot", true, &whiteHotSource);
-	config.displayGain = m_runtimeConfig.getDouble("Stage6Display", "DisplayGain", "Stage6DisplayGain", 1.0, &gainSource);
-	config.displayOffset = m_runtimeConfig.getDouble("Stage6Display", "DisplayOffset", "Stage6DisplayOffset", 0.0, &offsetSource);
+    const auto& profile=m_irSensorProfiles.profileForProtocolBand(sensor.trackerSensorBand);
+    std::string presetSource;
+    const std::string presetName=m_runtimeConfig.getString("SensorWave","DisplayPreset","SensorDisplayPreset",profile.defaultDisplayPreset,&presetSource);
+    IRDisplayPreset preset;
+    const auto entry=profile.displayPresets.find(presetName);
+    const bool fromProfile=profile.loadedFromFile&&entry!=profile.displayPresets.end();
+    if(fromProfile)preset=entry->second;
+    else if(presetName!="Legacy")std::cerr<<"[DisplayProfile][ERROR] preset_missing="<<presetName<<" fallback=Legacy"<<std::endl;
+    auto source=[&](const char* field,const std::string& selected,double value,const char* unit){
+        std::cout<<"[DisplayEffective]"<<(fromProfile&&selected!="default"?"[WARN]":"")<<" Band="<<profile.name<<" preset="<<presetName<<" field="<<field
+            <<" value="<<value<<" unit="<<unit<<" source="<<(selected=="default"?(fromProfile?"band_profile":"code_default"):selected)
+            <<" file="<<profile.sourcePath<<" legacyConflict="<<(fromProfile&&selected!="default")<<std::endl;
+    };
+
+	config.whiteHot = m_runtimeConfig.getBool("Stage6Display", "WhiteHot", "Stage6WhiteHot", preset.whiteHot, &whiteHotSource);
+	config.displayGain = m_runtimeConfig.getDouble("Stage6Display", "DisplayGain", "Stage6DisplayGain", preset.gain, &gainSource);
+	config.displayOffset = m_runtimeConfig.getDouble("Stage6Display", "DisplayOffset", "Stage6DisplayOffset", preset.offsetGray, &offsetSource);
+    std::string gammaSource,autoSource;
+    m_stage5SensorInputDisplayGamma=m_runtimeConfig.getDouble("Stage5Radiance","SensorInputDisplayGamma","SensorInputDisplayGamma",preset.gamma,&gammaSource);
+    m_stage6AgcEnabled=m_runtimeConfig.getBool("Stage6AGC","EnableAGC","EnableAGC",preset.automatic,&autoSource);
+    if(!std::isfinite(config.displayGain)||config.displayGain<=0)throw std::runtime_error("DisplayGain must be finite and positive");
+    if(!std::isfinite(config.displayOffset)||!std::isfinite(m_stage5SensorInputDisplayGamma)||m_stage5SensorInputDisplayGamma<.1||m_stage5SensorInputDisplayGamma>5)
+        throw std::runtime_error("Invalid display offset/gamma override");
+    m_stage6AgcStatsSource="raw_linear_pre_display";
+    source("WhiteHot",whiteHotSource,config.whiteHot,"bool");source("Gain",gainSource,config.displayGain,"ratio");
+    source("OffsetGray",offsetSource,config.displayOffset,"gray8");source("Gamma",gammaSource,m_stage5SensorInputDisplayGamma,"exponent");
+    source("Automatic",autoSource,m_stage6AgcEnabled,"bool");
 	config.applyToWindow = m_runtimeConfig.getBool("Stage6Display", "ApplyToWindow", "Stage6DisplayApplyToWindow", true, &applyToWindowSource);
 	config.applyToCapture = false;
 	config.backgroundDisplayEnable = m_runtimeConfig.getBool("Stage6Display", "BackgroundDisplayEnable", "Stage6BackgroundDisplayEnable", true, &backgroundSource);
@@ -3309,6 +3338,7 @@ bool HwaSimIR::IsStage7FinalScreenOverlayActive() const
 
 bool HwaSimIR::IsStage6FinalPostprocessNoop(std::string* reason) const
 {
+    if(m_p6.enabled&&m_p6.scene=="display"){if(reason)*reason="P6_linear_capture";return false;}
 	if (std::abs(m_stage5SensorInputDisplayGamma-1.0)>1.e-6) {
 		if(reason) *reason="common_final_gamma";
 		return false;
@@ -3679,44 +3709,35 @@ void HwaSimIR::UpdateStage6AgcFromFrame(const unsigned char* frameData, int fram
 
 	if (m_stage6AgcMode == "Manual")
 	{
-		targetGain = ClampStage5Double(config.displayGain, m_stage6AgcMinGain, m_stage6AgcMaxGain);
-		targetOffset = ClampStage5Double(config.displayOffset / 255.0, m_stage6AgcMinOffset, m_stage6AgcMaxOffset);
+		targetGain = 1.0; // Manual gain/offset already applied once by the final sample function.
+		targetOffset = 0.0;
 		lowInput = 0.0;
 		highInput = 1.0;
 		valid = true;
-		fallbackReason = "manual_display_gain_offset";
+		fallbackReason = "manual_already_applied_once";
 	}
 	else
 	{
 		std::array<int, 256> histogram;
+		PfmFile linear;
+        if(!ReadSceneLinear(m_pFramework->get_graphics_engine(),m_stage6RawSceneTex,m_stage6RawSceneBuffer,m_stage6FinalWidth,m_stage6FinalHeight,linear)) {
+            m_stage6AgcValid=false;m_stage6AgcFallbackReason="raw_linear_readback_failed";return;
+        }
+        // Texture allocation may be padded to 1024; exclude pixels outside the viewport.
+        frameWidth=std::min(m_stage6FinalWidth,linear.get_x_size());
+        frameHeight=std::min(m_stage6FinalHeight,linear.get_y_size());
 		histogram.fill(0);
 		double sum = 0.0;
 		double sumSq = 0.0;
 		const int stride = std::max(1, m_stage6AgcStride);
-		const double inverseGain = std::fabs(m_stage6AgcGain) > 1.0e-6 ? (1.0 / m_stage6AgcGain) : 1.0;
 		for (int y = 0; y < frameHeight; y += stride)
 		{
-			const unsigned char* row = frameData + static_cast<size_t>(y) * static_cast<size_t>(frameWidth) * 3u;
 			for (int x = 0; x < frameWidth; x += stride)
 			{
-				const unsigned char* px = row + static_cast<size_t>(x) * 3u;
-				const int r = px[0];
-				const int g = px[1];
-				const int b = px[2];
-				if (m_stage6AgcExcludeAnnotationOverlay &&
-					g > 150 && r < 120 && b < 120 && g > r + 45 && g > b + 45)
-				{
-					continue;
-				}
-				double gray = (0.299 * static_cast<double>(r) +
-					0.587 * static_cast<double>(g) +
-					0.114 * static_cast<double>(b)) / 255.0;
-				if (!config.whiteHot)
-				{
-					gray = 1.0 - gray;
-				}
-				gray = std::pow(std::max(0.0,gray),m_stage5SensorInputDisplayGamma);
-				gray = ClampStage5Double((gray - m_stage6AgcOffset) * inverseGain, 0.0, 1.0);
+                const auto px=linear.get_point3(x,y+linear.get_y_size()-frameHeight);
+                double gray=(.299*px[0]+.587*px[1]+.114*px[2])*config.displayGain+config.displayOffset/255.0;
+                if(!std::isfinite(gray))continue;
+                gray=ClampStage5Double(gray,0.0,1.0);
 				const int bin = std::max(0, std::min(255, static_cast<int>(gray * 255.0 + 0.5)));
 				++histogram[bin];
 				sum += gray;
@@ -4519,6 +4540,7 @@ uniform float u_cloud_gray;
 uniform float u_spawn_fade;
 uniform int u_ray_steps;
 uniform int u_camera_inside;
+uniform int u_game_cloud;
 in vec3 v_local_pos;
 out vec4 fragColor;
 
@@ -4538,22 +4560,29 @@ void main() {
 
     int stepCount = clamp(u_ray_steps, 2, 16);
     float stepLength = (exitT - entryT) / float(stepCount);
-    vec3 samplePoint = rayOrigin + rayDirection * (entryT + 0.5 * stepLength);
+    float samplePhase=u_game_cloud==1?(.25+.5*fract(dot(gl_FragCoord.xy,vec2(.75487766,.56984029)))):.5;
+    vec3 samplePoint = rayOrigin + rayDirection * (entryT + samplePhase * stepLength);
     float transmittance = 1.0;
+    float accumulated=0.0;
     for (int i = 0; i < 16; ++i) {
         if (i >= stepCount || transmittance < 0.03) break;
         // P4 native shared depth tests the proxy surface. No sampled depth
         // texture is attached; this is not precise depth clipping along the ray.
         float ellipsoidEdge = clamp(1.0 - dot(samplePoint, samplePoint), 0.0, 1.0);
         vec3 densityUv = fract(samplePoint * 0.5 + 0.5 + u_noise_offset);
-        float shape = texture(u_density_texture, densityUv).r;
-        float density = shape * smoothstep(0.0, 0.30, ellipsoidEdge) * u_density_scale * u_spawn_fade;
-        transmittance *= exp(-max(0.0, u_optical_depth) * density * stepLength);
+        if(u_game_cloud==1)densityUv=samplePoint*.5+.5;
+        vec4 cloudTexel=texture(u_density_texture, densityUv);
+        float shape=cloudTexel.r;
+        float density = shape * (u_game_cloud==1?1.0:smoothstep(0.0, 0.30, ellipsoidEdge)) * u_density_scale * u_spawn_fade;
+        float segmentT=exp(-max(0.0,u_optical_depth)*density*stepLength);
+        float artLight=u_game_cloud==1?(.42+.62*clamp((cloudTexel.g-.60)/.35,0.0,1.0)+.18*(samplePoint.z*.5+.5)):1.0;
+        accumulated+=transmittance*(1.0-segmentT)*u_cloud_gray*artLight;
+        transmittance*=segmentT;
         samplePoint += rayDirection * stepLength;
     }
     float alpha = clamp(1.0 - transmittance, 0.0, 0.96);
     if (alpha < 0.002) discard;
-    fragColor = vec4(vec3(clamp(u_cloud_gray, 0.0, 1.0)), alpha);
+    fragColor = vec4(vec3(clamp(accumulated/max(1.0-transmittance,.0001),0.0,1.0)),alpha);
 }
 )";
 	m_stage7VolumeShader = Shader::make(Shader::SL_GLSL, vertexShader, fragmentShader);
@@ -4562,6 +4591,8 @@ void main() {
 		std::cout << "[World3DCloud][ERROR] shader_compile_failed" << std::endl;
 	}
 }
+
+#include "IR/P6CloudDensity.h"
 
 void HwaSimIR::InitStage7VolumetricCloudRenderer()
 {
@@ -4572,7 +4603,8 @@ void HwaSimIR::InitStage7VolumetricCloudRenderer()
 		return;
 	}
 
-	const int size = m_stage7VolumeDensityTextureSize;
+	const bool gameDensity=m_p6.enabled&&!m_p6.legacy;
+    const int size = gameDensity?96:m_stage7VolumeDensityTextureSize;
 	const int voxelCount = size * size * size;
 	m_stage7VolumeDensityTextures.clear();
 	for (int templateIndex = 0; templateIndex < m_stage7VolumeDensityTemplateCount; ++templateIndex)
@@ -4580,7 +4612,14 @@ void HwaSimIR::InitStage7VolumetricCloudRenderer()
 		std::ostringstream textureName;
 		textureName << "Stage7CloudDensity3D_" << templateIndex;
 		PT(Texture) texture = new Texture(textureName.str());
-		texture->setup_3d_texture(size, size, size, Texture::T_unsigned_byte, Texture::F_red);
+		texture->setup_3d_texture(size, size, size, Texture::T_unsigned_byte, gameDensity?Texture::F_rgba:Texture::F_red);
+        if(gameDensity){
+            PTA_uchar assetVoxels=BuildP6CloudDensity(m_p6,templateIndex,size);
+            texture->set_ram_image_as(assetVoxels,"RGBA");
+            texture->set_wrap_u(SamplerState::WM_clamp);texture->set_wrap_v(SamplerState::WM_clamp);texture->set_wrap_w(SamplerState::WM_clamp);
+            texture->set_minfilter(SamplerState::FT_linear);texture->set_magfilter(SamplerState::FT_linear);
+            m_stage7VolumeDensityTextures.push_back(texture);continue;
+        }
 		PTA_uchar voxels = PTA_uchar::empty_array(voxelCount);
 		const double phase = 0.73 + static_cast<double>(templateIndex) * 1.91;
 		for (int z = 0; z < size; ++z)
@@ -4640,6 +4679,7 @@ void HwaSimIR::InitStage7VolumetricCloudRenderer()
 		volume.node.set_shader_input("u_spawn_fade", LVecBase2f(0.0f, 0.0f));
 		volume.node.set_shader_input("u_ray_steps", LVecBase2i(m_stage7VolumeRaymarchStepsFar, 0));
 		volume.node.set_shader_input("u_camera_inside", LVecBase2i(0, 0));
+        volume.node.set_shader_input("u_game_cloud",LVecBase2i(0,0));
 		if (!m_stage7VolumeDensityTextures.empty())
 		{
 			volume.node.set_shader_input("u_density_texture", m_stage7VolumeDensityTextures[0]);
@@ -4686,6 +4726,7 @@ bool HwaSimIR::GetStage7StreamingCenter(LPoint3f& center, std::string& targetKey
 
 double HwaSimIR::Stage7CloudLinearValue(IRBand band, double temperatureK, const IRStage7WeatherState& weather) const
 {
+    if(m_p6.enabled&&!m_p6.legacy)return band==IRBand::NearInfrared?m_p6.cloudNir:m_p6.cloudMwir;
 	// Dimensionless common LINEAR scene scale; RGB16F is storage, not a unit.
 	// Reuses the existing background mapping, without adding a radiometric model.
 	if (band == IRBand::MidWaveInfrared && m_m1RuntimeEnabled && m_m1MwirRuntimeEnabled && !m_m1CompareOnly)
@@ -4719,6 +4760,7 @@ void HwaSimIR::UpdateStage7VolumetricClouds(const IRStage7WeatherState& weatherS
 			weatherState.volumeCloudProbability > 0.0 ? weatherState.volumeCloudProbability : m_stage7VolumeFallbackProbability,
 			weatherState.volumeCloudDensityScale,
 			static_cast<int>(m_stage7VolumeDensityTextures.size()));
+		if(m_p6.enabled&&m_p6.scene=="mixed")desired=P6CloudDescriptors();
 		candidateCount = desired.size();
 		if (desired.size() > static_cast<size_t>(m_stage7VolumeConfig.maxActiveVolumes))
 		{
@@ -4881,6 +4923,9 @@ void HwaSimIR::UpdateStage7VolumetricClouds(const IRStage7WeatherState& weatherS
 	for (size_t order = 0; order < visibleOrder.size(); ++order)
 	{
 		Stage7CloudVolumeRuntime& volume = m_stage7CloudVolumePool[visibleOrder[order]];
+        // Far-to-near proxies; intersecting volumes retain object-level limits.
+        volume.node.set_bin("fixed",80-static_cast<int>(order));
+        volume.node.set_shader_input("u_game_cloud",LVecBase2i(m_p6.enabled&&!m_p6.legacy?1:0,0));
 		volume.visibleWanted = true;
 		const double edgeFade = std::max(0.0, std::min(1.0,
 			(m_stage7VolumeConfig.streamingRadiusM - volume.descriptor.centerDistanceM) /
@@ -4905,6 +4950,7 @@ void HwaSimIR::UpdateStage7VolumetricClouds(const IRStage7WeatherState& weatherS
 			if (projectedRatio < 0.08) steps = std::min(steps, m_stage7VolumeRaymarchStepsFar);
 			else if (projectedRatio < 0.18) steps = std::min(steps, m_stage7VolumeRaymarchStepsMedium);
 		}
+		if(m_p6.enabled)steps=m_p6.steps;
 		volume.raySteps = steps;
 		volume.node.set_shader_input("u_ray_steps", LVecBase2i(steps, 0));
 		volume.node.set_shader_input("u_density_scale", LVecBase2f(static_cast<float>(volume.descriptor.density), 0.0f));
@@ -4922,6 +4968,9 @@ void HwaSimIR::UpdateStage7VolumetricClouds(const IRStage7WeatherState& weatherS
 			cloudGray = cloudGray*(1.0-fog)+ClampStage5Double(weatherState.fogGray,0.0,1.0)*fog;
 		}
 		volume.node.set_shader_input("u_cloud_gray", LVecBase2f(static_cast<float>(cloudGray), 0.0f));
+        if(m_p6.enabled&&!m_p6.legacy){
+            volume.node.set_shader_input("u_optical_depth",LVecBase2f(m_p6.opticalDepth,0));
+        }
 	}
 
 	m_stage7VolumeActiveCount = 0;
@@ -5405,6 +5454,18 @@ void HwaSimIR::CreateEnginePlumeForTarget(TargetPlatformData& targetPlat)
 	}
 	if (plumeNodeCount + 2 > m_stage5PlumeOptions.maxPlumeNodes)
 	{
+		// INIT reserves batches in asset order. Reuse an unbound reservation when
+		// a later asset (for example F22) becomes active; keep the same node budget.
+		for(auto& donor:m_targetPlatformList){
+			if(donor.targetState.targetID>=0||donor.enginePlumeCoreNodePath.is_empty()||donor.enginePlumeHaloNodePath.is_empty())continue;
+			targetPlat.enginePlumeCoreNodePath=donor.enginePlumeCoreNodePath;
+			targetPlat.enginePlumeHaloNodePath=donor.enginePlumeHaloNodePath;
+			donor.enginePlumeCoreNodePath=NodePath();donor.enginePlumeHaloNodePath=NodePath();
+			targetPlat.enginePlumeCoreNodePath.reparent_to(targetPlat.nodePath);
+			targetPlat.enginePlumeHaloNodePath.reparent_to(targetPlat.nodePath);
+			std::cout<<"[PlumeBatchReuse] asset="<<Stage4PlatformName(targetPlat.type)<<" source=unbound_reservation nodes=2 allocation=0"<<std::endl;
+			return;
+		}
 		return;
 	}
 
@@ -5471,11 +5532,12 @@ IREnginePlumeOutput HwaSimIR::UpdateEnginePlumeForTarget(TargetPlatformData& tar
 	}
 	if (targetPlat.enginePlumeCoreNodePath.is_empty() && targetPlat.enginePlumeHaloNodePath.is_empty())
 	{
-		HideEnginePlume(targetPlat);
-		return output;
+		CreateEnginePlumeForTarget(targetPlat);
+		if(targetPlat.enginePlumeCoreNodePath.is_empty()){HideEnginePlume(targetPlat);return output;}
 	}
 
 	const std::string platformName = Stage4PlatformName(targetPlat.type);
+	const IRNozzleAttachment* nozzleAttachment=FindNozzleAttachment(platformName);
 	const std::string runtimeKey = platformName + "#plat" + std::to_string(targetPlat.targetState.targetPlatID)
 		+ "#target" + std::to_string(targetPlat.targetState.targetID);
 	Stage5PlumeRuntimeCache& cache = m_stage5PlumeRuntimeCache[runtimeKey];
@@ -5551,6 +5613,22 @@ IREnginePlumeOutput HwaSimIR::UpdateEnginePlumeForTarget(TargetPlatformData& tar
 				std::max(0.01f, radiusRootM),
 				std::max(0.05f, lengthM),
 				std::max(0.01f, radiusRootM));
+			if(nozzleAttachment){
+				const auto& a=*nozzleAttachment;
+				const float width=a.radiusX/.4f*(layer==2?1.35f:1.f);
+				const float length=layer==2?a.haloLength:a.coreLength;
+				node.set_pos(a.position[0]);node.set_scale(width,length,width);
+				LVector3f delta=a.count==2?a.position[1]-a.position[0]:LVector3f(0,0,0);
+				node.set_shader_input("u_sprite_nozzle_offset",LVecBase3f(delta[0]/width,delta[1]/length,delta[2]/width));
+				node.set_shader_input("u_sprite_aspect",LVecBase2f(a.radiusZ/a.radiusX,1));
+				node.set_shader_input("u_sprite_emitters",LVecBase2f(float(a.count),0));
+				node.set_tag("spriteEmitters",std::to_string(a.count));
+			}else{
+				node.set_shader_input("u_sprite_nozzle_offset",LVecBase3f(0,0,0));
+				node.set_shader_input("u_sprite_aspect",LVecBase2f(1,0));
+				node.set_shader_input("u_sprite_emitters",LVecBase2f(1,0));
+				node.set_tag("spriteEmitters","1");
+			}
 			node.set_shader_input("u_wave_band", LVecBase2i(static_cast<int>(band), 0));
 			node.set_shader_input("u_ir_band_index", LVecBase2i(static_cast<int>(band), 0));
 			node.set_shader_input("u_ir_band_class", LVecBase2i(IRBandClassForShader(band), 0));
@@ -6777,17 +6855,17 @@ void HwaSimIR::ProcessRealSimSceneInitData()
 	bool sensorWaveWidthFallback = false;
 	bool sensorWaveHeightFallback = false;
 	bool sensorWavePixelAngleFallback = false;
-	if (sensorWidth <= 0 && sensorProfile.width > 0)
+	if ((sensorWidth < 256 || sensorWidth > 4096) && sensorProfile.width > 0)
 	{
 		sensorWidth = sensorProfile.width;
 		sensorWaveWidthFallback = true;
 	}
-	if (sensorHeight <= 0 && sensorProfile.height > 0)
+	if ((sensorHeight < 256 || sensorHeight > 4096) && sensorProfile.height > 0)
 	{
 		sensorHeight = sensorProfile.height;
 		sensorWaveHeightFallback = true;
 	}
-	if (sensorPixelAngleUrad <= 0.0 && sensorProfile.fovHDeg > 0.0 && sensorWidth > 0)
+	if ((!std::isfinite(sensorPixelAngleUrad) || sensorPixelAngleUrad <= 0.0) && sensorProfile.fovHDeg > 0.0 && sensorWidth > 0)
 	{
 		const double pi = 3.14159265358979323846;
 		const double fovRad = sensorProfile.fovHDeg * pi / 180.0;
@@ -8719,6 +8797,7 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 	// ========== 业务逻辑（后续填充） ==========
 	switch (cmd.simCommand) {
 	case 1: // 复位
+        m_inputRoundPreparedByInit=false;
 		std::cout << "执行复位逻辑..." << std::endl;
 		if (m_pTcpThread) m_pTcpThread->stopOutputRound("reset");
 		m_stage0DisplayFrameCount = 0;
@@ -8817,19 +8896,23 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		break;
 	case 2: // 开始
 		std::cout << "执行开始仿真逻辑..." << std::endl;
-		m_stage0DisplayFrameCount = 0;
-		m_udpSequence = 0;
+        // INIT already created this input round. DDS realtime may arrive after
+        // INIT ACK while START is waiting on the render thread. Keep those FIFO
+        // entries and counters; clearing here lost the first valid input.
+        if(!m_inputRoundPreparedByInit){
+            m_stage0DisplayFrameCount=0;m_udpSequence=0;
+            m_latestUdpSourceSeq.store(0);m_pendingDisplayFrames.clear();m_perfStats.reset();
+        }
+        std::cout<<"[SyncStartBoundary] preparedByInit="<<m_inputRoundPreparedByInit<<" preservedInputs="<<m_pendingDisplayFrames.size()<<std::endl;
+        m_inputRoundPreparedByInit=false;
 		m_inputQueueBackpressureLogCount = 0;
 		m_annotationLastProjectionSourceSeq = 0;
 		m_lastIrUpdateSourceSeq = 0;
 		m_lastIrUpdateState.clear();
-		m_latestUdpSourceSeq.store(0);
-		m_pendingDisplayFrames.clear();
 		m_currentFrameTelemetry = IRFrameTelemetry();
 		m_lastCapturedSourceSeq = 0;
 		m_lastOutputSourceSeq.store(0);
 		m_lastSourceSeqContinuous.store(true);
-		m_perfStats.reset();
 		m_perfStats.configure(m_bSyncRenderMode.load(), static_cast<double>(m_targetVideoFps.load()));
 		// TODO: 实现开始仿真逻辑（启动渲染、数据采集等）
 		m_isSimRunning.store(true);
@@ -8946,6 +9029,7 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 		<< cmd.MissileMaxCount9 << "/" << cmd.MissileMaxCountMMD << std::endl;
 	const std::string renderControlSource = ingressTransport + "_init";
 	ApplyRenderControl(cmd.trackingInit.simMode, cmd.trackingInit.videoFps, renderControlSource.c_str());
+    m_inputRoundPreparedByInit=true;
 	const int targetVideoFps = m_targetVideoFps.load();
 	m_inputQueueBackpressureLogCount = 0;
 	m_annotationLastProjectionSourceSeq = 0;
@@ -9433,21 +9517,16 @@ void HwaSimIR::InitInfraredSimulation()
 		"../temperatures/Temperatures_Yemen_Summer.csv",
 		"../../temperatures/Temperatures_Yemen_Summer.csv"
 	});
-	std::vector<std::string> sensorWaveDirs;
-	sensorWaveDirs.push_back("Config/SensorWave");
-	sensorWaveDirs.push_back("../Bin/Config/SensorWave");
-	sensorWaveDirs.push_back("HwaSim_IR/Bin/Config/SensorWave");
-	sensorWaveDirs.push_back("../HwaSim_IR/Bin/Config/SensorWave");
+    Filename profileBinary=Filename::from_os_specific(ExecutionEnvironment::get_binary_name());
+    profileBinary.make_absolute();
+    const std::string profileConfigRoot=Filename(profileBinary.get_dirname()+"/Config").to_os_specific();
+    const std::vector<std::string> sensorWaveDirs={profileConfigRoot+"/SensorWave"};
 	materialPath = AbsolutePathForLog(materialPath);
 	materialBandOpticsPath = AbsolutePathForLog(materialBandOpticsPath);
 	solarHeatingLutPath = AbsolutePathForLog(solarHeatingLutPath);
 	transmittancePath = AbsolutePathForLog(transmittancePath);
 	modtranBandLutPath = AbsolutePathForLog(modtranBandLutPath);
 	weatherPath = AbsolutePathForLog(weatherPath);
-	for (size_t i = 0; i < sensorWaveDirs.size(); ++i)
-	{
-		sensorWaveDirs[i] = AbsolutePathForLog(sensorWaveDirs[i]);
-	}
 	std::vector<std::string> hotspotConfigPaths;
 	hotspotConfigPaths.push_back("Config/IRHotspots/target_hotspots.json");
 	hotspotConfigPaths.push_back("../Bin/Config/IRHotspots/target_hotspots.json");
@@ -11237,8 +11316,16 @@ void HwaSimIR::InitInfraredSimulation()
 	m_irAtmosphereModel.setModtranTauDebugEnabled(enableModtranTauDebug);
 	m_irAtmosphereModel.setUseModtranTauForAtmosphere(useModtranTauForAtmosphere);
 	m_irSensorProfilesReady = m_irSensorProfiles.loadFromDirectoryCandidates(sensorWaveDirs);
-	const std::string sensorWaveResolvedDir = m_irSensorProfilesReady
-		? AbsolutePathForLog(m_irSensorProfiles.loadedDirectory()) : std::string();
+    try{m_p6.load(profileConfigRoot);}catch(const std::exception& e){
+        std::cerr<<"[P6Preset][FATAL] "<<e.what()<<std::endl;std::exit(2);
+    }
+    if(m_p6.enabled){
+        m_stage7VolumeConfig.maxVisibleVolumes=std::max(1,m_p6.count);
+        m_stage7VolumeStreaming.setConfig(m_stage7VolumeConfig);
+        m_stage7CloudTextureWorldSizeM=m_p6.sheetWorldSize;
+        if(m_p6.scene=="display"||m_p6.scene=="plume")m_stage7VolumeCloudEnabled=false;
+    }
+	const std::string sensorWaveResolvedDir = m_irSensorProfiles.loadedDirectory();
 	std::cout << "[M1 ResourceP0]"
 		<< " MaterialDatabase=" << materialPath << " loaded=" << (m_irMaterialReady ? 1 : 0)
 		<< " ModtranSiLut=" << modtranBandLutPath << " loaded=" << (m_stage5ModtranRadianceReady ? 1 : 0)
@@ -11863,6 +11950,7 @@ void HwaSimIR::InitInfraredShader() {
     uniform float u_stage7_cloud_gray;
     uniform float u_stage7_cloud_optical_depth;
     uniform int u_stage7_cloud_mask_channel; // 0 luminance, 1 alpha
+    uniform vec4 u_game_sheet; // explicit P6 art: enabled, common linear source, depth scale
     uniform vec2 u_cloud_base_scale;
     uniform vec2 u_cloud_detail_scale;
     uniform vec2 u_cloud_detail_strength;
@@ -12031,6 +12119,11 @@ void HwaSimIR::InitInfraredShader() {
             vec2 base_uv = fract(v_cloud_world_uv * base_scale + u_cloud_uv_offset + wind_base);
             vec2 detail_uv = fract(v_cloud_world_uv * base_scale * detail_scale
                                  + u_cloud_uv_offset * 2.17 + wind_detail);
+            if(u_game_sheet.x>0.5){
+                // Repeat sampler owns wrapping: preserve derivatives for mip filtering.
+                base_uv=v_cloud_world_uv*base_scale+u_cloud_uv_offset+wind_base;
+                detail_uv=v_cloud_world_uv*base_scale*detail_scale+u_cloud_uv_offset*2.17+wind_detail;
+            }
             vec4 base_texel = texture2D(p3d_Texture0, base_uv);
             vec4 detail_texel = texture2D(p3d_Texture0, detail_uv);
             float base_luma = clamp(dot(base_texel.rgb, vec3(0.299, 0.587, 0.114)), 0.0, 1.0);
@@ -12044,6 +12137,7 @@ void HwaSimIR::InitInfraredShader() {
             float detail_mask = (u_stage7_cloud_mask_channel == 1)
                 ? clamp(detail_texel.a, 0.0, 1.0)
                 : smoothstep(0.34, 0.72, detail_luma);
+            if(u_game_sheet.x>0.5&&u_stage7_cloud_mask_channel==0){base_mask=base_luma;detail_mask=detail_luma;}
             float detail_strength = clamp(u_cloud_detail_strength.x, 0.0, 1.0);
             float raw_density = clamp(base_mask * (1.0 - detail_strength)
                                     + detail_mask * detail_strength, 0.0, 1.0);
@@ -12057,6 +12151,7 @@ void HwaSimIR::InitInfraredShader() {
             float cloud_mask = smoothstep(coverage_threshold,
                                           min(0.999, coverage_threshold + edge_softness),
                                           raw_density);
+            if(u_game_sheet.x>0.5)cloud_mask=smoothstep(.04,.92,base_mask);
             cloud_mask = clamp(cloud_mask * mix(1.0, 1.18,
                 clamp(u_cloud_inside_factor.x, 0.0, 1.0)), 0.0, 1.0);
             float extinction = max(0.0, u_stage7_cloud_optical_depth)
@@ -12075,8 +12170,9 @@ void HwaSimIR::InitInfraredShader() {
                     localFade=max(localFade,hole.w*(1.0-smoothstep(.35,1.0,radius)));
                 }
             }
+            if(u_game_sheet.x>0.5)extinction*=u_game_sheet.z;
             float tau_cloud = exp(-extinction*(1.0-localFade));
-            float cloud_intensity = clamp(u_stage7_cloud_gray, 0.0, 1.0);
+            float cloud_intensity = clamp(u_game_sheet.x>0.5?u_game_sheet.y:u_stage7_cloud_gray, 0.0, 1.0);
             if (u_ir_band_class == 0) {
                 cloud_intensity = clamp(cloud_intensity + (raw_density - 0.5) * 0.12, 0.0, 1.0);
             }
@@ -12539,6 +12635,7 @@ void HwaSimIR::ApplyInfraredShader(NodePath& node, bool isBackground) {
 	node.set_shader_input("u_stage7_cloud_opacity", LVecBase2f(0.0f, 0.0f));
 	node.set_shader_input("u_stage7_cloud_temperature_K", LVecBase2f(255.0f, 0.0f));
 	node.set_shader_input("u_stage7_cloud_gray", LVecBase2f(0.5f, 0.0f));
+    node.set_shader_input("u_game_sheet",LVecBase4f(0,0,1,0));
 	node.set_shader_input("u_stage7_cloud_optical_depth", LVecBase2f(0.0f, 0.0f));
 	node.set_shader_input("u_stage7_cloud_mask_channel", LVecBase2i(1, 0));
 	node.set_shader_input("u_cloud_world_uv_reciprocal", LVecBase2f(0.0f, 0.0f));
@@ -15546,6 +15643,7 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 }
 void HwaSimIR::ResetRenderSchedulingState()
 {
+    m_inputRoundPreparedByInit=false;
 	const std::size_t inputQueueDepth = m_pendingDisplayFrames.size();
 	m_pendingDisplayFrames.clear();
 	m_stage0DisplayFrameCount = 0;
@@ -15741,12 +15839,15 @@ void HwaSimIR::OnTcpFrameSent(
 
 
 #include "IR/P5GraphicsTest.inl"
+#include "IR/P6GraphicsTest.inl"
 
 void HwaSimIR::ResetGameGraphicsState()
 {
 	m_gameSpriteTimeOrigin=-1.0; m_gameSpriteLastTime=-1.0;
 	if(!m_p5TestRoot.is_empty()) m_p5TestRoot.remove_node();
 	m_p5TestRoot=NodePath();m_p5TestModel=NodePath();m_p5TestCore=NodePath();m_p5TestHalo=NodePath();
+    m_p6WorldCloudOriginReady=false;
+    m_p6Background=NodePath();m_p6Display=NodePath();m_p6Core=NodePath();m_p6Blocker=NodePath();
 }
 
 void HwaSimIR::UpdateGameSpriteAnimation()
@@ -15767,7 +15868,9 @@ void HwaSimIR::UpdateGameSpriteAnimation()
 			visibleLayers.push_back(node);
 		}
 	}
-	const double perLayerBudget=std::min(32.0,256.0/std::max(1.0,double(visibleLayers.size())));
+	double visibleEmitters=0;
+	for(auto& node:visibleLayers)visibleEmitters+=node.get_tag("spriteEmitters")=="2"?2:1;
+	const double perLayerBudget=std::min(32.0,256.0/std::max(1.0,visibleEmitters));
 	for (auto& node : visibleLayers) {
 			node.set_shader_input("u_sprite_time",LVecBase2f(elapsed,0));
 			const double distance = (node.get_pos(m_renderRoot)-m_cameraNode.get_pos(m_renderRoot)).length();
@@ -15814,6 +15917,7 @@ AsyncTask::DoneStatus HwaSimIR::shader_update_task(GenericAsyncTask* task, void*
 			sourceSeq >= self->m_lastIrUpdateSourceSeq + updateStride);
 		self->UpdateGameSpriteAnimation();
 		self->UpdateP5GraphicsTestScene();
+        self->UpdateP6GraphicsTestScene();
 		if (stateChanged || updateDue)
 		{
 			const auto begin = std::chrono::steady_clock::now();
@@ -16076,6 +16180,7 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 		height,
 		textureCropApplied,
 		telemetry.sourceSeq);
+    self->CaptureP6LinearFrame(frameData,frameWidth,frameHeight,telemetry.sourceSeq);
 	if (trackingSnapshot.flag != 0x38)
 	{
 		trackingSnapshot.flag = 0x38;

@@ -265,6 +265,7 @@ target_link_libraries(HwaSim_IR PRIVATE
         p3dtoolconfig
         p3direct
         Threads::Threads
+        ${CMAKE_DL_LIBS}
         ${OpenCV_LIBS}
 )
 

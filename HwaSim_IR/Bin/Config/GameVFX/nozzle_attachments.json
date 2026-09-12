@@ -1,0 +1,36 @@
+{
+  "SchemaVersion": 1,
+  "Revision": "P6A-mesh-nozzles-1",
+  "Scope": "mesh-local game effect placement and size only; no temperature or engine changes",
+  "Assets": {
+    "F35": {
+      "Mesh": "TargetLib/models/f35/F35C.obj",
+      "NozzleCount": 1,
+      "Nozzle0": {"X": 0, "Y": -6.84, "Z": 1.0878},
+      "RadiusX": 0.4395, "RadiusZ": 0.4395,
+      "CoreLength": 3.0, "HaloLength": 7.0
+    },
+    "F22": {
+      "Mesh": "TargetLib/models/f22/f22.obj",
+      "NozzleCount": 2,
+      "Nozzle0": {"X": -0.6815, "Y": -6.86, "Z": -0.96385},
+      "Nozzle1": {"X": 0.6815, "Y": -6.86, "Z": -0.96385},
+      "RadiusX": 0.5812, "RadiusZ": 0.23345,
+      "CoreLength": 3.4, "HaloLength": 8.0
+    },
+    "AIM120D": {
+      "Mesh": "TargetLib/models/aim120/AIM120.obj",
+      "NozzleCount": 1,
+      "Nozzle0": {"X": 0, "Y": -1.83, "Z": 0},
+      "RadiusX": 0.080, "RadiusZ": 0.080,
+      "CoreLength": 0.9, "HaloLength": 2.4
+    },
+    "AIM9X": {
+      "Mesh": "TargetLib/models/aim9x/aim9x.obj",
+      "NozzleCount": 1,
+      "Nozzle0": {"X": 0.00005, "Y": -1.515, "Z": 0},
+      "RadiusX": 0.052, "RadiusZ": 0.052,
+      "CoreLength": 0.75, "HaloLength": 2.0
+    }
+  }
+}

@@ -1,60 +1,38 @@
-# SensorWave 配置使用边界
+# SensorWave 配置的实际职责（P6A）
 
-本文说明 `HwaSim_IR/Bin/Config/SensorWave/default_*.json` 在 HwaSimIR 中的使用范围。SensorWave 文件来源接近 Presagis Ondulus IR profile，字段很多，HwaSimIR 只读取白名单字段，不一次性接入所有系统。
+继续使用独立的 default_NVG.json（实际 Band=NIR）和 default_MWIR.json。原始文件完整保存在 SensorWave/Archive/P5，精简后的 Systems 只保留白名单；项目新字段放在 HwaSimIR.SchemaVersion=1 段。NIR 文件名的 NVG 不代表已经实现像增强器。
 
-## 优先级
+完整逐字段盘点见 [P6A Profile Field Usage](HwaSimIR_P6A_Profile_Field_Usage.md)。其中列明原始 JSON 的每一个叶节点、是否仍在活动配置中、解析成员、消费者、单位及状态。“解析成功”不代表遗留算法已接通。
 
-传感器几何和固有参数优先级：
+## 解析与资源根
 
-1. UDP 初始化包：仿真输入优先，例如 `trackerSensorWidth`、`trackerSensorHeight`、`trackerSensorViewMin`、`trackerSensorViewMax`、`trackerSensorPixelAngle`。
-2. SensorWave/default_*.json：传感器固有参数和 fallback profile。
-3. HwaSimIRRuntime.ini：运行 fallback 和显示/调试开关。
-4. 代码默认值：最后兜底。
+IRConfig.cpp 使用已链接的 OpenCV FileStorage JSON 树，按明确完整路径读取。IRJson.h 在前面验证 JSON 数字/布尔类型、重复键、非有限值、尾随数据及嵌套深度；不会在整段字符串中搜索同名字段。当前白名单的对象键采用明文 ASCII，转义形式的键会给出明确不支持错误。字符串值保留 JSON 转义，包含原归档路径使用的可选转义斜线。
 
-实时仿真输入仍只来自 UDP realtime 包，例如 `targetState`、`weaponState`、`viewValid`、`engineState`、`strikeFlag`、`strikePart`、`lookatEn`，不允许 ini/env 覆盖。
+根目录由实际可执行程序所在目录确定为 Config/SensorWave，Windows 转成操作系统原生路径供文件读取。每个波段分别记录有效状态、文件、版本、内容 FNV1a64 和失败原因；部署清单另提供全部文件的 SHA-256。目录选择之后不从其他目录补齐无效文件。NIR/MWIR 都通过才将 requiredBands 标为完整有效，其余波段仍独立报告。读取发生在初始化，正常逐帧不读文件。
 
-## 当前使用字段
+必需项为宽高及与固定波段一致的光谱范围；项目新段存在时还必须验证版本、波段及显示预设完整性。失败时该波段使用有明确状态的代码缺省，不保留半解析值。VIS/SWIR 遗留范围与固定波段不一致会报告冲突，不在本轮扩展其辐射模型。
 
-当前 HwaSimIR 白名单读取以下字段：
+## 按字段类别的优先级
 
-- `SensorConfigurationSystem.Width`：传感器宽度 fallback。UDP init 提供有效宽度时不覆盖。
-- `SensorConfigurationSystem.Height`：传感器高度 fallback。UDP init 提供有效高度时不覆盖。
-- `SensorConfigurationSystem.ADCBitNumber`：ADC 位数，用于传感器 profile 日志和后续显示链路参考。
-- `SensorConfigurationSystem.DisplayBits`：显示位数，用于传感器 profile 日志和后续显示链路参考。
-- `SensorConfigurationSystem.SpectralResponseRangeLow`：波段光谱下限，单位 um。
-- `SensorConfigurationSystem.SpectralResponseRangeHigh`：波段光谱上限，单位 um。
-- `SensorConfigurationSystem.NoiseEquivalentTemperatureDifference`：NETD，当前只记录到 profile，不做完整 NETD 噪声物理标定。
-- `SensorConfigurationSystem.DetectorPitch`：探测器像元尺寸，当前用于 profile 记录和后续 Stage6/Stage6C 参考。
-- `SensorConfigurationSystem.FocalLength`：焦距，当前用于 profile 记录和后续几何参考。
-- `SensorConfigurationSystem.LensFnumber`：镜头 F 数，当前用于 profile 记录和后续辐射/噪声参考。
-- `SensorConfigurationSystem.BlackHot`：黑热偏好，当前只记录；正式显示极性由 `HwaSimIRRuntime.ini` 的 `[Stage6Display] WhiteHot` 控制。
+| 类别 | 有效优先级与消费 |
+|---|---|
+| 宽高 | 有效 DDS 初始化接口或显式兼容接口优先；256–4096 范围外才取 profile 缺省，随后经过 IRSensorModel 校验；640×480 不覆盖有效 800×800 |
+| FOV / pixel angle | 有效接口的 urad/pixel 优先；无效时由 FOVH 反推缺省，再经过现有 pixel angle 上限校验；FOVV 当前只存储/日志 |
+| 光谱范围 | 按 um 解析并与已有固定矩形波段一致性校验；没有重建 SRF/QE 或改变固定波段物理模型 |
+| Gamma / Gain / OffsetGray / WhiteHot / Mode | 环境显式覆盖 > 旧 INI 显式键 > 当前波段 HwaSimIR.Display 预设 > 代码缺省 |
+| 旧 NETD、焦距、像元间距、F 数、ADC/DisplayBits、BlackHot | 白名单存储/日志；不驱动完整探测器、编码位深或遗留极性算法 |
+| 旧 DisplayGamma、GainControlSystem.Automatic、NoiseEffectEnabled、MTF、IntegrationTime、QuamtumEfficiency、WellCapacity | 原样归档；不启用未实现算法，不推断单位 |
 
-## 只作为 fallback 或日志参考
+实时与初始化的正常输入是 DDS；保留的 UDP/TCP 只属于显式兼容路径。控制协议、目标温度、热区和发动机/气动状态不由显示配置改写。
 
-- `Width` / `Height`：只有 UDP init 宽高无效或缺失时才使用 SensorWave。
-- `FOVH` / `FOVV`：当前真实 FOV 优先由 `trackerSensorPixelAngle` 按 `umrad/pixel` 与宽高计算。只有 `trackerSensorPixelAngle` 无效时，才允许用 SensorWave `FOVH` 反推出 fallback pixel angle。
+## 显示迁移与兼容
 
-## 当前明确不使用
+每个波段包含 Legacy、Game、Auto、Black 独立命名预设。DefaultPreset=Legacy；Gamma=1、Gain=1、OffsetGray=0、WhiteHot=true、Mode=Fixed，保持 P5 默认显示。Game/Auto/Black 需要显式 SensorDisplayPreset 选择；不会因为原 JSON Automatic=true 就启用自动显示。
 
-以下 Presagis/Ondulus IR 复杂系统当前不接入：
+旧 INI 键保留为注释示例，取消注释即成为显式覆盖。旧环境变量名称也继续有效：SensorInputDisplayGamma、Stage6DisplayGain、Stage6DisplayOffset、Stage6WhiteHot、EnableAGC。冲突由每字段 DisplayEffective 行记录唯一有效来源及 legacyConflict；不叠加应用两套值。
 
-- `ImageFusionSystem`
-- `DistributedApertureSystem`
-- `IntensifierConfigurationSystem`
-- `TaskSSR`
-- 未白名单的高级渲染、融合、增强、任务系统字段
+业务源的公共范围缩放仍由既有 M1/Stage5 配置负责。本轮只迁移已知单位的最终通用显示参数；OffsetGray 的单位为 8-bit 灰阶，进入 shader 时除以 255。Gamma 在最终通道只执行一次，之后执行极性，编码固定为 H.264 8 bit。
 
-## 后续可能接入
+自动显示使用有效画幅中的 RGB16F 公共线性场景，统计阶段是最终显示增益/偏置之前的源，再明确应用一次固定增益/偏置以估计 AGC 范围。它不再从上一帧已经量化、截断、gamma 处理的 RGB8 逆推。统计值控制下一帧的全局单调映射；不依据目标框单独增强。原参数名 previous_readback 已过时，有效日志以 raw_linear_pre_display 为准。原生深度方案不变，AGC 只在显式启用时增加浮点颜色读回成本。
 
-以下字段或系统后续可能逐步接入，但不在本轮实现：
-
-- `GainControlSystem`
-- `MTF`
-- `Vignetting`
-- `FXAA`
-- `TemporalAA`
-- 更完整的 NETD / 固定图样噪声 / 探测器响应模型
-
-## 保留每波段 default_*.json
-
-后续仍保留不同波段的 `default_*.json`。每个波段有独立光谱范围、NETD、探测器参数和可能的镜头参数。HwaSimIR 只读取白名单字段，Presagis 原始复杂系统不一次性照搬。
+没有来源一致的本地 SRF/QE、曝光单位及电子噪声数据就记为未提供；IntegrationTime 等遗留数值不直接接入光子/电子模型。原浮点缓冲储存公共缩放后的线性场景值，不能称为原始物理辐亮度。

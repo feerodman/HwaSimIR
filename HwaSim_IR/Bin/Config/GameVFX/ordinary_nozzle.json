@@ -1,0 +1,8 @@
+{
+  "SchemaVersion": 1,
+  "Revision": "P6A-game-2-smoke-contrast",
+  "Scope": "generated ordinary nozzle only; no measured equipment parameters",
+  "Core": {"LengthM": 3.6, "RadiusM": 0.55, "LinearSource": 0.95},
+  "Body": {"LengthM": 9.0, "RadiusM": 1.2, "LinearSource": 0.65},
+  "Smoke": {"LengthM": 14.0, "RadiusM": 1.8, "LinearSource": 0.08}
+}

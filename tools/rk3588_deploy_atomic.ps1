@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)][string]$ElfPath,
     [string]$RepoRoot = '',
@@ -7,7 +7,8 @@ param(
     [string]$BoardRoot = '/userdata/HwaSimIR',
     [string]$SshKey = '',
     [string]$LogDirectory = '',
-    [switch]$ReuseVerifiedConfig
+    [switch]$ReuseVerifiedConfig,
+    [switch]$ReuseVerifiedFiles
 )
 
 $ErrorActionPreference = 'Stop'
@@ -103,6 +104,20 @@ $requiredConfig = @(
     'GameVFX/soft_sprite_atlas.png',
     'GameVFX/sprite.vert',
     'GameVFX/sprite.frag',
+    'GameVFX/ordinary_nozzle.json',
+    'GameVFX/nozzle_attachments.json',
+    'Weather/game_environment.json',
+    'Weather/Textures/cloud_scattered.png',
+    'Weather/game_background.frag',
+    'Weather/Textures/cloud_overcast.png',
+    'Weather/Textures/cloud3d_001.png',
+    'Weather/Textures/cloud3d_002.png',
+    'Weather/Textures/cloud3d_014.png',
+    'Weather/Textures/cloud3d_020.png',
+    'Tests/P6/fullscreen.vert',
+    'Tests/P6/display.frag',
+    'SensorWave/Archive/P5/default_NVG.json',
+    'SensorWave/Archive/P5/default_MWIR.json',
     'IRHotspots/target_hotspots.json',
     'IRRadiance/stage5_debug_display.json',
     'IRPlume/engine_plume_profiles.json',
@@ -164,7 +179,42 @@ $versionLines = @(
 
 $archive = Join-Path $LogDirectory "Config.$stamp.tgz"
 $reuseIdenticalConfig = $false
-if ($ReuseVerifiedConfig) {
+$reuseFiles = [bool]$ReuseVerifiedFiles
+$changedPaths = @()
+$removedPaths = @()
+if ($reuseFiles) {
+    # Validate the old complete release before reusing any inode.
+    Invoke-Ssh "cd '$BoardRoot/Config' && sha256sum -c deployment_manifest.sha256 >/dev/null"
+    $oldManifestPath=Join-Path $LogDirectory 'previous_manifest.sha256'
+    $remoteOldManifest="${BoardUser}@${BoardHost}:$BoardRoot/Config/deployment_manifest.sha256"
+    $arguments=@(New-SshArguments)+@($remoteOldManifest,$oldManifestPath)
+    Invoke-Native -FilePath 'scp.exe' -Arguments $arguments
+    $old=@{}
+    foreach($line in [IO.File]::ReadAllLines($oldManifestPath)) {
+        if($line -match '^([0-9a-f]{64})  (.+)$'){$old[$Matches[2]]=$Matches[1]}
+    }
+    $new=@{}
+    foreach($line in $manifestLines) {
+        if($line -match '^([0-9a-f]{64})  (.+)$') {
+            $relative=$Matches[2];$hash=$Matches[1]
+            if($relative.StartsWith('/') -or $relative -match '(^|/)\.\.(/|$)' -or $relative.Contains("'")){throw "Unsafe manifest path: $relative"}
+            $new[$relative]=$hash
+            if(-not $old.ContainsKey($relative) -or $old[$relative] -ne $hash){$changedPaths+=$relative}
+        }
+    }
+    foreach($relative in $old.Keys) {
+        if(-not $new.ContainsKey($relative)){
+            if($relative.StartsWith('/') -or $relative -match '(^|/)\.\.(/|$)' -or $relative.Contains("'")){throw 'Unsafe removed path'}
+            $removedPaths+=$relative
+        }
+    }
+    $changedPaths+=@('deployment_manifest.sha256','deployment_version.env')
+    $deltaList=Join-Path $LogDirectory 'delta_files.txt'
+    [IO.File]::WriteAllText($deltaList,(($changedPaths -join "`n")+"`n"),$utf8NoBom)
+    $removedList=Join-Path $LogDirectory 'removed_files.txt'
+    [IO.File]::WriteAllText($removedList,($removedPaths -join "`n"),$utf8NoBom)
+    Invoke-Native -FilePath 'tar.exe' -Arguments @('-C',$stageConfig,'-czf',$archive,'-T',$deltaList)
+} elseif ($ReuseVerifiedConfig) {
     $existingManifestSha = Invoke-SshCapture "sha256sum '$BoardRoot/Config/deployment_manifest.sha256' | awk '{print `$1}'"
     if ($existingManifestSha -ne $manifestSha) { throw 'ReuseVerifiedConfig requires identical complete Config contents' }
     Invoke-Ssh "cd '$BoardRoot/Config' && sha256sum -c deployment_manifest.sha256 >/dev/null"
@@ -175,9 +225,11 @@ if ($ReuseVerifiedConfig) {
 $configBytes = (Get-ChildItem -LiteralPath $stageConfig -Recurse -File | Measure-Object -Property Length -Sum).Sum
 $remoteFreeBytes = [Int64](Invoke-SshCapture "df -PB1 '$BoardRoot' | awk 'NR==2 {print `$4}'")
 $safetyBytes = 256MB
-$requiredBytes = if ($reuseIdenticalConfig) { $safetyBytes } else { $configBytes + $safetyBytes }
+$changedBytes=0
+if($reuseFiles){foreach($relative in $changedPaths){$changedBytes+=(Get-Item -LiteralPath (Join-Path $stageConfig $relative)).Length}}
+$requiredBytes = if ($reuseIdenticalConfig) { $safetyBytes } elseif($reuseFiles){$changedBytes+$safetyBytes} else { $configBytes + $safetyBytes }
 if ($remoteFreeBytes -lt $requiredBytes) {
-    throw "Insufficient board space for atomic Config staging: free=$remoteFreeBytes required=$($configBytes + $safetyBytes) configBytes=$configBytes"
+    throw "Insufficient board space for atomic Config staging: free=$remoteFreeBytes required=$requiredBytes configBytes=$configBytes changedBytes=$changedBytes reuseVerifiedFiles=$reuseFiles"
 }
 Write-Host "[DeploymentSpace] result=PASS freeBytes=$remoteFreeBytes configBytes=$configBytes safetyBytes=$safetyBytes"
 # Keep the compressed transfer artifact on tmpfs so it does not consume the
@@ -188,7 +240,21 @@ $remoteConfigBackup = "$BoardRoot/Config.before_$stamp"
 $remoteElfBackup = "$BoardRoot/HwaSim_IR.before_$stamp"
 $remoteLauncherBackup = "$BoardRoot/run_precise.sh.before_$stamp"
 $remotePerformanceBackup = "$BoardRoot/rk3588_hwasimir_performance_mode.sh.before_$stamp"
-if ($reuseIdenticalConfig) {
+if($reuseFiles) {
+    Invoke-Ssh "test ! -e '$remoteConfigNew' && cp -al '$BoardRoot/Config' '$remoteConfigNew'"
+    Invoke-Scp $archive $remoteArchive
+    $deltaDir="$BoardRoot/Config.delta_$stamp"
+    # Extract new files separately: tar must never truncate a hard-linked inode.
+    Invoke-Ssh "set -eu; test ! -e '$deltaDir'; mkdir '$deltaDir'; tar --warning=no-timestamp -xzf '$remoteArchive' -C '$deltaDir'"
+    foreach($relative in $changedPaths){
+        $parent=Split-Path -Parent $relative
+        $parent=$parent -replace '\\','/'
+        Invoke-Ssh "mkdir -p '$remoteConfigNew/$parent'; mv -f '$deltaDir/$relative' '$remoteConfigNew/$relative'"
+    }
+    foreach($relative in $removedPaths){Invoke-Ssh "rm -f -- '$remoteConfigNew/$relative'"}
+    Invoke-Ssh "find '$deltaDir' -depth -type d -empty -delete"
+    Write-Host "[DeploymentStage] mode=verified_file_snapshot changedFiles=$($changedPaths.Count) removedFiles=$($removedPaths.Count) allConfigFilesIncluded=1 sharedInodesReplacedByRename=1"
+} elseif ($reuseIdenticalConfig) {
     # Immutable snapshot of the entire already-verified tree, not an ELF-only
     # update. Replace version metadata through rename so no shared inode is edited.
     Invoke-Ssh "test ! -e '$remoteConfigNew' && cp -al '$BoardRoot/Config' '$remoteConfigNew'"
@@ -200,7 +266,7 @@ if ($reuseIdenticalConfig) {
 }
 
 $requiredTests = ($requiredConfig | ForEach-Object { "test -f '$remoteConfigNew/$_'" }) -join ' && '
-$extract = if ($reuseIdenticalConfig) { ':' } else { "mkdir -p '$remoteConfigNew'; tar --warning=no-timestamp -xzf '$remoteArchive' -C '$remoteConfigNew' --strip-components=1" }
+$extract = if ($reuseIdenticalConfig -or $reuseFiles) { ':' } else { "mkdir -p '$remoteConfigNew'; tar --warning=no-timestamp -xzf '$remoteArchive' -C '$remoteConfigNew' --strip-components=1" }
 $prepare = "set -eu; $extract; cd '$remoteConfigNew'; sha256sum -c deployment_manifest.sha256 >/tmp/hwasimir_config_verify_$stamp.log; $requiredTests; test `$(sha256sum deployment_manifest.sha256 | awk '{print `$1}') = '$manifestSha'; test `$(sha256sum '$boardElfNew' | awk '{print `$1}') = '$elfSha'; echo '[DeploymentVerify] result=PASS configManifestSha256=$manifestSha elfSha256=$elfSha buildId=$buildId staging=$remoteConfigNew'"
 Invoke-Ssh $prepare
 
@@ -209,7 +275,7 @@ Invoke-Ssh $switch
 
 $finalVerify = Invoke-SshCapture "set -eu; cd '$BoardRoot'; test `$(sha256sum HwaSim_IR | awk '{print `$1}') = '$elfSha'; test `$(sha256sum run_precise.sh | awk '{print `$1}') = '$launcherSha'; test `$(sha256sum rk3588_hwasimir_performance_mode.sh | awk '{print `$1}') = '$performanceSha'; test `$(sha256sum Config/deployment_manifest.sha256 | awk '{print `$1}') = '$manifestSha'; (cd Config && sha256sum -c deployment_manifest.sha256 >/dev/null); echo '[DeploymentFinal] result=PASS gitCommit=$gitCommit sourceIdentity=$sourceIdentity elfSha256=$elfSha buildId=$buildId runtimeConfigSha256=$runtimeSha configManifestSha256=$manifestSha'"
 $finalVerify | Tee-Object -FilePath (Join-Path $LogDirectory 'deployment_final.txt')
-if ($reuseIdenticalConfig) {
+if ($reuseIdenticalConfig -or $reuseFiles) {
     # Config is an immutable runtime input; future releases must replace files
     # by rename/copy, as this deployer does, not edit shared snapshot inodes.
     Write-Host "[DeploymentBackup] result=PASS directory=$remoteConfigBackup format=immutable_hardlink_snapshot"

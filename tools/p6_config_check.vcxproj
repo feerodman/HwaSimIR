@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations"><ProjectConfiguration Include="Release|x64"><Configuration>Release</Configuration><Platform>x64</Platform></ProjectConfiguration></ItemGroup>
+  <PropertyGroup Label="Globals"><ProjectGuid>{76C62C87-2D56-4A98-9569-A5B98C2CE614}</ProjectGuid></PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props"/>
+  <PropertyGroup Label="Configuration"><ConfigurationType>Application</ConfigurationType><PlatformToolset>v140</PlatformToolset><CharacterSet>MultiByte</CharacterSet></PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props"/>
+  <PropertyGroup><OutDir>$(ProjectDir)..\logs\p6\</OutDir><IntDir>$(OutDir)config_obj\</IntDir><TargetName>p6_config_check</TargetName></PropertyGroup>
+  <ItemDefinitionGroup><ClCompile><AdditionalIncludeDirectories>$(ProjectDir)..\HwaSim_IR\HwaSim_IR;$(ProjectDir)..\HwaSim_IR\HwaSim_IR\opencv2-440</AdditionalIncludeDirectories><RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary><ExceptionHandling>Sync</ExceptionHandling></ClCompile><Link><AdditionalLibraryDirectories>$(ProjectDir)..\HwaSim_IR\HwaSim_IR\opencv2-440\opencv_x64\vc14\lib</AdditionalLibraryDirectories><AdditionalDependencies>opencv_world440.lib;%(AdditionalDependencies)</AdditionalDependencies></Link></ItemDefinitionGroup>
+  <ItemGroup><ClCompile Include="p6_config_check.cpp"/><ClCompile Include="..\HwaSim_IR\HwaSim_IR\IR\IRConfig.cpp"/><ClCompile Include="..\HwaSim_IR\HwaSim_IR\IR\IRTypes.cpp"/><ClCompile Include="..\HwaSim_IR\HwaSim_IR\IR\IRSensorModel.cpp"/></ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets"/>
+</Project>

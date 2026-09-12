@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "pandaFramework.h"
+#include "IR/P6GameConfig.h"
 #include "windowFramework.h"
 #include "windowProperties.h"
 #include "nodePath.h"
@@ -691,6 +692,14 @@ private:
 	double m_gameSpriteLastTime = -1.0;
 	double m_stage7CloudTextureWorldSizeM = 5000.0;
 	void UpdateP5GraphicsTestScene();
+    void UpdateP6GraphicsTestScene();
+    std::vector<IRWorldCloudDescriptor> P6CloudDescriptors() const;
+    void CaptureP6LinearFrame(const unsigned char* pixels,int width,int height,std::uint64_t seq);
+    P6GameConfig m_p6;
+    bool m_p6WorldCloudOriginReady=false;
+    LPoint3f m_p6WorldCloudOrigin;
+    LVector3f m_p6WorldCloudRight,m_p6WorldCloudForward,m_p6WorldCloudUp;
+    NodePath m_p6Background,m_p6Display,m_p6Core,m_p6Blocker;
 	void ResetGameGraphicsState();
 	NodePath m_p5TestRoot, m_p5TestModel, m_p5TestCore, m_p5TestHalo;
 	LPoint3f m_p5TestCenter;
@@ -941,6 +950,7 @@ private:
 	BYHWICD::trackerSensorParam m_sensorParam;               // 传感器参数缓存
 	unsigned long long m_stage0DisplayFrameCount;            // 阶段0基线诊断：实时数据包计数
 	std::uint64_t m_udpSequence = 0;
+    bool m_inputRoundPreparedByInit = false; // guarded by m_mtx
 	std::atomic<std::uint64_t> m_latestUdpSourceSeq{ 0 };
 	// Steady-clock timestamp of the most recently accepted realtime sample.
 	// Used only to close a DDS round after cross-topic STOP/realtime delivery

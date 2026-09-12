@@ -1,8 +1,14 @@
 ﻿#include "HwaSim_IR_VideoDisplay.h"
 
 #include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QTimer>
 #include <QHeaderView>
 #include <QResizeEvent>
+#include <QSplitter>
+#include <QTabWidget>
+#include <QScrollArea>
+#include <QScrollBar>
 #include <QDebug>
 #include <QFile>
 #include <QFileInfo>
@@ -111,7 +117,20 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
             .arg(QFileInfo::exists(m_networkConfigPath) ? QStringLiteral("ini") : QStringLiteral("defaults"));
 
     ui.setupUi(this);
-    setWindowTitle("红外仿真图像接收器");
+    setupResponsiveLayout();
+    auto* fpsLayout=new QHBoxLayout(ui.Wgt_title);
+    fpsLayout->setContentsMargins(8,2,8,2);
+    m_liveFpsLabel=new QLabel(ui.Wgt_title);
+    m_liveFpsLabel->setObjectName("liveReceivedFps");
+    m_liveFpsLabel->setStyleSheet("color:#8fe0a4;font-size:16px;font-weight:600;");
+    m_liveFpsLabel->setWordWrap(true);
+    m_liveFpsLabel->setMinimumWidth(0);
+    fpsLayout->addWidget(m_liveFpsLabel,1);
+    m_liveFpsClock.start();
+    auto* fpsTimer=new QTimer(this);fpsTimer->setInterval(250);
+    connect(fpsTimer,&QTimer::timeout,this,&HwaSim_IR_VideoDisplay::updateLiveFps);
+    fpsTimer->start();updateLiveFps();
+    setWindowTitle(QString::fromUtf8("红外仿真图像接收器"));
     showMaximized();
 
     // m_Label_Video 居中 + 自适应缩放
@@ -119,7 +138,7 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
     ui.m_Label_Video->setAlignment(Qt::AlignCenter);
 
     // 设置 dockWidget
-    ui.dockWidget_dataShow->setWindowTitle("数据显示");
+    ui.dockWidget_dataShow->setWindowTitle(QString::fromUtf8("数据显示"));
 
     // 动态创建表格
     InitTables();
@@ -191,7 +210,7 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
 			this, &HwaSim_IR_VideoDisplay::videoStatusReceivedSlot);
 		connect(m_workerThread, &QThread::finished, m_ddsWorker, &QObject::deleteLater);
 		connect(m_workerThread, &QThread::started, m_ddsWorker, &DdsVideoReceiverWorker::doWork);
-		ui.dockWidget_dataShow->setWindowTitle(QStringLiteral("数据显示 - DDS full transport"));
+		ui.dockWidget_dataShow->setWindowTitle(QString::fromUtf8("数据显示 · DDS 全链路"));
 		qInfo().noquote() << QStringLiteral(
 			"[VideoInput] Transport=dds streamRole=%1 statusTopic=%2 topic=%3 codec=%4 domain=%5")
 			.arg(resolvedStreamRole).arg(config.topicVideoStatus).arg(config.topic)
@@ -262,6 +281,64 @@ void HwaSim_IR_VideoDisplay::InitQss()
     file.close();
 }
 
+// Each data page remains reachable without competing with the sensor form for height.
+void HwaSim_IR_VideoDisplay::setupResponsiveLayout()
+{
+    m_dataTabs=new QTabWidget(ui.dockWidgetContents);
+    m_dataTabs->setObjectName("dataPages");
+    m_dataTabs->setMinimumSize(0,0);
+    m_dataTabs->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Ignored);
+    m_dataTabs->setStyleSheet("QTabWidget::pane{border:1px solid #26795b;background:#071b19;} QTabBar::tab{background:#102f29;color:#b8ddce;padding:7px 10px;} QTabBar::tab:selected{background:#19533f;color:#ffffff;} QScrollArea,QGroupBox{background:#071b19;} QTableWidget{background:#071b19;alternate-background-color:#102c25;color:#d5eee2;} QSplitter::handle{background:#1c5040;}");
+    ui.verticalLayout_3->removeWidget(ui.groupBox_dataShow);
+    ui.verticalLayout_4->removeWidget(ui.groupBox_platData);
+    ui.verticalLayout_4->removeWidget(ui.groupBox_targetData);
+    auto* parameters=new QScrollArea(m_dataTabs);
+    parameters->setObjectName("parameterScroll");parameters->setWidgetResizable(true);
+    parameters->setMinimumSize(0,0);
+    parameters->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Ignored);
+    parameters->setWidget(ui.groupBox_dataShow);
+    m_dataTabs->addTab(parameters,QString::fromUtf8("场景参数"));
+    auto* dataPage=new QSplitter(Qt::Vertical,m_dataTabs);
+    dataPage->setObjectName("platformTargetPage");dataPage->setChildrenCollapsible(false);
+    dataPage->addWidget(ui.groupBox_platData);dataPage->addWidget(ui.groupBox_targetData);
+    dataPage->setStretchFactor(0,1);dataPage->setStretchFactor(1,2);
+    m_dataTabs->addTab(dataPage,QString::fromUtf8("平台与目标"));
+    ui.verticalLayout_3->addWidget(m_dataTabs);
+    ui.verticalLayout_3->setSizeConstraint(QLayout::SetNoConstraint);
+    ui.dockWidget_dataShow->setFeatures(QDockWidget::NoDockWidgetFeatures);
+    ui.dockWidget_dataShow->setMinimumWidth(230);
+    ui.widget_video->setMinimumSize(1,1);
+    ui.horizontalLayout->removeWidget(ui.dockWidget_dataShow);
+    ui.horizontalLayout->removeWidget(ui.widget_video);
+    m_dataSplitter=new QSplitter(Qt::Horizontal,ui.Wgt_showVideo);
+    m_dataSplitter->setObjectName("dataVideoSplitter");m_dataSplitter->setChildrenCollapsible(false);
+    m_dataSplitter->addWidget(ui.dockWidget_dataShow);m_dataSplitter->addWidget(ui.widget_video);
+    m_dataSplitter->setStretchFactor(0,0);m_dataSplitter->setStretchFactor(1,1);
+    m_dataSplitter->setSizes(QList<int>()<<480<<740);
+    ui.horizontalLayout->addWidget(m_dataSplitter);
+    ui.verticalLayout_2->setStretch(0,0);ui.verticalLayout_2->setStretch(1,1);
+    connect(m_dataSplitter,&QSplitter::splitterMoved,this,[this](int,int){centerVideoLabel();});
+}
+
+// Opt-in UI acceptance captures use live DDS data, at real widget sizes.
+void HwaSim_IR_VideoDisplay::captureResponsiveUi(int step)
+{
+    static const int pages[]={0,1,1};
+    if(step==0){m_uiOriginalSize=size();m_uiWasMaximized=isMaximized();showNormal();}
+    if(step>=3){m_dataTabs->setCurrentIndex(0);resize(m_uiOriginalSize);if(m_uiWasMaximized)showMaximized();return;}
+    m_dataTabs->setCurrentIndex(pages[step]);
+    layout()->activate();resize(step<2?1024:800,600);
+    QTimer::singleShot(300,this,[this,step](){
+        centerVideoLabel();
+        const QString base=QString::fromLocal8Bit(qgetenv("P6ReceiverUiDump"));
+        const QString path=QFileInfo(base).absolutePath()+QString("/ui_%1x%2_tab%3.png").arg(width()).arg(height()).arg(m_dataTabs->currentIndex());
+        grab().save(path);
+        auto* table=m_dataTabs->currentIndex()==1?ui.tableWidget_platData:ui.tableWidget_targetData;
+        qInfo().noquote()<<QString("[ResponsiveUiCapture] file=%1 size=%2x%3 tab=%4 rows=%5 hScrollMax=%6 viewport=%7x%8 targetRows=%9 targetViewportHeight=%10").arg(path).arg(width()).arg(height()).arg(m_dataTabs->currentIndex()).arg(table->rowCount()).arg(table->horizontalScrollBar()->maximum()).arg(table->viewport()->width()).arg(table->viewport()->height()).arg(ui.tableWidget_targetData->rowCount()).arg(ui.tableWidget_targetData->viewport()->height());
+        captureResponsiveUi(step+1);
+    });
+}
+
 void HwaSim_IR_VideoDisplay::InitTables()
 {
     // ============ 平台数据表格（ui 已创建，直接配置）============
@@ -273,9 +350,9 @@ void HwaSim_IR_VideoDisplay::InitTables()
         "速度(km/h)"
     });
     // Stretch 模式：列按比例平分占满整行，无空白
-    ui.tableWidget_platData->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    ui.tableWidget_platData->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
     ui.tableWidget_platData->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    ui.tableWidget_platData->horizontalHeader()->setMinimumSectionSize(28);
+    ui.tableWidget_platData->horizontalHeader()->setMinimumSectionSize(72);
     ui.tableWidget_platData->setEditTriggers(QAbstractItemView::NoEditTriggers);
     ui.tableWidget_platData->setSelectionBehavior(QAbstractItemView::SelectRows);
     ui.tableWidget_platData->verticalHeader()->setVisible(false);
@@ -291,13 +368,24 @@ void HwaSim_IR_VideoDisplay::InitTables()
         "在视场", "状态"
     });
     // Stretch 模式：列按比例平分占满整行，无空白
-    ui.tableWidget_targetData->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    ui.tableWidget_targetData->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
     ui.tableWidget_targetData->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    ui.tableWidget_targetData->horizontalHeader()->setMinimumSectionSize(28);
+    ui.tableWidget_targetData->horizontalHeader()->setMinimumSectionSize(72);
     ui.tableWidget_targetData->setEditTriggers(QAbstractItemView::NoEditTriggers);
     ui.tableWidget_targetData->setSelectionBehavior(QAbstractItemView::SelectRows);
     ui.tableWidget_targetData->verticalHeader()->setVisible(false);
     ui.tableWidget_targetData->setWordWrap(false);
+    for(auto* table:{ui.tableWidget_platData,ui.tableWidget_targetData}){
+        table->setMinimumSize(0,120);
+        table->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+        table->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+        table->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        table->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        table->horizontalHeader()->setDefaultSectionSize(110);
+        for(int column=0;column<table->columnCount();++column)table->setColumnWidth(column,110);
+        table->verticalHeader()->setDefaultSectionSize(32);
+        table->setTextElideMode(Qt::ElideNone);
+    }
 }
 
 // ==================== 视频标签居中 + 自适应缩放 ====================
@@ -320,18 +408,24 @@ void HwaSim_IR_VideoDisplay::centerVideoLabel()
         else
             targetH = static_cast<int>(targetW / ratio);
     }
-    if (targetW < 320) targetW = 320;
-    if (targetH < 240) targetH = 240;
+    targetW = qMax(1, targetW);
+    targetH = qMax(1, targetH);
 
     label->resize(targetW, targetH);
     int x = (pw - targetW) / 2;
     int y = (ph - targetH) / 2;
     label->move(x, y);
+    if(!m_lastVideoImage.isNull()) label->setPixmap(QPixmap::fromImage(m_lastVideoImage).scaled(label->size(),Qt::KeepAspectRatio,Qt::SmoothTransformation));
 }
 
 void HwaSim_IR_VideoDisplay::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
+    if(m_dataSplitter){
+        const int available=qMax(1,event->size().width()-48);
+        const int sidebar=qMin(480,qMax(230,available*45/100));
+        m_dataSplitter->setSizes(QList<int>()<<sidebar<<qMax(1,available-sidebar));
+    }
     centerVideoLabel();
 }
 
@@ -340,6 +434,7 @@ QString HwaSim_IR_VideoDisplay::targetTypeName(int type)
 {
     switch (type) {
     case 0x11: return "飞机";
+    case 0x12: return QString::fromUtf8("飞机");
     case 0x22: return "雷达导弹";
     case 0x33: return "红外弹";
     case 0x44: return "MMD";
@@ -445,6 +540,8 @@ bool HwaSim_IR_VideoDisplay::flushRecorder(const char* reason)
 
 void HwaSim_IR_VideoDisplay::resetVideoPerfStats()
 {
+    m_liveFrameTimes.clear();
+    updateLiveFps();
     m_videoPerfFrames = 0;
     m_videoPerfIntervalFrames = 0;
     m_lastFrameSeq = 0;
@@ -463,6 +560,27 @@ void HwaSim_IR_VideoDisplay::resetVideoPerfStats()
     m_latencyMsMax = 0.0;
     m_latencySamples = 0;
     m_latencyIntervalSamples.clear();
+}
+
+void HwaSim_IR_VideoDisplay::updateLiveFps()
+{
+    if(!m_liveFpsLabel)return;
+    const qint64 now=m_liveFpsClock.elapsed();
+    while(!m_liveFrameTimes.empty()&&m_liveFrameTimes.front()<=now-1000)m_liveFrameTimes.pop_front();
+    const double fps=double(m_liveFrameTimes.size());
+    m_liveFpsLabel->setText(QString::fromUtf8("实时接收显示 %1 FPS  |  最近 1 秒解码帧更新  |  设定 %2 Hz  |  %3 × %4")
+        .arg(fps,0,'f',1).arg(m_videoFps).arg(m_maxImageWidth).arg(m_maxImageHeight));
+    if(now-m_lastLiveFpsLogMs>=1000){
+        qInfo().noquote()<<QString("[LiveReceivedFps] fps=%1 windowMs=1000 source=decoded_gui_updates requestedHz=%2")
+            .arg(fps,0,'f',1).arg(m_videoFps);m_lastLiveFpsLogMs=now;
+    }
+    // Explicit acceptance capture of the actual widget; never writes on video pixels.
+    const QByteArray dump=qgetenv("P6ReceiverUiDump");
+    if(!m_uiCaptureSaved&&!dump.isEmpty()&&fps>0&&m_videoPerfFrames>=quint64(qMax(1,m_videoFps)*3)){
+        m_uiCaptureSaved=grab().save(QString::fromLocal8Bit(dump));
+        qInfo().noquote()<<QString("[ReceiverUiCapture] saved=%1 file=%2 fps=%3 title=%4").arg(m_uiCaptureSaved).arg(QString::fromLocal8Bit(dump)).arg(fps).arg(ui.dockWidget_dataShow->windowTitle());
+        if(m_uiCaptureSaved&&qEnvironmentVariableIntValue("P6ReceiverUiResponsiveCapture")==1) captureResponsiveUi(0);
+    }
 }
 
 quint64 HwaSim_IR_VideoDisplay::receivedFrameCount() const
@@ -535,11 +653,11 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
 				"[VideoGeometry][WARN] status=%1x%2 decoded=%3x%4")
 				.arg(m_statusWidth).arg(m_statusHeight).arg(img.width()).arg(img.height());
 		}
+		m_liveFrameTimes.push_back(m_liveFpsClock.elapsed());
 		m_maxImageWidth = img.width();
 		m_maxImageHeight = img.height();
+		m_lastVideoImage=img;
 		centerVideoLabel();
-		ui.m_Label_Video->setPixmap(QPixmap::fromImage(img).scaled(
-			ui.m_Label_Video->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
 		if (m_videoPerfFrames < 3 || ((m_videoPerfFrames + 1) % 120) == 0)
 		{
 			qInfo().noquote() << QStringLiteral(

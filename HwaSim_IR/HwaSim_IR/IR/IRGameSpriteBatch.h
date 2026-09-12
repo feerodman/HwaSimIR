@@ -17,16 +17,16 @@
 // Artistic sprite geometry only. No calibrated plume or sensor parameters.
 // A fixed pool of 32 quads per layer is expanded in eye space on the GPU.
 namespace IRGameSpriteBatch {
-inline PT(PandaNode) makeGeometry() {
+inline PT(PandaNode) makeGeometry(int emitters=1) {
     PT(GeomVertexData) data = new GeomVertexData("GameSpritePool32", GeomVertexFormat::get_v3n3t2(), Geom::UH_static);
     GeomVertexWriter vertex(data, "vertex"), seed(data, "normal"), uv(data, "texcoord");
     PT(GeomTriangles) triangles = new GeomTriangles(Geom::UH_static);
-    for (int i = 0; i < 32; ++i) {
+    for (int i = 0; i < 32*emitters; ++i) {
         for (int j = 0; j < 4; ++j) {
             const float x = (j == 1 || j == 2) ? 1.f : -1.f;
             const float y = j >= 2 ? 1.f : -1.f;
-            vertex.add_data3f(x, y, 0.f);
-            seed.add_data3f(float(i), float((i * 13) % 32) / 32.f, float((i * 7) % 32) / 32.f);
+            vertex.add_data3f(x, y, float(i/32));
+            seed.add_data3f(float(i%32), float((i * 13) % 32) / 32.f, float((i * 7) % 32) / 32.f);
             uv.add_data2f(x * .5f + .5f, y * .5f + .5f);
         }
         triangles->add_vertices(i*4, i*4+1, i*4+2);
@@ -74,6 +74,10 @@ inline bool apply(NodePath& node) {
     node.set_shader_input("u_sprite_atlas", atlas);
     node.set_shader_input("u_sprite_time", LVecBase2f(0,0));
     node.set_shader_input("u_sprite_lod", LVecBase2f(32,0));
+    node.set_shader_input("u_game_sprite", LVecBase4f(0,1,1,0));
+    node.set_shader_input("u_sprite_nozzle_offset", LVecBase3f(0,0,0));
+    node.set_shader_input("u_sprite_aspect", LVecBase2f(1,0));
+    node.set_shader_input("u_sprite_emitters", LVecBase2f(1,0));
     node.set_depth_test(true);
     node.set_depth_write(false);
     node.set_transparency(TransparencyAttrib::M_alpha);

@@ -185,7 +185,16 @@ MainWindow::MainWindow(
 MainWindow::~MainWindow()
 {
 #if defined(HWASIMIR_HAS_ZRDDS)
-	if (m_ddsStim) m_ddsStim->shutdown();
+	if (m_ddsStim) {
+        // A transport ACK is not an application STOP acknowledgment. Keep the
+        // writers alive while the renderer drains its ordered input queue.
+        std::string drainError;
+        if(!m_ddsStim->waitForStopStatus(30000,drainError))
+            qCritical().noquote()<<QString("[StimDrain][ERROR] %1").arg(QString::fromStdString(drainError));
+        if(!m_ddsStim->waitForAcknowledgments(10000,drainError))
+            qCritical().noquote()<<QString("[StimDrain][ERROR] %1").arg(QString::fromStdString(drainError));
+        m_ddsStim->shutdown();
+    }
 #endif
 	if (m_udpSocket) {
 		m_udpSocket->close();
@@ -214,6 +223,10 @@ void MainWindow::setupDDS()
 		QStringLiteral("HwaSimIR.Realtime")).toString().toLatin1().constData();
 	config.topicInitAck = settings.value(QStringLiteral("DdsProtocol/TopicInitAck"),
 		QStringLiteral("HwaSimIR.InitAck")).toString().toLatin1().constData();
+    config.observeStopStatus = true;
+    if(m_channel != QStringLiteral("unknown")) config.channel = m_channel.toStdString();
+    config.topicVideoStatus = settings.value(QStringLiteral("DdsProtocol/TopicVideoStatus"),
+        QStringLiteral("HwaSimIR.VideoStatus")).toString().toLatin1().constData();
 	m_ddsStim.reset(new DdsStimClient());
 	m_ddsStim->setAckCallback([this](const BYHWICD::InitAckC2pObjectTrackingCmd& ack) {
 		QMetaObject::invokeMethod(this, [this, ack]() {
@@ -909,6 +922,13 @@ void MainWindow::sendRealTimeData()
 	// 目标状态（相对平台偏移）
     data.targetNumValid = 1/*5*/;
     data.targetState[0].targetType = 0x11;
+    // Explicit geometry acceptance input; no change to the wire format or default.
+    bool testTargetOk=false;
+    const int testTarget=qEnvironmentVariable("P6TestTargetType").toInt(&testTargetOk,0);
+    if(testTargetOk&&(testTarget==0x11||testTarget==0x12||testTarget==0x22||testTarget==0x33)){
+        data.targetState[0].targetType=testTarget;
+        data.weaponState.targetType=testTarget;
+    }
 	data.targetState[0].targetPlatID = 3;
 	data.targetState[0].targetID = 3;
 //    if(current_time > 5){
@@ -1301,6 +1321,8 @@ void MainWindow::onStopButtonClicked()
 	if (m_isRealtimeSending || m_realTimeTimer->isActive()) {
 		m_isRealtimeSending = false;
 		m_realTimeTimer->stop();
+        qInfo().noquote()<<QString("[StimFinal] transport=%1 successfulRealtimeWrites=%2 elapsedMs=%3 targetHz=%4")
+            .arg(m_ddsStim?"dds":"compat").arg(m_sentFrameCount).arg(m_sendClock.elapsed()).arg(m_targetVideoFps);
 		sendControlCommand(3); // 发送停止命令
 		m_startButton->setEnabled(true);
 		m_stopButton->setEnabled(false);

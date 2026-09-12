@@ -23,6 +23,8 @@ node.setShader(Shader.make(Shader.SL_GLSL,'#version 130\n'+(folder/'sprite.vert'
 node.setShaderInput('u_sprite_atlas',app.loader.loadTexture(Filename.fromOsSpecific(str(folder/'soft_sprite_atlas.png'))))
 for k,x in dict(u_sprite_time=3.0,u_sprite_lod=32.0,u_plume_gray=.8,u_plume_opacity=.8,u_stage7_fog_gray=.2,u_stage7_fog_density=0.,u_stage7_target_contrast_scale=1.).items():node.setShaderInput(k,x)
 node.setShaderInput('u_plume_enabled',1);node.setShaderInput('u_plume_layer',1)
+node.setShaderInput('u_game_sprite',Vec4(0,1,1,0));node.setShaderInput('u_sprite_nozzle_offset',Vec3(0,0,0))
+node.setShaderInput('u_sprite_aspect',Vec2(1,0));node.setShaderInput('u_sprite_emitters',1.0)
 node.setTransparency(TransparencyAttrib.MAlpha);node.setDepthWrite(False);node.setDepthTest(True)
 for name,pos in [('end',(0,-20,0)),('side',(20,-4,0)),('oblique',(14,-16,5))]:
     app.camera.setPos(*pos);app.camera.lookAt(0,-4,0)

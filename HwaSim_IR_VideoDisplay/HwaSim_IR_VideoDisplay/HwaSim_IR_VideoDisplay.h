@@ -1,9 +1,13 @@
-#pragma once
+﻿#pragma once
 
 #include <QtWidgets/QWidget>
 #include <QThread>
 #include <QTableWidget>
 #include <QVector>
+#include <QElapsedTimer>
+#include <deque>
+class QTabWidget;
+class QSplitter;
 #include "AsyncVideoRecorder.h"
 #include "TcpServerWorker.h"
 #include "DdsVideoReceiverWorker.h"
@@ -70,6 +74,19 @@ private:
     QString targetTypeName(int type);
     QString targetStateName(int state);
     void resetVideoPerfStats();
+    void updateLiveFps();
+    void setupResponsiveLayout();
+    void captureResponsiveUi(int step);
+    QTabWidget* m_dataTabs=nullptr;
+    QSplitter* m_dataSplitter=nullptr;
+    QImage m_lastVideoImage;
+    QSize m_uiOriginalSize;
+    bool m_uiWasMaximized=false;
+    QLabel* m_liveFpsLabel = nullptr;
+    QElapsedTimer m_liveFpsClock;
+    std::deque<qint64> m_liveFrameTimes;
+    bool m_uiCaptureSaved = false;
+    qint64 m_lastLiveFpsLogMs = 0;
     bool flushRecorder(const char* reason);
 	quint64 receivedFrameCount() const;
 

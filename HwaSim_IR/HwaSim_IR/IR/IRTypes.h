@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <map>
 
 enum class IRBand
 {
@@ -18,12 +19,27 @@ struct IRBandRange
 	double highUm;
 };
 
+struct IRDisplayPreset
+{
+    double gamma = 1.0;
+    double gain = 1.0;
+    double offsetGray = 0.0;
+    bool whiteHot = true;
+    bool automatic = false;
+};
+
 struct IRSensorProfile
 {
 	IRBand band;
 	std::string name;
 	std::string sourcePath;
 	bool loadedFromFile;
+    std::string loadError;
+    std::string contentHash;
+    std::string revision;
+    int schemaVersion = 0;
+    std::string defaultDisplayPreset = "Legacy";
+    std::map<std::string, IRDisplayPreset> displayPresets;
 	double spectralLowUm;
 	double spectralHighUm;
 	int width;
