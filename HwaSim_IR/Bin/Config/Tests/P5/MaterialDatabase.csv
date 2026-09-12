@@ -1,0 +1,4 @@
+!RawMaterials
+Name,Category,Evaporation (Y/N),Solar Absorptivity,Thermal Emissivity,Characteristic length (m),Specific Heat (w-sec/gm/K),Conductivity (w/m/K),Density (kg/m**3),Transmissivity,Roughness
+TEST_A,Artificial,0,0.8,0.7,1,1,1,1000,0,0.5
+TEST_B,Artificial,0,0.4,0.9,1,1,1,1000,0,0.5

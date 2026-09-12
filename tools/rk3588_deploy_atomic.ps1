@@ -6,7 +6,8 @@ param(
     [string]$BoardUser = 'root',
     [string]$BoardRoot = '/userdata/HwaSimIR',
     [string]$SshKey = '',
-    [string]$LogDirectory = ''
+    [string]$LogDirectory = '',
+    [switch]$ReuseVerifiedConfig
 )
 
 $ErrorActionPreference = 'Stop'
@@ -76,6 +77,16 @@ if (Test-Path -LiteralPath $boardBoundQos) {
     Copy-Item -LiteralPath $boardBoundQos -Destination (Join-Path $stageConfig 'DDS') -Force
 }
 
+# Machine identity/address files belong to the board. Stage those exact files
+# before hashing the package; never replace them from a workstation Config.
+foreach ($machineFile in @('NetworkConfig_precise.ini','NetworkConfig_search.ini')) {
+    $exists = Invoke-SshCapture "if test -f '$BoardRoot/Config/$machineFile'; then echo yes; else echo no; fi"
+    if ($exists -eq 'yes') {
+        $arguments = @(New-SshArguments) + @("$BoardUser@$BoardHost`:$BoardRoot/Config/$machineFile", (Join-Path $stageConfig $machineFile))
+        Invoke-Native -FilePath 'scp.exe' -Arguments $arguments
+    }
+}
+
 $requiredConfig = @(
     'HwaSimIRRuntime.ini',
     'NetworkConfig_precise.ini',
@@ -89,6 +100,9 @@ $requiredConfig = @(
     'TargetLib/Targets.json',
     'Weather/weather_profiles.json',
     'Weather/weather_textures.json',
+    'GameVFX/soft_sprite_atlas.png',
+    'GameVFX/sprite.vert',
+    'GameVFX/sprite.frag',
     'IRHotspots/target_hotspots.json',
     'IRRadiance/stage5_debug_display.json',
     'IRPlume/engine_plume_profiles.json',
@@ -108,7 +122,9 @@ Invoke-Scp $launcherSource $boardLauncherNew
 Invoke-Scp $performanceSource $boardPerformanceNew
 Invoke-Ssh "chmod 755 '$boardElfNew' '$boardLauncherNew' '$boardPerformanceNew'"
 
-$elfSha = Invoke-SshCapture "sha256sum '$boardElfNew' | awk '{print `$1}'"
+$elfSha = (Get-FileHash -LiteralPath $elf -Algorithm SHA256).Hash.ToLowerInvariant()
+$uploadedElfSha = Invoke-SshCapture "sha256sum '$boardElfNew' | awk '{print `$1}'"
+if ($uploadedElfSha -ne $elfSha) { throw 'Uploaded ELF does not match the local build' }
 $buildId = Invoke-SshCapture "readelf -n '$boardElfNew' | awk '/Build ID:/ {print `$3; exit}'"
 $launcherSha = (Get-FileHash -LiteralPath $launcherSource -Algorithm SHA256).Hash.ToLowerInvariant()
 $performanceSha = (Get-FileHash -LiteralPath $performanceSource -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -147,11 +163,20 @@ $versionLines = @(
 [IO.File]::WriteAllText($versionPath, (($versionLines -join "`n") + "`n"), $utf8NoBom)
 
 $archive = Join-Path $LogDirectory "Config.$stamp.tgz"
-Invoke-Native -FilePath 'tar.exe' -Arguments @('-C', $stageRoot, '-czf', $archive, 'Config')
+$reuseIdenticalConfig = $false
+if ($ReuseVerifiedConfig) {
+    $existingManifestSha = Invoke-SshCapture "sha256sum '$BoardRoot/Config/deployment_manifest.sha256' | awk '{print `$1}'"
+    if ($existingManifestSha -ne $manifestSha) { throw 'ReuseVerifiedConfig requires identical complete Config contents' }
+    Invoke-Ssh "cd '$BoardRoot/Config' && sha256sum -c deployment_manifest.sha256 >/dev/null"
+    $reuseIdenticalConfig = $true
+} else {
+    Invoke-Native -FilePath 'tar.exe' -Arguments @('-C', $stageRoot, '-czf', $archive, 'Config')
+}
 $configBytes = (Get-ChildItem -LiteralPath $stageConfig -Recurse -File | Measure-Object -Property Length -Sum).Sum
 $remoteFreeBytes = [Int64](Invoke-SshCapture "df -PB1 '$BoardRoot' | awk 'NR==2 {print `$4}'")
 $safetyBytes = 256MB
-if ($remoteFreeBytes -lt ($configBytes + $safetyBytes)) {
+$requiredBytes = if ($reuseIdenticalConfig) { $safetyBytes } else { $configBytes + $safetyBytes }
+if ($remoteFreeBytes -lt $requiredBytes) {
     throw "Insufficient board space for atomic Config staging: free=$remoteFreeBytes required=$($configBytes + $safetyBytes) configBytes=$configBytes"
 }
 Write-Host "[DeploymentSpace] result=PASS freeBytes=$remoteFreeBytes configBytes=$configBytes safetyBytes=$safetyBytes"
@@ -163,17 +188,34 @@ $remoteConfigBackup = "$BoardRoot/Config.before_$stamp"
 $remoteElfBackup = "$BoardRoot/HwaSim_IR.before_$stamp"
 $remoteLauncherBackup = "$BoardRoot/run_precise.sh.before_$stamp"
 $remotePerformanceBackup = "$BoardRoot/rk3588_hwasimir_performance_mode.sh.before_$stamp"
-Invoke-Scp $archive $remoteArchive
+if ($reuseIdenticalConfig) {
+    # Immutable snapshot of the entire already-verified tree, not an ELF-only
+    # update. Replace version metadata through rename so no shared inode is edited.
+    Invoke-Ssh "test ! -e '$remoteConfigNew' && cp -al '$BoardRoot/Config' '$remoteConfigNew'"
+    Invoke-Scp $versionPath "$remoteConfigNew/deployment_version.env.replacement"
+    Invoke-Ssh "mv '$remoteConfigNew/deployment_version.env.replacement' '$remoteConfigNew/deployment_version.env'"
+    Write-Host '[DeploymentStage] mode=verified_identical_config_snapshot allConfigFilesIncluded=1 metadataReplacedByRename=1'
+} else {
+    Invoke-Scp $archive $remoteArchive
+}
 
 $requiredTests = ($requiredConfig | ForEach-Object { "test -f '$remoteConfigNew/$_'" }) -join ' && '
-$prepare = "set -eu; mkdir -p '$remoteConfigNew'; tar --warning=no-timestamp -xzf '$remoteArchive' -C '$remoteConfigNew' --strip-components=1; cd '$remoteConfigNew'; sha256sum -c deployment_manifest.sha256 >/tmp/hwasimir_config_verify_$stamp.log; $requiredTests; test `$(sha256sum deployment_manifest.sha256 | awk '{print `$1}') = '$manifestSha'; test `$(sha256sum '$boardElfNew' | awk '{print `$1}') = '$elfSha'; echo '[DeploymentVerify] result=PASS configManifestSha256=$manifestSha elfSha256=$elfSha buildId=$buildId staging=$remoteConfigNew'"
+$extract = if ($reuseIdenticalConfig) { ':' } else { "mkdir -p '$remoteConfigNew'; tar --warning=no-timestamp -xzf '$remoteArchive' -C '$remoteConfigNew' --strip-components=1" }
+$prepare = "set -eu; $extract; cd '$remoteConfigNew'; sha256sum -c deployment_manifest.sha256 >/tmp/hwasimir_config_verify_$stamp.log; $requiredTests; test `$(sha256sum deployment_manifest.sha256 | awk '{print `$1}') = '$manifestSha'; test `$(sha256sum '$boardElfNew' | awk '{print `$1}') = '$elfSha'; echo '[DeploymentVerify] result=PASS configManifestSha256=$manifestSha elfSha256=$elfSha buildId=$buildId staging=$remoteConfigNew'"
 Invoke-Ssh $prepare
 
 $switch = "set -eu; pkill -TERM -x HwaSim_IR 2>/dev/null || true; for n in 1 2 3 4 5; do pgrep -x HwaSim_IR >/dev/null || break; sleep 1; done; ! pgrep -x HwaSim_IR >/dev/null; cd '$BoardRoot'; cp -p HwaSim_IR '$remoteElfBackup'; cp -p run_precise.sh '$remoteLauncherBackup'; if [ -f rk3588_hwasimir_performance_mode.sh ]; then cp -p rk3588_hwasimir_performance_mode.sh '$remotePerformanceBackup'; fi; mv Config '$remoteConfigBackup'; if mv '$remoteConfigNew' Config && mv '$boardElfNew' HwaSim_IR && mv '$boardLauncherNew' run_precise.sh && mv '$boardPerformanceNew' rk3588_hwasimir_performance_mode.sh; then chmod 755 HwaSim_IR run_precise.sh rk3588_hwasimir_performance_mode.sh; rm -f '$remoteArchive'; echo '[DeploymentSwitch] result=PASS backupConfig=$remoteConfigBackup backupElf=$remoteElfBackup'; else rm -rf Config; mv '$remoteConfigBackup' Config; cp -p '$remoteElfBackup' HwaSim_IR; cp -p '$remoteLauncherBackup' run_precise.sh; [ ! -f '$remotePerformanceBackup' ] || cp -p '$remotePerformanceBackup' rk3588_hwasimir_performance_mode.sh; echo '[DeploymentSwitch][ERROR] reason=atomic_switch_failed action=rollback' >&2; exit 31; fi"
 Invoke-Ssh $switch
 
-$finalVerify = Invoke-SshCapture "cd '$BoardRoot'; test `$(sha256sum HwaSim_IR | awk '{print `$1}') = '$elfSha'; test `$(sha256sum Config/deployment_manifest.sha256 | awk '{print `$1}') = '$manifestSha'; (cd Config && sha256sum -c deployment_manifest.sha256 >/dev/null); echo '[DeploymentFinal] result=PASS gitCommit=$gitCommit sourceIdentity=$sourceIdentity elfSha256=$elfSha buildId=$buildId runtimeConfigSha256=$runtimeSha configManifestSha256=$manifestSha'"
+$finalVerify = Invoke-SshCapture "set -eu; cd '$BoardRoot'; test `$(sha256sum HwaSim_IR | awk '{print `$1}') = '$elfSha'; test `$(sha256sum run_precise.sh | awk '{print `$1}') = '$launcherSha'; test `$(sha256sum rk3588_hwasimir_performance_mode.sh | awk '{print `$1}') = '$performanceSha'; test `$(sha256sum Config/deployment_manifest.sha256 | awk '{print `$1}') = '$manifestSha'; (cd Config && sha256sum -c deployment_manifest.sha256 >/dev/null); echo '[DeploymentFinal] result=PASS gitCommit=$gitCommit sourceIdentity=$sourceIdentity elfSha256=$elfSha buildId=$buildId runtimeConfigSha256=$runtimeSha configManifestSha256=$manifestSha'"
 $finalVerify | Tee-Object -FilePath (Join-Path $LogDirectory 'deployment_final.txt')
+if ($reuseIdenticalConfig) {
+    # Config is an immutable runtime input; future releases must replace files
+    # by rename/copy, as this deployer does, not edit shared snapshot inodes.
+    Write-Host "[DeploymentBackup] result=PASS directory=$remoteConfigBackup format=immutable_hardlink_snapshot"
+    Write-Host "[Deployment] result=PASS logDirectory=$LogDirectory"
+    return
+}
 $backupArchive = "$BoardRoot/Config.before_$stamp.tgz"
 $archiveBackup = "set -eu; tar -C '$BoardRoot' -czf '/tmp/Config.before_$stamp.tgz' 'Config.before_$stamp'; tar -tzf '/tmp/Config.before_$stamp.tgz' >/dev/null; sha256sum '/tmp/Config.before_$stamp.tgz' > '/tmp/Config.before_$stamp.tgz.sha256'; resolved=`$(readlink -f '$remoteConfigBackup'); test `"`$resolved`" = '$remoteConfigBackup'; rm -rf -- '$remoteConfigBackup'; mv '/tmp/Config.before_$stamp.tgz' '$backupArchive'; mv '/tmp/Config.before_$stamp.tgz.sha256' '$backupArchive.sha256'; echo '[DeploymentBackup] result=PASS archive=$backupArchive archiveSha256='`$(awk '{print `$1}' '$backupArchive.sha256')"
 Invoke-Ssh $archiveBackup

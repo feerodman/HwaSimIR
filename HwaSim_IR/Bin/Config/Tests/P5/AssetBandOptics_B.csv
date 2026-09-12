@@ -1,0 +1,2 @@
+Material,NIRReflectance,MWIRReflectance,Source,Notes
+BM_METAL-IRON,0.4,,artificial_game_test,Only this material is overridden for GPU binding validation

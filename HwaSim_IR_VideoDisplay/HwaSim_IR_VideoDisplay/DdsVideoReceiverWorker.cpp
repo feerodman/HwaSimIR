@@ -183,6 +183,21 @@ public:
 			"[DdsProtocolReceiver] type=init platID=%1 sensorID=%2 simMode=%3 videoFps=%4")
 			.arg(sample.platID).arg(sample.sensorID).arg(sample.trackingInit.simMode)
 			.arg(sample.trackingInit.videoFps);
+		// A new INIT may reuse currentRound=1. The numeric round alone cannot
+		// delimit frame ordinal sets. Preserve lifetime transport counters, but
+		// reset the association diagnostics before accepting this run's frames.
+		m_owner->logFrameSync(true);
+		{
+			std::lock_guard<std::mutex> lock(m_owner->m_impl->syncMutex);
+			qInfo().noquote() << QStringLiteral("[DdsFrameSyncReset] reason=init previousRound=%1 previousVideo=%2 lifetimeSamples=%3")
+				.arg(m_owner->m_impl->syncRound).arg(m_owner->m_impl->syncVideo).arg(m_owner->m_receivedSamples.load());
+			m_owner->m_impl->syncVideo = m_owner->m_impl->syncMeta = m_owner->m_impl->syncAnnotation = 0;
+			m_owner->m_impl->syncMismatch = 0;
+			m_owner->m_impl->lastMetaSeq = m_owner->m_impl->lastAnnotationSeq = 0;
+			m_owner->m_impl->videoSeqs.clear();
+			m_owner->m_impl->metaSeqs.clear();
+			m_owner->m_impl->annotationSeqs.clear();
+		}
 		emit m_owner->initCommandReceived(HwaSimIRDdsAdapter::FromDds(sample));
 	}
 private:
@@ -638,6 +653,15 @@ void DdsVideoReceiverWorker::processSample(const char* data, int size)
 	}
 
 	const bool diagnosticsEnabled = !m_config.dumpFirstFramePath.trimmed().isEmpty();
+	// Optional bounded receiver-side proof: actual DDS Annex-B bytes, not a
+	// renderer-local recording. Decode/receive counters still count every sample.
+	const QByteArray p5VideoPath = qgetenv("P5DdsVideoPath");
+	const int p5VideoSamples = qEnvironmentVariableIntValue("P5DdsVideoSamples");
+	if (!p5VideoPath.isEmpty() && sampleIndex < static_cast<quint64>(qMax(1,p5VideoSamples))) {
+		QFile video(QString::fromLocal8Bit(p5VideoPath));
+		if (video.open(QIODevice::WriteOnly | (sampleIndex==0 ? QIODevice::Truncate : QIODevice::Append)))
+			video.write(payload);
+	}
 	if (!image.isNull() && diagnosticsEnabled)
 	{
 		const QImage gray = image.convertToFormat(QImage::Format_Grayscale8);

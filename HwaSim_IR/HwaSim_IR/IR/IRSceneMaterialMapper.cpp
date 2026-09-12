@@ -15,6 +15,8 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
+#include <set>
 
 namespace
 {
@@ -208,7 +210,17 @@ IRSceneMaterialBinding IRSceneMaterialMapper::bindPlatformNode(NodePath& node, c
 	PTA_float materialIds;
 	PTA_LVecBase4f materialParams;
 	PTA_LVecBase4f materialBandReflectance;
-	size_t shaderCount = std::min(binding.entries.size(), static_cast<size_t>(kMaxShaderMaterialParams));
+	if (binding.entries.size() > static_cast<size_t>(kMaxShaderMaterialParams))
+	{
+		throw std::runtime_error("Material map exceeds 8 GPU slots; refusing silent truncation: " + binding.materialMapPath);
+	}
+	std::set<int> uniqueIds;
+	for (const auto& entry : binding.entries)
+	{
+		if (entry.materialId < 0 || entry.materialId > 255 || !uniqueIds.insert(entry.materialId).second)
+			throw std::runtime_error("Invalid or duplicate 8-bit material ID: " + binding.materialMapPath);
+	}
+	size_t shaderCount = binding.entries.size();
 	for (int i = 0; i < kMaxShaderMaterialParams; ++i)
 	{
 		if (i < static_cast<int>(shaderCount))
@@ -246,6 +258,10 @@ IRSceneMaterialBinding IRSceneMaterialMapper::bindPlatformNode(NodePath& node, c
 			// 材质编号必须逐像素读取，不能让线性过滤把相邻材质 ID 混合。
 			materialIdTexture->set_minfilter(SamplerState::FT_nearest);
 			materialIdTexture->set_magfilter(SamplerState::FT_nearest);
+			// ID data must stay linear even when global color-texture policy changes.
+			if (materialIdTexture->get_num_components() == 1)
+				materialIdTexture->set_format(Texture::F_luminance);
+			node.set_shader_input("u_material_id_texture", materialIdTexture);
 			// 绑定到第二纹理通道，shader 通过 Panda3D 内置 sampler p3d_Texture1 读取。
 			PT(TextureStage) materialIdStage = new TextureStage("material_id_stage");
 			materialIdStage->set_sort(1);
@@ -268,6 +284,7 @@ IRSceneMaterialBinding IRSceneMaterialMapper::bindPlatformNode(NodePath& node, c
 		<< " materialIdTex=" << (binding.hasMaterialIdTexture ? "OK" : "fallback")
 		<< " materialMap=" << (binding.hasMaterialMap ? "OK" : "fallback")
 		<< " entries=" << binding.entries.size()
+		<< " gpuSlots=" << shaderCount << " capacity=8 truncated=0 sampler=nearest_linear_data"
 		<< " default=" << binding.defaultMaterialName
 		<< std::endl;
 	for (size_t i = 0; i < binding.entries.size(); ++i)

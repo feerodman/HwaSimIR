@@ -1,0 +1,4 @@
+<Composite_Material_Table>
+<Composite_Material index="1"><Name>TEST_A</Name><Primary_Substrate><Material><Name>TEST_A</Name></Material><Thickness>0.02</Thickness></Primary_Substrate></Composite_Material>
+<Composite_Material index="2"><Name>TEST_B</Name><Primary_Substrate><Material><Name>TEST_B</Name></Material><Thickness>0.02</Thickness></Primary_Substrate></Composite_Material>
+</Composite_Material_Table>

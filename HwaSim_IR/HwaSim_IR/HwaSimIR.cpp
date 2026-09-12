@@ -3,6 +3,7 @@
 //#include "stdafx.h"
 
 #include "HwaSimIR.h"
+#include "IR/IRGameSpriteBatch.h"
 #include "ProtocolRoute.h"
 #include "VideoTopicResolver.h"
 #include "lvecBase4.h"
@@ -552,6 +553,9 @@ PT(PandaNode) CreateStage7CloudVolumeProxyNode(int poolIndex)
 
 PT(PandaNode) CreateStage5EnginePlumeBillboardNode()
 {
+	// Explicit diagnostic comparison only; production uses soft sprite batches.
+	const char* legacy = std::getenv("P5LegacyVisuals");
+	if (!legacy || std::string(legacy) != "1") return IRGameSpriteBatch::makeGeometry();
 	PT(GeomVertexData) data = new GeomVertexData(
 		"Stage5EnginePlumeData",
 		GeomVertexFormat::get_v3n3t2(),
@@ -2510,6 +2514,7 @@ void HwaSimIR::InitStage6FinalPostShader()
     uniform int u_stage6_final_white_hot;
     uniform float u_stage6_final_display_gain;
     uniform float u_stage6_final_display_offset;
+    uniform float u_stage6_final_gamma;
     uniform int u_stage6_final_noise_enable;
     uniform float u_stage6_final_noise_sigma_norm;
     uniform vec2 u_stage6_final_uv_scale;
@@ -2738,6 +2743,7 @@ void HwaSimIR::InitStage6FinalPostShader()
         if (u_stage6_detector_noise_position == 2) {
             gray = Stage6FinalApplyDetectorNoise(gray, gl_FragCoord.xy);
         }
+        gray = pow(max(gray,0.0),1.0/max(u_stage6_final_gamma,.1));
         if (u_stage6_final_white_hot == 0) {
             gray = 1.0 - gray;
         }
@@ -2987,10 +2993,11 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 	m_stage6RawSceneTex->setup_2d_texture(safeWidth, safeHeight, Texture::T_half_float, Texture::F_rgb);
 	// eglGraphicsPipe on the RK3588 g6p0 X11 stack cannot create an
 	// all-bitplane texture buffer without an existing host/GSG.  Create the
-	// ordinary final color buffer first and use it as the host for paths that
-	// require a concrete GSG (volumetric all-plane or multisample raw scene).
-	// The established Layered2_5D non-MSAA path keeps its old order.
-	if (IsHeadlessOffscreenMode() && (volumetricCompositeRequired || m_msaaSamples > 0))
+	// ordinary final color buffer first and host EVERY floating raw-scene
+	// output on it. Without volumes, gamma/MTF alone also needs this path:
+	// an optional standalone EGL output can become RGB565 and copying it to
+	// the half-float texture fails with GL_INVALID_OPERATION on Mali.
+	if (IsHeadlessOffscreenMode())
 	{
 		m_stage6FinalSensorBuffer = MakeStage6OffscreenOutput(
 			m_pFramework,
@@ -3030,7 +3037,7 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 			safeHeight,
 			m_stage6FinalSensorBuffer != nullptr ? m_stage6FinalSensorBuffer->get_gsg() : nullptr,
 			m_stage6FinalSensorBuffer,
-			volumetricCompositeRequired,
+			true, // Require the same FBO format as the validated volume path.
 			m_msaaSamples,
 			true);
 		if (m_stage6RawSceneBuffer == nullptr && m_msaaSamples > 0)
@@ -3043,7 +3050,7 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 				safeHeight,
 				m_stage6FinalSensorBuffer != nullptr ? m_stage6FinalSensorBuffer->get_gsg() : nullptr,
 				m_stage6FinalSensorBuffer,
-				volumetricCompositeRequired,
+				true,
 				0,
 				true);
 		}
@@ -3302,6 +3309,10 @@ bool HwaSimIR::IsStage7FinalScreenOverlayActive() const
 
 bool HwaSimIR::IsStage6FinalPostprocessNoop(std::string* reason) const
 {
+	if (std::abs(m_stage5SensorInputDisplayGamma-1.0)>1.e-6) {
+		if(reason) *reason="common_final_gamma";
+		return false;
+	}
 	const IRSensorPostProcessConfig config = m_stage6DisplayConfigReady ? m_stage6DisplayConfig : IRSensorPostProcessConfig();
 	const bool displayNoop =
 		config.whiteHot &&
@@ -3363,6 +3374,7 @@ void HwaSimIR::ApplyStage6FinalPostprocessInputs()
 	m_stage6FinalCard.set_shader_input("u_stage6_final_white_hot", LVecBase2i(config.whiteHot ? 1 : 0, 0));
 	m_stage6FinalCard.set_shader_input("u_stage6_final_display_gain", LVecBase2f(static_cast<float>(config.displayGain), 0.0f));
 	m_stage6FinalCard.set_shader_input("u_stage6_final_display_offset", LVecBase2f(static_cast<float>(offsetNorm), 0.0f));
+	m_stage6FinalCard.set_shader_input("u_stage6_final_gamma", LVecBase2f(static_cast<float>(m_stage5SensorInputDisplayGamma),0));
 	m_stage6FinalCard.set_shader_input("u_stage6_final_noise_enable", LVecBase2i(config.noiseEnable ? 1 : 0, 0));
 	m_stage6FinalCard.set_shader_input("u_stage6_final_noise_sigma_norm", LVecBase2f(static_cast<float>(noiseSigmaNorm), 0.0f));
 	m_stage6FinalCard.set_shader_input("u_stage6_final_uv_scale", LVecBase2f(uvScaleU, uvScaleV));
@@ -3703,6 +3715,7 @@ void HwaSimIR::UpdateStage6AgcFromFrame(const unsigned char* frameData, int fram
 				{
 					gray = 1.0 - gray;
 				}
+				gray = std::pow(std::max(0.0,gray),m_stage5SensorInputDisplayGamma);
 				gray = ClampStage5Double((gray - m_stage6AgcOffset) * inverseGain, 0.0, 1.0);
 				const int bin = std::max(0, std::min(255, static_cast<int>(gray * 255.0 + 0.5)));
 				++histogram[bin];
@@ -4342,7 +4355,7 @@ void HwaSimIR::InitStage7CloudRenderer()
 		ApplyInfraredShader(cloud, false);
 		cloud.set_shader_input("u_object_kind", LVecBase2i(2, 0));
 		cloud.set_shader_input("u_cloud_world_uv_reciprocal", LVecBase2f(
-			static_cast<float>(1.0 / tileSizeM), 0.0f));
+			static_cast<float>(1.0 / m_stage7CloudTextureWorldSizeM), 0.0f));
 		cloud.set_shader_input("u_cloud_base_scale", LVecBase2f(
 			static_cast<float>(0.82 + layerT * 0.38), 0.0f));
 		cloud.set_shader_input("u_cloud_detail_scale", LVecBase2f(
@@ -4372,6 +4385,7 @@ void HwaSimIR::InitStage7CloudRenderer()
 		<< " thicknessM=" << (sliceCount > 1 ? m_stage7CloudThicknessM : 0.0)
 		<< " worldSizeM=" << m_stage7CloudWorldSizeM
 		<< " tileSizeM=" << m_stage7CloudTileSizeM
+		<< " textureWorldSizeM=" << m_stage7CloudTextureWorldSizeM
 		<< " gridOrigin=" << m_stage7CloudGridOriginX << "," << m_stage7CloudGridOriginY
 		<< " depthTest=1 depthWrite=0 worldUv=1 cameraAttached=0"
 		<< std::endl;
@@ -4496,7 +4510,6 @@ void main() {
 )";
 	const std::string fragmentShader = version + R"(
 uniform sampler3D u_density_texture;
-uniform sampler2D u_scene_depth_texture;
 uniform mat4 p3d_ModelViewProjectionMatrix;
 uniform vec3 u_camera_local;
 uniform vec3 u_noise_offset;
@@ -4506,7 +4519,6 @@ uniform float u_cloud_gray;
 uniform float u_spawn_fade;
 uniform int u_ray_steps;
 uniform int u_camera_inside;
-uniform int u_use_scene_depth;
 in vec3 v_local_pos;
 out vec4 fragColor;
 
@@ -4530,13 +4542,8 @@ void main() {
     float transmittance = 1.0;
     for (int i = 0; i < 16; ++i) {
         if (i >= stepCount || transmittance < 0.03) break;
-        if (u_use_scene_depth == 1) {
-            vec2 screenUv = gl_FragCoord.xy / vec2(textureSize(u_scene_depth_texture, 0));
-            float opaqueDepth = texture(u_scene_depth_texture, screenUv).r;
-            vec4 sampleClip = p3d_ModelViewProjectionMatrix * vec4(samplePoint, 1.0);
-            float sampleDepth = sampleClip.z / max(0.00001, sampleClip.w) * 0.5 + 0.5;
-            if (sampleDepth >= opaqueDepth - 0.00001) break;
-        }
+        // P4 native shared depth tests the proxy surface. No sampled depth
+        // texture is attached; this is not precise depth clipping along the ray.
         float ellipsoidEdge = clamp(1.0 - dot(samplePoint, samplePoint), 0.0, 1.0);
         vec3 densityUv = fract(samplePoint * 0.5 + 0.5 + u_noise_offset);
         float shape = texture(u_density_texture, densityUv).r;
@@ -4633,11 +4640,6 @@ void HwaSimIR::InitStage7VolumetricCloudRenderer()
 		volume.node.set_shader_input("u_spawn_fade", LVecBase2f(0.0f, 0.0f));
 		volume.node.set_shader_input("u_ray_steps", LVecBase2i(m_stage7VolumeRaymarchStepsFar, 0));
 		volume.node.set_shader_input("u_camera_inside", LVecBase2i(0, 0));
-		volume.node.set_shader_input("u_use_scene_depth", LVecBase2i(m_stage7SceneDepthTex != nullptr ? 1 : 0, 0));
-		if (m_stage7SceneDepthTex != nullptr)
-		{
-			volume.node.set_shader_input("u_scene_depth_texture", m_stage7SceneDepthTex);
-		}
 		if (!m_stage7VolumeDensityTextures.empty())
 		{
 			volume.node.set_shader_input("u_density_texture", m_stage7VolumeDensityTextures[0]);
@@ -4656,17 +4658,43 @@ void HwaSimIR::InitStage7VolumetricCloudRenderer()
 
 bool HwaSimIR::GetStage7StreamingCenter(LPoint3f& center, std::string& targetKey) const
 {
+	if (m_stage7VolumeStreamingCenter == "Camera" && !m_cameraNode.is_empty())
+	{
+		center = m_cameraNode.get_pos(m_renderRoot);
+		targetKey = "camera_explicit";
+		return true;
+	}
 	for (size_t i = 0; i < m_targetPlatformList.size(); ++i)
 	{
 		const TargetPlatformData& target = m_targetPlatformList[i];
-		if (WeaponTargetKeyMatches(m_realTimeSceneData.weaponState, target) && !target.nodePath.is_empty())
+		if (WeaponTargetKeyMatches(m_realTimeSceneData.weaponState, target) && !target.nodePath.is_empty() && !target.nodePath.is_hidden())
 		{
 			center = target.nodePath.get_pos(m_renderRoot);
 			targetKey = H4TargetRuntimeKey(target);
 			return true;
 		}
 	}
+	// Weather remains available without a tracked object; cell positions stay fixed.
+	if (!m_cameraNode.is_empty())
+	{
+		center = m_cameraNode.get_pos(m_renderRoot);
+		targetKey = "camera_fallback";
+		return true;
+	}
 	return false;
+}
+
+double HwaSimIR::Stage7CloudLinearValue(IRBand band, double temperatureK, const IRStage7WeatherState& weather) const
+{
+	// Dimensionless common LINEAR scene scale; RGB16F is storage, not a unit.
+	// Reuses the existing background mapping, without adding a radiometric model.
+	if (band == IRBand::MidWaveInfrared && m_m1RuntimeEnabled && m_m1MwirRuntimeEnabled && !m_m1CompareOnly)
+	{
+		const double value = m_m1MwirCloudEmissivity * IRRadianceModelV2::bandAveragePlanckRadianceWm2SrUm(band, temperatureK);
+		return ClampStage5Double((value-m_m1MwirDisplayRadianceMin) /
+			std::max(1.e-9,m_m1MwirDisplayRadianceMax-m_m1MwirDisplayRadianceMin),0.0,1.0);
+	}
+	return IRWeatherEffects::cloudEmissionGray(band,temperatureK,weather.cloudBackgroundGray,weather.skyDiffuseScale);
 }
 
 void HwaSimIR::UpdateStage7VolumetricClouds(const IRStage7WeatherState& weatherState, double currentTime, bool stateChanged)
@@ -4682,6 +4710,7 @@ void HwaSimIR::UpdateStage7VolumetricClouds(const IRStage7WeatherState& weatherS
 	const bool weatherAllowsCloud = centerReady && weatherState.cloudEnable &&
 		weatherState.volumeCloudProbability > 0.0;
 	std::vector<IRWorldCloudDescriptor> desired;
+	size_t candidateCount = 0;
 	if (weatherAllowsCloud)
 	{
 		desired = m_stage7VolumeStreaming.queryCandidates(
@@ -4690,6 +4719,7 @@ void HwaSimIR::UpdateStage7VolumetricClouds(const IRStage7WeatherState& weatherS
 			weatherState.volumeCloudProbability > 0.0 ? weatherState.volumeCloudProbability : m_stage7VolumeFallbackProbability,
 			weatherState.volumeCloudDensityScale,
 			static_cast<int>(m_stage7VolumeDensityTextures.size()));
+		candidateCount = desired.size();
 		if (desired.size() > static_cast<size_t>(m_stage7VolumeConfig.maxActiveVolumes))
 		{
 			desired.resize(static_cast<size_t>(m_stage7VolumeConfig.maxActiveVolumes));
@@ -4712,7 +4742,15 @@ void HwaSimIR::UpdateStage7VolumetricClouds(const IRStage7WeatherState& weatherS
 		if (active != activeById.end())
 		{
 			Stage7CloudVolumeRuntime& volume = m_stage7CloudVolumePool[active->second];
-			volume.descriptor.centerDistanceM = desired[i].centerDistanceM;
+			// Cloud IDs exclude the geographic origin; refresh the rebased height
+			// when the origin first becomes valid after INIT, preserving cell and fade.
+			if (std::abs(volume.descriptor.worldZ-desired[i].worldZ)>0.01) {
+				std::cout<<"[World3DCloudRebase] cloudId="<<IRWorldCloudStreaming::cloudIdText(desired[i].cloudId)
+					<<" oldZ="<<volume.descriptor.worldZ<<" newZ="<<desired[i].worldZ
+					<<" reason=ground_reference_change worldCellUnchanged=1"<<std::endl;
+			}
+			volume.descriptor = desired[i];
+			volume.node.set_pos(static_cast<float>(desired[i].worldX),static_cast<float>(desired[i].worldY),static_cast<float>(desired[i].worldZ));
 			volume.pendingDeactivate = false;
 			continue;
 		}
@@ -4783,6 +4821,8 @@ void HwaSimIR::UpdateStage7VolumetricClouds(const IRStage7WeatherState& weatherS
 
 	const LPoint3f cameraWorld = m_cameraNode.is_empty() ? LPoint3f(0.0f, 0.0f, 0.0f) : m_cameraNode.get_pos(m_renderRoot);
 	std::vector<size_t> visibleOrder;
+	int culledFrustum = 0, culledZero = 0;
+	double maxProjectedDiameter = 0.0;
 	for (size_t i = 0; i < m_stage7CloudVolumePool.size(); ++i)
 	{
 		Stage7CloudVolumeRuntime& volume = m_stage7CloudVolumePool[i];
@@ -4797,22 +4837,43 @@ void HwaSimIR::UpdateStage7VolumetricClouds(const IRStage7WeatherState& weatherS
 			static_cast<float>(volume.descriptor.worldZ));
 		const LVector3f cameraDelta = cloudWorld - cameraWorld;
 		volume.cameraDistanceM = cameraDelta.length();
+		if (volume.descriptor.density <= 0.0 || weatherState.cloudOpacity <= 0.0 || weatherState.cloudOpticalDepth <= 0.0)
+		{
+			++culledZero;
+			continue;
+		}
 		bool inFrustum = true;
 		if (m_stage7VolumeFrustumCull && m_cameraLens != nullptr && !m_cameraNode.is_empty())
 		{
 			const LPoint3f cameraPoint = m_cameraNode.get_relative_point(m_renderRoot, cloudWorld);
-			LPoint2f filmPoint;
-			inFrustum = m_cameraLens->project(cameraPoint, filmPoint) &&
-				std::abs(filmPoint[0]) <= 1.35f && std::abs(filmPoint[1]) <= 1.35f;
+			// Conservative sphere/plane test: a center outside the film can still
+			// cover the image. Include the camera-inside case and near/far planes.
+			const double radius = std::max(volume.descriptor.radiusZ, std::max(volume.descriptor.radiusX, volume.descriptor.radiusY));
+			const LVecBase2f fov = m_cameraLens->get_fov();
+			const double tx = std::tan(fov[0] * 3.141592653589793 / 360.0);
+			const double ty = std::tan(fov[1] * 3.141592653589793 / 360.0);
+			inFrustum = cameraPoint[1] + radius >= m_cameraLens->get_near() &&
+				cameraPoint[1] - radius <= m_cameraLens->get_far() &&
+				std::abs(cameraPoint[0]) <= cameraPoint[1]*tx + radius*std::sqrt(1.0+tx*tx) &&
+				std::abs(cameraPoint[2]) <= cameraPoint[1]*ty + radius*std::sqrt(1.0+ty*ty);
+			if(inFrustum) maxProjectedDiameter = std::max(maxProjectedDiameter,
+				800.0*radius/std::max(radius,double(cameraPoint[1])*ty));
+			const char* legacy = std::getenv("P5LegacyVisuals");
+			if (legacy && std::string(legacy) == "1") {
+				LPoint2f filmPoint;
+				inFrustum = m_cameraLens->project(cameraPoint, filmPoint) && std::abs(filmPoint[0])<=1.35f && std::abs(filmPoint[1])<=1.35f;
+			}
 		}
 		if (inFrustum)
 		{
 			visibleOrder.push_back(i);
 		}
+		else ++culledFrustum;
 	}
 	std::sort(visibleOrder.begin(), visibleOrder.end(), [this](size_t left, size_t right) {
 		return m_stage7CloudVolumePool[left].cameraDistanceM < m_stage7CloudVolumePool[right].cameraDistanceM;
 	});
+	const int culledBudget = std::max(0, int(visibleOrder.size())-m_stage7VolumeConfig.maxVisibleVolumes);
 	if (visibleOrder.size() > static_cast<size_t>(m_stage7VolumeConfig.maxVisibleVolumes))
 	{
 		visibleOrder.resize(static_cast<size_t>(m_stage7VolumeConfig.maxVisibleVolumes));
@@ -4850,11 +4911,16 @@ void HwaSimIR::UpdateStage7VolumetricClouds(const IRStage7WeatherState& weatherS
 		volume.node.set_shader_input("u_optical_depth", LVecBase2f(static_cast<float>(
 			weatherState.cloudOpticalDepth * weatherState.cloudOpacity * m_stage7CloudOpticalDepthScale), 0.0f));
 		const IRBand band = IRBandFromProtocol(std::max(0, std::min(4, m_sensorParam.trackerSensorBand)));
-		const double cloudGray = IRWeatherEffects::cloudEmissionGray(
-			band,
-			weatherState.cloudTemperatureK + volume.descriptor.temperatureOffsetK,
-			weatherState.cloudBackgroundGray,
-			weatherState.skyDiffuseScale);
+		double cloudGray = Stage7CloudLinearValue(band,weatherState.cloudTemperatureK + volume.descriptor.temperatureOffsetK,weatherState);
+		const char* legacy = std::getenv("P5LegacyVisuals");
+		if (legacy && std::string(legacy)=="1")
+			cloudGray = IRWeatherEffects::cloudEmissionGray(band,weatherState.cloudTemperatureK+volume.descriptor.temperatureOffsetK,weatherState.cloudBackgroundGray,weatherState.skyDiffuseScale);
+		else {
+			// Same linear contrast/fog operation as slice and sky before alpha blend.
+			cloudGray = ClampStage5Double(weatherState.fogGray+(cloudGray-weatherState.fogGray)*ClampStage5Double(weatherState.targetContrastScale,.05,1.5),0.0,1.0);
+			const double fog = ClampStage5Double(weatherState.fogDensity,0.0,.78);
+			cloudGray = cloudGray*(1.0-fog)+ClampStage5Double(weatherState.fogGray,0.0,1.0)*fog;
+		}
 		volume.node.set_shader_input("u_cloud_gray", LVecBase2f(static_cast<float>(cloudGray), 0.0f));
 	}
 
@@ -4871,10 +4937,25 @@ void HwaSimIR::UpdateStage7VolumetricClouds(const IRStage7WeatherState& weatherS
 	{
 		m_stage7VolumeRegion->set_active(m_stage7VolumeVisibleCount > 0);
 	}
-	const float hybridScale = m_stage7VolumeVisibleCount > 0 ? 0.72f : 1.0f;
+	const bool legacyHybrid = std::getenv("P5LegacyVisuals") && std::string(std::getenv("P5LegacyVisuals"))=="1";
+	const float hybridScale = legacyHybrid && m_stage7VolumeVisibleCount > 0 ? 0.72f : 1.0f;
 	for (size_t i = 0; i < m_cloudNodes.size(); ++i)
 	{
 		SetShaderInputCached(m_cloudNodes[i], "u_cloud_hybrid_scale", LVecBase2f(hybridScale, 0.0f));
+		PTA_LVecBase4f cutouts;
+		int count=0;
+		if (!legacyHybrid) for (const auto index : visibleOrder) {
+			const auto& volume=m_stage7CloudVolumePool[index];
+			const double dz=std::abs(m_cloudNodes[i].get_z()-volume.descriptor.worldZ);
+			if(count<4 && dz<volume.descriptor.radiusZ) {
+				cutouts.push_back(LVecBase4f(float(volume.descriptor.worldX),float(volume.descriptor.worldY),
+					float(std::max(volume.descriptor.radiusX,volume.descriptor.radiusY)),float(volume.fade)));
+				++count;
+			}
+		}
+		while(cutouts.size()<4) cutouts.push_back(LVecBase4f(0,0,1,0));
+		m_cloudNodes[i].set_shader_input("u_cloud_local_cutouts",cutouts);
+		m_cloudNodes[i].set_shader_input("u_cloud_cutout_count",LVecBase2i(count,0));
 	}
 	++m_stage7VolumeLogCounter;
 	if (stateChanged || m_stage7VolumeLogCounter <= 3 || (m_stage7VolumeLogCounter % 120) == 0)
@@ -4885,6 +4966,10 @@ void HwaSimIR::UpdateStage7VolumetricClouds(const IRStage7WeatherState& weatherS
 			<< " center=" << streamingCenter[0] << "," << streamingCenter[1] << "," << streamingCenter[2]
 			<< " profile=" << weatherState.weatherName
 			<< " probability=" << weatherState.volumeCloudProbability
+			<< " candidates=" << candidateCount << " culledFrustum=" << culledFrustum
+			<< " culledBudget=" << culledBudget << " culledZero=" << culledZero
+			<< " cameraZ=" << cameraWorld[2] << " maxProjectedDiameterPx=" << maxProjectedDiameter
+			<< " visibilityMeaning=selected_for_render_not_pixel_proof"
 			<< " activeCloudVolumes=" << m_stage7VolumeActiveCount
 			<< " visibleCloudVolumes=" << m_stage7VolumeVisibleCount
 			<< " averageRaySteps=" << m_stage7VolumeAverageRaySteps
@@ -5135,7 +5220,7 @@ void HwaSimIR::UpdateStage7CloudWorldGrid(const IRStage7WeatherState& weatherSta
 		static_cast<float>(std::cos(windRadians)),
 		static_cast<float>(std::sin(windRadians)));
 	const float windSpeedUv = static_cast<float>(
-		weatherState.windV * m_stage7CloudUvSpeedScale / tileSizeM);
+		weatherState.windV * m_stage7CloudUvSpeedScale / m_stage7CloudTextureWorldSizeM);
 	const double cloudTopM = m_stage7GroundReferenceZ + m_stage7CloudBaseAltitudeM +
 		(m_stage7CloudRenderMode == CloudRenderMode::World2D ? 0.0 : m_stage7CloudThicknessM);
 	const double transitionM = std::max(50.0, m_stage7CloudThicknessM * 0.25);
@@ -5164,7 +5249,7 @@ void HwaSimIR::UpdateStage7CloudWorldGrid(const IRStage7WeatherState& weatherSta
 			: 0.0;
 		const double altitudeM = m_stage7GroundReferenceZ + m_stage7CloudBaseAltitudeM +
 			layerT * m_stage7CloudThicknessM;
-		if (gridMoved)
+		if (gridMoved || stateChanged)
 		{
 			// XY 只按固定世界网格吸附；Z 始终由地面参考高度和云层高度定义。
 			cloud.set_pos(
@@ -5188,6 +5273,7 @@ void HwaSimIR::UpdateStage7CloudWorldGrid(const IRStage7WeatherState& weatherSta
 			SetShaderInputCached(cloud, "u_cloud_wind_direction", windDirection);
 			SetShaderInputCached(cloud, "u_cloud_wind_speed_uv", LVecBase2f(windSpeedUv, 0.0f));
 		}
+		if (std::getenv("P5SheetOff") && std::string(std::getenv("P5SheetOff"))=="1") cloud.hide();
 		SetShaderInputCached(cloud, "u_cloud_inside_factor", LVecBase2f(static_cast<float>(insideFactor), 0.0f));
 	}
 
@@ -5333,6 +5419,8 @@ void HwaSimIR::CreateEnginePlumeForTarget(TargetPlatformData& targetPlat)
 	targetPlat.enginePlumeHaloNodePath.set_shader_input("u_object_kind", LVecBase2i(4, 0));
 	targetPlat.enginePlumeHaloNodePath.set_shader_input("u_plume_layer", LVecBase2i(2, 0));
 	targetPlat.enginePlumeHaloNodePath.set_shader_input("u_plume_enabled", LVecBase2i(0, 0));
+	if (!std::getenv("P5LegacyVisuals") || std::string(std::getenv("P5LegacyVisuals")) != "1")
+		IRGameSpriteBatch::apply(targetPlat.enginePlumeHaloNodePath);
 	targetPlat.enginePlumeHaloNodePath.hide();
 
 	targetPlat.enginePlumeCoreNodePath = targetPlat.nodePath.attach_new_node(CreateStage5EnginePlumeBillboardNode());
@@ -5346,6 +5434,8 @@ void HwaSimIR::CreateEnginePlumeForTarget(TargetPlatformData& targetPlat)
 	targetPlat.enginePlumeCoreNodePath.set_shader_input("u_object_kind", LVecBase2i(4, 0));
 	targetPlat.enginePlumeCoreNodePath.set_shader_input("u_plume_layer", LVecBase2i(1, 0));
 	targetPlat.enginePlumeCoreNodePath.set_shader_input("u_plume_enabled", LVecBase2i(0, 0));
+	if (!std::getenv("P5LegacyVisuals") || std::string(std::getenv("P5LegacyVisuals")) != "1")
+		IRGameSpriteBatch::apply(targetPlat.enginePlumeCoreNodePath);
 	targetPlat.enginePlumeCoreNodePath.hide();
 }
 
@@ -5899,11 +5989,8 @@ void HwaSimIR::UpdateStage7SkyHorizon(const IRRuntimeEnvironment& environment, c
 		groundGray = 0.35;
 	}
 	m_stage7WeatherState.cloudBackgroundGray = skyGray;
-	m_stage7WeatherState.cloudGray = IRWeatherEffects::cloudEmissionGray(
-		environment.band,
-		m_stage7WeatherState.cloudTemperatureK,
-		skyGray,
-		m_stage7WeatherState.skyDiffuseScale);
+	m_stage7WeatherState.cloudGray = Stage7CloudLinearValue(environment.band,
+		m_stage7WeatherState.cloudTemperatureK,m_stage7WeatherState);
 	if (useM1MwirPhysicalEnvironment)
 	{
 		const double span = std::max(1.0e-9,
@@ -6576,7 +6663,7 @@ void HwaSimIR::InitPlatformModels()
 		"Config/TargetLib/models/f22/f22_mat.tif",
 		"Config/TargetLib/models/f22/f22_mat.tif.xml",
 		"Config/TargetLib/models/f22",
-		"F35",
+		"F22",
 		"BM_METAL-ALUMINIUM"
 	};
 
@@ -6765,6 +6852,7 @@ void HwaSimIR::ProcessRealSimSceneInitData()
 	m_irTemperatureModel.resetRuntime();
 	m_irEnginePlumeModel.resetRuntime();
 	m_stage5PlumeRuntimeCache.clear();
+	ResetGameGraphicsState();
 	m_stage5PlumePerfMsTotal = 0.0;
 	m_stage5PlumePerfMsMax = 0.0;
 	m_stage5PlumePerfSamples = 0;
@@ -7203,7 +7291,7 @@ NodePath HwaSimIR::LoadPlatformAssetNode(PLATFORM_TYPE type, const PlatformResPa
 		PT(Texture) texture = TexturePool::load_texture(texturePath);
 		if (texture != nullptr)
 		{
-			modelNode.set_texture(texture);
+			modelNode.set_texture(TextureStage::get_default(), texture, 100);
 		}
 		else
 		{
@@ -8691,6 +8779,7 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		m_stage6DisplayLogCounter = 0;
 		m_irEnginePlumeModel.resetRuntime();
 		m_stage5PlumeRuntimeCache.clear();
+		ResetGameGraphicsState();
 		m_stage5PlumePerfMsTotal = 0.0;
 		m_stage5PlumePerfMsMax = 0.0;
 		m_stage5PlumePerfSamples = 0;
@@ -11008,6 +11097,8 @@ void HwaSimIR::InitInfraredSimulation()
 	m_stage7CloudThicknessM = m_runtimeConfig.getDouble("Stage7Weather", "CloudThicknessM", "Stage7CloudThicknessM", 800.0, &stage7CloudThicknessSource);
 	m_stage7CloudWorldSizeM = m_runtimeConfig.getDouble("Stage7Weather", "CloudWorldSizeM", "Stage7CloudWorldSizeM", 30000.0, &stage7CloudWorldSizeSource);
 	m_stage7CloudTileSizeM = m_runtimeConfig.getDouble("Stage7Weather", "CloudTileSizeM", "Stage7CloudTileSizeM", 5000.0, &stage7CloudTileSizeSource);
+	m_stage7CloudTextureWorldSizeM = m_runtimeConfig.getDouble("Stage7Weather", "CloudTextureWorldSizeM", "Stage7CloudTextureWorldSizeM", m_stage7CloudTileSizeM);
+	if (!std::isfinite(m_stage7CloudTextureWorldSizeM) || m_stage7CloudTextureWorldSizeM < 100.0) m_stage7CloudTextureWorldSizeM = 5000.0;
 	m_stage7CloudUvSpeedScale = m_runtimeConfig.getDouble("Stage7Weather", "CloudUvSpeedScale", "Stage7CloudUvSpeedScale", 1.0, &stage7CloudUvSpeedSource);
 	m_stage7CloudOpticalDepthScale = m_runtimeConfig.getDouble("Stage7Weather", "CloudOpticalDepthScale", "Stage7CloudOpticalDepthScale", 1.0, &stage7CloudOpticalDepthSource);
 	m_stage7CloudEdgeSoftness = m_runtimeConfig.getDouble("Stage7Weather", "CloudEdgeSoftness", "Stage7CloudEdgeSoftness", 0.15, &stage7CloudEdgeSoftnessSource);
@@ -11335,7 +11426,7 @@ void HwaSimIR::InitInfraredSimulation()
 		<< "（Stage3C: production default Off; MWIR path runtime A/B must opt in）"
 		<< std::endl;
 	std::cout << "[Stage5 OutputCapture] Stage5OutputFrameDump="
-		<< ((m_stage5OutputFrameDumpEnabled && m_enableStage5RadianceDebug) ? "1" : "0")
+		<< ((m_stage5OutputFrameDumpEnabled && (m_enableStage5RadianceDebug || std::getenv("P5Scene"))) ? "1" : "0")
 		<< " path=" << (m_stage5OutputFrameDumpPath.empty() ? "NA" : m_stage5OutputFrameDumpPath)
 		<< " every=" << m_stage5OutputFrameDumpEvery
 		<< "（smoke-only render texture dump; TCP/JPEG protocol unchanged）" << std::endl;
@@ -11625,7 +11716,7 @@ void HwaSimIR::InitInfraredShader() {
     #version 100
     uniform mat4 p3d_ModelViewProjectionMatrix;
     uniform mat4 p3d_ModelMatrix;
-    uniform vec2 u_cloud_world_uv_reciprocal;
+    uniform highp vec2 u_cloud_world_uv_reciprocal;
     attribute vec4 p3d_Vertex;
     attribute vec3 p3d_Normal;
     attribute vec2 p3d_MultiTexCoord0;
@@ -11678,7 +11769,11 @@ void HwaSimIR::InitInfraredShader() {
     uniform float u_display_gain;
     uniform float u_display_offset;
     uniform float u_cloud_density;
-    uniform sampler2D p3d_Texture1;
+    uniform sampler2D u_material_id_texture;
+    uniform vec4 u_cloud_local_cutouts[4]; // XY center, radius, current fade
+    uniform int u_cloud_cutout_count;
+    uniform highp vec2 u_cloud_world_uv_reciprocal;
+    uniform int u_p5_material_view; // test only: 1 UV, 2 normals, 3 shaded, 4 selected reflectance, 5 emissivity
     uniform int u_material_id_ready;
     uniform int u_debug_material_id;
     uniform int u_material_param_count;
@@ -11969,7 +12064,18 @@ void HwaSimIR::InitInfraredShader() {
                              * clamp(u_cloud_layer_weight, 0.0, 1.0)
                              * clamp(u_cloud_hybrid_scale, 0.0, 1.0)
                              * cloud_mask;
-            float tau_cloud = exp(-extinction);
+            // Fade only the part of a far slice actually occupied by a local
+            // volume. Never dim the entire cloud sheet because one volume exists.
+            float localFade=0.0;
+            vec2 cloudWorldXY=v_cloud_world_uv/max(u_cloud_world_uv_reciprocal.x,0.000001);
+            for(int i=0;i<4;++i) {
+                if(i<u_cloud_cutout_count) {
+                    vec4 hole=u_cloud_local_cutouts[i];
+                    float radius=length(cloudWorldXY-hole.xy)/max(hole.z,1.0);
+                    localFade=max(localFade,hole.w*(1.0-smoothstep(.35,1.0,radius)));
+                }
+            }
+            float tau_cloud = exp(-extinction*(1.0-localFade));
             float cloud_intensity = clamp(u_stage7_cloud_gray, 0.0, 1.0);
             if (u_ir_band_class == 0) {
                 cloud_intensity = clamp(cloud_intensity + (raw_density - 0.5) * 0.12, 0.0, 1.0);
@@ -12039,7 +12145,7 @@ void HwaSimIR::InitInfraredShader() {
 		vec4 band_reflectance = vec4(surface_param.y, surface_param.y, 0.0, 0.0);
 		vec4 solar_delta_pos_K = vec4(0.0);
 		vec4 solar_delta_neg_K = vec4(0.0);
-        float material_id = texture2D(p3d_Texture1, texcoord).r;
+        float material_id = texture2D(u_material_id_texture, texcoord).r;
         if (u_material_id_ready == 1) {
             if (u_debug_material_id == 1) {
                 gl_FragColor = vec4(material_id, material_id, material_id, texColor.a);
@@ -12047,7 +12153,7 @@ void HwaSimIR::InitInfraredShader() {
             }
             for (int i = 0; i < 8; ++i) {
                 if (i < u_material_param_count) {
-                    float hit = 1.0 - step(0.006, abs(material_id - u_material_ids[i]));
+                    float hit = 1.0 - step(0.5 / 255.0, abs(material_id - u_material_ids[i]));
                     surface_param = mix(surface_param, u_material_params[i], hit);
 					band_reflectance = mix(band_reflectance, u_material_band_reflectance[i], hit);
 					solar_delta_pos_K = mix(solar_delta_pos_K, u_l1_solar_delta_pos_K[i], hit);
@@ -12060,6 +12166,14 @@ void HwaSimIR::InitInfraredShader() {
 		float surface_reflectance = (u_ir_band_index == 1)
 			? clamp(band_reflectance.x, 0.0, 1.0)
 			: ((u_ir_band_index == 3) ? clamp(band_reflectance.y, 0.0, 1.0) : clamp(surface_param.y, 0.0, 1.0));
+		if (u_p5_material_view != 0) {
+			vec3 diagnostic = vec3(surface_reflectance);
+			if (u_p5_material_view == 1) diagnostic = vec3(fract(texcoord),0.0);
+			if (u_p5_material_view == 2) diagnostic = normalize(v_stage5_normal)*.5+.5;
+			if (u_p5_material_view == 3) diagnostic = texColor.rgb*(.2+.8*max(0.0,dot(normalize(v_stage5_normal),normalize(vec3(.3,-.6,.7)))));
+			if (u_p5_material_view == 5) diagnostic = vec3(surface_emissivity);
+			gl_FragColor = vec4(diagnostic,1.0); return;
+		}
 		// 计算基础热辐射与范围热源
         float current_temp = u_base_temperature;
         float stage4_debug_mask = 0.0;
@@ -12186,8 +12300,7 @@ void HwaSimIR::InitInfraredShader() {
 					(u_m1_direct_solar_irradiance * m1_ndotl * u_l1_sun_visibility_optical +
 					 u_m1_sky_diffuse_irradiance * u_m1_sky_visibility);
 				float m1_sensor = u_m1_tau_up * m1_surface + u_m1_path_radiance + l2_active_sensor;
-				stage5_intensity = pow(max(m1_sensor * u_m1_display_scale + u_m1_display_offset, 0.0),
-					1.0 / max(u_m1_display_gamma, 0.1));
+				stage5_intensity = max(m1_sensor * u_m1_display_scale + u_m1_display_offset, 0.0);
 			} else if (u_stage5_debug_view_mode == 0 && u_m1_physics_runtime_en == 1 && u_ir_band_index == 3) {
 				formal_m1_radiance = true;
 				vec3 local_n = normalize(v_stage5_normal);
@@ -12214,8 +12327,7 @@ void HwaSimIR::InitInfraredShader() {
 				m1_surface = m1_surface * (1.0 - rear_coverage) + local_rear_hotspot;
 				m1_surface = m1_surface * (1.0 - bright_coverage) + local_brightspot;
 				float m1_sensor = u_m1_tau_up * m1_surface + u_m1_path_radiance + l2_active_sensor;
-				stage5_intensity = pow(max(m1_sensor * u_m1_display_scale + u_m1_display_offset, 0.0),
-					1.0 / max(u_m1_display_gamma, 0.1));
+				stage5_intensity = max(m1_sensor * u_m1_display_scale + u_m1_display_offset, 0.0);
 			} else
 #endif
 			if (u_stage5_use_sensor_input_for_display == 1) {
@@ -12332,6 +12444,21 @@ void HwaSimIR::ApplyInfraredShader(NodePath& node, bool isBackground) {
 		defaultSolarDelta.push_back(LVecBase4f(0.0f));
 	}
 	node.set_shader_input("u_material_id_ready", LVecBase2i(0, 0));
+	node.set_shader_input("u_p5_material_view", LVecBase2i(0,0));
+	PTA_LVecBase4f noCutouts;
+	for(int i=0;i<4;++i) noCutouts.push_back(LVecBase4f(0,0,1,0));
+	node.set_shader_input("u_cloud_local_cutouts",noCutouts);
+	node.set_shader_input("u_cloud_cutout_count",LVecBase2i(0,0));
+	static PT(Texture) emptyMaterialId;
+	if (!emptyMaterialId) {
+		emptyMaterialId = new Texture("EmptyMaterialId");
+		emptyMaterialId->setup_2d_texture(1,1,Texture::T_unsigned_byte,Texture::F_luminance);
+		PTA_uchar zero = PTA_uchar::empty_array(1); zero[0] = 0;
+		emptyMaterialId->set_ram_image(zero);
+		emptyMaterialId->set_minfilter(SamplerState::FT_nearest);
+		emptyMaterialId->set_magfilter(SamplerState::FT_nearest);
+	}
+	node.set_shader_input("u_material_id_texture", emptyMaterialId);
 	node.set_shader_input("u_debug_material_id", LVecBase2i(0, 0));
 	node.set_shader_input("u_material_param_count", LVecBase2i(0, 0));
 	node.set_shader_input("u_material_ids", defaultMaterialIds);
@@ -13155,8 +13282,8 @@ double HwaSimIR::MapSensorInputToDisplayGray(double sensorInputRadiance) const
 	{
 		return 0.0;
 	}
-	const double gamma = ClampStage5Double(m_stage5SensorInputDisplayGamma, 0.1, 5.0);
-	return ClampStage5Double(std::pow(mapped, 1.0 / gamma), 0.0, 1.0);
+	// Keep scene inputs linear. The common gamma is applied once after compositing.
+	return ClampStage5Double(mapped, 0.0, 1.0);
 }
 
 void HwaSimIR::LogEffectiveRuntimeConfig(
@@ -15613,6 +15740,44 @@ void HwaSimIR::OnTcpFrameSent(
 
 
 
+#include "IR/P5GraphicsTest.inl"
+
+void HwaSimIR::ResetGameGraphicsState()
+{
+	m_gameSpriteTimeOrigin=-1.0; m_gameSpriteLastTime=-1.0;
+	if(!m_p5TestRoot.is_empty()) m_p5TestRoot.remove_node();
+	m_p5TestRoot=NodePath();m_p5TestModel=NodePath();m_p5TestCore=NodePath();m_p5TestHalo=NodePath();
+}
+
+void HwaSimIR::UpdateGameSpriteAnimation()
+{
+	if(m_currentFrameTelemetry.sourceSeq==0) return;
+	const double simTime = m_realTimeSceneData.time * .001;
+	if (!std::isfinite(simTime)) return;
+	if (m_gameSpriteTimeOrigin < 0.0 || simTime < m_gameSpriteLastTime) m_gameSpriteTimeOrigin = simTime;
+	m_gameSpriteLastTime = simTime;
+	const float elapsed = static_cast<float>(simTime-m_gameSpriteTimeOrigin);
+	if(std::getenv("P5Scene") && (m_currentFrameTelemetry.sourceSeq<=3 || m_currentFrameTelemetry.sourceSeq%120==0))
+		std::cout<<"[GameSpriteAnimation] sourceSeq="<<m_currentFrameTelemetry.sourceSeq<<" elapsedSec="<<elapsed<<" originSec="<<m_gameSpriteTimeOrigin<<" dtSource=protocol_time_ms"<<std::endl;
+	std::vector<NodePath> visibleLayers;
+	for (auto& target : m_targetPlatformList) {
+		NodePath layers[] = {target.enginePlumeCoreNodePath,target.enginePlumeHaloNodePath};
+		for (auto& node : layers) {
+			if (node.is_empty() || node.is_hidden()) continue;
+			visibleLayers.push_back(node);
+		}
+	}
+	const double perLayerBudget=std::min(32.0,256.0/std::max(1.0,double(visibleLayers.size())));
+	for (auto& node : visibleLayers) {
+			node.set_shader_input("u_sprite_time",LVecBase2f(elapsed,0));
+			const double distance = (node.get_pos(m_renderRoot)-m_cameraNode.get_pos(m_renderRoot)).length();
+			const double radius = node.get_scale(m_renderRoot)[0];
+			const double fy = std::tan(m_cameraLens->get_fov()[1]*3.141592653589793/360.0);
+			const double pixels = 800.0*radius/std::max(1.0,distance*fy);
+			node.set_shader_input("u_sprite_lod",LVecBase2f(static_cast<float>(std::min(perLayerBudget,ClampStage5Double(8.0+pixels*.3,8.0,32.0))),0));
+	}
+}
+
 // HwaSimIR 的每帧更新任务回调
 AsyncTask::DoneStatus HwaSimIR::shader_update_task(GenericAsyncTask* task, void* data) {
 	HwaSimIR* self = static_cast<HwaSimIR*>(data);
@@ -15647,6 +15812,8 @@ AsyncTask::DoneStatus HwaSimIR::shader_update_task(GenericAsyncTask* task, void*
 			sourceSeq <= 3 ||
 			self->m_lastIrUpdateSourceSeq == 0 ||
 			sourceSeq >= self->m_lastIrUpdateSourceSeq + updateStride);
+		self->UpdateGameSpriteAnimation();
+		self->UpdateP5GraphicsTestScene();
 		if (stateChanged || updateDue)
 		{
 			const auto begin = std::chrono::steady_clock::now();
@@ -16005,7 +16172,7 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 		std::cout << captureLog.str() << std::endl;*/
 	}
 
-	if (self->m_stage5OutputFrameDumpEnabled && self->m_enableStage5RadianceDebug && !self->m_stage5OutputFrameDumpPath.empty()) {
+	if (self->m_stage5OutputFrameDumpEnabled && (self->m_enableStage5RadianceDebug || std::getenv("P5Scene")) && !self->m_stage5OutputFrameDumpPath.empty()) {
 				++self->m_stage5OutputFrameCounter;
 				if (self->m_stage5OutputFrameCounter % self->m_stage5OutputFrameDumpEvery == 0) {
 					try {

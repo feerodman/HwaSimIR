@@ -685,6 +685,16 @@ private:
 	void UpdateStage7VolumetricClouds(const IRStage7WeatherState& weatherState, double currentTime, bool stateChanged);
 	bool GetStage7StreamingCenter(LPoint3f& center, std::string& targetKey) const;
 	void UpdateStage7VolumetricCloudAnimation(double currentTime);
+	double Stage7CloudLinearValue(IRBand band, double temperatureK, const IRStage7WeatherState& weather) const;
+	void UpdateGameSpriteAnimation();
+	double m_gameSpriteTimeOrigin = -1.0;
+	double m_gameSpriteLastTime = -1.0;
+	double m_stage7CloudTextureWorldSizeM = 5000.0;
+	void UpdateP5GraphicsTestScene();
+	void ResetGameGraphicsState();
+	NodePath m_p5TestRoot, m_p5TestModel, m_p5TestCore, m_p5TestHalo;
+	LPoint3f m_p5TestCenter;
+	bool m_p5CaptureWritten = false;
 	void UpdateStage7CloudWorldGrid(const IRStage7WeatherState& weatherState, double currentTime, bool stateChanged);
 	IRStage7WeatherRuntimeInput BuildStage7WeatherInput() const;
 	IRStage7WeatherState EvaluateStage7WeatherState(const IRRuntimeEnvironment& environment) const;

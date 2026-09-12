@@ -65,9 +65,20 @@ write_verified()
     fi
     printf '%s\n' "$value" > "$path"
     actual=$(cat "$path")
+    # cpufreq policy updates may settle after the sysfs write returns. Preserve
+    # exact verification, but allow a bounded 200 ms for the readback to settle.
+    attempts=0
+    while [ "$actual" != "$value" ] && [ "$attempts" -lt 10 ]; do
+        sleep 0.02
+        actual=$(cat "$path")
+        attempts=$((attempts + 1))
+    done
     if [ "$actual" != "$value" ]; then
         echo "[BoardPerformancePolicy][ERROR] reason=readback_mismatch field=$label requested=$value actual=$actual path=$path policySource=$POLICY_FILE" >&2
         return 1
+    fi
+    if [ "$attempts" -gt 0 ]; then
+        echo "[BoardPerformancePolicy] result=PASS field=$label requested=$value actual=$actual readbackRetries=$attempts"
     fi
 }
 

@@ -862,7 +862,8 @@ void MainWindow::sendRealTimeData()
 		QDateTime utc = QDateTime::currentDateTimeUtc();
 		const int totalMs = qBound(0, static_cast<int>(m_testUtcHour * 3600000.0), 86399999);
 		utc.setTime(QTime(0, 0).addMSecs(totalMs));
-		data.time = utc.toMSecsSinceEpoch();
+		// Select the test's starting solar time, but keep animation time advancing.
+		data.time = utc.toMSecsSinceEpoch() + (m_sendClock.isValid() ? m_sendClock.elapsed() : 0);
 	}
 	else
 	{
@@ -1036,6 +1037,7 @@ void MainWindow::sendRealTimeData()
 //    }
 
     //applyPhase4cAeroMachOverride(data);
+    if (qEnvironmentVariableIntValue("P5NoTargets") == 1) data.targetNumValid = 0;
 	bool ddsSent = false;
 #if defined(HWASIMIR_HAS_ZRDDS)
 	if (m_ddsStim)

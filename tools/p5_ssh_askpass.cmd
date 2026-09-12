@@ -1,0 +1,1 @@
+@echo %HWASIMIR_SSH_PASSWORD%
