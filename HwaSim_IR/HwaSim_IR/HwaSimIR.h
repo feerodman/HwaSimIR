@@ -947,6 +947,8 @@ private:
 	double m_stage6AgcTargetGain = 1.0;
 	double m_stage6AgcTargetOffset = 0.0;
 	int m_stage6AgcSampleCount = 0;
+    bool m_stage6Reinhard = false;
+    double m_stage6AgcMinimumSpan = 0.02;
 	bool m_stage6AgcValid = false;
 	bool m_stage6AgcInitialized = false;
 	std::string m_stage6AgcFallbackReason = "disabled";

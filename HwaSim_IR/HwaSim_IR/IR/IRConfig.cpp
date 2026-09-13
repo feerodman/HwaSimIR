@@ -62,6 +62,8 @@ bool IRSensorProfileDatabase::loadProfileFromFile(IRBand band,const std::string&
                 const std::string mode=d.string(q+"Mode");
                 if(mode!="Fixed"&&mode!="Auto")throw std::runtime_error("unknown_display_mode: "+q);
                 v.automatic=mode=="Auto";
+                if(d.has(q+"ToneMap"))v.toneMap=d.string(q+"ToneMap");
+                if(v.toneMap!="LinearClamp"&&v.toneMap!="Reinhard")throw std::runtime_error("unknown ToneMap");
                 if(d.has(q+"Statistics")){
                     if(d.string(q+"Statistics.Method")!="stratified_pixel_centers")throw std::runtime_error("unsupported Auto sampling definition");
                     v.statisticsSize=d.integer(q+"Statistics.Size",16,128);
@@ -69,6 +71,15 @@ bool IRSensorProfileDatabase::loadProfileFromFile(IRBand band,const std::string&
                     v.lowPercentile=d.number(q+"Statistics.LowPercentile",0,99);
                     v.highPercentile=d.number(q+"Statistics.HighPercentile",v.lowPercentile+.01,100);
                     v.smoothingAlpha=d.number(q+"Statistics.SmoothingAlpha",0,1);
+                    if(d.has(q+"Statistics.MinimumInputSpan"))v.minimumInputSpan=d.number(q+"Statistics.MinimumInputSpan",.000001,100);
+                }
+                if(d.has(q+"Mapping")){
+                    v.targetLow=d.number(q+"Mapping.TargetLow",0,1);
+                    v.targetHigh=d.number(q+"Mapping.TargetHigh",v.targetLow+.000001,1);
+                    v.minGain=d.number(q+"Mapping.MinGain",.000001,100);
+                    v.maxGain=d.number(q+"Mapping.MaxGain",v.minGain,100);
+                    v.minOffset=d.number(q+"Mapping.MinOffset",-100,100);
+                    v.maxOffset=d.number(q+"Mapping.MaxOffset",v.minOffset,100);
                 }
                 p.displayPresets[name]=v;
             }

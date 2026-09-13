@@ -92,6 +92,9 @@ void HwaSimIR::UpdateP6GraphicsTestScene(){
     if(!m_p6.legacy||m_p6.scene=="plume")fullscreen(m_p6Background,"Weather/game_background.frag","P6_GameEnvironment",5);
     if(display){
         fullscreen(m_p6Display,"Tests/P6/display.frag","P6_LinearSteps",10);
+        const char* caseValue=std::getenv("P6CDisplayCase");
+        m_p6Display.set_shader_input("u_display_case",LVecBase2i(caseValue?std::atoi(caseValue):0,0));
+        m_p6Display.set_shader_input("u_frame_idx",LVecBase2i(int(m_currentFrameTelemetry.sourceSeq),0));
         m_p5TestModel.hide();m_p5TestCore.hide();m_p5TestHalo.hide();
         for(auto& n:m_cloudNodes)n.hide();
         return;
@@ -154,6 +157,16 @@ void HwaSimIR::UpdateP6GraphicsTestScene(){
 void HwaSimIR::CaptureP6LinearFrame(const unsigned char* pixels,int width,int height,std::uint64_t seq){
     const char* output=std::getenv("LinearDiagnosticPath"),*sample=std::getenv("LinearDiagnosticSeq");
     if(!output&&m_p6.enabled){output=std::getenv("P6DumpPath");sample=std::getenv("P6DumpSeq");}
+    if(m_p6.enabled&&m_p6.scene=="display"&&std::getenv("P6CMappingLog")){
+        std::ostringstream row;row<<std::setprecision(12)<<"[P6CMapping] sourceSeq="<<seq
+            <<" fixedGain="<<m_stage6DisplayConfig.displayGain<<" offsetGray="<<m_stage6DisplayConfig.displayOffset
+            <<" gamma="<<m_stage5SensorInputDisplayGamma<<" reinhard="<<m_stage6Reinhard
+            <<" whiteHot="<<m_stage6DisplayConfig.whiteHot<<" automatic="<<m_stage6AgcEnabled
+            <<" agcGain="<<m_stage6AgcGain<<" agcOffset="<<m_stage6AgcOffset
+            <<" statisticsSourceSeq="<<m_stage6AgcLastUpdateSourceSeq<<" low="<<m_stage6AgcLowInput<<" high="<<m_stage6AgcHighInput
+            <<" fallback="<<m_stage6AgcFallbackReason;
+        std::cout<<row.str()<<std::endl;
+    }
     if(!output||!sample||seq!=std::strtoull(sample,nullptr,10))return;
     std::cout<<"[DisplayFrameMapping] sourceSeq="<<seq<<" agcGain="<<m_stage6AgcGain<<" agcOffset="<<m_stage6AgcOffset
         <<" statisticsSourceSeq="<<m_stage6AgcLastUpdateSourceSeq<<" captureBeforeStatisticsUpdate=1 hdrUntilAgc=1"<<std::endl;

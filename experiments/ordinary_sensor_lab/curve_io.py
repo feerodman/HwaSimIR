@@ -21,6 +21,14 @@ def load_config(path):
     config = json.loads(raw.decode('utf-8-sig'), object_pairs_hook=unique_object,
                         parse_constant=lambda x: (_ for _ in ()).throw(ValueError('nonfinite JSON: '+x)))
     sources = [{'path': str(path), 'sha256': hashlib.sha256(raw).hexdigest()}]
+    sources.extend(resolve_curve_files(config, path))
+    return config, sources
+
+
+def resolve_curve_files(config, path):
+    """Resolve a spectral-basis object using the same strict CSV contract."""
+    path = Path(path).resolve()
+    sources = []
     for role in ('illumination', 'response', 'optics'):
         curve = config.get(role)
         if curve is None or 'samples_file' not in curve:
@@ -42,4 +50,4 @@ def load_config(path):
         curve['samples'] = [[float(x), float(y)] for x, y in rows[1:]]
         sources.append({'role': role, 'path': str(source), 'sha256': hashlib.sha256(data).hexdigest(),
                         'wavelength_unit': curve.get('wavelength_unit'), 'value_unit': curve.get('value_unit')})
-    return config, sources
+    return sources

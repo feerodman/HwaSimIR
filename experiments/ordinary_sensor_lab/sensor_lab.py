@@ -24,7 +24,7 @@ def number(value, name, low=0.0, strict=False):
     return value
 
 
-def curve(data, role):
+def curve(data, role, bounds_nm=(400.0, 700.0)):
     """Return wavelength in nm; spectral irradiance always per nm, never per sr."""
     if data.get("source_type") != "synthetic" or not data.get("source"):
         raise ValueError(f"{role}: this experiment requires documented synthetic input")
@@ -41,8 +41,8 @@ def curve(data, role):
         raise ValueError(f"{role}: non-finite sample")
     x = rows[:, 0] * units[data["wavelength_unit"]]
     y = rows[:, 1].copy()
-    if (np.diff(x) <= 0).any() or x[0] < 400 or x[-1] > 700:
-        raise ValueError(f"{role}: strictly increasing samples within 400..700 nm required")
+    if (np.diff(x) <= 0).any() or x[0] < bounds_nm[0] or x[-1] > bounds_nm[1]:
+        raise ValueError(f"{role}: strictly increasing samples within {bounds_nm} nm required")
     if (y < 0).any():
         raise ValueError(f"{role}: negative sample")
     if role == "illumination":
@@ -85,15 +85,19 @@ def integrate(curves, photon=False):
 def run(config, count=100000, seed=20260913):
     if config.get("schema") != VERSION:
         raise ValueError("unsupported schema")
-    if config.get("model") != "synthetic_visible_photon_pixel":
-        raise ValueError("only synthetic visible photon pixels are supported")
+    bands = {"synthetic_visible_photon_pixel": (400., 700.),
+             "synthetic_nir_photon_pixel": (700., 1100.),
+             "synthetic_mwir_photon_pixel": (3000., 5000.)}
+    if config.get("model") not in bands:
+        raise ValueError("only explicit synthetic photon pixel models are supported")
+    bounds = bands[config["model"]]
     if not isinstance(count, int) or isinstance(count, bool) or not 2 <= count <= 1000000:
         raise ValueError("samples must be an integer in 2..1000000")
     if not isinstance(seed, int) or isinstance(seed, bool) or not 0 <= seed < 2**64:
         raise ValueError("seed must be an unsigned 64-bit integer")
     light, response = config["illumination"], config["response"]
-    illumination = curve(light, "illumination")
-    response_curve = curve(response, "response")
+    illumination = curve(light, "illumination", bounds)
+    response_curve = curve(response, "response", bounds)
     factors = response.get("included_factors")
     if not isinstance(factors, list) or len(factors) != len(set(factors)):
         raise ValueError("response: explicit unique included_factors required")
@@ -117,11 +121,11 @@ def run(config, count=100000, seed=20260913):
         raise ValueError(f"illumination reference_plane must be {expected_plane}")
     curves = [illumination, response_curve]
     if optics is not None:
-        curves.append(curve(optics, "optics"))
+        curves.append(curve(optics, "optics", bounds))
     weighted_energy = integrate(curves)
     weighted_photons = integrate(curves, photon=True)
     result = {
-        "schema": VERSION, "validation_level": "synthetic_model_only_not_device_calibration",
+        "schema": VERSION, "model": config["model"], "validation_level": "synthetic_model_only_not_device_calibration",
         "input_irradiance_W_m2": integrate([illumination]),
         "response_kind": kind, "included_factors": factors,
         "separate_optics_applied": optics is not None,
@@ -145,9 +149,15 @@ def run(config, count=100000, seed=20260913):
                       "conversion_gain": "DN/electron", "black_level": "DN"}
     values = {}
     for key, unit in required_units.items():
-        if p[key].get("unit") != unit:
+        actual_unit = p[key].get("unit")
+        compatible = (key == "exposure" and actual_unit == "us") or (key == "conversion_gain" and actual_unit == "electron/DN")
+        if actual_unit != unit and not compatible:
             raise ValueError(f"pixel.{key}: expected {unit}")
         values[key] = number(p[key]["value"], key, strict=key in ("pitch", "full_well", "conversion_gain"))
+        if key == "exposure" and actual_unit == "us":
+            values[key] *= 1e-6
+        if key == "conversion_gain" and actual_unit == "electron/DN":
+            values[key] = 1.0 / values[key]
     bits = p["adc_bits"]
     if not isinstance(bits, int) or isinstance(bits, bool) or not 1 <= bits <= 24:
         raise ValueError("adc_bits: integer 1..24 required")

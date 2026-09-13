@@ -1,0 +1,170 @@
+{
+  "schema": "ordinary-sensor-image-1",
+  "validation_level": "synthetic_reference",
+  "model": "synthetic_photon_array",
+  "band": "mwir",
+  "width": 800,
+  "height": 800,
+  "tile_rows": 127,
+  "temporal_samples": 8,
+  "sequence_fps": 10,
+  "pixel": {
+    "source_type": "synthetic",
+    "source": "Artificial photon array for wavelength/unit mathematics; not a real NIR/MWIR detector and not a bolometer",
+    "pitch": {
+      "value": 5,
+      "unit": "um"
+    },
+    "exposure": {
+      "value": 0.01,
+      "unit": "s"
+    },
+    "dark_current": {
+      "value": 20,
+      "unit": "electron/pixel/s"
+    },
+    "read_noise": {
+      "value": 3,
+      "unit": "electron_rms"
+    },
+    "full_well": {
+      "value": 20000,
+      "unit": "electron"
+    },
+    "conversion_gain": {
+      "value": 0.6,
+      "unit": "DN/electron"
+    },
+    "black_level": {
+      "value": 64,
+      "unit": "DN"
+    },
+    "adc_bits": 14
+  },
+  "spectral_bases": [
+    {
+      "illumination": {
+        "source_type": "synthetic",
+        "source": "Artificial triangular equal-energy spectral basis; not an image reconstruction",
+        "reference_plane": "detector_plane",
+        "wavelength_unit": "nm",
+        "value_unit": "W/m2/nm",
+        "samples": [
+          [
+            3000,
+            3e-06
+          ],
+          [
+            4000.0,
+            1.5e-06
+          ],
+          [
+            5000,
+            0
+          ]
+        ]
+      },
+      "response": {
+        "source_type": "synthetic",
+        "source": "Artificial linearly increasing photon efficiency; no device attribution",
+        "kind": "absolute_qe",
+        "included_factors": [
+          "qe"
+        ],
+        "wavelength_unit": "nm",
+        "value_unit": "fraction",
+        "samples": [
+          [
+            3000,
+            0.15
+          ],
+          [
+            5000,
+            0.75
+          ]
+        ]
+      }
+    },
+    {
+      "illumination": {
+        "source_type": "synthetic",
+        "source": "Artificial triangular equal-energy spectral basis; not an image reconstruction",
+        "reference_plane": "detector_plane",
+        "wavelength_unit": "nm",
+        "value_unit": "W/m2/nm",
+        "samples": [
+          [
+            3000,
+            0
+          ],
+          [
+            4000.0,
+            1.5e-06
+          ],
+          [
+            5000,
+            3e-06
+          ]
+        ]
+      },
+      "response": {
+        "source_type": "synthetic",
+        "source": "Artificial linearly increasing photon efficiency; no device attribution",
+        "kind": "absolute_qe",
+        "included_factors": [
+          "qe"
+        ],
+        "wavelength_unit": "nm",
+        "value_unit": "fraction",
+        "samples": [
+          [
+            3000,
+            0.15
+          ],
+          [
+            5000,
+            0.75
+          ]
+        ]
+      }
+    }
+  ],
+  "scene": {
+    "kind": "chart",
+    "amplitude": 1,
+    "speed_pixels_per_s": 150
+  },
+  "fixed_pattern": {
+    "source_type": "synthetic",
+    "source": "Artificial stationary independent pixel variation; no device data",
+    "prnu_sigma": {
+      "value": 0.02,
+      "unit": "fraction_rms"
+    },
+    "dsnu_sigma": {
+      "value": 4,
+      "unit": "electron/pixel/s_rms"
+    }
+  },
+  "psf": {
+    "kind": "synthetic_discrete_irradiance_psf",
+    "boundary": "periodic",
+    "kernel": [
+      [
+        0.0625,
+        0.125,
+        0.0625
+      ],
+      [
+        0.125,
+        0.25,
+        0.125
+      ],
+      [
+        0.0625,
+        0.125,
+        0.0625
+      ]
+    ]
+  }
+}

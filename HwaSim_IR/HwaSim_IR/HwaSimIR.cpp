@@ -2246,7 +2246,20 @@ void HwaSimIR::ApplyStage6DisplayConfig(const BYHWICD::trackerSensorParam& senso
     m_stage6AgcLowPercentile=m_runtimeConfig.getDouble("Stage6AGC","AGCLowPercentile","AGCLowPercentile",preset.lowPercentile,&lowSource);
     m_stage6AgcHighPercentile=m_runtimeConfig.getDouble("Stage6AGC","AGCHighPercentile","AGCHighPercentile",preset.highPercentile,&highSource);
     m_stage6AgcSmoothingAlpha=m_runtimeConfig.getDouble("Stage6AGC","AGCSmoothingAlpha","AGCSmoothingAlpha",preset.smoothingAlpha,&smoothingSource);
-    m_stage6AgcStatsSource="stratified_pixel_centers_linear_256_bins";
+    m_stage6AgcStatsSource="stratified_pixel_centers_unclipped_linear_order_statistics";
+    m_stage6Reinhard=preset.toneMap=="Reinhard";
+    m_stage6AgcMinimumSpan=preset.minimumInputSpan;
+    source("ToneMapReinhard","default",m_stage6Reinhard,"bool");
+    source("MinimumInputSpan","default",m_stage6AgcMinimumSpan,"common_scaled_linear");
+    auto mapping=[&](const char* key,double fallback,double& value,const char* unit){
+        std::string selected;value=m_runtimeConfig.getDouble("Stage6AGC",key,key,fallback,&selected);source(key,selected,value,unit);
+    };
+    mapping("AGCTargetLowGray",preset.targetLow,m_stage6AgcTargetLowGray,"pre_tone_linear");
+    mapping("AGCTargetHighGray",preset.targetHigh,m_stage6AgcTargetHighGray,"pre_tone_linear");
+    mapping("AGCMinGain",preset.minGain,m_stage6AgcMinGain,"ratio");
+    mapping("AGCMaxGain",preset.maxGain,m_stage6AgcMaxGain,"ratio");
+    mapping("AGCMinOffset",preset.minOffset,m_stage6AgcMinOffset,"pre_tone_linear");
+    mapping("AGCMaxOffset",preset.maxOffset,m_stage6AgcMaxOffset,"pre_tone_linear");
     source("StatisticsHz",statsHzSource,m_stage6AgcUpdateHz,"Hz");source("StatisticsSize",statsSizeSource,m_agcSampleSize,"pixels_per_axis");
     source("LowPercentile",lowSource,m_stage6AgcLowPercentile,"percent");source("HighPercentile",highSource,m_stage6AgcHighPercentile,"percent");
     source("SmoothingAlpha",smoothingSource,m_stage6AgcSmoothingAlpha,"ratio");
@@ -2539,7 +2552,7 @@ void HwaSimIR::InitStage6FinalPostShader()
     uniform mat4 p3d_ModelViewProjectionMatrix;
     attribute vec4 p3d_Vertex;
     attribute vec2 p3d_MultiTexCoord0;
-    varying vec2 texcoord;
+    varying highp vec2 texcoord;
 
     void main() {
         gl_Position = p3d_ModelViewProjectionMatrix * p3d_Vertex;
@@ -2549,10 +2562,11 @@ void HwaSimIR::InitStage6FinalPostShader()
 
 	std::string fragmentShader = R"(
     #version 100
-    precision mediump float;
+    precision highp float;
 
-    uniform sampler2D p3d_Texture0;
+    uniform highp sampler2D p3d_Texture0;
     uniform int u_stage6_final_white_hot;
+    uniform int u_stage6_final_reinhard;
     uniform float u_stage6_final_display_gain;
     uniform float u_stage6_final_display_offset;
     uniform float u_stage6_final_gamma;
@@ -2594,7 +2608,7 @@ void HwaSimIR::InitStage6FinalPostShader()
     uniform float u_stage7_final_time;
     uniform float u_stage7_final_sensor_fov_deg;
 
-    varying vec2 texcoord;
+    varying highp vec2 texcoord;
 
     float Stage6FinalNoise(vec2 pixel)
     {
@@ -2650,7 +2664,7 @@ void HwaSimIR::InitStage6FinalPostShader()
         if (u_stage6_agc_enable != 1 || u_stage6_agc_mode == 0) {
             return gray;
         }
-        return clamp(gray * u_stage6_agc_gain + u_stage6_agc_offset, 0.0, 1.0);
+        return gray * u_stage6_agc_gain + u_stage6_agc_offset;
     }
 
     float Stage6Hash2(vec2 p)
@@ -2783,6 +2797,8 @@ void HwaSimIR::InitStage6FinalPostShader()
         if (u_stage6_detector_noise_position == 2) {
             gray = Stage6FinalApplyDetectorNoise(gray, gl_FragCoord.xy);
         }
+        // The shoulder precedes the sole gamma and polarity operations.
+        if(u_stage6_final_reinhard==1){gray=max(gray,0.0);gray=gray/(1.0+gray);}
         gray = pow(clamp(gray,0.0,1.0),1.0/max(u_stage6_final_gamma,.1));
         if (u_stage6_final_white_hot == 0) {
             gray = 1.0 - gray;
@@ -3360,6 +3376,7 @@ bool HwaSimIR::IsStage6FinalPostprocessNoop(std::string* reason) const
 	}
 	const IRSensorPostProcessConfig config = m_stage6DisplayConfigReady ? m_stage6DisplayConfig : IRSensorPostProcessConfig();
 	const bool displayNoop =
+        !m_stage6Reinhard &&
 		config.whiteHot &&
 		std::fabs(config.displayGain - 1.0) < 1.0e-6 &&
 		std::fabs(config.displayOffset) < 1.0e-6 &&
@@ -3417,6 +3434,7 @@ void HwaSimIR::ApplyStage6FinalPostprocessInputs()
 	const double safeSensorFovDeg = std::isfinite(sensorFovDeg) && sensorFovDeg > 0.0 ? sensorFovDeg : 1.0;
 	const double currentTime = ClockObject::get_global_clock() != nullptr ? ClockObject::get_global_clock()->get_frame_time() : 0.0;
 	m_stage6FinalCard.set_shader_input("u_stage6_final_white_hot", LVecBase2i(config.whiteHot ? 1 : 0, 0));
+	m_stage6FinalCard.set_shader_input("u_stage6_final_reinhard",LVecBase2i(m_stage6Reinhard?1:0,0));
 	m_stage6FinalCard.set_shader_input("u_stage6_final_display_gain", LVecBase2f(static_cast<float>(config.displayGain), 0.0f));
 	m_stage6FinalCard.set_shader_input("u_stage6_final_display_offset", LVecBase2f(static_cast<float>(offsetNorm), 0.0f));
 	m_stage6FinalCard.set_shader_input("u_stage6_final_gamma", LVecBase2f(static_cast<float>(m_stage5SensorInputDisplayGamma),0));
@@ -3693,7 +3711,14 @@ void HwaSimIR::UpdateStage6AgcFromFrame(const unsigned char* frameData, int fram
 
 	const std::int64_t nowNs = IRPerfStats::steadyTimeNs();
 	const double minUpdateIntervalSec = m_stage6AgcUpdateHz > 0.0 ? (1.0 / m_stage6AgcUpdateHz) : 0.0;
-	const bool updateDue =
+	// Explicit ordinary-chart diagnostic: hold the last mapping, never enabled by normal inputs.
+    if(m_p6.enabled && m_p6.scene=="display"){
+        const char* freeze=std::getenv("P6CFreezeAfter");
+        if(freeze&&std::strtoull(freeze,nullptr,10)>0&&sourceSeq>std::strtoull(freeze,nullptr,10)){
+            m_stage6AgcStatsMsCurrent=0.0;return;
+        }
+    }
+    const bool updateDue =
 		!m_stage6AgcInitialized ||
 		m_stage6AgcLastUpdateNs == 0 ||
 		minUpdateIntervalSec <= 0.0 ||
@@ -3735,7 +3760,7 @@ void HwaSimIR::UpdateStage6AgcFromFrame(const unsigned char* frameData, int fram
 	}
 	else
 	{
-		std::array<int, 256> histogram;
+		std::vector<double> samples;
 		PfmFile linear;
         const bool fullReference=std::getenv("AgcFullReadbackReference")&&std::string(std::getenv("AgcFullReadbackReference"))=="1";
         const int sampleW=fullReference?m_stage6FinalWidth:m_agcSampleSize;
@@ -3746,7 +3771,7 @@ void HwaSimIR::UpdateStage6AgcFromFrame(const unsigned char* frameData, int fram
         }
         // Texture allocation may be padded to 1024; exclude pixels outside the viewport.
         frameWidth=sampleW;frameHeight=sampleH;
-		histogram.fill(0);
+		samples.reserve(frameWidth*frameHeight);
 		double sum = 0.0;
 		double sumSq = 0.0;
 		const int stride = 1; // GPU has already selected one pixel per stratum.
@@ -3757,9 +3782,8 @@ void HwaSimIR::UpdateStage6AgcFromFrame(const unsigned char* frameData, int fram
                 const auto px=linear.get_point3(x,y+linear.get_y_size()-frameHeight);
                 double gray=(.299*px[0]+.587*px[1]+.114*px[2])*config.displayGain+config.displayOffset/255.0;
                 if(!std::isfinite(gray))continue;
-                gray=ClampStage5Double(gray,0.0,1.0);
-				const int bin = std::max(0, std::min(255, static_cast<int>(gray * 255.0 + 0.5)));
-				++histogram[bin];
+                // Keep the same signed HDR domain used by the final affine mapping.
+                samples.push_back(gray);
 				sum += gray;
 				sumSq += gray * gray;
 				++sampleCount;
@@ -3775,9 +3799,9 @@ void HwaSimIR::UpdateStage6AgcFromFrame(const unsigned char* frameData, int fram
 			const double mean = sum / static_cast<double>(sampleCount);
 			const double variance = std::max(0.0, sumSq / static_cast<double>(sampleCount) - mean * mean);
 			const double stddev = std::sqrt(variance);
-			lowInput = ClampStage5Double(mean - m_stage6AgcMeanStdK * stddev, 0.0, 1.0);
-			highInput = ClampStage5Double(mean + m_stage6AgcMeanStdK * stddev, 0.0, 1.0);
-			valid = highInput > lowInput + 1.0e-5;
+			lowInput = mean - m_stage6AgcMeanStdK * stddev;
+			highInput = mean + m_stage6AgcMeanStdK * stddev;
+			valid = highInput >= lowInput + m_stage6AgcMinimumSpan;
 			if (!valid)
 			{
 				fallbackReason = "mean_std_flat_range";
@@ -3785,24 +3809,15 @@ void HwaSimIR::UpdateStage6AgcFromFrame(const unsigned char* frameData, int fram
 		}
 		else
 		{
-			auto percentileValue = [&](double percentile) -> double {
-				const double p = ClampStage5Double(percentile, 0.0, 100.0);
-				const int targetIndex = std::max(0, static_cast<int>(
-					std::floor((p / 100.0) * static_cast<double>(sampleCount - 1) + 0.5)));
-				int cumulative = 0;
-				for (int i = 0; i < 256; ++i)
-				{
-					cumulative += histogram[i];
-					if (cumulative > targetIndex)
-					{
-						return static_cast<double>(i) / 255.0;
-					}
-				}
-				return 1.0;
-			};
+            std::sort(samples.begin(),samples.end());
+            // Nearest rank on the explicit 4096-pixel sample, not a full-image percentile.
+            auto percentileValue = [&](double percentile) -> double {
+                const auto index=static_cast<size_t>(std::floor(ClampStage5Double(percentile,0.0,100.0)*.01*(samples.size()-1)+.5));
+                return samples[index];
+            };
 			lowInput = percentileValue(m_stage6AgcLowPercentile);
 			highInput = percentileValue(m_stage6AgcHighPercentile);
-			valid = highInput > lowInput + 1.0e-5;
+			valid = highInput >= lowInput + m_stage6AgcMinimumSpan;
 			if (!valid)
 			{
 				fallbackReason = "percentile_flat_range";
@@ -3812,17 +3827,16 @@ void HwaSimIR::UpdateStage6AgcFromFrame(const unsigned char* frameData, int fram
 		if (valid)
 		{
 			targetGain = (m_stage6AgcTargetHighGray - m_stage6AgcTargetLowGray) / std::max(1.0e-5, highInput - lowInput);
-			targetOffset = m_stage6AgcTargetLowGray - targetGain * lowInput;
 			targetGain = ClampStage5Double(targetGain, m_stage6AgcMinGain, m_stage6AgcMaxGain);
+            targetOffset = m_stage6AgcTargetLowGray - targetGain * lowInput;
 			targetOffset = ClampStage5Double(targetOffset, m_stage6AgcMinOffset, m_stage6AgcMaxOffset);
 			fallbackReason = "none";
 		}
 		else
 		{
-			targetGain = m_stage6AgcInitialized ? m_stage6AgcGain : 1.0;
-			targetOffset = m_stage6AgcInitialized ? m_stage6AgcOffset : 0.0;
-			lowInput = m_stage6AgcInitialized ? m_stage6AgcLowInput : 0.0;
-			highInput = m_stage6AgcInitialized ? m_stage6AgcHighInput : 1.0;
+			// Flat/near-flat fields have no evidence for contrast expansion. Relax to identity.
+            targetGain=1.0;targetOffset=0.0;
+            fallbackReason="low_contrast_identity";
 		}
 	}
 

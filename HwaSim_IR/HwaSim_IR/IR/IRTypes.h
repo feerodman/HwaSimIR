@@ -31,6 +31,10 @@ struct IRDisplayPreset
     double lowPercentile = 2.0;
     double highPercentile = 98.0;
     double smoothingAlpha = 0.15;
+    std::string toneMap = "LinearClamp"; // Public display only; no temperature conversion.
+    double minimumInputSpan = 0.02; // Common scaled linear input after fixed gain/offset.
+    double targetLow = 0.05, targetHigh = 0.95;
+    double minGain = 0.25, maxGain = 8.0, minOffset = -1.0, maxOffset = 1.0;
 };
 
 struct IRSensorProfile

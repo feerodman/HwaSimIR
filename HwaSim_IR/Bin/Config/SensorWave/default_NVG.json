@@ -22,27 +22,29 @@
   "HwaSimIR": {
     "SchemaVersion": 1,
     "Band": "NIR",
-    "Revision": "P6B-display-sampling-1",
+    "Revision": "P6C-display-release-1",
     "LegacyArchive": "Archive/P5/default_NVG.json",
     "Display": {
-      "DefaultPreset": "Legacy",
+      "DefaultPreset": "Auto",
       "Presets": {
         "Legacy": {
           "Gamma": 1.0,
           "Gain": 1.0,
           "OffsetGray": 0.0,
           "WhiteHot": true,
-          "Mode": "Fixed"
+          "Mode": "Fixed",
+          "ToneMap": "LinearClamp"
         },
         "Game": {
           "Gamma": 1.8,
-          "Gain": 1.0,
+          "Gain": 1,
           "OffsetGray": 0.0,
           "WhiteHot": true,
-          "Mode": "Fixed"
+          "Mode": "Fixed",
+          "ToneMap": "LinearClamp"
         },
         "Auto": {
-          "Gamma": 1.8,
+          "Gamma": 2.2,
           "Gain": 1.0,
           "OffsetGray": 0.0,
           "WhiteHot": true,
@@ -53,15 +55,26 @@
             "UpdateHz": 5,
             "LowPercentile": 2,
             "HighPercentile": 98,
-            "SmoothingAlpha": 0.15
+            "SmoothingAlpha": 0.15,
+            "MinimumInputSpan": 0.02
+          },
+          "ToneMap": "Reinhard",
+          "Mapping": {
+            "TargetLow": 0.05,
+            "TargetHigh": 0.95,
+            "MinGain": 0.25,
+            "MaxGain": 8,
+            "MinOffset": -32,
+            "MaxOffset": 32
           }
         },
         "Black": {
           "Gamma": 1.8,
-          "Gain": 1.0,
+          "Gain": 1,
           "OffsetGray": 0.0,
           "WhiteHot": false,
-          "Mode": "Fixed"
+          "Mode": "Fixed",
+          "ToneMap": "LinearClamp"
         }
       }
     }
