@@ -9,12 +9,14 @@
 // Shared normal/test appearance resource description. No positions or camera.
 struct IRCloudAppearance {
     struct Template {std::string key,path,sha256,fnv,source,sourceSha;};
-    bool enabled=false,bounded=true;
+    bool enabled=false,bounded=true,densityLighting=false;
     std::string root,revision,hash,buildVersion,sheetTexture;
     std::vector<Template> templates;
     double latitude=40,longitude=116,altitude=0;
     int size=96,nearSteps=12,mediumSteps=10,farSteps=8;
     double cloudNir=.48,cloudMwir=.34,opticalDepth=2.5;
+    double nearDiameterPx=0,mediumDiameterPx=0;
+    int visibleStepBudget=0;
     double sheetPeriod=9000,sheetCoverage=30000,sheetAltitude=2500,sheetDepth=2,sheetGrazingFadeDegrees=8;
     IRWorldCloudStreamingConfig geometry;
     static std::string fnvHash(const unsigned char* data,size_t size) {
@@ -22,7 +24,7 @@ struct IRCloudAppearance {
         for(size_t i=0;i<size;++i){h^=data[i];h*=1099511628211ULL;}
         std::ostringstream s;s<<std::hex<<std::setw(16)<<std::setfill('0')<<h;return s.str();
     }
-    void load(const std::string& configRoot,const std::string& preset) {
+    void load(const std::string& configRoot,const std::string& preset,bool legacyReference=false) {
         enabled=false;
         if(preset!="Legacy"&&preset!="GameWorld"&&preset!="GameWorldLegacyArt")throw std::runtime_error("unknown weather appearance preset: "+preset);
         root=configRoot;IRJson::Document d;d.load(root+"/Weather/world_cloud_game.json");
@@ -42,15 +44,22 @@ struct IRCloudAppearance {
         size=d.integer("Appearance.DensitySize",16,128);
         nearSteps=d.integer("Appearance.NearSteps",2,64);mediumSteps=d.integer("Appearance.MediumSteps",2,nearSteps);
         farSteps=d.integer("Appearance.FarSteps",2,mediumSteps);
+        nearDiameterPx=d.has("Appearance.NearDiameterPx")?d.number("Appearance.NearDiameterPx",1,10000):0;
+        mediumDiameterPx=d.has("Appearance.MediumDiameterPx")?d.number("Appearance.MediumDiameterPx",1,std::max(1.0,nearDiameterPx)):0;
+        visibleStepBudget=d.has("Appearance.VisibleStepBudget")?d.integer("Appearance.VisibleStepBudget",4,128):0;
         opticalDepth=d.number("Appearance.OpticalDepth",.01,10);
         cloudNir=d.number("Appearance.LinearSourceNIR",0,1);cloudMwir=d.number("Appearance.LinearSourceMWIR",0,1);
+        const std::string light=d.has("Appearance.ArtLightEncoding")?d.string("Appearance.ArtLightEncoding"):"LegacyPNG";
+        if(light!="LegacyPNG" && light!="DensityCoefficientGx1.4")throw std::runtime_error("unsupported cloud art light encoding");
+        densityLighting=light=="DensityCoefficientGx1.4" && preset=="GameWorld" && !legacyReference;
         sheetTexture=d.string("Sheet.Texture");sheetPeriod=d.number("Sheet.PeriodM",100,50000);
         sheetCoverage=d.number("Sheet.CoverageM",sheetPeriod,200000);
         sheetAltitude=d.number("Sheet.AltitudeM",0,20000);sheetDepth=d.number("Sheet.OpticalDepthScale",.01,8);
         sheetGrazingFadeDegrees=d.number("Sheet.GrazingFadeDegrees",0,45);
         bounded=preset!="GameWorldLegacyArt";
-        IRJson::Document m;m.load(root+"/"+(bounded?d.string("Appearance.Manifest"):"Weather/Derived/cloud_manifest_p6a.json"));
+        IRJson::Document m;m.load(root+"/"+(legacyReference?"Weather/Derived/cloud_manifest.json":bounded?d.string("Appearance.Manifest"):"Weather/Derived/cloud_manifest_p6a.json"));
         buildVersion=m.string("BuildVersion");
+        if(densityLighting && buildVersion!="P6D-density-light-1")throw std::runtime_error("cloud lighting/cache version mismatch");
         if(m.integer("Size",16,128)!=size)throw std::runtime_error("cloud cache size mismatch");
         int count=m.integer("Count",1,16);templates.clear();
         for(int i=0;i<count;++i){

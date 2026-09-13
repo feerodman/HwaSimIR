@@ -1,0 +1,47 @@
+{
+  "BuildVersion": "P6D-density-light-1",
+  "Size": 96,
+  "Count": 4,
+  "AxisOrder": "Z,Y,X,RGBA",
+  "Templates": {
+    "T0": {
+      "Key": "cloud-alpha-001",
+      "Path": "Weather/Derived/cloud_001_p6d.rgba",
+      "SHA256": "3795eb4892307d6feeac5b7dfc3939e587314f1b5040ec5b9fa95257c633004b",
+      "FNV64": "a0c2e4e068567815",
+      "Source": "Weather/Textures/cloud3d_001.png",
+      "SourceSHA256": "61c7d2f68f800df58f2749d7b39f5f6317821c89a86ce1c712139502980ef8d1"
+    },
+    "T1": {
+      "Key": "cloud-alpha-002",
+      "Path": "Weather/Derived/cloud_002_p6d.rgba",
+      "SHA256": "236da57f7ad859e9d7ae536ff5c08dd4cb1c78d88ab0a4a9a27b4a8d69945f21",
+      "FNV64": "9924167f3f5f9da6",
+      "Source": "Weather/Textures/cloud3d_002.png",
+      "SourceSHA256": "b0d35c988fb03ffab90efa2b30efc8ed589afb54ca814f4b1227c83e47f4df56"
+    },
+    "T2": {
+      "Key": "cloud-alpha-014",
+      "Path": "Weather/Derived/cloud_014_p6d.rgba",
+      "SHA256": "d110eb424adcd8dcf3bf37c629a858042c405908e49f20cc5714fd3b002a0cbb",
+      "FNV64": "7eb9d7686101171f",
+      "Source": "Weather/Textures/cloud3d_014.png",
+      "SourceSHA256": "9311c134c292d1a0e4a12ea6f203f58b89386392aa38ccd9f9123ad0e1f264ad"
+    },
+    "T3": {
+      "Key": "cloud-alpha-020",
+      "Path": "Weather/Derived/cloud_020_p6d.rgba",
+      "SHA256": "5339f52bf1c759bab1efa0b9609c6150aa7575c18849633d525141eb590772f7",
+      "FNV64": "b0620cae77c9f56c",
+      "Source": "Weather/Textures/cloud3d_020.png",
+      "SourceSHA256": "53e9bd6c9f95127739e5cb1c88541cce410ac7aa7fc1db8ceb88c8d1dd50887f"
+    }
+  },
+  "LightMeaning": "G times 1.4 = synthetic local source multiplier; density-weighted mean 1",
+  "DensityMeaning": "R: 150 deterministic 3D puffs selected by source alpha; not a 2D extrusion",
+  "BuildEnvironment": {
+    "Python": "3.13.5",
+    "NumPy": "2.1.3",
+    "SciPy": "1.15.3"
+  }
+}

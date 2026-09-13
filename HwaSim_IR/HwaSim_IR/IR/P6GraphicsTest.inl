@@ -168,8 +168,12 @@ void HwaSimIR::CaptureP6LinearFrame(const unsigned char* pixels,int width,int he
         std::cout<<row.str()<<std::endl;
     }
     if(!output||!sample||seq!=std::strtoull(sample,nullptr,10))return;
-    std::cout<<"[DisplayFrameMapping] sourceSeq="<<seq<<" agcGain="<<m_stage6AgcGain<<" agcOffset="<<m_stage6AgcOffset
-        <<" statisticsSourceSeq="<<m_stage6AgcLastUpdateSourceSeq<<" captureBeforeStatisticsUpdate=1 hdrUntilAgc=1"<<std::endl;
+    std::ostringstream mapping;mapping<<std::setprecision(17)<<"[DisplayFrameMapping] sourceSeq="<<seq
+        <<" agcGain="<<m_stage6AgcGain<<" agcOffset="<<m_stage6AgcOffset
+        <<" fixedGain="<<m_stage6DisplayConfig.displayGain<<" offsetGray="<<m_stage6DisplayConfig.displayOffset
+        <<" gamma="<<m_stage5SensorInputDisplayGamma<<" reinhard="<<m_stage6Reinhard<<" whiteHot="<<m_stage6DisplayConfig.whiteHot
+        <<" statisticsSourceSeq="<<m_stage6AgcLastUpdateSourceSeq<<" captureBeforeStatisticsUpdate=1 hdrUntilAgc=1";
+    std::cout<<mapping.str()<<std::endl;
     if(m_agcSampleBuffer&&m_stage6AgcEnabled){
         PfmFile stats;if(ReadSceneLinear(m_pFramework->get_graphics_engine(),m_agcSampleTexture,m_agcSampleBuffer,m_agcSampleSize,m_agcSampleSize,stats))
             stats.write(Filename::from_os_specific(std::string(output)+"_stats.pfm"));

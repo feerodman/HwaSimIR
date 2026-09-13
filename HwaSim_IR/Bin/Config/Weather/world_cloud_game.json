@@ -1,6 +1,6 @@
 {
   "SchemaVersion": 1,
-  "Revision": "P6B-world-game-2",
+  "Revision": "P6D-world-density-light-3",
   "World": {
     "Frame": "WGS84_ENU_tangent",
     "LatitudeDeg": 40.0,
@@ -17,14 +17,18 @@
     "MaxRadiusZM": 500.0
   },
   "Appearance": {
-    "Manifest": "Weather/Derived/cloud_manifest.json",
+    "Manifest": "Weather/Derived/cloud_manifest_p6d.json",
     "DensitySize": 96,
-    "NearSteps": 10,
-    "MediumSteps": 8,
+    "NearSteps": 16,
+    "MediumSteps": 12,
     "FarSteps": 8,
     "OpticalDepth": 2.5,
     "LinearSourceNIR": 0.48,
-    "LinearSourceMWIR": 0.34
+    "LinearSourceMWIR": 0.34,
+    "ArtLightEncoding": "DensityCoefficientGx1.4",
+    "NearDiameterPx": 800,
+    "MediumDiameterPx": 250,
+    "VisibleStepBudget": 16
   },
   "Sheet": {
     "Texture": "Weather/Textures/cloud_scattered.png",

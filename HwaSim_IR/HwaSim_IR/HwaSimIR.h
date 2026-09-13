@@ -662,6 +662,8 @@ private:
 	int m_stage7VolumeActiveCount = 0;
 	int m_stage7VolumeVisibleCount = 0;
 	double m_stage7VolumeAverageRaySteps = 0.0;
+    std::uint64_t m_cloudRenderCallCount=0;
+    double m_cloudRenderCallSumMs=0.0,m_cloudRenderCallMaxMs=0.0;
 
 	void InitInfraredShader();                              // 初始化着色器代码
 	void InitStage6FinalPostShader();
