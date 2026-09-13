@@ -152,9 +152,15 @@ void HwaSimIR::UpdateP6GraphicsTestScene(){
             <<" fov="<<m_cameraLens->get_fov()<<" requestedClouds="<<m_p6.count<<" vfx="<<m_p6.vfx<<" existingTargets="<<m_p6.existingTargets<<" businessParametersChanged=0"<<std::endl;
 }
 void HwaSimIR::CaptureP6LinearFrame(const unsigned char* pixels,int width,int height,std::uint64_t seq){
-    if(!m_p6.enabled)return;
-    const char* output=std::getenv("P6DumpPath"),*sample=std::getenv("P6DumpSeq");
+    const char* output=std::getenv("LinearDiagnosticPath"),*sample=std::getenv("LinearDiagnosticSeq");
+    if(!output&&m_p6.enabled){output=std::getenv("P6DumpPath");sample=std::getenv("P6DumpSeq");}
     if(!output||!sample||seq!=std::strtoull(sample,nullptr,10))return;
+    std::cout<<"[DisplayFrameMapping] sourceSeq="<<seq<<" agcGain="<<m_stage6AgcGain<<" agcOffset="<<m_stage6AgcOffset
+        <<" statisticsSourceSeq="<<m_stage6AgcLastUpdateSourceSeq<<" captureBeforeStatisticsUpdate=1 hdrUntilAgc=1"<<std::endl;
+    if(m_agcSampleBuffer&&m_stage6AgcEnabled){
+        PfmFile stats;if(ReadSceneLinear(m_pFramework->get_graphics_engine(),m_agcSampleTexture,m_agcSampleBuffer,m_agcSampleSize,m_agcSampleSize,stats))
+            stats.write(Filename::from_os_specific(std::string(output)+"_stats.pfm"));
+    }
     PfmFile linear;
     if(ReadSceneLinear(m_pFramework->get_graphics_engine(),m_stage6RawSceneTex,m_stage6RawSceneBuffer,width,height,linear)){
         PfmFile valid;valid.clear(width,height,3);
@@ -167,4 +173,3 @@ void HwaSimIR::CaptureP6LinearFrame(const unsigned char* pixels,int width,int he
     cv::cvtColor(rgb,bgr,cv::COLOR_RGB2BGR);cv::flip(bgr,bgr,0);
     cv::imwrite(std::string(output)+"_rgb8.png",bgr);
 }
-

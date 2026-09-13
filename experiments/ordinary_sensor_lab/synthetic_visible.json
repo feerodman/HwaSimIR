@@ -1,0 +1,33 @@
+{
+  "schema": "ordinary-sensor-lab-1",
+  "model": "synthetic_visible_photon_pixel",
+  "illumination": {
+    "source_type": "synthetic",
+    "source": "Artificial uniform visible field, constant 0.00001 W/m2/nm; no image input",
+    "reference_plane": "detector_plane",
+    "wavelength_unit": "nm",
+    "value_unit": "W/m2/nm",
+    "samples": [[400, 0.00001], [550, 0.00001], [700, 0.00001]]
+  },
+  "response": {
+    "source_type": "synthetic",
+    "source": "Artificial constant 50 percent photon conversion probability; not a device curve",
+    "kind": "absolute_qe",
+    "included_factors": ["qe"],
+    "wavelength_unit": "nm",
+    "value_unit": "fraction",
+    "samples": [[400, 0.5], [700, 0.5]]
+  },
+  "pixel": {
+    "source_type": "synthetic",
+    "source": "All parameters chosen for an educational visible-light photon pixel; no manufacturer or device attribution",
+    "pitch": {"value": 5, "unit": "um"},
+    "exposure": {"value": 0.01, "unit": "s"},
+    "dark_current": {"value": 20, "unit": "electron/pixel/s"},
+    "read_noise": {"value": 3, "unit": "electron_rms"},
+    "full_well": {"value": 20000, "unit": "electron"},
+    "conversion_gain": {"value": 0.2, "unit": "DN/electron"},
+    "black_level": {"value": 64, "unit": "DN"},
+    "adc_bits": 12
+  }
+}

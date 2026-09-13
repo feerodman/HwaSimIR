@@ -64,6 +64,8 @@
 #include "IR/IRTemperatureModel.h"
 #include "IR/IRWeatherEffects.h"
 #include "IR/IRWorldCloudStreaming.h"
+#include "IR/IRCloudWorldFrame.h"
+#include "IR/IRCloudAppearance.h"
 #include "Annotation/AnnotationManager.h"
 
 #include "HwaSimIRProtocolEndpoint.h"
@@ -535,6 +537,12 @@ private:
 	PT(Texture) m_stage7SceneDepthTex;
 	PT(GraphicsOutput) m_stage6RawSceneBuffer;
 	PT(GraphicsOutput) m_stage6FinalSensorBuffer;
+    PT(GraphicsOutput) m_agcSampleBuffer;
+    PT(Texture) m_agcSampleTexture;
+    NodePath m_agcSampleRoot,m_agcSampleCard;
+    int m_agcSampleSize=64,m_agcAllocatedSize=0;
+    void SetupStage6AgcSampler();
+    void PrepareStage6AgcSampleFrame();
 	PT(GraphicsOutput) m_stage6PresentationOutput;
 	PT(DisplayRegion) m_stage6RawSceneRegion;
 	PT(DisplayRegion) m_stage6FinalRegion;
@@ -617,6 +625,14 @@ private:
 	std::string m_stage7VolumeStreamingCenter = "TrackedTarget";
 	IRWorldCloudStreamingConfig m_stage7VolumeConfig;
 	IRWorldCloudStreaming m_stage7VolumeStreaming;
+    IRCloudAppearance m_cloudAppearance;
+    IRCloudWorldFrame m_cloudFrame;
+    bool m_cloudFrameReady=false;
+    NodePath m_cloudVolumeWorldRoot,m_cloudSheetWorldRoot;
+    LMatrix4f CloudWorldRenderMatrix() const;
+    LPoint3f CloudRenderToWorld(const LPoint3f& point) const;
+    void RefreshCloudWorldFrame();
+    void AuditCloudDescriptor(const IRWorldCloudDescriptor& d) const;
 	int m_stage7VolumeDensityTextureSize = 32;
 	int m_stage7VolumeDensityTemplateCount = 4;
 	double m_stage7VolumeFallbackProbability = 0.35;

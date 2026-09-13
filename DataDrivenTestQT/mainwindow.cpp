@@ -20,6 +20,7 @@
 #include <algorithm>
 
 #include "ICD/math_algorithm.h"
+#include "OrdinaryWeatherInput.h"
 
 //#define M_PI 3.1415926
 
@@ -230,6 +231,7 @@ void MainWindow::setupDDS()
 	m_ddsStim.reset(new DdsStimClient());
 	m_ddsStim->setAckCallback([this](const BYHWICD::InitAckC2pObjectTrackingCmd& ack) {
 		QMetaObject::invokeMethod(this, [this, ack]() {
+            if (ack.platID != m_protocolPlatID || ack.sensorID != m_protocolSensorID) return;
 			qInfo().noquote() << QStringLiteral("[StimInitAck] transport=dds received=1 platID=%1 sensorID=%2 ready=%3")
 				.arg(ack.platID).arg(ack.sensorID).arg(ack.trackingReady ? 1 : 0);
 			m_lastReceivedLabel->setText(QStringLiteral("↓ 接收: DDS 初始化应答 (0x37)"));
@@ -754,7 +756,7 @@ void MainWindow::sendInitCommand()
 //	cmd.trackingInit.trackerSensor[0].preciseTrackResolution = m_fovVEdit->text().toDouble();
 
     // 从UI实时读取初始位置
-    cmd.platParamInit.id = 1001;
+    cmd.platParamInit.id = m_protocolPlatID;
     cmd.platParamInit.type = 1;
     cmd.platParamInit.spatial.lat = realTimeData.at(0).platPos.lat;
     cmd.platParamInit.spatial.lon = realTimeData.at(0).platPos.lon;
@@ -1058,6 +1060,7 @@ void MainWindow::sendRealTimeData()
 
     //applyPhase4cAeroMachOverride(data);
     if (qEnvironmentVariableIntValue("P5NoTargets") == 1) data.targetNumValid = 0;
+    ApplyOrdinaryWeatherInput(data,m_sendClock.isValid()?m_sendClock.elapsed()*.001:0.0);
 	bool ddsSent = false;
 #if defined(HWASIMIR_HAS_ZRDDS)
 	if (m_ddsStim)

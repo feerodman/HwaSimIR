@@ -26,6 +26,11 @@ struct IRDisplayPreset
     double offsetGray = 0.0;
     bool whiteHot = true;
     bool automatic = false;
+    int statisticsSize = 64;
+    double statisticsHz = 5.0;
+    double lowPercentile = 2.0;
+    double highPercentile = 98.0;
+    double smoothingAlpha = 0.15;
 };
 
 struct IRSensorProfile

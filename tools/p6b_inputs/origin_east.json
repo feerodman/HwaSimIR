@@ -1,0 +1,15 @@
+{
+  "Schema": "ordinary_weather_camera_1",
+  "SimulationEpochMs": 21600000,
+  "Keyframes": [
+    [
+      0,
+      40,
+      116,
+      3000,
+      0,
+      74.13,
+      14.6
+    ]
+  ]
+}

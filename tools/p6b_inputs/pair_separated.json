@@ -1,0 +1,25 @@
+{
+  "Schema": "ordinary_weather_camera_1",
+  "SimulationEpochMs": 21600000,
+  "Keyframes": [
+    [
+      0,
+      40.01192974518386,
+      115.95695359675261,
+      4801.196411850862,
+      0,
+      -36.00000000000002,
+      -20.008355676502397
+    ]
+  ],
+  "PublicCameraENU": [
+    -3678.02103405838,
+    1326.5040126542426,
+    4800.0
+  ],
+  "ExpectedNearbyCloudIds": [
+    "0391BFA66D229F40",
+    "983431D71CB344E7"
+  ],
+  "Description": "Camera chosen from real deterministic world descriptors; no cloud placement override."
+}

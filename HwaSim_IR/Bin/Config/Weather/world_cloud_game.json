@@ -1,0 +1,37 @@
+{
+  "SchemaVersion": 1,
+  "Revision": "P6B-world-game-2",
+  "World": {
+    "Frame": "WGS84_ENU_tangent",
+    "LatitudeDeg": 40.0,
+    "LongitudeDeg": 116.0,
+    "OriginEllipsoidAltitudeM": 0.0,
+    "Animation": "Static",
+    "CellSizeM": 2500.0,
+    "Seed": 12345,
+    "MinAltitudeM": 2200.0,
+    "MaxAltitudeM": 4200.0,
+    "MinRadiusXYM": 350.0,
+    "MaxRadiusXYM": 1000.0,
+    "MinRadiusZM": 180.0,
+    "MaxRadiusZM": 500.0
+  },
+  "Appearance": {
+    "Manifest": "Weather/Derived/cloud_manifest.json",
+    "DensitySize": 96,
+    "NearSteps": 10,
+    "MediumSteps": 8,
+    "FarSteps": 8,
+    "OpticalDepth": 2.5,
+    "LinearSourceNIR": 0.48,
+    "LinearSourceMWIR": 0.34
+  },
+  "Sheet": {
+    "Texture": "Weather/Textures/cloud_scattered.png",
+    "PeriodM": 9000.0,
+    "CoverageM": 30000.0,
+    "AltitudeM": 2500.0,
+    "OpticalDepthScale": 2.0,
+    "GrazingFadeDegrees": 8.0
+  }
+}

@@ -22,7 +22,7 @@
   "HwaSimIR": {
     "SchemaVersion": 1,
     "Band": "MWIR",
-    "Revision": "P6A-1",
+    "Revision": "P6B-display-sampling-1",
     "LegacyArchive": "Archive/P5/default_MWIR.json",
     "Display": {
       "DefaultPreset": "Legacy",
@@ -46,7 +46,15 @@
           "Gain": 1.0,
           "OffsetGray": 0.0,
           "WhiteHot": true,
-          "Mode": "Auto"
+          "Mode": "Auto",
+          "Statistics": {
+            "Method": "stratified_pixel_centers",
+            "Size": 64,
+            "UpdateHz": 5,
+            "LowPercentile": 2,
+            "HighPercentile": 98,
+            "SmoothingAlpha": 0.15
+          }
         },
         "Black": {
           "Gamma": 1.8,

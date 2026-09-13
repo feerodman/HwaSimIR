@@ -1,0 +1,40 @@
+{
+  "BuildVersion": "P6B-art-density-1",
+  "Size": 96,
+  "Count": 4,
+  "AxisOrder": "Z,Y,X,RGBA",
+  "Templates": {
+    "T0": {
+      "Key": "cloud-alpha-001",
+      "Path": "Weather/Derived/cloud_001.rgba",
+      "SHA256": "b9132fda3b297660cd74ceab1d0d3af53df32bfb5c6ad853ca5ec70265644b24",
+      "FNV64": "9e2d90733ec9fa9a",
+      "Source": "Weather/Textures/cloud3d_001.png",
+      "SourceSHA256": "61c7d2f68f800df58f2749d7b39f5f6317821c89a86ce1c712139502980ef8d1"
+    },
+    "T1": {
+      "Key": "cloud-alpha-002",
+      "Path": "Weather/Derived/cloud_002.rgba",
+      "SHA256": "8d7a00e9624d0a88c07b14731b1bdb803832742a61a6abd6b493ee00a9675aec",
+      "FNV64": "38dd6286b92ae7cb",
+      "Source": "Weather/Textures/cloud3d_002.png",
+      "SourceSHA256": "b0d35c988fb03ffab90efa2b30efc8ed589afb54ca814f4b1227c83e47f4df56"
+    },
+    "T2": {
+      "Key": "cloud-alpha-014",
+      "Path": "Weather/Derived/cloud_014.rgba",
+      "SHA256": "29274a20729bf1494afa135965d2b148e4b173ed595ea1d3abf9a48ed485d2bd",
+      "FNV64": "322b18c527014009",
+      "Source": "Weather/Textures/cloud3d_014.png",
+      "SourceSHA256": "9311c134c292d1a0e4a12ea6f203f58b89386392aa38ccd9f9123ad0e1f264ad"
+    },
+    "T3": {
+      "Key": "cloud-alpha-020",
+      "Path": "Weather/Derived/cloud_020.rgba",
+      "SHA256": "4c2893864cfb948497672b77c37128cbcea3d3334a6e301b8a829e32ebedfb55",
+      "FNV64": "602b8a8806f7776e",
+      "Source": "Weather/Textures/cloud3d_020.png",
+      "SourceSHA256": "53e9bd6c9f95127739e5cb1c88541cce410ac7aa7fc1db8ceb88c8d1dd50887f"
+    }
+  }
+}

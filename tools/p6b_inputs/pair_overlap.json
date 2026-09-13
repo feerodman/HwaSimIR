@@ -1,0 +1,25 @@
+{
+  "Schema": "ordinary_weather_camera_1",
+  "SimulationEpochMs": 21600000,
+  "Keyframes": [
+    [
+      0,
+      39.90272920110703,
+      116.01779956766345,
+      2609.3527670251206,
+      0,
+      44.553928815300445,
+      1.3578764277855446
+    ]
+  ],
+  "Description": "Only camera input. Existing normal cloud descriptors are unchanged.",
+  "PublicCameraENU": [
+    1522.7500949083505,
+    -10804.609179973872,
+    2600.0
+  ],
+  "ExpectedNearbyCloudIds": [
+    "D73EEA5ECB3EA0B8",
+    "198EE8338358C182"
+  ]
+}

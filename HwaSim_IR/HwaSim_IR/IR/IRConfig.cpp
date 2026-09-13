@@ -61,7 +61,16 @@ bool IRSensorProfileDatabase::loadProfileFromFile(IRBand band,const std::string&
                 v.offsetGray=d.number(q+"OffsetGray",-255,255);v.whiteHot=d.boolean(q+"WhiteHot");
                 const std::string mode=d.string(q+"Mode");
                 if(mode!="Fixed"&&mode!="Auto")throw std::runtime_error("unknown_display_mode: "+q);
-                v.automatic=mode=="Auto";p.displayPresets[name]=v;
+                v.automatic=mode=="Auto";
+                if(d.has(q+"Statistics")){
+                    if(d.string(q+"Statistics.Method")!="stratified_pixel_centers")throw std::runtime_error("unsupported Auto sampling definition");
+                    v.statisticsSize=d.integer(q+"Statistics.Size",16,128);
+                    v.statisticsHz=d.number(q+"Statistics.UpdateHz",.1,30);
+                    v.lowPercentile=d.number(q+"Statistics.LowPercentile",0,99);
+                    v.highPercentile=d.number(q+"Statistics.HighPercentile",v.lowPercentile+.01,100);
+                    v.smoothingAlpha=d.number(q+"Statistics.SmoothingAlpha",0,1);
+                }
+                p.displayPresets[name]=v;
             }
             if(!p.displayPresets.count(p.defaultDisplayPreset))throw std::runtime_error("default_display_preset_missing");
         }
