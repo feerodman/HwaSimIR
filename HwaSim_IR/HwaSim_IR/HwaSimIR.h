@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "pandaFramework.h"
 #include "IR/P6GameConfig.h"
+#include "IR/P8OrdinaryAnnotationScene.h"
 #include "windowFramework.h"
 #include "windowProperties.h"
 #include "nodePath.h"
@@ -850,6 +851,8 @@ private:
 	std::uint64_t m_headlessReadbackFrameCounter = 0;
 	int m_headlessReadbackDiagLogCounter = 0;
 	std::vector<unsigned char> m_headlessLastFramePixels;
+    std::vector<unsigned char> m_nativeRgbScratch;
+    bool m_nativeRgbDisabled=false;
 	int m_headlessLastFrameWidth = 0;
 	int m_headlessLastFrameHeight = 0;
 	int m_headlessLastTextureWidth = 0;
@@ -896,6 +899,7 @@ private:
 	std::vector<WeaponPlatformData> m_weaponPlatformList;// WeaponState平台
 	std::vector<TargetPlatformData> m_targetPlatformList;// TargetState平台
 	AnnotationManager m_annotationManager;              // Stage1：实时窗口标注与内存快照
+    P8OrdinaryAnnotationScene m_p8OrdinaryAnnotations;
 	double m_annotationUpdateHz = 15.0;
 	bool m_annotationOverlayInSensorImage = true;
 	bool m_annotationJsonPerFrame = true;

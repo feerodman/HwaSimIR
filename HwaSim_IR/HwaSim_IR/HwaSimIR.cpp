@@ -9,12 +9,15 @@
 #include "IR/IRGameSpriteBatch.h"
 #include "IR/IRJson.h"
 #include "IR/IRPrecipitationBatch.h"
+#include "IR/IRNativeRgbCopy.h"
 #include "IR/IRAutoMapping.h"
 #include "IR/IRNozzleAttachments.h"
 #include "executionEnvironment.h"
 #include "pfmFile.h"
 #include "ProtocolRoute.h"
 #include "VideoTopicResolver.h"
+#include "InputAuditV1.h"
+#include "StageAuditV1.h"
 #include "lvecBase4.h"
 #include "pta_LVecBase4.h"
 #include "pta_float.h"
@@ -1683,6 +1686,10 @@ void HwaSimIR::run() {
 			}
 		}
 		if (hasDisplayFrame) {
+            static HwaInputAuditV1::Ledger executionAudit("execute");
+            if(pendingFrame.ddsIngress)executionAudit.record(pendingFrame.data,
+                pendingFrame.telemetry.sourceSeq,pendingFrame.telemetry.acceptedSteadyNs,
+                pendingFrame.telemetry.processStartTimeNs,true,remainingInputQueueDepth);
 #if defined(HWASIMIR_HAS_ZRDDS)
             if(m_boardTelemetry && pendingFrame.ddsIngress)m_boardTelemetry->counters.execute(pendingFrame.telemetry.processStartTimeNs,pendingFrame.telemetry.acceptedSteadyNs);
 #endif
@@ -1710,6 +1717,7 @@ void HwaSimIR::run() {
 		if (!m_pFramework->do_frame(current_thread)) {
 			break;
 		}
+        const auto renderDone=std::chrono::steady_clock::now();
         if(hasDisplayFrame && m_isSimRunning.load()){
             const double callMs=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-renderBegin).count();
             ++m_cloudRenderCallCount;m_cloudRenderCallSumMs+=callMs;m_cloudRenderCallMaxMs=std::max(m_cloudRenderCallMaxMs,callMs);
@@ -1722,6 +1730,13 @@ void HwaSimIR::run() {
 		// Capture only after do_frame returns so a synchronous Realtime sample is
 		// paired with the GPU image it actually produced, not the previous RAM copy.
 		capture_task(nullptr, this);
+        if(hasDisplayFrame){
+            static HwaStageAuditV1::Ledger renderAudit("render","executeToDrawBeginMs,doFrameMs,captureTaskMs,remainingInputDepth");
+            renderAudit.record(pendingFrame.telemetry.sourceSeq,
+                (std::chrono::duration_cast<std::chrono::nanoseconds>(renderBegin.time_since_epoch()).count()-pendingFrame.telemetry.processStartTimeNs)/1.e6,
+                std::chrono::duration<double,std::milli>(renderDone-renderBegin).count(),
+                std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-renderDone).count(),remainingInputQueueDepth);
+        }
 		if (!m_bSyncRenderMode.load() && m_isSimRunning.load())
 		{
 			m_perfStats.recordOutputInputUsage(hasDisplayFrame);
@@ -6558,6 +6573,11 @@ bool HwaSimIR::ResolveAnnotationOutputSize(int& width, int& height) const
 
 void HwaSimIR::RefreshAnnotationOverlay(const BYHWICD::DisplayC2cObjTrackingData& currentData)
 {
+    if(P8OrdinaryAnnotationScene::requestedCount()){
+        int w=0,h=0;
+        if(ResolveAnnotationOutputSize(w,h))m_p8OrdinaryAnnotations.update(m_renderRoot,m_cameraNode,m_cameraLens,currentData,m_currentFrameTelemetry.sourceSeq,w,h);
+        return;
+    }
 	m_lastAnnotationBBoxMs = 0.0;
 	m_lastAnnotationOcclusionMs = 0.0;
 	m_lastAnnotationJsonMs = 0.0;
@@ -9114,6 +9134,7 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 			m_pTcpThread->stopOutputRound("stop");
 			m_pTcpThread->sendControlCmd(cmd);
 		}
+        HwaInputAuditV1::flushAll();
 		std::cout << "[SyncRoundConservation]"
 			<< " mode=" << (m_bSyncRenderMode.load() ? "sync" : "async")
 			<< " acceptedRealtime=" << m_udpSequence
@@ -9385,6 +9406,9 @@ void HwaSimIR::ProcessDisplayDataOnMainThread(
 	std::unique_lock<std::mutex> lock(m_mtx);
 	++m_stage0DisplayFrameCount;
 	const std::uint64_t udpSeq = ++m_udpSequence;
+    static HwaInputAuditV1::Ledger acceptanceAudit("accepted");
+    if(ddsIngress)acceptanceAudit.record(data,udpSeq,acceptedSteadyNs,
+        IRPerfStats::steadyTimeNs(),true,static_cast<int>(m_pendingDisplayFrames.size()));
 	m_perfStats.recordUdpFrame();
 	// Production ingress must stay a copy-only hot path.  The legacy Stage0 /
 	// Stage4 audit block remains available when QuietPerfMode is explicitly
@@ -16370,7 +16394,26 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 			}
 			return AsyncTask::DS_cont;
 		}
-		ram_image = self->m_renderTex->get_ram_image_as("RGB");
+        bool nativeCopy=false;
+        const int components=self->m_renderTex->get_num_components();
+        const auto format=self->m_renderTex->get_format();
+        const bool legacy=std::getenv("P8LegacyRgbReadback")&&std::string(std::getenv("P8LegacyRgbReadback"))=="1";
+        if(!legacy&&!self->m_nativeRgbDisabled&&self->m_renderTex->get_component_type()==Texture::T_unsigned_byte&&
+            ((components==3&&format==Texture::F_rgb)||(components==4&&format==Texture::F_rgba))){
+            ram_image=self->m_renderTex->get_ram_image();
+            const std::size_t pixels=static_cast<std::size_t>(self->m_renderTex->get_x_size())*self->m_renderTex->get_y_size();
+            if(ram_image&&ram_image.size()==pixels*components){
+                self->m_nativeRgbScratch.resize(pixels*3);
+                IRNativeRgbCopy(ram_image.p(),self->m_nativeRgbScratch.data(),pixels,components);nativeCopy=true;
+                if(self->m_currentFrameTelemetry.sourceSeq==1){
+                    const auto reference=self->m_renderTex->get_ram_image_as("RGB");
+                    const bool exact=reference&&reference.size()==pixels*3&&std::memcmp(reference.p(),self->m_nativeRgbScratch.data(),pixels*3)==0;
+                    std::cout<<"[NativeRgbCopy] components="<<components<<" bytes="<<pixels*3<<" PandaReference="<<(exact?"EXACT":"FALLBACK")<<" retainedRowOrder=1\n";
+                    if(!exact){ram_image=reference;nativeCopy=false;self->m_nativeRgbDisabled=true;}
+                }
+            }
+        }
+        if(!nativeCopy)ram_image=self->m_renderTex->get_ram_image_as("RGB");
 		readbackMs = std::chrono::duration<double, std::milli>(
 			std::chrono::steady_clock::now() - readbackBegin).count();
 		self->m_lastReadbackMs = readbackMs;
@@ -16382,7 +16425,7 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 		height = self->m_renderTex->get_y_size();
 		frameWidth = width;
 		frameHeight = height;
-		frameData = ram_image.p();
+		frameData = nativeCopy?self->m_nativeRgbScratch.data():ram_image.p();
 	}
 
 	if (!tcpFrameReused)
@@ -16473,11 +16516,11 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 		trackingSnapshot.flag = 0x38;
 	}
 
-	const bool annotationEnabled =
+	const bool annotationEnabled = P8OrdinaryAnnotationScene::requestedCount() || (
 		self->m_annotationJsonPerFrame &&
 		self->m_sensorParam.realtimeAnnotation &&
-		self->m_annotationManager.isEnabled();
-	AnnotationFrameRecord annotationSnapshot = self->m_annotationManager.latestRecord();
+		self->m_annotationManager.isEnabled());
+	AnnotationFrameRecord annotationSnapshot = P8OrdinaryAnnotationScene::requestedCount()?self->m_p8OrdinaryAnnotations.record():self->m_annotationManager.latestRecord();
 	if (!annotationEnabled)
 	{
 		annotationSnapshot.targets.clear();

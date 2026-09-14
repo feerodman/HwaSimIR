@@ -14,6 +14,12 @@ from pathlib import Path
 
 UUID = bytes.fromhex('48776153696d49529a724f10816d0201')
 
+def file_sha256(path):
+    digest=hashlib.sha256()
+    with path.open('rb') as stream:
+        for block in iter(lambda:stream.read(1024*1024),b''):digest.update(block)
+    return digest.hexdigest()
+
 
 def product(nal):
     if not nal or nal[0] & 31 != 6:
@@ -82,7 +88,6 @@ def validate(directory, ffmpeg, expected=None):
         '-show_packets','-show_streams','-of','json',str(movie)]))
     packets = probe_data['packets']
     rows = [json.loads(line) for line in (directory/'frame_index.jsonl').read_text().splitlines()]
-    body_file = (directory/'producer_annotations.jsonl').read_bytes()
     stream = probe_data['streams'][0]
     length_size = int(stream.get('nal_length_size',4))
     assert len(rows) == len(packets), (len(rows),len(packets))
@@ -95,7 +100,7 @@ def validate(directory, ffmpeg, expected=None):
     decoded = [line for line in hashes_path.read_text().splitlines() if line and not line.startswith('#')]
     assert len(decoded) == len(rows)
     results, keys = [], set()
-    with movie.open('rb') as video:
+    with movie.open('rb') as video, (directory/'producer_annotations.jsonl').open('rb') as body_file:
         for ordinal, (row, packet, rgb) in enumerate(zip(rows,packets,decoded),1):
             video.seek(int(packet['pos']))
             data = video.read(int(packet['size']))
@@ -118,7 +123,9 @@ def validate(directory, ffmpeg, expected=None):
             keys.add(identity)
             assert int(row['storageIndex']) == ordinal
             start, count = int(row['annotationBodyOffset']),int(row['annotationBodyBytes'])
-            actual_body = body_file[start:start+count]
+            assert 0 <= count <= 1024*1024, (ordinal,'invalid body size')
+            body_file.seek(start)
+            actual_body = body_file.read(count)
             assert actual_body == p['body'], (ordinal,'body differs from actual MP4 SEI')
             digest = hashlib.sha256(actual_body).hexdigest()
             assert digest == row['annotationBodySha256'] == row['annotationSha256']
@@ -138,7 +145,7 @@ def validate(directory, ffmpeg, expected=None):
         writer=csv.DictWriter(out,fieldnames=results[0].keys());writer.writeheader();writer.writerows(results)
     report=dict(result='PASS',frames=len(rows),independentEmbeddedIdentity=True,
         annotationBodyMatchesEveryMp4Sample=True,decodedEveryFrame=True,
-        movieSha256=hashlib.sha256(movie.read_bytes()).hexdigest(),
+        movieSha256=file_sha256(movie),
         scope='Actual saved MP4, embedded production identity, complete bodies, per-frame index and RGB decode')
     (directory/'validation.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
     print(json.dumps(report))

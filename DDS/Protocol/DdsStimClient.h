@@ -50,6 +50,7 @@ public:
     void setAckCallback(const std::function<void(const BYHWICD::InitAckC2pObjectTrackingCmd&)>& callback);
     unsigned long long ackCount() const;
     int runtimeInitCount() const;
+    bool hasTransportFault() const;
 
 private:
     struct Impl;

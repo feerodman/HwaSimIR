@@ -1,3 +1,4 @@
+#include "StageAuditV1.h"
 #include "AsyncVideoRecorder.h"
 #include <QCryptographicHash>
 #include "Video/RecordingMuxer.h"
@@ -114,6 +115,7 @@ bool AsyncVideoRecorder::enqueue(const RecordingFrame& frame)
     if(m_shutdownRequested||!m_accepting)return false;
     ++m_inputFrames;++m_perfInputFrames;
     m_queue.push_back(frame);
+    m_queue.back().recorderEnqueueNs=HwaInputAuditV1::now();
     m_maxQueueDepthObserved = std::max(
         m_maxQueueDepthObserved,
         static_cast<int>(m_queue.size()));
@@ -208,6 +210,8 @@ void AsyncVideoRecorder::threadMain()
             {
                 frame = m_queue.front();
                 m_queue.pop_front();
+                frame.recorderBeginNs=HwaInputAuditV1::now();
+                frame.recorderPendingDepth=static_cast<int>(m_queue.size());
                 m_spaceCondition.notify_one();
                 m_workerBusy = true;
                 haveFrame = true;
@@ -494,6 +498,8 @@ bool AsyncVideoRecorder::writeFrame(const RecordingFrame& frame)
         qCritical()<<"[Recorder] index/body write failed";return false;
     }
     const double writeMs=static_cast<double>(writeTimer.nsecsElapsed())/1.0e6;
+    static HwaStageAuditV1::Ledger writeAudit("recording","enqueueNs,beginNs,remainingDepth,fileWriteMs");
+    writeAudit.record(frame.sourceSeq,frame.recorderEnqueueNs,frame.recorderBeginNs,frame.recorderPendingDepth,writeMs);
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         ++m_writtenFrames;++m_perfWrittenFrames;++m_storageIndex;

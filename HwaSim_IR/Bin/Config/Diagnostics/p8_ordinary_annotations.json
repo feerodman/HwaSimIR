@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "notes": "EXPLICIT SYNTHETIC TEST ONLY. Legacy head/middle field names carry arbitrary marker A/B; no equipment semantic calibration.",
+  "defaults": {
+    "enabled": true, "label": "SYNTHETIC",
+    "bbox": {"mode": "mesh_body", "marginPx": 0, "minSizePx": 1, "excludeNodeNameContains": ["SyntheticMarker"]},
+    "keypoints": {"enabled": true, "points": {
+      "head": {"localPos": [0, -1.01, 0], "visible": true, "surface": false, "snapToMeshSurface": false},
+      "middle": {"localPos": [0.5, -1.01, 0.5], "visible": true, "surface": false, "snapToMeshSurface": false}
+    }}
+  },
+  "platforms": {}
+}

@@ -45,6 +45,14 @@ bool DdsRuntimeManager::start(const DdsRuntimeConfig& config, std::string& error
         return false;
     }
     m_config = config;
+    DDS::DomainParticipantQos actualQos;
+    const DDS::ReturnCode_t qosResult = m_participant->get_qos(actualQos);
+    if (qosResult == DDS::RETCODE_OK)
+        std::cout << "[DdsReceiveThreads] kind=" << static_cast<int>(actualQos.receiver_thread_config.kind)
+                  << " receiveBufferBytes=" << actualQos.receiver_thread_config.receive_buffer_length
+                  << " source=participant_get_qos enum=0_per_port,1_per_kind,2_all_ports" << std::endl;
+    else
+        std::cout << "[DdsReceiveThreads] result=unavailable returnCode=" << static_cast<int>(qosResult) << std::endl;
     m_running.store(true);
     std::cout << "[DdsRuntime] initialized=1 initCount=" << m_initCount.load()
               << " domain=" << config.domainId

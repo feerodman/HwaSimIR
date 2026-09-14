@@ -1199,6 +1199,17 @@ void MainWindow::sendRealTimeData()
 	}
 	
 
+	// A successful SDK write is not delivery confirmation during a TCP fault.
+	// Preserve its raw success counter, stop future inputs, and never replay it.
+#if defined(HWASIMIR_HAS_ZRDDS)
+    if(m_ddsStim && m_ddsStim->hasTransportFault()) {
+        qCritical().noquote()<<QStringLiteral("[StimTransportFault][ERROR] action=stop_input noReplay=1 currentWriteDelivery=unconfirmed apiSuccessCount=%1").arg(m_sentFrameCount);
+        onStopButtonClicked();
+        m_statusLabel->setText(QStringLiteral("● DDS传输异常：已停止输入，本轮完整性未确认"));
+        m_statusLabel->setStyleSheet("color: #D32F2F; font-weight: bold;");
+        return;
+    }
+#endif
 	// 关键：发送后立即更新位置（为下一次发送准备）
 	updatePosition();
 }

@@ -506,7 +506,8 @@ void HwaSim_IR_VideoDisplay::resetVideoPerfStats()
 
 void HwaSim_IR_VideoDisplay::updateLiveFps()
 {
-    if(m_uiDataPending){updatePlatDataTable(m_pendingUiData.platID,m_pendingUiData.platLoc);updateTargetDataTable(m_pendingUiData);fitTelemetryTables();m_uiDataPending=false;}
+    static const bool freezeTables=qEnvironmentVariableIntValue("P8FreezeTelemetryTables")==1;
+    if(m_uiDataPending&&!freezeTables){updatePlatDataTable(m_pendingUiData.platID,m_pendingUiData.platLoc);updateTargetDataTable(m_pendingUiData);fitTelemetryTables();m_uiDataPending=false;}
     if(!m_liveFpsLabel)return;
     const qint64 now=m_liveFpsClock.elapsed();
     while(!m_liveFrameTimes.empty()&&m_liveFrameTimes.front()<=now-1000)m_liveFrameTimes.pop_front();

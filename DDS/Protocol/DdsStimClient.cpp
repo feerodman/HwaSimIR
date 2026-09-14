@@ -1,4 +1,5 @@
 #include "DdsStimClient.h"
+#include "InputAuditV1.h"
 
 #include "CommonDataDdsAdapter.h"
 #include "DdsRuntimeManager.h"
@@ -36,12 +37,15 @@ private:
 
 struct DdsStimClient::Impl
 {
+    HwaInputAuditV1::Ledger inputAudit{"sender"};
     std::shared_ptr<DdsRuntimeManager> runtime;
     mutable std::mutex mutex;
     std::condition_variable ackReady;
     BYHWICD::InitAckC2pObjectTrackingCmd lastAck = {};
     unsigned long long ackCount = 0;
     unsigned long long ackConsumedCount = 0;
+    unsigned long long realtimeWriteCalls = 0;
+    bool transportFaultObserved = false;
     std::vector<BYHWICD::InitAckC2pObjectTrackingCmd> acknowledgments;
     std::function<void(const BYHWICD::InitAckC2pObjectTrackingCmd&)> ackCallback;
     bool observeStopStatus = false, stopPending = false, stopObserved = false, runningObserved = false;
@@ -194,6 +198,8 @@ bool DdsStimClient::sendControl(const BYHWICD::ControlP2cX1ObjTrackingCmd& value
 bool DdsStimClient::sendInit(const BYHWICD::InitP2cObjectTrackingCmd& value, std::string& error)
 {
 #if defined(HWASIMIR_HAS_ZRDDS)
+    m_impl->realtimeWriteCalls=0;
+    m_impl->transportFaultObserved=false;
     {
         std::lock_guard<std::mutex> lock(m_impl->mutex);
         m_impl->statusPlatID = value.platID;
@@ -207,7 +213,41 @@ bool DdsStimClient::sendInit(const BYHWICD::InitP2cObjectTrackingCmd& value, std
 bool DdsStimClient::sendRealtime(const BYHWICD::DisplayC2cObjTrackingData& value, std::string& error)
 {
 #if defined(HWASIMIR_HAS_ZRDDS)
-    return WriteTyped(m_impl->realtime, HwaSimIRDdsAdapter::ToDds(value), "Realtime", error);
+    if(m_impl->transportFaultObserved){error="previous DDS transport failure; explicit new INIT required, no automatic replay";return false;}
+    const auto begin=HwaInputAuditV1::now();
+    const bool ok=WriteTyped(m_impl->realtime, HwaSimIRDdsAdapter::ToDds(value), "Realtime", error);
+    const auto end=HwaInputAuditV1::now();
+    m_impl->inputAudit.record(value,0,begin,end,ok);
+    if(!ok)m_impl->transportFaultObserved=true;
+    ++m_impl->realtimeWriteCalls;
+    // The installed SDK can return write OK while its TCP locator reconnects.
+    // Keep the raw API-success count; observe the supported transport status
+    // independently, and never turn a later ACK into a claim of complete delivery.
+    if (m_impl->realtimeWriteCalls == 1 || m_impl->realtimeWriteCalls % 120 == 0 || end-begin >= 100000000LL)
+    {
+        DDS::PublicationSendStatusSeq statuses;
+        const auto statusRc=m_impl->realtimeBase->get_send_status(statuses);
+        if(statusRc==DDS::RETCODE_OK)
+        {
+            for(unsigned int i=0;i<statuses._length;++i)
+            for(unsigned int j=0;j<statuses[i].send_locators._length;++j)
+            {
+                const auto& locator=statuses[i].send_locators[j];
+                const int state=static_cast<int>(locator.locator_status);
+                const bool fault=state==3 || state==4; // SDK ERROR / RECONNECTING.
+                m_impl->transportFaultObserved=m_impl->transportFaultObserved||fault;
+                if(fault || m_impl->realtimeWriteCalls==1 || end-begin>=100000000LL)
+                    std::cout<<"[DdsSendLocator] writeCall="<<m_impl->realtimeWriteCalls
+                        <<" writeApiOk="<<ok<<" writeMs="<<double(end-begin)/1.e6
+                        <<" transport="<<static_cast<int>(locator.locator_type)
+                        <<" status="<<state<<" transportReturnCode="<<locator.locator_return_code
+                        <<" peer="<<int(locator.locator_addr[0])<<'.'<<int(locator.locator_addr[1])<<'.'<<int(locator.locator_addr[2])<<'.'<<int(locator.locator_addr[3])
+                        <<':'<<locator.locator_port<<" faultObserved="<<fault<<" deliveryNotImpliedByApiOk=1\n";
+            }
+        }
+        else std::cout<<"[DdsSendLocator] result=unavailable returnCode="<<static_cast<int>(statusRc)<<'\n';
+    }
+    return ok;
 #else
     (void)value; error = "DDS unavailable"; return false;
 #endif
@@ -274,9 +314,11 @@ bool DdsStimClient::waitForAcknowledgments(int timeoutMs, std::string& error)
               << " ackInit=" << static_cast<int>(initRc)
               << " ackRealtime=" << static_cast<int>(realtimeRc) << std::endl;
     if (controlRc != DDS::RETCODE_OK || initRc != DDS::RETCODE_OK ||
-        realtimeRc != DDS::RETCODE_OK)
+        realtimeRc != DDS::RETCODE_OK || m_impl->transportFaultObserved)
     {
-        error = "wait_for_acknowledgments failed";
+        error = m_impl->transportFaultObserved
+            ? "DDS transport error/reconnect observed in this run; ACK success cannot establish input completeness"
+            : "wait_for_acknowledgments failed";
         return false;
     }
     return true;
@@ -295,6 +337,7 @@ int DdsStimClient::runtimeInitCount() const
 {
     return m_impl->runtime ? m_impl->runtime->initCount() : 0;
 }
+bool DdsStimClient::hasTransportFault() const { return m_impl->transportFaultObserved; }
 
 void DdsStimClient::setAckCallback(
     const std::function<void(const BYHWICD::InitAckC2pObjectTrackingCmd&)>& callback)

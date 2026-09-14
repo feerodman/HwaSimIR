@@ -1,4 +1,5 @@
 param(
+    [ValidateSet('p7','p8')][string]$LogGroup='p7', [switch]$NoDuplicateH264, [string]$PerformancePolicy='', [switch]$InputAudit, [switch]$FreezeTelemetryTables,
     [string]$Name='smoke', [double]$ReceiverJoinDelay=0, [double]$ReceiverRestartAt=0, [double]$ReceiverRestartGap=2, [string]$ReceiverFaultConfig='', [int]$SaveMp4=1, [ValidateSet(1,2)][int]$SimMode=1, [int]$OutputFps=60, [string]$SensorFieldsJson='', [string]$DiagnosticJson='', [int]$DisplayCase=0, [int]$FreezeAfter=0, [int]$DumpSeq=0, [switch]$ProductionDefaults, [string]$Scene='mixed', [string]$View='oblique',
     [int]$MaterialView=0, [string]$MaterialCase='A', [int]$Band=2,
     [int]$Rate=60, [int]$Seconds=10, [int]$CaptureSeconds=10, [int]$Weather=1, [switch]$Legacy,
@@ -34,7 +35,7 @@ if($env:HWASIMIR_SSH_PASSWORD){
     $env:SSH_ASKPASS=Join-Path $PSScriptRoot 'p5_ssh_askpass.cmd'
     $env:SSH_ASKPASS_REQUIRE='force';$env:DISPLAY='p5'
 }
-$dir=Join-Path $root "logs\p7\$Name"
+$dir=Join-Path $root "logs\$LogGroup\$Name"
 New-Item -ItemType Directory -Force $dir | Out-Null
 $dir=(Resolve-Path $dir).Path
 @{host=$(if($Windows){'Windows'}else{'RK3588'});platId=$PlatId;sensorId=$SensorId;displayCase=$DisplayCase;freezeAfter=$FreezeAfter;dumpSeq=$DumpSeq;productionDefaults=[bool]$ProductionDefaults;useRuntimeWeather=[bool]$UseRuntimeWeather;useRuntimeStreaming=[bool]$UseRuntimeStreaming;scene=$Scene;view=$View;rate=$Rate;seconds=$Seconds;captureSeconds=$CaptureSeconds;appearance=$Appearance;cameraInput=$CameraInput;pixelAngle=$PixelAngle;sampleSize=$SampleSize;referenceSteps=$ReferenceSteps;hideCloudId=$HideCloudId;autoReference=[bool]$AutoReference;ordinaryPlate=[bool]$OrdinaryPlate;agcTiming=[bool]$AgcTiming;autoTargetHigh=$AutoTargetHigh;
@@ -116,6 +117,7 @@ if($Preset -eq 'Runtime'){
 }
 if($Scene -eq 'display'){$overrides.P6CDisplayCase="$DisplayCase";$overrides.P6CFreezeAfter="$FreezeAfter";$overrides.P6CMappingLog='1'}
 if($ProductionDefaults){$overrides.Clear()}
+if($PerformancePolicy){$overrides.HWASIMIR_PERF_POLICY_FILE=$PerformancePolicy}
 if($DiagnosticJson){
     $diagnostic=Get-Content -Encoding UTF8 $DiagnosticJson -Raw | ConvertFrom-Json
     foreach($property in $diagnostic.PSObject.Properties){$overrides[$property.Name]=[string]$property.Value}
@@ -128,14 +130,18 @@ if($RawDump){
     $overrides.Stage5OutputFrameDump='true';$overrides.Stage5OutputFrameDumpEvery="$DumpSeq"
     $overrides.Stage5OutputFrameDumpPath=$(if($Windows){"$dir\gpu_rgb8.png"}else{"/userdata/HwaSimIR/logs/p5_$Name.png"})
 }
+if($InputAudit){$overrides.HwaInputAuditDirectory=$(if($Windows){$dir}else{'/userdata/HwaSimIR/logs'})}
 $overrides | ConvertTo-Json | Set-Content -Encoding UTF8 "$dir\effective_environment.json"
 $env:P6ReceiverUiDump=Join-Path $dir 'receiver_ui.png'
 $env:P7RecordingRoot=Join-Path $dir 'recording'
+if($InputAudit){$env:HwaInputAuditDirectory=$dir}
+if($FreezeTelemetryTables){$env:P8FreezeTelemetryTables='1'}else{Remove-Item Env:P8FreezeTelemetryTables -ErrorAction SilentlyContinue}
 $env:P6ReceiverUiResponsiveCapture='1'
 if($ReceiverFaultConfig){$env:P7ReceiverFaultConfig=(Resolve-Path $ReceiverFaultConfig).Path}else{Remove-Item Env:P7ReceiverFaultConfig -ErrorAction SilentlyContinue}
 $env:P7SenderUiDump=Join-Path $dir 'sender_ui.png'
 $env:P5DdsVideoPath=Join-Path $dir 'received.h264'
 $env:P5DdsVideoSamples="$($Rate*[Math]::Min($CaptureSeconds,$Seconds))"
+if($NoDuplicateH264){Remove-Item Env:P5DdsVideoPath -ErrorAction SilentlyContinue;Remove-Item Env:P5DdsVideoSamples -ErrorAction SilentlyContinue}
 $videoExe=$ReceiverExe
 $stimExe=$SenderExe
 $video=$null;$stim=$null;$hwa=$null;$remoteSsh=$null;$thermal=$null
@@ -145,17 +151,17 @@ try {
     else{Get-FileHash $RendererExe | Format-List | Out-File "$dir\release.sha256"}
     if(-not $Windows){
         $thermal=Start-Process 'F:\Programs\anaconda3\python.exe' -WindowStyle Hidden -PassThru -ArgumentList @(
-            "$root\tools\p6d_thermal.py",'--output',"$dir\thermal.jsonl",'--seconds',"$($Seconds*2+150)"
+            $(if($LogGroup -eq 'p8'){"$root\tools\p8_board_monitor.py"}else{"$root\tools\p6d_thermal.py"}),'--output',"$dir\thermal.jsonl",'--seconds',"$($Seconds*2+150)"
         ) -RedirectStandardError "$dir\thermal.err.log" -RedirectStandardOutput "$dir\thermal.out.log"
     }
     function Start-CaseReceiver {
-    Start-Process -FilePath $videoExe -WorkingDirectory (Split-Path $videoExe) -WindowStyle Hidden -PassThru -ArgumentList @(
-        '--receive-transport=dds','--stream-role=direct',
+    $receiverArguments=@(
         '--channel=precise',"--plat-id=$PlatId","--sensor-id=$SensorId",
-        "--dds-qos=$root\HwaSim_IR\Bin\Config\DDS\ZRDDS_PROTOCOL_QOS.xml",
         "--dds-dump-first-frame=$dir\received.png","--dds-dump-frame-index=$DumpSeq",
         "--acceptance-exit-ms=$(($Seconds*$(if($RepeatWeather -ge 0){2}else{1})+120)*1000)"
-    ) -RedirectStandardOutput "$dir\video.out.log" -RedirectStandardError "$dir\video.err.log"
+    )
+    if(-not $ProductionDefaults){$receiverArguments+=@('--receive-transport=dds','--stream-role=direct',"--dds-qos=$root\HwaSim_IR\Bin\Config\DDS\ZRDDS_PROTOCOL_QOS.xml")}
+    Start-Process -FilePath $videoExe -WorkingDirectory (Split-Path $videoExe) -WindowStyle Hidden -PassThru -ArgumentList $receiverArguments -RedirectStandardOutput "$dir\video.out.log" -RedirectStandardError "$dir\video.err.log"
     }
     if($ReceiverJoinDelay -le 0){$video=Start-CaseReceiver}
     Start-Sleep -Seconds 2
@@ -180,7 +186,7 @@ try {
     Start-Sleep -Seconds 5
     $env:P5NoTargets=$(if($ExistingTargets -or $Normal){'0'}else{'1'})
     $env:P6TestTargetType=$TargetType
-    $stim=Start-Process -FilePath $stimExe -WorkingDirectory "$root\DataDrivenTestQT" -WindowStyle Hidden -PassThru -ArgumentList @(
+    $stim=Start-Process -FilePath $stimExe -WorkingDirectory (Split-Path $stimExe) -WindowStyle Hidden -PassThru -ArgumentList @(
         '--channel=precise',"--plat-id=$PlatId","--sensor-id=$SensorId","--sim-mode=$SimMode","--video-fps=$OutputFps","--send-step-ms=$((1000.0/$Rate).ToString('F6',[Globalization.CultureInfo]::InvariantCulture))",
         '--phase1d-h264=1',"--save-mp4=$SaveMp4","--duration-sec=$Seconds","--env-sky=$Weather","--sensor-band=$Band",
         "--sensor-pixel-angle-urad=$PixelAngle","--sensor-fields-json=$SensorFieldsJson",'--engine-state=1','--strike-flag=0','--freeze-geometry','--utc-hour=6.0',"--pause-start-sec=$PauseStart","--pause-duration-sec=$PauseDuration"
@@ -217,7 +223,7 @@ try {
         # Each sender uses the existing RESET -> INIT -> START -> STOP sequence.
         # Keep the renderer and DDS receiver alive to exercise real state reuse.
         Wait-RepeatDrain 1
-        $stim=Start-Process -FilePath $stimExe -WorkingDirectory "$root\DataDrivenTestQT" -WindowStyle Hidden -PassThru -ArgumentList @(
+        $stim=Start-Process -FilePath $stimExe -WorkingDirectory (Split-Path $stimExe) -WindowStyle Hidden -PassThru -ArgumentList @(
             '--channel=precise',"--plat-id=$PlatId","--sensor-id=$SensorId","--sim-mode=$SimMode","--video-fps=$OutputFps","--send-step-ms=$((1000.0/$Rate).ToString('F6',[Globalization.CultureInfo]::InvariantCulture))",
             '--phase1d-h264=1',"--save-mp4=$SaveMp4","--duration-sec=$Seconds","--env-sky=$RepeatWeather","--sensor-band=$Band",
             "--sensor-pixel-angle-urad=$PixelAngle","--sensor-fields-json=$SensorFieldsJson",'--engine-state=1','--strike-flag=0','--freeze-geometry','--utc-hour=6.0'
@@ -256,6 +262,23 @@ try {
             if(-not $remoteSsh.WaitForExit(10000)){throw 'Previous remote launcher did not finish its cleanup'}
         }
         & scp.exe -o StrictHostKeyChecking=yes "root@192.168.1.116:/userdata/HwaSimIR/logs/p5_$Name.log" "$dir\board.log"
+        if($InputAudit){
+            $auditLog=Get-Content -Encoding UTF8 "$dir\board.log" -Raw
+            $sessions=[regex]::Matches($auditLog,'input_accepted_([a-fA-F0-9]+)\.csv') | ForEach-Object {$_.Groups[1].Value} | Sort-Object -Unique
+            foreach($session in $sessions){
+                foreach($prefix in @('input_accepted','input_execute','stage_render','stage_output')){
+                    & scp.exe -q -o StrictHostKeyChecking=yes "root@192.168.1.116:/userdata/HwaSimIR/logs/${prefix}_${session}.csv" "$dir/"
+                }
+            }
+        }
+    }
+    if($video){
+        $video.Refresh()
+        if(-not $video.HasExited){
+            $video.CloseMainWindow()|Out-Null
+            $receiverFlushed=$video.WaitForExit(10000)
+            Write-Output "[P8Cleanup] receiverClosedGracefully=$receiverFlushed recordingCompletenessRequiresValidation=1"
+        }
     }
     foreach($process in @($stim,$hwa,$video,$remoteSsh,$thermal)){
         if($process){$process.Refresh();if(-not $process.HasExited){Stop-Process -Id $process.Id -Force}}

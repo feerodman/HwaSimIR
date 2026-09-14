@@ -913,7 +913,7 @@ std::string TcpCommThread::buildAnnotationJson(
 		<< ",\"ptsMs\":" << encodedFrame.ptsMs
 		<< ",\"encodedBytes\":" << encodedFrame.payload.size()
 		<< ",\"frameTimeMs\":" << (telemetry.udpReceiveTimeNs > 0 ? telemetry.udpReceiveTimeNs / 1000000LL : static_cast<std::int64_t>(outputOrdinal * 16))
-		<< ",\"simTimeMs\":" << record.simTimeMs
+		<< ",\"simTimeMs\":" << std::setprecision(17) << record.simTimeMs
 		<< ",\"sensorID\":" << record.sensorID
 		<< ",\"width\":" << tcpWidth
 		<< ",\"height\":" << tcpHeight
@@ -1219,7 +1219,8 @@ void TcpCommThread::sendFrameThreadFunc() {
 			}
 			const double prepMs = std::chrono::duration<double, std::milli>(
 				std::chrono::steady_clock::now() - prepBegin).count();
-			if (productOrdinal <= 3 || (productOrdinal % 120) == 0)
+	
+		if (productOrdinal <= 3 || (productOrdinal % 120) == 0)
 				std::cout << "[DdsRawPrep] format=" << (gray ? "gray8" : "bgr24")
 					<< " width=" << frame.width << " height=" << frame.height
 					<< " bytes=" << m_ddsRawBuffer.size() << " prepMs=" << prepMs << std::endl;
@@ -1266,6 +1267,7 @@ void TcpCommThread::sendFrameThreadFunc() {
 			}
 			else if (m_bIsConnected) continue;
 		}
+
 		if (productOrdinal <= 3 || (productOrdinal % 120) == 0)
 		{
 			std::cout << "[VideoOutputProducts] frame=" << productOrdinal

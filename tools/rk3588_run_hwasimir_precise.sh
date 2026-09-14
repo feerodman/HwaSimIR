@@ -7,7 +7,9 @@ network_config=${HWASIMIR_NETWORK_CONFIG:-$app_root/Config/NetworkConfig_${chann
 udp_port=${HWASIMIR_UDP_PORT:-8888}
 qos_file=${HwaSimIRDdsVideoQosFile:-Config/DDS/ZRDDS_QOS_PROFILES.xml}
 performance_tool=$app_root/rk3588_hwasimir_performance_mode.sh
-performance_policy=$app_root/Config/RK3588PerformancePolicy.conf
+# One effective policy source for preflight, application, logging and restore.
+# Explicit maintenance A/B may select a candidate; normal startup uses Config.
+performance_policy=${HWASIMIR_PERF_POLICY_FILE:-$app_root/Config/RK3588PerformancePolicy.conf}
 manifest_file=$app_root/Config/deployment_manifest.sha256
 version_file=$app_root/Config/deployment_version.env
 verify_full=false

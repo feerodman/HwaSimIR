@@ -16,13 +16,16 @@ foreach($file in $files | Sort-Object -Unique){
     if($file -match '^HwaSim_IR/HwaSim_IR/(.+\.(cpp|h|inl))$'){$target=$Matches[1]}
     elseif($file -match '^DDS/.+\.(h|cpp)$'){$target=$file}
     else{continue}
-    & scp -q -o StrictHostKeyChecking=yes (Join-Path $root $file) "linaro@192.168.203.128:$remote/$target"
+    & scp -p -q -o StrictHostKeyChecking=yes (Join-Path $root $file) "linaro@192.168.203.128:$remote/$target"
     if($LASTEXITCODE -ne 0){throw "Upload failed: $file"}
 }
 & scp -q -o StrictHostKeyChecking=yes (Join-Path $root 'tools/p7_nv12_test.cpp') (Join-Path $root 'tools/p7_auto_mapping_test.cpp') "linaro@192.168.203.128:$remote/"
 if($LASTEXITCODE -ne 0){throw 'Test upload failed'}
+$ErrorActionPreference='Continue'
 & ssh -o StrictHostKeyChecking=yes linaro@192.168.203.128 "cmake --build $remote/cmake-build-codex-rk3588 -j4" *> (Join-Path $root "logs/p7/build_vm_$Name.log")
-if($LASTEXITCODE -ne 0){throw 'aarch64 build failed'}
+$buildExit=$LASTEXITCODE
+$ErrorActionPreference='Stop'
+if($buildExit -ne 0){throw "aarch64 build failed exit=$buildExit"}
 & scp -q -o StrictHostKeyChecking=yes "linaro@192.168.203.128:$remote/cmake-build-codex-rk3588/HwaSim_IR" (Join-Path $root "logs/p7/HwaSim_IR_$Name")
 if($LASTEXITCODE -ne 0){throw 'ELF copy failed'}
 Get-FileHash (Join-Path $root "logs/p7/HwaSim_IR_$Name")

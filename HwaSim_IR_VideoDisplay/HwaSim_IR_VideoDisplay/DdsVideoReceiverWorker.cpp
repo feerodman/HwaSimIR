@@ -16,6 +16,7 @@
 #include <QJsonObject>
 #include <QCryptographicHash>
 #include "../../DDS/Protocol/FrameProductV2.h"
+#include "../../DDS/Protocol/InputAuditV1.h"
 #include <vector>
 
 #include "Video/VideoDecoder.h"
@@ -820,6 +821,10 @@ void DdsVideoReceiverWorker::processSample(const char* data, int size)
     QString body;
     if(identified) {
         tracking=product.realtime; logicalFrameSeq=product.frameSeq;
+        // Compact new-image timing remains available with MP4 recording off.
+        // It contains no image bytes and is enabled only by the audit directory.
+        static HwaInputAuditV1::Ledger newImageAudit("received");
+        newImageAudit.record(product.realtime,product.sourceSeq,arrivalSteadyNs,decodeCompleteSteadyNs,true);
         QJsonParseError parseError;
         auto doc=QJsonDocument::fromJson(QByteArray::fromStdString(product.annotation),&parseError);
         QJsonObject object=doc.object(), meta;

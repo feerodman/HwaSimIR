@@ -374,15 +374,21 @@ bool AnnotationProjector::projectWorldPointToPixel(
 	// Panda3D Lens::project 需要相机坐标系下的点；输出坐标再换成最终图像左上角像素坐标。
 	LPoint3f cameraPoint = cameraNode.get_relative_point(renderRoot, worldPoint);
 	LPoint2f ndc;
-	if (!cameraLens->project(cameraPoint, ndc))
+	const bool inLens = cameraLens->project(cameraPoint, ndc);
+    // Linear Lens::project also returns false for finite front-facing points
+    // outside the viewport. Keep those coordinates for bbox union, then clip
+    // the rectangle once. Dropping them collapses a partly visible quad to a line.
+	if (!inLens && (!cameraLens->is_linear() ||
+        LVector3f::forward(cameraLens->get_coordinate_system()).dot(cameraPoint) <= 0.00001f))
 	{
 		return false;
 	}
+    if(!std::isfinite(ndc.get_x())||!std::isfinite(ndc.get_y()))return false;
 
 	const float pixelX = (ndc.get_x() + 1.0f) * 0.5f * static_cast<float>(width);
 	const float pixelY = (1.0f - ndc.get_y()) * 0.5f * static_cast<float>(height);
-	outX = static_cast<int>(std::floor(pixelX + 0.5f));
-	outY = static_cast<int>(std::floor(pixelY + 0.5f));
+	outX = static_cast<int>(std::floor(std::max(-100000000.f,std::min(100000000.f,pixelX)) + 0.5f));
+	outY = static_cast<int>(std::floor(std::max(-100000000.f,std::min(100000000.f,pixelY)) + 0.5f));
 	inViewport = outX >= 0 && outX < width && outY >= 0 && outY < height;
 	return true;
 }
@@ -471,6 +477,12 @@ bool AnnotationProjector::buildBoundingBox(
 		buildMeshBodyBoundingBox(targetNode, renderRoot, cameraNode, cameraLens, width, height, targetConfig, outRect, stats))
 	{
 		return true;
+	}
+	// An evaluated mesh outside the viewport is a valid negative result.
+	// A larger AABB fallback must not resurrect an invisible object at the edge.
+	if (stats.mode == "mesh_body" && stats.fallback == "mesh_body_outside_or_small")
+	{
+		return false;
 	}
 
 	if (stats.mode == "mesh_body" &&

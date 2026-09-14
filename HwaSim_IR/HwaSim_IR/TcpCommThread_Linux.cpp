@@ -1,3 +1,4 @@
+#include "StageAuditV1.h"
 #include "FrameIdentityChart.h"
 #include "TcpCommThread_Linux.h"
 #include "HwaSimIR.h"
@@ -988,7 +989,7 @@ std::string TcpCommThread::buildAnnotationJson(
 		<< ",\"keyFrame\":" << (encodedFrame.keyFrame ? "true" : "false")
 		<< ",\"ptsMs\":" << encodedFrame.ptsMs
 		<< ",\"encodedBytes\":" << encodedFrame.payload.size()
-		<< ",\"simTimeMs\":" << record.simTimeMs
+		<< ",\"simTimeMs\":" << std::setprecision(17) << record.simTimeMs
 		<< ",\"sensorID\":" << record.sensorID
 		<< ",\"width\":" << tcpWidth
 		<< ",\"height\":" << tcpHeight
@@ -1315,7 +1316,8 @@ void TcpCommThread::sendFrameThreadFunc()
 			}
 			const double prepMs = std::chrono::duration<double, std::milli>(
 				std::chrono::steady_clock::now() - prepBegin).count();
-			if (productOrdinal <= 3 || (productOrdinal % 120) == 0)
+	
+		if (productOrdinal <= 3 || (productOrdinal % 120) == 0)
 				std::cout << "[DdsRawPrep] format=" << (gray ? "gray8" : "bgr24")
 					<< " width=" << frame.width << " height=" << frame.height
 					<< " bytes=" << m_ddsRawBuffer.size() << " prepMs=" << prepMs << std::endl;
@@ -1422,6 +1424,12 @@ void TcpCommThread::sendFrameThreadFunc()
 			metaAnnotationPublishMs = std::chrono::duration<double, std::milli>(
 				std::chrono::steady_clock::now() - auxBegin).count();
 		}
+        static HwaStageAuditV1::Ledger outputAudit("output","outputWorkBeginNs,readbackMs,convertMs,encodeMs,ddsEnqueueMs,ddsBackpressureMs,metaAnnotationMs,totalMs");
+        outputAudit.record(frame.telemetry.sourceSeq,
+            std::chrono::duration_cast<std::chrono::nanoseconds>(outputWorkBegin.time_since_epoch()).count(),
+            frame.telemetry.readbackMs,h264Ok?h264Frame.preprocessMs:0.0,h264Ok?h264Frame.encodeMs:0.0,
+            ddsPublishCallMs,ddsBackpressureMs,metaAnnotationPublishMs,
+            std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-outputWorkBegin).count());
 		if (productOrdinal <= 3 || (productOrdinal % 120) == 0)
 		{
 			const double frameTotalMs = std::chrono::duration<double, std::milli>(

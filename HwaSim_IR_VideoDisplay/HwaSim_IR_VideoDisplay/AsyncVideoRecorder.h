@@ -17,6 +17,8 @@
 
 struct RecordingFrame
 {
+    qint64 recorderEnqueueNs=0,recorderBeginNs=0;
+    int recorderPendingDepth=0;
     quint64 sourceSeq = 0;
     quint64 frameSeq = 0;
     qint64 ptsMs = -1;
