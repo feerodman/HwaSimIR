@@ -13,6 +13,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include "IRJson.h"
 
 // Artistic sprite geometry only. No calibrated plume or sensor parameters.
 // A fixed pool of 32 quads per layer is expanded in eye space on the GPU.
@@ -75,6 +76,23 @@ inline bool apply(NodePath& node) {
     node.set_shader_input("u_sprite_time", LVecBase2f(0,0));
     node.set_shader_input("u_sprite_lod", LVecBase2f(32,0));
     node.set_shader_input("u_game_sprite", LVecBase4f(0,1,1,0));
+    static const LVecBase3f art=[](){
+        LVecBase3f value(1,1,1);
+        try {
+            IRJson::Document doc;doc.load("Config/GameVFX/display_art.json");
+            doc.integer("SchemaVersion",1,1);
+            const char* overridePreset=std::getenv("P7GameArtPreset");
+            const std::string preset=overridePreset?overridePreset:doc.string("DefaultPreset");
+            if(preset!="Legacy" && preset!="Enhanced")throw std::runtime_error("unknown art preset");
+            const std::string base="Presets."+preset+".";
+            value=LVecBase3f(float(doc.number(base+"LengthMultiplier",.5,1.5)),
+                float(doc.number(base+"RadiusMultiplier",.5,1.5)),float(doc.number(base+"LuminousMultiplier",.5,1.5)));
+            std::cout<<"[GameSpriteArt] preset="<<preset<<" source="<<(overridePreset?"explicit_test_override":"GameVFX/display_art.json")
+                <<" multipliers="<<value<<" hash="<<doc.hash<<" thermalParametersChanged=0\n";
+        } catch(const std::exception& e) {std::cerr<<"[GameSpriteArt] fallback=Legacy reason="<<e.what()<<std::endl;}
+        return value;
+    }();
+    node.set_shader_input("u_sprite_art",art);
     node.set_shader_input("u_sprite_nozzle_offset", LVecBase3f(0,0,0));
     node.set_shader_input("u_sprite_aspect", LVecBase2f(1,0));
     node.set_shader_input("u_sprite_emitters", LVecBase2f(1,0));

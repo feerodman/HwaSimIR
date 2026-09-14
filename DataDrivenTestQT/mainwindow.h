@@ -38,6 +38,8 @@
 #include <iomanip>
 #include <QVector>
 #include <memory>
+#include <QMap>
+#include <QComboBox>
 #include "ICD/common_data.h"
 
 #if defined(HWASIMIR_HAS_ZRDDS)
@@ -58,9 +60,11 @@ public:
 		const QString& controlTransport = QStringLiteral("dds"),
 		QWidget *parent = nullptr);
 	~MainWindow();
-	void setH264EnabledForTest(bool enabled) { m_h264Enabled = enabled; }
-	void setSaveMP4EnabledForTest(bool enabled) { m_saveMP4Enabled = enabled; }
+	void setH264EnabledForTest(bool enabled) { m_h264Enabled = enabled; setSensorField("h264En",enabled?1:0); }
+	void setSaveMP4EnabledForTest(bool enabled) { m_saveMP4Enabled = enabled; setSensorField("saveMP4En",enabled?1:0); }
 	void configurePhase4cAeroMachTest(bool enabled, double altitudeKm, double mach);
+	bool setSensorField(const QString& name,double value);
+	void setSendStepMs(double milliseconds);
 	void configureProtocolForTest(int platID, int sensorID, int simMode, int videoFps);
 	void configureEnvironmentForTest(int envSky, int sensorBand);
 	void setSensorPixelAngleForTest(double pixelAngleUrad);
@@ -90,6 +94,12 @@ signals:
 	void updatePosition();
 
 private:
+    void setupSensorForm(QVBoxLayout* layout);
+    bool sensorFormSnapshot(BYHWICD::trackerSensorParam& sensor,QString& error) const;
+    QMap<QString,QWidget*> m_sensorControls;
+    QComboBox* m_simModeBox=nullptr;
+    QLabel* m_identitySourceLabel=nullptr;
+    double m_sendStepMs=16.666667, m_inputHz=60.0;
 	void setupUI();
 	void loadNetworkConfig();
 	void setupUDP();
@@ -217,7 +227,7 @@ private:
 
 	bool is_collided = false;   // 是否已相撞
     double current_time = 0.0;  // 当前模拟时间（秒）
-    int time_step = 25;     // 每次调用的时间步长（豪秒）
+    double time_step = 16.666667;     // 每次调用的时间步长（豪秒）
 	double collision_time;      // 预计相撞时间（秒）
 
 								// 飞机参数（可配置）

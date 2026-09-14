@@ -10,12 +10,18 @@
 #include <cmath>
 #include <cstring>
 #include <mutex>
-#include <set>
+#include <map>
+#include <algorithm>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QCryptographicHash>
+#include "../../DDS/Protocol/FrameProductV2.h"
 #include <vector>
 
 #include "Video/VideoDecoder.h"
 #include "CommonDataDdsAdapter.h"
 #include "DdsRuntimeManager.h"
+#include "../../DDS/Runtime/RuntimeTelemetryV2.h"
 #include "HwaSimIRProtocolV1DataReader.h"
 #include "HwaSimIRProtocolV1TypeSupport.h"
 
@@ -37,6 +43,16 @@ struct DdsVideoReceiverWorker::Impl
 {
 	std::unique_ptr<H264FfmpegDecoder> h264Decoder;
 	std::shared_ptr<DdsRuntimeManager> runtime;
+    std::mutex telemetryMutex;
+    HwaTelemetryV2::Message boardMetrics;
+    HwaTelemetryV2::ClockEstimate clockEstimate;
+    std::int64_t metricsArrivalNs=0,lastClockRequestNs=0;
+    std::uint64_t requestSequence=0;
+    std::map<std::uint64_t,std::int64_t> clockRequests;
+    std::string clockClient=HwaFrameV2::newSession();
+    std::string requestTopic;
+    std::deque<std::int64_t> decodedTimes;
+    double outputLatencyMs=-1,clockErrorMs=0;
 	std::mutex statusMutex;
 	bool statusPending = false;
 	QString pendingTopic;
@@ -57,11 +73,20 @@ struct DdsVideoReceiverWorker::Impl
 	quint64 syncMismatch = 0;
 	quint32 lastMetaSeq = 0;
 	quint32 lastAnnotationSeq = 0;
-	std::set<quint32> videoSeqs;
-	std::set<quint32> metaSeqs;
-	std::set<quint32> annotationSeqs;
+	struct ReceivedProduct {HwaFrameV2::Product product;QByteArray au;qint64 wallNs=0,steadyNs=0;};
+    std::map<qint64, ReceivedProduct> decodeProducts;
+    std::string decodeSession;std::uint64_t decodeGeneration=0,decodeRun=0;
+    std::deque<std::string> retiredSessions;
+    std::uint64_t lastProductSeq=0;
+    quint64 diagnosticDropSeq=0;
+    int diagnosticAnnotationDelayMs=0;
+	qint64 lastMetaPtsMs=-1, lastAnnotationPtsMs=-1;
+	QString lastAnnotationBodyHash;
+	quint64 identifiedVideos=0, unmatchedVideos=0;
 #if defined(HWASIMIR_HAS_ZRDDS)
 	DataReader* reader = nullptr;
+    DataReader* telemetryReader=nullptr;
+    DataWriter* clockWriter=nullptr;
 	DataReader* statusReader = nullptr;
 	DataReader* controlReader = nullptr;
 	DataReader* initReader = nullptr;
@@ -75,6 +100,31 @@ struct DdsVideoReceiverWorker::Impl
 };
 
 #if defined(HWASIMIR_HAS_ZRDDS)
+class DdsTelemetryListener : public SimpleDataReaderListener<Bytes,BytesSeq,BytesDataReader>
+{
+    DdsVideoReceiverWorker* owner;
+public:
+    explicit DdsTelemetryListener(DdsVideoReceiverWorker* p):owner(p){}
+    void on_process_sample(DataReader*,const Bytes& data,const SampleInfo&) override {
+        const auto t4=HwaTelemetryV2::nowNs();HwaTelemetryV2::Message m;
+        if(!HwaTelemetryV2::decode(reinterpret_cast<const char*>(data.value.get_contiguous_buffer()),data.value.length(),m))return;
+        std::lock_guard<std::mutex> lock(owner->m_impl->telemetryMutex);
+        auto& state=*owner->m_impl;
+        if(m.kind==3){
+            if(state.boardMetrics.server!=m.server||state.boardMetrics.generation!=m.generation)state.clockEstimate.reset();
+            state.boardMetrics=m;state.metricsArrivalNs=t4;
+        }else if(m.kind==2&&m.client==state.clockClient){
+            const auto request=state.clockRequests.find(m.sequence);
+            if(request==state.clockRequests.end()||request->second!=m.t1)return;
+            state.clockRequests.erase(request);
+            const bool valid=state.clockEstimate.observe(m,t4);
+            qInfo().noquote()<<QString("[ClockEstimateV2] seq=%1 t1=%2 t2=%3 t3=%4 t4=%5 valid=%6 offsetNs=%7 rttMs=%8 uncertaintyMs=%9 definition=server_minus_receiver")
+                .arg(m.sequence).arg(m.t1).arg(m.t2).arg(m.t3).arg(t4).arg(valid)
+                .arg(state.clockEstimate.offsetNs,0,'f',0).arg(state.clockEstimate.rttMs,0,'f',3).arg(state.clockEstimate.uncertaintyMs,0,'f',3);
+        }
+    }
+};
+
 class DdsBytesListener : public SimpleDataReaderListener<Bytes, BytesSeq, BytesDataReader>
 {
 public:
@@ -194,9 +244,9 @@ public:
 			m_owner->m_impl->syncVideo = m_owner->m_impl->syncMeta = m_owner->m_impl->syncAnnotation = 0;
 			m_owner->m_impl->syncMismatch = 0;
 			m_owner->m_impl->lastMetaSeq = m_owner->m_impl->lastAnnotationSeq = 0;
-			m_owner->m_impl->videoSeqs.clear();
-			m_owner->m_impl->metaSeqs.clear();
-			m_owner->m_impl->annotationSeqs.clear();
+
+
+
 		}
 		emit m_owner->initCommandReceived(HwaSimIRDdsAdapter::FromDds(sample));
 	}
@@ -237,6 +287,15 @@ DdsVideoReceiverWorker::DdsVideoReceiverWorker(const DdsVideoReceiverConfig& con
 	m_config.codec = m_config.codec.trimmed().toLower();
 	m_config.fps = qMax(1, m_config.fps);
 	m_impl->h264Decoder.reset(new H264FfmpegDecoder());
+    const QString faultPath=qEnvironmentVariable("P7ReceiverFaultConfig");
+    if(!faultPath.isEmpty()){
+        QFile input(faultPath);if(!input.open(QIODevice::ReadOnly))qFatal("Cannot open explicit receiver fault configuration");
+        QJsonParseError error;const auto doc=QJsonDocument::fromJson(input.readAll(),&error);
+        if(error.error!=QJsonParseError::NoError||!doc.isObject())qFatal("Invalid receiver fault configuration");
+        m_impl->diagnosticDropSeq=doc.object().value("DropFrameSeq").toVariant().toULongLong();
+        m_impl->diagnosticAnnotationDelayMs=qBound(0,doc.object().value("AnnotationDelayMs").toInt(),1000);
+        qWarning()<<"[ReceiverFaultTest] explicitly_armed"<<faultPath<<"dropSeq="<<m_impl->diagnosticDropSeq<<"annotationDelayMs="<<m_impl->diagnosticAnnotationDelayMs;
+    }
 }
 
 DdsVideoReceiverWorker::~DdsVideoReceiverWorker() = default;
@@ -250,6 +309,7 @@ void DdsVideoReceiverWorker::doWork()
 	return;
 #else
 	DdsBytesListener listener(this);
+    DdsTelemetryListener telemetryListener(this);
 	DdsVideoStatusListener statusListener(this);
 	DdsDisplayControlListener controlListener(this);
 	DdsDisplayInitListener initListener(this);
@@ -282,6 +342,12 @@ void DdsVideoReceiverWorker::doWork()
 		return;
 	}
 	DomainParticipant* participant = m_impl->runtime->participant();
+    if(m_config.platID>=0&&m_config.sensorID>=0){
+        const auto base=QString("HwaSimIR.Diagnostics.V2.%1.%2").arg(m_config.platID).arg(m_config.sensorID).toStdString();
+        m_impl->requestTopic=base+".ClockRequest";
+        m_impl->telemetryReader=DDSIF::SubTopic(participant,(base+".Board").c_str(),BytesTypeSupport::get_instance(),"hwasimir_protocol_reader",&telemetryListener);
+        m_impl->clockWriter=DDSIF::PubTopic(participant,m_impl->requestTopic.c_str(),BytesTypeSupport::get_instance(),"hwasimir_protocol_writer",nullptr);
+    }
 	const bool deferVideoReader = m_config.autoFromVideoStatus &&
 		m_config.platID >= 0 && m_config.sensorID >= 0;
 	if (!deferVideoReader)
@@ -328,7 +394,9 @@ void DdsVideoReceiverWorker::doWork()
 		if (m_impl->realtimeReader) DDSIF::UnSubTopic(m_impl->realtimeReader);
 		if (m_impl->metaReader) DDSIF::UnSubTopic(m_impl->metaReader);
 		if (m_impl->annotationReader) DDSIF::UnSubTopic(m_impl->annotationReader);
-		m_impl->runtime->shutdown();
+		if(m_impl->telemetryReader){DDSIF::UnSubTopic(m_impl->telemetryReader);m_impl->telemetryReader=nullptr;}
+    if(m_impl->clockWriter){DDSIF::UnPubTopic(m_impl->clockWriter);m_impl->clockWriter=nullptr;}
+	m_impl->runtime->shutdown();
 		return;
 	}
 	qInfo().noquote() << QStringLiteral(
@@ -431,7 +499,17 @@ void DdsVideoReceiverWorker::doWork()
 			emit videoStatusChanged(nextTopic, nextCodec, nextPixelFormat,
 				nextWidth, nextHeight, nextFps, nextRunning, nextRound);
 		}
-		QThread::msleep(20);
+        const auto clockNow=HwaTelemetryV2::nowNs();
+        if(m_impl->clockWriter&&clockNow-m_impl->lastClockRequestNs>=1000000000LL){
+            HwaTelemetryV2::Message request;request.kind=1;request.client=m_impl->clockClient;
+            request.sequence=++m_impl->requestSequence;request.t1=clockNow;
+            {std::lock_guard<std::mutex> lock(m_impl->telemetryMutex);m_impl->clockRequests[request.sequence]=clockNow;
+             while(m_impl->clockRequests.size()>8)m_impl->clockRequests.erase(m_impl->clockRequests.begin());}
+            auto bytes=HwaTelemetryV2::encode(request);
+            DDSIF::BytesWrite(m_config.domainId,const_cast<char*>(m_impl->requestTopic.c_str()),reinterpret_cast<const char*>(bytes.data()),static_cast<Long>(bytes.size()));
+            m_impl->lastClockRequestNs=clockNow;
+        }
+        QThread::msleep(20);
 	}
 	// Acceptance timers and GUI shutdown can race the final running=false
 	// status callback. Always emit one owned-state snapshot before teardown.
@@ -449,6 +527,8 @@ void DdsVideoReceiverWorker::doWork()
 	m_impl->reader = m_impl->statusReader = m_impl->controlReader =
 		m_impl->initReader = m_impl->realtimeReader = m_impl->metaReader =
 		m_impl->annotationReader = nullptr;
+	if(m_impl->telemetryReader){DDSIF::UnSubTopic(m_impl->telemetryReader);m_impl->telemetryReader=nullptr;}
+    if(m_impl->clockWriter){DDSIF::UnPubTopic(m_impl->clockWriter);m_impl->clockWriter=nullptr;}
 	m_impl->runtime->shutdown();
 	qInfo().noquote() << QStringLiteral(
 		"[DdsVideoReceiverPerf] receivedSamples=%1 receivedBytes=%2 ddsErrors=%3 finalizeCode=manager")
@@ -484,9 +564,9 @@ void DdsVideoReceiverWorker::processVideoStatus(int platID, int sensorID,
 			m_impl->syncVideo = m_impl->syncMeta = m_impl->syncAnnotation = 0;
 			m_impl->syncMismatch = 0;
 			m_impl->lastMetaSeq = m_impl->lastAnnotationSeq = 0;
-			m_impl->videoSeqs.clear();
-			m_impl->metaSeqs.clear();
-			m_impl->annotationSeqs.clear();
+
+
+
 		}
 	}
 	if (!running) logFrameSync(true);
@@ -500,74 +580,55 @@ void DdsVideoReceiverWorker::processRealtime(const BYHWICD::DisplayC2cObjTrackin
 
 void DdsVideoReceiverWorker::processVideoMeta(int currentRound, quint32 frameSeq, double ptsMs)
 {
-	Q_UNUSED(ptsMs);
-	{
-		std::lock_guard<std::mutex> lock(m_impl->syncMutex);
-		++m_impl->syncMeta;
-		if (currentRound != m_impl->syncRound || !m_impl->metaSeqs.insert(frameSeq).second ||
-			(m_impl->lastMetaSeq != 0 && frameSeq != m_impl->lastMetaSeq + 1) ||
-			(m_impl->syncMeta == 1 && frameSeq != 1))
-			++m_impl->syncMismatch;
-		m_impl->lastMetaSeq = frameSeq;
-	}
-	logFrameSync(frameSeq <= 3 || (frameSeq % 120u) == 0u);
+    std::lock_guard<std::mutex> lock(m_impl->syncMutex);
+    ++m_impl->syncMeta;
+    m_impl->lastMetaSeq=frameSeq;
+    m_impl->lastMetaPtsMs=static_cast<qint64>(ptsMs);
+    // V1 has no INIT generation; this is diagnostic data, never an arrival-order
+    // association authority. Late joining need not start at sequence one.
+    Q_UNUSED(currentRound);
 }
 
-void DdsVideoReceiverWorker::processAnnotation(
-	int currentRound, quint32 frameSeq, double ptsMs, const QString& json)
+void DdsVideoReceiverWorker::processAnnotation(int currentRound, quint32 frameSeq,
+    double ptsMs, const QString& json)
 {
-	Q_UNUSED(ptsMs);
-	Q_UNUSED(json);
-	{
-		std::lock_guard<std::mutex> lock(m_impl->syncMutex);
-		++m_impl->syncAnnotation;
-		if (currentRound != m_impl->syncRound || !m_impl->annotationSeqs.insert(frameSeq).second ||
-			(m_impl->lastAnnotationSeq != 0 && frameSeq != m_impl->lastAnnotationSeq + 1) ||
-			(m_impl->syncAnnotation == 1 && frameSeq != 1))
-			++m_impl->syncMismatch;
-		m_impl->lastAnnotationSeq = frameSeq;
-	}
-	logFrameSync(frameSeq <= 3 || (frameSeq % 120u) == 0u);
+    if(m_impl->diagnosticAnnotationDelayMs>0&&frameSeq==1){
+        qWarning()<<"[ReceiverFaultTest] delaying_V1_annotation"<<m_impl->diagnosticAnnotationDelayMs;
+        QThread::msleep(m_impl->diagnosticAnnotationDelayMs);
+    }
+    std::lock_guard<std::mutex> lock(m_impl->syncMutex);
+    ++m_impl->syncAnnotation;
+    m_impl->lastAnnotationSeq=frameSeq;
+    m_impl->lastAnnotationPtsMs=static_cast<qint64>(ptsMs);
+    QJsonParseError error;
+    const auto doc=QJsonDocument::fromJson(json.toUtf8(),&error);
+    if(error.error!=QJsonParseError::NoError||!doc.isObject()||
+       doc.object().value("frameSeq").toVariant().toULongLong()!=frameSeq ||
+       doc.object().value("ptsMs").toVariant().toLongLong()!=static_cast<qint64>(ptsMs))
+        ++m_impl->syncMismatch;
+    m_impl->lastAnnotationBodyHash=QString::fromLatin1(
+        QCryptographicHash::hash(json.toUtf8(),QCryptographicHash::Sha256).toHex());
+    Q_UNUSED(currentRound);
 }
 
 void DdsVideoReceiverWorker::logFrameSync(bool force)
 {
-	std::lock_guard<std::mutex> lock(m_impl->syncMutex);
-	if (!force && m_impl->syncVideo > 3 && (m_impl->syncVideo % 120) != 0) return;
-	quint64 pendingMeta = 0;
-	quint64 pendingAnnotation = 0;
-	if (m_config.receiveFrameProducts)
-	{
-		for (std::set<quint32>::const_iterator it = m_impl->videoSeqs.begin();
-			it != m_impl->videoSeqs.end(); ++it)
-		{
-			if (m_impl->metaSeqs.count(*it) == 0) ++pendingMeta;
-			if (m_impl->syncAnnotation > 0 && m_impl->annotationSeqs.count(*it) == 0)
-				++pendingAnnotation;
-		}
-		for (std::set<quint32>::const_iterator it = m_impl->metaSeqs.begin();
-			it != m_impl->metaSeqs.end(); ++it)
-			if (m_impl->videoSeqs.count(*it) == 0) ++pendingMeta;
-		for (std::set<quint32>::const_iterator it = m_impl->annotationSeqs.begin();
-			it != m_impl->annotationSeqs.end(); ++it)
-			if (m_impl->videoSeqs.count(*it) == 0) ++pendingAnnotation;
-	}
-	qInfo().noquote() << QStringLiteral(
-		"[DdsFrameSync] round=%1 video=%2 meta=%3 annotation=%4 lastFrameSeq=%5 pendingMeta=%6 pendingAnnotation=%7 mismatch=%8")
-		.arg(m_impl->syncRound).arg(m_impl->syncVideo).arg(m_impl->syncMeta)
-		.arg(m_impl->syncAnnotation).arg(m_impl->lastMetaSeq).arg(pendingMeta)
-		.arg(pendingAnnotation).arg(m_impl->syncMismatch);
+    std::lock_guard<std::mutex> lock(m_impl->syncMutex);
+    if(!force)return;
+    qInfo().noquote()<<QStringLiteral("[DdsFrameSync] round=%1 video=%2 meta=%3 annotation=%4 lastFrameSeq=%5 mismatch=%6 identified=%7 unmatched=%8 association=AU_SEI_V2 countsAreNotFileValidation=1")
+        .arg(m_impl->syncRound).arg(m_impl->syncVideo).arg(m_impl->syncMeta)
+        .arg(m_impl->syncAnnotation).arg(m_impl->lastMetaSeq).arg(m_impl->syncMismatch)
+        .arg(m_impl->identifiedVideos).arg(m_impl->unmatchedVideos);
 }
 
 void DdsVideoReceiverWorker::processSample(const char* data, int size)
 {
-	const quint64 sampleIndex = m_receivedSamples.fetch_add(1);
-	quint64 logicalFrameSeq = 0;
-	{
-		std::lock_guard<std::mutex> lock(m_impl->syncMutex);
-		logicalFrameSeq = ++m_impl->syncVideo;
-		m_impl->videoSeqs.insert(static_cast<quint32>(logicalFrameSeq));
-	}
+    qint64 arrivalNs=WallTimeNs(); // Full DDS sample arrival, before decode.
+    qint64 arrivalSteadyNs=std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+    const quint64 sampleIndex = m_receivedSamples.fetch_add(1);
+    quint64 logicalFrameSeq=0;
+    { std::lock_guard<std::mutex> lock(m_impl->syncMutex); ++m_impl->syncVideo; }
 	m_receivedBytes.fetch_add(static_cast<quint64>(qMax(0, size)));
 	if (!data || size <= 0)
 	{
@@ -575,14 +636,49 @@ void DdsVideoReceiverWorker::processSample(const char* data, int size)
 		qCritical().noquote() << QStringLiteral("[DdsVideoReceiver][ERROR] empty sample index=%1").arg(sampleIndex);
 		return;
 	}
-	const QByteArray payload(data, size); // Own the DDS callback buffer immediately.
+	const QByteArray payload(data, size);
+    QByteArray matchedAu=payload; // Own the DDS callback buffer immediately.
 	QImage image;
 	double decodeMs = 0.0;
 	int channels = 0;
 	QString imageFormat;
 	int codecId = 0;
 	bool keyFrame = false;
-	const qint64 ptsMs = static_cast<qint64>(sampleIndex * 1000ULL / static_cast<quint64>(m_config.fps));
+    HwaFrameV2::Product product;
+    bool identified=m_config.codec==QStringLiteral("h264") &&
+        HwaFrameV2::extract(reinterpret_cast<const std::uint8_t*>(data),size,product);
+    qint64 ptsMs=identified?product.ptsMs:-1;
+    if(identified) {
+        if((m_config.platID>=0&&product.platID!=m_config.platID)||
+           (m_config.sensorID>=0&&product.sensorID!=m_config.sensorID)||
+           QString::fromStdString(product.channel)!=m_config.channel) {
+            ++m_ddsErrors;return;
+        }
+        if(std::find(m_impl->retiredSessions.begin(),m_impl->retiredSessions.end(),product.session)!=m_impl->retiredSessions.end()||
+           (m_impl->decodeSession==product.session&&(product.generation<m_impl->decodeGeneration||
+            (product.generation==m_impl->decodeGeneration&&product.run<m_impl->decodeRun)))){
+            qWarning()<<"[FrameProductRejected] stale_session_or_generation";return;
+        }
+        if(m_impl->decodeSession!=product.session||m_impl->decodeGeneration!=product.generation||m_impl->decodeRun!=product.run) {
+            if(!m_impl->decodeSession.empty()&&m_impl->decodeSession!=product.session){
+                m_impl->retiredSessions.push_back(m_impl->decodeSession);if(m_impl->retiredSessions.size()>16)m_impl->retiredSessions.pop_front();
+            }
+            m_impl->h264Decoder->reset(QStringLiteral("producer_session_changed"));m_impl->decodeProducts.clear();
+            m_impl->decodeSession=product.session;m_impl->decodeGeneration=product.generation;m_impl->decodeRun=product.run;
+            m_impl->lastProductSeq=0;
+        }
+        if(product.frameSeq<=m_impl->lastProductSeq){qWarning()<<"[FrameProductRejected] duplicate_or_stale_frame"<<product.frameSeq;return;}
+        m_impl->lastProductSeq=product.frameSeq;
+        if(m_impl->diagnosticDropSeq==product.frameSeq){
+            qWarning()<<"[ReceiverFaultTest] dropped_one_sample"<<product.frameSeq<<"recovery=next_decodable_IDR";
+            m_impl->h264Decoder->reset(QStringLiteral("explicit_missing_sample_test"));m_impl->decodeProducts.clear();return;
+        }
+        Impl::ReceivedProduct entry;entry.product=product;entry.au=payload;entry.wallNs=arrivalNs;entry.steadyNs=arrivalSteadyNs;
+        m_impl->decodeProducts[ptsMs]=std::move(entry);
+        // Bounded by decoder latency, not by run length. An expired identity is
+        // explicitly unmatched; it is never reused for another picture.
+        while(m_impl->decodeProducts.size()>32)m_impl->decodeProducts.erase(m_impl->decodeProducts.begin());
+    }
 	if (m_config.codec == QStringLiteral("h264"))
 	{
 		DecodedVideoFrame decoded;
@@ -597,7 +693,12 @@ void DdsVideoReceiverWorker::processSample(const char* data, int size)
 			}
 			return;
 		}
-		image = decoded.image;
+        const auto matched=m_impl->decodeProducts.find(decoded.ptsMs);
+        identified=matched!=m_impl->decodeProducts.end();
+        if(identified){product=std::move(matched->second.product);matchedAu=matched->second.au;
+            arrivalNs=matched->second.wallNs;arrivalSteadyNs=matched->second.steadyNs;
+            m_impl->decodeProducts.erase(matched);ptsMs=product.ptsMs;}
+        image = decoded.image;
 		decodeMs = decoded.decodeMs;
 		channels = decoded.decodedChannels;
 		imageFormat = decoded.imageFormat;
@@ -652,6 +753,7 @@ void DdsVideoReceiverWorker::processSample(const char* data, int size)
 		return;
 	}
 
+    const qint64 decodeCompleteSteadyNs=HwaTelemetryV2::nowNs();
 	const bool diagnosticsEnabled = !m_config.dumpFirstFramePath.trimmed().isEmpty();
 	// Optional bounded receiver-side proof: actual DDS Annex-B bytes, not a
 	// renderer-local recording. Decode/receive counters still count every sample.
@@ -662,7 +764,7 @@ void DdsVideoReceiverWorker::processSample(const char* data, int size)
 		if (video.open(QIODevice::WriteOnly | (sampleIndex==0 ? QIODevice::Truncate : QIODevice::Append)))
 			video.write(payload);
 	}
-	if (!image.isNull() && diagnosticsEnabled)
+	if (!image.isNull() && diagnosticsEnabled && (sampleIndex < 3 || ((sampleIndex + 1) % 120) == 0 || (!m_dumpAttempted && static_cast<int>(sampleIndex + 1) >= m_config.dumpFrameIndex)))
 	{
 		const QImage gray = image.convertToFormat(QImage::Format_Grayscale8);
 		const quint64 pixelCount = static_cast<quint64>(gray.width()) * static_cast<quint64>(gray.height());
@@ -715,10 +817,77 @@ void DdsVideoReceiverWorker::processSample(const char* data, int size)
 
 	BYHWICD::DisplayC2cObjTrackingData tracking;
 	std::memset(&tracking, 0, sizeof(tracking));
-	emit dataReceived(image, tracking, QString(), true, false, false, 0, 0, codecId,
-		keyFrame, logicalFrameSeq, logicalFrameSeq, ptsMs, WallTimeNs(), decodeMs, channels, imageFormat);
+    QString body;
+    if(identified) {
+        tracking=product.realtime; logicalFrameSeq=product.frameSeq;
+        QJsonParseError parseError;
+        auto doc=QJsonDocument::fromJson(QByteArray::fromStdString(product.annotation),&parseError);
+        QJsonObject object=doc.object(), meta;
+        meta.insert("version",2);meta.insert("session",QString::fromStdString(product.session));
+        meta.insert("channel",QString::fromStdString(product.channel));
+        meta.insert("generation",QString::number(product.generation));meta.insert("run",QString::number(product.run));
+        meta.insert("frameSeq",QString::number(product.frameSeq));meta.insert("sourceSeq",QString::number(product.sourceSeq));
+        meta.insert("platID",product.platID);meta.insert("sensorID",product.sensorID);meta.insert("round",product.round);
+        meta.insert("ptsMs",QString::number(product.ptsMs));meta.insert("annotationEnabled",product.annotationEnabled);
+        meta.insert("saveRequested",product.saveRequested);
+        meta.insert("annotationStatus",parseError.error==QJsonParseError::NoError ?
+            (product.annotationEnabled?"matched":"disabled") : "invalid_body");
+        meta.insert("annotationSha256",QString::fromLatin1(QCryptographicHash::hash(
+            QByteArray::fromStdString(product.annotation),QCryptographicHash::Sha256).toHex()));
+        meta.insert("acceptedSteadyNs",QString::number(product.acceptedNs));
+        meta.insert("executeSteadyNs",QString::number(product.executeNs));
+        meta.insert("captureSteadyNs",QString::number(product.captureNs));
+        meta.insert("encodeSteadyNs",QString::number(product.encodeNs));
+        meta.insert("writerSubmitSteadyNs",QString::number(product.writerSubmitNs));
+        meta.insert("receiveSteadyNs",QString::number(arrivalSteadyNs));
+        meta.insert("decodeSteadyNs",QString::number(decodeCompleteSteadyNs));
+        meta.insert("queueWaitMs",(product.executeNs-product.acceptedNs)/1.e6);
+        {
+            std::lock_guard<std::mutex> lock(m_impl->telemetryMutex);
+            const bool reliable=m_impl->boardMetrics.server==product.session&&
+                m_impl->clockEstimate.valid(HwaTelemetryV2::nowNs())&&product.acceptedNs>0;
+            const double latency=(double(arrivalSteadyNs)+m_impl->clockEstimate.offsetNs-double(product.acceptedNs))/1.e6;
+            const bool latencyValid=reliable&&latency>=0;
+            meta.insert("outputLatencyEstimated",latencyValid);
+            if(latencyValid)meta.insert("outputLatencyMs",latency);
+            meta.insert("clockOffsetNs",QString::number(m_impl->clockEstimate.offsetNs,'f',0));
+            meta.insert("clockUncertaintyMs",m_impl->clockEstimate.uncertaintyMs);
+            m_impl->outputLatencyMs=latencyValid?latency:-1;m_impl->clockErrorMs=m_impl->clockEstimate.uncertaintyMs;
+        }
+        object.insert("_frameProduct",meta);
+        body=QString::fromUtf8(QJsonDocument(object).toJson(QJsonDocument::Compact));
+    }
+    { std::lock_guard<std::mutex> lock(m_impl->syncMutex);
+      if(identified)++m_impl->identifiedVideos;else ++m_impl->unmatchedVideos; }
+    {std::lock_guard<std::mutex> lock(m_impl->telemetryMutex);m_impl->decodedTimes.push_back(HwaTelemetryV2::nowNs());
+     while(m_impl->decodedTimes.size()>2000)m_impl->decodedTimes.pop_front();}
+    // Preserve every product while bounding outstanding Qt image events.
+    {std::unique_lock<std::mutex> lock(m_guiMutex);
+     m_guiSpace.wait(lock,[this]{return m_guiPending<8||m_stop.load();});
+     if(m_stop.load())return;++m_guiPending;}
+    ++m_decodedFrames;
+    emit dataReceived(image, tracking, body, true, identified,
+        identified&&product.annotationEnabled, identified?4:0, 0, codecId,
+        keyFrame, logicalFrameSeq, logicalFrameSeq, ptsMs, arrivalNs, decodeMs, channels, imageFormat, m_config.codec==QStringLiteral("h264")?matchedAu:QByteArray());
 	logFrameSync(logicalFrameSeq <= 3 || (logicalFrameSeq % 120u) == 0u);
 	if (sampleIndex < 3 || ((sampleIndex + 1) % 120) == 0)
 		qInfo().noquote() << QStringLiteral("[DdsVideoReceiverSample] sample=%1 bytes=%2 codec=%3 ddsErrors=%4")
 			.arg(sampleIndex + 1).arg(size).arg(m_config.codec).arg(m_ddsErrors.load());
+}
+
+QJsonObject DdsVideoReceiverWorker::telemetrySnapshot() const
+{
+    std::lock_guard<std::mutex> lock(m_impl->telemetryMutex);const auto now=HwaTelemetryV2::nowNs();
+    while(!m_impl->decodedTimes.empty()&&m_impl->decodedTimes.front()<=now-1000000000LL)m_impl->decodedTimes.pop_front();
+    const bool fresh=m_impl->metricsArrivalNs>0&&now-m_impl->metricsArrivalNs<2000000000LL;
+    QJsonObject s;s.insert("available",fresh);s.insert("videoFps",static_cast<int>(m_impl->decodedTimes.size()));
+    s.insert("receivedSamples",QString::number(m_receivedSamples.load()));s.insert("decodedFrames",QString::number(m_decodedFrames.load()));
+    s.insert("acceptedHz",m_impl->boardMetrics.acceptedHz);s.insert("executedHz",m_impl->boardMetrics.executedHz);
+    s.insert("accepted",QString::number(m_impl->boardMetrics.accepted));s.insert("executed",QString::number(m_impl->boardMetrics.executed));
+    s.insert("queueWaitMs",m_impl->boardMetrics.queueWaitMs);s.insert("generation",QString::number(m_impl->boardMetrics.generation));
+    s.insert("server",QString::fromStdString(m_impl->boardMetrics.server));s.insert("run",QString::number(m_impl->boardMetrics.run));
+    s.insert("outputSeq",QString::number(m_impl->boardMetrics.outputSeq));s.insert("finished",m_impl->boardMetrics.finished);
+    s.insert("clockValid",fresh&&m_impl->clockEstimate.valid(now));s.insert("clockErrorMs",m_impl->clockErrorMs);
+    s.insert("outputLatencyMs",fresh&&!m_impl->decodedTimes.empty()?m_impl->outputLatencyMs:-1);
+    return s;
 }

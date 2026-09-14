@@ -1,3 +1,4 @@
+uniform vec3 u_sprite_art; // length, radius, luminous art multipliers only
 uniform sampler2D u_sprite_atlas;
 uniform int u_plume_enabled;
 uniform int u_plume_layer;
@@ -21,6 +22,7 @@ void main() {
     // Soft luminous color and absorptive smoke use bounded source-over, never white additive saturation.
     float source = clamp(u_plume_gray,0.0,1.0) * (smoke ? .65 : 1.0);
     if(u_game_sprite.x>.5)source=clamp(u_plume_gray,0.0,1.0);
+    if(!smoke)source *= u_sprite_art.z;
     source = clamp(u_stage7_fog_gray+(source-u_stage7_fog_gray)*clamp(u_stage7_target_contrast_scale,.05,1.5),0.0,1.0);
     source = mix(source,clamp(u_stage7_fog_gray,0.0,1.0),clamp(u_stage7_fog_density,0.0,.78));
     fragColor = vec4(vec3(source),alpha);

@@ -1,0 +1,10 @@
+{
+  "SchemaVersion": 1,
+  "Revision": "P7-ordinary-art-1",
+  "Scope": "Non-calibrated game sprite display only; no thermal or engine parameters",
+  "DefaultPreset": "Enhanced",
+  "Presets": {
+    "Legacy": { "LengthMultiplier": 1.0, "RadiusMultiplier": 1.0, "LuminousMultiplier": 1.0 },
+    "Enhanced": { "LengthMultiplier": 1.12, "RadiusMultiplier": 1.12, "LuminousMultiplier": 1.10 }
+  }
+}

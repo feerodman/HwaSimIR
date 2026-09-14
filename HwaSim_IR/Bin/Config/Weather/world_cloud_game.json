@@ -1,6 +1,6 @@
 {
   "SchemaVersion": 1,
-  "Revision": "P6D-world-density-light-3",
+  "Revision": "P7-asymmetric-alpha-puffs-2",
   "World": {
     "Frame": "WGS84_ENU_tangent",
     "LatitudeDeg": 40.0,
@@ -17,7 +17,7 @@
     "MaxRadiusZM": 500.0
   },
   "Appearance": {
-    "Manifest": "Weather/Derived/cloud_manifest_p6d.json",
+    "Manifest": "Weather/Derived/cloud_manifest_p7.json",
     "DensitySize": 96,
     "NearSteps": 16,
     "MediumSteps": 12,

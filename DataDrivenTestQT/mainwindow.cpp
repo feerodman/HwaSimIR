@@ -1,5 +1,15 @@
 ﻿// mainwindow.cpp
 #include "mainwindow.h"
+#include <QSpinBox>
+#include <QScreen>
+#include <QDoubleSpinBox>
+#include <QCheckBox>
+#include <QGridLayout>
+#include <QScrollArea>
+#include <QDoubleValidator>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include "../DDS/Protocol/SensorFieldSchema.h"
 #include <QGroupBox>
 #include <QVBoxLayout>
 #include <QFormLayout>
@@ -170,7 +180,7 @@ MainWindow::MainWindow(
     plane_speed_y = realTimeData.at(0).platSpeed;
 //	collision_time = m_collisionTime->text().toDouble();
 	m_targetVideoFps = targetVideoFps();
-	time_step = qMax(1, qRound(1000.0 / static_cast<double>(m_targetVideoFps)));
+	setSendStepMs(m_timeStep->text().toDouble());
 
 
 	m_realTimeTimer = new QTimer(this);
@@ -279,14 +289,16 @@ void MainWindow::configureProtocolForTest(int platID, int sensorID, int simMode,
 		m_protocolSensorID = sensorID;
 	}
 	m_protocolSimMode = (simMode == 1 || simMode == 2) ? simMode : m_protocolSimMode;
-	if (videoFps > 0)
+    if(m_simModeBox)m_simModeBox->setCurrentIndex(m_simModeBox->findData(m_protocolSimMode));
+	if (videoFps >= 0)
 	{
-		m_protocolVideoFps = qBound(1, videoFps, 240);
+		m_protocolVideoFps = qBound(0, videoFps, 240);
 	}
 	if (m_videoFpsEdit)
 	{
 		m_videoFpsEdit->setText(QString::number(m_protocolVideoFps));
 	}
+    if(m_identitySourceLabel)m_identitySourceLabel->setText(QString("%1 / %2 / %3").arg(m_channel).arg(m_protocolPlatID).arg(m_protocolSensorID));
 	qInfo().noquote()
 		<< QStringLiteral("[StimProtocol] channel=%1 platID=%2 sensorID=%3 pid=%4 simMode=%5 videoFps=%6 saveMP4En=%7 h264En=%8 source=cli_or_config")
 			.arg(m_channel)
@@ -302,8 +314,8 @@ void MainWindow::configureProtocolForTest(int platID, int sensorID, int simMode,
 void MainWindow::configureIlluminatorForTest(double angleMrad, double spotRad,
 	int forceEnabled, double onStartSec, double onEndSec)
 {
-	if (angleMrad >= 0.0) m_protocolIlluminatorAngleMrad = angleMrad;
-	if (spotRad >= 0.0) m_protocolIlluminatorSpotRad = spotRad;
+	if (angleMrad >= 0.0) {m_protocolIlluminatorAngleMrad = angleMrad;setSensorField("illuminatorAngle",angleMrad);}
+	if (spotRad >= 0.0) {m_protocolIlluminatorSpotRad = spotRad;setSensorField("illuminatorSpotRad",spotRad);}
 	m_protocolIlluminatorForceEnabled = forceEnabled > 0 ? 1 : 0;
 	m_protocolIlluminatorOnStartSec = onStartSec;
 	m_protocolIlluminatorOnEndSec = onEndSec;
@@ -323,7 +335,7 @@ void MainWindow::configureEnvironmentForTest(int envSky, int sensorBand)
 	}
 	if (sensorBand >= 0 && sensorBand <= 4)
 	{
-		m_protocolSensorBand = sensorBand;
+		m_protocolSensorBand = sensorBand;setSensorField("trackerSensorBand",sensorBand);
 	}
 	qInfo().noquote()
 		<< QStringLiteral("[StimWeather] envSky=%1 sensorBand=%2 source=cli_or_default")
@@ -335,7 +347,7 @@ void MainWindow::setSensorPixelAngleForTest(double pixelAngleUrad)
 {
 	if (std::isfinite(pixelAngleUrad) && pixelAngleUrad > 0.0)
 	{
-		m_protocolSensorPixelAngleUrad = qBound(0.1, pixelAngleUrad, 1000.0);
+		m_protocolSensorPixelAngleUrad = qBound(0.1, pixelAngleUrad, 1000.0);setSensorField("trackerSensorPixelAngle",m_protocolSensorPixelAngleUrad);
 	}
 	qInfo().noquote()
 		<< QStringLiteral("[StimSensorGeometry] pixelAngleUrad=%1 source=cli_or_default")
@@ -387,7 +399,7 @@ void MainWindow::onSendRealTimeData()
 int MainWindow::targetVideoFps() const
 {
 	const int requested = m_videoFpsEdit ? m_videoFpsEdit->text().toInt() : 60;
-	return qBound(1, requested, 240);
+	return qBound(0, requested, 240);
 }
 
 void MainWindow::scheduleNextRealTimeFrame()
@@ -395,7 +407,7 @@ void MainWindow::scheduleNextRealTimeFrame()
 	++m_sendDeadlineIndex;
 	const qint64 targetNs = static_cast<qint64>(
 		(static_cast<long double>(m_sendDeadlineIndex) * 1000000000.0L) /
-		static_cast<long double>(m_targetVideoFps));
+		static_cast<long double>(m_inputHz));
 	const qint64 remainingNs = qMax<qint64>(0, targetNs - m_sendClock.nsecsElapsed());
 	const int delayMs = static_cast<int>((remainingNs + 999999LL) / 1000000LL);
 	m_realTimeTimer->start(delayMs);
@@ -413,17 +425,23 @@ void MainWindow::setupUI()
 	//192.168.1.189
 	//192.168.1.10
 	//127.0.0.1
-	m_configGroup = new QGroupBox(QStringLiteral("UDP通信配置"));
+	m_configGroup = new QGroupBox(m_controlTransport==QStringLiteral("dds")?QStringLiteral("DDS 通信配置"):QStringLiteral("UDP 兼容通信配置"));
 	QFormLayout *configLayout = new QFormLayout;
 	configLayout->addRow(QStringLiteral("本地IP:"), m_localIpEdit = new QLineEdit(m_udpLocalIp));
 	configLayout->addRow(QStringLiteral("本地端口:"), m_localPortEdit = new QLineEdit(QString::number(m_udpLocalPort)));
 	configLayout->addRow(QStringLiteral("目标IP:"), m_remoteIpEdit = new QLineEdit(m_udpRemoteIp));
 	configLayout->addRow(QStringLiteral("目标端口:"), m_remotePortEdit = new QLineEdit(QString::number(m_udpRemotePort)));
 	m_configGroup->setLayout(configLayout);
+    if(m_controlTransport==QStringLiteral("dds")){
+        for(auto* edit:{m_localIpEdit,m_localPortEdit,m_remoteIpEdit,m_remotePortEdit}){edit->setReadOnly(true);edit->hide();}
+        for(int r=0;r<configLayout->rowCount();++r)if(auto* item=configLayout->itemAt(r,QFormLayout::LabelRole))item->widget()->hide();
+        configLayout->addRow(QStringLiteral("实例"),m_identitySourceLabel=new QLabel(QString("%1 / %2 / %3").arg(m_channel).arg(m_protocolPlatID).arg(m_protocolSensorID)));
+        configLayout->addRow(QStringLiteral("DDS"),new QLabel(QStringLiteral("配置来源：")+m_networkConfigPath));
+    }
 
 	// 控制组
 	m_controlGroup = new QGroupBox(QStringLiteral("仿真控制"));
-	QVBoxLayout *controlLayout = new QVBoxLayout;
+	QHBoxLayout *controlLayout = new QHBoxLayout;
 	m_resetButton = new QPushButton(QStringLiteral("□ 复位 (1)"));
 	m_initButton = new QPushButton(QStringLiteral("○ 初始化 (0x36)"));
 	m_startButton = new QPushButton(QStringLiteral("▲▼ 开始仿真 (2)"));
@@ -441,10 +459,10 @@ void MainWindow::setupUI()
 	m_controlGroup->setLayout(controlLayout);
 
 	// 实时数据组
-	m_realTimeDataGroup = new QGroupBox(QStringLiteral("实时成像数据配置 (平台姿态每次+0.01)"));
+	m_realTimeDataGroup = new QGroupBox(QStringLiteral("文件数据与身份 · 位置来自输入文件"));
 	QFormLayout *realTimeLayout = new QFormLayout;
 	realTimeLayout->addRow(QStringLiteral("目标类型:"), m_targetTypeEdit = new QLineEdit("0x11"));
-	realTimeLayout->addRow(QStringLiteral("目标帧率(FPS):"), m_videoFpsEdit = new QLineEdit(QString::number(m_protocolVideoFps)));
+	m_videoFpsEdit = new QLineEdit(QString::number(m_protocolVideoFps));
     realTimeLayout->addRow(QStringLiteral("横向视场角:"), m_fovHEdit = new QLineEdit("0.1"));
     realTimeLayout->addRow(QStringLiteral("纵向视场角:"), m_fovVEdit = new QLineEdit("0.1"));
 	//realTimeLayout->addRow(QStringLiteral("平台ID:"), m_platIDEdit = new QLineEdit("1"));
@@ -465,7 +483,8 @@ void MainWindow::setupUI()
 	realTimeLayout->addRow(QStringLiteral("目标横滚(°):"), m_rollEditTarget = new QLineEdit("0.0"));
 //    realTimeLayout->addRow(QStringLiteral("相撞时间(s):"), m_collisionTime = new QLineEdit("30.0"));//相撞時間
 	realTimeLayout->addRow(QStringLiteral("平台速度/Z(m):"), m_speed = new QLineEdit("100.0"));
-    realTimeLayout->addRow(QStringLiteral("发送步长(ms):"), m_timeStep = new QLineEdit("25"));
+    m_timeStep = new QLineEdit("16.666667");
+    m_timeStep->setValidator(new QDoubleValidator(.1,100000,6,m_timeStep));
 	
 
 	m_realTimeDataGroup->setLayout(realTimeLayout);
@@ -486,13 +505,33 @@ void MainWindow::setupUI()
 	QVBoxLayout *mainLayout = new QVBoxLayout;
 	mainLayout->addWidget(m_configGroup);
 	mainLayout->addWidget(m_controlGroup);
-	mainLayout->addWidget(m_realTimeDataGroup);
+	    setupSensorForm(mainLayout);
+    auto* realtimeGroup=new QGroupBox(QStringLiteral("实时发送配置"));
+    auto* pacing=new QFormLayout(realtimeGroup);pacing->addRow(QStringLiteral("发送步长 (ms)"),m_timeStep);mainLayout->addWidget(realtimeGroup);
+    for(auto* edit:{m_latEdit,m_lonEdit,m_altEdit,m_yawEdit,m_pitchEdit,m_rollEdit,
+        m_latEditTarget,m_lonEditTarget,m_altEditTarget,m_yawEditTarget,m_pitchEditTarget,m_rollEditTarget,m_speed})edit->setReadOnly(true);
+    auto* sourceTitle=new QLabel(QStringLiteral("输入文件：")+QFileInfo(m_inputDataPath.isEmpty()?QStringLiteral("./1.txt"):m_inputDataPath).absoluteFilePath());
+    sourceTitle->setWordWrap(true);mainLayout->addWidget(sourceTitle);
+    // Existing file-driven compatibility controls stay available, outside pacing.
+    m_realTimeDataGroup->setCheckable(true);m_realTimeDataGroup->setChecked(false);
+    auto setPreviewVisible=[this](bool visible){for(auto* child:m_realTimeDataGroup->findChildren<QWidget*>(QString(),Qt::FindDirectChildrenOnly))child->setVisible(visible);};
+    m_realTimeDataGroup->setMaximumHeight(28);
+    connect(m_realTimeDataGroup,&QGroupBox::toggled,this,[this](bool on){m_realTimeDataGroup->setMaximumHeight(on?QWIDGETSIZE_MAX:28);});
+    setPreviewVisible(false);connect(m_realTimeDataGroup,&QGroupBox::toggled,this,setPreviewVisible);
+    mainLayout->addWidget(m_realTimeDataGroup);
 	mainLayout->addWidget(m_statusGroup);
 	mainLayout->addStretch();
 
 	QWidget *centralWidget = new QWidget;
 	centralWidget->setLayout(mainLayout);
-	setCentralWidget(centralWidget);
+	auto* scroll=new QScrollArea;scroll->setWidgetResizable(true);scroll->setWidget(centralWidget);setCentralWidget(scroll);
+    // Use the actual available screen; scrolling remains for smaller windows.
+    const auto available=QGuiApplication::primaryScreen()->availableGeometry();
+    resize(qMin(1180,available.width()-20),qMin(800,available.height()-40));
+    setStyleSheet("QWidget{font-family:'Microsoft YaHei UI';font-size:12px;}"
+        "QGroupBox{font-weight:bold;margin-top:6px;padding:0px;}"
+        "QGroupBox::title{subcontrol-origin:margin;left:8px;}"
+        "QPushButton{min-height:24px;}QLineEdit,QSpinBox,QDoubleSpinBox,QComboBox{min-height:18px;padding:1px;}" );
 
 	// 信号连接
 	connect(m_resetButton, &QPushButton::clicked, this, &MainWindow::onResetButtonClicked);
@@ -548,7 +587,7 @@ void MainWindow::loadNetworkConfig()
 			<< ":" << m_protocolSimMode << "- using 2";
 		m_protocolSimMode = 2;
 	}
-	m_protocolVideoFps = qBound(1, m_protocolVideoFps, 240);
+	m_protocolVideoFps = qBound(0, m_protocolVideoFps, 240);
 
 	if (QHostAddress(localIp).isNull())
 	{
@@ -775,7 +814,7 @@ void MainWindow::sendInitCommand()
     // performance comparisons without changing the packet layout.
     cmd.trackingInit.envSky = m_protocolEnvSky;
     cmd.trackingInit.envTemp = 25.0;
-	cmd.trackingInit.simMode = m_protocolSimMode;
+	cmd.trackingInit.simMode = m_simModeBox?m_simModeBox->currentData().toInt():m_protocolSimMode;
 	cmd.trackingInit.videoFps = targetVideoFps();
 
     cmd.trackingInit.envVisibility = 6000;
@@ -784,30 +823,32 @@ void MainWindow::sendInitCommand()
     cmd.trackingInit.envWindDir = 30;
     cmd.trackingInit.envRadScaleSky = 1.0;
     cmd.trackingInit.envRadScaleTerrain = 1.0;
+    ApplyOrdinaryWeatherInitialization(cmd.trackingInit,m_networkConfigPath);
 
 
-//    cmd.trackingInit.trackerSensor[0].index = 0;
-    cmd.trackingInit.trackerSensor[0].trackerSensorBand = m_protocolSensorBand;
-    cmd.trackingInit.trackerSensor[0].trackerSensorWidth = 800;
-    cmd.trackingInit.trackerSensor[0].trackerSensorHeight = 800;//hml
-    cmd.trackingInit.trackerSensor[0].trackerSensorViewMin = 1;
-    cmd.trackingInit.trackerSensor[0].trackerSensorViewMax = 200000;
-    cmd.trackingInit.trackerSensor[0].trackerSensorPixelAngle = m_protocolSensorPixelAngleUrad;
-	cmd.trackingInit.trackerSensor[0].illuminatorAngle = m_protocolIlluminatorAngleMrad;
-	cmd.trackingInit.trackerSensor[0].illuminatorSpotRad = m_protocolIlluminatorSpotRad;
-    //2.18166
-
-    cmd.trackingInit.trackerSensor[0].realtimeAnnotation = true;
-    cmd.trackingInit.trackerSensor[0].saveMP4En = m_saveMP4Enabled;
-    cmd.trackingInit.trackerSensor[0].h264En = m_h264Enabled;
-
-//    cmd.trackingInit.trackerSensor[0].coarseTrackEn = true;
-//    cmd.trackingInit.trackerSensor[0].preciseTrackEn = true;
-//    cmd.trackingInit.trackerSensor[0].coarseTrackResolution = m_fovHEdit->text().toDouble();
-//    cmd.trackingInit.trackerSensor[0].preciseTrackResolution = m_fovVEdit->text().toDouble();
-    cmd.trackingInit.trackerSensor[0].noiseEn =true;
-    cmd.trackingInit.trackerSensor[0].trackerSensorNoise =0.5;
-
+    QString sensorError;
+    if(!sensorFormSnapshot(cmd.trackingInit.trackerSensor[0],sensorError)){
+        qCritical()<<"[StimInit] invalid sensor form"<<sensorError;return;
+    }
+    QJsonObject sensorAudit;
+    for(int i=0;i<HwaSensorFields::count;++i){const auto& field=HwaSensorFields::fields()[i];
+        sensorAudit.insert(QString::fromLatin1(field.name),HwaSensorFields::get(cmd.trackingInit.trackerSensor[0],field));}
+    sensorAudit.insert("simMode",cmd.trackingInit.simMode);sensorAudit.insert("videoFps",cmd.trackingInit.videoFps);
+    qInfo().noquote()<<"[P7SensorConstructed]"<<QJsonDocument(sensorAudit).toJson(QJsonDocument::Compact);
+    const QString uiDump=qEnvironmentVariable("P7SenderUiDump");
+    if(!uiDump.isEmpty())QTimer::singleShot(250,this,[this,uiDump,sensorAudit]{
+        QJsonObject report;report.insert("fields",sensorAudit);
+        report.insert("logicalWidth",width());report.insert("logicalHeight",height());report.insert("devicePixelRatio",devicePixelRatioF());
+        report.insert("screenLogicalWidth",QGuiApplication::primaryScreen()->geometry().width());report.insert("screenLogicalHeight",QGuiApplication::primaryScreen()->geometry().height());
+        report.insert("logicalDpi",QGuiApplication::primaryScreen()->logicalDotsPerInch());
+        report.insert("captureKind","actual_widget_on_current_screen");
+        report.insert("sendStepMs",m_timeStep->text());report.insert("inputFile",m_inputDataPath);report.insert("config",m_networkConfigPath);
+        QJsonObject controls;for(auto it=m_sensorControls.begin();it!=m_sensorControls.end();++it){
+            QJsonObject entry;entry.insert("class",it.value()->metaObject()->className());entry.insert("enabled",it.value()->isEnabled());
+            entry.insert("visible",it.value()->isVisible());entry.insert("value",sensorAudit.value(it.key()));controls.insert(it.key(),entry);
+        }report.insert("controls",controls);
+        grab().save(uiDump);QFile output(uiDump+".json");if(output.open(QIODevice::WriteOnly))output.write(QJsonDocument(report).toJson());
+    });
 
     cmd.MissileMaxCount120 = 3;
     cmd.MissileMaxCount9 = 3;
@@ -1096,7 +1137,7 @@ void MainWindow::sendRealTimeData()
 					qMax(0.001, static_cast<double>(nowNs) / 1.0e9);
 				const qint64 expectedSendNs = static_cast<qint64>(
 					(static_cast<long double>(m_sentFrameCount - 1) * 1000000000.0L) /
-					static_cast<long double>(m_targetVideoFps));
+					static_cast<long double>(m_inputHz));
 				const double behindMs =
 					static_cast<double>(nowNs - expectedSendNs) / 1.0e6;
 				qInfo().noquote()
@@ -1105,11 +1146,11 @@ void MainWindow::sendRealTimeData()
 						.arg(m_protocolPlatID)
 						.arg(m_protocolSensorID)
 						.arg(QCoreApplication::applicationPid())
-						.arg(m_targetVideoFps)
+						.arg(m_inputHz)
 						.arg(sentFpsInstant, 0, 'f', 3)
 						.arg(sentFpsAvg, 0, 'f', 3)
 						.arg(m_sentFrameCount)
-						.arg(1000.0 / static_cast<double>(m_targetVideoFps), 0, 'f', 3)
+						.arg(1000.0 / static_cast<double>(m_inputHz), 0, 'f', 3)
 						.arg(behindMs, 0, 'f', 3);
 				m_lastSendPerfLogNs = nowNs;
 				m_lastSendPerfFrameCount = m_sentFrameCount;
@@ -1120,7 +1161,7 @@ void MainWindow::sendRealTimeData()
 					.arg(m_currentLat, 0, 'f', 4).arg(sent));
 				m_statusLabel->setText(QString(QStringLiteral("● 状态: 仿真中 | 已发送 %1 帧 | 目标 %2 FPS"))
 					.arg(m_sentFrameCount)
-					.arg(m_targetVideoFps));
+					.arg(m_inputHz));
 				m_statusLabel->setStyleSheet("color: #388E3C; font-weight: bold;");
 			}
 		}
@@ -1144,7 +1185,7 @@ void MainWindow::sendRealTimeData()
 			const quint64 intervalFrames = m_sentFrameCount - m_lastSendPerfFrameCount;
 			qInfo().noquote() << QStringLiteral(
 				"[StimPerf] transport=dds targetFps=%1 sentFpsInstant=%2 packetSeq=%3 runtimeInitCount=%4")
-				.arg(m_targetVideoFps)
+				.arg(m_inputHz)
 				.arg(static_cast<double>(intervalFrames) * 1.0e9 / intervalNs, 0, 'f', 3)
 				.arg(m_sentFrameCount)
 #if defined(HWASIMIR_HAS_ZRDDS)
@@ -1300,7 +1341,7 @@ void MainWindow::onStartButtonClicked()
 
 	if (!m_isRealtimeSending) {
 		m_targetVideoFps = targetVideoFps();
-		time_step = qMax(1, qRound(1000.0 / static_cast<double>(m_targetVideoFps)));
+		setSendStepMs(m_timeStep->text().toDouble());
 		m_timeStep->setText(QString::number(time_step));
 		m_isRealtimeSending = true;
 		m_sentFrameCount = 0;
@@ -1310,10 +1351,10 @@ void MainWindow::onStartButtonClicked()
 		m_sendClock.restart();
 		m_lastSendPerfLogNs = 0;
 		m_lastSendPerfFrameCount = 0;
-		m_uiUpdateEveryFrames = qMax(1, m_targetVideoFps / 5);
+		m_uiUpdateEveryFrames = qMax(1, static_cast<int>(m_inputHz / 5));
 		m_startButton->setEnabled(false);
 		m_stopButton->setEnabled(true);
-		m_statusLabel->setText(QString(QStringLiteral("● 状态: 仿真运行中 (%1 FPS)")).arg(m_targetVideoFps));
+		m_statusLabel->setText(QString(QStringLiteral("● 状态: 仿真运行中 (%1 FPS)")).arg(m_inputHz));
 		m_statusLabel->setStyleSheet("color: #388E3C; font-weight: bold;");
 		onSendRealTimeData();
 	}
@@ -1325,7 +1366,7 @@ void MainWindow::onStopButtonClicked()
 		m_isRealtimeSending = false;
 		m_realTimeTimer->stop();
         qInfo().noquote()<<QString("[StimFinal] transport=%1 successfulRealtimeWrites=%2 elapsedMs=%3 targetHz=%4")
-            .arg(m_ddsStim?"dds":"compat").arg(m_sentFrameCount).arg(m_sendClock.elapsed()).arg(m_targetVideoFps);
+            .arg(m_ddsStim?"dds":"compat").arg(m_sentFrameCount).arg(m_sendClock.elapsed()).arg(m_inputHz);
 		sendControlCommand(3); // 发送停止命令
 		m_startButton->setEnabled(true);
 		m_stopButton->setEnabled(false);
@@ -1404,7 +1445,7 @@ bool MainWindow::step(BYHWICD::CartesianCoordinate& plane_pos, BYHWICD::Euler& p
 	}
 
 	// 更新时间步
-	current_time += 1.0 / static_cast<double>(qMax(1, m_targetVideoFps));
+	current_time += 1.0 / m_inputHz;
 	return is_collided;
 }
 
@@ -1439,7 +1480,7 @@ void MainWindow::initStepSimData()
 
 //	collision_time = m_collisionTime->text().toDouble();
 	m_targetVideoFps = targetVideoFps();
-	time_step = qMax(1, qRound(1000.0 / static_cast<double>(m_targetVideoFps)));
+	setSendStepMs(m_timeStep->text().toDouble());
 	m_timeStep->setText(QString::number(time_step));
 
 	// 抛物线参数：确保t=collision_time时导弹x坐标等于飞机x坐标
@@ -1533,3 +1574,5 @@ void MainWindow::readData(QString tmp)
     }
     qDebug()<<"the data is ready!";
 }
+
+#include "p7_sensor_form.inl"

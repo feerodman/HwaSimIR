@@ -8,6 +8,8 @@ struct IRFrameTelemetry
 {
 	std::uint64_t sourceSeq = 0;
 	std::int64_t udpReceiveTimeNs = 0;
+	std::int64_t acceptedSteadyNs = 0;
+	std::int64_t captureSteadyNs = 0;
 	std::int64_t processStartTimeNs = 0;
 	int inputQueueDepth = 0;
 	double readbackMs = 0.0;

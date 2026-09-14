@@ -315,7 +315,7 @@ bool H264FfmpegDecoder::decode(
 	decoded.payloadCodec = QStringLiteral("h264_annexb");
 	decoded.decoderName = name();
 	decoded.keyFrame = keyFrame || containsIdr;
-	decoded.ptsMs = ptsMs;
+	decoded.ptsMs = m_impl->frame->pts;
 	decoded.decodeMs = static_cast<double>(timer.nsecsElapsed()) / 1.0e6;
 	decoded.decodedChannels = 3;
 	decoded.imageFormat = QStringLiteral("rgb");

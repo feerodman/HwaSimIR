@@ -56,8 +56,8 @@ struct DdsVideoPublisherStats
 };
 
 // Owns the process-lifetime ZRDDS publisher. It never reads a Panda texture,
-// encodes video, or adds metadata. Every queued vector is written verbatim as
-// one DDS::Bytes Sample.
+// or encodes video. It updates an existing versioned H264 product SEI with the
+// writer timestamp; raw/JPEG bytes remain unchanged. One AU is one DDS sample.
 class DdsVideoPublisher
 {
 public:

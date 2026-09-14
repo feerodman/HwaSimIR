@@ -3,8 +3,13 @@
 //#include "stdafx.h"
 
 #include "HwaSimIR.h"
+#if defined(HWASIMIR_HAS_ZRDDS)
+#include "BoardTelemetryService.h"
+#endif
 #include "IR/IRGameSpriteBatch.h"
 #include "IR/IRJson.h"
+#include "IR/IRPrecipitationBatch.h"
+#include "IR/IRAutoMapping.h"
 #include "IR/IRNozzleAttachments.h"
 #include "executionEnvironment.h"
 #include "pfmFile.h"
@@ -839,7 +844,7 @@ int ParseStage7PrecipitationMode(const std::string& value)
 	{
 		return 0;
 	}
-	if (lower == "cards" || lower == "card" || lower == "3d" || lower == "2")
+	if (lower == "batch" || lower == "cards" || lower == "card" || lower == "3d" || lower == "2")
 	{
 		return 2;
 	}
@@ -851,7 +856,7 @@ const char* Stage7PrecipitationModeName(int mode)
 	switch (mode)
 	{
 	case 0: return "None";
-	case 2: return "Cards";
+	case 2: return "Batch";
 	case 1:
 	default:
 		return "ScreenOverlay";
@@ -1498,6 +1503,7 @@ HwaSimIR::~HwaSimIR() {
 	// Stop protocol readers first, then video writer, and finalize the one
 	// process-wide DDS Runtime last.
 #if defined(HWASIMIR_HAS_ZRDDS)
+	if (m_boardTelemetry) m_boardTelemetry->stop();
 	if (m_ddsProtocolEndpoint) m_ddsProtocolEndpoint->shutdown();
 #endif
 	// 停止UDP线程
@@ -1677,6 +1683,9 @@ void HwaSimIR::run() {
 			}
 		}
 		if (hasDisplayFrame) {
+#if defined(HWASIMIR_HAS_ZRDDS)
+            if(m_boardTelemetry && pendingFrame.ddsIngress)m_boardTelemetry->counters.execute(pendingFrame.telemetry.processStartTimeNs,pendingFrame.telemetry.acceptedSteadyNs);
+#endif
 			// Do not hold the application FIFO mutex while updating telemetry.  On the
 			// ordered DDS path the reader callback may be waiting for this exact slot.
 			m_perfStats.recordAppRealtimeConsumed(
@@ -1694,6 +1703,8 @@ void HwaSimIR::run() {
 		m_frameRenderImageSeqBefore = m_renderTex != nullptr
 			? static_cast<std::uint64_t>(m_renderTex->get_image_modified().get_seq())
 			: 0;
+        if(m_p7FrameIdentityChart&&!m_stage6FinalCard.is_empty())
+            m_stage6FinalCard.set_shader_input("u_p7_frame_chart",LVecBase4f(1.0f,static_cast<float>(m_currentFrameTelemetry.sourceSeq%4096),static_cast<float>(m_stage6FinalWidth),static_cast<float>(m_stage6FinalHeight)));
 		PrepareStage6AgcSampleFrame();
 		const auto renderBegin = std::chrono::steady_clock::now();
 		if (!m_pFramework->do_frame(current_thread)) {
@@ -2574,6 +2585,7 @@ void HwaSimIR::InitStage6FinalPostShader()
     uniform float u_stage6_final_display_gain;
     uniform float u_stage6_final_display_offset;
     uniform float u_stage6_final_gamma;
+    uniform vec4 u_p7_frame_chart;
     uniform int u_stage6_final_noise_enable;
     uniform float u_stage6_final_noise_sigma_norm;
     uniform vec2 u_stage6_final_uv_scale;
@@ -2801,6 +2813,19 @@ void HwaSimIR::InitStage6FinalPostShader()
         if (u_stage6_detector_noise_position == 2) {
             gray = Stage6FinalApplyDetectorNoise(gray, gl_FragCoord.xy);
         }
+        // Explicit frame-identity chart only; never active in normal startup.
+        if(u_p7_frame_chart.x>0.5){
+            vec2 p=vec2(gl_FragCoord.x,u_p7_frame_chart.w-gl_FragCoord.y);
+            float seq=u_p7_frame_chart.y;
+            gray=0.2;
+            if(p.y>=40.0&&p.y<70.0&&p.x>=40.0&&p.x<328.0){
+                float bit=floor((p.x-40.0)/24.0);
+                gray=mod(floor(seq/pow(2.0,bit)),2.0)>0.5?0.8:0.2;
+            }
+            float left=100.0+mod(seq*3.0,560.0);
+            if(p.x>=left&&p.x<left+40.0&&p.y>=300.0&&p.y<360.0)gray=0.8;
+            if(p.x>=360.0&&p.x<400.0&&p.y>=40.0&&p.y<70.0)gray=0.8;
+        }
         // The shoulder precedes the sole gamma and polarity operations.
         if(u_stage6_final_reinhard==1){gray=max(gray,0.0);gray=gray/(1.0+gray);}
         gray = pow(clamp(gray,0.0,1.0),1.0/max(u_stage6_final_gamma,.1));
@@ -2821,6 +2846,7 @@ void HwaSimIR::InitStage6FinalPostShader()
 
 void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reason)
 {
+    const char* chart=std::getenv("P7FrameIdentityChart");m_p7FrameIdentityChart=chart&&std::string(chart)=="1";
 	const int safeWidth = std::max(1, width);
 	const int safeHeight = std::max(1, height);
 	const bool headlessMode = IsHeadlessOffscreenMode();
@@ -3373,6 +3399,7 @@ bool HwaSimIR::IsStage7FinalScreenOverlayActive() const
 
 bool HwaSimIR::IsStage6FinalPostprocessNoop(std::string* reason) const
 {
+    if(m_p7FrameIdentityChart){if(reason)*reason="explicit_frame_identity_chart";return false;}
     if(m_p6.enabled&&m_p6.scene=="display"){if(reason)*reason="P6_linear_capture";return false;}
 	if (std::abs(m_stage5SensorInputDisplayGamma-1.0)>1.e-6) {
 		if(reason) *reason="common_final_gamma";
@@ -3441,6 +3468,7 @@ void HwaSimIR::ApplyStage6FinalPostprocessInputs()
 	m_stage6FinalCard.set_shader_input("u_stage6_final_reinhard",LVecBase2i(m_stage6Reinhard?1:0,0));
 	m_stage6FinalCard.set_shader_input("u_stage6_final_display_gain", LVecBase2f(static_cast<float>(config.displayGain), 0.0f));
 	m_stage6FinalCard.set_shader_input("u_stage6_final_display_offset", LVecBase2f(static_cast<float>(offsetNorm), 0.0f));
+    m_stage6FinalCard.set_shader_input("u_p7_frame_chart",LVecBase4f(m_p7FrameIdentityChart?1.f:0.f,static_cast<float>(m_currentFrameTelemetry.sourceSeq%4096),static_cast<float>(m_stage6FinalWidth),static_cast<float>(m_stage6FinalHeight)));
 	m_stage6FinalCard.set_shader_input("u_stage6_final_gamma", LVecBase2f(static_cast<float>(m_stage5SensorInputDisplayGamma),0));
 	m_stage6FinalCard.set_shader_input("u_stage6_final_noise_enable", LVecBase2i(config.noiseEnable ? 1 : 0, 0));
 	m_stage6FinalCard.set_shader_input("u_stage6_final_noise_sigma_norm", LVecBase2f(static_cast<float>(noiseSigmaNorm), 0.0f));
@@ -3674,6 +3702,21 @@ void HwaSimIR::LogStage6DetectorNoise(std::uint64_t sourceSeq, double renderMs)
 
 #include "IR/IRAgcSampler.inl"
 
+void HwaSimIR::AdvanceStage6AgcMapping(double simulationMs,std::int64_t nowNs)
+{
+    if(!m_stage6AgcInitialized)return;
+    const double dt=std::isfinite(simulationMs)&&m_stage6AgcLastApplySimulationMs>=0.?
+        (simulationMs-m_stage6AgcLastApplySimulationMs)*.001:
+        (m_stage6AgcLastApplyNs?double(nowNs-m_stage6AgcLastApplyNs)/1.e9:0.);
+    const double alpha=IRAutoMapping::smoothing(m_stage6AgcSmoothingAlpha,m_stage6AgcUpdateHz,dt);
+    m_stage6AgcGain+=(m_stage6AgcTargetGain-m_stage6AgcGain)*alpha;
+    m_stage6AgcOffset+=(m_stage6AgcTargetOffset-m_stage6AgcOffset)*alpha;
+    m_stage6AgcLastApplySimulationMs=simulationMs;m_stage6AgcLastApplyNs=nowNs;
+    // Only two cached uniforms change between low-frequency statistics reads.
+    SetShaderInputCached(m_stage6FinalCard,"u_stage6_agc_gain",LVecBase2f(float(m_stage6AgcGain),0.f));
+    SetShaderInputCached(m_stage6FinalCard,"u_stage6_agc_offset",LVecBase2f(float(m_stage6AgcOffset),0.f));
+}
+
 void HwaSimIR::UpdateStage6AgcFromFrame(const unsigned char* frameData, int frameWidth, int frameHeight, std::uint64_t sourceSeq)
 {
 	const bool agcEffective =
@@ -3721,6 +3764,11 @@ void HwaSimIR::UpdateStage6AgcFromFrame(const unsigned char* frameData, int fram
         m_stage6AgcStatsMsCurrent=0.0;return;
     }
 	const std::int64_t nowNs = IRPerfStats::steadyTimeNs();
+    const double simulationMs=m_realTimeSceneData.time;
+    if(m_stage6AgcInitialized&&std::isfinite(simulationMs)&&simulationMs==m_stage6AgcLastSimulationMs){
+        m_stage6AgcStatsMsCurrent=0.;return; // asynchronous repetition/pause holds mapping
+    }
+    if(std::isfinite(simulationMs)&&simulationMs<m_stage6AgcLastSimulationMs)m_stage6AgcInitialized=false;
 	const double minUpdateIntervalSec = m_stage6AgcUpdateHz > 0.0 ? (1.0 / m_stage6AgcUpdateHz) : 0.0;
 	// Explicit ordinary-chart diagnostic: hold the last mapping, never enabled by normal inputs.
     if(m_p6.enabled && m_p6.scene=="display"){
@@ -3736,6 +3784,7 @@ void HwaSimIR::UpdateStage6AgcFromFrame(const unsigned char* frameData, int fram
 		(static_cast<double>(nowNs - m_stage6AgcLastUpdateNs) / 1.0e9) >= minUpdateIntervalSec;
 	if (!updateDue || (m_agcSampleBuffer && !m_agcSampleBuffer->is_active() && !std::getenv("AgcFullReadbackReference")))
 	{
+        AdvanceStage6AgcMapping(simulationMs,nowNs);
 		m_stage6AgcStatsMsCurrent = 0.0;
 		m_perfStats.recordStage6Agc(
 			0.0,
@@ -3835,32 +3884,20 @@ void HwaSimIR::UpdateStage6AgcFromFrame(const unsigned char* frameData, int fram
 			}
 		}
 
-		if (valid)
+		if (sampleCount>=16)
 		{
-			targetGain = (m_stage6AgcTargetHighGray - m_stage6AgcTargetLowGray) / std::max(1.0e-5, highInput - lowInput);
-			targetGain = ClampStage5Double(targetGain, m_stage6AgcMinGain, m_stage6AgcMaxGain);
-            targetOffset = m_stage6AgcTargetLowGray - targetGain * lowInput;
-			targetOffset = ClampStage5Double(targetOffset, m_stage6AgcMinOffset, m_stage6AgcMaxOffset);
-			fallbackReason = "none";
-		}
-		else
-		{
-			// Flat/near-flat fields have no evidence for contrast expansion. Relax to identity.
-            targetGain=1.0;targetOffset=0.0;
-            fallbackReason="low_contrast_identity";
+            const auto mapping=IRAutoMapping::target(lowInput,highInput,m_stage6AgcMinimumSpan,
+                m_stage6AgcTargetLowGray,m_stage6AgcTargetHighGray,m_stage6AgcMinGain,m_stage6AgcMaxGain,
+                m_stage6AgcMinOffset,m_stage6AgcMaxOffset);
+            targetGain=mapping.gain;targetOffset=mapping.offset;
+            fallbackReason=mapping.confidence<1.?"continuous_low_contrast":"none";
 		}
 	}
 
-	const double alpha = ClampStage5Double(m_stage6AgcSmoothingAlpha, 0.0, 1.0);
 	if (!m_stage6AgcInitialized)
 	{
 		m_stage6AgcGain = targetGain;
 		m_stage6AgcOffset = targetOffset;
-	}
-	else
-	{
-		m_stage6AgcGain = m_stage6AgcGain + (targetGain - m_stage6AgcGain) * alpha;
-		m_stage6AgcOffset = m_stage6AgcOffset + (targetOffset - m_stage6AgcOffset) * alpha;
 	}
 	m_stage6AgcGain = ClampStage5Double(m_stage6AgcGain, m_stage6AgcMinGain, m_stage6AgcMaxGain);
 	m_stage6AgcOffset = ClampStage5Double(m_stage6AgcOffset, m_stage6AgcMinOffset, m_stage6AgcMaxOffset);
@@ -3872,8 +3909,10 @@ void HwaSimIR::UpdateStage6AgcFromFrame(const unsigned char* frameData, int fram
 	m_stage6AgcValid = valid;
 	m_stage6AgcFallbackReason = fallbackReason;
 	m_stage6AgcInitialized = true;
+    AdvanceStage6AgcMapping(simulationMs,nowNs);
 	m_stage6AgcLastUpdateNs = nowNs;
 	m_stage6AgcLastUpdateSourceSeq = sourceSeq;
+    m_stage6AgcLastSimulationMs=simulationMs;
 	m_stage6AgcStatsMsCurrent = std::chrono::duration<double, std::milli>(
 		std::chrono::steady_clock::now() - statsBegin).count();
 
@@ -4305,6 +4344,8 @@ void HwaSimIR::ApplyStage7WeatherInputs(NodePath& node, const IRStage7WeatherSta
 
 void HwaSimIR::InitStage7WeatherScene()
 {
+    if(!m_p7IlluminationNode.is_empty())m_p7IlluminationNode.remove_node();
+    m_p7IlluminationNode=NodePath();
 	for (size_t i = 0; i < m_cloudNodes.size(); ++i)
 	{
 		if (!m_cloudNodes[i].is_empty())
@@ -4351,28 +4392,11 @@ void HwaSimIR::InitStage7WeatherScene()
 
 	InitStage7CloudRenderer();
 
-	const int precipitationCount =
-		(m_stage7PrecipitationEnabled && m_stage7PrecipitationMode == 2)
-		? std::max(0, std::min(128, m_stage7PrecipitationMaxParticles))
-		: 0;
-	for (int i = 0; i < precipitationCount; ++i)
-	{
-		CardMaker particleMaker("Stage7_Precipitation_Card");
-		particleMaker.set_frame(-0.035f, 0.035f, -0.55f, 0.55f);
-		NodePath particle = m_cameraNode.attach_new_node(particleMaker.generate());
-		const float x = -700.0f + static_cast<float>((i * 61) % 1400);
-		const float y = 240.0f + static_cast<float>((i % 16) * 28);
-		const float z = -320.0f + static_cast<float>((i * 43) % 760);
-		particle.set_pos(x, y, z);
-		particle.set_scale(30.0f, 1.0f, 120.0f);
-		particle.set_transparency(TransparencyAttrib::M_alpha);
-		particle.set_depth_write(false);
-		particle.set_bin("transparent", 20);
-		ApplyInfraredShader(particle, false);
-		particle.set_shader_input("u_object_kind", LVecBase2i(3, 0));
-		particle.hide();
-		m_stage7PrecipitationNodes.push_back(particle);
-	}
+	if(m_stage7PrecipitationEnabled && m_stage7PrecipitationMode==2 && m_stage7PrecipitationMaxParticles>0) {
+        NodePath batch=IRPrecipitationBatch::create(m_stage7VolumeRoot.is_empty()?m_renderRoot:m_stage7VolumeRoot,std::min(256,m_stage7PrecipitationMaxParticles));
+        if(!batch.is_empty()){batch.set_bin("fixed",100);m_stage7PrecipitationNodes.push_back(batch);}
+    }
+
 }
 
 void HwaSimIR::InitStage7CloudRenderer()
@@ -5305,7 +5329,7 @@ int HwaSimIR::RefreshStage7WeatherTextureCache(const IRStage7WeatherState& weath
 
 	if (m_stage7PrecipitationMode == 2 && !m_stage7PrecipitationNodes.empty())
 	{
-		const std::string rainPath = m_stage7WeatherEffects.texturePathForKey("rain_shaft");
+		const std::string rainPath = m_stage7WeatherEffects.texturePathForKey("rain_rgba");
 		const std::string snowPath = m_stage7WeatherEffects.texturePathForKey("snow_rgba");
 		const std::string resolvedRainPath = rainPath.empty() ? std::string() : FirstExistingPath(BuildRuntimeConfigPathCandidates(rainPath));
 		const std::string resolvedSnowPath = snowPath.empty() ? std::string() : FirstExistingPath(BuildRuntimeConfigPathCandidates(snowPath));
@@ -5355,36 +5379,7 @@ void HwaSimIR::UpdateStage7WeatherNodes(const IRStage7WeatherState& weatherState
 	UpdateStage7CloudWorldGrid(weatherState, currentTime, stateChanged);
 	UpdateStage7VolumetricClouds(weatherState, currentTime, stateChanged);
 
-	const bool precipitationVisible = weatherState.precipitationType != IRStage7PrecipitationType::None &&
-		weatherState.precipitationDensity > 0.01 &&
-		m_stage7PrecipitationMode == 2;
-	for (size_t i = 0; i < m_stage7PrecipitationNodes.size(); ++i)
-	{
-		if (m_stage7PrecipitationNodes[i].is_empty())
-		{
-			continue;
-		}
-		if (precipitationVisible)
-		{
-			m_stage7PrecipitationNodes[i].show();
-		}
-		else
-		{
-			m_stage7PrecipitationNodes[i].hide();
-		}
-		const double drift = weatherState.windV * 0.35 * std::sin((weatherState.windDir + 90.0) * 3.14159265358979323846 / 180.0);
-		const float x = -700.0f + static_cast<float>(((static_cast<int>(i) * 61) % 1400)) + static_cast<float>(std::fmod(currentTime * drift * 20.0, 1400.0));
-		const float y = 240.0f + static_cast<float>((i % 16) * 28);
-		const float fall = static_cast<float>(std::fmod(currentTime * weatherState.precipitationSpeed * 180.0 + i * 43.0, 760.0));
-		const float z = 380.0f - fall;
-		m_stage7PrecipitationNodes[i].set_pos(x, y, z);
-		m_stage7PrecipitationNodes[i].set_scale(weatherState.precipitationType == IRStage7PrecipitationType::Snow ? 38.0f : 28.0f,
-			1.0f,
-			weatherState.precipitationType == IRStage7PrecipitationType::Snow ? 52.0f : 125.0f);
-		ApplyStage7WeatherInputs(m_stage7PrecipitationNodes[i], weatherState);
-		SetShaderInputCached(m_stage7PrecipitationNodes[i], "u_object_kind", LVecBase2i(3, 0));
-		SetShaderInputCached(m_stage7PrecipitationNodes[i], "u_time", LVecBase2f(static_cast<float>(currentTime), 0.0f));
-	}
+	UpdateStage7PrecipitationBatch();
 	// UpdateStage7SkyHorizon has already applied the final-pass weather inputs
 	// before this function is called.  Repeating the full Stage6 update here
 	// costs a measurable amount at the 10 Hz weather cadence and does not change
@@ -8612,7 +8607,10 @@ bool HwaSimIR::InitDdsProtocol()
 			std::cerr << "[StartupFatal] component=DDSProtocol reason=" << error << std::endl;
 			return false;
 		}
-		PublishDdsVideoStatus(false, "dds_ready");
+        m_boardTelemetry.reset(new BoardTelemetryService());
+        if(!m_boardTelemetry->start(m_ddsRuntime,runtimeConfig.domainId,m_localPlatID,m_localSensorID))
+            std::cerr<<"[TelemetryV2] available=0 reason=diagnostic_topic_creation"<<std::endl;
+        PublishDdsVideoStatus(false, "dds_ready");
 	}
 	return true;
 }
@@ -8680,6 +8678,7 @@ bool HwaSimIR::PublishDdsFrameProducts(const DdsVideoFrameMeta& meta,
 		error = "DDS protocol endpoint is not ready";
 		return false;
 	}
+	if(m_boardTelemetry)m_boardTelemetry->counters.output(meta.generation,meta.run,meta.frameSeq);
 	if (!m_ddsProtocolEndpoint->publishVideoFrameMeta(meta, error)) return false;
 	if (annotation && !m_ddsProtocolEndpoint->publishAnnotationFrame(*annotation, error)) return false;
 	const DdsFrameAuxStats stats = m_ddsProtocolEndpoint->frameStats();
@@ -8732,6 +8731,9 @@ bool HwaSimIR::InitTcpThread()
 		this, m_tcpServerIp, m_tcpServerPort, m_channel, m_localPlatID, m_localSensorID);
 	m_pTcpThread->setSyncMode(m_bSyncRenderMode.load());
 	m_pTcpThread->setFlipVertical(m_stage6FlipInTcpThread);
+#ifdef __linux__
+    m_pTcpThread->setWorkerCpuList(m_runtimeConfig.getString("VideoOutput","WorkerCpuList","HwaSimIRVideoOutputCpuList","",nullptr));
+#endif
 	m_pTcpThread->configureOutput(
 		m_tcpJpegQuality,
 		m_tcpJpegGray,
@@ -9127,6 +9129,7 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
         m_cloudRenderCallCount=0;m_cloudRenderCallSumMs=0.0;m_cloudRenderCallMaxMs=0.0;
 #if defined(HWASIMIR_HAS_ZRDDS)
 		PublishDdsVideoStatus(false, "stop");
+        if(m_boardTelemetry)m_boardTelemetry->complete();
 #endif
 	
 		std::cout << "仿真停止：当前回合=" << m_currentRound << std::endl;
@@ -9205,6 +9208,10 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 		<< ", missileMax(AIM120/AIM9/MMD)=" << cmd.MissileMaxCount120 << "/"
 		<< cmd.MissileMaxCount9 << "/" << cmd.MissileMaxCountMMD << std::endl;
 	const std::string renderControlSource = ingressTransport + "_init";
+	if (m_pTcpThread) m_pTcpThread->beginProductInitialization();
+#if defined(HWASIMIR_HAS_ZRDDS)
+    if(m_boardTelemetry)m_boardTelemetry->counters.reset();
+#endif
 	ApplyRenderControl(cmd.trackingInit.simMode, cmd.trackingInit.videoFps, renderControlSource.c_str());
     m_inputRoundPreparedByInit=true;
 	const int targetVideoFps = m_targetVideoFps.load();
@@ -9262,6 +9269,8 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 	m_stage6AgcApplyMsCurrent = 0.0;
 	m_stage6AgcLastUpdateNs = 0;
 	m_stage6AgcLastUpdateSourceSeq = 0;
+	m_stage6AgcLastSimulationMs = -1.0;
+    m_stage6AgcLastApplySimulationMs=-1.0;m_stage6AgcLastApplyNs=0;
 	m_stage6AgcLogCounter = 0;
 	m_lastStage6AgcLogState.clear();
 	ApplyStage6FinalPostprocessInputs();
@@ -9365,6 +9374,10 @@ void HwaSimIR::ProcessDisplayDataOnMainThread(
 	const BYHWICD::DisplayC2cObjTrackingData& data,
 	const std::string& ingressTransport) {
 	const std::int64_t receiveTimeNs = IRPerfStats::wallTimeNs();
+	const std::int64_t acceptedSteadyNs = IRPerfStats::steadyTimeNs();
+#if defined(HWASIMIR_HAS_ZRDDS)
+    if(m_boardTelemetry && ingressTransport=="dds")m_boardTelemetry->counters.accept(acceptedSteadyNs);
+#endif
 	m_lastRealtimeIngressSteadyNs.store(IRPerfStats::steadyTimeNs());
 	const bool ddsIngress = ingressTransport == "dds";
 	if (ddsIngress)
@@ -9562,6 +9575,7 @@ void HwaSimIR::ProcessDisplayDataOnMainThread(
 	m_latestUdpSourceSeq.store(udpSeq);
 	pending.telemetry.sourceSeq = udpSeq;
 	pending.telemetry.udpReceiveTimeNs = receiveTimeNs;
+	pending.telemetry.acceptedSteadyNs = acceptedSteadyNs;
 	const bool orderedQueue = m_bSyncRenderMode.load() || m_asyncInputPolicy == "OrderedQueue";
 	if (orderedQueue)
 	{
@@ -10458,6 +10472,8 @@ void HwaSimIR::InitInfraredSimulation()
 	m_stage6AgcApplyMsCurrent = 0.0;
 	m_stage6AgcLastUpdateNs = 0;
 	m_stage6AgcLastUpdateSourceSeq = 0;
+	m_stage6AgcLastSimulationMs = -1.0;
+    m_stage6AgcLastApplySimulationMs=-1.0;m_stage6AgcLastApplyNs=0;
 	m_stage6AgcLogCounter = 0;
 	m_lastStage6AgcLogState.clear();
 	if (m_stage6DiagnosticsEnabled) std::cout << "[Stage6 AGCConfig]"
@@ -12577,10 +12593,10 @@ void HwaSimIR::InitInfraredShader() {
 				// standalone HeadlessOffscreen render root; mixing it with CPU values
 				// relative to m_renderRoot made the cone test silently evaluate to zero.
 				// Source position, direction, vertex and normal now share one frame.
-				vec3 source_to_fragment = v_local_pos - u_l2_active_source_pos_local;
-				float active_range_m = max(length(source_to_fragment), 0.001);
-				vec3 beam_ray = source_to_fragment / active_range_m;
-				float beam_angle_rad = acos(clamp(dot(normalize(u_l2_active_source_dir_local), beam_ray), -1.0, 1.0));
+				highp vec3 source_to_fragment = v_local_pos - u_l2_active_source_pos_local;
+				highp float active_range_m = max(length(source_to_fragment), 0.001);
+				highp vec3 beam_ray = source_to_fragment / active_range_m;
+				highp float beam_angle_rad = acos(clamp(dot(normalize(u_l2_active_source_dir_local), beam_ray), -1.0, 1.0));
 				float beam_factor = 0.0;
 				if (beam_angle_rad <= u_l2_active_half_angle_rad && u_l2_active_half_angle_rad > 0.0) {
 					if (u_l2_active_beam_profile == 1) {
@@ -15910,18 +15926,19 @@ void HwaSimIR::ApplyRenderControl(
 	const bool externalModeValid = externalSimMode == 1 || externalSimMode == 2;
 	const bool useExternalMode = m_renderModePolicy == "ExternalPreferred" && externalModeValid;
 	const int effectiveSimMode = useExternalMode ? externalSimMode : m_configuredSimMode;
-	int effectiveVideoFps = useExternalMode && externalVideoFps > 0
+    const bool useExternalFps=useExternalMode&&externalVideoFps>=0;
+	int effectiveVideoFps = useExternalFps
 		? externalVideoFps
 		: m_configuredVideoFps;
 	bool minFpsEnforced = false;
 	// The configured minimum is an asynchronous pacing guard.  Packet-driven
 	// sync mode must preserve the protocol's 20/30/60 Hz request exactly.
-	if (effectiveSimMode != 1 && m_enforceMinRealtimeFps && effectiveVideoFps < m_minRealtimeFps)
+	if (!useExternalFps && effectiveSimMode != 1 && m_enforceMinRealtimeFps && effectiveVideoFps > 0 && effectiveVideoFps < m_minRealtimeFps)
 	{
 		effectiveVideoFps = m_minRealtimeFps;
 		minFpsEnforced = true;
 	}
-	if (effectiveVideoFps <= 0)
+	if (effectiveVideoFps < 0)
 	{
 		effectiveVideoFps = 60;
 	}
@@ -16077,6 +16094,46 @@ void HwaSimIR::ResetGameGraphicsState()
     m_p6Background=NodePath();m_p6Display=NodePath();m_p6Core=NodePath();m_p6Blocker=NodePath();
 }
 
+#include "IR/P7OrdinaryIllumination.inl"
+
+void HwaSimIR::UpdateStage7PrecipitationBatch()
+{
+    if(m_stage7PrecipitationNodes.empty() || m_cameraNode.is_empty())return;
+    const auto& weather=m_stage7WeatherState;
+    const bool visible=m_stage7PrecipitationEnabled && m_stage7PrecipitationMode==2 &&
+        weather.precipitationType!=IRStage7PrecipitationType::None && weather.precipitationDensity>.001 && weather.maxHeight>0;
+    NodePath& node=m_stage7PrecipitationNodes[0];
+    if(!visible){node.hide();return;}
+    node.show();
+    node.set_mat(m_cameraNode.get_mat(m_renderRoot));
+    const double simTime=m_realTimeSceneData.time*.001;
+    const double elapsed=std::isfinite(simTime)?simTime:0.0;
+    const bool snow=weather.precipitationType==IRStage7PrecipitationType::Snow;
+    const double angle=weather.windDir*3.141592653589793/180.0;
+    const float speed=float(std::max(0.0,weather.precipitationSpeed));
+    const LVecBase3f velocityWorld(float(weather.windV*std::sin(angle)),float(weather.windV*std::cos(angle)),
+        -(snow?1.5f:11.f)*speed);
+    const auto velocity=m_cameraNode.get_relative_vector(m_renderRoot,velocityWorld);
+    const auto up=m_cameraNode.get_relative_vector(m_renderRoot,LVecBase3f(0,0,1));
+    const auto position=CloudRenderToWorld(m_cameraNode.get_pos(m_renderRoot));
+    const auto fov=m_cameraLens->get_fov();
+    const float source=m_sensorParam.trackerSensorBand==1?(snow?.55f:.38f):(snow?.39f:.34f);
+    SetShaderInputCached(node,"u_precip_time",LVecBase2f(float(elapsed),0));
+    node.set_shader_input("u_precip_state",LVecBase4f(snow?2.f:1.f,float(weather.precipitationDensity),speed,source));
+    SetShaderInputCached(node,"u_precip_fov",LVecBase2f(float(std::tan(fov[0]*3.141592653589793/360.0)),float(std::tan(fov[1]*3.141592653589793/360.0))));
+    SetShaderInputCached(node,"u_precip_velocity",velocity);
+    SetShaderInputCached(node,"u_precip_up",up);
+    SetShaderInputCached(node,"u_precip_height",LVecBase3f(position[2],float(weather.maxHeight),float(weather.transHeight)));
+    const auto seq=m_currentFrameTelemetry.sourceSeq;
+    if(seq<=3 || seq%3600==0) {
+        std::ostringstream line;line<<"[PrecipitationFrame] sourceSeq="<<seq<<" type="<<(snow?"snow":"rain")
+            <<" simTime="<<simTime<<" density="<<weather.precipitationDensity<<" speed="<<speed
+            <<" cameraAltitude="<<position[2]<<" ceiling="<<weather.maxHeight<<" transitionBelow="<<weather.transHeight
+            <<" batchCount=1 cloudVisible="<<m_stage7VolumeVisibleCount<<" worldWind="<<velocityWorld;
+        std::cout<<line.str()<<std::endl;
+    }
+}
+
 void HwaSimIR::UpdateGameSpriteAnimation()
 {
 	if(m_currentFrameTelemetry.sourceSeq==0) return;
@@ -16143,6 +16200,8 @@ AsyncTask::DoneStatus HwaSimIR::shader_update_task(GenericAsyncTask* task, void*
 			self->m_lastIrUpdateSourceSeq == 0 ||
 			sourceSeq >= self->m_lastIrUpdateSourceSeq + updateStride);
 		self->UpdateGameSpriteAnimation();
+        self->UpdateStage7PrecipitationBatch();
+        self->UpdateP7OrdinaryIllumination();
 		self->UpdateP5GraphicsTestScene();
         self->UpdateP6GraphicsTestScene();
 		if (stateChanged || updateDue)
@@ -16389,6 +16448,7 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 		displayFrameIndex = telemetry.sourceSeq > 0 ? telemetry.sourceSeq : self->m_stage0DisplayFrameCount;
 	}
 	telemetry.readbackMs = readbackMs;
+	telemetry.captureSteadyNs = IRPerfStats::steadyTimeNs();
 	if (self->m_bSyncRenderMode.load() &&
 		(telemetry.sourceSeq == 0 || telemetry.sourceSeq == self->m_lastCapturedSourceSeq))
 	{

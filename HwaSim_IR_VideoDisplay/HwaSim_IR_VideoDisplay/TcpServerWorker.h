@@ -41,7 +41,8 @@ signals:
 		qint64 receiveTimeNs,
 		double jpegDecodeMs,
 		int decodedChannels,
-		const QString& imageFormat);
+		const QString& imageFormat,
+        const QByteArray& encodedAu = QByteArray());
 	// 可选：收到初始化命令时通知主线程（参数可根据需要扩展）
 	void initCommandReceived(const BYHWICD::InitP2cObjectTrackingCmd& cmd);
 

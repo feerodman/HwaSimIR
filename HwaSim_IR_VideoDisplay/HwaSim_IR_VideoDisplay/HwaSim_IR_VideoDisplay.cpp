@@ -1,4 +1,8 @@
 ﻿#include "HwaSim_IR_VideoDisplay.h"
+#include <QScreen>
+#include <QWindow>
+#include <QGridLayout>
+#include "../../DDS/Protocol/SensorFieldSchema.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -122,12 +126,12 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
     fpsLayout->setContentsMargins(8,2,8,2);
     m_liveFpsLabel=new QLabel(ui.Wgt_title);
     m_liveFpsLabel->setObjectName("liveReceivedFps");
-    m_liveFpsLabel->setStyleSheet("color:#8fe0a4;font-size:16px;font-weight:600;");
+    m_liveFpsLabel->setStyleSheet("color:#c7d7e7;font-size:12px;");
     m_liveFpsLabel->setWordWrap(true);
     m_liveFpsLabel->setMinimumWidth(0);
     fpsLayout->addWidget(m_liveFpsLabel,1);
     m_liveFpsClock.start();
-    auto* fpsTimer=new QTimer(this);fpsTimer->setInterval(250);
+    auto* fpsTimer=new QTimer(this);fpsTimer->setInterval(200);
     connect(fpsTimer,&QTimer::timeout,this,&HwaSim_IR_VideoDisplay::updateLiveFps);
     fpsTimer->start();updateLiveFps();
     setWindowTitle(QString::fromUtf8("红外仿真图像接收器"));
@@ -239,6 +243,9 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
         recorderSettings.value(QStringLiteral("Recorder/FlushTimeoutMs"), 10000).toInt(),
         60000);
     m_recorder = new AsyncVideoRecorder(m_maxRecordingQueueFrames);
+    const QString recordingDirectory=qEnvironmentVariableIsSet("P7RecordingRoot")?QString::fromLocal8Bit(qgetenv("P7RecordingRoot")):
+        recorderSettings.value("Recorder/Directory",QApplication::applicationDirPath()+"/MP4").toString();
+    m_recorder->setOutputDirectory(recordingDirectory);
     qInfo().noquote()
         << QStringLiteral("[RecorderConfig] channel=%1 platID=%2 sensorID=%3 pid=%4 MaxRecordingQueueFrames=%5 FlushTimeoutMs=%6")
             .arg(m_channel)
@@ -281,68 +288,13 @@ void HwaSim_IR_VideoDisplay::InitQss()
     file.close();
 }
 
-// Each data page remains reachable without competing with the sensor form for height.
-void HwaSim_IR_VideoDisplay::setupResponsiveLayout()
-{
-    m_dataTabs=new QTabWidget(ui.dockWidgetContents);
-    m_dataTabs->setObjectName("dataPages");
-    m_dataTabs->setMinimumSize(0,0);
-    m_dataTabs->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Ignored);
-    m_dataTabs->setStyleSheet("QTabWidget::pane{border:1px solid #26795b;background:#071b19;} QTabBar::tab{background:#102f29;color:#b8ddce;padding:7px 10px;} QTabBar::tab:selected{background:#19533f;color:#ffffff;} QScrollArea,QGroupBox{background:#071b19;} QTableWidget{background:#071b19;alternate-background-color:#102c25;color:#d5eee2;} QSplitter::handle{background:#1c5040;}");
-    ui.verticalLayout_3->removeWidget(ui.groupBox_dataShow);
-    ui.verticalLayout_4->removeWidget(ui.groupBox_platData);
-    ui.verticalLayout_4->removeWidget(ui.groupBox_targetData);
-    auto* parameters=new QScrollArea(m_dataTabs);
-    parameters->setObjectName("parameterScroll");parameters->setWidgetResizable(true);
-    parameters->setMinimumSize(0,0);
-    parameters->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Ignored);
-    parameters->setWidget(ui.groupBox_dataShow);
-    m_dataTabs->addTab(parameters,QString::fromUtf8("场景参数"));
-    auto* dataPage=new QSplitter(Qt::Vertical,m_dataTabs);
-    dataPage->setObjectName("platformTargetPage");dataPage->setChildrenCollapsible(false);
-    dataPage->addWidget(ui.groupBox_platData);dataPage->addWidget(ui.groupBox_targetData);
-    dataPage->setStretchFactor(0,1);dataPage->setStretchFactor(1,2);
-    m_dataTabs->addTab(dataPage,QString::fromUtf8("平台与目标"));
-    ui.verticalLayout_3->addWidget(m_dataTabs);
-    ui.verticalLayout_3->setSizeConstraint(QLayout::SetNoConstraint);
-    ui.dockWidget_dataShow->setFeatures(QDockWidget::NoDockWidgetFeatures);
-    ui.dockWidget_dataShow->setMinimumWidth(230);
-    ui.widget_video->setMinimumSize(1,1);
-    ui.horizontalLayout->removeWidget(ui.dockWidget_dataShow);
-    ui.horizontalLayout->removeWidget(ui.widget_video);
-    m_dataSplitter=new QSplitter(Qt::Horizontal,ui.Wgt_showVideo);
-    m_dataSplitter->setObjectName("dataVideoSplitter");m_dataSplitter->setChildrenCollapsible(false);
-    m_dataSplitter->addWidget(ui.dockWidget_dataShow);m_dataSplitter->addWidget(ui.widget_video);
-    m_dataSplitter->setStretchFactor(0,0);m_dataSplitter->setStretchFactor(1,1);
-    m_dataSplitter->setSizes(QList<int>()<<480<<740);
-    ui.horizontalLayout->addWidget(m_dataSplitter);
-    ui.verticalLayout_2->setStretch(0,0);ui.verticalLayout_2->setStretch(1,1);
-    connect(m_dataSplitter,&QSplitter::splitterMoved,this,[this](int,int){centerVideoLabel();});
-}
-
-// Opt-in UI acceptance captures use live DDS data, at real widget sizes.
-void HwaSim_IR_VideoDisplay::captureResponsiveUi(int step)
-{
-    static const int pages[]={0,1,1};
-    if(step==0){m_uiOriginalSize=size();m_uiWasMaximized=isMaximized();showNormal();}
-    if(step>=3){m_dataTabs->setCurrentIndex(0);resize(m_uiOriginalSize);if(m_uiWasMaximized)showMaximized();return;}
-    m_dataTabs->setCurrentIndex(pages[step]);
-    layout()->activate();resize(step<2?1024:800,600);
-    QTimer::singleShot(300,this,[this,step](){
-        centerVideoLabel();
-        const QString base=QString::fromLocal8Bit(qgetenv("P6ReceiverUiDump"));
-        const QString path=QFileInfo(base).absolutePath()+QString("/ui_%1x%2_tab%3.png").arg(width()).arg(height()).arg(m_dataTabs->currentIndex());
-        grab().save(path);
-        auto* table=m_dataTabs->currentIndex()==1?ui.tableWidget_platData:ui.tableWidget_targetData;
-        qInfo().noquote()<<QString("[ResponsiveUiCapture] file=%1 size=%2x%3 tab=%4 rows=%5 hScrollMax=%6 viewport=%7x%8 targetRows=%9 targetViewportHeight=%10").arg(path).arg(width()).arg(height()).arg(m_dataTabs->currentIndex()).arg(table->rowCount()).arg(table->horizontalScrollBar()->maximum()).arg(table->viewport()->width()).arg(table->viewport()->height()).arg(ui.tableWidget_targetData->rowCount()).arg(ui.tableWidget_targetData->viewport()->height());
-        captureResponsiveUi(step+1);
-    });
-}
+#include "P7ReceiverLayout.inl"
 
 void HwaSim_IR_VideoDisplay::InitTables()
 {
     // ============ 平台数据表格（ui 已创建，直接配置）============
     ui.tableWidget_platData->setColumnCount(9);
+    ui.tableWidget_platData->setRowCount(2);
     ui.tableWidget_platData->setHorizontalHeaderLabels({
         "平台ID", "阵营",
         "纬度(°)", "经度(°)", "海拔(m)",
@@ -350,9 +302,9 @@ void HwaSim_IR_VideoDisplay::InitTables()
         "速度(km/h)"
     });
     // Stretch 模式：列按比例平分占满整行，无空白
-    ui.tableWidget_platData->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
+    ui.tableWidget_platData->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
     ui.tableWidget_platData->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    ui.tableWidget_platData->horizontalHeader()->setMinimumSectionSize(72);
+    ui.tableWidget_platData->horizontalHeader()->setMinimumSectionSize(12);
     ui.tableWidget_platData->setEditTriggers(QAbstractItemView::NoEditTriggers);
     ui.tableWidget_platData->setSelectionBehavior(QAbstractItemView::SelectRows);
     ui.tableWidget_platData->verticalHeader()->setVisible(false);
@@ -361,6 +313,7 @@ void HwaSim_IR_VideoDisplay::InitTables()
 
     // ============ 目标数据表格（ui 已创建，直接配置）============
     ui.tableWidget_targetData->setColumnCount(11);
+    ui.tableWidget_targetData->setRowCount(7);
     ui.tableWidget_targetData->setHorizontalHeaderLabels({
        "目标类型", "目标ID", "挂载平台ID",
         "纬度(°)", "经度(°)", "海拔(m)",
@@ -368,21 +321,24 @@ void HwaSim_IR_VideoDisplay::InitTables()
         "在视场", "状态"
     });
     // Stretch 模式：列按比例平分占满整行，无空白
-    ui.tableWidget_targetData->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
+    ui.tableWidget_targetData->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
     ui.tableWidget_targetData->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    ui.tableWidget_targetData->horizontalHeader()->setMinimumSectionSize(72);
+    ui.tableWidget_targetData->horizontalHeader()->setMinimumSectionSize(12);
     ui.tableWidget_targetData->setEditTriggers(QAbstractItemView::NoEditTriggers);
     ui.tableWidget_targetData->setSelectionBehavior(QAbstractItemView::SelectRows);
     ui.tableWidget_targetData->verticalHeader()->setVisible(false);
     ui.tableWidget_targetData->setWordWrap(false);
     for(auto* table:{ui.tableWidget_platData,ui.tableWidget_targetData}){
-        table->setMinimumSize(0,120);
+        table->setMinimumSize(0,0);
         table->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
         table->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
-        table->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-        table->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-        table->horizontalHeader()->setDefaultSectionSize(110);
-        for(int column=0;column<table->columnCount();++column)table->setColumnWidth(column,110);
+        table->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        table->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        for(int r=0;r<table->rowCount();++r)for(int c=0;c<table->columnCount();++c)
+            table->setItem(r,c,new QTableWidgetItem());
+        for(int c=0;c<table->columnCount();++c){auto* h=table->horizontalHeaderItem(c);h->setText(h->text().replace("(","\n(").replace(QString::fromUtf8("挂载平台ID"),QString::fromUtf8("平台\nID")));}
+        table->horizontalHeader()->setDefaultSectionSize(60);
+        for(int column=0;column<table->columnCount();++column)table->setColumnWidth(column,60);
         table->verticalHeader()->setDefaultSectionSize(32);
         table->setTextElideMode(Qt::ElideNone);
     }
@@ -399,8 +355,8 @@ void HwaSim_IR_VideoDisplay::centerVideoLabel()
     // 计算目标尺寸：填满父控件，但不超过图像最大分辨率，保持宽高比
     int maxW = m_maxImageWidth > 0 ? m_maxImageWidth : pw;
     int maxH = m_maxImageHeight > 0 ? m_maxImageHeight : ph;
-    int targetW = qMin(pw, maxW);
-    int targetH = qMin(ph, maxH);
+    int targetW = qMin(pw,static_cast<int>(1024.0/devicePixelRatioF()));
+    int targetH = qMin(ph,static_cast<int>(1024.0/devicePixelRatioF()));
     if (maxW > 0 && maxH > 0) {
         double ratio = (double)maxW / maxH;
         if (targetW > targetH * ratio)
@@ -421,11 +377,7 @@ void HwaSim_IR_VideoDisplay::centerVideoLabel()
 void HwaSim_IR_VideoDisplay::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
-    if(m_dataSplitter){
-        const int available=qMax(1,event->size().width()-48);
-        const int sidebar=qMin(480,qMax(230,available*45/100));
-        m_dataSplitter->setSizes(QList<int>()<<sidebar<<qMax(1,available-sidebar));
-    }
+    fitTelemetryTables();
     centerVideoLabel();
 }
 
@@ -487,28 +439,18 @@ void HwaSim_IR_VideoDisplay::updatePlatDataTable(int platID, const BYHWICD::Spat
 // ==================== 更新目标数据表格 ====================
 void HwaSim_IR_VideoDisplay::updateTargetDataTable(const BYHWICD::DisplayC2cObjTrackingData& data)
 {
-    ui.tableWidget_targetData->setRowCount(0);
-
-    // 遍历 targetState[5]，targetType == 0 时停止
-    for (int i = 0; i < 5; ++i) {
-        const BYHWICD::TargetState& ts = data.targetState[i];
-        if (ts.targetType == 0)
-            break;
-
-        int row = ui.tableWidget_targetData->rowCount();
-        ui.tableWidget_targetData->insertRow(row);
-
-        ui.tableWidget_targetData->setItem(row, 0, new QTableWidgetItem(targetTypeName(ts.targetType)));
-        ui.tableWidget_targetData->setItem(row, 1, new QTableWidgetItem(QString::number(ts.targetID)));
-        ui.tableWidget_targetData->setItem(row, 2, new QTableWidgetItem(QString::number(ts.targetPlatID)));
-        ui.tableWidget_targetData->setItem(row, 3, new QTableWidgetItem(QString::number(ts.targetLoc.lat, 'f', 6)));
-        ui.tableWidget_targetData->setItem(row, 4, new QTableWidgetItem(QString::number(ts.targetLoc.lon, 'f', 6)));
-        ui.tableWidget_targetData->setItem(row, 5, new QTableWidgetItem(QString::number(ts.targetLoc.alt, 'f', 2)));
-        ui.tableWidget_targetData->setItem(row, 6, new QTableWidgetItem(QString::number(ts.targetLoc.yaw, 'f', 2)));
-        ui.tableWidget_targetData->setItem(row, 7, new QTableWidgetItem(QString::number(ts.targetLoc.pitch, 'f', 2)));
-        ui.tableWidget_targetData->setItem(row, 8, new QTableWidgetItem(QString::number(ts.targetLoc.roll, 'f', 2)));
-        ui.tableWidget_targetData->setItem(row, 9, new QTableWidgetItem(ts.viewValid ? "是" : "否"));
-        ui.tableWidget_targetData->setItem(row, 10, new QTableWidgetItem(targetStateName(ts.targetState)));
+    auto* table=ui.tableWidget_targetData;
+    const int count=qBound(0,data.targetNumValid,5);
+    for(int row=0;row<7;++row){
+        QStringList values;
+        if(row<count){const auto& t=data.targetState[row];
+            values<<targetTypeName(t.targetType)<<QString::number(t.targetID)<<QString::number(t.targetPlatID)
+                <<QString::number(t.targetLoc.lat,'f',6)<<QString::number(t.targetLoc.lon,'f',6)
+                <<QString::number(t.targetLoc.alt,'f',1)<<QString::number(t.targetLoc.yaw,'f',1)
+                <<QString::number(t.targetLoc.pitch,'f',1)<<QString::number(t.targetLoc.roll,'f',1)
+                <<(t.viewValid?QString::fromUtf8("是"):QString::fromUtf8("否"))<<targetStateName(t.targetState);
+        }
+        for(int col=0;col<table->columnCount();++col)table->item(row,col)->setText(col<values.size()?values[col]:QString());
     }
 }
 
@@ -564,15 +506,38 @@ void HwaSim_IR_VideoDisplay::resetVideoPerfStats()
 
 void HwaSim_IR_VideoDisplay::updateLiveFps()
 {
+    if(m_uiDataPending){updatePlatDataTable(m_pendingUiData.platID,m_pendingUiData.platLoc);updateTargetDataTable(m_pendingUiData);fitTelemetryTables();m_uiDataPending=false;}
     if(!m_liveFpsLabel)return;
     const qint64 now=m_liveFpsClock.elapsed();
     while(!m_liveFrameTimes.empty()&&m_liveFrameTimes.front()<=now-1000)m_liveFrameTimes.pop_front();
-    const double fps=double(m_liveFrameTimes.size());
-    m_liveFpsLabel->setText(QString::fromUtf8("实时接收显示 %1 FPS  |  最近 1 秒解码帧更新  |  设定 %2 Hz  |  %3 × %4")
-        .arg(fps,0,'f',1).arg(m_videoFps).arg(m_maxImageWidth).arg(m_maxImageHeight));
+    const QJsonObject metrics=m_ddsWorker?m_ddsWorker->telemetrySnapshot():QJsonObject();
+    const bool telemetryFresh=metrics.value("available").toBool();
+    const QString finishedKey=metrics.value("server").toString()+"/"+metrics.value("generation").toString()+"/"+metrics.value("run").toString();
+    if(metrics.value("finished").toBool()&&finishedKey!=m_finishedProductKey&&
+       metrics.value("server")==m_lastProductIdentity.value("session")&&
+       metrics.value("generation")==m_lastProductIdentity.value("generation")&&
+       metrics.value("run")==m_lastProductIdentity.value("run")&&
+       m_lastProductIdentity.value("frameSeq").toString().toULongLong()>=metrics.value("outputSeq").toString().toULongLong()) {
+        CloseStorage();m_finishedProductKey=finishedKey;
+        qInfo().noquote()<<"[RecorderProductEnd]"<<finishedKey<<" lastFrame="<<metrics.value("outputSeq").toString();
+    }
+    const double fps=m_ddsWorker?metrics.value("videoFps").toDouble():double(m_liveFrameTimes.size());
+    if(m_metricLabels[1]){
+        m_metricLabels[1]->setText(QString::fromUtf8("数据接收 Hz  ")+(telemetryFresh?QString::number(metrics.value("acceptedHz").toDouble(),'f',1):QString::fromUtf8("—")));
+        m_metricLabels[2]->setText(QString::fromUtf8("指令处理 Hz  ")+(telemetryFresh?QString::number(metrics.value("executedHz").toDouble(),'f',1):QString::fromUtf8("—"))+
+            QString::fromUtf8("  等待 ")+(telemetryFresh?QString::number(metrics.value("queueWaitMs").toDouble(),'f',1):QString::fromUtf8("—"))+QStringLiteral(" ms"));
+        const bool valid=telemetryFresh&&metrics.value("clockValid").toBool()&&metrics.value("outputLatencyMs").toDouble(-1)>=0;
+        m_metricLabels[3]->setText(valid?QString::fromUtf8("输出延时 ≈%1 ms · 估计 ±%2 ms").arg(metrics.value("outputLatencyMs").toDouble(),0,'f',1).arg(metrics.value("clockErrorMs").toDouble(),0,'f',1):QString::fromUtf8("输出延时 — · 时间基准未就绪/过期"));
+    }
+    if(m_metricLabels[0])m_metricLabels[0]->setText(QString::fromUtf8("视频 FPS  %1").arg(fps,0,'f',1));
+    m_liveFpsLabel->setText(QString::fromUtf8("实时接收显示 %1 FPS  |  最近 1 秒新图  |  异步请求 %2 FPS (0=不限)  |  %3 × %4")
+        .arg(fps,0,'f',1).arg(m_requestedVideoFps>=0?QString::number(m_requestedVideoFps):QString("?" )).arg(m_maxImageWidth).arg(m_maxImageHeight));
+    if(m_recorder&&m_recorder->snapshot().fileError)
+        m_liveFpsLabel->setText(m_liveFpsLabel->text()+QString::fromUtf8("  |  录像写入失败，请检查日志与存储"));
     if(now-m_lastLiveFpsLogMs>=1000){
-        qInfo().noquote()<<QString("[LiveReceivedFps] fps=%1 windowMs=1000 source=decoded_gui_updates requestedHz=%2")
+        qInfo().noquote()<<QString("[LiveReceivedFps] fps=%1 windowMs=1000 source=receiver_decoded_new_images requestedHz=%2")
             .arg(fps,0,'f',1).arg(m_videoFps);m_lastLiveFpsLogMs=now;
+        qInfo().noquote()<<"[RuntimeMetricsV2]"<<QJsonDocument(metrics).toJson(QJsonDocument::Compact);
     }
     // Explicit acceptance capture of the actual widget; never writes on video pixels.
     const QByteArray dump=qgetenv("P6ReceiverUiDump");
@@ -629,15 +594,17 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
     qint64 receiveTimeNs,
     double jpegDecodeMs,
     int decodedChannels,
-    const QString& imageFormat)
+    const QString& imageFormat,
+    const QByteArray& encodedAu)
 {
+    const qint64 guiBeginSteadyNs=std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    if(hasVideo&&m_ddsWorker)m_ddsWorker->acknowledgeGuiFrame();
     if (!hasVideo)
     {
         // Metadata-only v3 packets must not decode or clear the last displayed frame.
         if (hasRealtimeData)
         {
-            updatePlatDataTable(data.platID, data.platLoc);
-            updateTargetDataTable(data);
+            m_pendingUiData=data;m_uiDataPending=true;
         }
         return;
     }
@@ -668,19 +635,19 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
     }
     const double displayMs = static_cast<double>(displayTimer.nsecsElapsed()) / 1.0e6;
     const qint64 shownTimeNs = wallTimeNs();
+    const qint64 guiSubmitSteadyNs=std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
     const bool updateUiData = m_videoPerfFrames < 3 ||
         (m_videoPerfFrames % static_cast<quint64>(qMax(1, m_uiUpdateEveryFrames))) == 0;
     if (updateUiData && hasRealtimeData)
     {
-        updatePlatDataTable(data.platID, data.platLoc);
-        updateTargetDataTable(data);
+        m_pendingUiData=data;m_uiDataPending=true;
     }
 
     quint64 frameSeq = packetFrameSeq;
     qint64 udpReceiveTimeNs = 0;
     qint64 tcpSendTimeNs = 0;
-    if (packetVersion == 0)
+    if (packetVersion == 0 || packetVersion == 4)
 	{
 		m_decodeCodec = codecId == 2 ? QStringLiteral("h264_annexb")
 			: (imageFormat == QStringLiteral("grayscale") ? QStringLiteral("raw_gray8")
@@ -700,10 +667,7 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
             ? QStringLiteral("h264")
             : m_decodeCodec;
         m_h264Requested = m_decodeCodec == QStringLiteral("h264_annexb");
-        if (ptsMs > 0)
-        {
-            udpReceiveTimeNs = ptsMs * 1000000LL;
-        }
+        // Media PTS is not a wall-clock timestamp.
         if (m_decodeCodec == QStringLiteral("h264_annexb") && keyFrame)
         {
             m_h264KeyFrameSeen = true;
@@ -715,7 +679,7 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
             ? QStringLiteral("jpeg_gray")
             : QStringLiteral("jpeg");
     }
-    if (hasAnnotation && !annotationJson.isEmpty())
+    if (!annotationJson.isEmpty())
     {
         QJsonParseError parseError;
         const QJsonDocument document = QJsonDocument::fromJson(annotationJson.toUtf8(), &parseError);
@@ -733,7 +697,7 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
             udpReceiveTimeNs = object.value("udpReceiveTimeNs").toString().toLongLong();
             tcpSendTimeNs = object.value("tcpSendTimeNs").toString().toLongLong();
             m_requestedCodec = object.value("requestedCodec").toString(QStringLiteral("jpeg"));
-            if (packetVersion != 3)
+            if (packetVersion != 3 && packetVersion != 4)
             {
                 m_activeCodec = object.value("activeCodec").toString(QStringLiteral("jpeg"));
                 m_decodeCodec = object.value("payloadCodec").toString(
@@ -781,9 +745,10 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
     }
 
     double endToEndMs = -1.0;
-    if (udpReceiveTimeNs > 0 && shownTimeNs >= udpReceiveTimeNs)
+    const auto productMetrics=QJsonDocument::fromJson(annotationJson.toUtf8()).object().value("_frameProduct").toObject();
+    if (productMetrics.value("outputLatencyEstimated").toBool())
     {
-        endToEndMs = static_cast<double>(shownTimeNs - udpReceiveTimeNs) / 1.0e6;
+        endToEndMs = productMetrics.value("outputLatencyMs").toDouble(-1);
         if (endToEndMs < 60000.0)
         {
             m_latencyMsTotal += endToEndMs;
@@ -792,16 +757,23 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
             m_latencyIntervalSamples.push_back(endToEndMs);
         }
     }
-    const double tcpToReceiveMs = tcpSendTimeNs > 0 && receiveTimeNs >= tcpSendTimeNs
-        ? static_cast<double>(receiveTimeNs - tcpSendTimeNs) / 1.0e6
-        : -1.0;
+    const double tcpToReceiveMs = -1.0; // Legacy host clocks have no verified shared epoch.
 
-    if (m_recorder && m_saveMP4Requested)
+    const QJsonObject identity=productMetrics;
+    if(!identity.isEmpty())m_lastProductIdentity=identity;
+    if (m_recorder && (identity.isEmpty()?m_saveMP4Requested:identity.value("saveRequested").toBool()))
     {
         QElapsedTimer enqueueTimer;
         enqueueTimer.start();
         RecordingFrame recordingFrame;
-        recordingFrame.sourceSeq = frameSeq;
+        recordingFrame.product=identity;
+        recordingFrame.product.insert("guiBeginSteadyNs",QString::number(guiBeginSteadyNs));
+        recordingFrame.product.insert("guiSubmitSteadyNs",QString::number(guiSubmitSteadyNs));
+        recordingFrame.frameSeq=frameSeq;
+        recordingFrame.sourceSeq=recordingFrame.product.value("sourceSeq").toString().toULongLong();
+        recordingFrame.ptsMs=ptsMs;
+        recordingFrame.encodedAu=encodedAu;
+        recordingFrame.keyFrame=keyFrame;
         recordingFrame.image = img;
         recordingFrame.trackingData = data;
         recordingFrame.annotationJson = annotationJson;
@@ -1047,25 +1019,19 @@ void HwaSim_IR_VideoDisplay::initCommandReceivedSlot(const BYHWICD::InitP2cObjec
     ui.lineEdit_trackerSensorViewMax->setText(QString::number(cmd.trackingInit.trackerSensor[0].trackerSensorViewMax));
     ui.lineEdit_trackerSensorPixelAngle->setText(QString::number(cmd.trackingInit.trackerSensor[0].trackerSensorPixelAngle));
 
-    // ----- 平台数据表格填充 -----
-    ui.tableWidget_platData->setRowCount(0);
-   // int count = cmd.platNumValid;
-   // if (count > 2) count = 2;  // platParam 固定长度 2
-   // for (int i = 0; i < count; ++i) {
-        const BYHWICD::PlatParamPak& pp = cmd.platParamInit;
-        int row = ui.tableWidget_platData->rowCount();
-        ui.tableWidget_platData->insertRow(row);
-
-        ui.tableWidget_platData->setItem(row, 0, new QTableWidgetItem(QString::number(pp.id)));
-        ui.tableWidget_platData->setItem(row, 1, new QTableWidgetItem(pp.type == 1 ? "红方" : "蓝方"));
-        ui.tableWidget_platData->setItem(row, 2, new QTableWidgetItem(QString::number(pp.spatial.lat, 'f', 6)));
-        ui.tableWidget_platData->setItem(row, 3, new QTableWidgetItem(QString::number(pp.spatial.lon, 'f', 6)));
-        ui.tableWidget_platData->setItem(row, 4, new QTableWidgetItem(QString::number(pp.spatial.alt, 'f', 2)));
-        ui.tableWidget_platData->setItem(row, 5, new QTableWidgetItem(QString::number(pp.spatial.yaw, 'f', 2)));
-        ui.tableWidget_platData->setItem(row, 6, new QTableWidgetItem(QString::number(pp.spatial.pitch, 'f', 2)));
-        ui.tableWidget_platData->setItem(row, 7, new QTableWidgetItem(QString::number(pp.spatial.roll, 'f', 2)));
-        ui.tableWidget_platData->setItem(row, 8, new QTableWidgetItem(QString::number(pp.spatial.speed, 'f', 2)));
-   // }
+    const auto& pp=cmd.platParamInit;
+    ui.tableWidget_platData->item(0,0)->setText(QString::number(pp.id));
+    ui.tableWidget_platData->item(0,1)->setText(pp.type==1?QString::fromUtf8("红方"):QString::fromUtf8("蓝方"));
+    updatePlatDataTable(pp.id,pp.spatial);
+    for(int i=0;i<HwaSensorFields::count;++i){const auto& field=HwaSensorFields::fields()[i];
+        const double value=HwaSensorFields::get(cmd.trackingInit.trackerSensor[0],field);
+        m_sensorFields[i]->setText(field.kind==HwaSensorFields::Boolean?(value?QString::fromUtf8("是"):QString::fromUtf8("否")):QString::number(value,'g',12));
+        qInfo().noquote()<<"[P7SensorReadback]"<<field.name<<QString::number(value,'g',17);
+    }
+    m_requestedVideoFps=cmd.trackingInit.videoFps;
+    m_simModeDisplay->setText(cmd.trackingInit.simMode==1?QString::fromUtf8("同步 (1)"):cmd.trackingInit.simMode==2?QString::fromUtf8("异步 (2)"):QString::number(cmd.trackingInit.simMode));
+    ui.lineEdit_videoFps->setText(cmd.trackingInit.videoFps==0?QString::fromUtf8("0 · 不限帧"):QString::number(cmd.trackingInit.videoFps));
+    fitTelemetryTables();
 }
 
 // ==================== 控制命令接收槽 ====================
@@ -1075,28 +1041,29 @@ void HwaSim_IR_VideoDisplay::controlCmdReceivedSlot(const BYHWICD::ControlP2cX1O
     {
     case 1: // 复位
     {
-        CloseStorage();
+        if(!m_ddsWorker)CloseStorage();
         resetVideoPerfStats();
-        ui.tableWidget_platData->setRowCount(0);
-        ui.tableWidget_targetData->setRowCount(0);
+        for(auto* table:{ui.tableWidget_platData,ui.tableWidget_targetData})
+            for(int r=0;r<table->rowCount();++r)for(int c=0;c<table->columnCount();++c)table->item(r,c)->setText(QString());
         ui.lineEdit_controlType->clear();
-        qDebug() << QStringLiteral("收到复位命令");
+        qDebug() << QString::fromUtf8("收到复位命令");
         break;
     }
     case 2: // 开始
     {
-        CloseStorage();
+        if(!m_ddsWorker)CloseStorage();
         resetVideoPerfStats();
 
-        ui.lineEdit_controlType->setText(QString("运行中-第%1/共%2回合")
+        ui.lineEdit_controlType->setText(QString("运行 %1/%2")
                                 .arg(cmd.currentRound).arg(cmd.roundCut));
 
         if (!m_saveMP4Requested || !m_recorder) {
-            qDebug() << QStringLiteral("收到开始命令，本回合不录制")
+            qDebug() << QString::fromUtf8("收到开始命令，本回合不录制")
                      << QStringLiteral("saveMP4En=") << m_saveMP4Requested;
             break;
         }
 
+        if(m_ddsWorker)break; // first identified AU starts its own session, including late joining
         const QString baseDirectory = QApplication::applicationDirPath() + QStringLiteral("/MP4");
         if (!m_recorder->startPending(cmd.currentRound, baseDirectory))
         {
@@ -1105,19 +1072,19 @@ void HwaSim_IR_VideoDisplay::controlCmdReceivedSlot(const BYHWICD::ControlP2cX1O
                     .arg(cmd.currentRound);
             break;
         }
-        qDebug() << QStringLiteral("收到开始命令，异步录像等待有效目标数据，round=") << cmd.currentRound;
+        qDebug() << QString::fromUtf8("收到开始命令，异步录像等待有效目标数据，round=") << cmd.currentRound;
         break;
     }
     case 3: // 停止
     {
         ui.lineEdit_controlType->setText("已停止");
-        CloseStorage();
+        if(!m_ddsWorker)CloseStorage();
         const RecorderSnapshot snapshot = m_recorder
             ? m_recorder->snapshot()
             : RecorderSnapshot();
-        qDebug() << QStringLiteral("收到停止命令，异步录像写入") << snapshot.writtenFrames
-                 << QStringLiteral("帧，丢弃") << snapshot.droppedFrames
-                 << QStringLiteral("路径") << snapshot.outputPath;
+        qDebug() << QString::fromUtf8("收到停止命令，异步录像写入") << snapshot.writtenFrames
+                 << QString::fromUtf8("帧，丢弃") << snapshot.droppedFrames
+                 << QString::fromUtf8("路径") << snapshot.outputPath;
         break;
     }
     default:

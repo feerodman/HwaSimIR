@@ -21,6 +21,7 @@
 #include "Annotation/AnnotationTypes.h"
 #include "IR/IRPerfStats.h"
 #include "Video/VideoEncoder.h"
+#include "FrameProductV2.h"
 #include "Video/DdsVideoPublisher.h"
 #include "Video/LocalMp4Recorder.h"
 
@@ -79,6 +80,7 @@ public:
 	bool startOutputRound(int round);
 	bool stopOutputRound(const char* reason);
 	void resetFrameCounters();
+	void beginProductInitialization() { ++m_productGeneration; }
 	// 转发 UDP 收到的控制命令，触发接收端开始/停止/复位逻辑。
 	bool sendControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd);
 	// 转发 UDP 收到的初始化命令，触发接收端初始化界面和回合状态。
@@ -155,7 +157,8 @@ private:
 	std::thread m_sendThread;
 	std::atomic<bool> m_bIsRunning;
 	std::atomic<bool> m_bIsConnected; // 连接状态标志
-	std::atomic<bool> m_initCompleted{ false }; // 初始化命令是否已转发成功
+	std::atomic<bool> m_initCompleted{ false };
+    std::atomic<bool> m_productSaveRequested{false}; // 初始化命令是否已转发成功
 	std::mutex m_mtx; // 互斥锁保护共享数据
 	std::mutex m_socketMtx; // 保护控制/初始化包与视频帧包不交叉发送
 
@@ -167,8 +170,10 @@ private:
 		BYHWICD::DisplayC2cObjTrackingData trackingData{};
 		AnnotationFrameRecord annotationRecord;
 		bool annotationEnabled = false;
+        bool saveRequested = false;
 		IRFrameTelemetry telemetry;
 		std::uint64_t logicalFrameSeq = 0;
+		std::uint64_t generation = 0, run = 0;
 		int currentRound = 0;
 		bool roundActive = false;
 		double queueWaitMs = 0.0;
@@ -221,6 +226,8 @@ private:
 	std::atomic<bool> m_ddsEnabled{ false };
 	std::atomic<bool> m_outputRoundActive{ false };
 	std::atomic<unsigned long long> m_roundFrameSequence{ 0 };
+	const std::string m_productSession = HwaFrameV2::processSession();
+	std::atomic<std::uint64_t> m_productGeneration{0}, m_productRun{0};
 	std::atomic<unsigned long long> m_roundLastCompletedFrame{ 0 };
 	std::atomic<unsigned long long> m_roundFramesInFlight{ 0 };
 	std::atomic<int> m_outputRound{ 0 };

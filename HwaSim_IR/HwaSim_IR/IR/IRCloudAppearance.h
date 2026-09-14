@@ -59,7 +59,7 @@ struct IRCloudAppearance {
         bounded=preset!="GameWorldLegacyArt";
         IRJson::Document m;m.load(root+"/"+(legacyReference?"Weather/Derived/cloud_manifest.json":bounded?d.string("Appearance.Manifest"):"Weather/Derived/cloud_manifest_p6a.json"));
         buildVersion=m.string("BuildVersion");
-        if(densityLighting && buildVersion!="P6D-density-light-1")throw std::runtime_error("cloud lighting/cache version mismatch");
+        if(densityLighting && buildVersion!="P6D-density-light-1" && buildVersion!="P7-asymmetric-alpha-puffs-2")throw std::runtime_error("cloud lighting/cache version mismatch");
         if(m.integer("Size",16,128)!=size)throw std::runtime_error("cloud cache size mismatch");
         int count=m.integer("Count",1,16);templates.clear();
         for(int i=0;i<count;++i){

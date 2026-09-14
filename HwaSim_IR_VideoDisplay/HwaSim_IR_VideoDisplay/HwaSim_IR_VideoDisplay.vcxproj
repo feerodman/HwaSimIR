@@ -63,7 +63,7 @@
     <FFmpegIncludeDir Condition="'$(FFmpegEnabled)' == 'true'">$(FFMPEG_ROOT)\include;</FFmpegIncludeDir>
     <FFmpegLibraryDir Condition="'$(FFmpegEnabled)' == 'true'">$(FFMPEG_ROOT)\lib;</FFmpegLibraryDir>
     <FFmpegDefinitions Condition="'$(FFmpegEnabled)' == 'true'">HWASIM_HAS_FFMPEG=1;</FFmpegDefinitions>
-    <FFmpegLibraries Condition="'$(FFmpegEnabled)' == 'true'">avcodec.lib;avutil.lib;swscale.lib;</FFmpegLibraries>
+    <FFmpegLibraries Condition="'$(FFmpegEnabled)' == 'true'">avcodec.lib;avformat.lib;avutil.lib;swscale.lib;</FFmpegLibraries>
     <ZrddsEnabled Condition="'$(ZRDDS_HOME)' != '' and Exists('$(ZRDDS_HOME)\include\CPlusPlusInterface\ZRDDSCppSimpleInterface.h') and Exists('$(ZRDDS_HOME)\lib\ZRDDSCpp_VS2015.lib')">true</ZrddsEnabled>
     <ZrddsIncludeDirs Condition="'$(ZrddsEnabled)' == 'true'">$(ZRDDS_HOME)\include\CPlusPlusInterface;$(ZRDDS_HOME)\include\ZRDDSCoreInterface;</ZrddsIncludeDirs>
     <ZrddsLibraryDir Condition="'$(ZrddsEnabled)' == 'true'">$(ZRDDS_HOME)\lib;</ZrddsLibraryDir>

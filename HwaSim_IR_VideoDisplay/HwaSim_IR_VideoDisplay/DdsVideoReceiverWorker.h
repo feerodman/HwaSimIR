@@ -3,9 +3,11 @@
 #include <QObject>
 #include <QImage>
 #include <QString>
+#include <QJsonObject>
 #include <atomic>
 #include <memory>
 #include <mutex>
+#include <condition_variable>
 
 #include "CommonData.h"
 
@@ -42,11 +44,13 @@ class DdsVideoReceiverWorker : public QObject
 public:
 	explicit DdsVideoReceiverWorker(const DdsVideoReceiverConfig& config, QObject* parent = nullptr);
 	~DdsVideoReceiverWorker();
-	quint64 receivedFrameCount() const { return m_receivedSamples.load(); }
+	quint64 receivedFrameCount() const { return m_decodedFrames.load(); }
+    QJsonObject telemetrySnapshot() const;
+    void acknowledgeGuiFrame(){std::lock_guard<std::mutex> lock(m_guiMutex);if(m_guiPending)--m_guiPending;m_guiSpace.notify_one();}
 
 public slots:
 	void doWork();
-	void stop() { m_stop.store(true); }
+	void stop() { m_stop.store(true); m_guiSpace.notify_all(); }
 
 signals:
 	void dataReceived(
@@ -66,7 +70,8 @@ signals:
 		qint64 receiveTimeNs,
 		double decodeMs,
 		int decodedChannels,
-		const QString& imageFormat);
+		const QString& imageFormat,
+        const QByteArray& encodedAu = QByteArray());
 	void fatalError(const QString& reason);
 	void initCommandReceived(const BYHWICD::InitP2cObjectTrackingCmd& cmd);
 	void controlCmdReceived(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd);
@@ -76,6 +81,7 @@ signals:
 
 private:
 	friend class DdsBytesListener;
+    friend class DdsTelemetryListener;
 	friend class DdsVideoStatusListener;
 	friend class DdsDisplayControlListener;
 	friend class DdsDisplayInitListener;
@@ -95,7 +101,9 @@ private:
 	DdsVideoReceiverConfig m_config;
 	std::atomic<bool> m_stop{ false };
 	std::atomic<quint64> m_receivedSamples{ 0 };
+	std::atomic<quint64> m_decodedFrames{ 0 };
 	std::atomic<quint64> m_receivedBytes{ 0 };
 	std::atomic<quint64> m_ddsErrors{ 0 };
 	bool m_dumpAttempted = false;
+    std::mutex m_guiMutex;std::condition_variable m_guiSpace;unsigned m_guiPending=0;
 };

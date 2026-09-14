@@ -1,6 +1,9 @@
 #include "AsyncVideoRecorder.h"
+#include <QCryptographicHash>
+#include "Video/RecordingMuxer.h"
 
 #include <QDateTime>
+#include <QFileInfo>
 #include <QDebug>
 #include <QDir>
 #include <QElapsedTimer>
@@ -40,6 +43,8 @@ QString targetStateName(int state)
     }
 }
 }
+
+struct AsyncVideoRecorder::Muxer : RecordingMuxer {};
 
 AsyncVideoRecorder::AsyncVideoRecorder(int maxQueueFrames)
     : m_maxQueueFrames(std::max(1, maxQueueFrames))
@@ -94,26 +99,20 @@ bool AsyncVideoRecorder::startPending(int round, const QString& baseDirectory)
 
 bool AsyncVideoRecorder::enqueue(const RecordingFrame& frame)
 {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    if (!m_enabled || !m_accepting || m_shutdownRequested)
-    {
-        return false;
+    std::unique_lock<std::mutex> lock(m_mutex);
+    if(m_fileError)return false;
+    if(!frame.product.isEmpty()){
+        if(!frame.product.value("saveRequested").toBool())return false;
+        m_enabled=true;m_accepting=true;
+        if(!m_initialized)m_pending=true;
+        m_round=frame.product.value("round").toInt();
     }
-    if (m_pending && !m_initialized &&
-        frame.hasRealtimeData &&
-        !hasTargetStateData(frame.trackingData))
-    {
-        return false;
-    }
-
-    ++m_inputFrames;
-    ++m_perfInputFrames;
-    if (static_cast<int>(m_queue.size()) >= m_maxQueueFrames)
-    {
-        ++m_droppedFrames;
-        return false;
-    }
-
+    if(!m_enabled||!m_accepting||m_shutdownRequested)return false;
+    // Zero-target frames are valid videos. Backpressure is bounded by queue
+    // capacity; a slow disk must not silently throw away saved frame products.
+    m_spaceCondition.wait(lock,[this]{return static_cast<int>(m_queue.size())<m_maxQueueFrames||m_shutdownRequested||!m_accepting;});
+    if(m_shutdownRequested||!m_accepting)return false;
+    ++m_inputFrames;++m_perfInputFrames;
     m_queue.push_back(frame);
     m_maxQueueDepthObserved = std::max(
         m_maxQueueDepthObserved,
@@ -172,6 +171,7 @@ RecorderSnapshot AsyncVideoRecorder::snapshot() const
 {
     std::lock_guard<std::mutex> lock(m_mutex);
     RecorderSnapshot result;
+    result.fileError = m_fileError;
     result.recordingEnabled = m_enabled && (m_accepting || m_pending || m_initialized);
     result.pending = m_pending;
     result.initialized = m_initialized;
@@ -208,6 +208,7 @@ void AsyncVideoRecorder::threadMain()
             {
                 frame = m_queue.front();
                 m_queue.pop_front();
+                m_spaceCondition.notify_one();
                 m_workerBusy = true;
                 haveFrame = true;
             }
@@ -224,6 +225,12 @@ void AsyncVideoRecorder::threadMain()
 
         if (haveFrame)
         {
+            const QString productKey=frame.product.value("session").toString()+"/"+frame.product.value("generation").toString()+"/"+frame.product.value("run").toString();
+            if(!frame.product.isEmpty()&&productKey!=m_sessionProductKey){
+                if(!m_sessionProductKey.isEmpty()){logPerf(true);closeSession();}
+                m_sessionProductKey=productKey;
+                std::lock_guard<std::mutex> lock(m_mutex);m_initialized=false;m_pending=true;m_round=frame.product.value("round").toInt();
+            }
             bool canWrite = false;
             {
                 std::lock_guard<std::mutex> lock(m_mutex);
@@ -233,9 +240,9 @@ void AsyncVideoRecorder::threadMain()
             {
                 canWrite = initializeSession(frame);
             }
-            if (canWrite)
-            {
-                writeFrame(frame);
+            if (!canWrite || !writeFrame(frame)) {
+                std::lock_guard<std::mutex> lock(m_mutex);++m_droppedFrames;m_fileError=true;m_accepting=false;m_spaceCondition.notify_all();
+                qCritical()<<"[Recorder] failed frameSeq="<<frame.frameSeq<<" storage is incomplete";
             }
 
             {
@@ -293,7 +300,7 @@ bool AsyncVideoRecorder::initializeSession(const RecordingFrame& firstFrame)
         return false;
     }
 
-    const QString timestamp = QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd_HHmmss"));
+    const QString timestamp = QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd_HHmmss_zzz"));
     const QString roundDirectory = QStringLiteral("%1/round_%2_%3")
         .arg(baseDirectory)
         .arg(round, 3, 10, QChar('0'))
@@ -346,8 +353,16 @@ bool AsyncVideoRecorder::initializeSession(const RecordingFrame& firstFrame)
 
     std::unique_ptr<cv::VideoWriter> writer;
     const char* selectedCodec = "none";
+    if(!firstFrame.encodedAu.isEmpty()) {
+        m_muxer.reset(new Muxer());
+        if(!m_muxer->open(outputPath,firstFrame.encodedAu,frameSize.width,frameSize.height,videoFps)) {
+            qCritical()<<"[Recorder] remux open failed"<<m_muxer->error; m_muxer.reset();return false;
+        }
+        selectedCodec="received_h264_remux";
+    }
     for (const CodecTry& codec : codecs)
     {
+        if(m_muxer)break;
         writer.reset(new cv::VideoWriter(
             outputPath.toStdString(),
             codec.fourcc,
@@ -361,7 +376,7 @@ bool AsyncVideoRecorder::initializeSession(const RecordingFrame& firstFrame)
         }
         writer.reset();
     }
-    if (!writer)
+    if (!writer && !m_muxer)
     {
         qWarning() << "[RecorderPerf][WARN] videoWriterOpenFailed" << outputPath;
         std::lock_guard<std::mutex> lock(m_mutex);
@@ -370,6 +385,12 @@ bool AsyncVideoRecorder::initializeSession(const RecordingFrame& firstFrame)
         return false;
     }
 
+    m_indexFile.reset(new QFile(roundDirectory+QStringLiteral("/frame_index.jsonl")));
+    m_bodyFile.reset(new QFile(roundDirectory+QStringLiteral("/producer_annotations.jsonl")));
+    if(!m_indexFile->open(QIODevice::WriteOnly)||!m_bodyFile->open(QIODevice::WriteOnly)) {
+        qCritical()<<"[Recorder] index/body open failed"; return false;
+    }
+    m_storageIndex=0;m_lastWrittenFrameSeq=0;
     m_videoWriter = std::move(writer);
     m_annotationFile = std::move(annotationFile);
     m_annotationStream = std::move(annotationStream);
@@ -395,13 +416,19 @@ bool AsyncVideoRecorder::initializeSession(const RecordingFrame& firstFrame)
 
 bool AsyncVideoRecorder::writeFrame(const RecordingFrame& frame)
 {
-    if (!m_videoWriter || !m_videoWriter->isOpened())
+    if (!m_muxer && (!m_videoWriter || !m_videoWriter->isOpened()))
     {
         return false;
     }
 
     QElapsedTimer writeTimer;
     writeTimer.start();
+    if(m_muxer) {
+        if(!m_muxer->write(frame.encodedAu,frame.keyFrame,
+           frame.product.value("captureSteadyNs").toString().toLongLong(),m_videoFps)) {
+            qCritical()<<"[Recorder] remux write failed"<<m_muxer->error;return false;
+        }
+    } else {
     cv::Mat bgr;
     if (frame.image.isGrayscale())
     {
@@ -426,27 +453,8 @@ bool AsyncVideoRecorder::writeFrame(const RecordingFrame& frame)
         cv::cvtColor(rgb, bgr, cv::COLOR_RGB2BGR);
     }
     m_videoWriter->write(bgr);
-    const double writeMs = static_cast<double>(writeTimer.nsecsElapsed()) / 1.0e6;
-
-    quint64 recordingFrameIndex = 0;
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        ++m_writtenFrames;
-        ++m_perfWrittenFrames;
-        recordingFrameIndex = m_writtenFrames;
-        m_writeMsTotal += writeMs;
-        m_writeMsMax = std::max(m_writeMsMax, writeMs);
-        m_perfWriteMsTotal += writeMs;
-        m_perfWriteMsMax = std::max(m_perfWriteMsMax, writeMs);
-        if (frame.sourceSeq > 0)
-        {
-            if (m_lastWrittenSourceSeq > 0 && frame.sourceSeq != m_lastWrittenSourceSeq + 1)
-            {
-                m_sourceSeqContinuousWritten = false;
-            }
-            m_lastWrittenSourceSeq = frame.sourceSeq;
-        }
     }
+    const quint64 recordingFrameIndex = m_storageIndex+1;
 
     if (m_annotationStream)
     {
@@ -456,12 +464,69 @@ bool AsyncVideoRecorder::writeFrame(const RecordingFrame& frame)
     {
         *m_targetAnnotationStream << targetAnnotationJsonLine(recordingFrameIndex, frame) << "\n";
     }
+    const qint64 bodyOffset=m_bodyFile->pos();
+    QJsonObject original=QJsonDocument::fromJson(frame.annotationJson.toUtf8()).object();
+    original.remove("_frameProduct");
+    HwaFrameV2::Product wireProduct;
+    const bool exactBody=HwaFrameV2::extract(reinterpret_cast<const std::uint8_t*>(frame.encodedAu.constData()),frame.encodedAu.size(),wireProduct);
+    const QByteArray body=exactBody?QByteArray::fromStdString(wireProduct.annotation):
+        (original.isEmpty()?QByteArray():QJsonDocument(original).toJson(QJsonDocument::Compact));
+    if(m_bodyFile->write(body)!=body.size()||m_bodyFile->write("\n",1)!=1)return false;
+    QJsonObject index=frame.product;
+    index.insert("storageIndex",QString::number(recordingFrameIndex));
+    index.insert("frameSeq",QString::number(frame.frameSeq));
+    index.insert("sourceSeq",QString::number(frame.sourceSeq));
+    index.insert("producerPtsMs",QString::number(frame.ptsMs));
+    index.insert("mp4PtsUs",QString::number(m_muxer?m_muxer->lastPtsUs:static_cast<qint64>((recordingFrameIndex-1)*1000000/qMax(1,m_videoFps))));
+    index.insert("storageCodec",m_muxer?"received_h264_remux":"opencv_reencode");
+    index.insert("receivedAuSha256",QString::fromLatin1(QCryptographicHash::hash(frame.encodedAu,QCryptographicHash::Sha256).toHex()));
+    index.insert("annotationBodyOffset",QString::number(bodyOffset));
+    index.insert("annotationBodyBytes",body.size());
+    index.insert("annotationBodySha256",QString::fromLatin1(QCryptographicHash::hash(body,QCryptographicHash::Sha256).toHex()));
+    index.insert("association",frame.product.isEmpty()?"unmatched":"AU_SEI_V2");
+    index.insert("receiveTimeNs",QString::number(frame.receiveTimeNs));
+    index.insert("displayTimeNs",QString::number(frame.displayTimeNs));
+    index.insert("width",frame.image.width());index.insert("height",frame.image.height());
+    m_indexFile->write(QJsonDocument(index).toJson(QJsonDocument::Compact));m_indexFile->write("\n",1);
+    if((m_annotationStream&&m_annotationStream->status()!=QTextStream::Ok)||
+       (m_targetAnnotationStream&&m_targetAnnotationStream->status()!=QTextStream::Ok)||
+       m_indexFile->error()!=QFile::NoError||m_bodyFile->error()!=QFile::NoError) {
+        qCritical()<<"[Recorder] index/body write failed";return false;
+    }
+    const double writeMs=static_cast<double>(writeTimer.nsecsElapsed())/1.0e6;
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        ++m_writtenFrames;++m_perfWrittenFrames;++m_storageIndex;
+        m_writeMsTotal+=writeMs;m_writeMsMax=std::max(m_writeMsMax,writeMs);
+        m_perfWriteMsTotal+=writeMs;m_perfWriteMsMax=std::max(m_perfWriteMsMax,writeMs);
+        if(frame.frameSeq>0&&m_lastWrittenFrameSeq>0&&frame.frameSeq!=m_lastWrittenFrameSeq+1)m_sourceSeqContinuousWritten=false;
+        m_lastWrittenFrameSeq=frame.frameSeq;m_lastWrittenSourceSeq=frame.sourceSeq;
+    }
     logPerf(false);
     return true;
 }
 
 void AsyncVideoRecorder::closeSession()
 {
+    m_spaceCondition.notify_all();
+    bool ok=true;
+    if(m_muxer&&!m_muxer->close()){qCritical()<<"[RecorderFileError]"<<m_muxer->error;ok=false;}
+    m_muxer.reset();
+    if(m_indexFile&&!m_indexFile->flush())ok=false;
+    if(m_bodyFile&&!m_bodyFile->flush())ok=false;
+    if(m_annotationStream){m_annotationStream->flush();if(m_annotationStream->status()!=QTextStream::Ok)ok=false;}
+    if(m_targetAnnotationStream){m_targetAnnotationStream->flush();if(m_targetAnnotationStream->status()!=QTextStream::Ok)ok=false;}
+    if(!ok){std::lock_guard<std::mutex> lock(m_mutex);m_fileError=true;m_accepting=false;qCritical()<<"[RecorderFileError] finalization_failed";}
+    if(m_indexFile){
+        QJsonObject summary;summary.insert("productSession",m_sessionProductKey);summary.insert("completeProducts",QString::number(m_storageIndex));
+        summary.insert("lastFrameSeq",QString::number(m_lastWrittenFrameSeq));summary.insert("lastSourceSeq",QString::number(m_lastWrittenSourceSeq));
+        {std::lock_guard<std::mutex> lock(m_mutex);summary.insert("fileError",m_fileError);}
+        summary.insert("muxerFinalized",ok);summary.insert("independentValidationRequired",true);
+        QFile report(QFileInfo(m_indexFile->fileName()).dir().filePath("recording_status.json"));
+        if(report.open(QIODevice::WriteOnly))report.write(QJsonDocument(summary).toJson());
+        m_indexFile.reset();
+    }
+    if(m_bodyFile){m_bodyFile->flush();m_bodyFile.reset();}
     if (m_videoWriter)
     {
         if (m_videoWriter->isOpened())
@@ -564,7 +629,9 @@ QString AsyncVideoRecorder::trackingJsonLine(
 {
     QJsonObject root;
     root.insert(QStringLiteral("recordingFrameIndex"), static_cast<double>(recordingFrameIndex));
-    root.insert(QStringLiteral("frameIndex"), static_cast<double>(frame.sourceSeq));
+    root.insert(QStringLiteral("frameSeq"), QString::number(frame.frameSeq));
+    root.insert(QStringLiteral("producerPtsMs"), QString::number(frame.ptsMs));
+    root.insert(QStringLiteral("_frameProduct"), frame.product);
     root.insert(QStringLiteral("sourceSeq"), static_cast<double>(frame.sourceSeq));
     root.insert(QStringLiteral("hasRealtimeData"), frame.hasRealtimeData);
     root.insert(QStringLiteral("receiveTimeNs"), QString::number(frame.receiveTimeNs));
@@ -611,7 +678,7 @@ QString AsyncVideoRecorder::targetAnnotationJsonLine(
     const RecordingFrame& frame)
 {
     QJsonObject root;
-    if (frame.hasAnnotation && !frame.annotationJson.trimmed().isEmpty())
+    if (!frame.annotationJson.trimmed().isEmpty())
     {
         QJsonParseError parseError;
         const QJsonDocument document = QJsonDocument::fromJson(
@@ -623,7 +690,9 @@ QString AsyncVideoRecorder::targetAnnotationJsonLine(
         }
     }
     root.insert(QStringLiteral("recordingFrameIndex"), static_cast<double>(recordingFrameIndex));
-    root.insert(QStringLiteral("frameIndex"), static_cast<double>(frame.sourceSeq));
+    root.insert(QStringLiteral("frameSeq"), QString::number(frame.frameSeq));
+    root.insert(QStringLiteral("producerPtsMs"), QString::number(frame.ptsMs));
+    root.insert(QStringLiteral("_frameProduct"), frame.product);
     root.insert(QStringLiteral("sourceSeq"), static_cast<double>(frame.sourceSeq));
     root.insert(QStringLiteral("hasAnnotation"), frame.hasAnnotation);
     if (!frame.hasAnnotation)

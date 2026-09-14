@@ -1,3 +1,4 @@
+uniform vec3 u_sprite_art; // length, radius, luminous art multipliers only
 // Public-domain mathematical game effect; normalized model-local emission axis -Y.
 uniform mat4 p3d_ModelViewMatrix;
 uniform mat4 p3d_ProjectionMatrix;
@@ -25,10 +26,13 @@ void main() {
     float angle = p3d_Normal.y * 6.2831853 + age * 1.4;
     vec3 center = vec3(cos(angle), 0.0, sin(angle)) * age * (.10 + halo * .15);
     center.y = -age;
+    center.y *= u_sprite_art.x;
+    center.xz *= u_sprite_art.y;
     center += u_sprite_nozzle_offset * p3d_Vertex.z;
     vec4 eye = p3d_ModelViewMatrix * vec4(center, 1.0);
     float radius = length(p3d_ModelViewMatrix[0].xyz) * mix(.32, .57 + halo*.18, age);
     if(u_game_sprite.x>0.5)radius=length(p3d_ModelViewMatrix[0].xyz)*mix(.6,.35+halo*.7,age);
+    radius *= u_sprite_art.y;
     // Each soft sprite faces the view. The emission axis and center remain in model space.
     vec2 corner=p3d_Vertex.xy;
     if(u_sprite_aspect.y>0.5){

@@ -1,0 +1,59 @@
+{
+  "Schema": "ordinary_weather_camera_1",
+  "SimulationEpochMs": 21600000,
+  "Keyframes": [
+    [
+      0,
+      40.039270879334474,
+      116.01904829021002,
+      2401.7019904917106,
+      0,
+      176.5686471057785,
+      1.6580234618657603
+    ],
+    [
+      3,
+      40.039270879334474,
+      116.01904829021002,
+      2851.7019904917106,
+      0,
+      176.5686471057785,
+      1.6580234618657603
+    ],
+    [
+      6,
+      40.039270879334474,
+      116.01904829021002,
+      2851.7019904917106,
+      0,
+      176.5686471057785,
+      1.6580234618657603
+    ],
+    [
+      9,
+      40.039270879334474,
+      116.01904829021002,
+      2401.7019904917106,
+      0,
+      176.5686471057785,
+      1.6580234618657603
+    ]
+  ],
+  "PublicCameraENU": [
+    1626.2860433031433,
+    4362.262044541217,
+    2400.0
+  ],
+  "ExpectedNearbyCloudIds": [
+    "0C909B1FE63A0F9F",
+    "DA9DE274F1FB89FC"
+  ],
+  "InitializationWeather": {
+    "envMaxHeightRain": 2500,
+    "envTransHeightRain": 300,
+    "envMaxHeightSnow": 4500,
+    "envTransHeightSnow": 800,
+    "envRainSnowSpeedScale": 1
+  },
+  "Description": "Ordinary protocol altitude crossing; cloud generation unchanged."
+}

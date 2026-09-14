@@ -59,7 +59,8 @@ public slots:
         qint64 receiveTimeNs,
         double jpegDecodeMs,
         int decodedChannels,
-        const QString& imageFormat);
+        const QString& imageFormat,
+        const QByteArray& encodedAu = QByteArray());
     void initCommandReceivedSlot(const BYHWICD::InitP2cObjectTrackingCmd& cmd);
     void controlCmdReceivedSlot(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd);
 	void videoStatusReceivedSlot(const QString& topic, const QString& codec,
@@ -76,6 +77,14 @@ private:
     void resetVideoPerfStats();
     void updateLiveFps();
     void setupResponsiveLayout();
+    void fitTelemetryTables();
+    QLabel* m_metricLabels[4]={};
+    QLineEdit* m_sensorFields[27]={};
+    QLineEdit* m_simModeDisplay=nullptr;
+    BYHWICD::DisplayC2cObjTrackingData m_pendingUiData={};
+    bool m_uiDataPending=false;
+    QJsonObject m_lastProductIdentity;
+    QString m_finishedProductKey;
     void captureResponsiveUi(int step);
     QTabWidget* m_dataTabs=nullptr;
     QSplitter* m_dataSplitter=nullptr;
@@ -104,6 +113,7 @@ private:
     int m_maxImageWidth = 0;
     int m_maxImageHeight = 0;
     int m_videoFps = 25;
+    int m_requestedVideoFps = -1;
 	int m_statusWidth = 0;
 	int m_statusHeight = 0;
 	QString m_statusTopic;

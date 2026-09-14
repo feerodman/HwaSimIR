@@ -1,0 +1,40 @@
+{
+  "Schema": "ordinary_weather_camera_1",
+  "SimulationEpochMs": 21600000,
+  "Keyframes": [
+    [
+      0,
+      40.039270879334474,
+      116.01904829021002,
+      2401.7019904917106,
+      0,
+      176.5686471057785,
+      1.6580234618657603
+    ]
+  ],
+  "GameAssetPose": [
+    40.03702509920994,
+    116.0192228247085,
+    2408.7732047196478,
+    241.5686471057785,
+    0,
+    0
+  ],
+  "PublicCameraENU": [
+    1626.2860433031433,
+    4362.262044541217,
+    2400.0
+  ],
+  "ExpectedNearbyCloudIds": [
+    "0C909B1FE63A0F9F",
+    "DA9DE274F1FB89FC"
+  ],
+  "InitializationWeather": {
+    "envMaxHeightRain": 4500,
+    "envTransHeightRain": 800,
+    "envMaxHeightSnow": 4500,
+    "envTransHeightSnow": 800,
+    "envRainSnowSpeedScale": 1
+  },
+  "Description": "Camera and existing game-asset pose chosen from actual world descriptors; no cloud placement or budget override."
+}

@@ -55,6 +55,7 @@ void HwaSimIR::PrepareStage6AgcSampleFrame() {
     if(!m_agcSampleBuffer)return;
     const double elapsed=double(IRPerfStats::steadyTimeNs()-m_stage6AgcLastUpdateNs)/1.e9;
     bool due=!m_stage6AgcInitialized||m_stage6AgcLastUpdateNs==0||elapsed>=1.0/std::max(.1,m_stage6AgcUpdateHz);
+    if(m_stage6AgcInitialized&&m_realTimeSceneData.time==m_stage6AgcLastSimulationMs)due=false;
     // Explicit paired PFM diagnostics require the current frame's samples too.
     const char* sequence=std::getenv("LinearDiagnosticSeq");
     if(!sequence&&m_p6.enabled)sequence=std::getenv("P6DumpSeq");

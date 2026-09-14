@@ -1,3 +1,4 @@
+#include "FrameIdentityChart.h"
 #include "TcpCommThread_Linux.h"
 #include "HwaSimIR.h"
 #include "VideoTopicResolver.h"
@@ -13,6 +14,9 @@
 #include <iostream>
 #include <sstream>
 #include <fcntl.h>
+#include <sched.h>
+#include <pthread.h>
+#include <cstdlib>
 #include "Common/TcpVideoPacketV3.h"
 
 namespace
@@ -201,6 +205,7 @@ void TcpCommThread::configureLocalRecording(const LocalMp4RecorderConfig& config
 
 void TcpCommThread::setLocalRecordingProtocolEnabled(bool enabled)
 {
+    m_productSaveRequested.store(enabled);
 	if (m_localRecorder) m_localRecorder->setProtocolEnabled(enabled);
 }
 
@@ -209,6 +214,7 @@ bool TcpCommThread::startOutputRound(int round)
 	{
 		std::lock_guard<std::mutex> lock(m_frameMtx);
 		m_outputRound.store(round);
+		++m_productRun;
 		m_roundFrameSequence.store(0);
 		m_roundLastCompletedFrame.store(0);
 		m_outputRoundActive.store(true);
@@ -1054,6 +1060,19 @@ std::string TcpCommThread::buildAnnotationJson(
 
 void TcpCommThread::sendFrameThreadFunc()
 {
+    if(!m_workerCpuList.empty()){
+        cpu_set_t allowed,chosen;CPU_ZERO(&allowed);CPU_ZERO(&chosen);
+        bool valid=sched_getaffinity(0,sizeof(allowed),&allowed)==0;int count=0;
+        std::istringstream list(m_workerCpuList);std::string token;
+        while(std::getline(list,token,',')){
+            char* end=nullptr;const long cpu=std::strtol(token.c_str(),&end,10);
+            if(end==token.c_str()||*end||cpu<0||cpu>=CPU_SETSIZE||!CPU_ISSET(cpu,&allowed)){valid=false;break;}
+            CPU_SET(cpu,&chosen);++count;
+        }
+        const int rc=valid&&count?pthread_setaffinity_np(pthread_self(),sizeof(chosen),&chosen):EINVAL;
+        std::cout<<"[VideoWorkerPlacement] requested="<<m_workerCpuList<<" result="<<(rc==0?"PASS":"FALLBACK_INHERITED")
+            <<" code="<<rc<<" currentCpu="<<sched_getcpu()<<" systemGovernorsChanged=0\n";
+    }
 	EncodedVideoFrame encodedFrame;
 	EncodedVideoFrame h264Frame;
 	EncodedVideoFrame jpegFrame;
@@ -1237,6 +1256,30 @@ void TcpCommThread::sendFrameThreadFunc()
 			if (jpegOk) ++m_jpegEncodeCounter;
 		}
 
+
+        // One immutable producer product, shared by DDS video, local H264 and V1
+        // annotation. The explicit disabled record is meaningful, not a fabricated
+        // annotation for a received frame with unknown identity.
+        const std::string productAnnotationJson = HwaFrameChart::annotate(buildAnnotationJson(
+            frame.annotationRecord, frame.annotationEnabled, frame.width, frame.height,
+            frame.telemetry, logicalFrameSeq, 0, packetVersion,
+            ddsCodec, h264RequestedBackend, h264Frame),frame.telemetry.sourceSeq,frame.width,frame.height);
+        if (h264Ok && frame.roundActive) {
+            HwaFrameV2::Product product;
+            product.session=m_productSession; product.channel=m_channel;
+            product.generation=frame.generation; product.run=frame.run;
+            product.frameSeq=logicalFrameSeq; product.sourceSeq=frame.telemetry.sourceSeq;
+            product.ptsMs=rawFrame.ptsMs; product.round=frame.currentRound;
+            product.platID=m_localPlatID; product.sensorID=m_localSensorID;
+            product.acceptedNs=frame.telemetry.acceptedSteadyNs;
+            product.executeNs=frame.telemetry.processStartTimeNs;
+            product.captureNs=frame.telemetry.captureSteadyNs;
+            product.encodeNs=IRPerfStats::steadyTimeNs();
+            product.realtime=frame.trackingData; product.annotationEnabled=frame.annotationEnabled; product.saveRequested=frame.saveRequested;
+            product.annotation=productAnnotationJson;
+            HwaFrameV2::insert(h264Frame.payload,product);
+        }
+
 		std::string ddsError;
 		double ddsBackpressureMs = 0.0;
 		double ddsPublishCallMs = 0.0;
@@ -1341,14 +1384,11 @@ void TcpCommThread::sendFrameThreadFunc()
 		{
 			const EncodedVideoFrame& annotationEncodedFrame = ddsH264 ? h264Frame : encodedFrame;
 			const auto annotationBegin = std::chrono::steady_clock::now();
-			const std::string ddsAnnotationJson = frame.annotationEnabled
-				? buildAnnotationJson(frame.annotationRecord, true, frame.width, frame.height,
-					frame.telemetry, logicalFrameSeq, IRPerfStats::wallTimeNs(), packetVersion,
-					ddsCodec, ddsH264 ? h264RequestedBackend : "raw", annotationEncodedFrame)
-				: std::string();
+			const std::string& ddsAnnotationJson = productAnnotationJson;
 			annotationSerializeMs = std::chrono::duration<double, std::milli>(
 				std::chrono::steady_clock::now() - annotationBegin).count();
 			DdsVideoFrameMeta meta;
+            meta.generation=frame.generation;meta.run=frame.run;
 			meta.platID = m_localPlatID;
 			meta.sensorID = m_localSensorID;
 			meta.channel = m_channel;
@@ -1648,10 +1688,13 @@ IRFrameEnqueueResult TcpCommThread::updateFrame(
 	frame.trackingData = trackingData;
 	frame.annotationRecord = annotationRecord;
 	frame.annotationEnabled = annotationEnabled;
+    frame.saveRequested=m_productSaveRequested.load();
 	frame.telemetry = telemetry;
 	frame.roundActive = m_outputRoundActive.load();
 	frame.currentRound = frame.roundActive ? m_outputRound.load() : 0;
 	frame.logicalFrameSeq = frame.roundActive ? ++m_roundFrameSequence : 0;
+	frame.generation = m_productGeneration.load();
+	frame.run = m_productRun.load();
 	frame.queueWaitMs = result.queueWaitMs;
 	frame.overwritten = result.overwritten;
 	result.copyMs = std::chrono::duration<double, std::milli>(

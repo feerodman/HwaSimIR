@@ -350,6 +350,7 @@ private:
 	std::uint64_t m_protocolIngressRealtimeCount = 0;
 #if defined(HWASIMIR_HAS_ZRDDS)
 	std::shared_ptr<DdsRuntimeManager> m_ddsRuntime;
+	std::unique_ptr<class BoardTelemetryService> m_boardTelemetry;
 	std::unique_ptr<HwaSimIRProtocolEndpoint> m_ddsProtocolEndpoint;
 #endif
 	std::uint64_t m_lastIrUpdateSourceSeq = 0;
@@ -555,7 +556,8 @@ private:
 	NodePath m_annotationCameraNode;
 	NodePath m_stage7VolumeRoot;
 	NodePath m_stage7VolumeCameraNode;
-	bool m_stage6FinalPipelineReady = false;
+	bool m_p7FrameIdentityChart = false;
+    bool m_stage6FinalPipelineReady = false;
 	std::string m_stage6RenderPath = "dual_pass";
 	std::string m_stage6FinalPostprocessNoopReason = "unknown";
 	bool m_stage6FinalPostprocessNoop = false;
@@ -706,6 +708,9 @@ private:
 	void UpdateStage7VolumetricCloudAnimation(double currentTime);
 	double Stage7CloudLinearValue(IRBand band, double temperatureK, const IRStage7WeatherState& weather) const;
 	void UpdateGameSpriteAnimation();
+    void UpdateStage7PrecipitationBatch();
+    void UpdateP7OrdinaryIllumination();
+    NodePath m_p7IlluminationNode;
 	double m_gameSpriteTimeOrigin = -1.0;
 	double m_gameSpriteLastTime = -1.0;
 	double m_stage7CloudTextureWorldSizeM = 5000.0;
@@ -958,6 +963,10 @@ private:
 	double m_stage6AgcApplyMsCurrent = 0.0;
 	std::int64_t m_stage6AgcLastUpdateNs = 0;
 	std::uint64_t m_stage6AgcLastUpdateSourceSeq = 0;
+	double m_stage6AgcLastSimulationMs = -1.0;
+    double m_stage6AgcLastApplySimulationMs = -1.0;
+    std::int64_t m_stage6AgcLastApplyNs = 0;
+    void AdvanceStage6AgcMapping(double simulationMs,std::int64_t nowNs);
 	int m_stage6AgcLogCounter = 0;
 	std::string m_lastStage6AgcLogState;
 

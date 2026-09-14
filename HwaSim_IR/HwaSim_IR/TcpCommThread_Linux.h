@@ -26,6 +26,7 @@
 #include "Annotation/AnnotationTypes.h"
 #include "IR/IRPerfStats.h"
 #include "Video/VideoEncoder.h"
+#include "FrameProductV2.h"
 #include "Video/DdsVideoPublisher.h"
 #include "Video/LocalMp4Recorder.h"
 
@@ -52,6 +53,7 @@ public:
 		const IRFrameTelemetry& telemetry);
 	void setSyncMode(bool syncMode) { m_syncMode.store(syncMode); }
 	void setFlipVertical(bool enabled) { m_flipVertical.store(enabled); }
+    void setWorkerCpuList(const std::string& cpus){m_workerCpuList=cpus;}
 	void configureOutput(
 		int jpegQuality,
 		bool jpegGray,
@@ -77,6 +79,7 @@ public:
 	bool startOutputRound(int round);
 	bool stopOutputRound(const char* reason);
 	void resetFrameCounters();
+	void beginProductInitialization() { ++m_productGeneration; }
 
 	bool sendControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd);
 	bool sendInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& initData);
@@ -142,6 +145,7 @@ private:
 	std::atomic<bool> m_bIsRunning;
 	std::atomic<bool> m_bIsConnected;
 	std::atomic<bool> m_initCompleted{ false };
+    std::atomic<bool> m_productSaveRequested{false};
 	std::mutex m_mtx;
 	std::mutex m_socketMtx;
 
@@ -153,8 +157,10 @@ private:
 		BYHWICD::DisplayC2cObjTrackingData trackingData{};
 		AnnotationFrameRecord annotationRecord;
 		bool annotationEnabled = false;
+        bool saveRequested = false;
 		IRFrameTelemetry telemetry;
 		std::uint64_t logicalFrameSeq = 0;
+		std::uint64_t generation = 0, run = 0;
 		int currentRound = 0;
 		bool roundActive = false;
 		double queueWaitMs = 0.0;
@@ -212,6 +218,8 @@ private:
 	std::atomic<bool> m_ddsEnabled{ false };
 	std::atomic<bool> m_outputRoundActive{ false };
 	std::atomic<unsigned long long> m_roundFrameSequence{ 0 };
+	const std::string m_productSession = HwaFrameV2::processSession();
+	std::atomic<std::uint64_t> m_productGeneration{0}, m_productRun{0};
 	std::atomic<unsigned long long> m_roundLastCompletedFrame{ 0 };
 	std::atomic<unsigned long long> m_roundFramesInFlight{ 0 };
 	std::atomic<int> m_outputRound{ 0 };
@@ -222,4 +230,5 @@ private:
 	std::atomic<unsigned long long> m_recordFrameCounter{ 0 };
 	std::atomic<unsigned long long> m_videoOutputFrameCounter{ 0 };
 	std::int64_t m_lastVideoOutputPerfLogNs = 0;
+    std::string m_workerCpuList;
 };

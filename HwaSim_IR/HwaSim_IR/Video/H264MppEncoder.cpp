@@ -1,4 +1,5 @@
 #include "VideoEncoder.h"
+#include "Nv12Neon.h"
 
 #if !defined(__linux__) || !defined(__aarch64__) || !defined(HWASIMIR_HAS_RKMPP)
 #error "H264MppEncoder.cpp requires Linux aarch64 with HWASIMIR_HAS_RKMPP"
@@ -10,6 +11,7 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <sched.h>
 
 extern "C"
 {
@@ -135,6 +137,7 @@ bool ConvertToNv12(
 		uvPlane,
 		128,
 		static_cast<std::size_t>(horizontalStride) * static_cast<std::size_t>(verticalStride / 2));
+	if(HwaNv12::convert(raw,yPlane,uvPlane,horizontalStride)){error.clear();return true;}
 
 	for (int y = 0; y < raw.height; ++y)
 	{
@@ -214,6 +217,8 @@ struct H264MppEncoder::Impl
 	MppBufferGroup bufferGroup = nullptr;
 	MppBuffer inputBuffer = nullptr;
 	std::vector<std::uint8_t> parameterSets;
+    std::vector<std::uint8_t> conversionStaging;
+    std::uint64_t preprocessSamples=0;
 };
 
 H264MppEncoder::H264MppEncoder()
@@ -273,6 +278,7 @@ void H264MppEncoder::reset()
 	m_impl->horizontalStride = 0;
 	m_impl->verticalStride = 0;
 	m_impl->inputBufferBytes = 0;
+    m_impl->conversionStaging.clear();m_impl->preprocessSamples=0;
 	m_impl->parameterSets.clear();
 	m_forceKeyFrame.store(true);
 	m_successLogged.store(false);
@@ -393,6 +399,14 @@ bool H264MppEncoder::configure(const VideoEncoderConfig& config, std::string& er
 	m_impl->inputBufferBytes =
 		static_cast<std::size_t>(m_impl->horizontalStride) *
 		static_cast<std::size_t>(m_impl->verticalStride) * 3U / 2U;
+#if !defined(HWASIMIR_MPP_HAS_BUFFER_SYNC)
+    // Older installed MPP headers lack cache-sync APIs. Keep its uncached DMA
+    // allocation, but do small interleaved conversion stores in cached RAM and
+    // transfer one contiguous block. Allocate once per encoder configuration.
+    m_impl->conversionStaging.resize(m_impl->inputBufferBytes);
+#endif
+    std::cout<<"[MppInputPath] preallocatedStagingBytes="<<m_impl->conversionStaging.size()
+        <<" conversion=neon_exact_integer fallback=scalar sourceResolutionUnchanged=1"<<std::endl;
 	result = mpp_buffer_get(
 		m_impl->bufferGroup,
 		&m_impl->inputBuffer,
@@ -480,12 +494,18 @@ bool H264MppEncoder::encode(
 #if defined(HWASIMIR_MPP_HAS_BUFFER_SYNC)
 	mpp_buffer_sync_begin(m_impl->inputBuffer);
 #endif
-	const bool converted = ConvertToNv12(
+	const auto conversionReady=std::chrono::steady_clock::now();
+    const int conversionCpu=sched_getcpu();
+    const bool converted = ConvertToNv12(
 		raw,
-		input,
+		m_impl->conversionStaging.empty()?input:m_impl->conversionStaging.data(),
 		m_impl->horizontalStride,
 		m_impl->verticalStride,
 		error);
+    const auto conversionDone=std::chrono::steady_clock::now();
+    if(converted&&!m_impl->conversionStaging.empty())
+        std::memcpy(input,m_impl->conversionStaging.data(),m_impl->inputBufferBytes);
+    const auto transferDone=std::chrono::steady_clock::now();
 #if defined(HWASIMIR_MPP_HAS_BUFFER_SYNC)
 	mpp_buffer_sync_end(m_impl->inputBuffer);
 #endif
@@ -495,6 +515,12 @@ bool H264MppEncoder::encode(
 	}
 	encoded.preprocessMs = std::chrono::duration<double, std::milli>(
 		std::chrono::steady_clock::now() - conversionBegin).count();
+    if(++m_impl->preprocessSamples<=3||m_impl->preprocessSamples%120==0){
+        std::ostringstream line;line<<"[MppPreprocessParts] sample="<<m_impl->preprocessSamples<<" cpu="<<conversionCpu
+            <<" convertMs="<<std::chrono::duration<double,std::milli>(conversionDone-conversionReady).count()
+            <<" dmaCopyMs="<<std::chrono::duration<double,std::milli>(transferDone-conversionDone).count()
+            <<" totalMs="<<encoded.preprocessMs<<"\n";std::cout<<line.str();
+    }
 
 	const bool forceKeyFrame = m_forceKeyFrame.exchange(false);
 	if (forceKeyFrame)

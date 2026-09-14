@@ -2,9 +2,14 @@
 #include <QApplication>
 #include <QDir>
 #include <QTimer>
+#include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 int main(int argc, char *argv[])
 {
+    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+    QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
     QApplication a(argc, argv);
 
     int autoSeconds = 0;
@@ -17,6 +22,9 @@ int main(int argc, char *argv[])
     int sensorID = -1;
     int simMode = -1;
     int videoFps = -1;
+    double sendStepMs=-1;
+    QString sensorFieldsJson;
+    bool h264Explicit=false,saveExplicit=false;
 	int envSky = -1;
 	int sensorBand = -1;
 	double sensorPixelAngleUrad = -1.0;
@@ -51,12 +59,12 @@ int main(int argc, char *argv[])
         const QString h264Prefix = QStringLiteral("--phase1d-h264=");
         if (argument.startsWith(h264Prefix))
         {
-            h264Enabled = argument.mid(h264Prefix.size()).toInt() != 0;
+            h264Enabled = argument.mid(h264Prefix.size()).toInt() != 0;h264Explicit=true;
         }
 		const QString saveMP4Prefix = QStringLiteral("--save-mp4=");
 		if (argument.startsWith(saveMP4Prefix))
 		{
-			saveMP4Enabled = argument.mid(saveMP4Prefix.size()).toInt() != 0;
+			saveMP4Enabled = argument.mid(saveMP4Prefix.size()).toInt() != 0;saveExplicit=true;
 		}
         const QString durationPrefix = QStringLiteral("--duration-sec=");
         if (argument.startsWith(durationPrefix))
@@ -106,10 +114,12 @@ int main(int argc, char *argv[])
                 simMode = requested;
             }
         }
+        if(argument.startsWith("--send-step-ms="))sendStepMs=argument.mid(15).toDouble();
+        if(argument.startsWith("--sensor-fields-json="))sensorFieldsJson=argument.mid(21);
         const QString videoFpsPrefix = QStringLiteral("--video-fps=");
         if (argument.startsWith(videoFpsPrefix))
         {
-            videoFps = qBound(1, argument.mid(videoFpsPrefix.size()).toInt(), 240);
+            videoFps = qBound(0, argument.mid(videoFpsPrefix.size()).toInt(), 240);
         }
 		const QString envSkyPrefix = QStringLiteral("--env-sky=");
 		if (argument.startsWith(envSkyPrefix))
@@ -259,8 +269,8 @@ int main(int argc, char *argv[])
 		.arg(controlTransportExplicit ? QStringLiteral("command_line") : QStringLiteral("production_default"));
 	MainWindow w(networkConfigPath, channel, inputDataPath, controlTransport);
 	w.show();
-    w.setH264EnabledForTest(h264Enabled);
-	w.setSaveMP4EnabledForTest(saveMP4Enabled);
+    if(h264Explicit)w.setH264EnabledForTest(h264Enabled);
+	if(saveExplicit)w.setSaveMP4EnabledForTest(saveMP4Enabled);
     w.configureProtocolForTest(platID, sensorID, simMode, videoFps);
 	w.configureEnvironmentForTest(envSky, sensorBand);
 	w.setSensorPixelAngleForTest(sensorPixelAngleUrad);
@@ -275,6 +285,16 @@ int main(int argc, char *argv[])
 	qInfo().noquote() << QStringLiteral("[StimTargetThermalFeatures] engineState=%1 strikeFlag=%2 strikePart=%3 protocolLayoutUnchanged=1")
 		.arg(engineState).arg(strikeFlag).arg(strikePart);
     w.configurePhase4cAeroMachTest(phase4cAeroMach, aeroAltitudeKm, aeroMach);
+    if(sendStepMs>=0)w.setSendStepMs(sendStepMs);
+    if(!sensorFieldsJson.isEmpty()){
+        QFile input(sensorFieldsJson);if(!input.open(QIODevice::ReadOnly))qFatal("Cannot open sensor fields JSON");
+        QJsonParseError error;const auto doc=QJsonDocument::fromJson(input.readAll(),&error);
+        if(error.error!=QJsonParseError::NoError||!doc.isObject())qFatal("Invalid sensor fields JSON");
+        const auto fields=doc.object();for(auto it=fields.begin();it!=fields.end();++it){
+            if(!it.value().isDouble()&&!it.value().isBool())qFatal("Non-numeric sensor field");
+            if(!w.setSensorField(it.key(),it.value().isBool()?(it.value().toBool()?1:0):it.value().toDouble()))qFatal("Invalid sensor field: %s",qPrintable(it.key()));
+        }
+    }
 	if (initOnly)
 	{
 		QTimer::singleShot(500, &w, [&w]() {

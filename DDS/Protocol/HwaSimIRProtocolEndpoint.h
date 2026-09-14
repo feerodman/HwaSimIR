@@ -27,6 +27,8 @@ struct DdsProtocolConfig
 
 struct DdsVideoFrameMeta
 {
+    // Internal product identity; V1 serializer and IDL remain unchanged.
+    std::uint64_t generation=0,run=0;
     int platID = 0;
     int sensorID = 0;
     std::string channel;

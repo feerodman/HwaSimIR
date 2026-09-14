@@ -1,5 +1,6 @@
 #include "DdsVideoPublisher.h"
 #include "DdsRuntimeManager.h"
+#include "FrameProductV2.h"
 
 #include <algorithm>
 #include <atomic>
@@ -120,13 +121,22 @@ struct DdsVideoPublisher::Impl
 			}
 
 			const auto before = std::chrono::steady_clock::now();
+			// Raw/JPEG streams retain their original bytes and incur no SEI scan.
+			std::vector<std::uint8_t> stamped;
+			const bool h264 = topicSnapshot.find("H264") != std::string::npos;
+			if (h264) stamped = *payload;
+			HwaFrameV2::Product product;
+			const bool identified = h264 && HwaFrameV2::stampWriter(stamped, SteadyNowNs(), product);
+			const auto& wire = h264 ? stamped : *payload;
+			const auto writeBegin = std::chrono::steady_clock::now();
+			const double prepareMs = std::chrono::duration<double, std::milli>(writeBegin - before).count();
 			bool writeOk = false;
 #if defined(HWASIMIR_HAS_ZRDDS)
 			const DDS::ReturnCode_t result = DDSIF::BytesWrite(
 				config.domainId,
 				const_cast<char*>(topicSnapshot.c_str()),
-				reinterpret_cast<const char*>(payload->data()),
-				static_cast<DDS::Long>(payload->size()));
+				reinterpret_cast<const char*>(wire.data()),
+				static_cast<DDS::Long>(wire.size()));
 			writeOk = result == DDS::RETCODE_OK;
 			if (!writeOk)
 			{
@@ -138,7 +148,13 @@ struct DdsVideoPublisher::Impl
 			fatalError = "DDS requested but binary lacks HWASIMIR_HAS_ZRDDS";
 #endif
 			const double writeMs = std::chrono::duration<double, std::milli>(
-				std::chrono::steady_clock::now() - before).count();
+				std::chrono::steady_clock::now() - writeBegin).count();
+			if (identified && (product.frameSeq <= 3 || product.frameSeq % 120 == 0))
+				std::cout << "[ProductWriterTiming] session=" << product.session
+					<< " generation=" << product.generation << " run=" << product.run
+					<< " frameSeq=" << product.frameSeq << " submitSteadyNs=" << product.writerSubmitNs
+					<< " returnSteadyNs=" << SteadyNowNs() << " prepareMs=" << prepareMs
+					<< " apiWriteMs=" << writeMs << " writeOk=" << writeOk << std::endl;
 			{
 				std::lock_guard<std::mutex> lock(mutex);
 				if (writeOk)
@@ -146,8 +162,8 @@ struct DdsVideoPublisher::Impl
 					if (audit.is_open() &&
 						(config.auditMaxSamples == 0 || stats.sentSamples < config.auditMaxSamples))
 					{
-						audit.write(reinterpret_cast<const char*>(payload->data()),
-							static_cast<std::streamsize>(payload->size()));
+						audit.write(reinterpret_cast<const char*>(wire.data()),
+							static_cast<std::streamsize>(wire.size()));
 						if (!audit)
 						{
 							fatalError = "DDS audit file write failed";
@@ -158,7 +174,8 @@ struct DdsVideoPublisher::Impl
 				if (writeOk)
 				{
 					++stats.sentSamples;
-					stats.sentBytes += payload->size();
+					stats.sentBytes += wire.size();
+					stats.appCopyMs += prepareMs;
 					writeMsTotal += writeMs;
 					stats.writeMsMaximum = (std::max)(stats.writeMsMaximum, writeMs);
 				}

@@ -1,9 +1,10 @@
-﻿#include "HwaSim_IR_VideoDisplay.h"
+#include "HwaSim_IR_VideoDisplay.h"
 #include <QtWidgets/QApplication>
 #include <QTextCodec>
 #include <QtGlobal>
 #include <QDebug>
 #include <QTimer>
+#include <QShortcut>
 #include "CommonData.h"
 
 int main(int argc, char *argv[])
@@ -12,6 +13,8 @@ int main(int argc, char *argv[])
     // Qt5 运行时统一使用 UTF-8，避免中文界面和日志在不同系统代码页下乱码。
     QTextCodec::setCodecForLocale(QTextCodec::codecForName("UTF-8"));
 #endif
+    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+    QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
     QApplication app(argc, argv);
     QString networkConfigPath;
     QString channel;
@@ -91,6 +94,11 @@ int main(int argc, char *argv[])
 		receiveTransport, streamRole, ddsTopic, ddsCodec, ddsQos, ddsDomain, ddsWidth, ddsHeight, ddsFps,
 		ddsDumpFirstFrame, ddsDumpFrameIndex);
     window.show();
+    auto* fullscreenShortcut=new QShortcut(QKeySequence(Qt::Key_F11),&window);
+    QObject::connect(fullscreenShortcut,&QShortcut::activated,&window,[&window]{
+        if(window.isFullScreen())window.showMaximized();else window.showFullScreen();
+    });
+    if(arguments.contains(QStringLiteral("--full-screen"))||qEnvironmentVariableIntValue("P7ReceiverFullScreen")==1)window.showFullScreen();
 	if (acceptanceExitMs > 0)
 	{
 		qInfo().noquote() << QStringLiteral("[AcceptanceExit] scheduledMs=%1").arg(acceptanceExitMs);
