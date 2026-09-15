@@ -9,7 +9,7 @@ void MainWindow::setupSensorForm(QVBoxLayout* mainLayout)
         if(field.kind==HwaSensorFields::Boolean){auto* box=new QCheckBox;box->setChecked(field.initial!=0);control=box;}
         else if(field.kind==HwaSensorFields::Band){
             auto* box=new QComboBox;
-            box->addItem(QString::fromUtf8("0 · 短波 SWIR"),0);box->addItem(QString::fromUtf8("1 · 近红外 NVG"),1);
+            box->addItem(QString::fromUtf8("0 · 短波 SWIR"),0);box->addItem(QString::fromUtf8("近红外（NIR）"),1);
             box->addItem(QString::fromUtf8("2 · 中波 MWIR"),2);box->addItem(QString::fromUtf8("3 · 长波 LWIR"),3);
             box->addItem(QString::fromUtf8("4 · 可见光"),4);control=box;
         }else if(field.kind==HwaSensorFields::Integer){auto* box=new QSpinBox;box->setRange(static_cast<int>(field.minimum),static_cast<int>(field.maximum));control=box;}

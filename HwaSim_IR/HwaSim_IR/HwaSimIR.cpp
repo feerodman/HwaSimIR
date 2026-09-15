@@ -8614,7 +8614,8 @@ bool HwaSimIR::InitDdsProtocol()
 		m_ddsProtocolEndpoint.reset(new HwaSimIRProtocolEndpoint());
 		DdsProtocolCallbacks callbacks;
 		callbacks.control = [this](const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd) {
-			handleDdsControlCmd(cmd);
+			const std::int64_t receiveNs = IRPerfStats::steadyTimeNs();
+			handleDdsControlCmd(cmd, receiveNs);
 		};
 		callbacks.init = [this](const BYHWICD::InitP2cObjectTrackingCmd& cmd) {
 			handleDdsInitCmd(cmd);
@@ -8794,28 +8795,38 @@ void HwaSimIR::ProcessPendingNetworkCommands()
 		pendingCommands.swap(m_pendingNetworkCommands);
 	}
 
-	for (std::deque<PendingNetworkCommand>::const_iterator it = pendingCommands.begin();
+	for (std::deque<PendingNetworkCommand>::iterator it = pendingCommands.begin();
 		it != pendingCommands.end(); ++it)
 	{
 		if (it->type == PendingNetworkCommandType::Control)
 		{
+#if defined(HWASIMIR_HAS_ZRDDS)
+			if(it->stopOperation){
+				if(!it->stopOperation->draining.load(std::memory_order_acquire)){
+					std::lock_guard<std::mutex> lock(m_mtx);
+					for(auto deferred=pendingCommands.end();deferred!=it;){--deferred;m_pendingNetworkCommands.push_front(*deferred);}
+					break;
+				}
+				it->controlExecuteNs=it->stopOperation->executeNs;
+				it->stopQuietRequiredNs=it->stopOperation->quietRequiredNs;
+			}
+#endif
+			// Begin the control business once. STOP now enters its draining phase
+			// here; requeued continuations retain both phase state and timestamps.
+			if (!it->controlExecuteNs) BeginControlCmdOnMainThread(*it);
 			// DDS STOP and Realtime use separate topics/writers, so their callbacks
-			// have no cross-topic ordering guarantee.  Defer STOP until the ordered
+			// have no cross-topic ordering guarantee.  Defer STOP completion until the ordered
 			// FIFO is empty and realtime ingress has been quiet for two frame periods
 			// (at least 50 ms).  This applies to packet-driven sync as well as async:
 			// otherwise STOP can set m_isSimRunning=false before the last one or two
 			// accepted samples reach the post-render capture path.
-			if (it->controlCmd.simCommand == 3 &&
-				(m_bSyncRenderMode.load() || m_asyncInputPolicy == "OrderedQueue"))
+			if (it->stopQuietRequiredNs > 0)
 			{
 				bool hasPendingRealtime = false;
 				const std::int64_t nowNs = IRPerfStats::steadyTimeNs();
 				const std::int64_t lastIngressNs = m_lastRealtimeIngressSteadyNs.load();
-				const std::int64_t quietRequiredNs = static_cast<std::int64_t>(
-					std::max(50.0, 2000.0 / static_cast<double>(
-						std::max(1, m_targetVideoFps.load()))) * 1.0e6);
 				const bool ingressMayStillBeStaging = lastIngressNs > 0 &&
-					nowNs - lastIngressNs < quietRequiredNs;
+					nowNs - lastIngressNs < it->stopQuietRequiredNs;
 				{
 					std::lock_guard<std::mutex> lock(m_mtx);
 					hasPendingRealtime = !m_pendingDisplayFrames.empty();
@@ -8837,7 +8848,7 @@ void HwaSimIR::ProcessPendingNetworkCommands()
 				<< " command=" << it->controlCmd.simCommand
 				<< " round=" << it->controlCmd.currentRound << "/" << it->controlCmd.roundCut
 				<< std::endl;
-			ProcessControlCmdOnMainThread(it->controlCmd);
+			ProcessControlCmdOnMainThread(it->controlCmd, it->controlExecuteNs);
 		}
 		else if (it->type == PendingNetworkCommandType::Init)
 		{
@@ -8884,8 +8895,9 @@ void HwaSimIR::handleControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd)
 }
 
 #if defined(HWASIMIR_HAS_ZRDDS)
-void HwaSimIR::handleDdsControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd)
+void HwaSimIR::handleDdsControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd, std::int64_t receiveNs)
 {
+	if(cmd.simCommand < 1 || cmd.simCommand > 3) return;
 	std::ostringstream key;
 	key << cmd.platID << ':' << cmd.simCommand << ':' << cmd.currentRound << ':' << cmd.roundCut;
 	if (!AcceptProtocolIngress("dds", "control", key.str(), cmd.platID, -1)) return;
@@ -8893,8 +8905,13 @@ void HwaSimIR::handleDdsControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cm
 	pending.type = PendingNetworkCommandType::Control;
 	pending.transport = "dds";
 	pending.controlCmd = cmd;
+	pending.controlReceiveNs = receiveNs;
 	{
 		std::lock_guard<std::mutex> lock(m_mtx);
+		// Normal running STOP may arm its drain barrier on the control service.
+		// Earlier queued INIT/Control work retains the main-thread order.
+		if(cmd.simCommand==3 && m_isSimRunning.load() && m_pendingNetworkCommands.empty() && m_boardTelemetry)
+			pending.stopOperation=m_boardTelemetry->requestStop(receiveNs,cmd.currentRound,m_targetVideoFps.load());
 		m_pendingNetworkCommands.push_back(pending);
 	}
 	m_cvNewData.notify_one();
@@ -8972,10 +8989,32 @@ bool HwaSimIR::AcceptProtocolIngress(const std::string& transport, const std::st
 	return !duplicate;
 }
 
-void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd) {
+void HwaSimIR::BeginControlCmdOnMainThread(PendingNetworkCommand& pending) {
 	std::lock_guard<std::mutex> lock(m_mtx);
-	// 更新当前回合数
-	m_currentRound = cmd.currentRound;
+	const std::int64_t executeNs = IRPerfStats::steadyTimeNs();
+	const auto& cmd=pending.controlCmd;
+	pending.controlExecuteNs=executeNs;
+	m_currentRound=cmd.currentRound;
+	if(cmd.simCommand==3 && (m_bSyncRenderMode.load() || m_asyncInputPolicy=="OrderedQueue")){
+		pending.stopQuietRequiredNs=static_cast<std::int64_t>(std::max(50.0,
+			2000.0/static_cast<double>(std::max(1,m_targetVideoFps.load())))*1.e6);
+		std::cout<<"[ControlStopPhase] phase=draining beginNs="<<executeNs
+			<<" pendingInputs="<<m_pendingDisplayFrames.size()<<" quietRequiredNs="<<pending.stopQuietRequiredNs<<std::endl;
+	}
+#if defined(HWASIMIR_HAS_ZRDDS)
+	const std::int64_t receiveNs=pending.controlReceiveNs;
+	if(m_boardTelemetry && receiveNs > 0 && cmd.simCommand >= 1 && cmd.simCommand <= 3){
+		m_boardTelemetry->counters.control(cmd.simCommand,cmd.currentRound,receiveNs,executeNs);
+		std::cout << "[ControlResponseV3] command=" << cmd.simCommand << " round=" << cmd.currentRound
+			<< " receiveNs=" << receiveNs << " executeNs=" << executeNs
+			<< " responseMs=" << (executeNs-receiveNs)/1.e6 << " clock=steady resolutionFloorNs=1000" << std::endl;
+	}
+#endif
+}
+
+void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd, std::int64_t executeNs) {
+	std::lock_guard<std::mutex> lock(m_mtx);
+	m_currentRound=cmd.currentRound;
 
 	std::cout << "收到控制指令：" << std::endl;
 	std::cout << "  军别：" << cmd.JB << std::endl;
@@ -9126,6 +9165,8 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		std::cout << "仿真开始：当前回合=" << m_currentRound << std::endl;
 		break;
 	case 3: // 停止
+		std::cout<<"[ControlStopPhase] phase=finalizing beginNs="<<executeNs
+			<<" drainWaitMs="<<(IRPerfStats::steadyTimeNs()-executeNs)/1.e6<<std::endl;
 		std::cout << "执行停止仿真逻辑..." << std::endl;
 		// TODO: 实现停止仿真逻辑（停止渲染、保存数据等）
 		m_isSimRunning.store(false);

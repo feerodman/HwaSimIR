@@ -4,10 +4,10 @@ void HwaSim_IR_VideoDisplay::setupResponsiveLayout()
 {
     setFont(QFont(QStringLiteral("Microsoft YaHei UI"),9));
     auto* page=new QWidget;page->setObjectName("telemetryPage");
-    auto* column=new QVBoxLayout(page);column->setContentsMargins(6,4,6,4);column->setSpacing(2);
+    auto* column=new QVBoxLayout(page);column->setContentsMargins(6,2,6,2);column->setSpacing(1);
     auto* monitor=new QGroupBox(QString::fromUtf8("运行监测"),page);
     auto* metrics=new QGridLayout(monitor);metrics->setContentsMargins(5,7,5,2);metrics->setSpacing(4);
-    const QString names[]={QString::fromUtf8("视频 FPS"),QString::fromUtf8("数据接收 Hz"),QString::fromUtf8("指令处理 Hz"),QString::fromUtf8("输出延时")};
+    const QString names[]={QString::fromUtf8("视频 FPS"),QString::fromUtf8("数据接收 Hz"),QString::fromUtf8("控制指令响应（等效）"),QString::fromUtf8("输出延时")};
     for(int i=0;i<4;++i){
         m_metricLabels[i]=new QLabel(names[i]+QString::fromUtf8("  —"),monitor);
         m_metricLabels[i]->setObjectName(QString("runtimeMetric%1").arg(i));
@@ -32,6 +32,7 @@ void HwaSim_IR_VideoDisplay::setupResponsiveLayout()
     }column->addWidget(env);
     auto* sensor=new QGroupBox(QString::fromUtf8("传感器初始化"),page);auto* sensorGrid=new QGridLayout(sensor);
     sensorGrid->setContentsMargins(5,7,5,2);sensorGrid->setSpacing(2);
+    sensorGrid->setVerticalSpacing(1);
     for(int i=0;i<HwaSensorFields::count;++i){
         const auto& field=HwaSensorFields::fields()[i];
         auto* edit=new QLineEdit(sensor);edit->setObjectName(QString::fromLatin1(field.name));
@@ -40,7 +41,13 @@ void HwaSim_IR_VideoDisplay::setupResponsiveLayout()
         const QString unit=(i==2||i==5||i==24||i==26)?QString():QString::fromUtf8(field.unit);
         auto* label=new QLabel(QString::fromUtf8(field.label)+(unit.isEmpty()?QString():" "+unit),sensor);
         label->setToolTip(QString::fromLatin1(field.name)+" / "+QString::fromUtf8(field.unit));
-        sensorGrid->addWidget(label,i/4,(i%4)*2);sensorGrid->addWidget(edit,i/4,(i%4)*2+1);
+        if(field.kind==HwaSensorFields::Band){
+            // The public band name needs more room than a numeric parameter.
+            sensorGrid->addWidget(label,7,4);sensorGrid->addWidget(edit,7,5,1,3);
+        }else{
+            const int slot=i<5?i:i-1;
+            sensorGrid->addWidget(label,slot/4,(slot%4)*2);sensorGrid->addWidget(edit,slot/4,(slot%4)*2+1);
+        }
     }
     m_simModeDisplay=new QLineEdit(sensor);m_simModeDisplay->setReadOnly(true);m_simModeDisplay->setMinimumWidth(0);
     sensorGrid->addWidget(new QLabel(QString::fromUtf8("仿真模式"),sensor),7,0);sensorGrid->addWidget(m_simModeDisplay,7,1);

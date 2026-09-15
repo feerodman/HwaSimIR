@@ -1,4 +1,5 @@
-﻿#include "HwaSim_IR_VideoDisplay.h"
+﻿#include "VideoPixelFit.h"
+#include "HwaSim_IR_VideoDisplay.h"
 #include <QScreen>
 #include <QWindow>
 #include <QGridLayout>
@@ -352,26 +353,22 @@ void HwaSim_IR_VideoDisplay::centerVideoLabel()
     int pw = parent->width();
     int ph = parent->height();
 
-    // 计算目标尺寸：填满父控件，但不超过图像最大分辨率，保持宽高比
-    int maxW = m_maxImageWidth > 0 ? m_maxImageWidth : pw;
-    int maxH = m_maxImageHeight > 0 ? m_maxImageHeight : ph;
-    int targetW = qMin(pw,static_cast<int>(1024.0/devicePixelRatioF()));
-    int targetH = qMin(ph,static_cast<int>(1024.0/devicePixelRatioF()));
-    if (maxW > 0 && maxH > 0) {
-        double ratio = (double)maxW / maxH;
-        if (targetW > targetH * ratio)
-            targetW = static_cast<int>(targetH * ratio);
-        else
-            targetH = static_cast<int>(targetW / ratio);
+    const qreal dpr=parent->devicePixelRatioF();
+    const int sourceW=m_lastVideoImage.isNull()?m_maxImageWidth:m_lastVideoImage.width();
+    const int sourceH=m_lastVideoImage.isNull()?m_maxImageHeight:m_lastVideoImage.height();
+    const auto physical=HwaVideoFit::fit(sourceW,sourceH,pw*dpr,ph*dpr);
+    if(!physical.width||!physical.height)return;
+    // A pixmap retains physical pixel data; DPR describes its logical extent.
+    // The label must never scale the pixmap a second time.
+    const int targetW=int(std::ceil(physical.width/dpr)),targetH=int(std::ceil(physical.height/dpr));
+    label->setScaledContents(false);label->setAlignment(Qt::AlignCenter);
+    label->setGeometry((pw-targetW)/2,(ph-targetH)/2,targetW,targetH);
+    if(!m_lastVideoImage.isNull()){
+        QImage pixels=m_lastVideoImage;
+        if(pixels.width()!=physical.width||pixels.height()!=physical.height)
+            pixels=pixels.scaled(physical.width,physical.height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
+        QPixmap pixmap=QPixmap::fromImage(pixels);pixmap.setDevicePixelRatio(dpr);label->setPixmap(pixmap);
     }
-    targetW = qMax(1, targetW);
-    targetH = qMax(1, targetH);
-
-    label->resize(targetW, targetH);
-    int x = (pw - targetW) / 2;
-    int y = (ph - targetH) / 2;
-    label->move(x, y);
-    if(!m_lastVideoImage.isNull()) label->setPixmap(QPixmap::fromImage(m_lastVideoImage).scaled(label->size(),Qt::KeepAspectRatio,Qt::SmoothTransformation));
 }
 
 void HwaSim_IR_VideoDisplay::resizeEvent(QResizeEvent* event)
@@ -525,8 +522,15 @@ void HwaSim_IR_VideoDisplay::updateLiveFps()
     const double fps=m_ddsWorker?metrics.value("videoFps").toDouble():double(m_liveFrameTimes.size());
     if(m_metricLabels[1]){
         m_metricLabels[1]->setText(QString::fromUtf8("数据接收 Hz  ")+(telemetryFresh?QString::number(metrics.value("acceptedHz").toDouble(),'f',1):QString::fromUtf8("—")));
-        m_metricLabels[2]->setText(QString::fromUtf8("指令处理 Hz  ")+(telemetryFresh?QString::number(metrics.value("executedHz").toDouble(),'f',1):QString::fromUtf8("—"))+
-            QString::fromUtf8("  等待 ")+(telemetryFresh?QString::number(metrics.value("queueWaitMs").toDouble(),'f',1):QString::fromUtf8("—"))+QStringLiteral(" ms"));
+        const bool hasControl=metrics.value("controlSequence").toString().toULongLong()>0;
+        const bool timed=hasControl&&metrics.value("controlTimeValid").toBool();
+        const int command=metrics.value("controlCommand").toInt();
+        const QString name=command==1?QString::fromUtf8("复位"):command==2?QString::fromUtf8("开始"):command==3?QString::fromUtf8("停止"):QString::fromUtf8("—");
+        m_metricLabels[2]->setText(QString::fromUtf8("控制指令响应（等效） %1 Hz\n接收→开始执行 %2｜最近指令：%3%4")
+            .arg(timed?QString::number(metrics.value("controlEquivalentHz").toDouble(),'f',1):QString::fromUtf8("—"))
+            .arg(timed?QString::number(metrics.value("controlResponseMs").toDouble(),'f',3)+" ms":hasControl?QString::fromUtf8("低于计时分辨率"):QString::fromUtf8("—"))
+            .arg(name).arg(hasControl&&!telemetryFresh?QString::fromUtf8(" · 已过期"):QString()));
+        m_metricLabels[2]->setToolTip(QString::fromUtf8("仅复位、开始、停止；接收至业务开始等待的倒数，不代表命令吞吐能力。"));
         const bool valid=telemetryFresh&&metrics.value("clockValid").toBool()&&metrics.value("outputLatencyMs").toDouble(-1)>=0;
         m_metricLabels[3]->setText(valid?QString::fromUtf8("输出延时 ≈%1 ms · 估计 ±%2 ms").arg(metrics.value("outputLatencyMs").toDouble(),0,'f',1).arg(metrics.value("clockErrorMs").toDouble(),0,'f',1):QString::fromUtf8("输出延时 — · 时间基准未就绪/过期"));
     }
@@ -998,6 +1002,9 @@ void HwaSim_IR_VideoDisplay::initCommandReceivedSlot(const BYHWICD::InitP2cObjec
     case 0:
         ui.lineEdit_trackerSensorBand->setText("短波红外");
         break;
+    case 1:
+        ui.lineEdit_trackerSensorBand->setText(QString::fromUtf8("近红外（NIR）"));
+        break;
     case 2:
         ui.lineEdit_trackerSensorBand->setText("中波红外");
         break;
@@ -1027,6 +1034,10 @@ void HwaSim_IR_VideoDisplay::initCommandReceivedSlot(const BYHWICD::InitP2cObjec
     for(int i=0;i<HwaSensorFields::count;++i){const auto& field=HwaSensorFields::fields()[i];
         const double value=HwaSensorFields::get(cmd.trackingInit.trackerSensor[0],field);
         m_sensorFields[i]->setText(field.kind==HwaSensorFields::Boolean?(value?QString::fromUtf8("是"):QString::fromUtf8("否")):QString::number(value,'g',12));
+        if(field.kind==HwaSensorFields::Band){
+            const QString names[]={QString::fromUtf8("短波（SWIR）"),QString::fromUtf8("近红外（NIR）"),QString::fromUtf8("中波（MWIR）"),QString::fromUtf8("长波（LWIR）"),QString::fromUtf8("可见光")};
+            const int band=int(value);if(band>=0&&band<5)m_sensorFields[i]->setText(names[band]);
+        }
         qInfo().noquote()<<"[P7SensorReadback]"<<field.name<<QString::number(value,'g',17);
     }
     m_requestedVideoFps=cmd.trackingInit.videoFps;

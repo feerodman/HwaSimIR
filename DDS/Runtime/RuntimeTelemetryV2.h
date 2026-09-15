@@ -16,6 +16,11 @@ struct Message {
     bool finished=false;
     std::int64_t t1=0,t2=0,t3=0,sampleNs=0;
     double acceptedHz=0,executedHz=0,queueWaitMs=0;
+    // V3/kind 4 is a separate Control response record on the existing diagnostic
+    // channel. The V2 clock/Realtime byte layout is unchanged.
+    std::uint64_t controlSequence=0;
+    int controlCommand=0,controlRound=0;
+    std::int64_t controlReceiveNs=0,controlExecuteNs=0,controlResolutionNs=1000;
 };
 template<class IO>inline void fields(IO& io,Message& m){
     io.value(m.version);io.value(m.kind);io.value(m.server);io.value(m.client);
@@ -23,15 +28,35 @@ template<class IO>inline void fields(IO& io,Message& m){
     io.value(m.run);io.value(m.outputSeq);io.value(m.finished);
     io.value(m.t1);io.value(m.t2);io.value(m.t3);io.value(m.sampleNs);
     io.value(m.acceptedHz);io.value(m.executedHz);io.value(m.queueWaitMs);
+    if(m.version==3 && m.kind==4){
+        io.value(m.controlSequence);io.value(m.controlCommand);io.value(m.controlRound);
+        io.value(m.controlReceiveNs);io.value(m.controlExecuteNs);io.value(m.controlResolutionNs);
+    }
 }
 inline std::vector<std::uint8_t> encode(Message m){HwaFrameV2::Writer w;fields(w,m);return w.bytes;}
-inline bool decode(const char* p,std::size_t n,Message& m){try{HwaFrameV2::Reader r(reinterpret_cast<const std::uint8_t*>(p),n);fields(r,m);return r.pos==n&&m.version==2&&m.kind>=1&&m.kind<=3;}catch(const std::exception&){return false;}}
+inline bool decode(const char* p,std::size_t n,Message& m){try{m=Message();HwaFrameV2::Reader r(reinterpret_cast<const std::uint8_t*>(p),n);fields(r,m);return r.pos==n&&((m.version==2&&m.kind>=1&&m.kind<=3)||(m.version==3&&m.kind==4));}catch(const std::exception&){return false;}}
+inline bool controlTimeValid(const Message& m){return m.controlSequence>0 && m.controlReceiveNs>0 &&
+    m.controlExecuteNs>m.controlReceiveNs && m.controlExecuteNs-m.controlReceiveNs>=std::max<std::int64_t>(1000,m.controlResolutionNs);}
+inline double controlResponseMs(const Message& m){return (m.controlExecuteNs-m.controlReceiveNs)/1.e6;}
+inline double controlEquivalentHz(const Message& m){return controlTimeValid(m)?1.e9/double(m.controlExecuteNs-m.controlReceiveNs):0;}
 class Counters {
     std::mutex mutex;std::deque<std::int64_t> arrivals,starts;
     std::uint64_t accepted=0,executed=0,generation=0;double wait=0;
     std::uint64_t run=0,outputSeq=0;bool finished=false;
+    Message lastControl;
     static void trim(std::deque<std::int64_t>& q,std::int64_t now){while(!q.empty()&&q.front()<=now-1000000000LL)q.pop_front();}
 public:
+    void control(int command,int round,std::int64_t receiveNs,std::int64_t executeNs){
+        if(command<1||command>3||receiveNs<=0)return;
+        std::lock_guard<std::mutex> lock(mutex);
+        lastControl.version=3;lastControl.kind=4;++lastControl.controlSequence;
+        lastControl.controlCommand=command;lastControl.controlRound=round;
+        lastControl.controlReceiveNs=receiveNs;lastControl.controlExecuteNs=executeNs;
+        // Conservative 1 us reporting floor, never an assumption of perfect ns resolution.
+        lastControl.controlResolutionNs=std::max<std::int64_t>(1000,
+            std::int64_t(std::ceil(1.e9*std::chrono::steady_clock::period::num/std::chrono::steady_clock::period::den)));
+    }
+    Message controlSnapshot(){std::lock_guard<std::mutex> lock(mutex);return lastControl;}
     void reset(){std::lock_guard<std::mutex> lock(mutex);arrivals.clear();starts.clear();accepted=executed=0;wait=0;outputSeq=0;finished=false;++generation;}
     void output(std::uint64_t g,std::uint64_t r,std::uint64_t seq){std::lock_guard<std::mutex> lock(mutex);generation=g;run=r;outputSeq=seq;finished=false;}
     void finish(){std::lock_guard<std::mutex> lock(mutex);finished=true;}

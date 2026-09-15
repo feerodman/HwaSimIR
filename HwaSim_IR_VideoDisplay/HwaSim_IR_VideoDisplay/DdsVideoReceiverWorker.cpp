@@ -46,6 +46,7 @@ struct DdsVideoReceiverWorker::Impl
 	std::shared_ptr<DdsRuntimeManager> runtime;
     std::mutex telemetryMutex;
     HwaTelemetryV2::Message boardMetrics;
+    HwaTelemetryV2::Message controlResponse;
     HwaTelemetryV2::ClockEstimate clockEstimate;
     std::int64_t metricsArrivalNs=0,lastClockRequestNs=0;
     std::uint64_t requestSequence=0;
@@ -113,7 +114,29 @@ public:
         auto& state=*owner->m_impl;
         if(m.kind==3){
             if(state.boardMetrics.server!=m.server||state.boardMetrics.generation!=m.generation)state.clockEstimate.reset();
+            if(state.controlResponse.server!=m.server)state.controlResponse=HwaTelemetryV2::Message();
             state.boardMetrics=m;state.metricsArrivalNs=t4;
+        }else if(m.kind==4){
+            if(!state.boardMetrics.server.empty() && state.boardMetrics.server!=m.server)return;
+            if(m.controlCommand<1||m.controlCommand>3||!m.controlSequence)return;
+            if(state.controlResponse.server==m.server && state.controlResponse.controlSequence>=m.controlSequence)return;
+            state.controlResponse=m;
+            qInfo().noquote()<<QString("[ControlResponseV3] session=%1 sequence=%2 command=%3 round=%4 receiveNs=%5 executeNs=%6 responseMs=%7 equivalentHz=%8 valid=%9")
+                .arg(QString::fromStdString(m.server)).arg(m.controlSequence).arg(m.controlCommand).arg(m.controlRound)
+                .arg(m.controlReceiveNs).arg(m.controlExecuteNs).arg(HwaTelemetryV2::controlResponseMs(m),0,'f',6)
+                .arg(HwaTelemetryV2::controlEquivalentHz(m),0,'f',6).arg(HwaTelemetryV2::controlTimeValid(m));
+            const auto csvPath=qgetenv("P9ControlCsv");
+            if(!csvPath.isEmpty()){
+                QFile csv(QString::fromLocal8Bit(csvPath));const bool empty=!csv.exists()||csv.size()==0;
+                if(csv.open(QIODevice::WriteOnly|QIODevice::Append)){
+                    if(empty)csv.write("session,sequence,command,round,receiveNs,executeNs,responseMs,equivalentHz,valid,resolutionFloorNs,receiverArrivalNs\n");
+                    csv.write(QString("%1,%2,%3,%4,%5,%6,%7,%8,%9,%10,%11\n")
+                        .arg(QString::fromStdString(m.server)).arg(m.controlSequence).arg(m.controlCommand).arg(m.controlRound)
+                        .arg(m.controlReceiveNs).arg(m.controlExecuteNs).arg(HwaTelemetryV2::controlResponseMs(m),0,'f',6)
+                        .arg(HwaTelemetryV2::controlEquivalentHz(m),0,'f',6).arg(HwaTelemetryV2::controlTimeValid(m))
+                        .arg(m.controlResolutionNs).arg(t4).toUtf8());
+                }
+            }
         }else if(m.kind==2&&m.client==state.clockClient){
             const auto request=state.clockRequests.find(m.sequence);
             if(request==state.clockRequests.end()||request->second!=m.t1)return;
@@ -892,6 +915,11 @@ QJsonObject DdsVideoReceiverWorker::telemetrySnapshot() const
     s.insert("queueWaitMs",m_impl->boardMetrics.queueWaitMs);s.insert("generation",QString::number(m_impl->boardMetrics.generation));
     s.insert("server",QString::fromStdString(m_impl->boardMetrics.server));s.insert("run",QString::number(m_impl->boardMetrics.run));
     s.insert("outputSeq",QString::number(m_impl->boardMetrics.outputSeq));s.insert("finished",m_impl->boardMetrics.finished);
+    const auto& control=m_impl->controlResponse;
+    s.insert("controlSequence",QString::number(control.controlSequence));s.insert("controlCommand",control.controlCommand);
+    s.insert("controlTimeValid",HwaTelemetryV2::controlTimeValid(control));
+    s.insert("controlResponseMs",HwaTelemetryV2::controlResponseMs(control));
+    s.insert("controlEquivalentHz",HwaTelemetryV2::controlEquivalentHz(control));
     s.insert("clockValid",fresh&&m_impl->clockEstimate.valid(now));s.insert("clockErrorMs",m_impl->clockErrorMs);
     s.insert("outputLatencyMs",fresh&&!m_impl->decodedTimes.empty()?m_impl->outputLatencyMs:-1);
     return s;

@@ -146,7 +146,7 @@ public:
 	// 处理实时成像数据包
 	void handleDisplayData(const BYHWICD::DisplayC2cObjTrackingData& data);
 #if defined(HWASIMIR_HAS_ZRDDS)
-	void handleDdsControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd);
+	void handleDdsControlCmd(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd, std::int64_t receiveNs);
 	void handleDdsInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& cmd);
 	void handleDdsDisplayData(const BYHWICD::DisplayC2cObjTrackingData& data);
 	bool PublishDdsFrameProducts(const DdsVideoFrameMeta& meta,
@@ -199,12 +199,17 @@ private:
 		PendingNetworkCommandType type = PendingNetworkCommandType::Control;
 		std::string transport = "udp";
 		BYHWICD::ControlP2cX1ObjTrackingCmd controlCmd{};
+		std::int64_t controlReceiveNs = 0;
+		std::int64_t controlExecuteNs = 0;
+		std::int64_t stopQuietRequiredNs = 0;
+		std::shared_ptr<struct HwaStopDrainOperation> stopOperation;
 		BYHWICD::InitP2cObjectTrackingCmd initCmd{};
 		BYHWICD::DisplayC2cObjTrackingData realtimeData{};
 	};
 
 	void ProcessPendingNetworkCommands();
-	void ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd);
+	void BeginControlCmdOnMainThread(PendingNetworkCommand& pending);
+	void ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrackingCmd& cmd, std::int64_t executeNs);
 	void ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCmd& cmd,
 		const std::string& ingressTransport = "udp");
 	void ProcessDisplayDataOnMainThread(const BYHWICD::DisplayC2cObjTrackingData& data,

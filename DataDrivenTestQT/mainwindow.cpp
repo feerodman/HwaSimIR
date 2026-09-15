@@ -140,6 +140,10 @@ MainWindow::MainWindow(
 		qFatal("invalid --control-transport; expected udp|dds|both");
 	loadNetworkConfig();
 	setupUI();
+    BYHWICD::trackerSensorParam initialSensor={};QString initialError;
+    if(!sensorFormSnapshot(initialSensor,initialError))qFatal("Invalid initial sensor form");
+    m_protocolSensorBand=initialSensor.trackerSensorBand;
+    m_h264Enabled=initialSensor.h264En;
 	if (m_controlTransport == QStringLiteral("udp") || m_controlTransport == QStringLiteral("both"))
 		setupUDP();
 	if (m_controlTransport == QStringLiteral("dds") || m_controlTransport == QStringLiteral("both"))
@@ -147,12 +151,12 @@ MainWindow::MainWindow(
 
 
     //讀取文件内容
-    QString tmp = m_inputDataPath.isEmpty() ? QStringLiteral("./1.txt") : m_inputDataPath;
+    QString tmp = m_inputDataPath;
     readData(tmp);
 	qInfo().noquote() << QStringLiteral("[StimInput] path=%1 rows=%2 source=%3")
 		.arg(QFileInfo(tmp).absoluteFilePath())
 		.arg(realTimeData.size())
-		.arg(m_inputDataPath.isEmpty() ? QStringLiteral("default") : QStringLiteral("command_line"));
+		.arg(QStringLiteral("resolved_input_file"));
 	if (realTimeData.isEmpty())
 	{
 		qFatal("实时激励文件没有有效数据行: %s", qPrintable(QFileInfo(tmp).absoluteFilePath()));
@@ -461,7 +465,7 @@ void MainWindow::setupUI()
 	// 实时数据组
 	m_realTimeDataGroup = new QGroupBox(QStringLiteral("文件数据与身份 · 位置来自输入文件"));
 	QFormLayout *realTimeLayout = new QFormLayout;
-	realTimeLayout->addRow(QStringLiteral("目标类型:"), m_targetTypeEdit = new QLineEdit("0x11"));
+	realTimeLayout->addRow(QStringLiteral("目标类型:"), m_targetTypeEdit = new QLineEdit(QSettings(m_networkConfigPath,QSettings::IniFormat).value("Demo/TargetType","0x11").toString()));
 	m_videoFpsEdit = new QLineEdit(QString::number(m_protocolVideoFps));
     realTimeLayout->addRow(QStringLiteral("横向视场角:"), m_fovHEdit = new QLineEdit("0.1"));
     realTimeLayout->addRow(QStringLiteral("纵向视场角:"), m_fovVEdit = new QLineEdit("0.1"));
@@ -483,7 +487,7 @@ void MainWindow::setupUI()
 	realTimeLayout->addRow(QStringLiteral("目标横滚(°):"), m_rollEditTarget = new QLineEdit("0.0"));
 //    realTimeLayout->addRow(QStringLiteral("相撞时间(s):"), m_collisionTime = new QLineEdit("30.0"));//相撞時間
 	realTimeLayout->addRow(QStringLiteral("平台速度/Z(m):"), m_speed = new QLineEdit("100.0"));
-    m_timeStep = new QLineEdit("16.666667");
+    m_timeStep = new QLineEdit(QString::number(m_sendStepMs,'f',6));
     m_timeStep->setValidator(new QDoubleValidator(.1,100000,6,m_timeStep));
 	
 
@@ -510,7 +514,7 @@ void MainWindow::setupUI()
     auto* pacing=new QFormLayout(realtimeGroup);pacing->addRow(QStringLiteral("发送步长 (ms)"),m_timeStep);mainLayout->addWidget(realtimeGroup);
     for(auto* edit:{m_latEdit,m_lonEdit,m_altEdit,m_yawEdit,m_pitchEdit,m_rollEdit,
         m_latEditTarget,m_lonEditTarget,m_altEditTarget,m_yawEditTarget,m_pitchEditTarget,m_rollEditTarget,m_speed})edit->setReadOnly(true);
-    auto* sourceTitle=new QLabel(QStringLiteral("输入文件：")+QFileInfo(m_inputDataPath.isEmpty()?QStringLiteral("./1.txt"):m_inputDataPath).absoluteFilePath());
+    auto* sourceTitle=new QLabel(QStringLiteral("输入文件：")+QFileInfo(m_inputDataPath).absoluteFilePath());
     sourceTitle->setWordWrap(true);mainLayout->addWidget(sourceTitle);
     // Existing file-driven compatibility controls stay available, outside pacing.
     m_realTimeDataGroup->setCheckable(true);m_realTimeDataGroup->setChecked(false);
@@ -550,6 +554,15 @@ void MainWindow::loadNetworkConfig()
 	QSettings settings(configPath, QSettings::IniFormat);
 	settings.setIniCodec("UTF-8");
 
+    if(m_inputDataPath.isEmpty()){
+        const QString configured=settings.value("Demo/InputFile",QStringLiteral("1.txt")).toString();
+        m_inputDataPath=QDir(QCoreApplication::applicationDirPath()).absoluteFilePath(configured);
+    }else m_inputDataPath=QFileInfo(m_inputDataPath).absoluteFilePath();
+    if(!QFileInfo(m_inputDataPath).isFile())qFatal("Missing input file: %s",qPrintable(m_inputDataPath));
+    m_protocolEnvSky=settings.value("Demo/envSky",0).toInt();
+    m_sendStepMs=settings.value("RenderControl/sendStepMs",1000.0/60.0).toDouble();
+    if(!std::isfinite(m_sendStepMs)||m_sendStepMs<.1||m_sendStepMs>100000)qFatal("Invalid sendStepMs");
+    m_inputHz=1000.0/m_sendStepMs;
 	const QString defaultLocalIp = QStringLiteral("0.0.0.0");
 	const quint16 defaultLocalPort = 9999;
 	const QString defaultRemoteIp = QStringLiteral("127.0.0.1");

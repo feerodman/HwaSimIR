@@ -1,0 +1,41 @@
+{
+  "SchemaVersion": 1,
+  "Revision": "P9-static-customer-demo",
+  "World": {
+    "Frame": "WGS84_ENU_tangent",
+    "LatitudeDeg": 40.0,
+    "LongitudeDeg": 100.0,
+    "OriginEllipsoidAltitudeM": 0.0,
+    "Animation": "Static",
+    "CellSizeM": 2500.0,
+    "Seed": 30,
+    "MinAltitudeM": 9400.0,
+    "MaxAltitudeM": 10600.0,
+    "MinRadiusXYM": 350.0,
+    "MaxRadiusXYM": 1000.0,
+    "MinRadiusZM": 180.0,
+    "MaxRadiusZM": 500.0
+  },
+  "Appearance": {
+    "Manifest": "Weather/Derived/cloud_manifest_p7.json",
+    "DensitySize": 96,
+    "NearSteps": 12,
+    "MediumSteps": 10,
+    "FarSteps": 8,
+    "OpticalDepth": 2.5,
+    "LinearSourceNIR": 0.48,
+    "LinearSourceMWIR": 0.34,
+    "ArtLightEncoding": "DensityCoefficientGx1.4",
+    "NearDiameterPx": 800,
+    "MediumDiameterPx": 250,
+    "VisibleStepBudget": 16
+  },
+  "Sheet": {
+    "Texture": "Weather/Textures/cloud_scattered.png",
+    "PeriodM": 9000.0,
+    "CoverageM": 30000.0,
+    "AltitudeM": 10500.0,
+    "OpticalDepthScale": 2.0,
+    "GrazingFadeDegrees": 8.0
+  }
+}

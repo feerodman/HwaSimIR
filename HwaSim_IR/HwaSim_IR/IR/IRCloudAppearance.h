@@ -26,8 +26,8 @@ struct IRCloudAppearance {
     }
     void load(const std::string& configRoot,const std::string& preset,bool legacyReference=false) {
         enabled=false;
-        if(preset!="Legacy"&&preset!="GameWorld"&&preset!="GameWorldLegacyArt")throw std::runtime_error("unknown weather appearance preset: "+preset);
-        root=configRoot;IRJson::Document d;d.load(root+"/Weather/world_cloud_game.json");
+        if(preset!="Legacy"&&preset!="GameWorld"&&preset!="GameWorldLegacyArt"&&preset!="CustomerDemo")throw std::runtime_error("unknown weather appearance preset: "+preset);
+        root=configRoot;IRJson::Document d;d.load(root+(preset=="CustomerDemo"?"/Weather/world_cloud_demo.json":"/Weather/world_cloud_game.json"));
         d.integer("SchemaVersion",1,1);revision=d.string("Revision");hash=d.hash;
         if(d.string("World.Frame")!="WGS84_ENU_tangent"||d.string("World.Animation")!="Static")
             throw std::runtime_error("unsupported cloud world frame/time definition");
@@ -51,7 +51,7 @@ struct IRCloudAppearance {
         cloudNir=d.number("Appearance.LinearSourceNIR",0,1);cloudMwir=d.number("Appearance.LinearSourceMWIR",0,1);
         const std::string light=d.has("Appearance.ArtLightEncoding")?d.string("Appearance.ArtLightEncoding"):"LegacyPNG";
         if(light!="LegacyPNG" && light!="DensityCoefficientGx1.4")throw std::runtime_error("unsupported cloud art light encoding");
-        densityLighting=light=="DensityCoefficientGx1.4" && preset=="GameWorld" && !legacyReference;
+        densityLighting=light=="DensityCoefficientGx1.4" && (preset=="GameWorld"||preset=="CustomerDemo") && !legacyReference;
         sheetTexture=d.string("Sheet.Texture");sheetPeriod=d.number("Sheet.PeriodM",100,50000);
         sheetCoverage=d.number("Sheet.CoverageM",sheetPeriod,200000);
         sheetAltitude=d.number("Sheet.AltitudeM",0,20000);sheetDepth=d.number("Sheet.OpticalDepthScale",.01,8);
