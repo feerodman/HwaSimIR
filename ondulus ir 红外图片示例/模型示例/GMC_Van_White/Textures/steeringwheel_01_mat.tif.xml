@@ -1,0 +1,23 @@
+<Composite_Material_Table>
+  <Composite_Material index="1" IsVisibleInClassification="True" IsVisibleInPaint="True">
+    <Name>RUBBER-TIRE</Name>
+    <Color>#FF404042</Color>
+    <Primary_Substrate>
+      <Material>
+        <Name>BM_RUBBER</Name>
+        <Weight>100</Weight>
+      </Material>
+      <Thickness>0.05</Thickness>
+    </Primary_Substrate>
+    <Secondary_Substrate>
+      <Material>
+        <Name>BM_METAL-ALUMINIUM</Name>
+        <Weight>100</Weight>
+      </Material>
+      <Thickness>0.1</Thickness>
+    </Secondary_Substrate>
+    <ColorAssignment>
+      <Color>#FF3A3B36</Color>
+    </ColorAssignment>
+  </Composite_Material>
+</Composite_Material_Table>

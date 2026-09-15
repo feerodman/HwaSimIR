@@ -1,0 +1,53 @@
+<Composite_Material_Table>
+  <Composite_Material index="1" IsVisibleInClassification="True" IsVisibleInPaint="True">
+    <Name>METAL-IRON</Name>
+    <Color>#FFCED6DB</Color>
+    <Primary_Substrate>
+      <Material>
+        <Name>BM_METAL-IRON</Name>
+        <Weight>100</Weight>
+      </Material>
+      <Thickness>0.2</Thickness>
+    </Primary_Substrate>
+    <ColorAssignment>
+      <Color>#FF919295</Color>
+      <Color>#FF87888B</Color>
+    </ColorAssignment>
+  </Composite_Material>
+  <Composite_Material index="128" IsVisibleInClassification="True" IsVisibleInPaint="True">
+    <Name>METAL-PAINTED</Name>
+    <Color>#FF869BB0</Color>
+    <Primary_Substrate>
+      <Material>
+        <Name>BM_METAL</Name>
+        <Weight>100</Weight>
+      </Material>
+      <Thickness>0.05</Thickness>
+    </Primary_Substrate>
+    <Surface_Substrate>
+      <Material>
+        <Name>BM_PAINT</Name>
+        <Weight>100</Weight>
+      </Material>
+    </Surface_Substrate>
+    <ColorAssignment>
+      <Color>#FFAAB0B5</Color>
+      <Color>#FF838A8F</Color>
+    </ColorAssignment>
+  </Composite_Material>
+  <Composite_Material index="255" IsVisibleInClassification="True" IsVisibleInPaint="True">
+    <Name>METAL-ALUMINUM</Name>
+    <Color>#FFD3D9E0</Color>
+    <Primary_Substrate>
+      <Material>
+        <Name>BM_METAL-ALUMINIUM</Name>
+        <Weight>100</Weight>
+      </Material>
+      <Thickness>0.01</Thickness>
+    </Primary_Substrate>
+    <ColorAssignment>
+      <Color>#FF8B8C8F</Color>
+      <Color>#FF8B8C8E</Color>
+    </ColorAssignment>
+  </Composite_Material>
+</Composite_Material_Table>

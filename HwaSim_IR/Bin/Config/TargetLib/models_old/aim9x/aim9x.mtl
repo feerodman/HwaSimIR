@@ -1,0 +1,16 @@
+﻿# 3ds Max Wavefront OBJ Exporter v0.99 - (c)2007 guruware
+# 创建的文件:26.05.2026 17:16:06
+
+newmtl TX_AIM9X_Diffuse
+	Ns 10.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 0.7940 0.7940 0.7940
+	Kd 0.7940 0.7940 0.7940
+	Ks 0.0000 0.0000 0.0000
+	Ke 0.0000 0.0000 0.0000
+	map_Ka TX_AIM9X_Diffuse.png
+	map_Kd TX_AIM9X_Diffuse.png

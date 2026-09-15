@@ -8,6 +8,8 @@
 #endif
 #include "IR/IRGameSpriteBatch.h"
 #include "IR/IRJson.h"
+#include "IR/IRFramebufferAudit.h"
+#include "IR/IRPortableModel.h"
 #include "IR/IRPrecipitationBatch.h"
 #include "IR/IRNativeRgbCopy.h"
 #include "IR/IRAutoMapping.h"
@@ -252,10 +254,10 @@ void LogMsaaFramebufferResult(int requested, GraphicsOutput* output, const char*
 	const int actual = output != nullptr ? output->get_fb_properties().get_multisamples() : 0;
 	const char* result = requested == 0
 		? "disabled"
-		: (actual == requested ? "enabled" : "fallback");
+		: (actual == requested ? "declared_native_verification_required" : "property_fallback");
 	std::cout << "[MSAA]"
 		<< " requested=" << requested
-		<< " actual=" << actual
+		<< " propertySamples=" << actual
 		<< " output=" << (outputName != nullptr ? outputName : "unknown")
 		<< " result=" << result
 		<< std::endl;
@@ -2600,6 +2602,7 @@ void HwaSimIR::InitStage6FinalPostShader()
     uniform float u_stage6_final_display_gain;
     uniform float u_stage6_final_display_offset;
     uniform float u_stage6_final_gamma;
+    uniform int u_p10_edge_aa;
     uniform vec4 u_p7_frame_chart;
     uniform int u_stage6_final_noise_enable;
     uniform float u_stage6_final_noise_sigma_norm;
@@ -2648,11 +2651,30 @@ void HwaSimIR::InitStage6FinalPostShader()
         return fract((p.x + p.y) * p.x);
     }
 
+    float Stage6RawLuma(vec2 uv){
+        vec2 halfPixel=u_stage6_mtf_texel_size*.5;
+        return dot(texture2D(p3d_Texture0,clamp(uv,halfPixel,max(halfPixel,u_stage6_mtf_uv_max-halfPixel))).rgb,vec3(.299,.587,.114));
+    }
+    float Stage6EdgeAA(vec2 uv,float center){
+        vec2 px=u_stage6_mtf_texel_size;
+        float a=Stage6RawLuma(uv+px*vec2(-1,-1)),b=Stage6RawLuma(uv+px*vec2(1,-1));
+        float c=Stage6RawLuma(uv+px*vec2(-1,1)),d=Stage6RawLuma(uv+px);
+        float low=min(center,min(min(a,b),min(c,d))),high=max(center,max(max(a,b),max(c,d)));
+        if(high-low<max(.015,.1*abs(high)))return center;
+        // Single-frame directional edge filtering; flat areas are untouched.
+        vec2 direction=vec2(c+d-a-b,a+c-b-d);
+        float stabilizer=max((abs(a)+abs(b)+abs(c)+abs(d))*.03125,.0078125);
+        direction=clamp(direction/(min(abs(direction.x),abs(direction.y))+stabilizer),vec2(-4),vec2(4))*px;
+        float inner=.5*(Stage6RawLuma(uv-direction/6.0)+Stage6RawLuma(uv+direction/6.0));
+        float outer=.5*inner+.25*(Stage6RawLuma(uv-direction*.5)+Stage6RawLuma(uv+direction*.5));
+        return outer<low||outer>high?inner:outer;
+    }
     float Stage6FinalSampleDisplayGray(vec2 uv)
     {
         vec2 safeUv = clamp(uv, vec2(0.0, 0.0), u_stage6_mtf_uv_max);
         vec4 rawColor = texture2D(p3d_Texture0, safeUv);
         float gray = dot(rawColor.rgb, vec3(0.299, 0.587, 0.114));
+        if(u_p10_edge_aa==1)gray=Stage6EdgeAA(safeUv,gray);
         gray = gray * u_stage6_final_display_gain + u_stage6_final_display_offset;
         return gray; // Retain highlights until the final display/AGC mapping.
     }
@@ -3215,6 +3237,7 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 	m_stage6RawSceneRegion->set_clear_color(LColor(0.0f, 0.0f, 0.0f, 1.0f));
 	m_stage6RawSceneRegion->set_clear_depth_active(true);
 	m_stage6RawSceneRegion->set_active(true);
+	if(std::getenv("P10FramebufferAudit"))m_stage6RawSceneRegion->set_draw_callback(new IRFramebufferAudit);
 
 	if (IsHeadlessOffscreenMode())
 	{
@@ -3480,6 +3503,9 @@ void HwaSimIR::ApplyStage6FinalPostprocessInputs()
 	const double safeSensorFovDeg = std::isfinite(sensorFovDeg) && sensorFovDeg > 0.0 ? sensorFovDeg : 1.0;
 	const double currentTime = ClockObject::get_global_clock() != nullptr ? ClockObject::get_global_clock()->get_frame_time() : 0.0;
 	m_stage6FinalCard.set_shader_input("u_stage6_final_white_hot", LVecBase2i(config.whiteHot ? 1 : 0, 0));
+	const std::string aa=m_runtimeConfig.getString("Render","PostprocessAA","RenderPostprocessAA","Off");
+	if(aa!="Off"&&aa!="EdgeAA")throw std::runtime_error("unsupported PostprocessAA");
+	m_stage6FinalCard.set_shader_input("u_p10_edge_aa",LVecBase2i(aa=="EdgeAA"?1:0,0));
 	m_stage6FinalCard.set_shader_input("u_stage6_final_reinhard",LVecBase2i(m_stage6Reinhard?1:0,0));
 	m_stage6FinalCard.set_shader_input("u_stage6_final_display_gain", LVecBase2f(static_cast<float>(config.displayGain), 0.0f));
 	m_stage6FinalCard.set_shader_input("u_stage6_final_display_offset", LVecBase2f(static_cast<float>(offsetNorm), 0.0f));
@@ -7523,7 +7549,7 @@ NodePath HwaSimIR::LoadPlatformAssetNode(PLATFORM_TYPE type, const PlatformResPa
 		return NodePath();
 	}
 
-	Filename modelPath = Filename::from_os_specific(res.modelPath);
+	Filename modelPath = Filename::from_os_specific(IRPortableModelPath(res.modelPath));
 	PT(PandaNode) loadedNode = Loader::get_global_ptr()->load_sync(modelPath);
 	NodePath modelNode;
 	if (loadedNode != nullptr)
@@ -7760,7 +7786,7 @@ void HwaSimIR::ProcessAddRemoveWeaponPlatform()
 
 
 		// 加载模型和纹理
-		NodePath modelNode = m_pMainWindow->load_model(m_renderRoot, resIter->second.modelPath);
+		NodePath modelNode = m_pMainWindow->load_model(m_renderRoot, IRPortableModelPath(resIter->second.modelPath));
 		if (modelNode.is_empty()) return;
 
 		PT(Texture) texture = TexturePool::load_texture(resIter->second.texturePath);
@@ -9129,6 +9155,7 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		break;
 	case 2: // 开始
 		std::cout << "执行开始仿真逻辑..." << std::endl;
+        if(!m_sensorProfileRequestValid){std::cerr<<"[SensorProfileRequest][ERROR] start_rejected invalid_previous_init"<<std::endl;break;}
         // INIT already created this input round. DDS realtime may arrive after
         // INIT ACK while START is waiting on the render thread. Keep those FIFO
         // entries and counters; clearing here lost the first valid input.
@@ -9259,6 +9286,15 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 	std::cout << "  传感器ID：" << cmd.sensorID << std::endl;
 	//std::cout << "  有效平台数：" << cmd.platNumValid << std::endl;
 	const BYHWICD::trackerSensorParam& sensor = cmd.trackingInit.trackerSensor[0];
+	if(!m_irSensorProfiles.supportsProductionProtocolBand(sensor.trackerSensorBand)){
+		m_sensorProfileRequestValid=false;m_isSimRunning.store(false);
+		std::cerr<<"[SensorProfileRequest][ERROR] requestedProtocolBand="<<sensor.trackerSensorBand
+			<<" effectiveBand=unavailable action=reject_init no_band_substitution=1 reason="
+			<<m_irSensorProfiles.profileForProtocolBand(sensor.trackerSensorBand).loadError
+			<<" supportedProductionBands=NIR,MWIR"<<std::endl;
+		return;
+	}
+	m_sensorProfileRequestValid=true;
 	std::cout << "[Stage0] Init baseline: sensorBand=" << sensor.trackerSensorBand
 		<< ", sensorSize=" << sensor.trackerSensorWidth << "x" << sensor.trackerSensorHeight
 		<< ", viewMinMax=" << sensor.trackerSensorViewMin << "/" << sensor.trackerSensorViewMax

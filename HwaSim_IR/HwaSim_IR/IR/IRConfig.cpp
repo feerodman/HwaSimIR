@@ -31,6 +31,11 @@ const IRSensorProfile& IRSensorProfileDatabase::profileForBand(IRBand b)const{
 const IRSensorProfile& IRSensorProfileDatabase::profileForProtocolBand(int b)const{return profileForBand(IRBandFromProtocol(b));}
 std::vector<IRSensorProfile> IRSensorProfileDatabase::allProfiles()const{std::vector<IRSensorProfile> v;for(auto b:bands)v.push_back(profileForBand(b));return v;}
 bool IRSensorProfileDatabase::loaded()const{return m_loaded;}
+bool IRSensorProfileDatabase::supportsProductionProtocolBand(int b)const{
+    if(b!=1 && b!=2)return false;
+    const auto& p=profileForProtocolBand(b);
+    return p.loadedFromFile && p.schemaVersion==1 && p.displayPresets.count(p.defaultDisplayPreset)!=0;
+}
 const std::string& IRSensorProfileDatabase::loadedDirectory()const{return m_loadedDirectory;}
 bool IRSensorProfileDatabase::loadProfileFromFile(IRBand band,const std::string& path){
     IRSensorProfile p=IRDefaultSensorProfile(band);p.sourcePath=path;
@@ -40,6 +45,9 @@ bool IRSensorProfileDatabase::loadProfileFromFile(IRBand band,const std::string&
         p.width=d.integer(s+"Width",256,4096);p.height=d.integer(s+"Height",256,4096);
         p.spectralLowUm=d.number(s+"SpectralResponseRangeLow",.1,100);
         p.spectralHighUm=d.number(s+"SpectralResponseRangeHigh",.1,100);
+        // Legacy units are implicitly um. Explicit units cannot reinterpret them.
+        if(d.has("HwaSimIR.SpectralUnit") && d.string("HwaSimIR.SpectralUnit")!="um")
+            throw std::runtime_error("unsupported_spectral_unit: expected um");
         const auto range=IRDefaultRangeForBand(band);
         if(std::abs(p.spectralLowUm-range.lowUm)>1.e-4||std::abs(p.spectralHighUm-range.highUm)>1.e-4)
             throw std::runtime_error("spectral_range_conflicts_with_fixed_band");
@@ -89,8 +97,13 @@ bool IRSensorProfileDatabase::loadProfileFromFile(IRBand band,const std::string&
         p.fallbackFields="Systems.SensorConfigurationSystem.Width,Height,FOVH only when interface geometry invalid";
         p.ignoredPresagisFields="legacy gain/MTF/noise/intensifier/QE/integration/well capacity not implemented";
         p.loadedFromFile=true;
-    }catch(const cv::Exception& e){p=IRDefaultSensorProfile(band);p.sourcePath=path;p.loadError="opencv_json: "+e.err;}
-    catch(const std::exception& e){p=IRDefaultSensorProfile(band);p.sourcePath=path;p.loadError=e.what();}
+    }catch(const cv::Exception& e){p.loadError="opencv_json: "+e.err;}
+    catch(const std::exception& e){p.loadError=e.what();}
+    if(!p.loadedFromFile){
+        // Preserve the rejected request/hash/range; INIT prevents consumption.
+        p.name="UNAVAILABLE("+std::string(IRBandName(band))+")";
+        p.displayPresets.clear();p.defaultDisplayPreset="Unavailable";
+    }
     m_profiles[band]=p;
     std::cout<<"[SensorProfile] Band="<<IRBandName(band)<<" valid="<<p.loadedFromFile<<" file="<<path
         <<" version="<<p.schemaVersion<<" revision="<<p.revision<<" hash="<<p.contentHash

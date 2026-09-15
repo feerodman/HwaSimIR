@@ -1,6 +1,6 @@
 ﻿[CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true)][string]$ElfPath,
+    [string]$ElfPath = '',
     [string]$RepoRoot = '',
     [string]$BoardHost = '192.168.1.116',
     [string]$BoardUser = 'root',
@@ -8,12 +8,20 @@ param(
     [string]$SshKey = '',
     [string]$LogDirectory = '',
     [switch]$ReuseVerifiedConfig,
-    [switch]$ReuseVerifiedFiles
+    [switch]$ReuseVerifiedFiles,
+    [switch]$FinalizeRetention,
+    [string]$AcceptanceReceipt = '',
+    [string]$RollbackVersion = '',
+    [string]$ResumeStaging = ''
 )
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version 2
 if (-not $RepoRoot) { $RepoRoot = Split-Path -Parent $PSScriptRoot }
+if($env:HWASIMIR_SSH_PASSWORD -and !$SshKey){
+    $env:SSH_ASKPASS=Join-Path $PSScriptRoot 'p5_ssh_askpass.cmd'
+    $env:SSH_ASKPASS_REQUIRE='force';$env:DISPLAY='hwasimir_deploy'
+}
 
 function Invoke-Native {
     param([string]$FilePath, [string[]]$Arguments)
@@ -57,7 +65,28 @@ function Get-RelativeUnixPath {
     return [Uri]::UnescapeDataString($rootUri.MakeRelativeUri($pathUri).ToString())
 }
 
+if($BoardRoot -ne '/userdata/HwaSimIR'){throw 'Deployment/retention is restricted to the named board workspace'}
+if($FinalizeRetention){
+    if(!$AcceptanceReceipt){throw 'Retention requires an actual short-test PASS receipt identifying the deployed ELF and Config manifest'}
+    if($RollbackVersion -and $RollbackVersion -notmatch '^\d{8}-\d{6}$'){throw 'Invalid rollback version'}
+    if(!$LogDirectory){$LogDirectory=Join-Path $RepoRoot 'logs/p10/retention'}
+    New-Item -ItemType Directory -Force -Path $LogDirectory | Out-Null
+    Invoke-Scp (Join-Path $PSScriptRoot 'rk3588_retain_versions.py') "$BoardRoot/logs/retain_versions.py"
+    Invoke-Scp (Resolve-Path -LiteralPath $AcceptanceReceipt).Path "$BoardRoot/logs/retention_acceptance.json"
+    $retentionSha=(Get-FileHash (Join-Path $PSScriptRoot 'rk3588_retain_versions.py')).Hash.ToLowerInvariant()
+    $receiptSha=(Get-FileHash (Resolve-Path -LiteralPath $AcceptanceReceipt).Path).Hash.ToLowerInvariant()
+    $actualTool=Invoke-SshCapture "sha256sum '$BoardRoot/logs/retain_versions.py' | cut -d ' ' -f 1"
+    $actualReceipt=Invoke-SshCapture "sha256sum '$BoardRoot/logs/retention_acceptance.json' | cut -d ' ' -f 1"
+    if($actualTool -ne $retentionSha -or $actualReceipt -ne $receiptSha){throw 'Retention tool or receipt transfer hash mismatch'}
+    $selection=if($RollbackVersion){"--rollback '$RollbackVersion'"}else{''}
+    Invoke-Ssh "python3 '$BoardRoot/logs/retain_versions.py' --root '$BoardRoot' --apply --receipt '$BoardRoot/logs/retention_acceptance.json' $selection --output '$BoardRoot/logs/retention_result.json'"
+    $arguments=@(New-SshArguments)+@("${BoardUser}@${BoardHost}:$BoardRoot/logs/retention_result.json",(Join-Path $LogDirectory 'retention_result.json'))
+    Invoke-Native -FilePath 'scp.exe' -Arguments $arguments
+    return
+}
 $elf = (Resolve-Path -LiteralPath $ElfPath).Path
+$assetPython=if(Test-Path 'F:\Programs\anaconda3\python.exe'){'F:\Programs\anaconda3\python.exe'}else{'python'}
+Invoke-Native -FilePath $assetPython -Arguments @((Join-Path $PSScriptRoot 'p10_prepare_portable_models.py'))
 $configSource = Join-Path $RepoRoot 'HwaSim_IR\Bin\Config'
 $launcherSource = Join-Path $RepoRoot 'tools\rk3588_run_hwasimir_precise.sh'
 $performanceSource = Join-Path $RepoRoot 'tools\rk3588_hwasimir_performance_mode.sh'
@@ -65,14 +94,16 @@ foreach ($required in @($elf, $configSource, $launcherSource, $performanceSource
     if (-not (Test-Path -LiteralPath $required)) { throw "Required deployment source missing: $required" }
 }
 
-$stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+if($ResumeStaging -and $ResumeStaging -notmatch '^\d{8}-\d{6}$'){throw 'Invalid resume version'}
+$stamp = if($ResumeStaging){$ResumeStaging}else{Get-Date -Format 'yyyyMMdd-HHmmss'}
 if (-not $LogDirectory) { $LogDirectory = Join-Path $RepoRoot "logs\rk3588-deploy-$stamp" }
 New-Item -ItemType Directory -Force -Path $LogDirectory | Out-Null
 $LogDirectory = (Resolve-Path -LiteralPath $LogDirectory).Path
 $stageRoot = Join-Path $LogDirectory 'stage'
 $stageConfig = Join-Path $stageRoot 'Config'
 New-Item -ItemType Directory -Force -Path $stageConfig | Out-Null
-Copy-Item -Path (Join-Path $configSource '*') -Destination $stageConfig -Recurse -Force
+if(!$ResumeStaging){Copy-Item -Path (Join-Path $configSource '*') -Destination $stageConfig -Recurse -Force}
+elseif (-not (Test-Path -LiteralPath (Join-Path $stageConfig 'deployment_manifest.sha256'))) {throw 'Resume requires the original local complete stage'}
 $boardBoundQos = Join-Path $RepoRoot 'tools\dds_d1_qos\ZRDDS_QOS_RK3588_192.168.1.116.xml'
 if (Test-Path -LiteralPath $boardBoundQos) {
     Copy-Item -LiteralPath $boardBoundQos -Destination (Join-Path $stageConfig 'DDS') -Force
@@ -129,6 +160,10 @@ foreach ($relative in $requiredConfig) {
     }
 }
 
+# Atomic marker excludes concurrent deploy/retention; a failed deployment keeps
+# it in place until its incomplete switch has been inspected and recovered.
+if(!$ResumeStaging){Invoke-Ssh "set -eu; test ! -e '$BoardRoot/.retention_in_progress'; mkdir '$BoardRoot/.deployment_in_progress'; test ! -e '$BoardRoot/.retention_in_progress'"}
+else{Invoke-Ssh "set -eu; test -d '$BoardRoot/.deployment_in_progress'; test ! -e '$BoardRoot/.retention_in_progress'; test -d '$BoardRoot/Config.new_$stamp'; test ! -e '$BoardRoot/Config.before_$stamp'"}
 $boardElfNew = "$BoardRoot/HwaSim_IR.new_$stamp"
 $boardLauncherNew = "$BoardRoot/run_precise.sh.new_$stamp"
 $boardPerformanceNew = "$BoardRoot/rk3588_hwasimir_performance_mode.sh.new_$stamp"
@@ -241,11 +276,13 @@ $remoteElfBackup = "$BoardRoot/HwaSim_IR.before_$stamp"
 $remoteLauncherBackup = "$BoardRoot/run_precise.sh.before_$stamp"
 $remotePerformanceBackup = "$BoardRoot/rk3588_hwasimir_performance_mode.sh.before_$stamp"
 if($reuseFiles) {
-    Invoke-Ssh "test ! -e '$remoteConfigNew' && cp -al '$BoardRoot/Config' '$remoteConfigNew'"
+    if(!$ResumeStaging){Invoke-Ssh "test ! -e '$remoteConfigNew' && cp -al '$BoardRoot/Config' '$remoteConfigNew'"}
     Invoke-Scp $archive $remoteArchive
     $deltaDir="$BoardRoot/Config.delta_$stamp"
     # Extract new files separately: tar must never truncate a hard-linked inode.
-    Invoke-Ssh "set -eu; test ! -e '$deltaDir'; mkdir '$deltaDir'; tar --warning=no-timestamp -xzf '$remoteArchive' -C '$deltaDir'"
+    if(!$ResumeStaging){Invoke-Ssh "set -eu; test ! -e '$deltaDir'; mkdir '$deltaDir'"}
+    else{Invoke-Ssh "set -eu; test -d '$deltaDir'; test -z `"`$(find '$deltaDir' -type f -links +1 -print -quit)`"; test -z `"`$(find '$deltaDir' -type l -print -quit)`""}
+    Invoke-Ssh "set -eu; tar --warning=no-timestamp --warning=no-unknown-keyword -xzf '$remoteArchive' -C '$deltaDir'"
     foreach($relative in $changedPaths){
         $parent=Split-Path -Parent $relative
         $parent=$parent -replace '\\','/'
@@ -266,7 +303,7 @@ if($reuseFiles) {
 }
 
 $requiredTests = ($requiredConfig | ForEach-Object { "test -f '$remoteConfigNew/$_'" }) -join ' && '
-$extract = if ($reuseIdenticalConfig -or $reuseFiles) { ':' } else { "mkdir -p '$remoteConfigNew'; tar --warning=no-timestamp -xzf '$remoteArchive' -C '$remoteConfigNew' --strip-components=1" }
+$extract = if ($reuseIdenticalConfig -or $reuseFiles) { ':' } else { "mkdir -p '$remoteConfigNew'; tar --warning=no-timestamp --warning=no-unknown-keyword -xzf '$remoteArchive' -C '$remoteConfigNew' --strip-components=1" }
 $prepare = "set -eu; $extract; cd '$remoteConfigNew'; sha256sum -c deployment_manifest.sha256 >/tmp/hwasimir_config_verify_$stamp.log; $requiredTests; test `$(sha256sum deployment_manifest.sha256 | awk '{print `$1}') = '$manifestSha'; test `$(sha256sum '$boardElfNew' | awk '{print `$1}') = '$elfSha'; echo '[DeploymentVerify] result=PASS configManifestSha256=$manifestSha elfSha256=$elfSha buildId=$buildId staging=$remoteConfigNew'"
 Invoke-Ssh $prepare
 
@@ -275,14 +312,8 @@ Invoke-Ssh $switch
 
 $finalVerify = Invoke-SshCapture "set -eu; cd '$BoardRoot'; test `$(sha256sum HwaSim_IR | awk '{print `$1}') = '$elfSha'; test `$(sha256sum run_precise.sh | awk '{print `$1}') = '$launcherSha'; test `$(sha256sum rk3588_hwasimir_performance_mode.sh | awk '{print `$1}') = '$performanceSha'; test `$(sha256sum Config/deployment_manifest.sha256 | awk '{print `$1}') = '$manifestSha'; (cd Config && sha256sum -c deployment_manifest.sha256 >/dev/null); echo '[DeploymentFinal] result=PASS gitCommit=$gitCommit sourceIdentity=$sourceIdentity elfSha256=$elfSha buildId=$buildId runtimeConfigSha256=$runtimeSha configManifestSha256=$manifestSha'"
 $finalVerify | Tee-Object -FilePath (Join-Path $LogDirectory 'deployment_final.txt')
-if ($reuseIdenticalConfig -or $reuseFiles) {
-    # Config is an immutable runtime input; future releases must replace files
-    # by rename/copy, as this deployer does, not edit shared snapshot inodes.
-    Write-Host "[DeploymentBackup] result=PASS directory=$remoteConfigBackup format=immutable_hardlink_snapshot"
-    Write-Host "[Deployment] result=PASS logDirectory=$LogDirectory"
-    return
-}
-$backupArchive = "$BoardRoot/Config.before_$stamp.tgz"
-$archiveBackup = "set -eu; tar -C '$BoardRoot' -czf '/tmp/Config.before_$stamp.tgz' 'Config.before_$stamp'; tar -tzf '/tmp/Config.before_$stamp.tgz' >/dev/null; sha256sum '/tmp/Config.before_$stamp.tgz' > '/tmp/Config.before_$stamp.tgz.sha256'; resolved=`$(readlink -f '$remoteConfigBackup'); test `"`$resolved`" = '$remoteConfigBackup'; rm -rf -- '$remoteConfigBackup'; mv '/tmp/Config.before_$stamp.tgz' '$backupArchive'; mv '/tmp/Config.before_$stamp.tgz.sha256' '$backupArchive.sha256'; echo '[DeploymentBackup] result=PASS archive=$backupArchive archiveSha256='`$(awk '{print `$1}' '$backupArchive.sha256')"
-Invoke-Ssh $archiveBackup
+# Retain the whole immutable package until the deployed version passes its short test.
+# A separate -FinalizeRetention invocation consumes the actual acceptance receipt.
+Invoke-Ssh "rmdir '$BoardRoot/.deployment_in_progress'"
+Write-Host "[DeploymentBackup] result=PASS directory=$remoteConfigBackup format=complete_immutable_snapshot retention=pending_short_acceptance"
 Write-Host "[Deployment] result=PASS logDirectory=$LogDirectory"

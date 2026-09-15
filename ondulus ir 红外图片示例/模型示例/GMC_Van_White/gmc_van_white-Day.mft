@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with MultiGen Creator (http://www.multigen-paradigm.com) -->
+
+<MetaFlightRoot xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn://www.multigen-paradigm.com/MetaFlight  metaflight.xsd" xmlns="urn://www.multigen-paradigm.com/MetaFlight">
+  <Database name="gmc_van_white-Day">
+    <SchemaCopyright>MetaFlight Schema V1.3 - Copyright 2006-2007 MultiGen Paradigm, Inc.</SchemaCopyright>
+    <VersionMajor></VersionMajor>
+    <VersionMinor></VersionMinor>
+    <PublicationDate>Tue Nov 14 20:37:38 2017</PublicationDate>
+    <RecipientName></RecipientName>
+    <RecipientOrganization></RecipientOrganization>
+    <RecipientProject></RecipientProject>
+    <FeatureTagDescription>Feature Tags not used</FeatureTagDescription>
+    <DatasetNameMapping>USE_DATASET_TITLE</DatasetNameMapping>
+    <ModelListDataset name="gmc_van_white-Day">
+      <DatasetName>gmc_van_white-Day</DatasetName>
+      <DatasetTitle></DatasetTitle>
+      <Volume></Volume>
+      <RootPath></RootPath>
+      <Model name="gmc_van_white-Day">
+        <FileName>gmc_van_white-Day.flt</FileName>
+        <ModelComponents>
+          <Dof name="door_driver">
+            <ID>22</ID>
+          </Dof>
+          <Dof name="door_passenger">
+            <ID>1</ID>
+          </Dof>
+          <Dof name="door_sideleft">
+            <ID>2</ID>
+          </Dof>
+          <Dof name="door_sideright">
+            <ID>3</ID>
+          </Dof>
+          <Dof name="door_rearleft">
+            <ID>4</ID>
+          </Dof>
+          <Dof name="door_rearright">
+            <ID>5</ID>
+          </Dof>
+          <Dof name="WHEEL_BK_SPIN">
+            <ID>6</ID>
+          </Dof>
+          <Dof name="WHEEL_FL_TURN">
+            <ID>7</ID>
+          </Dof>
+          <Dof name="WHEEL_FL_SPIN">
+            <ID>8</ID>
+          </Dof>
+          <Dof name="WHEEL_FR_TURN">
+            <ID>9</ID>
+          </Dof>
+          <Dof name="WHEEL_FR_SPIN">
+            <ID>10</ID>
+          </Dof>
+          <Dof name="door_driver_1">
+            <ID>11</ID>
+          </Dof>
+          <Dof name="door_passenger_1">
+            <ID>12</ID>
+          </Dof>
+          <Dof name="door_sideleft_1">
+            <ID>13</ID>
+          </Dof>
+          <Dof name="door_sideright_1">
+            <ID>14</ID>
+          </Dof>
+          <Dof name="door_rearleft_1">
+            <ID>15</ID>
+          </Dof>
+          <Dof name="door_rearright_1">
+            <ID>16</ID>
+          </Dof>
+          <Dof name="WHEEL_BK_SPIN_1">
+            <ID>17</ID>
+          </Dof>
+          <Dof name="WHEEL_FL_TURN_1">
+            <ID>18</ID>
+          </Dof>
+          <Dof name="WHEEL_FL_SPIN_1">
+            <ID>19</ID>
+          </Dof>
+          <Dof name="WHEEL_FR_TURN_1">
+            <ID>20</ID>
+          </Dof>
+          <Dof name="WHEEL_FR_SPIN_1">
+            <ID>21</ID>
+          </Dof>
+          <Switch name="damage">
+            <ID>0</ID>
+            <SwitchState name="undamaged">
+              <SwitchStateMask>100</SwitchStateMask>
+            </SwitchState>
+            <SwitchState name="damaged">
+              <SwitchStateMask>010</SwitchStateMask>
+            </SwitchState>
+            <SwitchState name="destroyed">
+              <SwitchStateMask>001</SwitchStateMask>
+            </SwitchState>
+          </Switch>
+          <Switch name="headlights_beams">
+            <ID>999</ID>
+            <SwitchState name="beams_off">
+              <SwitchStateMask>10</SwitchStateMask>
+            </SwitchState>
+            <SwitchState name="beams_on">
+              <SwitchStateMask>01</SwitchStateMask>
+            </SwitchState>
+          </Switch>
+          <Switch name="headlights_beams_1">
+            <ID>998</ID>
+            <SwitchState name="beams_off">
+              <SwitchStateMask>10</SwitchStateMask>
+            </SwitchState>
+            <SwitchState name="beams_on">
+              <SwitchStateMask>01</SwitchStateMask>
+            </SwitchState>
+          </Switch>
+        </ModelComponents>
+      </Model>
+    </ModelListDataset>
+  </Database>
+</MetaFlightRoot>

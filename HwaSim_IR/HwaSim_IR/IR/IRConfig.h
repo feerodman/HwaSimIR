@@ -17,6 +17,9 @@ public:
 	std::vector<IRSensorProfile> allProfiles() const;
 	bool loaded() const;
 	const std::string& loadedDirectory() const;
+	// Standalone auditing uses the exact production parser and fixed-band gate.
+	bool checkProfileFile(IRBand band, const std::string& path) { return loadProfileFromFile(band, path); }
+	bool supportsProductionProtocolBand(int protocolBand) const;
 
 private:
 	void resetToFallbacks();

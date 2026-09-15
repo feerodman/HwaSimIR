@@ -1,12 +1,17 @@
 ﻿#include "AnnotationOverlay.h"
 
 #include "lineSegs.h"
+#ifdef _MSC_VER
+#pragma warning(disable:4996) // Read-only diagnostic environment switches.
+#endif
 #include "pandaNode.h"
 #include "textNode.h"
 
 #include <algorithm>
 #include <iostream>
 #include <sstream>
+#include <fstream>
+#include <cstdlib>
 
 namespace
 {
@@ -19,11 +24,13 @@ int ClampPixel(int value, int low, int high)
 void AnnotationOverlay::initialize(const NodePath& overlayRoot)
 {
 	m_overlayRoot = overlayRoot;
+	m_layout.reset();
 	clear();
 }
 
 void AnnotationOverlay::clear()
 {
+	m_requests.clear();m_textNodes.clear();m_textScales.clear();m_placements.clear();
 	if (!m_frameRoot.is_empty())
 	{
 		m_frameRoot.remove_node();
@@ -64,6 +71,7 @@ void AnnotationOverlay::drawFrame(const AnnotationFrameRecord& record, const Ann
 	for (size_t i = 0; i < record.targets.size(); ++i)
 	{
 		const TargetAnnotation& target = record.targets[i];
+		m_labelIdentity=std::to_string(target.targetType)+":"+std::to_string(target.targetPlatID)+":"+std::to_string(target.targetID)+":";
 		if (!target.bbox.visible)
 		{
 			continue;
@@ -96,6 +104,7 @@ void AnnotationOverlay::drawFrame(const AnnotationFrameRecord& record, const Ann
 			addText(label.str(), point.x + 6, point.y - 6, record.width, record.height, 0.028f);
 		}
 	}
+	flushText(record);
 }
 
 LPoint3f AnnotationOverlay::pixelToOverlayCoord(int x, int y, int width, int height) const
@@ -164,6 +173,14 @@ void AnnotationOverlay::addText(const std::string& text, int x, int y, int width
 	textNode->set_shadow_color(0.0f, 0.0f, 0.0f, 0.9f);
 	textNode->set_align(TextNode::A_left);
 
+	const char* legacy=std::getenv("P10LabelLegacy");
+	if(!legacy || std::string(legacy)!="1"){
+		AnnotationLabelRequest r;r.text=text;
+		r.key=m_labelIdentity+text.substr(0,text.find('('));r.anchorX=float(x);r.anchorY=float(y);
+		r.w=std::ceil((textNode->get_right()-textNode->get_left())*scale*width*.5f)+3;
+		r.h=std::ceil((textNode->get_top()-textNode->get_bottom())*scale*height*.5f)+3;
+		m_requests.push_back(r);m_textNodes.push_back(textNode);m_textScales.push_back(scale);return;
+	}
 	NodePath textPath = m_frameRoot.attach_new_node(textNode);
 	// 标注坐标对应最终图像左上角像素坐标；这里只转换到 Panda3D 2D overlay 坐标。
 	textPath.set_pos(pixelToOverlayCoord(safeX, safeY, width, height));
@@ -171,4 +188,33 @@ void AnnotationOverlay::addText(const std::string& text, int x, int y, int width
 	textPath.set_bin("fixed", 103);
 	textPath.set_depth_test(false);
 	textPath.set_depth_write(false);
+}
+
+void AnnotationOverlay::flushText(const AnnotationFrameRecord& record){
+    m_placements=m_layout.place(m_requests,record.width,record.height);
+    for(size_t i=0;i<m_requests.size();++i){
+        const auto& r=m_requests[i];const auto& b=m_placements[i].box;auto t=m_textNodes[i];const float s=m_textScales[i];
+        const int x=int(std::lround(b.x+1-t->get_left()*s*record.width*.5f));
+        const int y=int(std::lround(b.y+1+t->get_top()*s*record.height*.5f));
+        NodePath p=m_frameRoot.attach_new_node(t);p.set_pos(pixelToOverlayCoord(x,y,record.width,record.height));p.set_scale(s);
+        p.set_bin("fixed",103);p.set_depth_test(false);p.set_depth_write(false);
+        // Original keypoint call used (+6,-6); restore only the visual leader
+        // anchor. Required coordinate text and AnnotationFrameRecord stay intact.
+        const bool point=r.text.find('(')!=std::string::npos;
+        if(point){
+            const float ax=r.anchorX-6,ay=r.anchorY+6;
+            const float ex=std::max(b.x,std::min(b.x+b.w,ax)),ey=std::max(b.y,std::min(b.y+b.h,ay));
+            LineSegs l("Annotation_TextLeader");l.set_color(0,1,.2f,.85f);l.set_thickness(1);
+            l.move_to(pixelToOverlayCoord(int(ax),int(ay),record.width,record.height));
+            l.draw_to(pixelToOverlayCoord(int(ex),int(ey),record.width,record.height));
+            auto n=m_frameRoot.attach_new_node(l.create());n.set_bin("fixed",102);n.set_depth_test(false);n.set_depth_write(false);
+        }
+        if(m_placements[i].overflow)std::cerr<<"[AnnotationLayout][ERROR] insufficient_area key="<<r.key<<" allLabelsRetained=1"<<std::endl;
+    }
+    const char* path=std::getenv("P10LabelDumpPrefix"),*seq=std::getenv("P10LabelDumpSeq");
+    if(path&&seq&&record.frameIndex==std::strtoull(seq,nullptr,10)){
+        std::ofstream out(std::string(path)+"_labels.csv");out<<"key,text,anchorX,anchorY,labelX,labelY,width,height,candidate,overflow\n";
+        for(size_t i=0;i<m_requests.size();++i){const auto& r=m_requests[i];const auto& p=m_placements[i];
+            out<<r.key<<",\""<<r.text<<"\","<<r.anchorX<<','<<r.anchorY<<','<<p.box.x<<','<<p.box.y<<','<<p.box.w<<','<<p.box.h<<','<<p.candidate<<','<<p.overflow<<'\n';}
+    }
 }

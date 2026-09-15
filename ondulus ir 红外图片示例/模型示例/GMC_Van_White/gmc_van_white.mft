@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with MultiGen Creator (http://www.multigen-paradigm.com) -->
+
+<MetaFlightRoot xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn://www.multigen-paradigm.com/MetaFlight  metaflight.xsd" xmlns="urn://www.multigen-paradigm.com/MetaFlight">
+  <Database name="gmc_van_white">
+    <SchemaCopyright>MetaFlight Schema V1.3 - Copyright 2006-2007 MultiGen Paradigm, Inc.</SchemaCopyright>
+    <VersionMajor></VersionMajor>
+    <VersionMinor></VersionMinor>
+    <PublicationDate>Tue Nov 14 20:37:39 2017</PublicationDate>
+    <RecipientName></RecipientName>
+    <RecipientOrganization></RecipientOrganization>
+    <RecipientProject></RecipientProject>
+    <FeatureTagDescription>Feature Tags not used</FeatureTagDescription>
+    <DatasetNameMapping>USE_DATASET_TITLE</DatasetNameMapping>
+    <ModelListDataset name="gmc_van_white">
+      <DatasetName>gmc_van_white</DatasetName>
+      <DatasetTitle></DatasetTitle>
+      <Volume></Volume>
+      <RootPath></RootPath>
+      <Model name="gmc_van_white">
+        <FileName>gmc_van_white.flt</FileName>
+        <ModelComponents>
+          <Dof name="door_driver">
+            <ID>23</ID>
+          </Dof>
+          <Dof name="door_passenger">
+            <ID>1</ID>
+          </Dof>
+          <Dof name="door_sideleft">
+            <ID>2</ID>
+          </Dof>
+          <Dof name="door_sideright">
+            <ID>3</ID>
+          </Dof>
+          <Dof name="door_rearleft">
+            <ID>4</ID>
+          </Dof>
+          <Dof name="door_rearright">
+            <ID>5</ID>
+          </Dof>
+          <Dof name="wheel_front_left">
+            <ID>6</ID>
+          </Dof>
+          <Dof name="wheel_front_right">
+            <ID>7</ID>
+          </Dof>
+          <Dof name="wheel_back_left">
+            <ID>8</ID>
+          </Dof>
+          <Dof name="wheel_back_right">
+            <ID>9</ID>
+          </Dof>
+          <Dof name="door_driver_1">
+            <ID>12</ID>
+          </Dof>
+          <Dof name="door_passenger_1">
+            <ID>13</ID>
+          </Dof>
+          <Dof name="door_sideleft_1">
+            <ID>14</ID>
+          </Dof>
+          <Dof name="door_sideright_1">
+            <ID>15</ID>
+          </Dof>
+          <Dof name="door_rearleft_1">
+            <ID>16</ID>
+          </Dof>
+          <Dof name="door_rearright_1">
+            <ID>17</ID>
+          </Dof>
+          <Switch name="damage">
+            <ID>0</ID>
+            <SwitchState name="undamaged">
+              <SwitchStateMask>100</SwitchStateMask>
+            </SwitchState>
+            <SwitchState name="damaged">
+              <SwitchStateMask>010</SwitchStateMask>
+            </SwitchState>
+            <SwitchState name="destroyed">
+              <SwitchStateMask>001</SwitchStateMask>
+            </SwitchState>
+          </Switch>
+          <Switch name="headlights_beams">
+            <ID>999</ID>
+            <SwitchState name="beams_off">
+              <SwitchStateMask>0</SwitchStateMask>
+            </SwitchState>
+            <SwitchState name="beams_on">
+              <SwitchStateMask>1</SwitchStateMask>
+            </SwitchState>
+          </Switch>
+        </ModelComponents>
+      </Model>
+    </ModelListDataset>
+  </Database>
+</MetaFlightRoot>

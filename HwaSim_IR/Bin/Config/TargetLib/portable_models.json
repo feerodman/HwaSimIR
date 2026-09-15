@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "purpose": "path-only portable imports of current user models",
+  "models": [
+    {
+      "source": "models/f35/F35C.obj",
+      "sourceSha256": "b6563ef6bcc78aef4a9f5eaef5f288c0eb0f6dbacaf332787f40f402aeab0269",
+      "materialSha256": "76a411a741f6f7ad68afe80fac60853a4ef49627ee96723960df80b1e07a827e",
+      "derived": "models/f35/F35C.obj.portable.d8278a37ec76b351-76f484c1b9e5fbad.obj",
+      "derivedSha256": "d64a128f07221b69983c48ab03f296a0997e070eba126b0e3dcbee0289a91411",
+      "geometryAndUVBytesUnchanged": true,
+      "texturePaths": [
+        {
+          "originalPathHex": "443a5cbaeccde2b0e5bfa85c6633355c663335632e4a5047",
+          "relativePath": "f35c.jpg"
+        },
+        {
+          "originalPathHex": "443a5cbaeccde2b0e5bfa85c6633355c663335632e4a5047",
+          "relativePath": "f35c.jpg"
+        }
+      ]
+    },
+    {
+      "source": "models/f22/f22.obj",
+      "sourceSha256": "31d2edb19651b491fa974a30e0b1e365a0b870d6533f2f097c1038ee28ab3b23",
+      "materialSha256": "f11e438ef2c3b754baf03fb9dde071b5d1da15698a905db4c79ba913b1f40629",
+      "derived": "models/f22/f22.obj.portable.e56855117cf047d3-69de7fd8f23e06be.obj",
+      "derivedSha256": "d5f0ab6e7de3f40a60bfe88bda5cda4768b1831a717a811ba43a84ffc526e3a5",
+      "geometryAndUVBytesUnchanged": true,
+      "texturePaths": [
+        {
+          "originalPathHex": "443a5cbaeccde2b0e5bfa85c6632325c6632322e726762",
+          "relativePath": "f22.rgb"
+        },
+        {
+          "originalPathHex": "443a5cbaeccde2b0e5bfa85c6632325c6632322e726762",
+          "relativePath": "f22.rgb"
+        }
+      ]
+    },
+    {
+      "source": "models/aim120/AIM120.obj",
+      "sourceSha256": "05226496b071a4f1e3f5d7f55133c894207b51d870a0ff48b2ee550c02a887a9",
+      "materialSha256": "a12bae20c5e3400e1f55bb1285cbc4176f0dc901a608eaa9800f7c2cb7a6f412",
+      "derived": "models/aim120/AIM120.obj.portable.b3b9820f844f3f5e-7a3e42073c0e7317.obj",
+      "derivedSha256": "2e8ddc5cadc459f325606fdfd81671df4662e2ca6f146dc48b384f1127e1ad91",
+      "geometryAndUVBytesUnchanged": true,
+      "texturePaths": [
+        {
+          "originalPathHex": "443a5cbaeccde2b0e5bfa85c61696d3132305c61696d3132302e6a7067",
+          "relativePath": "aim120.jpg"
+        },
+        {
+          "originalPathHex": "443a5cbaeccde2b0e5bfa85c61696d3132305c61696d3132302e6a7067",
+          "relativePath": "aim120.jpg"
+        }
+      ]
+    }
+  ]
+}

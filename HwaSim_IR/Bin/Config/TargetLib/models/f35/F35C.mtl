@@ -1,5 +1,5 @@
-ï»¿# 3ds Max Wavefront OBJ Exporter v0.97b - (c)2007 guruware
-# åˆ›å»ºçš„æ–‡ä»¶:10.02.2026 17:36:15
+# 3ds Max Wavefront OBJ Exporter v0.97b - (c)2007 guruware
+# ´´½¨µÄÎÄ¼þ:08.09.2026 10:46:04
 
 newmtl 01___Default
 	Ns 10.0000
@@ -12,5 +12,5 @@ newmtl 01___Default
 	Kd 0.5880 0.5880 0.5880
 	Ks 0.0000 0.0000 0.0000
 	Ke 0.0000 0.0000 0.0000
-	map_Ka f35c.jpg
-	map_Kd f35c.jpg
+	map_Ka D:\ºìÍâ°å¿¨\f35\f35c.JPG
+	map_Kd D:\ºìÍâ°å¿¨\f35\f35c.JPG

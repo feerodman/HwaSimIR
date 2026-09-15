@@ -849,6 +849,7 @@ private:
 	bool m_renderPerfProbe = false;
 	bool m_headlessForceSyncVideoFalse = true;
 	int m_msaaSamples = 0;
+	bool m_sensorProfileRequestValid = true;
 	HeadlessReadbackMode m_headlessReadbackMode = HeadlessReadbackMode::EveryFrame;
 	std::string m_headlessReadbackModeName = "EveryFrame";
 	int m_headlessReadbackEveryN = 1;

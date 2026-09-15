@@ -1,0 +1,152 @@
+<Composite_Material_Table>
+  <Composite_Material index="1" IsVisibleInClassification="True" IsVisibleInPaint="True">
+    <Name>CAR-BODY</Name>
+    <Color>#FFB0C4DE</Color>
+    <Primary_Substrate>
+      <Material>
+        <Name>BM_METAL-ALUMINIUM</Name>
+        <Weight>100</Weight>
+      </Material>
+      <Thickness>0.01</Thickness>
+    </Primary_Substrate>
+    <Secondary_Substrate>
+      <Material>
+        <Name>BM_FIBERGLASS</Name>
+        <Weight>100</Weight>
+      </Material>
+      <Thickness>0.1</Thickness>
+    </Secondary_Substrate>
+    <ColorAssignment>
+      <Color>#FF070705</Color>
+    </ColorAssignment>
+  </Composite_Material>
+  <Composite_Material index="29" IsVisibleInClassification="False" IsVisibleInPaint="True">
+    <Name>WINDSHIELD-GLASS</Name>
+    <Color>#FFD3EBF2</Color>
+    <Primary_Substrate>
+      <Material>
+        <Name>BM_GLASS</Name>
+        <Weight>100</Weight>
+      </Material>
+      <Thickness>0.0024892</Thickness>
+    </Primary_Substrate>
+    <Secondary_Substrate>
+      <Material>
+        <Name>BM_PLASTIC</Name>
+        <Weight>100</Weight>
+      </Material>
+      <Thickness>0.000762</Thickness>
+    </Secondary_Substrate>
+    <Secondary_Substrate>
+      <Material>
+        <Name>BM_GLASS</Name>
+        <Weight>100</Weight>
+      </Material>
+      <Thickness>0.0024892</Thickness>
+    </Secondary_Substrate>
+    <ColorAssignment />
+  </Composite_Material>
+  <Composite_Material index="57" IsVisibleInClassification="False" IsVisibleInPaint="True">
+    <Name>LIGHTS-PLASTIC</Name>
+    <Color>#FFF0F7C8</Color>
+    <Primary_Substrate>
+      <Material>
+        <Name>BM_PLASTIC</Name>
+        <Weight>100</Weight>
+      </Material>
+      <Thickness>0.05</Thickness>
+    </Primary_Substrate>
+    <ColorAssignment />
+  </Composite_Material>
+  <Composite_Material index="85" IsVisibleInClassification="False" IsVisibleInPaint="True">
+    <Name>METAL</Name>
+    <Color>#FF708090</Color>
+    <Primary_Substrate>
+      <Material>
+        <Name>BM_METAL</Name>
+        <Weight>100</Weight>
+      </Material>
+      <Thickness>0.05</Thickness>
+    </Primary_Substrate>
+    <ColorAssignment />
+  </Composite_Material>
+  <Composite_Material index="113" IsVisibleInClassification="False" IsVisibleInPaint="True">
+    <Name>METAL-ALUMINUM</Name>
+    <Color>#FFD3D9E0</Color>
+    <Primary_Substrate>
+      <Material>
+        <Name>BM_METAL-ALUMINIUM</Name>
+        <Weight>100</Weight>
+      </Material>
+      <Thickness>0.01</Thickness>
+    </Primary_Substrate>
+    <ColorAssignment />
+  </Composite_Material>
+  <Composite_Material index="141" IsVisibleInClassification="False" IsVisibleInPaint="True">
+    <Name>PLASTIC</Name>
+    <Color>#FFFFFFE0</Color>
+    <Primary_Substrate>
+      <Material>
+        <Name>BM_PLASTIC</Name>
+        <Weight>100</Weight>
+      </Material>
+      <Thickness>0.05</Thickness>
+    </Primary_Substrate>
+    <ColorAssignment />
+  </Composite_Material>
+  <Composite_Material index="169" IsVisibleInClassification="False" IsVisibleInPaint="True">
+    <Name>GLASS</Name>
+    <Color>#FFAFEEEE</Color>
+    <Primary_Substrate>
+      <Material>
+        <Name>BM_GLASS</Name>
+        <Weight>100</Weight>
+      </Material>
+      <Thickness>0.01</Thickness>
+    </Primary_Substrate>
+    <ColorAssignment />
+  </Composite_Material>
+  <Composite_Material index="197" IsVisibleInClassification="False" IsVisibleInPaint="True">
+    <Name>METAL-IRON</Name>
+    <Color>#FFCED6DB</Color>
+    <Primary_Substrate>
+      <Material>
+        <Name>BM_METAL-IRON</Name>
+        <Weight>100</Weight>
+      </Material>
+      <Thickness>0.2</Thickness>
+    </Primary_Substrate>
+    <ColorAssignment />
+  </Composite_Material>
+  <Composite_Material index="225" IsVisibleInClassification="False" IsVisibleInPaint="True">
+    <Name>TIRE-RUBBER</Name>
+    <Color>#FF404042</Color>
+    <Primary_Substrate>
+      <Material>
+        <Name>BM_RUBBER</Name>
+        <Weight>100</Weight>
+      </Material>
+      <Thickness>0.05</Thickness>
+    </Primary_Substrate>
+    <Secondary_Substrate>
+      <Material>
+        <Name>BM_METAL-ALUMINIUM</Name>
+        <Weight>100</Weight>
+      </Material>
+      <Thickness>0.1</Thickness>
+    </Secondary_Substrate>
+    <ColorAssignment />
+  </Composite_Material>
+  <Composite_Material index="255" IsVisibleInClassification="False" IsVisibleInPaint="True">
+    <Name>CAR-INTERIOR-FABRIC</Name>
+    <Color>#FF66543F</Color>
+    <Primary_Substrate>
+      <Material>
+        <Name>BM_FABRIC</Name>
+        <Weight>100</Weight>
+      </Material>
+      <Thickness>0.1</Thickness>
+    </Primary_Substrate>
+    <ColorAssignment />
+  </Composite_Material>
+</Composite_Material_Table>

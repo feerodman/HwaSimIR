@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('p7','p8')][string]$LogGroup='p7', [switch]$NoDuplicateH264, [string]$PerformancePolicy='', [switch]$InputAudit, [switch]$FreezeTelemetryTables,
+    [ValidateSet('p7','p8','p10')][string]$LogGroup='p7', [switch]$NoDuplicateH264, [string]$PerformancePolicy='', [switch]$InputAudit, [switch]$FreezeTelemetryTables,
     [string]$Name='smoke', [double]$ReceiverJoinDelay=0, [double]$ReceiverRestartAt=0, [double]$ReceiverRestartGap=2, [string]$ReceiverFaultConfig='', [int]$SaveMp4=1, [ValidateSet(1,2)][int]$SimMode=1, [int]$OutputFps=60, [string]$SensorFieldsJson='', [string]$DiagnosticJson='', [int]$DisplayCase=0, [int]$FreezeAfter=0, [int]$DumpSeq=0, [switch]$ProductionDefaults, [string]$Scene='mixed', [string]$View='oblique',
     [int]$MaterialView=0, [string]$MaterialCase='A', [int]$Band=2,
     [int]$Rate=60, [int]$Seconds=10, [int]$CaptureSeconds=10, [int]$Weather=1, [switch]$Legacy,
