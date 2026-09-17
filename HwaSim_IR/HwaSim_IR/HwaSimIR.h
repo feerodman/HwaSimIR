@@ -269,6 +269,9 @@ private:
 	IRModtranRadianceLut m_stage5ModtranRadianceLut;        // Stage5 3B: MODTRAN path/sky/solar log-only source
 	IRSolarPosition m_m1SolarPosition;
 	IRSolarPositionOutput m_m1SolarState;
+	bool m_m1SolarOverrideEnabled = false;
+	double m_m1SolarOverrideAzimuthDeg = 180.0;
+	double m_m1SolarOverrideElevationDeg = 45.0;
 	IRMaterialBandOptics m_l1MaterialBandOptics;
 	IRSolarHeatingLut m_l1SolarHeatingLut;
 	IRMaterialThermalModel m_l1MaterialThermalModel;
@@ -391,6 +394,8 @@ private:
 	// display/AGC path.  These are scene-wide exposure ranges, never per-target gains.
 	double m_m1NirDisplayRadianceMin = 0.0;
 	double m_m1NirDisplayRadianceMax = 350.0;
+	double m_m1SwirDisplayRadianceMin = 0.0;
+	double m_m1SwirDisplayRadianceMax = 1200.0;
 	double m_m1MwirDisplayRadianceMin = 0.0;
 	double m_m1MwirDisplayRadianceMax = 2.5;
 	// Scene-wide MWIR environment proxies share the same physical 3--5 um
@@ -401,6 +406,23 @@ private:
 	double m_m1MwirGroundEffectiveTempK = 288.0;
 	double m_m1MwirGroundEmissivity = 0.95;
 	double m_m1MwirCloudEmissivity = 0.98;
+	double m_m1SwirSkyEffectiveTempK = 250.0;
+	double m_m1SwirGroundEffectiveTempK = 288.0;
+	double m_m1SwirGroundReflectance = 0.28;
+	double m_m1SwirCloudReflectance = 0.55;
+	double m_m1MwirGroundReflectance = 0.05;
+	double m_m1MwirCloudReflectance = 0.02;
+	// Latest valid target LOS is also used as the explicitly logged reference
+	// LOS for the scene environment.  Until one exists, formal raw environment
+	// pixels stay at zero instead of silently reverting to normalized artwork.
+	bool m_m1EnvironmentLosReady = false;
+	IRBand m_m1EnvironmentLosBand = IRBand::MidWaveInfrared;
+	double m_m1EnvironmentTau = 0.0;
+	double m_m1EnvironmentPathRadiance = 0.0;
+	double m_m1EnvironmentDirectSolarIrradiance = 0.0;
+	double m_m1EnvironmentSkyDiffuseIrradiance = 0.0;
+	double m_m1EnvironmentReferenceRangeM = 0.0;
+	std::uint64_t m_m1EnvironmentSourceSeq = 0;
 	IRBand m_stage5SensorInputDisplayBand = IRBand::MidWaveInfrared;
 	std::string m_stage5SensorInputDisplayBandName = "MWIR";
 	bool m_stage5AeroThermalEnabled = true;
@@ -411,6 +433,7 @@ private:
 	double m_stage5AeroApplyClampBodyDeltaK = 40.0;
 	IRBand m_stage5AeroApplyOnlyBand = IRBand::MidWaveInfrared;
 	std::string m_stage5AeroApplyOnlyBandName = "MWIR";
+	bool m_stage5AeroApplyAllFormalBands = false;
 	IRAeroThermalOptions m_stage5AeroThermalOptions;
 	bool m_enableStage5ModtranRadianceDebug = false;
 	bool m_stage5UseModtranPathRuntime = false;
@@ -434,6 +457,7 @@ private:
 	bool m_m1CompareOnly = false;
 	bool m_m1RuntimeEnabled = false;
 	bool m_m1NirRuntimeEnabled = false;
+	bool m_m1SwirRuntimeEnabled = false;
 	bool m_m1MwirRuntimeEnabled = false;
 	std::string m_m1FallbackUtcDate = "2026-09-06";
 	std::string m_m1AtmosphereModel = "Mid-Latitude Summer";
@@ -497,6 +521,8 @@ private:
 		bool hasAppliedOutput = false;
 		bool lastEngineState = false;
 		IRBand lastBand = IRBand::MidWaveInfrared;
+		bool formalTauReady = false;
+		double formalTau = 0.0;
 	};
 	std::map<std::string, Stage5PlumeRuntimeCache> m_stage5PlumeRuntimeCache;
 	double m_stage5PlumeUpdateHz = 30.0;
@@ -541,6 +567,15 @@ private:
 	std::string m_stage6LastFrameDiagState;
 	PT(Shader) m_stage6FinalPostShader;
 	PT(Texture) m_stage6RawSceneTex;
+	// Windows-only color-plane copy target used for explicitly requested
+	// floating-point diagnostics.  RK3588 reads the bound production RGBA16F
+	// texture through a temporary FBO on those frames, never on every frame.
+	PT(Texture) m_stage6LinearReadbackTex;
+	std::uint64_t m_stage6LinearReadbackSourceSeq = 0;
+	// Prevent a free-running Latest presentation from repeatedly triggering and
+	// overwriting the same explicitly requested diagnostic frame.  Reset at the
+	// beginning of every protocol round so sequence numbers may restart at one.
+	std::uint64_t m_stage6LinearCaptureCompletedSourceSeq = 0;
 	PT(Texture) m_stage7SceneDepthTex;
 	PT(GraphicsOutput) m_stage6RawSceneBuffer;
 	PT(GraphicsOutput) m_stage6FinalSensorBuffer;
@@ -548,6 +583,7 @@ private:
     PT(Texture) m_agcSampleTexture;
     NodePath m_agcSampleRoot,m_agcSampleCard;
     int m_agcSampleSize=64,m_agcAllocatedSize=0;
+	bool m_agcSampleCopyRamPending=false;
     void SetupStage6AgcSampler();
     void PrepareStage6AgcSampleFrame();
 	PT(GraphicsOutput) m_stage6PresentationOutput;
@@ -568,6 +604,15 @@ private:
 	std::string m_stage6FinalPostprocessNoopReason = "unknown";
 	bool m_stage6FinalPostprocessNoop = false;
 	bool m_stage6FinalPostprocessBypass = false;
+	// P11: the formal SWIR/MWIR scene pass is stored as radiance in
+	// W/(m^2 sr um).  Display-window mapping is deferred to the final card.
+	bool m_stage6RawSiDomain = false;
+	// Panda may silently downgrade RTM_bind_or_copy to RTM_copy_texture when a
+	// backend cannot attach the requested color texture.  Formal SI rendering is
+	// not allowed to continue until the first rendered frame verifies the actual
+	// attachment mode.
+	bool m_stage6RawAttachmentChecked = false;
+	bool m_stage6RawAttachmentVerified = false;
 	int m_stage6FinalPipelineLogCounter = 0;
 	int m_annotationOverlayLogCounter = 0;
 	int m_renderPerfProbeLogCounter = 0;
@@ -684,6 +729,8 @@ private:
 	bool IsStage6AgcEffective() const;
 	bool IsStage7FinalScreenOverlayActive() const;
 	bool IsStage6FinalPostprocessNoop(std::string* reason) const;
+	bool IsStage6FormalSiDomainRequested() const;
+	void Stage6PhysicalDisplayWindow(double& minimumRadiance, double& maximumRadiance) const;
 	void LogStage6MtfBlur(std::uint64_t sourceSeq, double renderMs);
 	void LogStage6DetectorNoise(std::uint64_t sourceSeq, double renderMs);
 	void UpdateStage6AgcFromFrame(const unsigned char* frameData, int frameWidth, int frameHeight, std::uint64_t sourceSeq);
@@ -721,9 +768,11 @@ private:
 	double m_gameSpriteLastTime = -1.0;
 	double m_stage7CloudTextureWorldSizeM = 5000.0;
 	void UpdateP5GraphicsTestScene();
-    void UpdateP6GraphicsTestScene();
-    std::vector<IRWorldCloudDescriptor> P6CloudDescriptors() const;
-    void CaptureP6LinearFrame(const unsigned char* pixels,int width,int height,std::uint64_t seq);
+	void UpdateP6GraphicsTestScene();
+	std::vector<IRWorldCloudDescriptor> P6CloudDescriptors() const;
+	bool IsP6LinearCaptureRequested(std::uint64_t seq) const;
+	void ArmP6LinearCapture(std::uint64_t seq);
+	void CaptureP6LinearFrame(const unsigned char* pixels,int width,int height,std::uint64_t seq);
     P6GameConfig m_p6;
     bool m_p6WorldCloudOriginReady=false;
     LPoint3f m_p6WorldCloudOrigin;
@@ -779,6 +828,7 @@ private:
 	void LogStage6DisplayConfig(const IRSensorPostProcessConfig& config, const char* reason) const;
 	void LogStage6DisplayRoute(const IRSensorPostProcessConfig& config, const char* reason) const;
 	void LogStage6FinalPipeline(const char* reason);
+	void VerifyStage6RawAttachment();
 	void LogStage6ViewportDiag(const char* reason) const;
 	void LogStage6FrameDiag(const BYHWICD::DisplayC2cObjTrackingData& currentData, int targetMappedCount, int targetVisibleCount, int hiddenByTargetNum, int hiddenByTargetViewValid, int hiddenByWeaponViewValid, int beyondFarClipCount);
 	void LogRenderPerfProbe(double pandaDoFrameMs);
@@ -854,6 +904,7 @@ private:
 	std::string m_headlessReadbackModeName = "EveryFrame";
 	int m_headlessReadbackEveryN = 1;
 	bool m_headlessCopyRamAttached = true;
+	bool m_stage6FinalCopyRamPending = false;
 	std::uint64_t m_headlessReadbackFrameCounter = 0;
 	int m_headlessReadbackDiagLogCounter = 0;
 	std::vector<unsigned char> m_headlessLastFramePixels;

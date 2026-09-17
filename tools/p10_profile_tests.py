@@ -10,9 +10,21 @@ def check(name,value,expected,band=2):
     assert p.returncode==expected,(name,p.returncode,p.stdout,p.stderr)
     return dict(case=name,exit=p.returncode,expected=expected,result='PASS')
 rows=[]
-for name,band,code in [('VIS-SWIR',4,2),('SWIR',0,2),('MWIR',2,0)]:
-    result=OUT/('default_'+name+'.result.json');p=subprocess.run([str(exe),str(base/('default_'+name+'.json')),str(band),str(result)],capture_output=True,text=True)
+# P11 production profile contract: protocol 0/1/2 are SWIR/NIR/MWIR and all
+# three shipped profiles must load.  VIS-SWIR remains a non-production profile;
+# protocol 4 is VIS and must not be used to activate it.
+for name,profile_name,band,code in [
+    ('SWIR','default_SWIR.json',0,0),
+    ('NIR','default_NVG.json',1,0),
+    ('MWIR','default_MWIR.json',2,0),
+    ('VIS-SWIR-unsupported','default_VIS-SWIR.json',4,2),
+]:
+    result=OUT/(name+'.result.json');p=subprocess.run([str(exe),str(base/profile_name),str(band),str(result)],capture_output=True,text=True)
     assert p.returncode==code,(name,p.stdout,p.stderr);rows.append(dict(case=name,exit=p.returncode,expected=code,result='PASS'))
+for protocol,profile_name in [(-1,'default_MWIR.json'),(3,'default_LWIR.json'),(4,'default_LLLTV.json'),(5,'default_MWIR.json')]:
+    name=f'protocol_{protocol}_unsupported';result=OUT/(name+'.result.json')
+    p=subprocess.run([str(exe),str(base/profile_name),str(protocol),str(result)],capture_output=True,text=True)
+    assert p.returncode==2,(name,p.stdout,p.stderr);rows.append(dict(case=name,exit=p.returncode,expected=2,result='PASS'))
 good=json.loads((base/'default_MWIR.json').read_text());s='SensorConfigurationSystem'
 def variant(name,edit,code):
     v=copy.deepcopy(good);edit(v);rows.append(check(name,v,code))

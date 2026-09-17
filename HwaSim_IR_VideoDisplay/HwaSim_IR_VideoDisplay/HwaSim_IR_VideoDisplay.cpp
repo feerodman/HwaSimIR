@@ -464,6 +464,19 @@ bool HwaSim_IR_VideoDisplay::flushRecorder(const char* reason)
     }
     const bool flushed = m_recorder->stopAndFlush(m_recorderFlushTimeoutMs);
     const RecorderSnapshot snapshot = m_recorder->snapshot();
+    qInfo().noquote()
+        << QStringLiteral("[RecorderFlush] completed=%1 reason=%2 queueDepth=%3 inputFrames=%4 writtenFrames=%5 droppedFrames=%6 frameSeqWritten=%7 sourceSeqWritten=%8 frameSeqContinuousWritten=%9 sourceSeqContinuousWritten=%10 outputPath=%11")
+            .arg(flushed ? 1 : 0)
+            .arg(QString::fromLatin1(reason ? reason : "unknown"))
+            .arg(snapshot.queueDepth)
+            .arg(snapshot.inputFrames)
+            .arg(snapshot.writtenFrames)
+            .arg(snapshot.droppedFrames)
+            .arg(snapshot.frameSeqWritten)
+            .arg(snapshot.sourceSeqWritten)
+            .arg(snapshot.frameSeqContinuousWritten ? 1 : 0)
+            .arg(snapshot.sourceSeqContinuousWritten ? 1 : 0)
+            .arg(snapshot.outputPath);
     if (!flushed)
     {
         qWarning().noquote()
@@ -750,7 +763,8 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
     }
 
     double endToEndMs = -1.0;
-    const auto productMetrics=QJsonDocument::fromJson(annotationJson.toUtf8()).object().value("_frameProduct").toObject();
+    const QJsonObject annotationMetrics = QJsonDocument::fromJson(annotationJson.toUtf8()).object();
+    const QJsonObject productMetrics = annotationMetrics.value("_frameProduct").toObject();
     if (productMetrics.value("outputLatencyEstimated").toBool())
     {
         endToEndMs = productMetrics.value("outputLatencyMs").toDouble(-1);
@@ -775,7 +789,32 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
         recordingFrame.product.insert("guiBeginSteadyNs",QString::number(guiBeginSteadyNs));
         recordingFrame.product.insert("guiSubmitSteadyNs",QString::number(guiSubmitSteadyNs));
         recordingFrame.frameSeq=frameSeq;
-        recordingFrame.sourceSeq=recordingFrame.product.value("sourceSeq").toString().toULongLong();
+        const auto jsonUInt64 = [](const QJsonValue& value) -> quint64 {
+            if (value.isString())
+            {
+                return value.toString().toULongLong();
+            }
+            if (value.isDouble())
+            {
+                const double number = value.toDouble();
+                return number > 0.0 ? static_cast<quint64>(number) : 0;
+            }
+            return 0;
+        };
+        recordingFrame.sourceSeq=jsonUInt64(productMetrics.value("sourceSeq"));
+        if (recordingFrame.sourceSeq == 0)
+        {
+            // TCP v3 JPEG packets carry the authoritative producer sourceSeq
+            // in the annotation root rather than in a DDS FrameProduct.
+            recordingFrame.sourceSeq=jsonUInt64(annotationMetrics.value("sourceSeq"));
+        }
+        if (recordingFrame.sourceSeq > 0)
+        {
+            recordingFrame.product.insert("sourceSeq",QString::number(recordingFrame.sourceSeq));
+        }
+        recordingFrame.association=identity.isEmpty()
+            ? QStringLiteral("TCP_PACKET_V3_JSON")
+            : QStringLiteral("AU_SEI_V2");
         recordingFrame.ptsMs=ptsMs;
         recordingFrame.encodedAu=encodedAu;
         recordingFrame.keyFrame=keyFrame;
@@ -786,10 +825,27 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
         recordingFrame.hasAnnotation = hasAnnotation;
         recordingFrame.receiveTimeNs = receiveTimeNs;
         recordingFrame.displayTimeNs = shownTimeNs;
-        m_recorder->enqueue(recordingFrame);
+        const bool recorderAccepted = m_recorder->enqueue(recordingFrame);
         const double enqueueMs = static_cast<double>(enqueueTimer.nsecsElapsed()) / 1.0e6;
         m_recordingEnqueueMsTotal += enqueueMs;
         m_recordingEnqueueMsMax = qMax(m_recordingEnqueueMsMax, enqueueMs);
+        if (frameSeq <= 3 || (!recorderAccepted && (frameSeq % 120) == 0))
+        {
+            const RecorderSnapshot recorderState = m_recorder->snapshot();
+            qInfo().noquote()
+                << QStringLiteral("[RecorderEnqueue] frameSeq=%1 accepted=%2 enabled=%3 pending=%4 initialized=%5 accepting=%6 shutdown=%7 fileError=%8 queueDepth=%9 productIdentity=%10 productSaveRequested=%11")
+                    .arg(frameSeq)
+                    .arg(recorderAccepted ? 1 : 0)
+                    .arg(recorderState.recordingEnabled ? 1 : 0)
+                    .arg(recorderState.pending ? 1 : 0)
+                    .arg(recorderState.initialized ? 1 : 0)
+                    .arg(recorderState.accepting ? 1 : 0)
+                    .arg(recorderState.shutdownRequested ? 1 : 0)
+                    .arg(recorderState.fileError ? 1 : 0)
+                    .arg(recorderState.queueDepth)
+                    .arg(identity.isEmpty() ? 0 : 1)
+                    .arg(identity.value("saveRequested").toBool() ? 1 : 0);
+        }
         if (enqueueMs > 1.0)
         {
             qWarning().noquote()

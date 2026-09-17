@@ -4,23 +4,36 @@
 #include <dlfcn.h>
 #endif
 
-// Diagnostic / AGC readback only. The scene's native color/depth attachments
-// are never replaced. Returned rows match the delivered, top-down RGB8 image.
-static bool ReadSceneLinear(GraphicsEngine* engine,Texture* texture,GraphicsOutput* output,
-                            int width,int height,PfmFile& result){
-    if(!texture||!output||width<=0||height<=0)return false;
-#ifdef _WIN32
+static bool ReadSceneLinearRamImage(Texture* texture,int width,int height,PfmFile& result){
+    if(!texture||!texture->has_ram_image())return false;
     PfmFile allocated;
-    if(!engine->extract_texture_data(texture,output->get_gsg())||!texture->store(allocated))return false;
+    if(!texture->store(allocated))return false;
     if(allocated.get_x_size()<width||allocated.get_y_size()<height)return false;
     result.clear(width,height,3);
     for(int y=0;y<height;++y)for(int x=0;x<width;++x)
         result.set_point3(x,y,allocated.get_point3(x,y+allocated.get_y_size()-height));
     return true;
+}
+
+// Diagnostic / AGC readback only. The scene's native color/depth attachments
+// are never replaced. Returned rows match the delivered, top-down RGB8 image.
+static bool ReadSceneLinear(GraphicsEngine* engine,Texture* texture,GraphicsOutput* output,
+                            int width,int height,PfmFile& result,bool consumeExistingRam=true){
+    if(!texture||!output||width<=0||height<=0)return false;
+    if(consumeExistingRam&&ReadSceneLinearRamImage(texture,width,height,result)){
+        static bool loggedRam=false;if(!loggedRam){
+            std::cout<<"[LinearReadback] route=render_target_ram_copy sceneAttachmentsChanged=0 depthReadback=0"<<std::endl;
+            loggedRam=true;
+        }
+        return true;
+    }
+#ifdef _WIN32
+    if(!engine->extract_texture_data(texture,output->get_gsg()))return false;
+    return ReadSceneLinearRamImage(texture,width,height,result);
 #else
-    // GLES does not allow the HALF_FLOAT read requested by Panda's generic
-    // texture extractor. Read the existing color texture through a temporary
-    // read-only FBO using the floating-point RGBA/FLOAT transfer pair.
+	// Read the bound formal floating-point color texture through a temporary read-only
+    // FBO. This path is invoked only for selected diagnostic source sequences;
+    // it never adds full-resolution per-frame CPU or disk traffic.
     static void* library=dlopen("libGLESv2.so.2",RTLD_LAZY|RTLD_LOCAL);
     if(!library)return false;
     using U=unsigned int;using I=int;

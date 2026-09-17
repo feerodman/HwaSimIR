@@ -1,0 +1,242 @@
+{
+  "schema": 1,
+  "asset": "P11 Controlled IR Samples",
+  "protocolTargetType": "0x66",
+  "platform": "Resv2",
+  "origin": "Project-authored deterministic geometry and reference values.",
+  "license": "CC0-1.0",
+  "coordinateSystem": "Z-up, front +Y",
+  "units": "metres",
+  "nominalBoundsM": {
+    "x": [
+      -2.155,
+      2.155
+    ],
+    "y": [
+      -0.08,
+      0.08
+    ],
+    "z": [
+      0.2,
+      2.2
+    ]
+  },
+  "geometry": {
+    "vertices": 192,
+    "polygons": 48,
+    "materials": 8
+  },
+  "canonicalSource": "p11_controlled_samples.obj",
+  "derived": [
+    "p11_controlled_samples.egg",
+    "p11_controlled_samples.bam"
+  ],
+  "visibleTexture": "p11_controlled_samples_visible.ppm",
+  "materialIdTexture": "p11_controlled_samples_material_id.pgm",
+  "materialMap": "p11_controlled_samples_material_id.pgm.xml",
+  "bandOptics": "p11_controlled_samples_band_optics.csv",
+  "layout": "in increasing world X: top row IDs 21..24 and bottom row IDs 25..28; a camera on +Y sees each row in reverse screen order",
+  "materialPolicy": "All SWIR/MWIR values are explicit ideal or engineering assumptions; visible RGB is orientation-only.",
+  "panels": [
+    {
+      "id": 21,
+      "key": "blackbody_250K",
+      "label": "BLACKBODY-250K",
+      "db": "BM_PAINT",
+      "rgb": [
+        0.05,
+        0.1,
+        0.34
+      ],
+      "swir": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "mwir": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "temperature_k": 250.0,
+      "basis": "Ideal blackbody reference assumption; epsilon=1 exactly in both bands.",
+      "row": 0,
+      "column": 0
+    },
+    {
+      "id": 22,
+      "key": "blackbody_300K",
+      "label": "BLACKBODY-300K",
+      "db": "BM_PAINT",
+      "rgb": [
+        0.08,
+        0.34,
+        0.62
+      ],
+      "swir": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "mwir": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "temperature_k": 300.0,
+      "basis": "Ideal blackbody reference assumption; epsilon=1 exactly in both bands.",
+      "row": 0,
+      "column": 1
+    },
+    {
+      "id": 23,
+      "key": "blackbody_350K",
+      "label": "BLACKBODY-350K",
+      "db": "BM_PAINT",
+      "rgb": [
+        0.12,
+        0.58,
+        0.45
+      ],
+      "swir": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "mwir": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "temperature_k": 350.0,
+      "basis": "Ideal blackbody reference assumption; epsilon=1 exactly in both bands.",
+      "row": 0,
+      "column": 2
+    },
+    {
+      "id": 24,
+      "key": "blackbody_475K",
+      "label": "BLACKBODY-475K",
+      "db": "BM_PAINT",
+      "rgb": [
+        0.86,
+        0.2,
+        0.08
+      ],
+      "swir": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "mwir": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "temperature_k": 475.0,
+      "basis": "Ideal blackbody reference assumption; epsilon=1 exactly in both bands.",
+      "row": 0,
+      "column": 3
+    },
+    {
+      "id": 25,
+      "key": "graybody_300K",
+      "label": "GRAYBODY-E0.8-300K",
+      "db": "BM_PAINT",
+      "rgb": [
+        0.42,
+        0.42,
+        0.42
+      ],
+      "swir": [
+        0.2,
+        0.8,
+        0.0
+      ],
+      "mwir": [
+        0.2,
+        0.8,
+        0.0
+      ],
+      "temperature_k": 300.0,
+      "basis": "Ideal opaque graybody reference assumption; rho=0.2 epsilon=0.8.",
+      "row": 1,
+      "column": 0
+    },
+    {
+      "id": 26,
+      "key": "reflector_300K",
+      "label": "REFLECTOR-R0.8-300K",
+      "db": "BM_METAL-IRON",
+      "rgb": [
+        0.78,
+        0.78,
+        0.82
+      ],
+      "swir": [
+        0.8,
+        0.2,
+        0.0
+      ],
+      "mwir": [
+        0.8,
+        0.2,
+        0.0
+      ],
+      "temperature_k": 300.0,
+      "basis": "Ideal opaque diffuse-reflector reference assumption; rho=0.8 epsilon=0.2.",
+      "row": 1,
+      "column": 1
+    },
+    {
+      "id": 27,
+      "key": "glass_300K",
+      "label": "GLASS-SWIR-T0.85-300K",
+      "db": "BM_GLASS",
+      "rgb": [
+        0.1,
+        0.66,
+        0.82
+      ],
+      "swir": [
+        0.08,
+        0.07,
+        0.85
+      ],
+      "mwir": [
+        0.05,
+        0.9,
+        0.05
+      ],
+      "temperature_k": 300.0,
+      "basis": "Generic uncoated-glass engineering sample; explicit SWIR transmission and MWIR emission, pending coupon data.",
+      "row": 1,
+      "column": 2
+    },
+    {
+      "id": 28,
+      "key": "cold_graybody_275K",
+      "label": "GRAYBODY-E0.7-275K",
+      "db": "BM_PAINT",
+      "rgb": [
+        0.32,
+        0.2,
+        0.62
+      ],
+      "swir": [
+        0.3,
+        0.7,
+        0.0
+      ],
+      "mwir": [
+        0.3,
+        0.7,
+        0.0
+      ],
+      "temperature_k": 275.0,
+      "basis": "Ideal opaque cold-graybody engineering reference; rho=0.3 epsilon=0.7.",
+      "row": 1,
+      "column": 3
+    }
+  ]
+}

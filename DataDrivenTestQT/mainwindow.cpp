@@ -868,6 +868,18 @@ void MainWindow::sendInitCommand()
     cmd.MissileMaxCountF35 = 3;
     cmd.MissileMaxCountF22 = 3;
 	cmd.MissileMaxCountMMD = 0;
+	// P11 uses the protocol's existing reserved capacity fields.  Resv1 is the
+	// civil van (0x55) and Resv2 is the controlled sample rack (0x66); each is
+	// allocated only for its explicit test input.
+	bool p11TargetTypeOk = false;
+	const int p11TargetType = qEnvironmentVariable("P6TestTargetType").toInt(&p11TargetTypeOk, 0);
+	cmd.MissileMaxCountResv1 = p11TargetTypeOk && p11TargetType == 0x55 ? 1 : 0;
+	cmd.MissileMaxCountResv2 = p11TargetTypeOk && p11TargetType == 0x66 ? 1 : 0;
+	qInfo().noquote() << QStringLiteral(
+		"[StimTargetPool] requestedType=%1 resv1Count=%2 resv2Count=%3 protocolLayoutUnchanged=1")
+		.arg(p11TargetTypeOk ? targetTypeHex(p11TargetType) : QStringLiteral("default"))
+		.arg(cmd.MissileMaxCountResv1)
+		.arg(cmd.MissileMaxCountResv2);
 
 #if defined(HWASIMIR_HAS_ZRDDS)
 	if (m_ddsStim)
@@ -981,7 +993,7 @@ void MainWindow::sendRealTimeData()
     // Explicit geometry acceptance input; no change to the wire format or default.
     bool testTargetOk=false;
     const int testTarget=qEnvironmentVariable("P6TestTargetType").toInt(&testTargetOk,0);
-    if(testTargetOk&&(testTarget==0x11||testTarget==0x12||testTarget==0x22||testTarget==0x33)){
+    if(testTargetOk&&(testTarget==0x11||testTarget==0x12||testTarget==0x22||testTarget==0x33||testTarget==0x55||testTarget==0x66)){
         data.targetState[0].targetType=testTarget;
         data.weaponState.targetType=testTarget;
     }

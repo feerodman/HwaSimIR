@@ -7,6 +7,7 @@
 enum class IRActiveIlluminatorBand
 {
 	NearInfrared,
+	ShortWaveInfrared,
 	MidWaveInfrared,
 	FollowSensor
 };
@@ -71,6 +72,8 @@ struct IRActiveIlluminatorOutput
 	std::string sensorBand;
 	double sourceLowUm;
 	double sourceHighUm;
+	double sourceBandwidthUm;
+	double sensorBandwidthUm;
 	double protocolAngleMrad;
 	double halfAngleRad;
 	double rangeM;
@@ -86,8 +89,13 @@ struct IRActiveIlluminatorOutput
 	double activeSurfaceRadianceWm2Sr;
 	double activeSensorRadianceWm2Sr;
 	double spectralOverlapWidthUm;
+	double spectralOverlapFraction;
 	double activeSurfaceRadianceWm2SrUm;
 	double activeSensorRadianceWm2SrUm;
+	// Coefficient before the per-fragment beam and incidence factors.  This is
+	// what the GPU consumes so the Gaussian profile is applied exactly once.
+	double unshapedSurfaceRadianceWm2SrUm;
+	double unshapedSensorRadianceWm2SrUm;
 	double activeVisibility;
 	std::string intensitySource;
 	std::string outboundTauSource;

@@ -47,6 +47,26 @@
         }
       }
     },
+    "P11CivilVan": {
+      "label": "P11-CIVIL-VAN",
+      "keypoints": {
+        "forwardAxis": "PositiveY",
+        "points": {
+          "head": { "localPos": [0.0, 2.5, 1.2], "visible": true, "surface": true, "snapToMeshSurface": true, "surfaceSearchMode": "nearest_mesh_vertex" },
+          "middle": { "localPos": [0.0, 0.0, 1.2], "visible": true, "surface": true, "snapToMeshSurface": true, "surfaceSearchMode": "nearest_mesh_vertex" }
+        }
+      }
+    },
+    "P11ControlledSamples": {
+      "label": "P11-CONTROLLED-SAMPLES",
+      "keypoints": {
+        "forwardAxis": "PositiveY",
+        "points": {
+          "head": { "localPos": [0.0, 0.08, 2.2], "visible": true, "surface": true, "snapToMeshSurface": true, "surfaceSearchMode": "nearest_mesh_vertex" },
+          "middle": { "localPos": [0.0, 0.08, 1.2], "visible": true, "surface": true, "snapToMeshSurface": true, "surfaceSearchMode": "nearest_mesh_vertex" }
+        }
+      }
+    },
     "MMD": {
       "label": "MMD"
     }

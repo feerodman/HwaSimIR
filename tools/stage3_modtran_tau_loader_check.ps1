@@ -179,7 +179,7 @@ $debugPrintsOnly = (
     ($atmosphereText -match "old_tau=") -and
     ($atmosphereText -match "new_tau=") -and
     ($atmosphereText -match "diff=") -and
-    ($atmosphereText -match "band_lut\.csv")
+    ($atmosphereText -match "band_lut(?:_si)?\.csv")
 )
 $checks.Add((Add-Check "debug code prints old/new tau comparison" $debugPrintsOnly "source/tau_up/tau_down/old_tau/new_tau/diff")) | Out-Null
 

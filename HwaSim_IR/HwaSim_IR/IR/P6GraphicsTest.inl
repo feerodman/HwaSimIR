@@ -154,8 +154,52 @@ void HwaSimIR::UpdateP6GraphicsTestScene(){
         std::cout<<"[P6Scene] sourceSeq="<<m_currentFrameTelemetry.sourceSeq<<" elapsedSec="<<time<<" camera="<<m_cameraNode.get_pos(m_renderRoot)
             <<" fov="<<m_cameraLens->get_fov()<<" requestedClouds="<<m_p6.count<<" vfx="<<m_p6.vfx<<" existingTargets="<<m_p6.existingTargets<<" businessParametersChanged=0"<<std::endl;
 }
+bool HwaSimIR::IsP6LinearCaptureRequested(std::uint64_t seq) const {
+    const char* output=std::getenv("LinearDiagnosticPath"),*sample=std::getenv("LinearDiagnosticSeq");
+	const char* sampleList=std::getenv("LinearDiagnosticSeqs");
+    if(!output&&m_p6.enabled){output=std::getenv("P6DumpPath");sample=std::getenv("P6DumpSeq");}
+	if(!output)return false;
+	if(sample&&seq==std::strtoull(sample,nullptr,10))return true;
+	if(sampleList&&*sampleList){
+		const char* cursor=sampleList;
+		while(*cursor){
+			char* end=nullptr;const unsigned long long requested=std::strtoull(cursor,&end,10);
+			if(end==cursor)break;
+			if(seq==requested)return true;
+			cursor=end;while(*cursor==','||*cursor==';'||*cursor==' '||*cursor=='\t')++cursor;
+		}
+	}
+	return false;
+}
+
+void HwaSimIR::ArmP6LinearCapture(std::uint64_t seq){
+	if(!IsP6LinearCaptureRequested(seq))return;
+	if(m_stage6LinearCaptureCompletedSourceSeq==seq)return;
+	m_stage6LinearReadbackSourceSeq=0;
+	if(!m_stage6RawSiDomain||!m_stage6RawSceneBuffer||!m_stage6RawSceneTex){
+		std::cerr<<"[P6LinearCapture][ERROR] triggered_float_readback_unavailable sourceSeq="<<seq<<std::endl;
+		return;
+	}
+	m_stage6LinearReadbackSourceSeq=seq;
+#ifdef _WIN32
+	if(!m_stage6LinearReadbackTex){
+		std::cerr<<"[P6LinearCapture][ERROR] triggered_float_readback_unavailable sourceSeq="<<seq<<std::endl;
+		m_stage6LinearReadbackSourceSeq=0;
+		return;
+	}
+	m_stage6LinearReadbackTex->clear_ram_image();
+	m_stage6RawSceneBuffer->trigger_copy();
+	std::cout<<"[P6LinearCapture] phase=armed sourceSeq="<<seq
+		<<" route=RTM_triggered_copy_ram perFrameReadback=0"<<std::endl;
+#else
+	std::cout<<"[P6LinearCapture] phase=armed sourceSeq="<<seq
+		<<" route=gles_rgba_float perFrameReadback=0"<<std::endl;
+#endif
+}
+
 void HwaSimIR::CaptureP6LinearFrame(const unsigned char* pixels,int width,int height,std::uint64_t seq){
     const char* output=std::getenv("LinearDiagnosticPath"),*sample=std::getenv("LinearDiagnosticSeq");
+	const char* sampleList=std::getenv("LinearDiagnosticSeqs");
     if(!output&&m_p6.enabled){output=std::getenv("P6DumpPath");sample=std::getenv("P6DumpSeq");}
     if(m_p6.enabled&&m_p6.scene=="display"&&std::getenv("P6CMappingLog")){
         std::ostringstream row;row<<std::setprecision(12)<<"[P6CMapping] sourceSeq="<<seq
@@ -167,7 +211,20 @@ void HwaSimIR::CaptureP6LinearFrame(const unsigned char* pixels,int width,int he
             <<" fallback="<<m_stage6AgcFallbackReason;
         std::cout<<row.str()<<std::endl;
     }
-    if(!output||!sample||seq!=std::strtoull(sample,nullptr,10))return;
+	bool multiSample=false;
+	if(output&&sampleList&&*sampleList){
+		const char* cursor=sampleList;
+		while(*cursor){
+			char* end=nullptr;const unsigned long long requested=std::strtoull(cursor,&end,10);
+			if(end==cursor)break;
+			if(seq==requested){multiSample=true;break;}
+			cursor=end;while(*cursor==','||*cursor==';'||*cursor==' '||*cursor=='\t')++cursor;
+		}
+    }
+    if(!IsP6LinearCaptureRequested(seq))return;
+	if(m_stage6LinearCaptureCompletedSourceSeq==seq)return;
+	std::ostringstream captureBase;captureBase<<output;
+	if(multiSample)captureBase<<"_seq"<<seq;
     std::ostringstream mapping;mapping<<std::setprecision(17)<<"[DisplayFrameMapping] sourceSeq="<<seq
         <<" agcGain="<<m_stage6AgcGain<<" agcOffset="<<m_stage6AgcOffset
         <<" fixedGain="<<m_stage6DisplayConfig.displayGain<<" offsetGray="<<m_stage6DisplayConfig.displayOffset
@@ -176,17 +233,63 @@ void HwaSimIR::CaptureP6LinearFrame(const unsigned char* pixels,int width,int he
     std::cout<<mapping.str()<<std::endl;
     if(m_agcSampleBuffer&&m_stage6AgcEnabled){
         PfmFile stats;if(ReadSceneLinear(m_pFramework->get_graphics_engine(),m_agcSampleTexture,m_agcSampleBuffer,m_agcSampleSize,m_agcSampleSize,stats))
-            stats.write(Filename::from_os_specific(std::string(output)+"_stats.pfm"));
+			stats.write(Filename::from_os_specific(captureBase.str()+"_stats.pfm"));
     }
     PfmFile linear;
-    if(ReadSceneLinear(m_pFramework->get_graphics_engine(),m_stage6RawSceneTex,m_stage6RawSceneBuffer,width,height,linear)){
+	const bool markerMatches=m_stage6LinearReadbackSourceSeq==seq;
+	bool linearReadbackOk=false;
+	const char* linearReadbackRoute="none";
+#ifdef _WIN32
+	// Desktop GL keeps the sparse triggered-copy route. Never fall back from an
+	// unattached or unfinished diagnostic texture to undefined pixels.
+	const bool ramCopyReady=markerMatches&&m_stage6LinearReadbackTex&&m_stage6LinearReadbackTex->has_ram_image();
+	if(!ramCopyReady){
+		std::cerr<<"[P6LinearCapture][ERROR] sourceSeq="<<seq
+			<<" reason=triggered_ram_copy_not_ready markerMatches="<<(markerMatches?1:0)
+			<<" hasRamImage="<<((m_stage6LinearReadbackTex&&m_stage6LinearReadbackTex->has_ram_image())?1:0)
+			<<" action=no_pfm_written"<<std::endl;
+	}else{
+		linearReadbackOk=ReadSceneLinearRamImage(m_stage6LinearReadbackTex,width,height,linear);
+		linearReadbackRoute="RTM_triggered_copy_ram";
+		if(!linearReadbackOk)std::cerr<<"[P6LinearCapture][ERROR] sourceSeq="<<seq
+			<<" reason=triggered_ram_image_decode_failed action=no_pfm_written"<<std::endl;
+	}
+#else
+	// The production raw texture is the actual formal SI attachment on Mali after
+	// do_frame. Read it directly through the diagnostic-only temporary FBO,
+	// bypassing stale RAM and failing closed if FLOAT readback is unsupported.
+	if(!markerMatches){
+		std::cerr<<"[P6LinearCapture][ERROR] sourceSeq="<<seq
+			<<" reason=direct_readback_marker_mismatch action=no_pfm_written"<<std::endl;
+	}else{
+		linearReadbackOk=ReadSceneLinear(m_pFramework->get_graphics_engine(),
+			m_stage6RawSceneTex,m_stage6RawSceneBuffer,width,height,linear,false);
+		linearReadbackRoute="gles_rgba_float";
+		if(!linearReadbackOk)std::cerr<<"[P6LinearCapture][ERROR] sourceSeq="<<seq
+			<<" reason=gles_rgba_float_readback_failed action=no_pfm_written"<<std::endl;
+	}
+#endif
+	if(linearReadbackOk){
         PfmFile valid;valid.clear(width,height,3);
         for(int y=0;y<height;++y)for(int x=0;x<width;++x)valid.set_point3(x,y,linear.get_point3(x,y+linear.get_y_size()-height));
-        valid.write(Filename::from_os_specific(std::string(output)+".pfm"));
-        std::cout<<"[P6LinearCapture] sourceSeq="<<seq<<" size="<<linear.get_x_size()<<"x"<<linear.get_y_size()
-            <<" validViewport="<<width<<"x"<<height<<" stage=pre_display common_scaled_linear=1 physicalRadiance=0 file="<<output<<".pfm"<<std::endl;
-    }else std::cerr<<"[P6LinearCapture][ERROR] missing_float_buffer"<<std::endl;
+		const std::string pfmPath=captureBase.str()+".pfm";
+		if(valid.write(Filename::from_os_specific(pfmPath))){
+			m_stage6LinearCaptureCompletedSourceSeq=seq;
+			std::cout<<"[P6LinearCapture] sourceSeq="<<seq<<" size="<<linear.get_x_size()<<"x"<<linear.get_y_size()
+            <<" validViewport="<<width<<"x"<<height<<" stage=pre_display"
+			<<" domain="<<(m_stage6RawSiDomain?"spectral_radiance":"common_scaled_linear")
+			<<" unit="<<(m_stage6RawSiDomain?"W/(m^2_sr_um)":"dimensionless")
+			<<" common_scaled_linear="<<(m_stage6RawSiDomain?0:1)
+			<<" physicalRadiance="<<(m_stage6RawSiDomain?1:0)
+			<<" readbackRoute="<<linearReadbackRoute
+			<<" file="<<pfmPath<<std::endl;
+		}else{
+			std::cerr<<"[P6LinearCapture][ERROR] sourceSeq="<<seq
+				<<" reason=pfm_write_failed file="<<pfmPath<<std::endl;
+		}
+	}
+	m_stage6LinearReadbackSourceSeq=0;
     cv::Mat rgb(height,width,CV_8UC3,const_cast<unsigned char*>(pixels)),bgr;
     cv::cvtColor(rgb,bgr,cv::COLOR_RGB2BGR);cv::flip(bgr,bgr,0);
-    cv::imwrite(std::string(output)+"_rgb8.png",bgr);
+	cv::imwrite(captureBase.str()+"_rgb8.png",bgr);
 }

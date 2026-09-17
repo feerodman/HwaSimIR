@@ -3,14 +3,17 @@
 #include "filename.h"
 #include "lvecBase2.h"
 #include "lvecBase4.h"
+#include "nodePathCollection.h"
 #include "pta_LVecBase4.h"
 #include "pta_float.h"
 #include "samplerState.h"
 #include "texture.h"
 #include "texturePool.h"
 #include "textureStage.h"
+#include "transparencyAttrib.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
@@ -153,6 +156,92 @@ double ClampLocal(double value, double low, double high)
 	return std::max(low, std::min(high, value));
 }
 
+bool ParseOptionalDoubleLocal(const std::string& block, const std::string& tagName, double& value)
+{
+	const std::string text = ExtractTagValueLocal(block, tagName);
+	if (text.empty()) return false;
+	size_t consumed = 0;
+	double parsed = 0.0;
+	try
+	{
+		parsed = std::stod(text, &consumed);
+	}
+	catch (...)
+	{
+		throw std::runtime_error("Invalid numeric <" + tagName + "> value: " + text);
+	}
+	if (consumed != text.size() || !std::isfinite(parsed))
+	{
+		throw std::runtime_error("Invalid finite <" + tagName + "> value: " + text);
+	}
+	value = parsed;
+	return true;
+}
+
+void ApplyExplicitBandOpticsLocal(const std::string& block, IRMaterialIdEntry& entry)
+{
+	double swirR = 0.0, swirE = 0.0, swirT = 0.0;
+	double mwirR = 0.0, mwirE = 0.0, mwirT = 0.0;
+	const bool fields[6] = {
+		ParseOptionalDoubleLocal(block, "SWIRReflectance", swirR),
+		ParseOptionalDoubleLocal(block, "SWIREmissivity", swirE),
+		ParseOptionalDoubleLocal(block, "SWIRTransmissivity", swirT),
+		ParseOptionalDoubleLocal(block, "MWIRReflectance", mwirR),
+		ParseOptionalDoubleLocal(block, "MWIREmissivity", mwirE),
+		ParseOptionalDoubleLocal(block, "MWIRTransmissivity", mwirT)
+	};
+	int present = 0;
+	for (bool field : fields) present += field ? 1 : 0;
+	if (present == 0) return;
+	if (present != 6)
+	{
+		throw std::runtime_error("Partial SWIR/MWIR material override is forbidden for material ID " +
+			std::to_string(entry.materialId));
+	}
+	const auto inUnitInterval = [](double candidate) { return candidate >= 0.0 && candidate <= 1.0; };
+	if (!inUnitInterval(swirR) || !inUnitInterval(swirE) || !inUnitInterval(swirT) ||
+		!inUnitInterval(mwirR) || !inUnitInterval(mwirE) || !inUnitInterval(mwirT) ||
+		std::fabs(swirR + swirE + swirT - 1.0) > 1.0e-6 ||
+		std::fabs(mwirR + mwirE + mwirT - 1.0) > 1.0e-6)
+	{
+		throw std::runtime_error("Invalid SWIR/MWIR energy balance for material ID " +
+			std::to_string(entry.materialId));
+	}
+	entry.bandReflectance.swir = swirR;
+	entry.bandReflectance.swirEmissivity = swirE;
+	entry.bandReflectance.swirTransmissivity = swirT;
+	entry.bandReflectance.mwir = mwirR;
+	entry.bandReflectance.mwirEmissivity = mwirE;
+	entry.bandReflectance.mwirTransmissivity = mwirT;
+	entry.bandReflectance.swirSource = "model_xml_engineering_assumption";
+	entry.bandReflectance.swirEmissivitySource = "model_xml_engineering_assumption";
+	entry.bandReflectance.mwirSource = "model_xml_engineering_assumption";
+	entry.bandReflectance.mwirEmissivitySource = "model_xml_engineering_assumption";
+	entry.hasBandOpticsOverride = true;
+}
+
+void ApplyExplicitTemperaturesLocal(const std::string& block, IRMaterialIdEntry& entry)
+{
+	double nominal = 0.0;
+	double engineOn = 0.0;
+	const bool hasNominal = ParseOptionalDoubleLocal(block, "NominalTemperatureK", nominal);
+	const bool hasEngineOn = ParseOptionalDoubleLocal(block, "EngineOnTemperatureK", engineOn);
+	if ((hasNominal && (nominal < 120.0 || nominal > 1500.0)) ||
+		(hasEngineOn && (engineOn < 120.0 || engineOn > 2500.0)))
+	{
+		throw std::runtime_error("Material temperature outside supported Kelvin range for material ID " +
+			std::to_string(entry.materialId));
+	}
+	if (hasEngineOn && !hasNominal)
+	{
+		throw std::runtime_error("EngineOnTemperatureK requires NominalTemperatureK for material ID " +
+			std::to_string(entry.materialId));
+	}
+	entry.nominalTemperatureK = hasNominal ? nominal : 0.0;
+	entry.engineOnTemperatureK = hasEngineOn ? engineOn : 0.0;
+	entry.temperatureSource = hasNominal ? "model_xml_engineering_assumption" : "platform_runtime";
+}
+
 LVecBase4f MaterialToShaderParamsLocal(const IRMaterial& material, const IRBandReflectance& reflectance)
 {
 	double emissivity = ClampLocal(material.thermalEmissivity, 0.01, 1.0);
@@ -167,13 +256,18 @@ LVecBase4f MaterialToShaderParamsLocal(const IRMaterial& material, const IRBandR
 }
 
 IRMaterialIdEntry::IRMaterialIdEntry()
-	: materialId(0), effectiveThicknessM(0.02), thicknessSource("fallback")
+	: materialId(0), effectiveThicknessM(0.02), thicknessSource("fallback"),
+	hasBandOpticsOverride(false), nominalTemperatureK(0.0), engineOnTemperatureK(0.0),
+	temperatureSource("platform_runtime")
 {
 }
 
 IRSceneMaterialBinding::IRSceneMaterialBinding()
 	: hasMaterialIdTexture(false),
-	hasMaterialMap(false)
+	hasMaterialMap(false),
+	transmissiveMaterialCount(0),
+	transmissiveNodeCount(0),
+	transmissionCompositeReady(true)
 {
 }
 
@@ -210,6 +304,9 @@ IRSceneMaterialBinding IRSceneMaterialMapper::bindPlatformNode(NodePath& node, c
 	PTA_float materialIds;
 	PTA_LVecBase4f materialParams;
 	PTA_LVecBase4f materialBandReflectance;
+	PTA_LVecBase4f materialBandEmissivity;
+	PTA_LVecBase4f materialBandTransmissivity;
+	PTA_LVecBase4f materialTemperatureK;
 	if (binding.entries.size() > static_cast<size_t>(kMaxShaderMaterialParams))
 	{
 		throw std::runtime_error("Material map exceeds 8 GPU slots; refusing silent truncation: " + binding.materialMapPath);
@@ -230,7 +327,19 @@ IRSceneMaterialBinding IRSceneMaterialMapper::bindPlatformNode(NodePath& node, c
 			materialIds.push_back(static_cast<float>(ClampLocal(static_cast<double>(entry.materialId) / 255.0, 0.0, 1.0)));
 			materialParams.push_back(MaterialToShaderParamsLocal(material, entry.bandReflectance));
 			materialBandReflectance.push_back(LVecBase4f(static_cast<float>(entry.bandReflectance.nir),
-				static_cast<float>(entry.bandReflectance.mwir), 0.0f, 0.0f));
+				static_cast<float>(entry.bandReflectance.mwir), static_cast<float>(entry.bandReflectance.swir), 0.0f));
+			materialBandEmissivity.push_back(LVecBase4f(static_cast<float>(material.thermalEmissivity),
+				static_cast<float>(entry.bandReflectance.mwirEmissivity),
+				static_cast<float>(entry.bandReflectance.swirEmissivity),
+				static_cast<float>(material.thermalEmissivity)));
+			// x/w remain compatibility-opaque.  P11 material transmission is only
+			// calibrated and enabled for the formal SWIR/MWIR bands.
+			materialBandTransmissivity.push_back(LVecBase4f(0.0f,
+				static_cast<float>(entry.bandReflectance.mwirTransmissivity),
+				static_cast<float>(entry.bandReflectance.swirTransmissivity), 0.0f));
+			materialTemperatureK.push_back(LVecBase4f(
+				static_cast<float>(entry.nominalTemperatureK),
+				static_cast<float>(entry.engineOnTemperatureK), 0.0f, 0.0f));
 		}
 		else
 		{
@@ -239,7 +348,15 @@ IRSceneMaterialBinding IRSceneMaterialMapper::bindPlatformNode(NodePath& node, c
 			materialIds.push_back(0.0f);
 			materialParams.push_back(MaterialToShaderParamsLocal(material, reflectance));
 			materialBandReflectance.push_back(LVecBase4f(static_cast<float>(reflectance.nir),
-				static_cast<float>(reflectance.mwir), 0.0f, 0.0f));
+				static_cast<float>(reflectance.mwir), static_cast<float>(reflectance.swir), 0.0f));
+			materialBandEmissivity.push_back(LVecBase4f(static_cast<float>(material.thermalEmissivity),
+				static_cast<float>(reflectance.mwirEmissivity),
+				static_cast<float>(reflectance.swirEmissivity),
+				static_cast<float>(material.thermalEmissivity)));
+			materialBandTransmissivity.push_back(LVecBase4f(0.0f,
+				static_cast<float>(reflectance.mwirTransmissivity),
+				static_cast<float>(reflectance.swirTransmissivity), 0.0f));
+			materialTemperatureK.push_back(LVecBase4f(0.0f));
 		}
 	}
 
@@ -248,6 +365,55 @@ IRSceneMaterialBinding IRSceneMaterialMapper::bindPlatformNode(NodePath& node, c
 	node.set_shader_input("u_material_ids", materialIds);
 	node.set_shader_input("u_material_params", materialParams);
 	node.set_shader_input("u_material_band_reflectance", materialBandReflectance);
+	node.set_shader_input("u_material_band_emissivity", materialBandEmissivity);
+	node.set_shader_input("u_material_band_transmissivity", materialBandTransmissivity);
+	node.set_shader_input("u_material_temperature_K", materialTemperatureK);
+	node.set_shader_input("u_material_transmission_composite_en", LVecBase2i(0, 0));
+
+	// Material-ID lookup alone cannot make only part of a shared draw transparent:
+	// blend/depth state belongs to a scene-graph node.  P11 assets therefore mark
+	// every transmissive region as an independent Egg Group.  Enable premultiplied
+	// physical compositing only on a group whose p11_material_id resolves to an
+	// explicitly transmissive SWIR/MWIR entry; unmatched legacy geometry remains
+	// opaque instead of silently producing a dark, incomplete contribution.
+	for (const auto& entry : binding.entries)
+	{
+		const bool transmissive = entry.bandReflectance.swirTransmissivity > 1.0e-8 ||
+			entry.bandReflectance.mwirTransmissivity > 1.0e-8;
+		if (!transmissive) continue;
+		++binding.transmissiveMaterialCount;
+		const std::string matchPattern = "**/=p11_material_id=" + std::to_string(entry.materialId);
+		NodePathCollection matches = node.find_all_matches(matchPattern);
+		if (matches.get_num_paths() == 0)
+		{
+			binding.transmissionCompositeReady = false;
+			std::cerr << "[P11 MaterialTransmission][WARN]"
+				<< " materialId=" << entry.materialId
+				<< " semantic=" << entry.semanticName
+				<< " action=fail_closed_opaque"
+				<< " reason=transmissive_material_requires_independent_tagged_geometry"
+				<< std::endl;
+			continue;
+		}
+		for (int matchIndex = 0; matchIndex < matches.get_num_paths(); ++matchIndex)
+		{
+			NodePath transmissiveNode = matches.get_path(matchIndex);
+			transmissiveNode.set_shader_input("u_material_transmission_composite_en", LVecBase2i(1, 0));
+			transmissiveNode.set_transparency(TransparencyAttrib::M_premultiplied_alpha);
+			transmissiveNode.set_depth_test(true);
+			transmissiveNode.set_depth_write(false);
+			transmissiveNode.set_bin("transparent", 20);
+			++binding.transmissiveNodeCount;
+			std::cout << "[P11 MaterialTransmission]"
+				<< " node=" << transmissiveNode.get_name()
+				<< " materialId=" << entry.materialId
+				<< " swirTau=" << entry.bandReflectance.swirTransmissivity
+				<< " mwirTau=" << entry.bandReflectance.mwirTransmissivity
+				<< " blend=premultiplied_alpha"
+				<< " depthTest=1 depthWrite=0 bin=transparent sort=20"
+				<< std::endl;
+		}
+	}
 
 	if (!binding.materialIdTexturePath.empty() && FileExistsLocal(binding.materialIdTexturePath))
 	{
@@ -260,7 +426,17 @@ IRSceneMaterialBinding IRSceneMaterialMapper::bindPlatformNode(NodePath& node, c
 			materialIdTexture->set_magfilter(SamplerState::FT_nearest);
 			// ID data must stay linear even when global color-texture policy changes.
 			if (materialIdTexture->get_num_components() == 1)
-				materialIdTexture->set_format(Texture::F_luminance);
+			{
+				// Use the GLES3-native single-channel representation.  The IR shader
+				// samples only .r, so this is numerically equivalent to the former
+				// legacy luminance format while avoiding a driver-side conversion.
+				materialIdTexture->set_format(Texture::F_red);
+				std::cout << "[MaterialIdTexture] name=asset"
+					<< " path=" << binding.materialIdTexturePath
+					<< " format=R8_UNORM components=1 sampler=nearest"
+					<< " reason=gles3_legacy_luminance_unsupported"
+					<< std::endl;
+			}
 			node.set_shader_input("u_material_id_texture", materialIdTexture);
 			// 绑定到第二纹理通道，shader 通过 Panda3D 内置 sampler p3d_Texture1 读取。
 			PT(TextureStage) materialIdStage = new TextureStage("material_id_stage");
@@ -285,6 +461,9 @@ IRSceneMaterialBinding IRSceneMaterialMapper::bindPlatformNode(NodePath& node, c
 		<< " materialMap=" << (binding.hasMaterialMap ? "OK" : "fallback")
 		<< " entries=" << binding.entries.size()
 		<< " gpuSlots=" << shaderCount << " capacity=8 truncated=0 sampler=nearest_linear_data"
+		<< " transmissiveMaterials=" << binding.transmissiveMaterialCount
+		<< " transmissiveNodes=" << binding.transmissiveNodeCount
+		<< " transmissionCompositeReady=" << (binding.transmissionCompositeReady ? 1 : 0)
 		<< " default=" << binding.defaultMaterialName
 		<< std::endl;
 	for (size_t i = 0; i < binding.entries.size(); ++i)
@@ -294,8 +473,18 @@ IRSceneMaterialBinding IRSceneMaterialMapper::bindPlatformNode(NodePath& node, c
 			<< " materialId=" << entry.materialId
 			<< " nirReflectance=" << entry.bandReflectance.nir
 			<< " nirReflectanceSource=" << entry.bandReflectance.nirSource
+			<< " swirReflectance=" << entry.bandReflectance.swir
+			<< " swirEmissivity=" << entry.bandReflectance.swirEmissivity
+			<< " swirTransmissivity=" << entry.bandReflectance.swirTransmissivity
+			<< " swirSource=" << entry.bandReflectance.swirSource
 			<< " mwirReflectance=" << entry.bandReflectance.mwir
+			<< " mwirEmissivity=" << entry.bandReflectance.mwirEmissivity
+			<< " mwirTransmissivity=" << entry.bandReflectance.mwirTransmissivity
 			<< " mwirReflectanceSource=" << entry.bandReflectance.mwirSource
+			<< " bandOpticsOverride=" << (entry.hasBandOpticsOverride ? 1 : 0)
+			<< " nominalTemperatureK=" << entry.nominalTemperatureK
+			<< " engineOnTemperatureK=" << entry.engineOnTemperatureK
+			<< " temperatureSource=" << entry.temperatureSource
 			<< " effectiveThicknessM=" << entry.effectiveThicknessM
 			<< " thicknessSource=" << entry.thicknessSource << std::endl;
 	}
@@ -355,6 +544,8 @@ bool IRSceneMaterialMapper::parseCompositeMaterialXml(const std::string& filePat
 				ExtractTagValueLocal(ExtractSectionLocal(block, "Primary_Substrate"), "Thickness").empty()
 				? "fallback" : "model_xml";
 			entry.bandReflectance = bandOptics.resolve(materialDb.get(entry.materialName));
+			ApplyExplicitBandOpticsLocal(block, entry);
+			ApplyExplicitTemperaturesLocal(block, entry);
 			if (!materialDb.empty() && !materialDb.contains(entry.materialName))
 			{
 				std::cerr << "[Stage2] 材质库未找到 " << entry.materialName << "，该ID将使用默认材质参数：" << filePath << std::endl;

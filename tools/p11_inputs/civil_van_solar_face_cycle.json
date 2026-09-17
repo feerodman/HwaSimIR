@@ -1,0 +1,27 @@
+{
+  "Schema": "ordinary_weather_camera_1",
+  "SimulationEpochMs": 1782014400000,
+  "Description": "P11 civil-van solar-face cycle. The target rotates 180 degrees over 0.25 s at t=10 s and returns at t=30 s. Optical reflection responds in the current frame while the six-normal-bin material temperature histories retain finite thermal inertia.",
+  "InitializationWeather": {
+    "envVisibility": 6000.0,
+    "envHumidity": 60.0
+  },
+  "Keyframes": [
+    [0.0, 39.99550844, 116.00000000, 500.0, 0.0, 0.0, 0.0],
+    [20.0, 39.99550844, 116.00000000, 500.0, 0.0, 0.0, 0.0],
+    [40.0, 39.99550844, 116.00000000, 500.0, 0.0, 0.0, 0.0],
+    [60.0, 39.99550844, 116.00000000, 500.0, 0.0, 0.0, 0.0]
+  ],
+  "SyntheticTelemetryTargets": [
+    [85, 3101, 5501, 40.00000000, 116.00000000, 500.0, 0.0, 0.0, 0.0, 0.0, 1]
+  ],
+  "SyntheticTelemetryKeyframes": [
+    [0.0, 40.00000000, 116.00000000, 500.0, 0.0, 0.0, 0.0, 0.0, 0],
+    [10.0, 40.00000000, 116.00000000, 500.0, 0.0, 0.0, 0.0, 0.0, 0],
+    [10.25, 40.00000000, 116.00000000, 500.0, 180.0, 0.0, 0.0, 0.0, 0],
+    [30.0, 40.00000000, 116.00000000, 500.0, 180.0, 0.0, 0.0, 0.0, 0],
+    [30.25, 40.00000000, 116.00000000, 500.0, 0.0, 0.0, 0.0, 0.0, 0],
+    [60.0, 40.00000000, 116.00000000, 500.0, 0.0, 0.0, 0.0, 0.0, 0]
+  ],
+  "LookAtTargetKey": [85, 3101, 5501]
+}

@@ -574,7 +574,9 @@ void TcpServerWorker::doWork()
 					receiveTimeNs,
 					parsed.hasVideo ? decoded.decodeMs : 0.0,
 					parsed.hasVideo ? decoded.decodedChannels : 0,
-					parsed.hasVideo ? decoded.imageFormat : QStringLiteral("none"));
+					parsed.hasVideo ? decoded.imageFormat : QStringLiteral("none"),
+					parsed.codecId == HwaSimTcpVideoV3::CodecH264AnnexB
+						? parsed.encodedPayload : QByteArray());
 				continue;
 			}
 
@@ -680,7 +682,9 @@ void TcpServerWorker::doWork()
 					receiveTimeNs,
 					decoded.decodeMs,
 					decoded.decodedChannels,
-					decoded.imageFormat);
+					decoded.imageFormat,
+					parsed.codecId == HwaSimTcpVideoV3::CodecH264AnnexB
+						? parsed.encodedPayload : QByteArray());
 			}
 			else {
 				qWarning() << QStringLiteral("未知的 flag:") << flag << QStringLiteral("，忽略当前包");

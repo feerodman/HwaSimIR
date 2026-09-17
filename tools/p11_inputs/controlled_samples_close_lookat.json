@@ -1,0 +1,14 @@
+{
+  "Schema": "ordinary_weather_camera_1",
+  "SimulationEpochMs": 1782014400000,
+  "Description": "P11A controlled 0x66/Resv2 sample-rack close view. Three strictly ordered camera keyframes stay inside the audited 0.1-1.0 km MODTRAN range and preserve one full protocol key; engineState is off and no renderer-side pose override or Latest replay is used.",
+  "Keyframes": [
+    [0.0, 39.995000, 116.000000, 1000.0, 0.0, 0.0, 0.0],
+    [4.0, 39.997000, 116.000000, 1000.0, 0.0, 0.0, 0.0],
+    [8.0, 39.995000, 116.000000, 1000.0, 0.0, 0.0, 0.0]
+  ],
+  "SyntheticTelemetryTargets": [
+    [102, 3202, 6601, 40.000000, 116.000000, 1000.0, 180.0, 0.0, 0.0, 0.0, 1]
+  ],
+  "LookAtTargetKey": [102, 3202, 6601]
+}

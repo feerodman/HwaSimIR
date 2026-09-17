@@ -1,6 +1,6 @@
-Material,NIRReflectance,MWIRReflectance,Source,Notes
-BM_METAL-ALUMINIUM,,,project_fallback_only,No traceable band measurement was found locally; resolve from SolarAbsorptivity or ThermalEmissivity
-BM_METAL,,,project_fallback_only,No traceable band measurement was found locally; resolve from SolarAbsorptivity or ThermalEmissivity
-BM_METAL-IRON,,,project_fallback_only,No traceable band measurement was found locally; resolve from SolarAbsorptivity or ThermalEmissivity
-BM_PAINT,,,project_fallback_only,No traceable band measurement was found locally; resolve from SolarAbsorptivity or ThermalEmissivity
-BM_GLASS,,,project_fallback_only,No traceable band measurement was found locally; resolve from SolarAbsorptivity or ThermalEmissivity
+Material,NIRReflectance,SWIRReflectance,SWIREmissivity,SWIRTransmissivity,MWIRReflectance,MWIREmissivity,MWIRTransmissivity,Source,Notes
+BM_METAL-ALUMINIUM,0.70,0.70,0.30,0.00,0.55,0.45,0.00,P11_engineering_assumption,Opaque weathered aluminium; band constants are explicit non-RGB assumptions pending coupon measurement
+BM_METAL,0.58,0.58,0.42,0.00,0.35,0.65,0.00,P11_engineering_assumption,Opaque generic metal; Kirchhoff energy balance enforced per band pending material-specific measurement
+BM_METAL-IRON,0.53,0.53,0.47,0.00,0.40,0.60,0.00,P11_engineering_assumption,Opaque oxidized iron; band constants are explicit non-RGB assumptions pending coupon measurement
+BM_PAINT,0.50,0.50,0.50,0.00,0.25,0.75,0.00,P11_engineering_assumption,Opaque generic paint; band constants follow existing broadband priors and are not inferred from visible texture
+BM_GLASS,0.27,0.08,0.07,0.85,0.05,0.90,0.05,P11_engineering_assumption,Generic glazing partition; explicit band transmission replaces inconsistent broadband fallback pending glass specification

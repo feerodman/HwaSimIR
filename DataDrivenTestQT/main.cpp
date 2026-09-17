@@ -127,9 +127,35 @@ int main(int argc, char *argv[])
 			envSky = qBound(0, argument.mid(envSkyPrefix.size()).toInt(), 5);
 		}
 		const QString sensorBandPrefix = QStringLiteral("--sensor-band=");
+		QString sensorBandText;
+		bool sensorBandRequested = false;
 		if (argument.startsWith(sensorBandPrefix))
 		{
-			sensorBand = qBound(0, argument.mid(sensorBandPrefix.size()).toInt(), 4);
+			sensorBandText = argument.mid(sensorBandPrefix.size());
+			sensorBandRequested = true;
+		}
+		else if (argument == QStringLiteral("--sensor-band"))
+		{
+			sensorBandRequested = true;
+			if (argumentIndex + 1 < arguments.size())
+				sensorBandText = arguments.at(++argumentIndex);
+		}
+		if (sensorBandRequested)
+		{
+			bool ok = false;
+			const int requested = sensorBandText.toInt(&ok, 10);
+			// trackerSensorBand is a protocol value, not a display-list index.  Keep
+			// the production set explicit so malformed text can never collapse to
+			// zero/SWIR and unsupported VIS-SWIR cannot masquerade as SWIR.
+			if (!ok || QString::number(requested) != sensorBandText
+				|| requested < 0 || requested > 2)
+			{
+				qCritical().noquote()
+					<< QStringLiteral("[StimCLI][FATAL] invalid --sensor-band='%1'; production supports only 0=SWIR, 1=NIR, 2=MWIR; LWIR, VIS, and VIS-SWIR are unsupported")
+						.arg(sensorBandText);
+				return 64;
+			}
+			sensorBand = requested;
 		}
 		const QString sensorPixelAnglePrefix = QStringLiteral("--sensor-pixel-angle-urad=");
 		if (argument.startsWith(sensorPixelAnglePrefix))

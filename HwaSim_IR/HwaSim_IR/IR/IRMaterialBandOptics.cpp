@@ -34,7 +34,7 @@ std::vector<std::string> SplitCsv(const std::string& line)
 	return values;
 }
 
-bool ParseUnitReflectance(const std::string& text, double& value)
+bool ParseUnitFraction(const std::string& text, double& value)
 {
 	if (text.empty()) return false;
 	try { value = std::stod(text); }
@@ -52,7 +52,12 @@ bool IRMaterialBandOptics::load(const std::string& filePath)
 	const std::vector<std::string> header = SplitCsv(line);
 	std::map<std::string, size_t> columns;
 	for (size_t i = 0; i < header.size(); ++i) columns[header[i]] = i;
-	const char* required[] = { "Material", "NIRReflectance", "MWIRReflectance", "Source", "Notes" };
+	const char* required[] = {
+		"Material", "NIRReflectance",
+		"SWIRReflectance", "SWIREmissivity", "SWIRTransmissivity",
+		"MWIRReflectance", "MWIREmissivity", "MWIRTransmissivity",
+		"Source", "Notes"
+	};
 	for (size_t i = 0; i < sizeof(required) / sizeof(required[0]); ++i)
 		if (columns.find(required[i]) == columns.end()) return false;
 
@@ -68,8 +73,18 @@ bool IRMaterialBandOptics::load(const std::string& filePath)
 		const std::string name = text("Material");
 		if (name.empty()) continue;
 		Entry entry;
-		entry.hasNir = ParseUnitReflectance(text("NIRReflectance"), entry.nir);
-		entry.hasMwir = ParseUnitReflectance(text("MWIRReflectance"), entry.mwir);
+		entry.hasNir = ParseUnitFraction(text("NIRReflectance"), entry.nir);
+		entry.hasSwir = ParseUnitFraction(text("SWIRReflectance"), entry.swir);
+		entry.hasSwirEmissivity = ParseUnitFraction(text("SWIREmissivity"), entry.swirEmissivity);
+		entry.hasSwirTransmissivity = ParseUnitFraction(text("SWIRTransmissivity"), entry.swirTransmissivity);
+		entry.hasMwir = ParseUnitFraction(text("MWIRReflectance"), entry.mwir);
+		entry.hasMwirEmissivity = ParseUnitFraction(text("MWIREmissivity"), entry.mwirEmissivity);
+		entry.hasMwirTransmissivity = ParseUnitFraction(text("MWIRTransmissivity"), entry.mwirTransmissivity);
+		const bool swirEnergyOk = entry.hasSwir && entry.hasSwirEmissivity && entry.hasSwirTransmissivity &&
+			std::abs(entry.swir + entry.swirEmissivity + entry.swirTransmissivity - 1.0) <= 1.0e-6;
+		const bool mwirEnergyOk = entry.hasMwir && entry.hasMwirEmissivity && entry.hasMwirTransmissivity &&
+			std::abs(entry.mwir + entry.mwirEmissivity + entry.mwirTransmissivity - 1.0) <= 1.0e-6;
+		if (!swirEnergyOk || !mwirEnergyOk) return false;
 		entry.source = text("Source");
 		entry.notes = text("Notes");
 		loaded[name] = entry;
@@ -96,10 +111,27 @@ IRBandReflectance IRMaterialBandOptics::resolve(const IRMaterial& material) cons
 			result.nir = it->second.nir;
 			result.nirSource = "band_database";
 		}
+		if (it->second.hasSwir)
+		{
+			result.swir = it->second.swir;
+			result.swirSource = "band_database";
+		}
 		if (it->second.hasMwir)
 		{
 			result.mwir = it->second.mwir;
 			result.mwirSource = "band_database";
+		}
+		if (it->second.hasSwirEmissivity && it->second.hasSwirTransmissivity)
+		{
+			result.swirEmissivity = it->second.swirEmissivity;
+			result.swirTransmissivity = it->second.swirTransmissivity;
+			result.swirEmissivitySource = "band_database";
+		}
+		if (it->second.hasMwirEmissivity && it->second.hasMwirTransmissivity)
+		{
+			result.mwirEmissivity = it->second.mwirEmissivity;
+			result.mwirTransmissivity = it->second.mwirTransmissivity;
+			result.mwirEmissivitySource = "band_database";
 		}
 	}
 	if (result.nirSource != "band_database")
@@ -107,10 +139,27 @@ IRBandReflectance IRMaterialBandOptics::resolve(const IRMaterial& material) cons
 		result.nir = Clamp01(1.0 - material.solarAbsorptivity - material.transmissivity);
 		result.nirSource = "solar_absorptivity_fallback";
 	}
+	if (result.swirSource != "band_database")
+	{
+		result.swir = Clamp01(1.0 - material.solarAbsorptivity - material.transmissivity);
+		result.swirSource = "solar_absorptivity_fallback";
+	}
 	if (result.mwirSource != "band_database")
 	{
 		result.mwir = Clamp01(1.0 - material.thermalEmissivity - material.transmissivity);
 		result.mwirSource = "thermal_emissivity_fallback";
+	}
+	if (result.swirEmissivitySource != "band_database")
+	{
+		result.swirTransmissivity = Clamp01(material.transmissivity);
+		result.swirEmissivity = Clamp01(1.0 - result.swir - result.swirTransmissivity);
+		result.swirEmissivitySource = "kirchhoff_energy_balance_fallback";
+	}
+	if (result.mwirEmissivitySource != "band_database")
+	{
+		result.mwirTransmissivity = Clamp01(material.transmissivity);
+		result.mwirEmissivity = Clamp01(1.0 - result.mwir - result.mwirTransmissivity);
+		result.mwirEmissivitySource = "kirchhoff_energy_balance_fallback";
 	}
 	return result;
 }

@@ -18,6 +18,20 @@
 			"model_name":"F35",
 			"model_type":"plane",
 			"model_file_path":"plane/01_F35/f35c.flt"
+		},
+		{
+			"model_id": 3,
+			"model_name":"P11-CIVIL-VAN",
+			"model_type":"civil_vehicle",
+			"protocol_target_type":"0x55",
+			"model_file_path":"p11/civil_van/p11_civil_van.bam"
+		},
+		{
+			"model_id": 4,
+			"model_name":"P11-CONTROLLED-SAMPLES",
+			"model_type":"controlled_ir_samples",
+			"protocol_target_type":"0x66",
+			"model_file_path":"p11/controlled_samples/p11_controlled_samples.bam"
 		}
 	]
 }

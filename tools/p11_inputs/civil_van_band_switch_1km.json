@@ -1,0 +1,22 @@
+{
+  "Schema": "ordinary_weather_camera_1",
+  "SimulationEpochMs": 1782014400000,
+  "Description": "P11 deterministic 1 km civil-van state for SWIR-MWIR-SWIR reinitialization. Camera, target, range, altitude and full protocol key remain fixed across all three independent rounds.",
+  "Keyframes": [
+    [0.0, 39.99101688825009, 116.0, 1000.0, 0.0, 0.0, 0.0],
+    [120.0, 39.99101688825009, 116.0, 1000.0, 0.0, 0.0, 0.0]
+  ],
+  "SyntheticTelemetryTargets": [
+    [85, 3101, 5501, 40.0, 116.0, 1000.0, 90.0, 0.0, 0.0, 0.0, 1]
+  ],
+  "LookAtTargetKey": [85, 3101, 5501],
+  "InitializationWeather": {
+    "envVisibility": 6000.0,
+    "envHumidity": 60.0,
+    "envMaxHeightRain": 4500.0,
+    "envTransHeightRain": 800.0,
+    "envMaxHeightSnow": 4500.0,
+    "envTransHeightSnow": 800.0,
+    "envRainSnowSpeedScale": 1.0
+  }
+}

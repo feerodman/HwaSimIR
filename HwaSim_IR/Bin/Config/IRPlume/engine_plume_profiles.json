@@ -1,6 +1,15 @@
 {
-  "version": 2,
-  "notes": "Stage5E.1 EnginePlume is an independent two-layer thermal plume body. Core is the short hot jet, halo is the longer diffuse plume. It is not BrightSpot and does not replace rear ThermalHotspot.",
+  "version": 3,
+  "notes": "P11 EnginePlume is an independent local two-layer thermal gas body. bandEmissivity is a dimensionless engineering assumption bounded to 0..1 and is not fitted to legacy gray. opacity is applied separately once. SWIR 1.10-2.50 um and MWIR 3.00-5.00 um use band-mean Planck radiance in W/(m^2 sr um). These generic values are not calibrated exhaust spectroscopy. EngineState control remains independent of BrightSpot and rear ThermalHotspot.",
+  "radiometry": {
+    "sourceRadianceUnit": "W/(m^2 sr um)",
+    "sourceRadianceDefinition": "bandEmissivity * max(B_band(T) - B_band(Tambient), 0)",
+    "emittedRadianceDefinition": "opacity * sourceRadiance",
+    "SWIRBandUm": [1.10, 2.50],
+    "MWIRBandUm": [3.00, 5.00],
+    "responseAssumption": "rectangular band mean",
+    "propertyBasis": "unvalidated engineering assumption; not visible-texture-derived and not a calibrated exhaust spectral library"
+  },
   "defaults": {
     "enabled": true,
     "enabledByEngineState": true,
@@ -20,11 +29,11 @@
       "radialDecay": 5.25,
       "noiseScale": 6.2,
       "noiseStrength": 0.10,
-      "bandGain": {
+      "bandEmissivity": {
         "VIS": 0.0,
         "NIR": 0.08,
         "SWIR": 0.18,
-        "MWIR": 1.25,
+        "MWIR": 0.78,
         "LWIR": 0.42
       }
     },
@@ -39,16 +48,99 @@
       "radialDecay": 1.95,
       "noiseScale": 3.6,
       "noiseStrength": 0.24,
-      "bandGain": {
+      "bandEmissivity": {
         "VIS": 0.0,
         "NIR": 0.04,
         "SWIR": 0.10,
-        "MWIR": 0.58,
+        "MWIR": 0.40,
         "LWIR": 0.30
       }
     }
   },
   "platforms": {
+    "P11-CIVIL-VAN": {
+      "enabled": true,
+      "enabledByEngineState": true,
+      "localPos": [0.66, -2.88, 0.56],
+      "localDir": [0.0, -1.0, 0.0],
+      "ambientMixK": 303.0,
+      "heatTauSec": 1.2,
+      "coolTauSec": 3.5,
+      "assumption": "Small naturally aspirated civil road-vehicle exhaust under a warm running condition. Geometry is aligned to the explicit tailpipe exit in p11_civil_van.obj. Gas values are engineering assumptions, not measured spectroscopy. The separate solid tailpipe material remains 303 K engine-off and 475 K engine-on.",
+      "core": {
+        "enabled": true,
+        "temperatureK": 575.0,
+        "opacity": 0.10,
+        "lengthM": 0.55,
+        "radiusRootM": 0.055,
+        "radiusTailM": 0.14,
+        "axialDecay": 2.8,
+        "radialDecay": 4.2,
+        "noiseScale": 7.0,
+        "noiseStrength": 0.05,
+        "bandEmissivity": {
+          "VIS": 0.0,
+          "NIR": 0.01,
+          "SWIR": 0.04,
+          "MWIR": 0.16,
+          "LWIR": 0.12
+        }
+      },
+      "halo": {
+        "enabled": true,
+        "temperatureK": 375.0,
+        "opacity": 0.035,
+        "lengthM": 1.25,
+        "radiusRootM": 0.09,
+        "radiusTailM": 0.30,
+        "axialDecay": 1.35,
+        "radialDecay": 1.8,
+        "noiseScale": 4.2,
+        "noiseStrength": 0.09,
+        "bandEmissivity": {
+          "VIS": 0.0,
+          "NIR": 0.003,
+          "SWIR": 0.015,
+          "MWIR": 0.07,
+          "LWIR": 0.06
+        }
+      }
+    },
+    "P11-CONTROLLED-SAMPLES": {
+      "enabled": false,
+      "enabledByEngineState": true,
+      "localPos": [0.0, 0.0, 0.0],
+      "localDir": [0.0, -1.0, 0.0],
+      "ambientMixK": 300.0,
+      "heatTauSec": 1.0,
+      "coolTauSec": 1.0,
+      "core": {
+        "enabled": false,
+        "temperatureK": 300.0,
+        "opacity": 0.0,
+        "lengthM": 0.05,
+        "radiusRootM": 0.01,
+        "radiusTailM": 0.01,
+        "axialDecay": 1.0,
+        "radialDecay": 1.0,
+        "noiseScale": 0.0,
+        "noiseStrength": 0.0,
+        "bandEmissivity": { "VIS": 0.0, "NIR": 0.0, "SWIR": 0.0, "MWIR": 0.0, "LWIR": 0.0 }
+      },
+      "halo": {
+        "enabled": false,
+        "temperatureK": 300.0,
+        "opacity": 0.0,
+        "lengthM": 0.05,
+        "radiusRootM": 0.01,
+        "radiusTailM": 0.01,
+        "axialDecay": 1.0,
+        "radialDecay": 1.0,
+        "noiseScale": 0.0,
+        "noiseStrength": 0.0,
+        "bandEmissivity": { "VIS": 0.0, "NIR": 0.0, "SWIR": 0.0, "MWIR": 0.0, "LWIR": 0.0 }
+      }
+    },
     "F35": {
       "enabled": true,
       "enabledByEngineState": true,
@@ -68,11 +160,11 @@
         "radialDecay": 4.7,
         "noiseScale": 5.5,
         "noiseStrength": 0.11,
-        "bandGain": {
+        "bandEmissivity": {
           "VIS": 0.0,
           "NIR": 0.06,
           "SWIR": 0.16,
-          "MWIR": 1.10,
+          "MWIR": 0.75,
           "LWIR": 0.52
         }
       },
@@ -87,11 +179,11 @@
         "radialDecay": 1.55,
         "noiseScale": 2.8,
         "noiseStrength": 0.27,
-        "bandGain": {
+        "bandEmissivity": {
           "VIS": 0.0,
           "NIR": 0.03,
           "SWIR": 0.08,
-          "MWIR": 0.50,
+          "MWIR": 0.36,
           "LWIR": 0.34
         }
       }
@@ -115,12 +207,12 @@
         "radialDecay": 1.4,
         "noiseScale": 3.8,
         "noiseStrength": 0.25,
-        "bandGain": {
+        "bandEmissivity": {
           "VIS": 0.0,
           "NIR": 0.25,
           "SWIR": 0.55,
-          "MWIR": 2.5,
-          "LWIR": 1.2
+          "MWIR": 0.92,
+          "LWIR": 0.85
         }
       },
       "halo": {
@@ -134,12 +226,12 @@
         "radialDecay": 2.2,
         "noiseScale": 3.8,
         "noiseStrength": 0.45,
-        "bandGain": {
+        "bandEmissivity": {
           "VIS": 0.0,
           "NIR": 0.10,
           "SWIR": 0.25,
-          "MWIR": 1.3,
-          "LWIR": 0.75
+          "MWIR": 0.65,
+          "LWIR": 0.60
         }
       }
     },
@@ -162,12 +254,12 @@
         "radialDecay": 1.4,
         "noiseScale": 3.8,
         "noiseStrength": 0.25,
-        "bandGain": {
+        "bandEmissivity": {
           "VIS": 0.0,
           "NIR": 0.25,
           "SWIR": 0.55,
-          "MWIR": 2.5,
-          "LWIR": 1.2
+          "MWIR": 0.92,
+          "LWIR": 0.85
         }
       },
       "halo": {
@@ -181,12 +273,12 @@
         "radialDecay": 2.2,
         "noiseScale": 3.8,
         "noiseStrength": 0.45,
-        "bandGain": {
+        "bandEmissivity": {
           "VIS": 0.0,
           "NIR": 0.10,
           "SWIR": 0.25,
-          "MWIR": 1.3,
-          "LWIR": 0.75
+          "MWIR": 0.65,
+          "LWIR": 0.60
         }
       }
     }

@@ -38,6 +38,8 @@ struct IRModtranRadianceResult
 	std::string irradianceUnit;
 	std::string responseMode;
 	std::string interpolationMode;
+	double relativeHumidityPercent;
+	std::string humidityMode;
 	std::string fallbackReason;
 	std::string fallbackAxis;
 	double fallbackQuery;
@@ -56,7 +58,13 @@ public:
 	bool empty() const;
 	const std::string& loadedPath() const;
 	size_t entryCount() const;
+	bool hasBand(IRBand band) const;
 	IRModtranRadianceResult query(const IRModtranRadianceQuery& query) const;
+	// The protocol carries a numeric relative humidity, while MODTRAN rows are
+	// audited at the classified 30/60/85 percent planes.  Interpolate only inside
+	// that measured envelope; tau is mixed in optical-depth space.
+	IRModtranRadianceResult queryRelativeHumidity(
+		const IRModtranRadianceQuery& query, double relativeHumidityPercent) const;
 
 private:
 	struct Entry
@@ -105,9 +113,15 @@ private:
 	static Sample mix(const Sample& low, const Sample& high, double t);
 	bool interpolate(const std::vector<const Entry*>& entries, const IRModtranRadianceQuery& query,
 		size_t axisIndex, Sample& sample, InterpolationError& error) const;
-	static double axisValue(const Entry& entry, size_t axisIndex, bool nir);
-	static double queryAxisValue(const IRModtranRadianceQuery& query, size_t axisIndex, bool nir);
-	static const char* axisName(size_t axisIndex, bool nir);
+	bool interpolateEqualAltitude(const std::vector<const Entry*>& entries,
+		const IRModtranRadianceQuery& query, size_t axisIndex,
+		Sample& sample, InterpolationError& error) const;
+	static double axisValue(const Entry& entry, size_t axisIndex, bool solarAware);
+	static double queryAxisValue(const IRModtranRadianceQuery& query, size_t axisIndex, bool solarAware);
+	static const char* axisName(size_t axisIndex, bool solarAware);
+	static double equalAltitudeAxisValue(const Entry& entry, size_t axisIndex);
+	static double equalAltitudeQueryAxisValue(const IRModtranRadianceQuery& query, size_t axisIndex);
+	static const char* equalAltitudeAxisName(size_t axisIndex);
 
 	std::vector<Entry> m_entries;
 	std::string m_loadedPath;

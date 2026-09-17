@@ -30,6 +30,7 @@ struct RecordingFrame
     QString annotationJson;
     bool hasRealtimeData = true;
     bool hasAnnotation = true;
+    QString association;
     qint64 receiveTimeNs = 0;
     qint64 displayTimeNs = 0;
 };
@@ -39,11 +40,15 @@ struct RecorderSnapshot
     bool recordingEnabled = false;
     bool pending = false;
     bool initialized = false;
+    bool accepting = false;
+    bool shutdownRequested = false;
+    bool frameSeqContinuousWritten = true;
     bool sourceSeqContinuousWritten = true;
     bool fileError = false;
     quint64 inputFrames = 0;
     quint64 writtenFrames = 0;
     quint64 droppedFrames = 0;
+    quint64 frameSeqWritten = 0;
     quint64 sourceSeqWritten = 0;
     int queueDepth = 0;
     int maxQueueDepth = 0;
@@ -116,6 +121,7 @@ private:
     quint64 m_droppedFrames = 0;
     quint64 m_lastWrittenSourceSeq = 0;
     quint64 m_lastWrittenFrameSeq = 0;
+    bool m_frameSeqContinuousWritten = true;
     bool m_sourceSeqContinuousWritten = true;
     int m_maxQueueDepthObserved = 0;
     double m_writeMsTotal = 0.0;

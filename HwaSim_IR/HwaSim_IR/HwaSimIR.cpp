@@ -14,6 +14,7 @@
 #include "IR/IRNativeRgbCopy.h"
 #include "IR/IRAutoMapping.h"
 #include "IR/IRNozzleAttachments.h"
+#include "IR/IRStage7TextureCompat.h"
 #include "executionEnvironment.h"
 #include "pfmFile.h"
 #include "ProtocolRoute.h"
@@ -203,7 +204,9 @@ GraphicsOutput* MakeStage6OffscreenOutput(
 	GraphicsOutput* host,
 	bool bindAllPlanes,
 	int multisamples,
-	bool floatColor = false)
+	bool floatColor = false,
+	int floatColorBits = 16,
+	bool floatAlpha = false)
 {
 	if (framework == nullptr)
 	{
@@ -218,7 +221,14 @@ GraphicsOutput* MakeStage6OffscreenOutput(
 
 	FrameBufferProperties fbProps = FrameBufferProperties::get_default();
 	fbProps.set_rgb_color(true);
-	fbProps.set_rgba_bits(floatColor ? 16 : 8, floatColor ? 16 : 8, floatColor ? 16 : 8, 0);
+	const int colorBits = floatColor ? std::max(16, floatColorBits) : 8;
+	// Mali GLES does not expose a renderable RGB floating-point color attachment
+	// on the RK3588.  The formal SI path therefore requests RGBA and keeps alpha
+	// as an unused attachment channel; RGB still carries the three identical
+	// spectral-radiance components.  The caller selects 16-bit components on
+	// Linux/GLES and 32-bit components on Windows/OpenGL.
+	fbProps.set_rgba_bits(colorBits, colorBits, colorBits,
+		(floatColor && floatAlpha) ? colorBits : 0);
 	fbProps.set_float_color(floatColor);
 	fbProps.set_depth_bits(24);
 	fbProps.set_back_buffers(0);
@@ -248,6 +258,45 @@ GraphicsOutput* MakeStage6OffscreenOutput(
 		sharedGsg,
 		host);
 }
+
+#if !defined(_WIN32)
+bool ApplyStage6GlesHalfTextureNegotiationWorkaround(GraphicsOutput* output)
+{
+	if (output == nullptr)
+	{
+		return false;
+	}
+	// EGL must see float_color=true while creating the actual floating output.
+	// Panda later reuses the output's FrameBufferProperties only as a texture
+	// format negotiation hint in add_render_texture/rebuild_bitplanes; there is
+	// no public setter for that post-creation hint.  Keep this const_cast in one
+	// Linux-only compatibility function, after output creation and before any
+	// attachment, so the native EGL output is never recreated or altered.
+	const FrameBufferProperties& before = output->get_fb_properties();
+	const bool preFloatProperty = before.get_float_color();
+	const int redBits = before.get_red_bits();
+	const int greenBits = before.get_green_bits();
+	const int blueBits = before.get_blue_bits();
+	const int alphaBits = before.get_alpha_bits();
+	FrameBufferProperties& textureNegotiationProperties =
+		const_cast<FrameBufferProperties&>(output->get_fb_properties());
+	textureNegotiationProperties.set_float_color(false);
+	const bool postFloatProperty = output->get_fb_properties().get_float_color();
+	const bool valid = preFloatProperty && !postFloatProperty &&
+		redBits >= 16 && greenBits >= 16 && blueBits >= 16 && alphaBits >= 16;
+	std::cout << "[Stage6 RawFramebufferCompat]"
+		<< " phase=post_create_pre_attach"
+		<< " preFloatProperty=" << (preFloatProperty ? 1 : 0)
+		<< " postFloatProperty=" << (postFloatProperty ? 1 : 0)
+		<< " actualRgbBits=(" << redBits << "," << greenBits << "," << blueBits << ")"
+		<< " actualAlphaBits=" << alphaBits
+		<< " eglOutputRecreated=0"
+		<< " valid=" << (valid ? 1 : 0)
+		<< " reason=Panda_rebuild_bitplanes_component_override_avoided"
+		<< std::endl;
+	return valid;
+}
+#endif
 
 void LogMsaaFramebufferResult(int requested, GraphicsOutput* output, const char* outputName)
 {
@@ -1662,7 +1711,10 @@ void HwaSimIR::run() {
 		int remainingInputQueueDepth = 0;
 		{
 			std::unique_lock<std::mutex> lock(m_mtx);
-			if (!m_pendingDisplayFrames.empty()) {
+			// Preserve INIT->START realtime samples.  START (and the deferred STOP
+			// drain) leave m_isSimRunning true before this point, so only genuinely
+			// pre-start input remains queued rather than being silently consumed.
+			if (m_isSimRunning.load() && !m_pendingDisplayFrames.empty()) {
 				if (m_bSyncRenderMode.load() || m_asyncInputPolicy == "OrderedQueue")
 				{
 					pendingFrame = m_pendingDisplayFrames.front();
@@ -1708,17 +1760,55 @@ void HwaSimIR::run() {
 				std::chrono::steady_clock::now() - sceneBegin).count());
 		}
 
-		m_syncFrameActive.store(!m_bSyncRenderMode.load() || hasDisplayFrame);
+		// Sync mode and asynchronous OrderedQueue are both input-driven: one
+		// consumed protocol sample owns exactly one shader/capture pass.  Latest
+		// intentionally retains its free-running, repeated-state presentation.
+		const bool frameDriven =
+			m_bSyncRenderMode.load() || m_asyncInputPolicy == "OrderedQueue";
+		const bool businessFrameActive = !frameDriven || hasDisplayFrame;
+		m_syncFrameActive.store(businessFrameActive);
+#ifndef _WIN32
+		// On RK, defer the RTM_copy_ram attachment itself (not merely the output's
+		// active flag) until the first owned OrderedQueue frame.  Panda prepares a
+		// newly attached RAM target on the first graphics-engine tick, which is too
+		// early while the sensor texture is still uninitialized.  Latest, sync, and
+		// Windows/TCP retain their existing attachment and activation contracts.
+		if (!m_bSyncRenderMode.load() &&
+			m_asyncInputPolicy == "OrderedQueue" &&
+			hasDisplayFrame &&
+			m_stage6FinalSensorBuffer != nullptr)
+		{
+			if (m_stage6FinalCopyRamPending)
+			{
+				m_stage6FinalSensorBuffer->add_render_texture(
+					m_renderTex, GraphicsOutput::RTM_copy_ram);
+				m_stage6FinalCopyRamPending = false;
+				std::cout << "[Stage6 FinalReadbackGate] phase=first_business_frame"
+					<< " attached=1 pending=0 sourceSeq=" << m_currentFrameTelemetry.sourceSeq
+					<< " policy=OrderedQueue platform=linux"
+					<< std::endl;
+			}
+			if (!m_stage6FinalSensorBuffer->is_active())
+			{
+				m_stage6FinalSensorBuffer->set_active(true);
+			}
+		}
+#endif
 		m_frameRenderImageSeqBefore = m_renderTex != nullptr
 			? static_cast<std::uint64_t>(m_renderTex->get_image_modified().get_seq())
 			: 0;
         if(m_p7FrameIdentityChart&&!m_stage6FinalCard.is_empty())
             m_stage6FinalCard.set_shader_input("u_p7_frame_chart",LVecBase4f(1.0f,static_cast<float>(m_currentFrameTelemetry.sourceSeq%4096),static_cast<float>(m_stage6FinalWidth),static_cast<float>(m_stage6FinalHeight)));
 		PrepareStage6AgcSampleFrame();
+		if (businessFrameActive)
+		{
+			ArmP6LinearCapture(m_currentFrameTelemetry.sourceSeq);
+		}
 		const auto renderBegin = std::chrono::steady_clock::now();
 		if (!m_pFramework->do_frame(current_thread)) {
 			break;
 		}
+		VerifyStage6RawAttachment();
         const auto renderDone=std::chrono::steady_clock::now();
         if(hasDisplayFrame && m_isSimRunning.load()){
             const double callMs=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-renderBegin).count();
@@ -1731,7 +1821,10 @@ void HwaSimIR::run() {
 		// Panda's task poll precedes GraphicsEngine::render_frame inside do_frame.
 		// Capture only after do_frame returns so a synchronous Realtime sample is
 		// paired with the GPU image it actually produced, not the previous RAM copy.
-		capture_task(nullptr, this);
+		if (businessFrameActive)
+		{
+			capture_task(nullptr, this);
+		}
         if(hasDisplayFrame){
             static HwaStageAuditV1::Ledger renderAudit("render","executeToDrawBeginMs,doFrameMs,captureTaskMs,remainingInputDepth");
             renderAudit.record(pendingFrame.telemetry.sourceSeq,
@@ -1739,7 +1832,7 @@ void HwaSimIR::run() {
                 std::chrono::duration<double,std::milli>(renderDone-renderBegin).count(),
                 std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-renderDone).count(),remainingInputQueueDepth);
         }
-		if (!m_bSyncRenderMode.load() && m_isSimRunning.load())
+		if (!m_bSyncRenderMode.load() && m_isSimRunning.load() && businessFrameActive)
 		{
 			m_perfStats.recordOutputInputUsage(hasDisplayFrame);
 		}
@@ -1755,7 +1848,7 @@ void HwaSimIR::run() {
 		m_lastPandaCoreMs = std::max(0.0,
 			renderMs - m_lastIrTaskMs - m_lastCaptureTaskMs);
 		LogRenderPerfProbe(renderMs);
-		if (!m_bSyncRenderMode.load() || hasDisplayFrame)
+		if (!frameDriven || hasDisplayFrame)
 		{
 			const bool mtfEffective = IsStage6MtfEffective();
 			const double mtfBlurMs = mtfEffective ? renderMs : 0.0;
@@ -2602,6 +2695,9 @@ void HwaSimIR::InitStage6FinalPostShader()
     uniform float u_stage6_final_display_gain;
     uniform float u_stage6_final_display_offset;
     uniform float u_stage6_final_gamma;
+	uniform int u_stage6_raw_si_domain;
+	uniform float u_stage6_raw_to_display_scale;
+	uniform float u_stage6_raw_to_display_offset;
     uniform int u_p10_edge_aa;
     uniform vec4 u_p7_frame_chart;
     uniform int u_stage6_final_noise_enable;
@@ -2653,7 +2749,10 @@ void HwaSimIR::InitStage6FinalPostShader()
 
     float Stage6RawLuma(vec2 uv){
         vec2 halfPixel=u_stage6_mtf_texel_size*.5;
-        return dot(texture2D(p3d_Texture0,clamp(uv,halfPixel,max(halfPixel,u_stage6_mtf_uv_max-halfPixel))).rgb,vec3(.299,.587,.114));
+		float raw=dot(texture2D(p3d_Texture0,clamp(uv,halfPixel,max(halfPixel,u_stage6_mtf_uv_max-halfPixel))).rgb,vec3(.299,.587,.114));
+		return u_stage6_raw_si_domain==1
+			? raw*u_stage6_raw_to_display_scale+u_stage6_raw_to_display_offset
+			: raw;
     }
     float Stage6EdgeAA(vec2 uv,float center){
         vec2 px=u_stage6_mtf_texel_size;
@@ -2672,8 +2771,7 @@ void HwaSimIR::InitStage6FinalPostShader()
     float Stage6FinalSampleDisplayGray(vec2 uv)
     {
         vec2 safeUv = clamp(uv, vec2(0.0, 0.0), u_stage6_mtf_uv_max);
-        vec4 rawColor = texture2D(p3d_Texture0, safeUv);
-        float gray = dot(rawColor.rgb, vec3(0.299, 0.587, 0.114));
+		float gray = Stage6RawLuma(safeUv);
         if(u_p10_edge_aa==1)gray=Stage6EdgeAA(safeUv,gray);
         gray = gray * u_stage6_final_display_gain + u_stage6_final_display_offset;
         return gray; // Retain highlights until the final display/AGC mapping.
@@ -2887,6 +2985,7 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 	const int safeWidth = std::max(1, width);
 	const int safeHeight = std::max(1, height);
 	const bool headlessMode = IsHeadlessOffscreenMode();
+	const bool formalSiDomainRequested = IsStage6FormalSiDomainRequested();
 	std::string finalPostprocessReason;
 	const bool finalPostprocessNoop = IsStage6FinalPostprocessNoop(&finalPostprocessReason);
 	const bool volumetricCompositeRequired = m_stage7VolumeCloudEnabled &&
@@ -2897,6 +2996,7 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 		m_headlessFastDirectFinal &&
 		m_msaaSamples == 0 &&
 		finalPostprocessNoop &&
+		!formalSiDomainRequested &&
 		!volumetricCompositeRequired;
 	const std::string plannedRenderPath = directFinal ? "direct_final" : "dual_pass";
 
@@ -2973,6 +3073,7 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 		m_stage6FinalHeight == safeHeight &&
 		finalOutputReady &&
 		m_stage6FinalRegion != nullptr &&
+		m_stage6RawSiDomain == formalSiDomainRequested &&
 		pathUnchanged &&
 		pathObjectsReady;
 
@@ -2984,6 +3085,7 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 	m_stage6FinalPostprocessNoop = finalPostprocessNoop;
 	m_stage6FinalPostprocessNoopReason = finalPostprocessReason;
 	m_stage6FinalPostprocessBypass = directFinal;
+	m_stage6RawSiDomain = formalSiDomainRequested;
 	if (sameSize)
 	{
 		if (directFinal)
@@ -3046,6 +3148,11 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 		m_stage6FinalCard = NodePath();
 	}
 	m_stage6RawSceneTex = nullptr;
+	m_stage6LinearReadbackTex = nullptr;
+	m_stage6LinearReadbackSourceSeq = 0;
+	m_stage6LinearCaptureCompletedSourceSeq = 0;
+	m_stage6RawAttachmentChecked = false;
+	m_stage6RawAttachmentVerified = false;
 	m_stage7SceneDepthTex = nullptr;
 	m_stage7VolumeRegion = nullptr;
 
@@ -3088,10 +3195,29 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 		LogGraphicsBackend(m_stage6FinalSensorBuffer);
 		m_stage6FinalSensorBuffer->clear_render_textures();
 		m_headlessCopyRamAttached = ShouldAttachStage6CopyRam();
-		if (m_renderTex != nullptr && m_headlessCopyRamAttached)
+		m_stage6FinalCopyRamPending = false;
+#ifndef _WIN32
+		m_stage6FinalCopyRamPending =
+			!m_bSyncRenderMode.load() &&
+			m_asyncInputPolicy == "OrderedQueue" &&
+			m_renderTex != nullptr &&
+			m_headlessCopyRamAttached;
+#endif
+		if (m_renderTex != nullptr &&
+			m_headlessCopyRamAttached &&
+			!m_stage6FinalCopyRamPending)
 		{
 			m_stage6FinalSensorBuffer->add_render_texture(m_renderTex, GraphicsOutput::RTM_copy_ram);
 		}
+#ifndef _WIN32
+		if (m_stage6FinalCopyRamPending)
+		{
+			m_stage6FinalSensorBuffer->set_active(false);
+			std::cout << "[Stage6 FinalReadbackGate] phase=setup"
+				<< " attached=0 pending=1 active=0 policy=OrderedQueue platform=linux"
+				<< std::endl;
+		}
+#endif
 		m_stage6FinalSensorBuffer->remove_all_display_regions();
 		m_stage6PresentationOutput = m_stage6FinalSensorBuffer;
 		m_stage6FinalRegion = m_stage6FinalSensorBuffer->make_display_region(0.0f, 1.0f, 0.0f, 1.0f);
@@ -3113,10 +3239,32 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 	}
 
 	m_stage6RawSceneTex = new Texture("Stage6RawSceneTex");
+	// Keep Windows at the independently validated RGBA32F precision.  Panda's
+	// GLES bind_slot initializes an attached texture through copy_image(); the
+	// RK build cannot convert a four-byte RGBA component there, but it supports
+	// renderable RGBA16F.  This is a storage-precision compatibility choice only:
+	// the shader domain and diagnostic PFM unit remain W/(m^2 sr um).
+#if defined(_WIN32)
+	const bool formalSiHalfStorage = false;
+#else
+	const bool formalSiHalfStorage = formalSiDomainRequested;
+#endif
+	const int formalSiStorageBits = formalSiDomainRequested
+		? (formalSiHalfStorage ? 16 : 32)
+		: 16;
+	const char* formalSiStorageFormat = formalSiDomainRequested
+		? (formalSiHalfStorage ? "RGBA16F_SI" : "RGBA32F_SI")
+		: "RGB16F_linear";
 	// Preserve physical radiance/exposure headroom until the final Stage6 display
 	// transform.  The former unsigned-byte raw target quantized and clamped the
 	// Stage5 result before MTF/AGC/polarity could operate on it.
-	m_stage6RawSceneTex->setup_2d_texture(safeWidth, safeHeight, Texture::T_half_float, Texture::F_rgb);
+	m_stage6RawSceneTex->setup_2d_texture(
+		safeWidth,
+		safeHeight,
+		formalSiDomainRequested
+			? (formalSiHalfStorage ? Texture::T_half_float : Texture::T_float)
+			: Texture::T_half_float,
+		formalSiDomainRequested ? Texture::F_rgba : Texture::F_rgb);
 	// eglGraphicsPipe on the RK3588 g6p0 X11 stack cannot create an
 	// all-bitplane texture buffer without an existing host/GSG.  Create the
 	// ordinary final color buffer first and host EVERY floating raw-scene
@@ -3140,7 +3288,9 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 	{
 		FrameBufferProperties rawSceneFbProps = FrameBufferProperties::get_default();
 		rawSceneFbProps.set_rgb_color(true);
-		rawSceneFbProps.set_rgba_bits(16, 16, 16, 0);
+		const int rawColorBits = formalSiStorageBits;
+		rawSceneFbProps.set_rgba_bits(rawColorBits, rawColorBits, rawColorBits,
+			formalSiDomainRequested ? rawColorBits : 0);
 		rawSceneFbProps.set_float_color(true);
 		rawSceneFbProps.set_multisamples(m_msaaSamples);
 		m_stage6RawSceneBuffer = m_pGraphicsWindow->make_texture_buffer(
@@ -3165,7 +3315,9 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 			m_stage6FinalSensorBuffer,
 			true, // Require the same FBO format as the validated volume path.
 			m_msaaSamples,
-			true);
+			true,
+			formalSiStorageBits,
+			formalSiDomainRequested);
 		if (m_stage6RawSceneBuffer == nullptr && m_msaaSamples > 0)
 		{
 			m_stage6RawSceneBuffer = MakeStage6OffscreenOutput(
@@ -3178,13 +3330,86 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 				m_stage6FinalSensorBuffer,
 				true,
 				0,
-				true);
+				true,
+				formalSiStorageBits,
+				formalSiDomainRequested);
 		}
 		if (m_stage6RawSceneBuffer != nullptr)
 		{
-			m_stage6RawSceneBuffer->add_render_texture(m_stage6RawSceneTex, GraphicsOutput::RTM_copy_texture);
+#if !defined(_WIN32)
+			if (!ApplyStage6GlesHalfTextureNegotiationWorkaround(m_stage6RawSceneBuffer))
+			{
+				std::cerr << "[Stage6 RawFramebufferCompat][ERROR]"
+					<< " failure=post_creation_texture_negotiation_setup"
+					<< " action=fail_closed"
+					<< std::endl;
+				m_pFramework->get_graphics_engine()->remove_window(m_stage6RawSceneBuffer);
+				m_stage6RawSceneBuffer = nullptr;
+			}
+#endif
+		}
+		if (m_stage6RawSceneBuffer != nullptr)
+		{
+			// Bind the formal floating-point texture directly whenever the backend
+			// permits it.  Mali GLES rejects the glCopyTexSubImage path used by
+			// RTM_copy_texture for floating RGBA, which otherwise leaves an all-zero raw
+			// texture and reports GL_INVALID_OPERATION once per rendered frame.
+			m_stage6RawSceneBuffer->add_render_texture(m_stage6RawSceneTex, GraphicsOutput::RTM_bind_or_copy);
+#if !defined(_WIN32)
+			// The framebuffer must remain float_color=true for EGL to create the
+			// 16-bit floating output.  Panda's add_render_texture negotiation then
+			// overwrites T_half_float with T_float; restore the explicit GPU storage
+			// before the first bind_slot/upload.  This avoids the unsupported
+			// GL_RGBA/4-components/4-byte copy_image path seen in the board GDB trace.
+			const Texture::ComponentType preRestoreType = m_stage6RawSceneTex->get_component_type();
+			const int preRestoreWidth = m_stage6RawSceneTex->get_component_width();
+			const int preRestoreComponents = m_stage6RawSceneTex->get_num_components();
+			const bool preRestoreRamImage = m_stage6RawSceneTex->has_ram_image();
+			m_stage6RawSceneTex->clear_ram_image();
+			m_stage6RawSceneTex->setup_2d_texture(
+				safeWidth,
+				safeHeight,
+				Texture::T_half_float,
+				formalSiDomainRequested ? Texture::F_rgba16 : Texture::F_rgb16);
+			m_stage6RawSceneTex->clear_ram_image();
+			const Texture::ComponentType postRestoreType = m_stage6RawSceneTex->get_component_type();
+			std::cout << "[Stage6 RawTextureCompat]"
+				<< " phase=post_attach_restore"
+				<< " framebufferFloatProperty="
+				<< (m_stage6RawSceneBuffer->get_fb_properties().get_float_color() ? 1 : 0)
+				<< " preType=" << (preRestoreType == Texture::T_float ? "float" :
+					(preRestoreType == Texture::T_half_float ? "half_float" : "non_float"))
+				<< " preWidth=" << preRestoreWidth
+				<< " preComponents=" << preRestoreComponents
+				<< " preHasRamImage=" << (preRestoreRamImage ? 1 : 0)
+				<< " postType=" << (postRestoreType == Texture::T_half_float ? "half_float" : "unexpected")
+				<< " postWidth=" << m_stage6RawSceneTex->get_component_width()
+				<< " postComponents=" << m_stage6RawSceneTex->get_num_components()
+				<< " postHasRamImage=" << (m_stage6RawSceneTex->has_ram_image() ? 1 : 0)
+				<< " reason=Panda_float_color_component_override_avoided"
+				<< std::endl;
+#endif
 		}
 	}
+	// Desktop OpenGL can service a sparse triggered RGBA32F RAM copy.  The
+	// RK3588 GLES driver cannot convert that attachment to Panda's RAM image;
+	// Linux diagnostics instead read the already-bound production texture
+	// through a temporary read FBO only on explicitly requested source frames.
+#if defined(_WIN32)
+	if (m_stage6RawSceneBuffer != nullptr && formalSiDomainRequested)
+	{
+		// Keep the production raw texture GPU-only.  This separate target is
+		// copied from the already validated RGBA32F framebuffer only after an
+		// explicit trigger for a requested diagnostic source sequence.
+		m_stage6LinearReadbackTex = new Texture("Stage6LinearReadbackTex");
+		m_stage6LinearReadbackTex->setup_2d_texture(
+			safeWidth, safeHeight, Texture::T_float, Texture::F_rgba);
+		m_stage6RawSceneBuffer->add_render_texture(
+			m_stage6LinearReadbackTex,
+			GraphicsOutput::RTM_triggered_copy_ram,
+			DrawableRegion::RTP_color);
+	}
+#endif
 	LogMsaaFramebufferResult(m_msaaSamples, m_stage6RawSceneBuffer, "Stage6RawSceneBuffer");
 	if (m_stage6RawSceneBuffer == nullptr)
 	{
@@ -3206,13 +3431,76 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 	LogGraphicsBackend(m_stage6RawSceneBuffer);
 	{
 		const FrameBufferProperties& actualRawFb = m_stage6RawSceneBuffer->get_fb_properties();
-		std::cout << "[Stage6 RawRadianceBuffer]"
-			<< " requested=RGB16F"
-			<< " actualFloat=" << (actualRawFb.get_float_color() ? 1 : 0)
+		const Texture::ComponentType actualRawComponentType = m_stage6RawSceneTex->get_component_type();
+		const int actualRawComponentWidth = m_stage6RawSceneTex->get_component_width();
+		const int actualRawComponents = m_stage6RawSceneTex->get_num_components();
+		const bool actualRawTextureFloatingPoint =
+			actualRawComponentType == Texture::T_half_float ||
+			actualRawComponentType == Texture::T_float;
+		const char* actualRawComponentTypeText = actualRawComponentType == Texture::T_half_float
+			? "half_float"
+			: (actualRawComponentType == Texture::T_float ? "float" : "non_float");
+#if defined(_WIN32)
+		const bool actualRawTextureStorageValid =
+			actualRawComponentType == Texture::T_float &&
+			actualRawComponentWidth == 4 && actualRawComponents == 4;
+#else
+		const bool actualRawTextureStorageValid =
+			actualRawComponentType == Texture::T_half_float &&
+			actualRawComponentWidth == 2 && actualRawComponents == 4;
+#endif
+		// Build this audit record independently of the application's global fixed
+		// stream precision.  The binary16 bound must remain machine-readable.
+		std::ostringstream rawAudit;
+		rawAudit << std::setprecision(12)
+			<< "[Stage6 RawRadianceBuffer]"
+			<< " requested=" << formalSiStorageFormat
+			<< " formalRequested=" << (formalSiDomainRequested ? 1 : 0)
+			<< " platformBackend="
+#if defined(_WIN32)
+			<< "windows_gl"
+#else
+			<< "linux_gles"
+#endif
+			<< " domain=" << (formalSiDomainRequested ? "W_per_m2_sr_um" : "common_linear")
+			<< " unit=" << (formalSiDomainRequested ? "W/(m^2_sr_um)" : "normalized_linear")
+			<< " quantizationModel=" << (formalSiStorageBits == 16 ? "IEEE754_binary16" : "IEEE754_binary32")
+			<< " quantizationRelativeErrorBound="
+			<< (formalSiStorageBits == 16 ? 0.00048828125 : 0.000000059604644775390625)
+			<< " quantizationMaxFinite="
+			<< (formalSiStorageBits == 16 ? 65504.0 : 3.402823466e38)
+			<< " framebufferFloatProperty=" << (actualRawFb.get_float_color() ? 1 : 0)
+			<< " textureFloatingPoint=" << (actualRawTextureFloatingPoint ? 1 : 0)
+			<< " actualTextureComponentType=" << actualRawComponentTypeText
+			<< " actualTextureComponentWidth=" << actualRawComponentWidth
+			<< " actualTextureComponents=" << actualRawComponents
 			<< " actualRgbBits=(" << actualRawFb.get_red_bits() << ","
 			<< actualRawFb.get_green_bits() << "," << actualRawFb.get_blue_bits() << ")"
+			<< " actualAlphaBits=" << actualRawFb.get_alpha_bits()
 			<< " finalTransport=H264_8bit"
-			<< std::endl;
+			<< " workaround=Panda_float_color_component_override_avoided";
+		std::cout << rawAudit.str() << std::endl;
+		if (formalSiDomainRequested &&
+			(!actualRawTextureStorageValid ||
+			 !actualRawTextureFloatingPoint ||
+			 actualRawFb.get_red_bits() < formalSiStorageBits ||
+			 actualRawFb.get_green_bits() < formalSiStorageBits ||
+			 actualRawFb.get_blue_bits() < formalSiStorageBits ||
+			 actualRawFb.get_alpha_bits() < formalSiStorageBits))
+		{
+			m_stage6FinalPipelineReady = false;
+			std::cerr << "[Stage6 RawRadianceBuffer][ERROR]"
+				<< " failure=formal_si_requires_"
+				<< (formalSiStorageBits == 16 ? "rgba16f_on_gles" : "rgba32f_on_windows")
+				<< " requested=" << formalSiStorageFormat
+				<< " actualTextureComponentType=" << actualRawComponentTypeText
+				<< " actualTextureComponentWidth=" << actualRawComponentWidth
+				<< " actualTextureComponents=" << actualRawComponents
+				<< " framebufferFloatProperty=" << (actualRawFb.get_float_color() ? 1 : 0)
+				<< " noLegacyFallback=1"
+				<< std::endl;
+			return;
+		}
 	}
 
 	m_stage6RawSceneBuffer->remove_all_display_regions();
@@ -3271,10 +3559,29 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 		}
 		m_stage6FinalSensorBuffer->clear_render_textures();
 		m_headlessCopyRamAttached = ShouldAttachStage6CopyRam();
-		if (m_renderTex != nullptr && m_headlessCopyRamAttached)
+		m_stage6FinalCopyRamPending = false;
+#ifndef _WIN32
+		m_stage6FinalCopyRamPending =
+			!m_bSyncRenderMode.load() &&
+			m_asyncInputPolicy == "OrderedQueue" &&
+			m_renderTex != nullptr &&
+			m_headlessCopyRamAttached;
+#endif
+		if (m_renderTex != nullptr &&
+			m_headlessCopyRamAttached &&
+			!m_stage6FinalCopyRamPending)
 		{
 			m_stage6FinalSensorBuffer->add_render_texture(m_renderTex, GraphicsOutput::RTM_copy_ram);
 		}
+#ifndef _WIN32
+		if (m_stage6FinalCopyRamPending)
+		{
+			m_stage6FinalSensorBuffer->set_active(false);
+			std::cout << "[Stage6 FinalReadbackGate] phase=setup"
+				<< " attached=0 pending=1 active=0 policy=OrderedQueue platform=linux"
+				<< std::endl;
+		}
+#endif
 		m_stage6FinalSensorBuffer->remove_all_display_regions();
 		m_stage6PresentationOutput = m_stage6FinalSensorBuffer;
 		m_stage6FinalRegion = m_stage6FinalSensorBuffer->make_display_region(0.0f, 1.0f, 0.0f, 1.0f);
@@ -3435,8 +3742,53 @@ bool HwaSimIR::IsStage7FinalScreenOverlayActive() const
 		m_stage7WeatherState.precipitationDensity > 0.001;
 }
 
+bool HwaSimIR::IsStage6FormalSiDomainRequested() const
+{
+	if (m_m1CompareOnly || !m_m1RuntimeEnabled)
+	{
+		return false;
+	}
+	const int protocolBand =
+		(m_sensorParam.trackerSensorBand >= 0 && m_sensorParam.trackerSensorBand <= 4)
+		? m_sensorParam.trackerSensorBand : 3;
+	const IRBand band = IRBandFromProtocol(protocolBand);
+	return (band == IRBand::ShortWaveInfrared && m_m1SwirRuntimeEnabled) ||
+		(band == IRBand::MidWaveInfrared && m_m1MwirRuntimeEnabled);
+}
+
+void HwaSimIR::Stage6PhysicalDisplayWindow(
+	double& minimumRadiance,
+	double& maximumRadiance) const
+{
+	const int protocolBand =
+		(m_sensorParam.trackerSensorBand >= 0 && m_sensorParam.trackerSensorBand <= 4)
+		? m_sensorParam.trackerSensorBand : 3;
+	const IRBand band = IRBandFromProtocol(protocolBand);
+	if (band == IRBand::ShortWaveInfrared)
+	{
+		minimumRadiance = m_m1SwirDisplayRadianceMin;
+		maximumRadiance = m_m1SwirDisplayRadianceMax;
+	}
+	else
+	{
+		minimumRadiance = m_m1MwirDisplayRadianceMin;
+		maximumRadiance = m_m1MwirDisplayRadianceMax;
+	}
+	if (!std::isfinite(minimumRadiance) || !std::isfinite(maximumRadiance) ||
+		maximumRadiance <= minimumRadiance + 1.0e-12)
+	{
+		minimumRadiance = 0.0;
+		maximumRadiance = 1.0;
+	}
+}
+
 bool HwaSimIR::IsStage6FinalPostprocessNoop(std::string* reason) const
 {
+	if (IsStage6FormalSiDomainRequested())
+	{
+		if (reason != nullptr) *reason = "formal_si_window_mapping";
+		return false;
+	}
     if(m_p7FrameIdentityChart){if(reason)*reason="explicit_frame_identity_chart";return false;}
     if(m_p6.enabled&&m_p6.scene=="display"){if(reason)*reason="P6_linear_capture";return false;}
 	if (std::abs(m_stage5SensorInputDisplayGamma-1.0)>1.e-6) {
@@ -3502,6 +3854,10 @@ void HwaSimIR::ApplyStage6FinalPostprocessInputs()
 	const double sensorFovDeg = std::max(m_sensorDisplayConfig.horizontalFovDeg, m_sensorDisplayConfig.verticalFovDeg);
 	const double safeSensorFovDeg = std::isfinite(sensorFovDeg) && sensorFovDeg > 0.0 ? sensorFovDeg : 1.0;
 	const double currentTime = ClockObject::get_global_clock() != nullptr ? ClockObject::get_global_clock()->get_frame_time() : 0.0;
+	double physicalMinimum = 0.0;
+	double physicalMaximum = 1.0;
+	Stage6PhysicalDisplayWindow(physicalMinimum, physicalMaximum);
+	const double physicalSpan = std::max(1.0e-12, physicalMaximum - physicalMinimum);
 	m_stage6FinalCard.set_shader_input("u_stage6_final_white_hot", LVecBase2i(config.whiteHot ? 1 : 0, 0));
 	const std::string aa=m_runtimeConfig.getString("Render","PostprocessAA","RenderPostprocessAA","Off");
 	if(aa!="Off"&&aa!="EdgeAA")throw std::runtime_error("unsupported PostprocessAA");
@@ -3511,6 +3867,11 @@ void HwaSimIR::ApplyStage6FinalPostprocessInputs()
 	m_stage6FinalCard.set_shader_input("u_stage6_final_display_offset", LVecBase2f(static_cast<float>(offsetNorm), 0.0f));
     m_stage6FinalCard.set_shader_input("u_p7_frame_chart",LVecBase4f(m_p7FrameIdentityChart?1.f:0.f,static_cast<float>(m_currentFrameTelemetry.sourceSeq%4096),static_cast<float>(m_stage6FinalWidth),static_cast<float>(m_stage6FinalHeight)));
 	m_stage6FinalCard.set_shader_input("u_stage6_final_gamma", LVecBase2f(static_cast<float>(m_stage5SensorInputDisplayGamma),0));
+	m_stage6FinalCard.set_shader_input("u_stage6_raw_si_domain", LVecBase2i(m_stage6RawSiDomain ? 1 : 0, 0));
+	m_stage6FinalCard.set_shader_input("u_stage6_raw_to_display_scale", LVecBase2f(
+		static_cast<float>(m_stage6RawSiDomain ? 1.0 / physicalSpan : 1.0), 0.0f));
+	m_stage6FinalCard.set_shader_input("u_stage6_raw_to_display_offset", LVecBase2f(
+		static_cast<float>(m_stage6RawSiDomain ? -physicalMinimum / physicalSpan : 0.0), 0.0f));
 	m_stage6FinalCard.set_shader_input("u_stage6_final_noise_enable", LVecBase2i(config.noiseEnable ? 1 : 0, 0));
 	m_stage6FinalCard.set_shader_input("u_stage6_final_noise_sigma_norm", LVecBase2f(static_cast<float>(noiseSigmaNorm), 0.0f));
 	m_stage6FinalCard.set_shader_input("u_stage6_final_uv_scale", LVecBase2f(uvScaleU, uvScaleV));
@@ -3556,7 +3917,9 @@ void HwaSimIR::ApplyStage6FinalPostprocessInputs()
 
 void HwaSimIR::LogStage6FinalPipeline(const char* reason)
 {
-	if (!m_stage6DiagnosticsEnabled) return;
+	// The formal SI route is an acceptance/field audit record, not optional
+	// verbose diagnostics.  Keep ordinary non-formal logging gated as before.
+	if (!m_stage6DiagnosticsEnabled && !m_stage6RawSiDomain) return;
 	if (!m_stage6FinalPipelineReady)
 	{
 		return;
@@ -3575,12 +3938,19 @@ void HwaSimIR::LogStage6FinalPipeline(const char* reason)
 	const int renderTexEffectiveW = headlessMode && m_stage6FinalWidth > 0 ? m_stage6FinalWidth : renderTexW;
 	const int renderTexEffectiveH = headlessMode && m_stage6FinalHeight > 0 ? m_stage6FinalHeight : renderTexH;
 	const char* presentationOutputName = headlessMode ? "final_sensor_buffer" : "window";
-	const char* rawSceneCopyMode =
-		m_stage6RawSceneBuffer == nullptr ? "none" :
-		(headlessMode ? "RTM_copy_texture" : "RTM_bind_or_copy");
+	const char* rawSceneCopyMode = m_stage6RawSceneBuffer == nullptr ? "none" :
+		(m_stage6RawAttachmentChecked
+			? (m_stage6RawAttachmentVerified ? "RTM_bind_or_copy" : "invalid")
+			: "pending_actual_verification");
 	std::cout << "[Stage6 FinalPipeline]"
 		<< " renderMode=" << m_renderPresentationModeName
 		<< " renderPath=" << m_stage6RenderPath
+		<< " formalSiDomain=" << (m_stage6RawSiDomain ? "1" : "0")
+#if defined(_WIN32)
+		<< " rawStorageFormat=" << (m_stage6RawSiDomain ? "RGBA32F_SI" : "RGB16F_linear")
+#else
+		<< " rawStorageFormat=" << (m_stage6RawSiDomain ? "RGBA16F_SI" : "RGB16F_linear")
+#endif
 		<< " headlessFastDirectFinal=" << (m_headlessFastDirectFinal ? "1" : "0")
 		<< " finalPostprocessBypass=" << (m_stage6FinalPostprocessBypass ? "1" : "0")
 		<< " rawBufferReady=" << (rawBufferReady ? "1" : "0")
@@ -3627,6 +3997,86 @@ void HwaSimIR::LogStage6FinalPipeline(const char* reason)
 		<< " sameOutput=1"
 		<< std::endl;
 	LogStage6ViewportDiag(reason);
+}
+
+void HwaSimIR::VerifyStage6RawAttachment()
+{
+#if defined(_WIN32)
+	// Windows formal evidence remains tied to the separately validated RGBA32F
+	// desktop path.  The RK/GLES backend is the one whose bind-or-copy mode may
+	// be silently downgraded by Panda after the first render.
+	return;
+#else
+	if (!m_stage6RawSiDomain || m_stage6RawAttachmentChecked ||
+		m_stage6RawSceneBuffer == nullptr || m_stage6RawSceneTex == nullptr)
+	{
+		return;
+	}
+
+	m_stage6RawAttachmentChecked = true;
+	bool found = false;
+	GraphicsOutput::RenderTextureMode actualMode = GraphicsOutput::RTM_none;
+	const int attachmentCount = m_stage6RawSceneBuffer->count_textures();
+	for (int index = 0; index < attachmentCount; ++index)
+	{
+		if (m_stage6RawSceneBuffer->get_texture(index) == m_stage6RawSceneTex.p())
+		{
+			found = true;
+			actualMode = m_stage6RawSceneBuffer->get_rtm_mode(index);
+			break;
+		}
+	}
+
+	const char* actualModeText = "missing";
+	switch (actualMode)
+	{
+	case GraphicsOutput::RTM_bind_or_copy: actualModeText = "RTM_bind_or_copy"; break;
+	case GraphicsOutput::RTM_copy_texture: actualModeText = "RTM_copy_texture"; break;
+	case GraphicsOutput::RTM_copy_ram: actualModeText = "RTM_copy_ram"; break;
+	case GraphicsOutput::RTM_triggered_copy_texture: actualModeText = "RTM_triggered_copy_texture"; break;
+	case GraphicsOutput::RTM_triggered_copy_ram: actualModeText = "RTM_triggered_copy_ram"; break;
+	case GraphicsOutput::RTM_none: actualModeText = "RTM_none"; break;
+	default: actualModeText = "unknown"; break;
+	}
+	const Texture::ComponentType actualComponentType = m_stage6RawSceneTex->get_component_type();
+	const int actualComponentWidth = m_stage6RawSceneTex->get_component_width();
+	const int actualComponents = m_stage6RawSceneTex->get_num_components();
+	const bool textureStorageVerified =
+		actualComponentType == Texture::T_half_float &&
+		actualComponentWidth == 2 && actualComponents == 4;
+	const char* actualComponentTypeText = actualComponentType == Texture::T_half_float
+		? "half_float"
+		: (actualComponentType == Texture::T_float ? "float" : "non_float");
+	m_stage6RawAttachmentVerified = found &&
+		actualMode == GraphicsOutput::RTM_bind_or_copy && textureStorageVerified;
+	std::cout << "[Stage6 RawAttachment]"
+		<< " requested=RTM_bind_or_copy"
+		<< " actual=" << actualModeText
+		<< " directBound=" << (m_stage6RawAttachmentVerified ? 1 : 0)
+		<< " formalSiDomain=1"
+		<< " storageFormat=RGBA16F_SI"
+		<< " textureStorageVerified=" << (textureStorageVerified ? 1 : 0)
+		<< " actualTextureComponentType=" << actualComponentTypeText
+		<< " actualTextureComponentWidth=" << actualComponentWidth
+		<< " actualTextureComponents=" << actualComponents
+		<< " attachmentCount=" << attachmentCount
+		<< std::endl;
+	if (!m_stage6RawAttachmentVerified)
+	{
+		m_stage6FinalPipelineReady = false;
+		std::cerr << "[Stage6 RawAttachment][ERROR]"
+			<< " failure=formal_si_attachment_not_direct"
+			<< " requested=RTM_bind_or_copy"
+			<< " actual=" << actualModeText
+			<< " textureStorageVerified=" << (textureStorageVerified ? 1 : 0)
+			<< " actualTextureComponentType=" << actualComponentTypeText
+			<< " actualTextureComponentWidth=" << actualComponentWidth
+			<< " actualTextureComponents=" << actualComponents
+			<< " action=fail_closed"
+			<< std::endl;
+		m_requestExit.store(true);
+	}
+#endif
 }
 
 void HwaSimIR::LogStage6MtfBlur(std::uint64_t sourceSeq, double renderMs)
@@ -3876,12 +4326,17 @@ void HwaSimIR::UpdateStage6AgcFromFrame(const unsigned char* frameData, int fram
 		double sum = 0.0;
 		double sumSq = 0.0;
 		const int stride = 1; // GPU has already selected one pixel per stratum.
+		double rawMinimum=0.0,rawMaximum=1.0;
+		Stage6PhysicalDisplayWindow(rawMinimum,rawMaximum);
+		const double rawSpan=std::max(1.0e-12,rawMaximum-rawMinimum);
 		for (int y = 0; y < frameHeight; y += stride)
 		{
 			for (int x = 0; x < frameWidth; x += stride)
 			{
                 const auto px=linear.get_point3(x,y+linear.get_y_size()-frameHeight);
-                double gray=(.299*px[0]+.587*px[1]+.114*px[2])*config.displayGain+config.displayOffset/255.0;
+                double gray=.299*px[0]+.587*px[1]+.114*px[2];
+				if(fullReference&&m_stage6RawSiDomain)gray=(gray-rawMinimum)/rawSpan;
+				gray=gray*config.displayGain+config.displayOffset/255.0;
                 if(!std::isfinite(gray))continue;
                 // Keep the same signed HDR domain used by the final affine mapping.
                 samples.push_back(gray);
@@ -4381,6 +4836,7 @@ void HwaSimIR::ApplyStage7WeatherInputs(NodePath& node, const IRStage7WeatherSta
 	SetShaderInputCached(node, "u_stage7_sun_direct_scale", LVecBase2f(static_cast<float>(weatherState.sunDirectScale), 0.0f));
 	SetShaderInputCached(node, "u_stage7_sky_diffuse_scale", LVecBase2f(static_cast<float>(weatherState.skyDiffuseScale), 0.0f));
 	SetShaderInputCached(node, "u_stage7_target_contrast_scale", LVecBase2f(static_cast<float>(weatherState.targetContrastScale), 0.0f));
+	SetShaderInputCached(node, "u_stage6_raw_si_domain", LVecBase2i(m_stage6RawSiDomain ? 1 : 0, 0));
 }
 
 void HwaSimIR::InitStage7WeatherScene()
@@ -4782,7 +5238,21 @@ void HwaSimIR::InitStage7VolumetricCloudRenderer()
                 std::cout<<"[WorldCloudAsset] key="<<t.key<<" sha256="<<t.sha256<<" source="<<t.source
                     <<" sourceSha256="<<t.sourceSha<<" cacheFNVVerified=1 build="<<m_cloudAppearance.buildVersion<<std::endl;
             }else assetVoxels=BuildP6CloudDensity(m_p6,templateIndex,size);
-            texture->set_ram_image_as(assetVoxels,"RGBA");
+            const std::size_t expectedBytes = static_cast<std::size_t>(voxelCount) * 4u;
+            if (assetVoxels.size() != expectedBytes)
+            {
+                throw std::runtime_error("Stage7 RGBA density volume has an invalid byte count");
+            }
+            const std::vector<unsigned char> pandaNativeVoxels =
+                IRStage7TextureCompat::RgbaToPandaBgra(assetVoxels);
+            PTA_uchar pandaNativeImage = PTA_uchar::empty_array(pandaNativeVoxels.size());
+            std::copy(pandaNativeVoxels.begin(), pandaNativeVoxels.end(), pandaNativeImage.begin());
+            texture->set_ram_image(pandaNativeImage);
+            std::cout << "[WorldCloudTextureUpload] template=" << templateIndex
+                << " size=" << size << "x" << size << "x" << size
+                << " sourceOrder=RGBA ramOrder=BGRA conversion=cpu_explicit"
+                << " reason=Panda3D_pre_1.10.9_3d_set_ram_image_as_unsupported"
+                << std::endl;
             texture->set_wrap_u(SamplerState::WM_clamp);texture->set_wrap_v(SamplerState::WM_clamp);texture->set_wrap_w(SamplerState::WM_clamp);
             texture->set_minfilter(SamplerState::FT_linear);texture->set_magfilter(SamplerState::FT_linear);
             m_stage7VolumeDensityTextures.push_back(texture);continue;
@@ -5784,11 +6254,15 @@ IREnginePlumeOutput HwaSimIR::UpdateEnginePlumeForTarget(TargetPlatformData& tar
 	}
 
 	const bool validTarget = targetPlat.targetState.targetID >= 0 && targetPlat.targetState.viewValid;
-	const bool coreVisible = targetRenderable && validTarget && output.coreNodeVisible;
-	const bool haloVisible = targetRenderable && validTarget && output.haloNodeVisible;
-	auto applyPlumeLayer = [&](NodePath& node, int layer, bool visible, float tempK, float gray, float opacity, float lengthM,
+	const bool formalPlumeRequested = m_stage6RawSiDomain &&
+		(band == IRBand::ShortWaveInfrared || band == IRBand::MidWaveInfrared);
+	const bool formalPlumeReady = !formalPlumeRequested || cache.formalTauReady;
+	const bool coreVisible = targetRenderable && validTarget && output.coreNodeVisible && formalPlumeReady;
+	const bool haloVisible = targetRenderable && validTarget && output.haloNodeVisible && formalPlumeReady;
+	auto applyPlumeLayer = [&](NodePath& node, int layer, bool visible, float tempK, float gray,
+		float sourceRadianceWm2SrUm, float opacity, float lengthM,
 		float radiusRootM, float radiusTailM, float axialDecay, float radialDecay, float noiseScale, float noiseStrength, float bandGain,
-		float previousTempK, float previousGray, float previousOpacity)
+		float previousTempK, float previousGray, float previousSourceRadianceWm2SrUm, float previousOpacity)
 	{
 		if (node.is_empty())
 		{
@@ -5845,26 +6319,36 @@ IREnginePlumeOutput HwaSimIR::UpdateEnginePlumeForTarget(TargetPlatformData& tar
 			node.set_shader_input("u_plume_band_gain", LVecBase2f(bandGain, 0.0f));
 			node.show();
 		}
+		const float shaderRadiance = formalPlumeRequested
+			? static_cast<float>(cache.formalTau * static_cast<double>(sourceRadianceWm2SrUm))
+			: gray;
+		const float previousShaderRadiance = formalPlumeRequested
+			? static_cast<float>(cache.formalTau * static_cast<double>(previousSourceRadianceWm2SrUm))
+			: previousGray;
 		const bool dynamicChanged = !cache.hasAppliedOutput ||
 			std::fabs(tempK - previousTempK) > 0.25f ||
-			std::fabs(gray - previousGray) > 0.001f ||
+			std::fabs(shaderRadiance - previousShaderRadiance) > 0.001f ||
 			std::fabs(opacity - previousOpacity) > 0.001f;
 		if (becomingVisible || dynamicChanged)
 		{
 			node.set_shader_input("u_plume_temperature_K", LVecBase2f(tempK, 0.0f));
-			node.set_shader_input("u_plume_gray", LVecBase2f(gray, 0.0f));
+			node.set_shader_input("u_plume_gray", LVecBase2f(shaderRadiance, 0.0f));
 			node.set_shader_input("u_plume_opacity", LVecBase2f(opacity, 0.0f));
 		}
 		node.set_shader_input("u_time", LVecBase2f(static_cast<float>(currentTime), 0.0f));
 	};
-	applyPlumeLayer(targetPlat.enginePlumeHaloNodePath, 2, haloVisible, output.haloTempK, output.haloGray, output.haloOpacity,
+	applyPlumeLayer(targetPlat.enginePlumeHaloNodePath, 2, haloVisible, output.haloTempK, output.haloGray,
+		output.haloSourceRadianceWm2SrUm, output.haloOpacity,
 		output.haloLengthM, output.haloRadiusRootM, output.haloRadiusTailM, output.haloAxialDecay, output.haloRadialDecay,
 		output.haloNoiseScale, output.haloNoiseStrength, output.haloBandGain,
-		cache.lastAppliedOutput.haloTempK, cache.lastAppliedOutput.haloGray, cache.lastAppliedOutput.haloOpacity);
-	applyPlumeLayer(targetPlat.enginePlumeCoreNodePath, 1, coreVisible, output.coreTempK, output.coreGray, output.coreOpacity,
+		cache.lastAppliedOutput.haloTempK, cache.lastAppliedOutput.haloGray,
+		cache.lastAppliedOutput.haloSourceRadianceWm2SrUm, cache.lastAppliedOutput.haloOpacity);
+	applyPlumeLayer(targetPlat.enginePlumeCoreNodePath, 1, coreVisible, output.coreTempK, output.coreGray,
+		output.coreSourceRadianceWm2SrUm, output.coreOpacity,
 		output.coreLengthM, output.coreRadiusRootM, output.coreRadiusTailM, output.coreAxialDecay, output.coreRadialDecay,
 		output.coreNoiseScale, output.coreNoiseStrength, output.coreBandGain,
-		cache.lastAppliedOutput.coreTempK, cache.lastAppliedOutput.coreGray, cache.lastAppliedOutput.coreOpacity);
+		cache.lastAppliedOutput.coreTempK, cache.lastAppliedOutput.coreGray,
+		cache.lastAppliedOutput.coreSourceRadianceWm2SrUm, cache.lastAppliedOutput.coreOpacity);
 	cache.lastAppliedOutput = output;
 	cache.hasAppliedOutput = true;
 
@@ -5901,6 +6385,14 @@ IREnginePlumeOutput HwaSimIR::UpdateEnginePlumeForTarget(TargetPlatformData& tar
 			<< " haloTempK=" << output.haloTempK
 			<< " coreGray=" << output.coreGray
 			<< " haloGray=" << output.haloGray
+			<< " coreSourceRadiance=" << output.coreSourceRadianceWm2SrUm
+			<< " haloSourceRadiance=" << output.haloSourceRadianceWm2SrUm
+			<< " coreEmittedRadiance=" << output.coreEmittedRadianceWm2SrUm
+			<< " haloEmittedRadiance=" << output.haloEmittedRadianceWm2SrUm
+			<< " unit=W/(m^2_sr_um)"
+			<< " formalTauReady=" << (cache.formalTauReady ? 1 : 0)
+			<< " formalTau=" << cache.formalTau
+			<< " noLegacyFallback=" << ((formalPlumeRequested && !formalPlumeReady) ? 1 : 0)
 			<< " coreOpacity=" << output.coreOpacity
 			<< " haloOpacity=" << output.haloOpacity
 			<< " coreVisible=" << (coreVisible ? "1" : "0")
@@ -6143,6 +6635,7 @@ void HwaSimIR::UpdateStage7SkyHorizon(const IRRuntimeEnvironment& environment, c
 	{
 		std::string stage6PlannerReason;
 		const bool noOp = IsStage6FinalPostprocessNoop(&stage6PlannerReason);
+		const bool formalSiDomainRequested = IsStage6FormalSiDomainRequested();
 		const bool volumeCompositeRequired = m_stage7VolumeCloudEnabled &&
 			(m_stage7CloudRenderMode == CloudRenderMode::StreamedWorld3D ||
 			 m_stage7CloudRenderMode == CloudRenderMode::Volumetric3D);
@@ -6150,6 +6643,7 @@ void HwaSimIR::UpdateStage7SkyHorizon(const IRRuntimeEnvironment& environment, c
 			m_headlessFastDirectFinal &&
 			m_msaaSamples == 0 &&
 			noOp &&
+			!formalSiDomainRequested &&
 			!volumeCompositeRequired;
 		const std::string plannedPath = directFinal ? "direct_final" : "dual_pass";
 		if (plannedPath != m_stage6RenderPath)
@@ -6167,44 +6661,74 @@ void HwaSimIR::UpdateStage7SkyHorizon(const IRRuntimeEnvironment& environment, c
 
 	double skyGrayBase = 0.62;
 	double groundGrayBase = 0.38;
-	const bool useM1MwirPhysicalEnvironment =
-		environment.band == IRBand::MidWaveInfrared &&
-		m_m1RuntimeEnabled && m_m1MwirRuntimeEnabled && !m_m1CompareOnly;
+	const bool formalSceneRequested = !m_m1CompareOnly && m_m1RuntimeEnabled &&
+		((environment.band == IRBand::ShortWaveInfrared && m_m1SwirRuntimeEnabled) ||
+		 (environment.band == IRBand::MidWaveInfrared && m_m1MwirRuntimeEnabled));
+	const bool formalEnvironmentReady = formalSceneRequested && m_m1EnvironmentLosReady &&
+		m_m1EnvironmentLosBand == environment.band;
+	const double environmentTau = formalEnvironmentReady
+		? ClampStage5Double(m_m1EnvironmentTau, 0.0, 1.0) : 0.0;
+	const double environmentPath = formalEnvironmentReady
+		? std::max(0.0, m_m1EnvironmentPathRadiance) : 0.0;
+	const double environmentDirect = formalEnvironmentReady
+		? std::max(0.0, m_m1EnvironmentDirectSolarIrradiance) : 0.0;
+	const double environmentDiffuse = formalEnvironmentReady
+		? std::max(0.0, m_m1EnvironmentSkyDiffuseIrradiance) : 0.0;
+	const double sunOnHorizontal = m_m1SolarState.valid
+		? ClampStage5Double(m_m1SolarState.up, 0.0, 1.0) : 0.0;
 	switch (environment.band)
 	{
 	case IRBand::Visible:
 	case IRBand::NearInfrared:
-	case IRBand::ShortWaveInfrared:
 		skyGrayBase = 0.70;
 		groundGrayBase = 0.40;
 		break;
-	case IRBand::MidWaveInfrared:
-		if (useM1MwirPhysicalEnvironment)
+	case IRBand::ShortWaveInfrared:
+		if (formalSceneRequested)
 		{
-			const double span = std::max(1.0e-9,
-				m_m1MwirDisplayRadianceMax - m_m1MwirDisplayRadianceMin);
-			const double skyRadiance = m_m1MwirSkyEmissivity *
+			const double skySurface = IRRadianceModelV2::bandAveragePlanckRadianceWm2SrUm(
+				IRBand::ShortWaveInfrared, m_m1SwirSkyEffectiveTempK);
+			const double groundBody = (1.0 - m_m1SwirGroundReflectance) *
+				IRRadianceModelV2::bandAveragePlanckRadianceWm2SrUm(
+					IRBand::ShortWaveInfrared, m_m1SwirGroundEffectiveTempK);
+			const double groundReflection = m_m1SwirGroundReflectance / 3.14159265358979323846 *
+				(environmentDirect * sunOnHorizontal + environmentDiffuse);
+			skyGrayBase = environmentTau * skySurface + environmentPath;
+			groundGrayBase = environmentTau * (groundBody + groundReflection) + environmentPath;
+		}
+		else
+		{
+			skyGrayBase = 0.70;
+			groundGrayBase = 0.40;
+		}
+		break;
+	case IRBand::MidWaveInfrared:
+		if (formalSceneRequested)
+		{
+			const double skySurface = m_m1MwirSkyEmissivity *
 				IRRadianceModelV2::bandAveragePlanckRadianceWm2SrUm(
 					IRBand::MidWaveInfrared, m_m1MwirSkyEffectiveTempK);
-			const double groundRadiance = m_m1MwirGroundEmissivity *
+			const double groundBody = m_m1MwirGroundEmissivity *
 				IRRadianceModelV2::bandAveragePlanckRadianceWm2SrUm(
 					IRBand::MidWaveInfrared, m_m1MwirGroundEffectiveTempK);
-			skyGrayBase = ClampStage5Double(
-				(skyRadiance - m_m1MwirDisplayRadianceMin) / span, 0.0, 1.0);
-			groundGrayBase = ClampStage5Double(
-				(groundRadiance - m_m1MwirDisplayRadianceMin) / span, 0.0, 1.0);
+			const double groundReflection = m_m1MwirGroundReflectance / 3.14159265358979323846 *
+				(environmentDirect * sunOnHorizontal + environmentDiffuse);
+			skyGrayBase = environmentTau * skySurface + environmentPath;
+			groundGrayBase = environmentTau * (groundBody + groundReflection) + environmentPath;
 			if (forceLog)
 			{
 				std::cout << "[M1 MWIR EnvironmentRadiance]"
 					<< " responseMode=RectangularBand"
 					<< " unit=W/(m^2 sr um)"
+					<< " formalEnvironmentReady=" << (formalEnvironmentReady ? 1 : 0)
+					<< " referenceRangeM=" << m_m1EnvironmentReferenceRangeM
+					<< " tau=" << environmentTau
+					<< " pathRadiance=" << environmentPath
 					<< " skyTempK=" << m_m1MwirSkyEffectiveTempK
-					<< " skyRadiance=" << skyRadiance
-					<< " skyGray=" << skyGrayBase
+					<< " skySensorRadiance=" << skyGrayBase
 					<< " groundTempK=" << m_m1MwirGroundEffectiveTempK
-					<< " groundRadiance=" << groundRadiance
-					<< " groundGray=" << groundGrayBase
-					<< " source=config_engineering_proxy"
+					<< " groundSensorRadiance=" << groundGrayBase
+					<< " source=config_material_plus_latest_valid_target_los"
 					<< std::endl;
 			}
 		}
@@ -6241,22 +6765,22 @@ void HwaSimIR::UpdateStage7SkyHorizon(const IRRuntimeEnvironment& environment, c
 	default: terrainFactor = 1.0; break;
 	}
 
-	const double skyGrayRaw = useM1MwirPhysicalEnvironment
-		? skyGrayBase * skyScale
+	const double skyGrayRaw = formalSceneRequested
+		? skyGrayBase
 		: skyGrayBase * skyWeatherFactor * skyScale *
 			m_stage7WeatherState.skyGrayScale * m_stage7WeatherState.skyDiffuseScale;
-	const double groundGrayRaw = useM1MwirPhysicalEnvironment
-		? groundGrayBase * terrainScale
+	const double groundGrayRaw = formalSceneRequested
+		? groundGrayBase
 		: groundGrayBase * terrainFactor * terrainScale * m_stage7WeatherState.groundGrayScale;
-	double skyGray = useM1MwirPhysicalEnvironment
-		? ClampStage5Double(skyGrayRaw, 0.0, 1.0)
+	double skyGray = formalSceneRequested
+		? std::max(0.0, skyGrayRaw)
 		: ClampStage5Double(skyGrayRaw, 0.12, 0.92);
-	double groundGray = useM1MwirPhysicalEnvironment
-		? ClampStage5Double(groundGrayRaw, 0.0, 1.0)
+	double groundGray = formalSceneRequested
+		? std::max(0.0, groundGrayRaw)
 		: ClampStage5Double(groundGrayRaw, 0.18, 0.88);
 	// Fog/contrast is applied exactly once by ApplyStage7WeatherDisplay in the
 	// scene shader.  Repeating the same mix here attenuated sky/ground twice.
-	if (std::fabs(skyGray - groundGray) < 0.03)
+	if (!formalSceneRequested && std::fabs(skyGray - groundGray) < 0.03)
 	{
 		groundGray = ClampStage5Double(groundGray - 0.04, 0.18, 0.88);
 	}
@@ -6268,22 +6792,28 @@ void HwaSimIR::UpdateStage7SkyHorizon(const IRRuntimeEnvironment& environment, c
 	m_stage7WeatherState.cloudBackgroundGray = skyGray;
 	m_stage7WeatherState.cloudGray = Stage7CloudLinearValue(environment.band,
 		m_stage7WeatherState.cloudTemperatureK,m_stage7WeatherState);
-	if (useM1MwirPhysicalEnvironment)
+	if (formalSceneRequested)
 	{
-		const double span = std::max(1.0e-9,
-			m_m1MwirDisplayRadianceMax - m_m1MwirDisplayRadianceMin);
-		const double cloudRadiance = m_m1MwirCloudEmissivity *
+		const bool swir = environment.band == IRBand::ShortWaveInfrared;
+		const double cloudReflectance = swir ? m_m1SwirCloudReflectance : m_m1MwirCloudReflectance;
+		const double cloudEmissivity = swir ? (1.0 - cloudReflectance) : m_m1MwirCloudEmissivity;
+		const double cloudSurfaceRadiance = cloudEmissivity *
 			IRRadianceModelV2::bandAveragePlanckRadianceWm2SrUm(
-				IRBand::MidWaveInfrared, m_stage7WeatherState.cloudTemperatureK);
-		m_stage7WeatherState.cloudGray = ClampStage5Double(
-			(cloudRadiance - m_m1MwirDisplayRadianceMin) / span, 0.0, 1.0);
+				environment.band, m_stage7WeatherState.cloudTemperatureK) +
+			cloudReflectance / 3.14159265358979323846 *
+				(environmentDirect * sunOnHorizontal + environmentDiffuse);
+		const double cloudSensorRadiance = environmentTau * cloudSurfaceRadiance + environmentPath;
+		m_stage7WeatherState.cloudGray = std::max(0.0, cloudSensorRadiance);
 		if (forceLog)
 		{
-			std::cout << "[M1 MWIR CloudRadiance]"
+			std::cout << "[M1 Formal CloudRadiance]"
+				<< " band=" << IRBandName(environment.band)
 				<< " cloudTempK=" << m_stage7WeatherState.cloudTemperatureK
-				<< " emissivity=" << m_m1MwirCloudEmissivity
-				<< " radiance=" << cloudRadiance
-				<< " mappedGray=" << m_stage7WeatherState.cloudGray
+				<< " emissivity=" << cloudEmissivity
+				<< " reflectance=" << cloudReflectance
+				<< " surfaceRadiance=" << cloudSurfaceRadiance
+				<< " sensorRadiance=" << cloudSensorRadiance
+				<< " formalEnvironmentReady=" << (formalEnvironmentReady ? 1 : 0)
 				<< " unit=W/(m^2 sr um) responseMode=RectangularBand"
 				<< std::endl;
 		}
@@ -6971,6 +7501,29 @@ void HwaSimIR::InitPlatformModels()
 		"BM_METAL-STEEL"
 	};
 
+	// P11 civil target uses the protocol's existing reserved type 0x55/Resv1.
+	// This is an additive mapping: the F35/F22/missile identities and assets stay untouched.
+	m_platformResMap[Resv1] = {
+		"Config/TargetLib/p11/civil_van/p11_civil_van.bam",
+		"Config/TargetLib/p11/civil_van/p11_civil_van_visible.ppm",
+		"Config/TargetLib/p11/civil_van/p11_civil_van_material_id.pgm",
+		"Config/TargetLib/p11/civil_van/p11_civil_van_material_id.pgm.xml",
+		"Config/TargetLib/p11/civil_van",
+		"P11-CIVIL-VAN",
+		"BM_PAINT"
+	};
+	// P11A controlled samples use the protocol's existing 0x66/Resv2 slot.
+	// The independent 0x55 civil-van identity and every wire structure remain unchanged.
+	m_platformResMap[Resv2] = {
+		"Config/TargetLib/p11/controlled_samples/p11_controlled_samples.bam",
+		"Config/TargetLib/p11/controlled_samples/p11_controlled_samples_visible.ppm",
+		"Config/TargetLib/p11/controlled_samples/p11_controlled_samples_material_id.pgm",
+		"Config/TargetLib/p11/controlled_samples/p11_controlled_samples_material_id.pgm.xml",
+		"Config/TargetLib/p11/controlled_samples",
+		"P11-CONTROLLED-SAMPLES",
+		"BM_PAINT"
+	};
+
 	std::cout << "平台模型路径初始化完成，共加载" << m_platformResMap.size() << "种平台资源" << std::endl;
 
 	if (IsHeadlessOffscreenMode())
@@ -7563,7 +8116,8 @@ NodePath HwaSimIR::LoadPlatformAssetNode(PLATFORM_TYPE type, const PlatformResPa
 	}
 	LPoint3 modelBoundsMin;
 	LPoint3 modelBoundsMax;
-	if (modelNode.calc_tight_bounds(modelBoundsMin, modelBoundsMax))
+	const bool modelBoundsReady = modelNode.calc_tight_bounds(modelBoundsMin, modelBoundsMax);
+	if (modelBoundsReady)
 	{
 		std::cout << "[PlatformModelBounds]"
 			<< " platform=" << res.displayName
@@ -7590,6 +8144,21 @@ NodePath HwaSimIR::LoadPlatformAssetNode(PLATFORM_TYPE type, const PlatformResPa
 
 	// 先挂红外 shader，再绑定材质 ID 纹理和材质参数数组，确保 shader input 已声明可用。
 	ApplyInfraredShader(modelNode, false);
+	if (modelBoundsReady)
+	{
+		const LPoint3 center(
+			(modelBoundsMin.get_x() + modelBoundsMax.get_x()) * 0.5f,
+			(modelBoundsMin.get_y() + modelBoundsMax.get_y()) * 0.5f,
+			(modelBoundsMin.get_z() + modelBoundsMax.get_z()) * 0.5f);
+		const LVecBase3f halfExtent(
+			std::max(0.001f, (modelBoundsMax.get_x() - modelBoundsMin.get_x()) * 0.5f),
+			std::max(0.001f, (modelBoundsMax.get_y() - modelBoundsMin.get_y()) * 0.5f),
+			std::max(0.001f, (modelBoundsMax.get_z() - modelBoundsMin.get_z()) * 0.5f));
+		modelNode.set_shader_input("u_stage5_aero_bounds_center", LVecBase3f(
+			center.get_x(), center.get_y(), center.get_z()));
+		modelNode.set_shader_input("u_stage5_aero_bounds_half_extent", halfExtent);
+		modelNode.set_shader_input("u_stage5_aero_forward_local", LVecBase3f(0.0f, 1.0f, 0.0f));
+	}
 	const IRSceneMaterialBinding l1Binding = m_irSceneMaterialMapper.bindPlatformNode(modelNode, res,
 		m_irMaterialDatabase, m_l1MaterialBandOptics, m_l1DefaultEffectiveThicknessM);
 	m_l1MaterialBindingsByType[static_cast<int>(type)] = l1Binding;
@@ -8084,6 +8653,91 @@ void HwaSimIR::ProcessAddRemoveTargetPlatform()
 
 			std::cout << "TargetState平台生成成功：类型=" << platType << " 目标ID=" << newTargetPlat.platID << std::endl;
 		}
+		// P11 civil target is provisioned only when the existing Resv1 capacity
+		// field is explicitly non-zero.  Normal F35/F22/missile startup is unchanged.
+		const int p11CivilTargetCount = std::max(0, std::min(m_initSceneData.MissileMaxCountResv1, 5));
+		for (int i = 0; i < p11CivilTargetCount; ++i)
+		{
+			const PLATFORM_TYPE platType = TargetTypeToPlatformType(0x55);
+			const std::map<PLATFORM_TYPE, PlatformResPath>::const_iterator resIter = m_platformResMap.find(platType);
+			if (platType == NONE || resIter == m_platformResMap.end())
+			{
+				std::cerr << "P11民用目标资源未配置：targetType=0x55" << std::endl;
+				continue;
+			}
+
+			NodePath modelNode = LoadPlatformAssetNode(platType, resIter->second);
+			if (modelNode.is_empty()) continue;
+
+			TargetPlatformData newTargetPlat;
+			newTargetPlat.type = platType;
+			newTargetPlat.platID = -1;
+			newTargetPlat.targetState.targetType = 0x55;
+			newTargetPlat.targetState.targetPlatID = -1;
+			newTargetPlat.targetState.targetID = -1;
+			newTargetPlat.targetState.engineState = false;
+			newTargetPlat.targetState.viewValid = false;
+			newTargetPlat.targetState.targetLoc.lat = 0.0;
+			newTargetPlat.targetState.targetLoc.lon = 0.0;
+			newTargetPlat.targetState.targetLoc.alt = 0.0;
+			newTargetPlat.targetState.targetLoc.yaw = 0.0;
+			newTargetPlat.targetState.targetLoc.pitch = 0.0;
+			newTargetPlat.targetState.targetLoc.roll = 0.0;
+			newTargetPlat.targetState.targetState = 0x01;
+			newTargetPlat.isExist = true;
+			newTargetPlat.nodePath = modelNode;
+			CreateEnginePlumeForTarget(newTargetPlat);
+			modelNode.set_pos(0.0, 0.0, 0.0);
+			modelNode.set_hpr(0.0, 0.0, 0.0);
+			m_targetPlatformList.push_back(newTargetPlat);
+			modelNode.hide();
+
+			std::cout << "[P11 CivilTargetPool] targetType=0x55 platform=Resv1 slot=" << i
+				<< " model=" << resIter->second.modelPath << " protocolLayoutUnchanged=1" << std::endl;
+		}
+
+		// P11A controlled samples are provisioned only through the existing Resv2
+		// count.  A normal run leaves this field at zero and allocates no rack.
+		const int p11ControlledSampleCount = std::max(0, std::min(m_initSceneData.MissileMaxCountResv2, 5));
+		for (int i = 0; i < p11ControlledSampleCount; ++i)
+		{
+			const PLATFORM_TYPE platType = TargetTypeToPlatformType(0x66);
+			const std::map<PLATFORM_TYPE, PlatformResPath>::const_iterator resIter = m_platformResMap.find(platType);
+			if (platType == NONE || resIter == m_platformResMap.end())
+			{
+				std::cerr << "P11受控样片资源未配置：targetType=0x66" << std::endl;
+				continue;
+			}
+
+			NodePath modelNode = LoadPlatformAssetNode(platType, resIter->second);
+			if (modelNode.is_empty()) continue;
+
+			TargetPlatformData newTargetPlat;
+			newTargetPlat.type = platType;
+			newTargetPlat.platID = -1;
+			newTargetPlat.targetState.targetType = 0x66;
+			newTargetPlat.targetState.targetPlatID = -1;
+			newTargetPlat.targetState.targetID = -1;
+			newTargetPlat.targetState.engineState = false;
+			newTargetPlat.targetState.viewValid = false;
+			newTargetPlat.targetState.targetLoc.lat = 0.0;
+			newTargetPlat.targetState.targetLoc.lon = 0.0;
+			newTargetPlat.targetState.targetLoc.alt = 0.0;
+			newTargetPlat.targetState.targetLoc.yaw = 0.0;
+			newTargetPlat.targetState.targetLoc.pitch = 0.0;
+			newTargetPlat.targetState.targetLoc.roll = 0.0;
+			newTargetPlat.targetState.targetState = 0x01;
+			newTargetPlat.isExist = true;
+			newTargetPlat.nodePath = modelNode;
+			CreateEnginePlumeForTarget(newTargetPlat);
+			modelNode.set_pos(0.0, 0.0, 0.0);
+			modelNode.set_hpr(0.0, 0.0, 0.0);
+			m_targetPlatformList.push_back(newTargetPlat);
+			modelNode.hide();
+
+			std::cout << "[P11 ControlledSamplePool] targetType=0x66 platform=Resv2 slot=" << i
+				<< " model=" << resIter->second.modelPath << " protocolLayoutUnchanged=1" << std::endl;
+		}
 	}
 	else
 	{
@@ -8251,7 +8905,11 @@ void HwaSimIR::LoadRenderControlConfig()
 			<< " fallback=OrderedQueue" << std::endl;
 		m_asyncInputPolicy = "OrderedQueue";
 	}
-	m_asyncInputQueueMaxFrames = std::max(1, std::min(256, m_runtimeConfig.getInt(
+	// A formal 60 Hz / 60 s DDS run can deliver 3600 samples.  Keep the renderer
+	// queue bounded, but allow one complete formal round plus margin so the DDS
+	// reader does not stall behind slow frames.  Strict FIFO/no-overwrite semantics
+	// remain unchanged and STOP still waits for the accepted round to drain.
+	m_asyncInputQueueMaxFrames = std::max(1, std::min(4096, m_runtimeConfig.getInt(
 		"RenderControl", "AsyncInputQueueMaxFrames", "AsyncInputQueueMaxFrames", 16)));
 	m_asyncInputBackpressureMaxWaitMs = std::max(1, std::min(5000, m_runtimeConfig.getInt(
 		"RenderControl", "AsyncInputBackpressureMaxWaitMs", "AsyncInputBackpressureMaxWaitMs", 250)));
@@ -8776,7 +9434,12 @@ bool HwaSimIR::InitTcpThread()
 
 	m_pTcpThread = new TcpCommThread(
 		this, m_tcpServerIp, m_tcpServerPort, m_channel, m_localPlatID, m_localSensorID);
-	m_pTcpThread->setSyncMode(m_bSyncRenderMode.load());
+	// TcpCommThread's sync flag is its no-overwrite/output-ordering policy.
+	// Asynchronous OrderedQueue is still input driven and must preserve every
+	// accepted frame through encode/send; only Latest may replace queued output.
+	const bool orderedOutput =
+		m_bSyncRenderMode.load() || m_asyncInputPolicy == "OrderedQueue";
+	m_pTcpThread->setSyncMode(orderedOutput);
 	m_pTcpThread->setFlipVertical(m_stage6FlipInTcpThread);
 #ifdef __linux__
     m_pTcpThread->setWorkerCpuList(m_runtimeConfig.getString("VideoOutput","WorkerCpuList","HwaSimIRVideoOutputCpuList","",nullptr));
@@ -8833,8 +9496,17 @@ void HwaSimIR::ProcessPendingNetworkCommands()
 					for(auto deferred=pendingCommands.end();deferred!=it;){--deferred;m_pendingNetworkCommands.push_front(*deferred);}
 					break;
 				}
+				const bool firstStopExecutionTransfer=it->controlExecuteNs==0;
 				it->controlExecuteNs=it->stopOperation->executeNs;
 				it->stopQuietRequiredNs=it->stopOperation->quietRequiredNs;
+				if(firstStopExecutionTransfer&&it->controlReceiveNs>0){
+					std::cout<<"[ControlResponseV3] command="<<it->controlCmd.simCommand
+						<<" round="<<it->controlCmd.currentRound
+						<<" receiveNs="<<it->controlReceiveNs
+						<<" executeNs="<<it->controlExecuteNs
+						<<" responseMs="<<(it->controlExecuteNs-it->controlReceiveNs)/1.e6
+						<<" clock=steady resolutionFloorNs=1000 executor=control_service"<<std::endl;
+				}
 			}
 #endif
 			// Begin the control business once. STOP now enters its draining phase
@@ -9067,6 +9739,8 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		m_currentFrameTelemetry = IRFrameTelemetry();
 		m_latestUdpSourceSeq.store(0);
 		m_lastCapturedSourceSeq = 0;
+		m_stage6LinearReadbackSourceSeq = 0;
+		m_stage6LinearCaptureCompletedSourceSeq = 0;
     m_cloudRenderCallCount=0;m_cloudRenderCallSumMs=0.0;m_cloudRenderCallMaxMs=0.0;
 		m_lastOutputSourceSeq.store(0);
 		m_lastSourceSeqContinuous.store(true);
@@ -9171,6 +9845,8 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		m_lastIrUpdateState.clear();
 		m_currentFrameTelemetry = IRFrameTelemetry();
 		m_lastCapturedSourceSeq = 0;
+		m_stage6LinearReadbackSourceSeq = 0;
+		m_stage6LinearCaptureCompletedSourceSeq = 0;
     m_cloudRenderCallCount=0;m_cloudRenderCallSumMs=0.0;m_cloudRenderCallMaxMs=0.0;
 		m_lastOutputSourceSeq.store(0);
 		m_lastSourceSeqContinuous.store(true);
@@ -9192,16 +9868,27 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		std::cout << "仿真开始：当前回合=" << m_currentRound << std::endl;
 		break;
 	case 3: // 停止
+	{
 		std::cout<<"[ControlStopPhase] phase=finalizing beginNs="<<executeNs
 			<<" drainWaitMs="<<(IRPerfStats::steadyTimeNs()-executeNs)/1.e6<<std::endl;
 		std::cout << "执行停止仿真逻辑..." << std::endl;
 		// TODO: 实现停止仿真逻辑（停止渲染、保存数据等）
 		m_isSimRunning.store(false);
 		// Stage2B：同步转发停止控制命令，触发显示端 flush 并关闭视频/数据/标注文件。
+		bool outputDrainOk = true;
+		bool stopForwardOk = true;
 		if (m_pTcpThread) {
-			m_pTcpThread->stopOutputRound("stop");
-			m_pTcpThread->sendControlCmd(cmd);
+			outputDrainOk = m_pTcpThread->stopOutputRound("stop");
+			// Even a failed bounded drain must forward STOP so the receiver can
+			// close its container.  outputDrainOk remains an independent hard
+			// acceptance signal and must not be hidden by a successful forward.
+			stopForwardOk = m_pTcpThread->sendControlCmd(cmd);
 		}
+		std::cout << "[ControlStopResult] outputDrainOk=" << (outputDrainOk ? 1 : 0)
+			<< " stopForwardOk=" << (stopForwardOk ? 1 : 0)
+			<< " acceptance=" << (outputDrainOk && stopForwardOk ? "pass" : "fail")
+			<< " stopTotalMs=" << (IRPerfStats::steadyTimeNs() - executeNs) / 1.e6
+			<< std::endl;
         HwaInputAuditV1::flushAll();
 		std::cout << "[SyncRoundConservation]"
 			<< " mode=" << (m_bSyncRenderMode.load() ? "sync" : "async")
@@ -9232,6 +9919,7 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 			}
 		}
 		break;
+	}
 	default:
 		std::cerr << "未知的仿真指令：" << cmd.simCommand << std::endl;
 		break;
@@ -9291,7 +9979,21 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 		std::cerr<<"[SensorProfileRequest][ERROR] requestedProtocolBand="<<sensor.trackerSensorBand
 			<<" effectiveBand=unavailable action=reject_init no_band_substitution=1 reason="
 			<<m_irSensorProfiles.profileForProtocolBand(sensor.trackerSensorBand).loadError
-			<<" supportedProductionBands=NIR,MWIR"<<std::endl;
+			<<" supportedProductionBands=SWIR,NIR,MWIR"<<std::endl;
+		return;
+	}
+	const IRBand requestedProductionBand = IRBandFromProtocol(sensor.trackerSensorBand);
+	if ((requestedProductionBand == IRBand::ShortWaveInfrared ||
+		 requestedProductionBand == IRBand::NearInfrared ||
+		 requestedProductionBand == IRBand::MidWaveInfrared) &&
+		!m_stage5ModtranRadianceLut.hasBand(requestedProductionBand))
+	{
+		m_sensorProfileRequestValid = false;
+		m_isSimRunning.store(false);
+		std::cerr << "[SensorProfileRequest][ERROR] requestedProtocolBand=" << sensor.trackerSensorBand
+			<< " effectiveBand=unavailable action=reject_init no_band_substitution=1"
+			<< " reason=formal_atmosphere_band_missing band=" << IRBandName(requestedProductionBand)
+			<< " lut=" << m_stage5ModtranRadiancePath << std::endl;
 		return;
 	}
 	m_sensorProfileRequestValid=true;
@@ -9328,6 +10030,8 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 	m_currentFrameTelemetry = IRFrameTelemetry();
 	m_latestUdpSourceSeq.store(0);
 	m_lastCapturedSourceSeq = 0;
+	m_stage6LinearReadbackSourceSeq = 0;
+	m_stage6LinearCaptureCompletedSourceSeq = 0;
     m_cloudRenderCallCount=0;m_cloudRenderCallSumMs=0.0;m_cloudRenderCallMaxMs=0.0;
 	m_headlessReadbackFrameCounter = 0;
 	m_headlessReadbackDiagLogCounter = 0;
@@ -9842,8 +10546,17 @@ void HwaSimIR::InitInfraredSimulation()
 	m_m1CompareOnly = m_runtimeConfig.getBool("M1NirMwirPhysics", "CompareOnly", "M1CompareOnly", false, nullptr);
 	m_m1RuntimeEnabled = m_runtimeConfig.getBool("M1NirMwirPhysics", "EnableRuntime", "M1EnableRuntime", false, nullptr);
 	m_m1NirRuntimeEnabled = m_runtimeConfig.getBool("M1NirMwirPhysics", "EnableNIRRuntime", "M1EnableNIRRuntime", false, nullptr);
+	m_m1SwirRuntimeEnabled = m_runtimeConfig.getBool("M1NirMwirPhysics", "EnableSWIRRuntime", "M1EnableSWIRRuntime", false, nullptr);
 	m_m1MwirRuntimeEnabled = m_runtimeConfig.getBool("M1NirMwirPhysics", "EnableMWIRRuntime", "M1EnableMWIRRuntime", false, nullptr);
 	m_m1FallbackUtcDate = m_runtimeConfig.getString("M1NirMwirPhysics", "FallbackUtcDate", "M1FallbackUtcDate", "2026-09-06", nullptr);
+	m_m1SolarOverrideEnabled = m_runtimeConfig.getBool("M1NirMwirPhysics", "SolarOverrideEnable", "M1SolarOverrideEnable", false, nullptr);
+	m_m1SolarOverrideAzimuthDeg = m_runtimeConfig.getDouble("M1NirMwirPhysics", "SolarOverrideAzimuthDeg", "M1SolarOverrideAzimuthDeg", 180.0, nullptr);
+	m_m1SolarOverrideElevationDeg = m_runtimeConfig.getDouble("M1NirMwirPhysics", "SolarOverrideElevationDeg", "M1SolarOverrideElevationDeg", 45.0, nullptr);
+	if (!std::isfinite(m_m1SolarOverrideAzimuthDeg) || m_m1SolarOverrideAzimuthDeg < 0.0 || m_m1SolarOverrideAzimuthDeg >= 360.0 ||
+		!std::isfinite(m_m1SolarOverrideElevationDeg) || m_m1SolarOverrideElevationDeg < -90.0 || m_m1SolarOverrideElevationDeg > 90.0)
+	{
+		throw std::runtime_error("M1 controlled solar override is outside azimuth/elevation bounds");
+	}
 	m_m1AtmosphereModel = m_runtimeConfig.getString("M1NirMwirPhysics", "AtmosphereModel", "M1AtmosphereModel", "Mid-Latitude Summer", nullptr);
 	m_m1AerosolModel = m_runtimeConfig.getString("M1NirMwirPhysics", "AerosolModel", "M1AerosolModel", "Rural", nullptr);
 	m_m1HumidityProfile = m_runtimeConfig.getString("M1NirMwirPhysics", "HumidityProfile", "M1HumidityProfile", "default", nullptr);
@@ -11105,10 +11818,14 @@ void HwaSimIR::InitInfraredSimulation()
 		"M1RadianceDisplay", "NIRRadianceMinWm2SrUm", "M1NIRRadianceMinWm2SrUm", 0.0, nullptr));
 	m_m1NirDisplayRadianceMax = m_runtimeConfig.getDouble(
 		"M1RadianceDisplay", "NIRRadianceMaxWm2SrUm", "M1NIRRadianceMaxWm2SrUm", 350.0, nullptr);
+	m_m1SwirDisplayRadianceMin = std::max(0.0, m_runtimeConfig.getDouble(
+		"M1RadianceDisplay", "SWIRRadianceMinWm2SrUm", "M1SWIRRadianceMinWm2SrUm", 0.0, nullptr));
+	m_m1SwirDisplayRadianceMax = m_runtimeConfig.getDouble(
+		"M1RadianceDisplay", "SWIRRadianceMaxWm2SrUm", "M1SWIRRadianceMaxWm2SrUm", 40.0, nullptr);
 	m_m1MwirDisplayRadianceMin = std::max(0.0, m_runtimeConfig.getDouble(
 		"M1RadianceDisplay", "MWIRRadianceMinWm2SrUm", "M1MWIRRadianceMinWm2SrUm", 0.0, nullptr));
 	m_m1MwirDisplayRadianceMax = m_runtimeConfig.getDouble(
-		"M1RadianceDisplay", "MWIRRadianceMaxWm2SrUm", "M1MWIRRadianceMaxWm2SrUm", 2.5, nullptr);
+		"M1RadianceDisplay", "MWIRRadianceMaxWm2SrUm", "M1MWIRRadianceMaxWm2SrUm", 64.0, nullptr);
 	m_m1MwirSkyEffectiveTempK = ClampStage5Double(m_runtimeConfig.getDouble(
 		"M1RadianceDisplay", "MWIRSkyEffectiveTempK", "M1MWIRSkyEffectiveTempK", 255.0, nullptr), 180.0, 330.0);
 	m_m1MwirSkyEmissivity = ClampStage5Double(m_runtimeConfig.getDouble(
@@ -11119,6 +11836,18 @@ void HwaSimIR::InitInfraredSimulation()
 		"M1RadianceDisplay", "MWIRGroundEmissivity", "M1MWIRGroundEmissivity", 0.95, nullptr), 0.0, 1.0);
 	m_m1MwirCloudEmissivity = ClampStage5Double(m_runtimeConfig.getDouble(
 		"M1RadianceDisplay", "MWIRCloudEmissivity", "M1MWIRCloudEmissivity", 0.98, nullptr), 0.0, 1.0);
+	m_m1SwirSkyEffectiveTempK = ClampStage5Double(m_runtimeConfig.getDouble(
+		"M1RadianceDisplay", "SWIRSkyEffectiveTempK", "M1SWIRSkyEffectiveTempK", 250.0, nullptr), 180.0, 330.0);
+	m_m1SwirGroundEffectiveTempK = ClampStage5Double(m_runtimeConfig.getDouble(
+		"M1RadianceDisplay", "SWIRGroundEffectiveTempK", "M1SWIRGroundEffectiveTempK", 288.0, nullptr), 180.0, 360.0);
+	m_m1SwirGroundReflectance = ClampStage5Double(m_runtimeConfig.getDouble(
+		"M1RadianceDisplay", "SWIRGroundReflectance", "M1SWIRGroundReflectance", 0.28, nullptr), 0.0, 1.0);
+	m_m1SwirCloudReflectance = ClampStage5Double(m_runtimeConfig.getDouble(
+		"M1RadianceDisplay", "SWIRCloudReflectance", "M1SWIRCloudReflectance", 0.55, nullptr), 0.0, 1.0);
+	m_m1MwirGroundReflectance = ClampStage5Double(m_runtimeConfig.getDouble(
+		"M1RadianceDisplay", "MWIRGroundReflectance", "M1MWIRGroundReflectance", 0.05, nullptr), 0.0, 1.0);
+	m_m1MwirCloudReflectance = ClampStage5Double(m_runtimeConfig.getDouble(
+		"M1RadianceDisplay", "MWIRCloudReflectance", "M1MWIRCloudReflectance", 0.02, nullptr), 0.0, 1.0);
 	if (!std::isfinite(m_m1NirDisplayRadianceMax) ||
 		m_m1NirDisplayRadianceMax <= m_m1NirDisplayRadianceMin + 1.0e-9)
 	{
@@ -11131,10 +11860,18 @@ void HwaSimIR::InitInfraredSimulation()
 		m_m1MwirDisplayRadianceMax = m_m1MwirDisplayRadianceMin + 2.5;
 		std::cerr << "[M1 RadianceDisplay][WARN] band=MWIR fallbackReason=invalid_public_range" << std::endl;
 	}
+	if (!std::isfinite(m_m1SwirDisplayRadianceMax) ||
+		m_m1SwirDisplayRadianceMax <= m_m1SwirDisplayRadianceMin + 1.0e-9)
+	{
+		m_m1SwirDisplayRadianceMax = m_m1SwirDisplayRadianceMin + 1200.0;
+		std::cerr << "[M1 RadianceDisplay][WARN] band=SWIR fallbackReason=invalid_public_range" << std::endl;
+	}
 	std::cout << "[M1 RadianceDisplay] mode=scene_wide_physical_window"
 		<< " unit=W/(m^2 sr um)"
 		<< " NIRMin=" << m_m1NirDisplayRadianceMin
 		<< " NIRMax=" << m_m1NirDisplayRadianceMax
+		<< " SWIRMin=" << m_m1SwirDisplayRadianceMin
+		<< " SWIRMax=" << m_m1SwirDisplayRadianceMax
 		<< " MWIRMin=" << m_m1MwirDisplayRadianceMin
 		<< " MWIRMax=" << m_m1MwirDisplayRadianceMax
 		<< " MWIRSkyTempK=" << m_m1MwirSkyEffectiveTempK
@@ -11209,7 +11946,19 @@ void HwaSimIR::InitInfraredSimulation()
 			"Stage5AeroApplyOnlyBand",
 			"MWIR",
 			&stage5AeroApplyOnlyBandSource);
-		m_stage5AeroApplyOnlyBand = ParseStage5ModtranPathRuntimeBand(aeroBandText, m_stage5AeroApplyOnlyBandName);
+		const std::string aeroBandLower = ToLowerAscii(aeroBandText);
+		m_stage5AeroApplyAllFormalBands =
+			aeroBandLower == "swir_mwir" || aeroBandLower == "swir+mwir" ||
+			aeroBandLower == "formal_ir" || aeroBandLower == "ir";
+		if (m_stage5AeroApplyAllFormalBands)
+		{
+			m_stage5AeroApplyOnlyBandName = "SWIR_MWIR";
+		}
+		else
+		{
+			m_stage5AeroApplyOnlyBand = ParseStage5ModtranPathRuntimeBand(
+				aeroBandText, m_stage5AeroApplyOnlyBandName);
+		}
 	}
 	m_enableStage5ModtranRadianceDebug = m_runtimeConfig.getBool(
 		"Stage5ModtranRadiance",
@@ -11341,20 +12090,30 @@ void HwaSimIR::InitInfraredSimulation()
 		goldenQuery.band = IRBand::MidWaveInfrared;
 		goldenQuery.atmosphereModel = m_m1AtmosphereModel;
 		goldenQuery.aerosolModel = m_m1AerosolModel;
-		goldenQuery.humidityProfile = m_m1HumidityProfile;
-		goldenQuery.observerAltKm = 10.0;
-		goldenQuery.targetAltKm = 5.0;
-		goldenQuery.rangeKm = 10.0;
+		// Keep the loader self-check tied to a complete five-component P11 cell.
+		// The previous 10/5/10 km legacy cell had blank solar/sky/scattering
+		// columns and therefore correctly stopped being loadable once the formal
+		// chain began rejecting missing components.
+		goldenQuery.humidityProfile = "default";
+		goldenQuery.observerAltKm = 0.001;
+		goldenQuery.targetAltKm = 0.001;
+		goldenQuery.rangeKm = 0.1;
 		goldenQuery.visibilityKm = 23.0;
 		goldenQuery.solarZenithDeg = 45.0;
 		const IRModtranRadianceResult golden = m_stage5ModtranRadianceLut.query(goldenQuery);
-		const bool goldenPass = golden.valid && std::abs(golden.tauUp - 0.666728313) <= 1.0e-9 &&
-			std::abs(golden.pathThermalWm2SrUm - 0.0360989067) <= 1.0e-10;
+		const bool goldenPass = golden.valid && std::abs(golden.tauUp - 0.797640295903) <= 1.0e-9 &&
+			std::abs(golden.pathThermalWm2SrUm - 0.163640323465) <= 1.0e-9 &&
+			golden.directSolarIrradianceWm2Um > 0.0 &&
+			golden.downwardSkyDiffuseIrradianceWm2Um > 0.0 &&
+			golden.pathScatteringRadianceWm2SrUm > 0.0;
 		std::cout << "[M1 ModtranSiSelfCheck] status=" << (goldenPass ? "PASS" : "FAIL")
 			<< " rows=" << m_stage5ModtranRadianceLut.entryCount()
-			<< " tau=" << golden.tauUp << " tauAbsError=" << std::abs(golden.tauUp - 0.666728313)
+			<< " tau=" << golden.tauUp << " tauAbsError=" << std::abs(golden.tauUp - 0.797640295903)
 			<< " pathThermal=" << golden.pathThermalWm2SrUm
-			<< " pathAbsError=" << std::abs(golden.pathThermalWm2SrUm - 0.0360989067)
+			<< " pathAbsError=" << std::abs(golden.pathThermalWm2SrUm - 0.163640323465)
+			<< " directSolar=" << golden.directSolarIrradianceWm2Um
+			<< " skyDiffuse=" << golden.downwardSkyDiffuseIrradianceWm2Um
+			<< " pathScattering=" << golden.pathScatteringRadianceWm2SrUm
 			<< " unit=" << golden.radianceUnit << " responseMode=" << golden.responseMode << std::endl;
 		if (!goldenPass)
 		{
@@ -11376,6 +12135,7 @@ void HwaSimIR::InitInfraredSimulation()
 	std::cout << "[M1 PhysicsConfig] CompareOnly=" << (m_m1CompareOnly ? 1 : 0)
 		<< " EnableRuntime=" << (m_m1RuntimeEnabled ? 1 : 0)
 		<< " EnableNIRRuntime=" << (m_m1NirRuntimeEnabled ? 1 : 0)
+		<< " EnableSWIRRuntime=" << (m_m1SwirRuntimeEnabled ? 1 : 0)
 		<< " EnableMWIRRuntime=" << (m_m1MwirRuntimeEnabled ? 1 : 0)
 		<< " productionOutput=" << (m_m1RuntimeEnabled && !m_m1CompareOnly ? "M1_requested" : "legacy")
 		<< " responseMode=RectangularBand"
@@ -11389,8 +12149,9 @@ void HwaSimIR::InitInfraredSimulation()
 		std::cout << "[Stage5 ModtranRadianceConfig][WARN]"
 			<< " UseModtranSkyRuntime=" << (m_stage5UseModtranSkyRuntime ? "1" : "0")
 			<< " UseModtranSolarRuntime=" << (m_stage5UseModtranSolarRuntime ? "1" : "0")
-			<< " effective=log_only"
-			<< " reason=Stage3B_does_not_apply_sky_or_solar_to_final_image"
+			<< " scope=legacy_stage5_debug_flags effective=log_only"
+			<< " formalM1Unaffected=1"
+			<< " formalM1Gate=EnableRuntime+bandEnable+validFiveComponentLut"
 			<< std::endl;
 	}
 	m_stage5DebugConfig = m_stage5DebugConfigs[Stage5BandIndex(IRBand::MidWaveInfrared)];
@@ -11768,7 +12529,7 @@ void HwaSimIR::InitInfraredSimulation()
 		<< "/" << stage5SensorInputDisplayOffsetSource << "/" << stage5SensorInputDisplayClampMinSource
 		<< "/" << stage5SensorInputDisplayClampMaxSource << "/" << stage5SensorInputDisplayGammaSource
 		<< "/" << stage5SensorInputDisplayBandSource
-		<< "（DebugView Off 时主画面保持legacy输出；path/sky/solar MODTRAN runtime disabled）"
+		<< " legacyDebugFlagsDoNotGateFormalM1=1"
 		<< std::endl;
 	std::cout << "[Stage5 AeroThermalConfig]"
 		<< " EnableAeroThermalModel=" << (m_stage5AeroThermalEnabled ? "1" : "0")
@@ -11800,7 +12561,7 @@ void HwaSimIR::InitInfraredSimulation()
 		<< "/" << stage5AeroDeltaMaxSource
 		<< "/" << stage5AeroApplyScaleSource << "/" << stage5AeroApplyClampBodyDeltaSource
 		<< "/" << stage5AeroApplyOnlyBandSource
-		<< "（Stage4B: default computes components only; ApplyAeroToRadiance=false keeps production image unchanged）"
+		<< " distribution=gpu_local_bounds_normalized wholeBodyHeating=forbidden"
 		<< std::endl;
 	std::cout << "[Stage5 ModtranRadianceConfig]"
 		<< " EnableModtranRadianceDebug=" << (m_enableStage5ModtranRadianceDebug ? "1" : "0")
@@ -12192,7 +12953,11 @@ void HwaSimIR::InitInfraredShader() {
     uniform int u_material_param_count;
     uniform float u_material_ids[8];
     uniform vec4 u_material_params[8];
-	uniform vec4 u_material_band_reflectance[8]; // x=NIR, y=MWIR; formal band optics/fallback only
+	uniform vec4 u_material_band_reflectance[8]; // x=NIR, y=MWIR, z=SWIR
+	uniform vec4 u_material_band_emissivity[8];  // x=NIR compat, y=MWIR, z=SWIR, w=LWIR compat
+	uniform vec4 u_material_band_transmissivity[8]; // x=NIR opaque, y=MWIR, z=SWIR, w=LWIR opaque
+	uniform int u_material_transmission_composite_en; // only on independently tagged/sorted geometry
+	uniform vec4 u_material_temperature_K[8];    // x=nominal, y=engine-on; <=0 uses platform runtime
 	uniform vec4 u_l1_solar_delta_pos_K[8];      // +X,+Y,+Z directional temperature history
 	uniform vec4 u_l1_solar_delta_neg_K[8];      // -X,-Y,-Z directional temperature history
 	uniform int u_l1_solar_thermal_en;
@@ -12220,6 +12985,7 @@ void HwaSimIR::InitInfraredShader() {
 	uniform float u_m1_sun_visibility;
 	uniform float u_m1_sky_visibility;
 	uniform vec3 u_m1_sun_direction_world;
+	uniform int u_m1_raw_si_output;
 	uniform float u_m1_display_scale;
 	uniform float u_m1_display_offset;
 	uniform float u_m1_display_gamma;
@@ -12236,7 +13002,7 @@ void HwaSimIR::InitInfraredShader() {
 	uniform float u_l2_active_tau_inbound;
 	uniform float u_l2_active_visibility;
 	uniform float u_l2_active_overlap_width_um;
-	uniform float u_l2_active_center_sensor_radiance;
+	uniform float u_l2_active_unshaped_sensor_radiance;
     uniform float u_body_radiance_scale;
     uniform float u_stage5_body_gray;
     uniform float u_stage5_reflected_radiance;
@@ -12256,6 +13022,14 @@ void HwaSimIR::InitInfraredShader() {
     uniform float u_stage5_composite_min_gray;
     uniform float u_stage5_composite_max_gray;
     uniform int u_stage5_display_fallback_applied;
+	uniform int u_target_engine_state;
+	uniform int u_stage5_aero_local_en;
+	uniform float u_stage5_aero_nose_delta_K;
+	uniform float u_stage5_aero_edge_delta_K;
+	uniform float u_stage5_aero_rear_delta_K;
+	uniform vec3 u_stage5_aero_bounds_center;
+	uniform vec3 u_stage5_aero_bounds_half_extent;
+	uniform vec3 u_stage5_aero_forward_local;
     uniform int u_stage6_display_en;
     uniform int u_stage6_white_hot;
     uniform float u_stage6_display_gain;
@@ -12263,6 +13037,7 @@ void HwaSimIR::InitInfraredShader() {
     uniform int u_stage6_noise_enable;
     uniform float u_stage6_noise_sigma_norm;
     uniform int u_stage6_background_display_en;
+	uniform int u_stage6_raw_si_domain;
     uniform int u_stage7_sky_horizon_en;
     uniform vec2 u_game_world_haze;
     uniform int u_stage7_background_kind; // 0 legacy, 1 3D sky dome, 2 lower ground/sea shell
@@ -12408,6 +13183,20 @@ void HwaSimIR::InitInfraredShader() {
 			+ 4.0 * P4PlanckWm2SrUm(4.5, temperature_K)
 			+ P4PlanckWm2SrUm(5.0, temperature_K)) / 12.0;
     }
+
+	 highp float P4SwirBandMeanPlanckWm2SrUm(highp float temperature_K)
+	 {
+		// Rectangular 1.1--2.5 um response, ten-interval composite Simpson
+		// integration.  This matches the CPU grid and remains within the frozen
+		// P11 <=1% error budget against the 16384-interval reference.
+		highp float weighted_sum = P4PlanckWm2SrUm(1.1, temperature_K) +
+			P4PlanckWm2SrUm(2.5, temperature_K);
+		for (int index = 1; index < 10; ++index) {
+			highp float weight = (index - (index / 2) * 2 == 0) ? 2.0 : 4.0;
+			weighted_sum += weight * P4PlanckWm2SrUm(1.1 + 0.14 * float(index), temperature_K);
+		}
+		return weighted_sum / 30.0;
+	 }
 #endif
 
     void main() {
@@ -12418,7 +13207,7 @@ void HwaSimIR::InitInfraredShader() {
                 float stage7_intensity = u_stage7_sky_gray;
                 if (u_stage7_background_kind == 2) {
                     stage7_intensity = u_stage7_ground_gray;
-                } else if (u_stage7_background_kind == 1) {
+                } else if (u_stage7_background_kind == 1 && u_stage6_raw_si_domain != 1) {
                     float vertical = clamp(v_local_pos.z * 0.5 + 0.5, 0.0, 1.0);
                     stage7_intensity = clamp(u_stage7_sky_gray + vertical * 0.035, 0.0, 1.0);
                 }
@@ -12429,7 +13218,9 @@ void HwaSimIR::InitInfraredShader() {
                     stage7_intensity=mix(u_stage7_ground_gray,u_stage7_sky_gray,
                         smoothstep(-.105,.105,elevation));
                 }
-                stage7_intensity = ApplyStage7WeatherDisplay(stage7_intensity);
+				if (u_stage6_raw_si_domain != 1) {
+					stage7_intensity = ApplyStage7WeatherDisplay(stage7_intensity);
+				}
                 gl_FragColor = vec4(stage7_intensity, stage7_intensity, stage7_intensity, 1.0);
                 return;
             }
@@ -12506,11 +13297,17 @@ void HwaSimIR::InitInfraredShader() {
             }
             if(u_game_sheet.x>0.5)extinction*=u_game_sheet.z;
             float tau_cloud = exp(-extinction*(1.0-localFade));
-            float cloud_intensity = clamp(u_game_sheet.x>0.5?u_game_sheet.y:u_stage7_cloud_gray, 0.0, 1.0);
-            if (u_ir_band_class == 0) {
+			float cloud_intensity = u_game_sheet.x>0.5?u_game_sheet.y:u_stage7_cloud_gray;
+			if (u_stage6_raw_si_domain == 1) {
+				// Texture data shapes cloud occupancy only; its visible RGB values are
+				// never interpreted as spectral radiance or material emissivity.
+				cloud_intensity = max(0.0, cloud_intensity * (0.85 + 0.30 * raw_density));
+			} else if (u_ir_band_class == 0) {
                 cloud_intensity = clamp(cloud_intensity + (raw_density - 0.5) * 0.12, 0.0, 1.0);
             }
-            cloud_intensity = ApplyStage7WeatherDisplay(cloud_intensity);
+			if (u_stage6_raw_si_domain != 1) {
+				cloud_intensity = ApplyStage7WeatherDisplay(clamp(cloud_intensity, 0.0, 1.0));
+			}
             // Standard alpha blending yields Lout=tau*Lbackground+(1-tau)*Lcloud.
             float cloud_alpha = clamp(1.0 - tau_cloud, 0.0, 0.94);
             if(u_game_sheet.w>0.0){
@@ -12529,8 +13326,10 @@ void HwaSimIR::InitInfraredShader() {
             float streak = 1.0 - smoothstep(0.0, 0.52, abs(v_local_pos.x));
             float particle_mask = clamp(max(texColor.a, dot(texColor.rgb, vec3(0.299, 0.587, 0.114))), 0.0, 1.0);
             float fall_noise = 0.55 + 0.45 * fract(sin(dot(v_local_pos.xy + vec2(u_time * u_stage7_precipitation_speed, 0.0), vec2(17.1, 91.7))) * 43758.5453);
-            float precip_gray = (u_stage7_precipitation_type == 2) ? 0.82 : 0.55;
-            precip_gray = ApplyStage7WeatherDisplay(precip_gray);
+			float precip_gray = (u_stage6_raw_si_domain == 1)
+				? max(0.0, u_stage7_cloud_gray)
+				: ((u_stage7_precipitation_type == 2) ? 0.82 : 0.55);
+			if (u_stage6_raw_si_domain != 1) precip_gray = ApplyStage7WeatherDisplay(precip_gray);
             float alpha = streak * density * fall_noise * mix(0.55, 1.0, particle_mask);
             if (u_stage7_precipitation_type == 2) {
                 alpha *= 0.65 + 0.35 * (1.0 - smoothstep(0.0, 0.50, length(v_local_pos.xy)));
@@ -12566,12 +13365,22 @@ void HwaSimIR::InitInfraredShader() {
                 flicker = clamp(1.0 + n * u_plume_noise_strength, 0.55, 1.35);
             }
             float plume_mask = clamp(axial_mask * radial_mask, 0.0, 1.0);
-            float layer_gain = is_core ? 1.12 : 0.86;
-            float plume_intensity = clamp(u_plume_gray * layer_gain * flicker * plume_mask, 0.0, 1.0);
-            plume_intensity = ApplyStage7WeatherDisplay(plume_intensity);
+			float layer_gain = is_core ? 1.12 : 0.86;
+			// In formal SI mode RGB is the in-band source radiance after LOS tau;
+			// straight-alpha opacity owns the density mask exactly once.  Legacy
+			// normalized rendering retains its historical artistic layer shaping.
+			float plume_intensity = u_stage6_raw_si_domain == 1
+				? max(0.0, u_plume_gray * flicker)
+				: max(0.0, u_plume_gray * layer_gain * flicker * plume_mask);
+			if (u_stage6_raw_si_domain != 1) {
+				plume_intensity = ApplyStage7WeatherDisplay(clamp(plume_intensity, 0.0, 1.0));
+			}
             float layer_alpha_limit = is_core ? 0.82 : 0.52;
-            float alpha_shape = is_core ? (0.32 + plume_intensity * 0.68) : (0.14 + plume_intensity * 0.44);
-            float plume_alpha = clamp(u_plume_opacity * plume_mask * alpha_shape, 0.0, layer_alpha_limit);
+			float alpha_driver = u_stage6_raw_si_domain == 1 ? plume_mask : plume_intensity;
+			float alpha_shape = is_core ? (0.32 + alpha_driver * 0.68) : (0.14 + alpha_driver * 0.44);
+			float plume_alpha = u_stage6_raw_si_domain == 1
+				? clamp(u_plume_opacity * plume_mask, 0.0, 1.0)
+				: clamp(u_plume_opacity * plume_mask * alpha_shape, 0.0, layer_alpha_limit);
             gl_FragColor = vec4(plume_intensity, plume_intensity, plume_intensity, plume_alpha);
             return;
         }
@@ -12579,7 +13388,10 @@ void HwaSimIR::InitInfraredShader() {
     )";
 	fragment_shader += R"(
         vec4 surface_param = vec4(u_emissivity, u_reflectance, 0.0, 0.5);
-		vec4 band_reflectance = vec4(surface_param.y, surface_param.y, 0.0, 0.0);
+		vec4 band_reflectance = vec4(surface_param.y, surface_param.y, surface_param.y, 0.0);
+		vec4 band_emissivity = vec4(surface_param.x);
+		vec4 band_transmissivity = vec4(0.0);
+		vec2 material_temperature_K = vec2(0.0);
 		vec4 solar_delta_pos_K = vec4(0.0);
 		vec4 solar_delta_neg_K = vec4(0.0);
         float material_id = texture2D(u_material_id_texture, texcoord).r;
@@ -12593,16 +13405,25 @@ void HwaSimIR::InitInfraredShader() {
                     float hit = 1.0 - step(0.5 / 255.0, abs(material_id - u_material_ids[i]));
                     surface_param = mix(surface_param, u_material_params[i], hit);
 					band_reflectance = mix(band_reflectance, u_material_band_reflectance[i], hit);
+					band_emissivity = mix(band_emissivity, u_material_band_emissivity[i], hit);
+					band_transmissivity = mix(band_transmissivity, u_material_band_transmissivity[i], hit);
+					material_temperature_K = mix(material_temperature_K, u_material_temperature_K[i].xy, hit);
 					solar_delta_pos_K = mix(solar_delta_pos_K, u_l1_solar_delta_pos_K[i], hit);
 					solar_delta_neg_K = mix(solar_delta_neg_K, u_l1_solar_delta_neg_K[i], hit);
                 }
             }
         }
 
-        float surface_emissivity = clamp(surface_param.x, 0.01, 1.0);
+		float surface_emissivity = (u_ir_band_index == 2)
+			? clamp(band_emissivity.z, 0.01, 1.0)
+			: ((u_ir_band_index == 3) ? clamp(band_emissivity.y, 0.01, 1.0) : clamp(band_emissivity.x, 0.01, 1.0));
 		float surface_reflectance = (u_ir_band_index == 1)
 			? clamp(band_reflectance.x, 0.0, 1.0)
-			: ((u_ir_band_index == 3) ? clamp(band_reflectance.y, 0.0, 1.0) : clamp(surface_param.y, 0.0, 1.0));
+			: ((u_ir_band_index == 2) ? clamp(band_reflectance.z, 0.0, 1.0)
+			: ((u_ir_band_index == 3) ? clamp(band_reflectance.y, 0.0, 1.0) : clamp(surface_param.y, 0.0, 1.0)));
+		float surface_transmissivity = (u_ir_band_index == 2)
+			? clamp(band_transmissivity.z, 0.0, 1.0)
+			: ((u_ir_band_index == 3) ? clamp(band_transmissivity.y, 0.0, 1.0) : 0.0);
 		if (u_p5_material_view != 0) {
 			vec3 diagnostic = vec3(surface_reflectance);
 			if (u_p5_material_view == 1) diagnostic = vec3(fract(texcoord),0.0);
@@ -12685,6 +13506,7 @@ void HwaSimIR::InitInfraredShader() {
             float atmosphere_debug = clamp(u_stage5_atmosphere_display_gray, 0.0, 1.0);
             float sensor_input_debug = clamp(u_stage5_sensor_input_display_gray, 0.0, 1.0);
             float stage5_intensity = 0.0;
+			float stage5_output_alpha = texColor.a;
 			bool formal_m1_radiance = false;
 			float l2_active_sensor = 0.0;
 #if P1_M1_L1_L2_SHADER_FEATURES
@@ -12725,20 +13547,13 @@ void HwaSimIR::InitInfraredShader() {
 				// Reapplying (Rref/Rlocal)^2 here silently attenuated the active term by
 				// the model scale.  The fragment stage supplies only the directional
 				// beam and incidence factors missing from the target-center calculation.
-				l2_active_sensor = u_l2_active_center_sensor_radiance * beam_factor * active_ndotl;
+				l2_active_sensor = u_l2_active_unshaped_sensor_radiance * beam_factor * active_ndotl;
 			}
 			// An explicitly selected component view is diagnostic evidence and must
 			// take precedence over the production M1 composite.  Production keeps
 			// DebugView=Off, so this guard does not alter the formal image path.
-            if (u_stage5_debug_view_mode == 0 && u_m1_physics_runtime_en == 1 && u_ir_band_index == 1) {
-				formal_m1_radiance = true;
-				float m1_ndotl = max(dot(normalize(v_stage5_world_normal), normalize(u_m1_sun_direction_world)), 0.0);
-				float m1_surface = surface_reflectance / 3.14159265 *
-					(u_m1_direct_solar_irradiance * m1_ndotl * u_l1_sun_visibility_optical +
-					 u_m1_sky_diffuse_irradiance * u_m1_sky_visibility);
-				float m1_sensor = u_m1_tau_up * m1_surface + u_m1_path_radiance + l2_active_sensor;
-				stage5_intensity = max(m1_sensor * u_m1_display_scale + u_m1_display_offset, 0.0);
-			} else if (u_stage5_debug_view_mode == 0 && u_m1_physics_runtime_en == 1 && u_ir_band_index == 3) {
+			if (u_stage5_debug_view_mode == 0 && u_m1_physics_runtime_en == 1 &&
+				(u_ir_band_index == 1 || u_ir_band_index == 2 || u_ir_band_index == 3)) {
 				formal_m1_radiance = true;
 				vec3 local_n = normalize(v_stage5_normal);
 				vec3 normal_weight = abs(local_n);
@@ -12748,8 +13563,47 @@ void HwaSimIR::InitInfraredShader() {
 					local_n.y >= 0.0 ? solar_delta_pos_K.y : solar_delta_neg_K.y,
 					local_n.z >= 0.0 ? solar_delta_pos_K.z : solar_delta_neg_K.z);
 				float solar_delta_K = (u_l1_solar_thermal_en == 1) ? dot(normal_weight, directional_delta) : 0.0;
-				float surface_temp_K = max(120.0, u_material_temp_K + solar_delta_K);
-				float planck_mwir_band_mean = P4MwirBandMeanPlanckWm2SrUm(surface_temp_K);
+				float material_base_temp_K = material_temperature_K.x > 0.0
+					? material_temperature_K.x : u_material_temp_K;
+				if (u_target_engine_state == 1 && material_temperature_K.y > 0.0) {
+					material_base_temp_K = material_temperature_K.y;
+				}
+				// Aerodynamic recovery heating is a spatial field, never a whole-body
+				// temperature offset.  Coordinates are normalized by the loaded model's
+				// measured bounds; +Y is the documented forward axis for the P11 civil van.
+				float aero_local_delta_K = 0.0;
+				if (u_stage5_aero_local_en == 1) {
+					vec3 safe_half_extent = max(abs(u_stage5_aero_bounds_half_extent), vec3(0.001));
+					vec3 normalized_position = clamp(
+						(v_local_pos - u_stage5_aero_bounds_center) / safe_half_extent,
+						vec3(-1.5), vec3(1.5));
+					vec3 forward_axis = normalize(u_stage5_aero_forward_local);
+					float axial = clamp(dot(normalized_position, forward_axis), -1.0, 1.0);
+					vec3 radial_vector = normalized_position - forward_axis * axial;
+					float radial = clamp(length(radial_vector) / 1.41421356237, 0.0, 1.0);
+					float normal_alignment = clamp(dot(local_n, forward_axis), -1.0, 1.0);
+					float nose_mask = smoothstep(0.35, 0.95, axial) *
+						smoothstep(0.05, 0.65, max(0.0, normal_alignment));
+					float edge_mask = smoothstep(0.55, 0.95, radial) *
+						smoothstep(0.05, 0.85, axial) *
+						smoothstep(0.10, 0.90, 1.0 - abs(normal_alignment));
+					float rear_mask = smoothstep(0.45, 0.95, -axial) *
+						smoothstep(0.05, 0.65, max(0.0, -normal_alignment));
+					aero_local_delta_K = max(max(
+						nose_mask * max(0.0, u_stage5_aero_nose_delta_K),
+						edge_mask * max(0.0, u_stage5_aero_edge_delta_K)),
+						rear_mask * max(0.0, u_stage5_aero_rear_delta_K));
+				}
+				float surface_temp_K = max(120.0,
+					material_base_temp_K + solar_delta_K + aero_local_delta_K);
+				float planck_band_mean = (u_ir_band_index == 2)
+					? P4SwirBandMeanPlanckWm2SrUm(surface_temp_K)
+					: ((u_ir_band_index == 3) ? P4MwirBandMeanPlanckWm2SrUm(surface_temp_K)
+					: P4PlanckWm2SrUm(0.9, surface_temp_K));
+				float m1_ndotl = max(dot(normalize(v_stage5_world_normal), normalize(u_m1_sun_direction_world)), 0.0);
+				float physical_reflected = surface_reflectance / 3.14159265 *
+					(u_m1_direct_solar_irradiance * m1_ndotl * u_l1_sun_visibility_optical +
+					 u_m1_sky_diffuse_irradiance * u_m1_sky_visibility);
 				// Local aircraft heat sources are surface radiance and therefore receive
 				// the same inbound tau as the band-mean body emission.  The separately
 				// rendered plume node is intentionally not added here a second time.
@@ -12757,14 +13611,31 @@ void HwaSimIR::InitInfraredShader() {
 				float bright_coverage = clamp(stage5_bright_mask, 0.0, 1.0);
 				float local_rear_hotspot = rear_coverage * max(u_stage5_rear_hotspot_radiance, 0.0);
 				float local_brightspot = bright_coverage * max(u_stage5_brightspot_radiance, 0.0);
-				float m1_surface = surface_emissivity * planck_mwir_band_mean;
+				float m1_surface = surface_emissivity * planck_band_mean + physical_reflected;
 				// A local hot region replaces the covered body's radiance; it is not
 				// a second full surface layered on top of the same area.  Rear and
 				// bright masks occupy separate configured regions for the F35 sample.
 				m1_surface = m1_surface * (1.0 - rear_coverage) + local_rear_hotspot;
 				m1_surface = m1_surface * (1.0 - bright_coverage) + local_brightspot;
 				float m1_sensor = u_m1_tau_up * m1_surface + u_m1_path_radiance + l2_active_sensor;
-				stage5_intensity = max(m1_sensor * u_m1_display_scale + u_m1_display_offset, 0.0);
+				if (u_material_transmission_composite_en == 1 && u_m1_raw_si_output == 1 &&
+					surface_transmissivity > 0.0) {
+					// The tagged glass group uses Panda's premultiplied-alpha blend:
+					// Cout = Csrc + (1-alpha)*Cbehind.  With alpha=1-tau_material
+					// and Csrc containing the glass surface plus only its opaque share
+					// of foreground path, this is exactly
+					// Lout=tau_atm*Lsurface+Lactive+(1-tau_material)*Lpath
+					//      +tau_material*Lbehind.
+					// No target or behind contribution is sampled/added a second time.
+					float material_opacity = clamp(1.0 - surface_transmissivity, 0.0, 1.0);
+					stage5_intensity = max(u_m1_tau_up * m1_surface + l2_active_sensor +
+						material_opacity * u_m1_path_radiance, 0.0);
+					stage5_output_alpha = material_opacity;
+				} else {
+					stage5_intensity = (u_m1_raw_si_output == 1)
+						? max(m1_sensor, 0.0)
+						: max(m1_sensor * u_m1_display_scale + u_m1_display_offset, 0.0);
+				}
 			} else
 #endif
 			if (u_stage5_use_sensor_input_for_display == 1) {
@@ -12798,7 +13669,7 @@ void HwaSimIR::InitInfraredShader() {
 			if (!formal_m1_radiance) {
 				stage5_intensity = ApplyStage7WeatherDisplay(stage5_intensity);
 			}
-            gl_FragColor = vec4(stage5_intensity, stage5_intensity, stage5_intensity, texColor.a);
+            gl_FragColor = vec4(stage5_intensity, stage5_intensity, stage5_intensity, stage5_output_alpha);
             return;
         }
 
@@ -12872,12 +13743,18 @@ void HwaSimIR::ApplyInfraredShader(NodePath& node, bool isBackground) {
 	PTA_float defaultMaterialIds;
 	PTA_LVecBase4f defaultMaterialParams;
 	PTA_LVecBase4f defaultBandReflectance;
+	PTA_LVecBase4f defaultBandEmissivity;
+	PTA_LVecBase4f defaultBandTransmissivity;
+	PTA_LVecBase4f defaultMaterialTemperature;
 	PTA_LVecBase4f defaultSolarDelta;
 	for (int i = 0; i < 8; ++i)
 	{
 		defaultMaterialIds.push_back(0.0f);
 		defaultMaterialParams.push_back(LVecBase4f(0.85f, 0.15f, 0.40f, 0.50f));
-		defaultBandReflectance.push_back(LVecBase4f(0.15f, 0.15f, 0.0f, 0.0f));
+		defaultBandReflectance.push_back(LVecBase4f(0.15f, 0.15f, 0.15f, 0.0f));
+		defaultBandEmissivity.push_back(LVecBase4f(0.85f, 0.85f, 0.85f, 0.85f));
+		defaultBandTransmissivity.push_back(LVecBase4f(0.0f));
+		defaultMaterialTemperature.push_back(LVecBase4f(0.0f));
 		defaultSolarDelta.push_back(LVecBase4f(0.0f));
 	}
 	node.set_shader_input("u_material_id_ready", LVecBase2i(0, 0));
@@ -12889,11 +13766,19 @@ void HwaSimIR::ApplyInfraredShader(NodePath& node, bool isBackground) {
 	static PT(Texture) emptyMaterialId;
 	if (!emptyMaterialId) {
 		emptyMaterialId = new Texture("EmptyMaterialId");
-		emptyMaterialId->setup_2d_texture(1,1,Texture::T_unsigned_byte,Texture::F_luminance);
+		// GL_LUMINANCE was removed from the GLES3 core profile used by the
+		// RK3588 Mali stack.  The shader consumes only the red channel, so an
+		// explicit R8 data texture preserves the material-id meaning without a
+		// first-draw legacy-format conversion inside Panda's GSG.
+		emptyMaterialId->setup_2d_texture(1,1,Texture::T_unsigned_byte,Texture::F_red);
 		PTA_uchar zero = PTA_uchar::empty_array(1); zero[0] = 0;
 		emptyMaterialId->set_ram_image(zero);
 		emptyMaterialId->set_minfilter(SamplerState::FT_nearest);
 		emptyMaterialId->set_magfilter(SamplerState::FT_nearest);
+		std::cout << "[MaterialIdTexture] name=EmptyMaterialId"
+			<< " format=R8_UNORM components=1 sampler=nearest"
+			<< " reason=gles3_legacy_luminance_unsupported"
+			<< std::endl;
 	}
 	node.set_shader_input("u_material_id_texture", emptyMaterialId);
 	node.set_shader_input("u_debug_material_id", LVecBase2i(0, 0));
@@ -12901,6 +13786,10 @@ void HwaSimIR::ApplyInfraredShader(NodePath& node, bool isBackground) {
 	node.set_shader_input("u_material_ids", defaultMaterialIds);
 	node.set_shader_input("u_material_params", defaultMaterialParams);
 	node.set_shader_input("u_material_band_reflectance", defaultBandReflectance);
+	node.set_shader_input("u_material_band_emissivity", defaultBandEmissivity);
+	node.set_shader_input("u_material_band_transmissivity", defaultBandTransmissivity);
+	node.set_shader_input("u_material_transmission_composite_en", LVecBase2i(0, 0));
+	node.set_shader_input("u_material_temperature_K", defaultMaterialTemperature);
 	node.set_shader_input("u_l1_solar_delta_pos_K", defaultSolarDelta);
 	node.set_shader_input("u_l1_solar_delta_neg_K", defaultSolarDelta);
 	node.set_shader_input("u_l1_solar_thermal_en", LVecBase2i(0, 0));
@@ -12921,6 +13810,7 @@ void HwaSimIR::ApplyInfraredShader(NodePath& node, bool isBackground) {
 	SetShaderInputCached(node, "u_stage5_sensor_input_display_gray", LVecBase2f(0.0f, 0.0f));
 	SetShaderInputCached(node, "u_stage5_use_sensor_input_for_display", LVecBase2i(0, 0));
 	SetShaderInputCached(node, "u_m1_physics_runtime_en", LVecBase2i(0, 0));
+	SetShaderInputCached(node, "u_m1_raw_si_output", LVecBase2i(0, 0));
 	SetShaderInputCached(node, "u_m1_tau_up", LVecBase2f(1.0f, 0.0f));
 	SetShaderInputCached(node, "u_m1_path_radiance", LVecBase2f(0.0f, 0.0f));
 	SetShaderInputCached(node, "u_m1_direct_solar_irradiance", LVecBase2f(0.0f, 0.0f));
@@ -12944,7 +13834,7 @@ void HwaSimIR::ApplyInfraredShader(NodePath& node, bool isBackground) {
 	SetShaderInputCached(node, "u_l2_active_tau_inbound", LVecBase2f(1.0f, 0.0f));
 	SetShaderInputCached(node, "u_l2_active_visibility", LVecBase2f(0.0f, 0.0f));
 	SetShaderInputCached(node, "u_l2_active_overlap_width_um", LVecBase2f(1.0f, 0.0f));
-	SetShaderInputCached(node, "u_l2_active_center_sensor_radiance", LVecBase2f(0.0f, 0.0f));
+	SetShaderInputCached(node, "u_l2_active_unshaped_sensor_radiance", LVecBase2f(0.0f, 0.0f));
 	node.set_shader_input("u_body_radiance_scale", LVecBase2f(0.0f, 0.0f));
 	node.set_shader_input("u_stage5_body_gray", LVecBase2f(0.0f, 0.0f));
 	node.set_shader_input("u_stage5_reflected_radiance", LVecBase2f(0.0f, 0.0f));
@@ -12964,7 +13854,16 @@ void HwaSimIR::ApplyInfraredShader(NodePath& node, bool isBackground) {
 	node.set_shader_input("u_stage5_composite_min_gray", LVecBase2f(0.0f, 0.0f));
 	node.set_shader_input("u_stage5_composite_max_gray", LVecBase2f(1.0f, 0.0f));
 	node.set_shader_input("u_stage5_display_fallback_applied", LVecBase2i(0, 0));
+	node.set_shader_input("u_target_engine_state", LVecBase2i(0, 0));
+	node.set_shader_input("u_stage5_aero_local_en", LVecBase2i(0, 0));
+	node.set_shader_input("u_stage5_aero_nose_delta_K", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_aero_edge_delta_K", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_aero_rear_delta_K", LVecBase2f(0.0f, 0.0f));
+	node.set_shader_input("u_stage5_aero_bounds_center", LVecBase3f(0.0f, 0.0f, 0.0f));
+	node.set_shader_input("u_stage5_aero_bounds_half_extent", LVecBase3f(1.0f, 1.0f, 1.0f));
+	node.set_shader_input("u_stage5_aero_forward_local", LVecBase3f(0.0f, 1.0f, 0.0f));
 	node.set_shader_input("u_stage6_background_display_en", LVecBase2i(1, 0));
+	node.set_shader_input("u_stage6_raw_si_domain", LVecBase2i(m_stage6RawSiDomain ? 1 : 0, 0));
 	node.set_shader_input("u_stage7_sky_horizon_en", LVecBase2i(0, 0));
 	node.set_shader_input("u_game_world_haze", LVecBase2f(0,0));
 	node.set_shader_input("u_stage7_background_kind", LVecBase2i(0, 0));
@@ -13673,6 +14572,7 @@ IRModtranRadianceResult HwaSimIR::QueryStage5ModtranRadiance(const TargetPlatfor
 		<< ":tgt=" << targetAltKm
 		<< ":vis=" << visibilityKmRaw
 		<< ":profile=" << m_m1HumidityProfile
+		<< ":rh=" << environment.humidityPercent
 		<< ":sza=" << solarZenithDeg;
 	const std::string cacheKey = key.str();
 	const auto lookupStart = std::chrono::steady_clock::now();
@@ -13686,7 +14586,11 @@ IRModtranRadianceResult HwaSimIR::QueryStage5ModtranRadiance(const TargetPlatfor
 		return cacheIt->second.result;
 	}
 
-	IRModtranRadianceResult result = m_stage5ModtranRadianceLut.query(query);
+	const bool numericHumidityBand = query.band == IRBand::ShortWaveInfrared ||
+		query.band == IRBand::MidWaveInfrared;
+	IRModtranRadianceResult result = numericHumidityBand
+		? m_stage5ModtranRadianceLut.queryRelativeHumidity(query, environment.humidityPercent)
+		: m_stage5ModtranRadianceLut.query(query);
 	m_stage5ModtranRadianceCache[cacheKey].result = result;
 	++m_stage5ModtranCacheMissCurrent;
 	m_stage5ModtranLookupMsCurrent += std::chrono::duration<double, std::milli>(
@@ -13881,8 +14785,8 @@ void HwaSimIR::LogEffectiveRuntimeConfig(
 	}
 	if (m_stage5ApplyAeroToRadiance)
 	{
-		std::cout << "[EffectiveRuntimeConfig][WARN] ApplyAeroToRadiance=1"
-			<< " reason=stage4A_AB_or_debug_mode_not_production_default"
+		std::cout << "[EffectiveRuntimeConfig] ApplyAeroToRadiance=1"
+			<< " distribution=gpu_local_bounds_normalized wholeBodyHeating=0"
 			<< std::endl;
 	}
 	if (m_stage5AeroDebugLog)
@@ -13897,7 +14801,9 @@ void HwaSimIR::LogEffectiveRuntimeConfig(
 			<< " UseModtranPathRuntime=" << (m_stage5UseModtranPathRuntime ? "1" : "0")
 			<< " UseModtranSkyRuntime=" << (m_stage5UseModtranSkyRuntime ? "1" : "0")
 			<< " UseModtranSolarRuntime=" << (m_stage5UseModtranSolarRuntime ? "1" : "0")
-			<< " reason=stage3b_fix_production_must_not_apply_modtran_path_sky_solar"
+			<< " scope=legacy_stage5_debug_path"
+			<< " formalM1Gate=EnableRuntime+bandEnable+validFiveComponentLut"
+			<< " formalM1Unaffected=1"
 			<< std::endl;
 	}
 	if (m_stage5ModtranPathRuntimeMode != "Off")
@@ -14007,6 +14913,8 @@ void HwaSimIR::LogStage5ModtranRadianceCompare(const TargetPlatformData& targetP
 		<< " fallbackMin=" << modtranResult.fallbackMin
 		<< " fallbackMax=" << modtranResult.fallbackMax
 		<< " interpolationMode=" << components.modtranInterpolationMode
+		<< " relativeHumidityPercent=" << modtranResult.relativeHumidityPercent
+		<< " humidityMode=" << modtranResult.humidityMode
 		<< " pathRadianceSource=" << components.pathRadianceSource
 		<< " ratio=" << ratio
 		<< " diff=" << diff
@@ -14250,6 +15158,11 @@ void HwaSimIR::LogStage5AeroThermal(const TargetPlatformData& targetPlat, const 
 		<< " noseAeroDeltaK=" << aeroOutput.noseAeroDeltaK
 		<< " edgeAeroDeltaK=" << aeroOutput.edgeAeroDeltaK
 		<< " rearAeroDeltaK=" << aeroOutput.rearAeroDeltaK
+		<< " noseAeroDeltaKEffective=" << components.noseAeroDeltaK
+		<< " edgeAeroDeltaKEffective=" << components.edgeAeroDeltaK
+		<< " rearAeroDeltaKEffective=" << components.rearAeroDeltaK
+		<< " aeroDistribution=gpu_local_bounds_normalized"
+		<< " wholeBodyAeroDeltaK=0"
 		<< " aeroAppliedToRadiance=" << (components.aeroAppliedToRadiance ? "1" : "0")
 		<< " valid=" << (aeroOutput.valid ? "1" : "0")
 		<< " fallbackReason=" << aeroOutput.fallbackReason
@@ -14272,6 +15185,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 		m_stage5UseSensorInputForDisplay && sensorInputDisplayBandAllowed;
 	const bool m1RuntimeRequested = !m_m1CompareOnly && m_m1RuntimeEnabled &&
 		((stage5Band == IRBand::NearInfrared && m_m1NirRuntimeEnabled) ||
+		 (stage5Band == IRBand::ShortWaveInfrared && m_m1SwirRuntimeEnabled) ||
 		 (stage5Band == IRBand::MidWaveInfrared && m_m1MwirRuntimeEnabled));
 	const bool stage5DisplayUsesSensorInput = useSensorInputForDisplayEffective || m_enableStage5RadianceDebug || m1RuntimeRequested;
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_radiance_debug_en", LVecBase2i(stage5DisplayUsesSensorInput ? 1 : 0, 0));
@@ -14289,13 +15203,17 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	stage5Input.band = stage5Band;
 	stage5Input.materialName = MaterialNameForPlatform(targetPlat.type);
 	stage5Input.materialTemperatureK = radiance.temperatureK;
-	stage5Input.materialEmissivity = radiance.emissivity;
 	const IRMaterial& m1Material = m_irMaterialDatabase.get(stage5Input.materialName);
 	const IRBandReflectance m1BandReflectance = m_l1MaterialBandOptics.resolve(m1Material);
-	stage5Input.materialReflectance = stage5Band == IRBand::NearInfrared
-		? m1BandReflectance.nir : m1BandReflectance.mwir;
-	stage5Input.reflectanceSource = stage5Band == IRBand::NearInfrared
-		? m1BandReflectance.nirSource : m1BandReflectance.mwirSource;
+	stage5Input.materialReflectance = stage5Band == IRBand::ShortWaveInfrared
+		? m1BandReflectance.swir
+		: (stage5Band == IRBand::MidWaveInfrared ? m1BandReflectance.mwir : m1BandReflectance.nir);
+	stage5Input.materialEmissivity = stage5Band == IRBand::ShortWaveInfrared
+		? m1BandReflectance.swirEmissivity
+		: (stage5Band == IRBand::MidWaveInfrared ? m1BandReflectance.mwirEmissivity : radiance.emissivity);
+	stage5Input.reflectanceSource = stage5Band == IRBand::ShortWaveInfrared
+		? m1BandReflectance.swirSource
+		: (stage5Band == IRBand::MidWaveInfrared ? m1BandReflectance.mwirSource : m1BandReflectance.nirSource);
 	const double rawTauUp = static_cast<double>(radiance.tauUp);
 	double selectedTauUp = rawTauUp;
 	std::string selectedTauSource = m_irAtmosphereModel.useModtranTauForAtmosphere()
@@ -14307,21 +15225,21 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	{
 		selectedTauUp = 1.0;
 		selectedTauSource = "fallback_unity";
-		selectedTauValid = true;
+		selectedTauValid = false;
 		tauFallbackReason = "radiance_tau_nonfinite_fallback_unity";
 	}
-	else if (rawTauUp <= 1.0e-6)
+	else if (rawTauUp < 0.0)
 	{
-		selectedTauUp = 1.0;
-		selectedTauSource = "fallback_unity";
-		selectedTauValid = true;
-		tauFallbackReason = "radiance_tau_near_zero_fallback_unity";
+		selectedTauUp = 0.0;
+		selectedTauSource += "_clamped";
+		selectedTauValid = false;
+		tauFallbackReason = "radiance_tau_negative_clamped_zero";
 	}
 	else if (rawTauUp > 1.0)
 	{
 		selectedTauUp = 1.0;
 		selectedTauSource += "_clamped";
-		selectedTauValid = true;
+		selectedTauValid = false;
 		tauFallbackReason = "radiance_tau_out_of_range_clamped";
 	}
 	stage5Input.tauUp = selectedTauUp;
@@ -14347,30 +15265,43 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	stage5Input.airTempK = aeroOutput.airTempK;
 	stage5Input.recoveryTempK = aeroOutput.recoveryTempK;
 	stage5Input.aeroDeltaK = aeroOutput.aeroDeltaK;
-	const bool aeroApplyBandAllowed = stage5Band == m_stage5AeroApplyOnlyBand;
+	const bool aeroApplyBandAllowed = m_stage5AeroApplyAllFormalBands
+		? (stage5Band == IRBand::ShortWaveInfrared || stage5Band == IRBand::MidWaveInfrared)
+		: stage5Band == m_stage5AeroApplyOnlyBand;
 	const double bodyAeroDeltaKRaw = std::max(0.0, aeroOutput.bodyAeroDeltaK);
-	const double scaledBodyAeroDeltaK = QuantizeForCache(bodyAeroDeltaKRaw * m_stage5AeroApplyScale, 0.05);
-	const double bodyAeroDeltaKEffective =
-		(m_stage5ApplyAeroToRadiance && aeroOutput.valid && aeroApplyBandAllowed)
-		? ClampStage5Double(scaledBodyAeroDeltaK, 0.0, m_stage5AeroApplyClampBodyDeltaK)
-		: 0.0;
-	stage5Input.bodyAeroDeltaK = bodyAeroDeltaKEffective;
+	const bool localAeroApplied = m_stage5ApplyAeroToRadiance && aeroOutput.valid && aeroApplyBandAllowed;
+	const auto effectiveLocalAeroDelta = [&](double rawDeltaK)
+	{
+		return localAeroApplied
+			? ClampStage5Double(QuantizeForCache(std::max(0.0, rawDeltaK) * m_stage5AeroApplyScale, 0.05),
+				0.0, m_stage5AeroApplyClampBodyDeltaK)
+			: 0.0;
+	};
+	// P11 forbids applying recovery heating to the whole body.  The CPU body
+	// reference therefore remains unheated; nose/edge/rear candidates are sent
+	// separately to the fragment shader's bounds-normalized spatial masks.
+	stage5Input.bodyAeroDeltaK = 0.0;
 	stage5Input.bodyAeroDeltaKRaw = bodyAeroDeltaKRaw;
-	stage5Input.bodyAeroDeltaKEffective = bodyAeroDeltaKEffective;
-	stage5Input.noseAeroDeltaK = aeroOutput.noseAeroDeltaK;
-	stage5Input.edgeAeroDeltaK = aeroOutput.edgeAeroDeltaK;
-	stage5Input.rearAeroDeltaK = aeroOutput.rearAeroDeltaK;
+	stage5Input.bodyAeroDeltaKEffective = 0.0;
+	stage5Input.noseAeroDeltaK = effectiveLocalAeroDelta(aeroOutput.noseAeroDeltaK);
+	stage5Input.edgeAeroDeltaK = effectiveLocalAeroDelta(aeroOutput.edgeAeroDeltaK);
+	stage5Input.rearAeroDeltaK = effectiveLocalAeroDelta(aeroOutput.rearAeroDeltaK);
 	stage5Input.aeroValid = aeroOutput.valid;
 	stage5Input.aeroFallbackReason = aeroOutput.fallbackReason;
-	stage5Input.aeroAppliedToRadiance = m_stage5ApplyAeroToRadiance && aeroOutput.valid && aeroApplyBandAllowed;
+	stage5Input.aeroAppliedToRadiance = false; // no global CPU/body offset; GPU applies only local masks
 	double plumeRadiance = 0.0;
 	const std::map<std::string, Stage5PlumeRuntimeCache>::const_iterator plumeIt = m_stage5PlumeRuntimeCache.find(targetKey);
 	if (plumeIt != m_stage5PlumeRuntimeCache.end() && plumeIt->second.hasOutput)
 	{
 		const IREnginePlumeOutput& plume = plumeIt->second.output;
-		plumeRadiance = std::max(
-			static_cast<double>(plume.coreGray) * static_cast<double>(plume.coreOpacity),
-			static_cast<double>(plume.haloGray) * static_cast<double>(plume.haloOpacity));
+		const bool physicalPlumeBand = stage5Band == IRBand::ShortWaveInfrared ||
+			stage5Band == IRBand::MidWaveInfrared;
+		plumeRadiance = physicalPlumeBand
+			? std::max(static_cast<double>(plume.coreEmittedRadianceWm2SrUm),
+				static_cast<double>(plume.haloEmittedRadianceWm2SrUm))
+			: std::max(
+				static_cast<double>(plume.coreGray) * static_cast<double>(plume.coreOpacity),
+				static_cast<double>(plume.haloGray) * static_cast<double>(plume.haloOpacity));
 	}
 	stage5Input.plumeRadiance = plumeRadiance;
 	const double legacyPathRadiance = std::max(0.0f, radiance.pathRadiance);
@@ -14406,7 +15337,11 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	IRModtranRadianceResult l2Atmosphere = modtranRadiance;
 	const bool l2ProtocolRequested = m_l2ActiveIlluminatorConfig.enabled &&
 		m_realTimeSceneData.weaponState.illuminatorEn;
-	if (l2ProtocolRequested && !l2Atmosphere.valid && l2Atmosphere.fallbackAxis == "solarZenithDeg")
+	const bool reflectiveNightBoundary =
+		(stage5Band == IRBand::NearInfrared || stage5Band == IRBand::ShortWaveInfrared) &&
+		m_m1SolarState.valid && m_m1SolarState.elevationDeg <= 0.0;
+	if ((l2ProtocolRequested || reflectiveNightBoundary) &&
+		!l2Atmosphere.valid && l2Atmosphere.fallbackAxis == "solarZenithDeg")
 	{
 		// LOS transmission does not depend on solar zenith.  NIR irradiance/path
 		// fields remain invalid at night; only the tau field is taken from the
@@ -14423,17 +15358,21 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	// Below the horizon, the formal NIR natural terms are a defined zero boundary,
 	// not a reason to switch the target back to the legacy display chain.  Keeping
 	// the M1 route stable prevents illuminatorEn from changing the baseline mapping.
-	const bool nirNightBoundary = stage5Band == IRBand::NearInfrared &&
-		m_m1SolarState.valid && m_m1SolarState.elevationDeg <= 0.0;
-	stage5Input.useM1Physics = (modtranRadiance.valid || nirNightBoundary ||
+	const bool reflectiveNightAtmosphereReady = reflectiveNightBoundary && l2Atmosphere.valid;
+	stage5Input.useM1Physics = (modtranRadiance.valid || reflectiveNightAtmosphereReady ||
 		(l2ProtocolRequested && l2Atmosphere.valid)) &&
-		(stage5Band == IRBand::NearInfrared || stage5Band == IRBand::MidWaveInfrared);
+		(stage5Band == IRBand::NearInfrared ||
+		 stage5Band == IRBand::ShortWaveInfrared ||
+		 stage5Band == IRBand::MidWaveInfrared);
 	stage5Input.m1TauUp = modtranRadiance.valid ? modtranRadiance.tauUp :
 		(l2Atmosphere.valid ? l2Atmosphere.tauUp : 1.0);
 	stage5Input.directSolarIrradiance = modtranRadiance.valid ? modtranRadiance.directSolarIrradianceWm2Um : 0.0;
 	stage5Input.skyDiffuseIrradiance = modtranRadiance.valid ? modtranRadiance.downwardSkyDiffuseIrradianceWm2Um : 0.0;
-	stage5Input.pathScatteringRadiance = modtranRadiance.valid ? modtranRadiance.pathScatteringRadianceWm2SrUm : 0.0;
-	stage5Input.pathThermalRadiance = modtranRadiance.valid ? modtranRadiance.pathThermalWm2SrUm : 0.0;
+	stage5Input.pathScatteringRadiance = modtranRadiance.valid
+		? modtranRadiance.pathScatteringRadianceWm2SrUm : 0.0;
+	stage5Input.pathThermalRadiance = modtranRadiance.valid
+		? modtranRadiance.pathThermalWm2SrUm
+		: (reflectiveNightAtmosphereReady ? l2Atmosphere.pathThermalWm2SrUm : 0.0);
 	if (!m_m1SolarState.valid || m_m1SolarState.elevationDeg <= 0.0)
 	{
 		stage5Input.directSolarIrradiance = 0.0;
@@ -14443,12 +15382,16 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	stage5Input.skyVisibility = m_m1SkyVisibility;
 	const bool m1BandRuntimeEnabled =
 		(stage5Band == IRBand::NearInfrared && m_m1NirRuntimeEnabled) ||
+		(stage5Band == IRBand::ShortWaveInfrared && m_m1SwirRuntimeEnabled) ||
 		(stage5Band == IRBand::MidWaveInfrared && m_m1MwirRuntimeEnabled);
 	stage5Input.m1RuntimeAffectsImage = !m_m1CompareOnly && m_m1RuntimeEnabled && m1BandRuntimeEnabled &&
-		(modtranRadiance.valid || nirNightBoundary || (l2ProtocolRequested && l2Atmosphere.valid));
+		(modtranRadiance.valid || reflectiveNightAtmosphereReady || (l2ProtocolRequested && l2Atmosphere.valid));
+	const bool formalM1FailClosed = m1RuntimeRequested &&
+		(stage5Band == IRBand::ShortWaveInfrared || stage5Band == IRBand::MidWaveInfrared) &&
+		!stage5Input.m1RuntimeAffectsImage;
 	stage5Input.modtranRadianceValid = modtranRadiance.valid;
 	stage5Input.modtranInterpolationMode = modtranRadiance.interpolationMode;
-	stage5Input.modtranFallbackReason = nirNightBoundary && !modtranRadiance.valid
+	stage5Input.modtranFallbackReason = reflectiveNightBoundary && !modtranRadiance.valid
 		? "night_boundary_zero_natural" : modtranRadiance.fallbackReason;
 	const IRActiveIlluminatorOutput l2Active = EvaluateL2ActiveIlluminator(
 		targetPlat, targetKey, stage5Band, m1BandReflectance, l2Atmosphere);
@@ -14556,14 +15499,32 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	{
 		stage5Input.sourceFlags += "+activeIlluminator";
 	}
+	if (stage5Input.m1RuntimeAffectsImage)
+	{
+		stage5Input.sourceFlags += "+formalM1Final";
+	}
+	if (formalM1FailClosed)
+	{
+		stage5Input.sourceFlags += "+formalM1FailClosed";
+	}
 	stage5Input.enableDebugFloor = true;
 	stage5Input.debugConfig = m_stage5DebugConfigs[stage5BandIndex];
 
 	IRRadianceComponents components = m_irRadianceModelV2.evaluateComponents(stage5Input);
+	components.aeroAppliedToRadiance = localAeroApplied;
+	{
+		Stage5PlumeRuntimeCache& plumeAtmosphere = m_stage5PlumeRuntimeCache[targetKey];
+		plumeAtmosphere.formalTauReady = stage5Input.m1RuntimeAffectsImage &&
+			(stage5Band == IRBand::ShortWaveInfrared || stage5Band == IRBand::MidWaveInfrared);
+		plumeAtmosphere.formalTau = plumeAtmosphere.formalTauReady
+			? ClampStage5Double(components.m1TauUp, 0.0, 1.0) : 0.0;
+	}
 	const bool stage5DisplayGateEffective = useSensorInputForDisplayEffective ||
-		m_enableStage5RadianceDebug || stage5Input.m1RuntimeAffectsImage;
+		m_enableStage5RadianceDebug || stage5Input.m1RuntimeAffectsImage || formalM1FailClosed;
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_radiance_debug_en", LVecBase2i(stage5DisplayGateEffective ? 1 : 0, 0));
-	components.sensorInputToDisplayEnabled = useSensorInputForDisplayEffective;
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_use_sensor_input_for_display",
+		LVecBase2i((useSensorInputForDisplayEffective || formalM1FailClosed) ? 1 : 0, 0));
+	components.sensorInputToDisplayEnabled = useSensorInputForDisplayEffective || formalM1FailClosed;
 	IRRadianceModelV2Output stage5 = m_irRadianceModelV2.evaluate(stage5Input);
 	double observerAltKmForLog = 10.0;
 	if (m_stage0DisplayFrameCount > 0 && IsReasonableAltitudeMeters(m_realTimeSceneData.platLoc.alt))
@@ -14578,6 +15539,76 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 		? targetPlat.targetState.targetLoc.alt / 1000.0
 		: observerAltKmForLog;
 	const double rangeKmForLog = std::max(0.001, static_cast<double>(EstimateRangeToCamera(targetPlat.nodePath)) / 1000.0);
+	if (stage5Input.m1RuntimeAffectsImage && modtranRadiance.valid)
+	{
+		const std::uint64_t atmosphereSeq = m_currentFrameTelemetry.sourceSeq > 0
+			? m_currentFrameTelemetry.sourceSeq : m_stage0DisplayFrameCount;
+		const double atmosphereRangeM = rangeKmForLog * 1000.0;
+		if (!m_m1EnvironmentLosReady || m_m1EnvironmentLosBand != stage5Band ||
+			m_m1EnvironmentSourceSeq != atmosphereSeq ||
+			atmosphereRangeM < m_m1EnvironmentReferenceRangeM)
+		{
+			const bool atmosphereMateriallyChanged = !m_m1EnvironmentLosReady ||
+				m_m1EnvironmentLosBand != stage5Band ||
+				std::fabs(m_m1EnvironmentTau - components.m1TauUp) > 5.0e-4 ||
+				std::fabs(m_m1EnvironmentPathRadiance -
+					(components.pathThermalRadiance + components.pathScatteringRadiance)) > 5.0e-4 ||
+				std::fabs(m_m1EnvironmentDirectSolarIrradiance - components.directSolarIrradiance) > 0.25 ||
+				std::fabs(m_m1EnvironmentSkyDiffuseIrradiance - components.skyDiffuseIrradiance) > 0.05;
+			m_m1EnvironmentLosReady = true;
+			m_m1EnvironmentLosBand = stage5Band;
+			m_m1EnvironmentTau = components.m1TauUp;
+			m_m1EnvironmentPathRadiance =
+				components.pathThermalRadiance + components.pathScatteringRadiance;
+			m_m1EnvironmentDirectSolarIrradiance = components.directSolarIrradiance;
+			m_m1EnvironmentSkyDiffuseIrradiance = components.skyDiffuseIrradiance;
+			m_m1EnvironmentReferenceRangeM = atmosphereRangeM;
+			m_m1EnvironmentSourceSeq = atmosphereSeq;
+			if (atmosphereMateriallyChanged) m_stage7LastFullUpdateKey.clear();
+		}
+	}
+	const std::string formalFailClosedLogKey = targetKey + "#formal-m1-fail-closed";
+	std::map<std::string, std::string>::iterator priorFailClosed =
+		m_lastStage5ModtranRadianceCompareLogState.find(formalFailClosedLogKey);
+	if (formalM1FailClosed)
+	{
+		const IRModtranRadianceResult& failedQuery =
+			(!l2Atmosphere.valid && (reflectiveNightBoundary || l2ProtocolRequested))
+			? l2Atmosphere : modtranRadiance;
+		std::ostringstream failureState;
+		failureState << IRBandName(stage5Band) << ':' << failedQuery.fallbackReason << ':'
+			<< failedQuery.fallbackAxis << ':' << Stage5ModtranCacheDouble(failedQuery.fallbackQuery)
+			<< ':' << Stage5ModtranCacheDouble(failedQuery.fallbackMin)
+			<< ':' << Stage5ModtranCacheDouble(failedQuery.fallbackMax);
+		const bool stateChanged = priorFailClosed == m_lastStage5ModtranRadianceCompareLogState.end() ||
+			priorFailClosed->second != failureState.str();
+		m_lastStage5ModtranRadianceCompareLogState[formalFailClosedLogKey] = failureState.str();
+		const std::uint64_t sourceSeq = m_currentFrameTelemetry.sourceSeq > 0
+			? m_currentFrameTelemetry.sourceSeq : m_stage0DisplayFrameCount;
+		if (stateChanged || m_enableIRVerboseLog || sourceSeq <= 3 || (sourceSeq % 120) == 0)
+		{
+			std::cerr << "[M1 FormalFailClosed][ERROR]"
+				<< " status=FAILED_CLOSED"
+				<< " sourceSeq=" << sourceSeq
+				<< " targetKey=" << targetKey
+				<< " band=" << IRBandName(stage5Band)
+				<< " fallbackReason=" << failedQuery.fallbackReason
+				<< " fallbackAxis=" << failedQuery.fallbackAxis
+				<< " query=" << failedQuery.fallbackQuery
+				<< " min=" << failedQuery.fallbackMin
+				<< " max=" << failedQuery.fallbackMax
+				<< " action=black_target_no_legacy"
+				<< " legacyRendered=0" << std::endl;
+		}
+	}
+	else if (priorFailClosed != m_lastStage5ModtranRadianceCompareLogState.end())
+	{
+		std::cout << "[M1 FormalFailClosed] status=RECOVERED"
+			<< " targetKey=" << targetKey
+			<< " band=" << IRBandName(stage5Band)
+			<< " action=formal_output_restored" << std::endl;
+		m_lastStage5ModtranRadianceCompareLogState.erase(priorFailClosed);
+	}
 	const IRRadianceModelV2DebugConfig& displayConfig = m_stage5DebugConfigs[stage5BandIndex];
 	const auto clamp01 = [](double value) -> double {
 		return std::max(0.0, std::min(1.0, value));
@@ -14594,7 +15625,8 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	const double brightspotGrayRawDisplay = clamp01(stage5.brightspotGray * std::max(0.0, displayConfig.brightspotDisplayGain));
 	const double plumeGrayDisplay = clamp01(components.plumeRadiance * std::max(0.0, displayConfig.hotspotDisplayGain));
 	const double atmosphereGrayDisplay = clamp01(components.pathRadiance * std::max(0.0, displayConfig.bodyDisplayGain));
-	const double sensorInputDisplayGray = MapSensorInputToDisplayGray(components.sensorInputRadiance);
+	const double sensorInputDisplayGray = formalM1FailClosed
+		? 0.0 : MapSensorInputToDisplayGray(components.sensorInputRadiance);
 	const double sensorInputRatio = components.sensorInputNoAero > 1.0e-12
 		? components.sensorInputWithAero / components.sensorInputNoAero
 		: 1.0;
@@ -14612,7 +15644,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	const double compositeGrayDisplay = clamp01(
 		std::max(compositeMinGray, std::min(compositeMaxGray,
 			bodyGrayDisplay + reflectedGrayDisplay + hotspotGrayDisplay + plumeGrayDisplay + brightspotGrayDisplay + atmosphereGrayDisplay)));
-	const double finalGrayDebugDisplay = useSensorInputForDisplayEffective
+	const double finalGrayDebugDisplay = (useSensorInputForDisplayEffective || formalM1FailClosed)
 		? sensorInputDisplayGray
 		: compositeGrayDisplay;
 
@@ -14625,12 +15657,14 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_path_radiance", LVecBase2f(static_cast<float>(components.pathRadiance), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_sensor_input_radiance", LVecBase2f(static_cast<float>(components.sensorInputRadiance), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_sensor_input_display_gray", LVecBase2f(static_cast<float>(sensorInputDisplayGray), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage6_raw_si_domain", LVecBase2i(m_stage6RawSiDomain ? 1 : 0, 0));
 	if (stage5Input.m1RuntimeAffectsImage)
 	{
 		SetShaderInputCached(targetPlat.nodePath, "u_m1_physics_runtime_en", LVecBase2i(1, 0));
+		SetShaderInputCached(targetPlat.nodePath, "u_m1_raw_si_output", LVecBase2i(m_stage6RawSiDomain ? 1 : 0, 0));
 		SetShaderInputCached(targetPlat.nodePath, "u_m1_tau_up", LVecBase2f(static_cast<float>(components.m1TauUp), 0.0f));
 		SetShaderInputCached(targetPlat.nodePath, "u_m1_path_radiance", LVecBase2f(static_cast<float>(
-			stage5Band == IRBand::NearInfrared ? components.pathScatteringRadiance : components.pathThermalRadiance), 0.0f));
+			components.pathThermalRadiance + components.pathScatteringRadiance), 0.0f));
 		SetShaderInputCached(targetPlat.nodePath, "u_m1_direct_solar_irradiance", LVecBase2f(static_cast<float>(components.directSolarIrradiance), 0.0f));
 		SetShaderInputCached(targetPlat.nodePath, "u_m1_sky_diffuse_irradiance", LVecBase2f(static_cast<float>(components.skyDiffuseIrradiance), 0.0f));
 		SetShaderInputCached(targetPlat.nodePath, "u_m1_sun_visibility", LVecBase2f(static_cast<float>(components.sunVisibility), 0.0f));
@@ -14640,13 +15674,24 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 		SetShaderInputCached(targetPlat.nodePath, "u_m1_sun_direction_world", LVecBase3f(
 			static_cast<float>(m_m1SolarState.east), static_cast<float>(m_m1SolarState.north), static_cast<float>(m_m1SolarState.up)));
 		const double physicalMin = stage5Band == IRBand::NearInfrared
-			? m_m1NirDisplayRadianceMin : m_m1MwirDisplayRadianceMin;
+			? m_m1NirDisplayRadianceMin
+			: (stage5Band == IRBand::ShortWaveInfrared
+				? m_m1SwirDisplayRadianceMin : m_m1MwirDisplayRadianceMin);
 		const double physicalMax = stage5Band == IRBand::NearInfrared
-			? m_m1NirDisplayRadianceMax : m_m1MwirDisplayRadianceMax;
+			? m_m1NirDisplayRadianceMax
+			: (stage5Band == IRBand::ShortWaveInfrared
+				? m_m1SwirDisplayRadianceMax : m_m1MwirDisplayRadianceMax);
 		const double physicalSpan = std::max(1.0e-9, physicalMax - physicalMin);
 		SetShaderInputCached(targetPlat.nodePath, "u_m1_display_scale", LVecBase2f(static_cast<float>(1.0 / physicalSpan), 0.0f));
 		SetShaderInputCached(targetPlat.nodePath, "u_m1_display_offset", LVecBase2f(static_cast<float>(-physicalMin / physicalSpan), 0.0f));
 		SetShaderInputCached(targetPlat.nodePath, "u_m1_display_gamma", LVecBase2f(static_cast<float>(m_stage5SensorInputDisplayGamma), 0.0f));
+	}
+	else
+	{
+		// Clear a previously valid formal state.  Without this reset, moving a
+		// target outside the LUT could reuse stale M1 uniforms from an older frame.
+		SetShaderInputCached(targetPlat.nodePath, "u_m1_physics_runtime_en", LVecBase2i(0, 0));
+		SetShaderInputCached(targetPlat.nodePath, "u_m1_raw_si_output", LVecBase2i(0, 0));
 	}
 	if (m_l2ActiveIlluminatorConfig.enabled)
 	{
@@ -14688,8 +15733,8 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 		SetShaderInputCached(targetPlat.nodePath, "u_l2_active_tau_inbound", LVecBase2f(static_cast<float>(l2Active.tauInbound), 0.0f));
 		SetShaderInputCached(targetPlat.nodePath, "u_l2_active_visibility", LVecBase2f(static_cast<float>(l2Active.activeVisibility), 0.0f));
 		SetShaderInputCached(targetPlat.nodePath, "u_l2_active_overlap_width_um", LVecBase2f(static_cast<float>(std::max(1.0e-6, l2Active.spectralOverlapWidthUm)), 0.0f));
-		SetShaderInputCached(targetPlat.nodePath, "u_l2_active_center_sensor_radiance", LVecBase2f(
-			static_cast<float>(l2ShaderActiveEnabled ? l2Active.activeSensorRadianceWm2SrUm : 0.0), 0.0f));
+		SetShaderInputCached(targetPlat.nodePath, "u_l2_active_unshaped_sensor_radiance", LVecBase2f(
+			static_cast<float>(l2ShaderActiveEnabled ? l2Active.unshapedSensorRadianceWm2SrUm : 0.0), 0.0f));
 	}
 	SetShaderInputCached(targetPlat.nodePath, "u_body_radiance_scale", LVecBase2f(static_cast<float>(stage5.bodyGrayBeforeFloor), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_body_gray", LVecBase2f(static_cast<float>(stage5.bodyGrayAfterFloor), 0.0f));
@@ -14710,7 +15755,16 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_composite_min_gray", LVecBase2f(static_cast<float>(compositeMinGray), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_composite_max_gray", LVecBase2f(static_cast<float>(compositeMaxGray), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_display_fallback_applied", LVecBase2i(stage5DisplayFallbackApplied ? 1 : 0, 0));
-	SetShaderInputCached(targetPlat.nodePath, "u_stage5_aero_body_delta_K", LVecBase2f(static_cast<float>(components.bodyAeroDeltaK), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_target_engine_state", LVecBase2i(
+		targetPlat.targetState.engineState ? 1 : 0, 0));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_aero_local_en", LVecBase2i(
+		localAeroApplied ? 1 : 0, 0));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_aero_nose_delta_K", LVecBase2f(
+		static_cast<float>(stage5Input.noseAeroDeltaK), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_aero_edge_delta_K", LVecBase2f(
+		static_cast<float>(stage5Input.edgeAeroDeltaK), 0.0f));
+	SetShaderInputCached(targetPlat.nodePath, "u_stage5_aero_rear_delta_K", LVecBase2f(
+		static_cast<float>(stage5Input.rearAeroDeltaK), 0.0f));
 	SetShaderInputCached(targetPlat.nodePath, "u_stage5_aero_mach", LVecBase2f(static_cast<float>(components.mach), 0.0f));
 
 	const std::map<PLATFORM_TYPE, PlatformResPath>::const_iterator resIter = m_platformResMap.find(targetPlat.type);
@@ -14734,7 +15788,9 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 		std::to_string(stage5Input.aeroAppliedToRadiance ? 1 : 0) + ":" +
 		std::to_string(useSensorInputForDisplayEffective ? 1 : 0) + ":" +
 		m_stage5SensorInputDisplayMode + ":" +
-		Stage5ModtranCacheDouble(stage5Input.bodyAeroDeltaK) + ":" +
+		Stage5ModtranCacheDouble(stage5Input.noseAeroDeltaK) + ":" +
+		Stage5ModtranCacheDouble(stage5Input.edgeAeroDeltaK) + ":" +
+		Stage5ModtranCacheDouble(stage5Input.rearAeroDeltaK) + ":" +
 		Stage5ModtranCacheDouble(stage5Input.tauUp);
 	const bool componentStateChanged =
 		m_lastStage5RadianceComponentLogState[componentLogKey] != componentLogState;
@@ -14774,7 +15830,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 			<< " targetKey=" << targetKey
 			<< " reference=target_center_base_excludes_gpu_local_masks"
 			<< " route=" << (stage5Input.m1RuntimeAffectsImage ? "M1" : "legacy")
-			<< " nightBoundary=" << (nirNightBoundary ? 1 : 0)
+			<< " nightBoundary=" << (reflectiveNightBoundary ? 1 : 0)
 			<< " activeEnabled=" << (components.activeContributionEnabled ? 1 : 0)
 			<< " activeSensorRadiance=" << components.activeSensorRadiance
 			<< " totalSensorRadiance=" << components.m1SensorRadiance
@@ -14865,6 +15921,14 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 			<< " surfaceRadiance=" << components.surfaceRadiance
 			<< " surfaceRadianceNoAero=" << components.surfaceRadianceNoAero
 			<< " surfaceRadianceWithAero=" << components.surfaceRadianceWithAero
+			<< " formalRuntimeAffectsImage=" << (stage5Input.m1RuntimeAffectsImage ? "1" : "0")
+			<< " finalOutput=" << (stage5Input.m1RuntimeAffectsImage ? "M1" : (formalM1FailClosed ? "formal_fail_closed" : "legacy"))
+			<< " finalTauUp=" << (stage5Input.m1RuntimeAffectsImage ? components.m1TauUp : components.tauUp)
+			<< " finalPathRadiance=" << (stage5Input.m1RuntimeAffectsImage
+				? components.pathThermalRadiance + components.pathScatteringRadiance
+				: components.pathRadiance)
+			<< " finalSensorInputRadiance=" << components.sensorInputRadiance
+			<< " radianceUnit=W/(m^2_sr_um)"
 			<< " tauUp=" << components.tauUp
 			<< " tauUpSource=" << components.tauUpSource
 			<< " tauUpValid=" << (components.tauUpValid ? "1" : "0")
@@ -15240,6 +16304,22 @@ void HwaSimIR::UpdateM1SolarPosition(IRRuntimeEnvironment& environment, bool for
 	}
 	input.utcHour = CurrentSimulationHour();
 	m_m1SolarState = m_m1SolarPosition.evaluate(input);
+	if (m_m1SolarOverrideEnabled)
+	{
+		const double radiansPerDegree = 3.14159265358979323846 / 180.0;
+		const double azimuthRad = m_m1SolarOverrideAzimuthDeg * radiansPerDegree;
+		const double elevationRad = m_m1SolarOverrideElevationDeg * radiansPerDegree;
+		const double cosElevation = std::cos(elevationRad);
+		m_m1SolarState.valid = true;
+		m_m1SolarState.azimuthDeg = m_m1SolarOverrideAzimuthDeg;
+		m_m1SolarState.elevationDeg = m_m1SolarOverrideElevationDeg;
+		m_m1SolarState.zenithDeg = 90.0 - m_m1SolarOverrideElevationDeg;
+		m_m1SolarState.east = cosElevation * std::sin(azimuthRad);
+		m_m1SolarState.north = cosElevation * std::cos(azimuthRad);
+		m_m1SolarState.up = std::sin(elevationRad);
+		m_m1SolarState.fallbackReason = "none";
+		positionSource = "controlled_config_solar_override";
+	}
 	if (m_m1SolarState.valid)
 	{
 		environment.sunAzimuthDeg = m_m1SolarState.azimuthDeg;
@@ -15269,6 +16349,7 @@ void HwaSimIR::UpdateM1SolarPosition(IRRuntimeEnvironment& environment, bool for
 		<< " solarEl=" << m_m1SolarState.elevationDeg << " solarZenith=" << m_m1SolarState.zenithDeg
 		<< " sunDirection=(" << m_m1SolarState.east << ',' << m_m1SolarState.north << ',' << m_m1SolarState.up << ')'
 		<< " frame=" << m_m1SolarState.coordinateFrame << " positionSource=" << positionSource
+		<< " solarOverride=" << (m_m1SolarOverrideEnabled ? 1 : 0)
 		<< " dateSource=config_fallback protocolTimeSource=time_ms_since_midnight"
 		<< " valid=" << (m_m1SolarState.valid ? 1 : 0)
 		<< " fallbackReason=" << m_m1SolarState.fallbackReason << std::endl;
@@ -15478,8 +16559,12 @@ IRActiveIlluminatorOutput HwaSimIR::EvaluateL2ActiveIlluminator(
 	input.tauInboundValid = modtranRadiance.valid;
 	input.tauFallbackReason = modtranRadiance.fallbackReason;
 	input.activeVisibility = L2ActiveVisibilityForTarget(targetKey);
-	input.bandReflectance = sensorBand == IRBand::NearInfrared ? reflectance.nir : reflectance.mwir;
-	input.reflectanceSource = sensorBand == IRBand::NearInfrared ? reflectance.nirSource : reflectance.mwirSource;
+	input.bandReflectance = sensorBand == IRBand::ShortWaveInfrared
+		? reflectance.swir
+		: (sensorBand == IRBand::MidWaveInfrared ? reflectance.mwir : reflectance.nir);
+	input.reflectanceSource = sensorBand == IRBand::ShortWaveInfrared
+		? reflectance.swirSource
+		: (sensorBand == IRBand::MidWaveInfrared ? reflectance.mwirSource : reflectance.nirSource);
 
 	LPoint3f targetCenter;
 	float targetRadius = 1.0f;
@@ -15523,6 +16608,9 @@ IRActiveIlluminatorOutput HwaSimIR::EvaluateL2ActiveIlluminator(
 			<< " sensorBand=" << output.sensorBand
 			<< " spectralOverlap=" << (output.spectralOverlap ? 1 : 0)
 			<< " overlapWidthUm=" << output.spectralOverlapWidthUm
+			<< " sourceBandwidthUm=" << output.sourceBandwidthUm
+			<< " sensorBandwidthUm=" << output.sensorBandwidthUm
+			<< " overlapFraction=" << output.spectralOverlapFraction
 			<< " activeContributionEnabled=" << (output.activeContributionEnabled ? 1 : 0)
 			<< " protocolEnabled=" << (input.protocolEnabled ? 1 : 0)
 			<< " protocolAngleMrad=" << output.protocolAngleMrad
@@ -15539,6 +16627,7 @@ IRActiveIlluminatorOutput HwaSimIR::EvaluateL2ActiveIlluminator(
 			<< " activeVisibility=" << output.activeVisibility
 			<< " activeSurfaceWm2SrUm=" << output.activeSurfaceRadianceWm2SrUm
 			<< " activeSensorWm2SrUm=" << output.activeSensorRadianceWm2SrUm
+			<< " gpuUnshapedSensorWm2SrUm=" << output.unshapedSensorRadianceWm2SrUm
 			<< " intensitySource=" << output.intensitySource
 			<< " outboundTauSource=" << output.outboundTauSource
 			<< " tauQueryMode=" << (modtranRadiance.interpolationMode.empty() ? "none" : modtranRadiance.interpolationMode)
@@ -15599,13 +16688,24 @@ void HwaSimIR::UpdateL1MaterialThermalState(TargetPlatformData& targetPlat, cons
 		query.targetAltKm = IsReasonableAltitudeMeters(targetPlat.targetState.targetLoc.alt) ? targetPlat.targetState.targetLoc.alt / 1000.0 : 5.0;
 		query.visibilityKm = std::max(0.001, environment.visibilityMeters / 1000.0);
 		query.solarZenithDeg = m_m1SolarState.zenithDeg;
-		solar = m_l1SolarHeatingLut.query(query);
+		solar = m_l1SolarHeatingLut.queryRelativeHumidity(query, environment.humidityPercent);
 		if (!solar.valid)
 		{
 			std::cout << "[L1 SolarHeatingLut][WARN] target=" << targetKey
 				<< " axis=" << solar.fallbackAxis << " query=" << solar.fallbackQuery
 				<< " min=" << solar.fallbackMin << " max=" << solar.fallbackMax
 				<< " fallbackReason=" << solar.fallbackReason << " action=no_solar_heating" << std::endl;
+		}
+		else if (m_l1DebugLog)
+		{
+			std::cout << "[L1 SolarHeatingLut] target=" << targetKey
+				<< " relativeHumidityPercent=" << solar.relativeHumidityPercent
+				<< " humidityMode=" << solar.humidityMode
+				<< " directWm2=" << solar.directIrradianceWm2
+				<< " diffuseWm2=" << solar.diffuseDownIrradianceWm2
+				<< " unit=" << solar.irradianceUnit
+				<< " interpolationMode=" << solar.interpolationMode
+				<< " sourceFiles=" << solar.sourceFiles << std::endl;
 		}
 	}
 	const LVecBase3f localSun = L1SunDirectionLocal(targetPlat);
@@ -15639,7 +16739,9 @@ void HwaSimIR::UpdateL1MaterialThermalState(TargetPlatformData& targetPlat, cons
 			IRMaterialThermalInput input;
 			input.dtSec = std::min(1.0, std::max(0.0, thermalDt));
 			input.baseTempK = baseTempK;
-			input.aeroDeltaK = (m_stage5ApplyAeroToRadiance && aeroOutput.valid) ? std::max(0.0, aeroOutput.bodyAeroDeltaK * m_stage5AeroApplyScale) : 0.0;
+			// Aerodynamic heating is applied later as a spatial GPU field.  Feeding a
+			// body-wide delta into every material history would heat the complete model.
+			input.aeroDeltaK = 0.0;
 			input.airTempK = environment.airTemperatureC + 273.15;
 			input.environmentTempK = input.airTempK;
 			input.targetSpeedMps = aeroOutput.speedMps;
@@ -15901,25 +17003,6 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 					}
 				}
 			}
-			IREnginePlumeOutput plumeOutput;
-			if (targetRenderable)
-			{
-				const auto plumeUpdateStart = std::chrono::high_resolution_clock::now();
-				plumeOutput = UpdateEnginePlumeForTarget(
-					targetPlat,
-					stage4DtSec,
-					ambientTempK,
-					environment.band,
-					true,
-					current_time,
-					nullptr);
-				updatePlumeMs += std::chrono::duration<double, std::milli>(
-					std::chrono::high_resolution_clock::now() - plumeUpdateStart).count();
-			}
-			else
-			{
-				HideEnginePlume(targetPlat);
-			}
 			std::chrono::steady_clock::time_point stage4Start;
 			if (profileBreakdown)
 			{
@@ -15938,6 +17021,28 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 			{
 				breakdown.stage4HotspotMs += std::chrono::duration<double, std::milli>(
 					std::chrono::steady_clock::now() - stage4Start).count();
+			}
+			// Stage4/Stage5 first establishes the current target's formal LOS tau.
+			// The separately rendered plume then consumes that same-frame tau; the
+			// previous order either used stale data or encouraged a legacy fallback.
+			IREnginePlumeOutput plumeOutput;
+			if (targetRenderable)
+			{
+				const auto plumeUpdateStart = std::chrono::high_resolution_clock::now();
+				plumeOutput = UpdateEnginePlumeForTarget(
+					targetPlat,
+					stage4DtSec,
+					ambientTempK,
+					environment.band,
+					true,
+					current_time,
+					nullptr);
+				updatePlumeMs += std::chrono::duration<double, std::milli>(
+					std::chrono::high_resolution_clock::now() - plumeUpdateStart).count();
+			}
+			else
+			{
+				HideEnginePlume(targetPlat);
 			}
 			if (plumeOutput.coreNodeVisible && targetRenderable)
 			{
@@ -15996,6 +17101,8 @@ void HwaSimIR::ResetRenderSchedulingState()
 	m_latestUdpSourceSeq.store(0);
 	m_lastRealtimeIngressSteadyNs.store(0);
 	m_lastCapturedSourceSeq = 0;
+	m_stage6LinearReadbackSourceSeq = 0;
+	m_stage6LinearCaptureCompletedSourceSeq = 0;
     m_cloudRenderCallCount=0;m_cloudRenderCallSumMs=0.0;m_cloudRenderCallMaxMs=0.0;
 	m_lastOutputSourceSeq.store(0);
 	m_lastSourceSeqContinuous.store(true);
@@ -16070,13 +17177,14 @@ void HwaSimIR::ApplyRenderControl(
 
 void HwaSimIR::SetRenderMode(bool isSync, double targetFPS) {
 	m_bSyncRenderMode.store(isSync);
+	const bool orderedOutput = isSync || m_asyncInputPolicy == "OrderedQueue";
 	const double configuredTarget = targetFPS > 0.0
 		? targetFPS
 		: static_cast<double>(m_targetVideoFps.load());
 	m_perfStats.configure(isSync, configuredTarget);
 	if (m_pTcpThread)
 	{
-		m_pTcpThread->setSyncMode(isSync);
+		m_pTcpThread->setSyncMode(orderedOutput);
 	}
 
 	ClockObject* globalClock = ClockObject::get_global_clock();
@@ -16099,6 +17207,7 @@ void HwaSimIR::SetRenderMode(bool isSync, double targetFPS) {
 	}
 	std::cout << "[RenderModeApply]"
 		<< " sync=" << (isSync ? "1" : "0")
+		<< " orderedOutput=" << (orderedOutput ? "1" : "0")
 		<< " targetFps=" << configuredTarget
 		<< " clockMode=" << (isSync ? "packet_driven" : (targetFPS > 0.0 ? "deadline_limited" : "unlimited"))
 		<< std::endl;
@@ -16270,8 +17379,10 @@ void HwaSimIR::UpdateGameSpriteAnimation()
 AsyncTask::DoneStatus HwaSimIR::shader_update_task(GenericAsyncTask* task, void* data) {
 	HwaSimIR* self = static_cast<HwaSimIR*>(data);
 	ScopedSteadyMs taskTimer(self->m_lastIrTaskMs);
+	const bool frameDriven = self->m_bSyncRenderMode.load() ||
+		self->m_asyncInputPolicy == "OrderedQueue";
 	if (self->m_isSimRunning.load() &&
-		(!self->m_bSyncRenderMode.load() || self->m_syncFrameActive.load())) {
+		(!frameDriven || self->m_syncFrameActive.load())) {
 		const std::uint64_t sourceSeq = self->m_currentFrameTelemetry.sourceSeq;
 		const double targetFps = std::max(1.0, static_cast<double>(self->m_targetVideoFps.load()));
 		const std::uint64_t updateStride = static_cast<std::uint64_t>(
@@ -16332,6 +17443,8 @@ AsyncTask::DoneStatus HwaSimIR::scene_update_task(GenericAsyncTask* task, void* 
 AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data) {
 	HwaSimIR* self = static_cast<HwaSimIR*>(data);
 	ScopedSteadyMs taskTimer(self->m_lastCaptureTaskMs);
+	const bool frameDriven = self->m_bSyncRenderMode.load() ||
+		self->m_asyncInputPolicy == "OrderedQueue";
 	if (!self->m_pTcpThread)
 	{
 		return AsyncTask::DS_cont;
@@ -16340,7 +17453,7 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 	{
 		return AsyncTask::DS_cont;
 	}
-	if (self->m_bSyncRenderMode.load() && !self->m_syncFrameActive.load())
+	if (frameDriven && !self->m_syncFrameActive.load())
 	{
 		return AsyncTask::DS_cont;
 	}
@@ -16381,11 +17494,27 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 
 	++self->m_headlessReadbackFrameCounter;
 	const bool headlessMode = self->IsHeadlessOffscreenMode();
+	const bool frameDrivenReadbackOverride = frameDriven && headlessMode &&
+		self->m_headlessReadbackMode != HeadlessReadbackMode::EveryFrame;
+	if (frameDrivenReadbackOverride)
+	{
+		static bool loggedFrameDrivenReadbackOverride = false;
+		if (!loggedFrameDrivenReadbackOverride)
+		{
+			std::cerr << "[FrameContract][WARN] configuredHeadlessReadbackMode="
+				<< self->HeadlessReadbackModeText()
+				<< " effectiveHeadlessReadbackMode=EveryFrame"
+				<< " reason=frame_driven_no_pixel_reuse_or_drop" << std::endl;
+			loggedFrameDrivenReadbackOverride = true;
+		}
+	}
 	const bool readbackDisabled =
 		headlessMode &&
+		!frameDrivenReadbackOverride &&
 		self->m_headlessReadbackMode == HeadlessReadbackMode::DisabledForPerfProbe;
 	const bool readbackEveryN =
 		headlessMode &&
+		!frameDrivenReadbackOverride &&
 		self->m_headlessReadbackMode == HeadlessReadbackMode::EveryN &&
 		self->m_headlessReadbackEveryN > 1;
 	const bool readbackDue =
@@ -16569,7 +17698,7 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 	}
 	telemetry.readbackMs = readbackMs;
 	telemetry.captureSteadyNs = IRPerfStats::steadyTimeNs();
-	if (self->m_bSyncRenderMode.load() &&
+	if (frameDriven &&
 		(telemetry.sourceSeq == 0 || telemetry.sourceSeq == self->m_lastCapturedSourceSeq))
 	{
 		return AsyncTask::DS_cont;
@@ -16640,7 +17769,7 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 			<< " height=" << frameHeight
 			<< std::endl;
 	}
-	if (self->m_bSyncRenderMode.load())
+	if (frameDriven)
 	{
 		self->m_lastCapturedSourceSeq = telemetry.sourceSeq;
 		if (enqueueResult.queueWasFull)

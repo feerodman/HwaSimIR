@@ -1,0 +1,14 @@
+P11 Controlled IR Sample Rack
+SPDX-License-Identifier: CC0-1.0
+
+To the extent possible under law, the authors and contributors have waived all
+copyright and related or neighboring rights to this project-authored geometry
+and its model-local companion data. You may copy, modify, distribute, and use
+the work, including commercially, without asking permission.
+
+This waiver applies only to files in the `p11/controlled_samples` directory. It
+does not alter the license of HwaSimIR, Panda3D, existing target models, source
+papers, or third-party assets. No GMC model content was used.
+
+CC0 1.0 Universal legal text:
+https://creativecommons.org/publicdomain/zero/1.0/legalcode

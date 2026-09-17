@@ -397,9 +397,12 @@ PLATFORM_TYPE TargetTypeToPlatform(int targetType)
 	switch (targetType)
 	{
 	case 0x11: return F35;
+	case 0x12: return F22;
 	case 0x22: return AIM120;
 	case 0x33: return AIM9;
 	case 0x44: return MMD;
+	case 0x55: return Resv1;
+	case 0x66: return Resv2;
 	default: return NONE;
 	}
 }
@@ -422,6 +425,8 @@ void AnnotationConfig::resetToFallback()
 	m_configs[AIM120] = MakeFallbackConfig("AIM120D", LPoint3f(0.0f, 1.1f, 0.0f), LPoint3f(0.0f, 0.0f, 0.08f));
 	m_configs[AIM9] = MakeFallbackConfig("AIM9X", LPoint3f(0.0f, 0.9f, 0.0f), LPoint3f(0.0f, 0.0f, 0.08f));
 	m_configs[MMD] = MakeFallbackConfig("MMD", LPoint3f(0.0f, 1.0f, 0.0f), LPoint3f(0.0f, 0.0f, 0.1f));
+	m_configs[Resv1] = MakeFallbackConfig("P11-CIVIL-VAN", LPoint3f(0.0f, 2.5f, 1.2f), LPoint3f(0.0f, 0.0f, 1.2f));
+	m_configs[Resv2] = MakeFallbackConfig("P11-CONTROLLED-SAMPLES", LPoint3f(0.0f, 0.08f, 2.2f), LPoint3f(0.0f, 0.08f, 1.2f));
 }
 
 bool AnnotationConfig::loadFromCandidates(const std::vector<std::string>& filePaths, const std::string& configuredPath, const std::string& source)
@@ -460,7 +465,10 @@ bool AnnotationConfig::loadFromCandidates(const std::vector<std::string>& filePa
 	std::string platformsText;
 	if (FindJsonObject(text, "platforms", platformsText))
 	{
-		const char* platformNames[] = { "F35", "AIM120D", "AIM120", "AIM9X", "MMD" };
+		const char* platformNames[] = {
+			"F35", "AIM120D", "AIM120", "AIM9X", "MMD",
+			"P11CivilVan", "P11ControlledSamples"
+		};
 		for (size_t i = 0; i < sizeof(platformNames) / sizeof(platformNames[0]); ++i)
 		{
 			const std::string name = platformNames[i];
@@ -489,6 +497,14 @@ bool AnnotationConfig::loadFromCandidates(const std::vector<std::string>& filePa
 			else if (name == "MMD")
 			{
 				m_configs[MMD] = config;
+			}
+			else if (name == "P11CivilVan")
+			{
+				m_configs[Resv1] = config;
+			}
+			else if (name == "P11ControlledSamples")
+			{
+				m_configs[Resv2] = config;
 			}
 		}
 	}

@@ -1,0 +1,14 @@
+P11 Civil Panel Van asset
+SPDX-License-Identifier: CC0-1.0
+
+To the extent possible under law, the authors and contributors have waived all
+copyright and related or neighboring rights to this project-authored model and
+its model-local companion data. You may copy, modify, distribute, and use the
+work, including commercially, without asking permission.
+
+This waiver applies only to files in this `p11/civil_van` directory. It does not
+change the license of HwaSimIR, Panda3D, any existing target model, or any GMC
+asset. No GMC geometry, texture, metadata, or conversion output was used.
+
+CC0 1.0 Universal legal text:
+https://creativecommons.org/publicdomain/zero/1.0/legalcode

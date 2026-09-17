@@ -88,16 +88,28 @@ param(
 	[double]$StimUtcHour = -1.0,
     [string]$EnablePerfLog = "true",
     [int]$PostStimulusWaitSeconds = -1,
+    [ValidateRange(16, 256)]
+    [int]$OrderedInputQueueMaxFrames = 256,
+    [ValidateRange(1, 60)]
+    [int]$InitAckTimeoutSeconds = 30,
+    [ValidateRange(1, 60)]
+    [int]$StopCompletionTimeoutSeconds = 60,
     [string]$M1CompareOnly = "false",
     [string]$M1EnableRuntime = "false",
     [string]$M1EnableNIRRuntime = "false",
+    [string]$M1EnableSWIRRuntime = "false",
     [string]$M1EnableMWIRRuntime = "false",
+    [ValidateRange(0.0, 1.0)]
+    [double]$M1SunVisibility = 1.0,
+    [string]$M1SolarOverrideEnable = "false",
+    [double]$M1SolarOverrideAzimuthDeg = 180.0,
+    [double]$M1SolarOverrideElevationDeg = 45.0,
     [string]$NaturalSolarEnable = "false",
     [string]$NaturalSolarEnableOpticalShadow = "false",
     [string]$NaturalSolarEnableSolarThermal = "false",
     [string]$NaturalSolarDebugLog = "false"
 	,[string]$ActiveIlluminatorEnable = "false"
-	,[ValidateSet("NIR", "MWIR", "FollowSensor")][string]$ActiveIlluminatorBand = "NIR"
+	,[ValidateSet("NIR", "SWIR", "MWIR", "FollowSensor")][string]$ActiveIlluminatorBand = "NIR"
 	,[ValidateSet("LegacyNormalized", "BandIrradianceAtReference")][string]$ActiveIlluminatorIntensityMode = "LegacyNormalized"
 	,[double]$ActiveIlluminatorCenterWavelengthUm = 0.85
 	,[double]$ActiveIlluminatorBandwidthUm = 0.05
@@ -106,6 +118,7 @@ param(
 	,[double]$ActiveIlluminatorLegacyMaxReferenceIrradianceWm2 = 1.0
 	,[string]$ActiveIlluminatorDebugLog = "false"
 	,[string]$AnnotationOverlayInSensorImage = "true"
+	,[ValidateSet("Off", "EdgeAA")][string]$PostprocessAA = "Off"
 )
 
 $ErrorActionPreference = "Stop"
@@ -219,6 +232,39 @@ function Stop-TestProcess {
     }
 }
 
+function Wait-LogPattern {
+    param(
+        [string]$Path,
+        [string]$Pattern,
+        [int]$TimeoutSeconds
+    )
+    $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
+    do {
+        if (Test-Path -LiteralPath $Path) {
+            try {
+                $stream = [IO.File]::Open(
+                    $Path,
+                    [IO.FileMode]::Open,
+                    [IO.FileAccess]::Read,
+                    [IO.FileShare]::ReadWrite)
+                try {
+                    $reader = New-Object IO.StreamReader($stream)
+                    $text = $reader.ReadToEnd()
+                    $reader.Dispose()
+                } finally {
+                    $stream.Dispose()
+                }
+                if ($text -match $Pattern) { return $true }
+            } catch [IO.IOException] {
+                # Redirected process logs may briefly rotate or hold an exclusive
+                # handle during startup; retry inside the same bounded deadline.
+            }
+        }
+        Start-Sleep -Milliseconds 100
+    } while ([DateTime]::UtcNow -lt $deadline)
+    return $false
+}
+
 $backupPaths = @($runtimeIni, $hwaNetwork, $videoNetwork, $stimNetwork)
 $backups = @{}
 foreach ($path in $backupPaths) {
@@ -237,6 +283,10 @@ $caseStart = Get-Date
 $video = $null
 $hwa = $null
 $stim = $null
+$stimInitAckObserved = $false
+$stimInitAckWaitMs = 0.0
+$hwaStopCompleted = $false
+$videoFlushCompleted = $false
 
 try {
     $pathValue = $oldPathValue
@@ -277,6 +327,10 @@ try {
     $runtimeText = Set-IniValue $runtimeText "EnablePerfLog" $EnablePerfLog
 	$runtimeText = Set-IniValue $runtimeText "ConfiguredSimMode" ([string]$StimSimMode)
 	$runtimeText = Set-IniValue $runtimeText "ConfiguredVideoFps" "60"
+	# UDP cannot exert sender-side backpressure.  Keep an ordered transient
+	# reservoir large enough to absorb bounded 60 Hz render jitter, then require
+	# exact sent->accepted->written conservation at the gate below.
+	$runtimeText = Set-IniSectionValue $runtimeText "RenderControl" "AsyncInputQueueMaxFrames" ([string]$OrderedInputQueueMaxFrames)
     $runtimeText = Set-IniValue $runtimeText "EnableIRVerboseLog" "0"
     $runtimeText = Set-IniValue $runtimeText "DebugView" "Off"
     $runtimeText = Set-IniValue $runtimeText "LogComponents" $Stage5LogComponents
@@ -316,32 +370,35 @@ try {
     $runtimeText = Set-IniValue $runtimeText "NoiseClampMax" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $NoiseClampMax))
     $runtimeText = Set-IniValue $runtimeText "NoiseDebugLog" $NoiseDebugLog
     $runtimeText = Set-IniValue $runtimeText "NoiseLogEveryFrames" ([string]$NoiseLogEveryFrames)
-    $runtimeText = Set-IniValue $runtimeText "EnableAGC" $EnableAGC
-    $runtimeText = Set-IniValue $runtimeText "AGCMode" $AGCMode
-    $runtimeText = Set-IniValue $runtimeText "AGCApplyTo" $AGCApplyTo
-    $runtimeText = Set-IniValue $runtimeText "AGCStatsSource" $AGCStatsSource
-    $runtimeText = Set-IniValue $runtimeText "AGCUpdateHz" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCUpdateHz))
-    $runtimeText = Set-IniValue $runtimeText "AGCLogEveryFrames" ([string]$AGCLogEveryFrames)
-    $runtimeText = Set-IniValue $runtimeText "AGCLowPercentile" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCLowPercentile))
-    $runtimeText = Set-IniValue $runtimeText "AGCHighPercentile" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCHighPercentile))
-    $runtimeText = Set-IniValue $runtimeText "AGCMeanStdK" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCMeanStdK))
-    $runtimeText = Set-IniValue $runtimeText "AGCMinGain" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCMinGain))
-    $runtimeText = Set-IniValue $runtimeText "AGCMaxGain" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCMaxGain))
-    $runtimeText = Set-IniValue $runtimeText "AGCMinOffset" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCMinOffset))
-    $runtimeText = Set-IniValue $runtimeText "AGCMaxOffset" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCMaxOffset))
-    $runtimeText = Set-IniValue $runtimeText "AGCSmoothingAlpha" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCSmoothingAlpha))
-    $runtimeText = Set-IniValue $runtimeText "AGCTargetLowGray" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCTargetLowGray))
-    $runtimeText = Set-IniValue $runtimeText "AGCTargetHighGray" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCTargetHighGray))
-    $runtimeText = Set-IniValue $runtimeText "AGCStride" ([string]$AGCStride)
-    $runtimeText = Set-IniValue $runtimeText "AGCExcludeAnnotationOverlay" $AGCExcludeAnnotationOverlay
-    $runtimeText = Set-IniValue $runtimeText "AGCDebugLog" $AGCDebugLog
+    # AGC defaults may intentionally live only in the selected band profile.
+    # Put all evidence overrides in the owning INI section; appending a bare
+    # key at EOF leaves it under the previous section and does not override AGC.
+    $runtimeText = Set-IniSectionValue $runtimeText "Stage6AGC" "EnableAGC" $EnableAGC
+    $runtimeText = Set-IniSectionValue $runtimeText "Stage6AGC" "AGCMode" $AGCMode
+    $runtimeText = Set-IniSectionValue $runtimeText "Stage6AGC" "AGCApplyTo" $AGCApplyTo
+    $runtimeText = Set-IniSectionValue $runtimeText "Stage6AGC" "AGCStatsSource" $AGCStatsSource
+    $runtimeText = Set-IniSectionValue $runtimeText "Stage6AGC" "AGCUpdateHz" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCUpdateHz))
+    $runtimeText = Set-IniSectionValue $runtimeText "Stage6AGC" "AGCLogEveryFrames" ([string]$AGCLogEveryFrames)
+    $runtimeText = Set-IniSectionValue $runtimeText "Stage6AGC" "AGCLowPercentile" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCLowPercentile))
+    $runtimeText = Set-IniSectionValue $runtimeText "Stage6AGC" "AGCHighPercentile" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCHighPercentile))
+    $runtimeText = Set-IniSectionValue $runtimeText "Stage6AGC" "AGCMeanStdK" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCMeanStdK))
+    $runtimeText = Set-IniSectionValue $runtimeText "Stage6AGC" "AGCMinGain" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCMinGain))
+    $runtimeText = Set-IniSectionValue $runtimeText "Stage6AGC" "AGCMaxGain" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCMaxGain))
+    $runtimeText = Set-IniSectionValue $runtimeText "Stage6AGC" "AGCMinOffset" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCMinOffset))
+    $runtimeText = Set-IniSectionValue $runtimeText "Stage6AGC" "AGCMaxOffset" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCMaxOffset))
+    $runtimeText = Set-IniSectionValue $runtimeText "Stage6AGC" "AGCSmoothingAlpha" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCSmoothingAlpha))
+    $runtimeText = Set-IniSectionValue $runtimeText "Stage6AGC" "AGCTargetLowGray" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCTargetLowGray))
+    $runtimeText = Set-IniSectionValue $runtimeText "Stage6AGC" "AGCTargetHighGray" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $AGCTargetHighGray))
+    $runtimeText = Set-IniSectionValue $runtimeText "Stage6AGC" "AGCStride" ([string]$AGCStride)
+    $runtimeText = Set-IniSectionValue $runtimeText "Stage6AGC" "AGCExcludeAnnotationOverlay" $AGCExcludeAnnotationOverlay
+    $runtimeText = Set-IniSectionValue $runtimeText "Stage6AGC" "AGCDebugLog" $AGCDebugLog
     $runtimeText = Set-IniValue $runtimeText "EnableModtranRadianceDebug" $EnableModtranRadianceDebug
     $runtimeText = Set-IniValue $runtimeText "UseModtranPathRuntime" $UseModtranPathRuntime
     $runtimeText = Set-IniValue $runtimeText "UseModtranSkyRuntime" "false"
     $runtimeText = Set-IniValue $runtimeText "UseModtranSolarRuntime" "false"
     $runtimeText = Set-IniValue $runtimeText "ModtranPathRuntimeBand" "MWIR"
     $runtimeText = Set-IniValue $runtimeText "ModtranPathRuntimeMode" $ModtranPathRuntimeMode
-    $runtimeText = Set-IniValue $runtimeText "ModtranPathUnitMode" "Native"
+    $runtimeText = Set-IniValue $runtimeText "ModtranPathUnitMode" "SI"
     $runtimeText = Set-IniValue $runtimeText "ModtranPathScale" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $ModtranPathScale))
     $runtimeText = Set-IniValue $runtimeText "ModtranPathOffset" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $ModtranPathOffset))
     $runtimeText = Set-IniValue $runtimeText "ModtranPathClampMin" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $ModtranPathClampMin))
@@ -358,7 +415,12 @@ try {
     $runtimeText = Set-IniValue $runtimeText "CompareOnly" $M1CompareOnly
     $runtimeText = Set-IniValue $runtimeText "EnableRuntime" $M1EnableRuntime
     $runtimeText = Set-IniValue $runtimeText "EnableNIRRuntime" $M1EnableNIRRuntime
+    $runtimeText = Set-IniValue $runtimeText "EnableSWIRRuntime" $M1EnableSWIRRuntime
     $runtimeText = Set-IniValue $runtimeText "EnableMWIRRuntime" $M1EnableMWIRRuntime
+    $runtimeText = Set-IniSectionValue $runtimeText "M1NirMwirPhysics" "SunVisibility" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $M1SunVisibility))
+    $runtimeText = Set-IniSectionValue $runtimeText "M1NirMwirPhysics" "SolarOverrideEnable" $M1SolarOverrideEnable
+    $runtimeText = Set-IniSectionValue $runtimeText "M1NirMwirPhysics" "SolarOverrideAzimuthDeg" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $M1SolarOverrideAzimuthDeg))
+    $runtimeText = Set-IniSectionValue $runtimeText "M1NirMwirPhysics" "SolarOverrideElevationDeg" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $M1SolarOverrideElevationDeg))
     $runtimeText = Set-IniSectionValue $runtimeText "NaturalSolar" "Enable" $NaturalSolarEnable
     $runtimeText = Set-IniSectionValue $runtimeText "NaturalSolar" "EnableOpticalShadow" $NaturalSolarEnableOpticalShadow
     $runtimeText = Set-IniSectionValue $runtimeText "NaturalSolar" "EnableSolarThermal" $NaturalSolarEnableSolarThermal
@@ -373,6 +435,7 @@ try {
 	$runtimeText = Set-IniSectionValue $runtimeText "ActiveIlluminator" "LegacyMaxReferenceIrradianceWm2" ([string]::Format([Globalization.CultureInfo]::InvariantCulture, "{0:R}", $ActiveIlluminatorLegacyMaxReferenceIrradianceWm2))
 	$runtimeText = Set-IniSectionValue $runtimeText "ActiveIlluminator" "DebugLog" $ActiveIlluminatorDebugLog
     $runtimeText = Set-IniSectionValue $runtimeText "Annotation" "OverlayInSensorImage" $AnnotationOverlayInSensorImage
+	$runtimeText = Set-IniSectionValue $runtimeText "Render" "PostprocessAA" $PostprocessAA
     # This harness is the explicit legacy compatibility regression.  A1 made
     # DDS the production default, so every legacy transport must be requested
     # here rather than relying on the application's fallback behavior.
@@ -407,13 +470,34 @@ try {
     if ($StimExtraArgs -and $StimExtraArgs.Count -gt 0) {
         $stimArgs += $StimExtraArgs
     }
+    $initAckTimer = [Diagnostics.Stopwatch]::StartNew()
     $stim = Start-Process -FilePath $stimExe -ArgumentList $stimArgs -WorkingDirectory $stimWork `
         -WindowStyle Hidden -PassThru `
         -RedirectStandardOutput (Join-Path $logRoot "stim.out.log") `
         -RedirectStandardError (Join-Path $logRoot "stim.err.log")
+    $stimInitAckObserved = Wait-LogPattern `
+        -Path (Join-Path $logRoot "stim.err.log") `
+        -Pattern '\[StimInitAck\].*received=1' `
+        -TimeoutSeconds $InitAckTimeoutSeconds
+    $initAckTimer.Stop()
+    $stimInitAckWaitMs = $initAckTimer.Elapsed.TotalMilliseconds
     if (-not $stim.WaitForExit(($Seconds + 30) * 1000)) {
         throw "Stimulus timeout"
     }
+	# STOP is part of the measured protocol, not merely a process-cleanup hint.
+	# Wait for the producer to drain its exact target frame and forward command 3,
+	# then for the receiver to close the MP4 container.  The bounded waits keep a
+	# genuine drain failure visible while still allowing finally{} to restore INIs.
+	$hwaStopCompleted = Wait-LogPattern `
+		-Path (Join-Path $logRoot "hwa.out.log") `
+		-Pattern '\[ControlStopResult\].*acceptance=pass' `
+		-TimeoutSeconds $StopCompletionTimeoutSeconds
+	if ($hwaStopCompleted) {
+		$videoFlushCompleted = Wait-LogPattern `
+			-Path (Join-Path $logRoot "video.err.log") `
+			-Pattern '\[RecorderFlush\] completed=1 reason=close' `
+			-TimeoutSeconds $StopCompletionTimeoutSeconds
+	}
     $postWait = if ($PostStimulusWaitSeconds -ge 0) {
         $PostStimulusWaitSeconds
     } else {
@@ -456,6 +540,8 @@ $annotations = 0
 $targetAnnotations = 0
 $mp4Path = ""
 $mp4Frames = 0
+$mp4ProbeSucceeded = $false
+$mp4ProbeError = "recording_round_missing"
 if ($round) {
     $mp4Path = Join-Path $round.FullName "output.mp4"
     $annotationsPath = Join-Path $round.FullName "annotations.txt"
@@ -468,9 +554,31 @@ if ($round) {
     }
     $ffprobe = Get-Command ffprobe -ErrorAction SilentlyContinue
     if ($ffprobe -and (Test-Path -LiteralPath $mp4Path)) {
-        $ffText = & $ffprobe.Source -v error -select_streams v:0 -count_frames `
-            -show_entries stream=nb_read_frames -of default=nokey=1:noprint_wrappers=1 $mp4Path
-        [void][int]::TryParse(($ffText | Select-Object -First 1), [ref]$mp4Frames)
+        # Preserve a machine-readable FAIL summary even when an unclosed MP4 has
+        # no moov atom.  Native stderr must not abort this script before the
+        # STOP/flush evidence is serialized.
+        $savedErrorActionPreference = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+        try {
+            $ffText = & $ffprobe.Source -v error -select_streams v:0 -count_frames `
+                -show_entries stream=nb_read_frames -of default=nokey=1:noprint_wrappers=1 $mp4Path 2>&1
+            $ffExitCode = $LASTEXITCODE
+        } finally {
+            $ErrorActionPreference = $savedErrorActionPreference
+        }
+        $parsedFrames = 0
+        $parsed = [int]::TryParse(([string]($ffText | Select-Object -First 1)).Trim(), [ref]$parsedFrames)
+        if ($ffExitCode -eq 0 -and $parsed -and $parsedFrames -gt 0) {
+            $mp4Frames = $parsedFrames
+            $mp4ProbeSucceeded = $true
+            $mp4ProbeError = "none"
+        } else {
+            $mp4ProbeError = "ffprobe_exit_$ffExitCode"
+        }
+    } elseif (!$ffprobe) {
+        $mp4ProbeError = "ffprobe_missing"
+    } else {
+        $mp4ProbeError = "output_mp4_missing"
     }
 }
 
@@ -520,10 +628,24 @@ $summary = [pscustomobject]@{
     stage5ModtranCacheMissCountAvg = [math]::Round((Get-Average (Get-NumericValues $hwaText "Perf" "stage5ModtranCacheMissCount")), 3)
     enablePerfLog = $EnablePerfLog
     postStimulusWaitSeconds = $PostStimulusWaitSeconds
+    orderedInputQueueMaxFrames = $OrderedInputQueueMaxFrames
+    stopCompletionTimeoutSeconds = $StopCompletionTimeoutSeconds
+    initAckTimeoutSeconds = $InitAckTimeoutSeconds
+    stimInitAckObserved = $stimInitAckObserved
+    stimInitAckWaitMs = [math]::Round($stimInitAckWaitMs, 3)
+    hwaStopCompleted = $hwaStopCompleted
+    videoFlushCompleted = $videoFlushCompleted
+    outputDrainTimeout = [bool]($hwaText -match '\[OutputRoundDrain\]\[ERROR\].*wait_timeout')
+    stopTotalMs = [math]::Round((Get-Maximum (Get-NumericValues $hwaText "ControlStopResult" "stopTotalMs")), 3)
     m1CompareOnly = $M1CompareOnly
     m1EnableRuntime = $M1EnableRuntime
     m1EnableNIRRuntime = $M1EnableNIRRuntime
+		m1EnableSWIRRuntime = $M1EnableSWIRRuntime
         m1EnableMWIRRuntime = $M1EnableMWIRRuntime
+        m1SunVisibility = $M1SunVisibility
+        m1SolarOverrideEnable = $M1SolarOverrideEnable
+        m1SolarOverrideAzimuthDeg = $M1SolarOverrideAzimuthDeg
+        m1SolarOverrideElevationDeg = $M1SolarOverrideElevationDeg
 		stimSimMode = $StimSimMode
 		stimSensorBand = $StimSensorBand
 		stimUtcHour = $StimUtcHour
@@ -540,6 +662,7 @@ $summary = [pscustomobject]@{
 		activePositiveSampleCount = @($l2ActiveValues | Where-Object { $_ -gt 0.0 }).Count
 		activeProtocolStates = ($l2ProtocolStates -join ",")
 		annotationOverlayInSensorImage = $AnnotationOverlayInSensorImage
+		postprocessAA = $PostprocessAA
     modtranPathRuntimeMode = $ModtranPathRuntimeMode
     useModtranPathRuntime = $UseModtranPathRuntime
     modtranPathScale = $ModtranPathScale
@@ -616,11 +739,26 @@ $summary = [pscustomobject]@{
     recorderWriteMs = [math]::Round((Get-Average (Get-NumericValues $videoText "RecorderPerf" "writeMsAvg")), 3)
     recorderDroppedFrames = [int](Get-Maximum (Get-NumericValues $videoText "RecorderPerf" "droppedFrames"))
     sourceSeqContinuous = $(if ($videoText -match "sourceSeqContinuous=0") { 0 } else { 1 })
+    frameSeqContinuousWritten = $(if ($videoText -match "frameSeqContinuousWritten=0") { 0 } else { 1 })
     sourceSeqContinuousWritten = $(if ($videoText -match "sourceSeqContinuousWritten=0") { 0 } else { 1 })
     inputQueueOverflow = [int](Get-Maximum (Get-NumericValues $hwaText "Perf" "inputQueueOverflowCount"))
     tcpOverwritten = $(if ($hwaText -match "overwritten=1") { 1 } else { 0 })
-    writtenFrames = [int](Get-Maximum (Get-NumericValues $videoText "RecorderPerf" "sourceSeqWritten"))
+    sentFrames = [int](Get-Maximum (Get-NumericValues $stimText "StimFinal" "successfulRealtimeWrites"))
+    acceptedFrames = [int](Get-Maximum (Get-NumericValues $hwaText "SyncRoundConservation" "acceptedRealtime"))
+    queuedFrames = [int](Get-Maximum (Get-NumericValues $hwaText "RealtimeIngress" "appRealtimeQueued"))
+    executedFrames = [int](Get-Maximum (Get-NumericValues $hwaText "RealtimeIngress" "appRealtimeConsumed"))
+    capturedFrames = [int](Get-Maximum (Get-NumericValues $hwaText "SyncRoundConservation" "lastCapturedSourceSeq"))
+    renderedFrames = [int](Get-Maximum (Get-NumericValues $hwaText "Perf" "renderFrames"))
+    outputFrames = [int](Get-Maximum (Get-NumericValues $hwaText "Perf" "outputFrames"))
+    outputDrainTargetFrames = [int](Get-Maximum (Get-NumericValues $hwaText "OutputRoundDrain" "targetFrames"))
+    outputDrainCompletedFrames = [int](Get-Maximum (Get-NumericValues $hwaText "OutputRoundDrain" "completedFrames"))
+    recorderInputFrames = [int](Get-Maximum (Get-NumericValues $videoText "RecorderFlush" "inputFrames"))
+    writtenFrames = [int](Get-Maximum (Get-NumericValues $videoText "RecorderFlush" "writtenFrames"))
+    frameSeqWritten = [int](Get-Maximum (Get-NumericValues $videoText "RecorderFlush" "frameSeqWritten"))
+    sourceSeqWritten = [int](Get-Maximum (Get-NumericValues $videoText "RecorderFlush" "sourceSeqWritten"))
     mp4Frames = $mp4Frames
+    mp4ProbeSucceeded = $mp4ProbeSucceeded
+    mp4ProbeError = $mp4ProbeError
     annotations = $annotations
     targetAnnotations = $targetAnnotations
 }
@@ -629,3 +767,6 @@ $summaryPath = Join-Path $logRoot "phase2a_sync60_save_summary.json"
 $summary | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $summaryPath -Encoding UTF8
 $summary | Format-List
 Write-Output "summary=$summaryPath"
+if (-not $hwaStopCompleted -or -not $videoFlushCompleted -or -not $mp4ProbeSucceeded) {
+    throw "Formal round incomplete: hwaStopCompleted=$hwaStopCompleted videoFlushCompleted=$videoFlushCompleted mp4ProbeSucceeded=$mp4ProbeSucceeded mp4ProbeError=$mp4ProbeError"
+}

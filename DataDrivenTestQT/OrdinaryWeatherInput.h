@@ -7,6 +7,7 @@
 #include <QDebug>
 #include <cmath>
 #include <QSettings>
+#include <algorithm>
 
 static void ApplyOrdinaryWeatherInitialization(BYHWICD::InitObjectTrackingParam& init,const QString& configPath) {
     QSettings settings(configPath,QSettings::IniFormat);settings.setIniCodec("UTF-8");
@@ -18,6 +19,8 @@ static void ApplyOrdinaryWeatherInitialization(BYHWICD::InitObjectTrackingParam&
     }
     struct Field {const char* name;double BYHWICD::InitObjectTrackingParam::*member;double initial,minimum,maximum;};
     const Field fields[]={
+		{"envVisibility",&BYHWICD::InitObjectTrackingParam::envVisibility,6000,100,100000},
+		{"envHumidity",&BYHWICD::InitObjectTrackingParam::envHumidity,76.18,0,100},
         {"envMaxHeightRain",&BYHWICD::InitObjectTrackingParam::envMaxHeightRain,4500,0,20000},
         {"envTransHeightRain",&BYHWICD::InitObjectTrackingParam::envTransHeightRain,800,0,20000},
         {"envMaxHeightSnow",&BYHWICD::InitObjectTrackingParam::envMaxHeightSnow,4500,0,20000},
@@ -38,7 +41,7 @@ static void ApplyOrdinaryWeatherInitialization(BYHWICD::InitObjectTrackingParam&
 // existing interface; the renderer has no fixture/camera override for this path.
 static void ApplyOrdinaryWeatherInput(BYHWICD::DisplayC2cObjTrackingData& data,double elapsedSec){
     struct Fixture {
-        bool enabled=false;QJsonArray frames,assetPose,telemetryTargets,illumination;qint64 epoch=0;double start=0;
+        bool enabled=false;QJsonArray frames,assetPose,telemetryTargets,targetStateFrames,illumination,lookAtTargetKey;qint64 epoch=0;double start=0;
         Fixture(){
             const QString path=qEnvironmentVariable("WeatherCameraInput");if(path.isEmpty())return;
             QFile f(path);if(!f.open(QIODevice::ReadOnly))qFatal("Weather camera fixture unavailable");
@@ -59,7 +62,9 @@ static void ApplyOrdinaryWeatherInput(BYHWICD::DisplayC2cObjTrackingData& data,d
                 if(std::abs(assetPose[0].toDouble())>89||std::abs(assetPose[1].toDouble())>180)qFatal("Invalid game asset position");
             }
             telemetryTargets=root.value("SyntheticTelemetryTargets").toArray();
+			targetStateFrames=root.value("SyntheticTelemetryKeyframes").toArray();
             illumination=root.value("OrdinaryIlluminationEnableSteps").toArray();
+            lookAtTargetKey=root.value("LookAtTargetKey").toArray();
             double previousIllumination=-1;
             for(auto value:illumination){const auto row=value.toArray();
                 if(row.size()!=2 || !row[0].isDouble() || !row[1].isBool() || !std::isfinite(row[0].toDouble()) || row[0].toDouble()<0 || row[0].toDouble()<=previousIllumination)qFatal("Invalid ordinary illumination steps");
@@ -69,6 +74,33 @@ static void ApplyOrdinaryWeatherInput(BYHWICD::DisplayC2cObjTrackingData& data,d
             for(auto value:telemetryTargets){const auto target=value.toArray();
                 if(target.size()!=11)qFatal("Telemetry target needs type, platform, ID, seven spatial fields and status");
                 for(auto x:target)if(!x.isDouble()||!std::isfinite(x.toDouble()))qFatal("Invalid telemetry target value");
+            }
+			if(!targetStateFrames.isEmpty()){
+				if(telemetryTargets.size()!=1)qFatal("SyntheticTelemetryKeyframes require exactly one full-key target");
+				double previousTargetTime=-1.0;
+				for(auto value:targetStateFrames){const auto row=value.toArray();
+					if(row.size()!=9)qFatal("Synthetic telemetry keyframe needs time, pose, speed and engine state");
+					for(auto x:row)if(!x.isDouble()||!std::isfinite(x.toDouble()))qFatal("Invalid synthetic telemetry keyframe value");
+					if(row[0].toDouble()<=previousTargetTime || std::abs(row[1].toDouble())>89.0 || std::abs(row[2].toDouble())>180.0 ||
+					   (row[8].toInt()!=0 && row[8].toInt()!=1) || std::floor(row[8].toDouble())!=row[8].toDouble())
+						qFatal("Invalid synthetic telemetry keyframe order/position/engine state");
+					previousTargetTime=row[0].toDouble();
+				}
+				if(targetStateFrames[0].toArray()[0].toDouble()!=0.0)qFatal("Synthetic telemetry keyframes must start at zero");
+			}
+            if(!lookAtTargetKey.isEmpty()){
+                if(lookAtTargetKey.size()!=3)qFatal("LookAtTargetKey needs type, platform and target ID");
+                for(auto value:lookAtTargetKey){
+                    if(!value.isDouble()||!std::isfinite(value.toDouble())||std::floor(value.toDouble())!=value.toDouble())
+                        qFatal("LookAtTargetKey values must be finite integers");
+                }
+                bool keyPresent=false;
+                for(auto value:telemetryTargets){const auto target=value.toArray();
+                    if(target[0].toInt()==lookAtTargetKey[0].toInt() &&
+                       target[1].toInt()==lookAtTargetKey[1].toInt() &&
+                       target[2].toInt()==lookAtTargetKey[2].toInt()){keyPresent=true;break;}
+                }
+                if(!keyPresent)qFatal("LookAtTargetKey must exactly match a SyntheticTelemetryTargets full key");
             }
             epoch=qint64(root.value("SimulationEpochMs").toDouble());
             bool ok=false;start=qEnvironmentVariable("WeatherStartSec").toDouble(&ok);if(!ok)start=0;
@@ -106,10 +138,41 @@ static void ApplyOrdinaryWeatherInput(BYHWICD::DisplayC2cObjTrackingData& data,d
         // the existing DDS input; they are never injected into receiver widgets.
         data.targetNumValid=fixture.telemetryTargets.size();
         for(int n=0;n<data.targetNumValid;++n){const auto a=fixture.telemetryTargets[n].toArray();auto& t=data.targetState[n];
-            t={};t.targetType=a[0].toInt();t.targetPlatID=a[1].toInt();t.targetID=a[2].toInt();
+			// Preserve explicitly configured protocol controls that are not part of
+			// the geometry fixture.  Clearing the struct previously discarded the
+			// --engine-state value and invalidated the local exhaust on/off case.
+			const bool engineState=t.engineState;
+			t={};t.targetType=a[0].toInt();t.targetPlatID=a[1].toInt();t.targetID=a[2].toInt();
             t.targetLoc.lat=a[3].toDouble();t.targetLoc.lon=a[4].toDouble();t.targetLoc.alt=a[5].toDouble();
             t.targetLoc.yaw=a[6].toDouble();t.targetLoc.pitch=a[7].toDouble();t.targetLoc.roll=a[8].toDouble();t.targetLoc.speed=a[9].toDouble();
-            t.targetState=a[10].toInt();t.viewValid=true;
+			t.targetState=a[10].toInt();t.engineState=engineState;t.viewValid=true;
         }
+    }
+	if(!fixture.targetStateFrames.isEmpty()){
+		// Deterministic time-varying state still travels through the unchanged
+		// realtime packet.  The target identity comes only from the validated
+		// SyntheticTelemetryTargets full key above.
+		int frameIndex=0;
+		while(frameIndex+1<fixture.targetStateFrames.size() &&
+		      fixture.targetStateFrames[frameIndex+1].toArray()[0].toDouble()<=time)++frameIndex;
+		const auto a=fixture.targetStateFrames[frameIndex].toArray();
+		const auto b=fixture.targetStateFrames[std::min(frameIndex+1,fixture.targetStateFrames.size()-1)].toArray();
+		const double span=b[0].toDouble()-a[0].toDouble();
+		const double blend=span>0.0?std::min(1.0,(time-a[0].toDouble())/span):0.0;
+		auto targetAt=[&](int n){return a[n].toDouble()+(b[n].toDouble()-a[n].toDouble())*blend;};
+		auto& target=data.targetState[0];
+		target.targetLoc.lat=targetAt(1);target.targetLoc.lon=targetAt(2);target.targetLoc.alt=targetAt(3);
+		target.targetLoc.yaw=targetAt(4);target.targetLoc.pitch=targetAt(5);target.targetLoc.roll=targetAt(6);
+		target.targetLoc.speed=targetAt(7); // protocol km/h, documented in fixture
+		target.engineState=a[8].toInt()!=0; // stepped state, never interpolated
+	}
+    if(!fixture.lookAtTargetKey.isEmpty()){
+        // Explicit full-key camera lock for controlled close-range captures.
+        // It uses the protocol fields and normal renderer lookup; no target-ID-only shortcut.
+        data.weaponState.targetType=fixture.lookAtTargetKey[0].toInt();
+        data.weaponState.targetPlatID=fixture.lookAtTargetKey[1].toInt();
+        data.weaponState.targetID=fixture.lookAtTargetKey[2].toInt();
+        data.weaponState.lookatEn=true;
+        data.weaponState.viewValid=true;
     }
 }

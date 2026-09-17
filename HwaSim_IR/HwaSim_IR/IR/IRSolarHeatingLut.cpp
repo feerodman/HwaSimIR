@@ -54,6 +54,80 @@ IRSolarHeatingResult IRSolarHeatingLut::query(const IRSolarHeatingQuery& query)c
 	r.valid=true;r.directIrradianceWm2=sample.direct;r.diffuseDownIrradianceWm2=sample.diffuse;r.interpolationMode="staged_linear_targetAlt_visibility_solarZenith";r.fallbackReason="none";r.sourceCaseIds=sample.cases;r.sourceFiles=sample.files;return r;
 }
 
+IRSolarHeatingResult IRSolarHeatingLut::queryRelativeHumidity(
+	const IRSolarHeatingQuery& query, double relativeHumidityPercent) const
+{
+	IRSolarHeatingResult result;
+	result.relativeHumidityPercent = relativeHumidityPercent;
+	result.humidityMode = "numeric_measured_envelope";
+	static const double humidityPlanes[] = {30.0, 60.0, 85.0};
+	static const char* humidityProfiles[] = {
+		"scaled_mls_surface_rh30", "scaled_mls_surface_rh60", "scaled_mls_surface_rh85"
+	};
+	if (!std::isfinite(relativeHumidityPercent))
+	{
+		result.fallbackReason = "invalid_query";
+		result.fallbackAxis = "relativeHumidityPercent";
+		return result;
+	}
+	if (relativeHumidityPercent < humidityPlanes[0] - kEps ||
+		relativeHumidityPercent > humidityPlanes[2] + kEps)
+	{
+		result.fallbackReason = "out_of_range";
+		result.fallbackAxis = "relativeHumidityPercent";
+		result.fallbackQuery = relativeHumidityPercent;
+		result.fallbackMin = humidityPlanes[0];
+		result.fallbackMax = humidityPlanes[2];
+		return result;
+	}
+	size_t lowIndex = 0, highIndex = 2;
+	for (size_t index = 0; index < 3; ++index)
+	{
+		if (std::abs(relativeHumidityPercent - humidityPlanes[index]) <= kEps)
+		{
+			lowIndex = highIndex = index;
+			break;
+		}
+		if (humidityPlanes[index] < relativeHumidityPercent) lowIndex = index;
+		if (humidityPlanes[index] > relativeHumidityPercent)
+		{
+			highIndex = index;
+			break;
+		}
+	}
+	IRSolarHeatingQuery lowQuery = query;
+	lowQuery.humidityProfile = humidityProfiles[lowIndex];
+	const IRSolarHeatingResult low = this->query(lowQuery);
+	if (!low.valid) return low;
+	if (lowIndex == highIndex)
+	{
+		result = low;
+		result.relativeHumidityPercent = relativeHumidityPercent;
+		result.humidityMode = "numeric_exact_profile";
+		result.interpolationMode = "relativeHumidity_exact_profile+" + low.interpolationMode;
+		return result;
+	}
+	IRSolarHeatingQuery highQuery = query;
+	highQuery.humidityProfile = humidityProfiles[highIndex];
+	const IRSolarHeatingResult high = this->query(highQuery);
+	if (!high.valid) return high;
+	const double t = (relativeHumidityPercent - humidityPlanes[lowIndex]) /
+		(humidityPlanes[highIndex] - humidityPlanes[lowIndex]);
+	result.valid = true;
+	result.directIrradianceWm2 = low.directIrradianceWm2 +
+		(high.directIrradianceWm2 - low.directIrradianceWm2) * t;
+	result.diffuseDownIrradianceWm2 = low.diffuseDownIrradianceWm2 +
+		(high.diffuseDownIrradianceWm2 - low.diffuseDownIrradianceWm2) * t;
+	result.relativeHumidityPercent = relativeHumidityPercent;
+	result.humidityMode = "numeric_linear_components";
+	result.interpolationMode = "relativeHumidity_linear_components+" + low.interpolationMode;
+	result.fallbackReason = "none";
+	result.fallbackAxis = "none";
+	result.sourceCaseIds = Merge(low.sourceCaseIds, high.sourceCaseIds);
+	result.sourceFiles = Merge(low.sourceFiles, high.sourceFiles);
+	return result;
+}
+
 bool IRSolarHeatingLut::interpolate(const std::vector<const Entry*>& entries,const IRSolarHeatingQuery&q,size_t axis,Sample& sample,IRSolarHeatingResult& error)const
 {
 	if(axis>=3){if(entries.size()!=1){error.fallbackReason="cell_missing_or_duplicate";error.fallbackAxis="cell";return false;}sample.direct=entries[0]->direct;sample.diffuse=entries[0]->diffuse;sample.cases=entries[0]->sourceCaseIds;sample.files=entries[0]->sourceFiles;return true;}

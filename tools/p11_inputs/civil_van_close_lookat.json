@@ -1,0 +1,14 @@
+{
+  "Schema": "ordinary_weather_camera_1",
+  "SimulationEpochMs": 1782014400000,
+  "Description": "P11 controlled civil-van close view. Three ordered camera keyframes stay inside the audited 0.1-1.0 km MODTRAN range while approaching and withdrawing from one fixed full-key target. No renderer-side pose override and no Latest semantics.",
+  "Keyframes": [
+    [0.0, 39.995000, 116.000000, 1000.0, 0.0, 0.0, 0.0],
+    [4.0, 39.997000, 116.000000, 1000.0, 0.0, 0.0, 0.0],
+    [8.0, 39.995000, 116.000000, 1000.0, 0.0, 0.0, 0.0]
+  ],
+  "SyntheticTelemetryTargets": [
+    [85, 3101, 5501, 40.000000, 116.000000, 1000.0, 90.0, 0.0, 0.0, 0.0, 1]
+  ],
+  "LookAtTargetKey": [85, 3101, 5501]
+}

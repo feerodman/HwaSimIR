@@ -1,4 +1,5 @@
 #include "IREnginePlumeModel.h"
+#include "IRRadianceModelV2.h"
 
 #include <algorithm>
 #include <cmath>
@@ -215,13 +216,23 @@ bool extractJsonVec3(const std::string& text, const std::string& key, IRStage4Ve
 	return true;
 }
 
-void applyBandGainObject(const std::string& text, IREnginePlumeBandGain& bandGain)
+float clampUnit(float value)
 {
-	extractJsonNumber(text, "VIS", bandGain.vis);
-	extractJsonNumber(text, "NIR", bandGain.nir);
-	extractJsonNumber(text, "SWIR", bandGain.swir);
-	extractJsonNumber(text, "MWIR", bandGain.mwir);
-	extractJsonNumber(text, "LWIR", bandGain.lwir);
+	return std::isfinite(value) ? std::max(0.0f, std::min(1.0f, value)) : 0.0f;
+}
+
+void applyBandEmissivityObject(const std::string& text, IREnginePlumeBandEmissivity& emissivity)
+{
+	extractJsonNumber(text, "VIS", emissivity.vis);
+	extractJsonNumber(text, "NIR", emissivity.nir);
+	extractJsonNumber(text, "SWIR", emissivity.swir);
+	extractJsonNumber(text, "MWIR", emissivity.mwir);
+	extractJsonNumber(text, "LWIR", emissivity.lwir);
+	emissivity.vis = clampUnit(emissivity.vis);
+	emissivity.nir = clampUnit(emissivity.nir);
+	emissivity.swir = clampUnit(emissivity.swir);
+	emissivity.mwir = clampUnit(emissivity.mwir);
+	emissivity.lwir = clampUnit(emissivity.lwir);
 }
 
 void applyLayerObject(const std::string& text, IREnginePlumeLayerProfile& layer)
@@ -237,10 +248,16 @@ void applyLayerObject(const std::string& text, IREnginePlumeLayerProfile& layer)
 	extractJsonNumber(text, "noiseScale", layer.noiseScale);
 	extractJsonNumber(text, "noiseStrength", layer.noiseStrength);
 
-	std::string bandGainText;
-	if (findJsonObject(text, "bandGain", bandGainText))
+	std::string bandEmissivityText;
+	if (findJsonObject(text, "bandEmissivity", bandEmissivityText))
 	{
-		applyBandGainObject(bandGainText, layer.bandGain);
+		applyBandEmissivityObject(bandEmissivityText, layer.bandEmissivity);
+	}
+	else if (findJsonObject(text, "bandGain", bandEmissivityText))
+	{
+		// Read-only compatibility with archived Stage5 profiles.  Legacy gains
+		// are clamped to emissivity bounds and are never multiplied twice.
+		applyBandEmissivityObject(bandEmissivityText, layer.bandEmissivity);
 	}
 }
 
@@ -256,10 +273,14 @@ void applyLegacyLayerFields(const std::string& text, IREnginePlumeLayerProfile& 
 	extractJsonNumber(text, "noiseScale", layer.noiseScale);
 	extractJsonNumber(text, "noiseStrength", layer.noiseStrength);
 
-	std::string bandGainText;
-	if (findJsonObject(text, "bandGain", bandGainText))
+	std::string bandEmissivityText;
+	if (findJsonObject(text, "bandEmissivity", bandEmissivityText))
 	{
-		applyBandGainObject(bandGainText, layer.bandGain);
+		applyBandEmissivityObject(bandEmissivityText, layer.bandEmissivity);
+	}
+	else if (findJsonObject(text, "bandGain", bandEmissivityText))
+	{
+		applyBandEmissivityObject(bandEmissivityText, layer.bandEmissivity);
 	}
 }
 
@@ -297,7 +318,7 @@ void applyProfileObject(const std::string& text, IREnginePlumeProfile& profile)
 }
 }
 
-IREnginePlumeBandGain::IREnginePlumeBandGain()
+IREnginePlumeBandEmissivity::IREnginePlumeBandEmissivity()
 	: vis(0.0f),
 	nir(0.08f),
 	swir(0.18f),
@@ -306,7 +327,7 @@ IREnginePlumeBandGain::IREnginePlumeBandGain()
 {
 }
 
-float IREnginePlumeBandGain::forBand(IRBand band) const
+float IREnginePlumeBandEmissivity::forBand(IRBand band) const
 {
 	switch (band)
 	{
@@ -401,6 +422,12 @@ IREnginePlumeOutput::IREnginePlumeOutput()
 	haloNoiseScale(3.5f),
 	coreNoiseStrength(0.0f),
 	haloNoiseStrength(0.0f),
+	coreEffectiveEmissivity(1.0f),
+	haloEffectiveEmissivity(0.55f),
+	coreSourceRadianceWm2SrUm(0.0f),
+	haloSourceRadianceWm2SrUm(0.0f),
+	coreEmittedRadianceWm2SrUm(0.0f),
+	haloEmittedRadianceWm2SrUm(0.0f),
 	coreBandGain(1.0f),
 	haloBandGain(0.55f),
 	coreRadiance(0.0f),
@@ -446,7 +473,10 @@ bool IREnginePlumeModel::load(const std::string& filePath)
 	std::string platformsText;
 	if (findJsonObject(text, "platforms", platformsText))
 	{
-		const char* platformNames[] = { "F35", "AIM120D", "AIM120", "AIM9X" };
+		const char* platformNames[] = {
+			"F35", "AIM120D", "AIM120", "AIM9X", "P11-CIVIL-VAN",
+			"P11-CONTROLLED-SAMPLES"
+		};
 		for (size_t i = 0; i < sizeof(platformNames) / sizeof(platformNames[0]); ++i)
 		{
 			std::string platformText;
@@ -501,8 +531,17 @@ IREnginePlumeOutput IREnginePlumeModel::update(const IREnginePlumeInput& input)
 
 	const float ambientTempK = std::max(1.0f, input.ambientTempK);
 	const float ambientMixK = std::max(ambientTempK, profile.ambientMixK);
-	const bool engineInput = input.options.useEngineState ? input.engineState : true;
-	const bool heating = input.options.forcePlumeVisible || engineInput || !profile.enabledByEngineState;
+	const bool strictCivilEngineGate =
+		normalizePlatformName(input.platformName) == "P11CIVILVAN" &&
+		profile.enabledByEngineState;
+	// The civil reference exhaust is never synthesized while its protocol
+	// engineState is false.  Diagnostic force/useEngineState bypasses remain
+	// available to legacy military profiles only.
+	const bool engineInput = strictCivilEngineGate
+		? input.engineState
+		: (input.options.useEngineState ? input.engineState : true);
+	const bool forceVisible = input.options.forcePlumeVisible && !strictCivilEngineGate;
+	const bool heating = forceVisible || engineInput || !profile.enabledByEngineState;
 	const float dtSec = std::max(0.0f, input.dtSec);
 	const float tau = heating ? std::max(0.01f, profile.heatTauSec) : std::max(0.01f, profile.coolTauSec);
 
@@ -547,27 +586,35 @@ IREnginePlumeOutput IREnginePlumeModel::update(const IREnginePlumeInput& input)
 	output.coreGray = computeLayerGray(profile.core, coreCurrent, output.coreTargetTempK, ambientMixK, input.band,
 		input.options.displayGain * input.options.coreDisplayGain,
 		input.options.opacityScale * input.options.coreOpacityScale,
-		output.coreRadiance,
+		output.coreSourceRadianceWm2SrUm,
+		output.coreEmittedRadianceWm2SrUm,
 		output.coreOpacity,
-		output.coreBandGain);
+		output.coreEffectiveEmissivity);
 	output.haloGray = computeLayerGray(profile.halo, haloCurrent, output.haloTargetTempK, ambientMixK, input.band,
 		input.options.displayGain * input.options.haloDisplayGain,
 		input.options.opacityScale * input.options.haloOpacityScale,
-		output.haloRadiance,
+		output.haloSourceRadianceWm2SrUm,
+		output.haloEmittedRadianceWm2SrUm,
 		output.haloOpacity,
-		output.haloBandGain);
+		output.haloEffectiveEmissivity);
+	// Keep source compatibility until HwaSimIR.cpp switches to the explicit P11
+	// names.  No extra scaling is introduced by these aliases.
+	output.coreBandGain = output.coreEffectiveEmissivity;
+	output.haloBandGain = output.haloEffectiveEmissivity;
+	output.coreRadiance = output.coreSourceRadianceWm2SrUm;
+	output.haloRadiance = output.haloSourceRadianceWm2SrUm;
 
 	const bool baseEnabled = input.options.enableEnginePlume && profile.enabled;
 	output.coreEnabled = baseEnabled &&
 		profile.core.enabled &&
 		output.coreOpacity > 0.001f &&
-		(input.options.forcePlumeVisible || (engineInput && output.coreBandGain > 0.001f));
+		(forceVisible || (engineInput && output.coreEffectiveEmissivity > 0.001f));
 	output.haloEnabled = baseEnabled &&
 		profile.halo.enabled &&
 		output.haloOpacity > 0.001f &&
-		(input.options.forcePlumeVisible || (engineInput && output.haloBandGain > 0.001f));
-	output.coreNodeVisible = output.coreEnabled && output.coreGray > 0.001f;
-	output.haloNodeVisible = output.haloEnabled && output.haloGray > 0.001f;
+		(forceVisible || (engineInput && output.haloEffectiveEmissivity > 0.001f));
+	output.coreNodeVisible = output.coreEnabled && output.coreEmittedRadianceWm2SrUm > 1.0e-9f;
+	output.haloNodeVisible = output.haloEnabled && output.haloEmittedRadianceWm2SrUm > 1.0e-9f;
 	output.enabled = output.coreEnabled || output.haloEnabled;
 	output.nodeVisible = output.coreNodeVisible || output.haloNodeVisible;
 	return output;
@@ -619,55 +666,55 @@ float IREnginePlumeModel::approachTemperature(float current, float target, float
 	return current + (target - current) * clamp(alpha, 0.0f, 1.0f);
 }
 
-float IREnginePlumeModel::planckRadiance(float wavelengthUm, float temperatureK)
+double IREnginePlumeModel::bandAveragePlanckRadianceWm2SrUm(IRBand band, double temperatureK)
 {
-	const double c1 = 1.191042e8;   // W/(m^2 sr um), wavelength in um
-	const double c2 = 1.4387752e4;  // um K
-	const double lambda = std::max(0.1, static_cast<double>(wavelengthUm));
-	const double temp = std::max(1.0, static_cast<double>(temperatureK));
-	const double exponent = c2 / (lambda * temp);
-	if (exponent > 80.0)
-	{
-		return 0.0f;
-	}
-	const double denom = std::pow(lambda, 5.0) * (std::exp(exponent) - 1.0);
-	if (denom <= 0.0)
-	{
-		return 0.0f;
-	}
-	return static_cast<float>(c1 / denom);
+	// A single implementation owns the formal response integration so plume,
+	// target body and hotspot terms cannot drift onto different wavelength
+	// grids.  SWIR is 1.10--2.50 um (10 Simpson intervals); MWIR is 3--5 um
+	// (4 intervals).  Returned units are W/(m^2 sr um).
+	return IRRadianceModelV2::bandAveragePlanckRadianceWm2SrUm(band, temperatureK);
 }
 
-float IREnginePlumeModel::bandCenterUm(IRBand band)
+double IREnginePlumeModel::layerSourceRadianceWm2SrUm(IRBand band, double temperatureK,
+	double ambientTemperatureK, double effectiveEmissivity)
 {
-	switch (band)
-	{
-	case IRBand::Visible: return 0.55f;
-	case IRBand::NearInfrared: return 0.90f;
-	case IRBand::ShortWaveInfrared: return 1.80f;
-	case IRBand::MidWaveInfrared: return 4.00f;
-	case IRBand::LongWaveInfrared: return 10.0f;
-	default: return 4.00f;
-	}
+	const double emissivity = std::max(0.0, std::min(1.0, effectiveEmissivity));
+	const double hot = bandAveragePlanckRadianceWm2SrUm(band, temperatureK);
+	const double ambient = bandAveragePlanckRadianceWm2SrUm(band, ambientTemperatureK);
+	return emissivity * std::max(0.0, hot - ambient);
 }
 
-float IREnginePlumeModel::computeLayerGray(const IREnginePlumeLayerProfile& layer, float currentTempK, float targetTempK, float ambientMixK, IRBand band, float displayGain, float opacityScale, float& radianceOut, float& opacityOut, float& bandGainOut)
+float IREnginePlumeModel::computeLayerGray(const IREnginePlumeLayerProfile& layer,
+	float currentTempK, float targetTempK, float ambientMixK, IRBand band,
+	float displayGain, float opacityScale, float& sourceRadianceOut,
+	float& emittedRadianceOut, float& opacityOut, float& emissivityOut)
 {
-	radianceOut = 0.0f;
-	opacityOut = clamp(layer.opacity * opacityScale, 0.0f, 1.0f);
-	bandGainOut = std::max(0.0f, layer.bandGain.forBand(band));
-	if (!layer.enabled || opacityOut <= 0.001f || bandGainOut <= 0.001f || displayGain <= 0.0f)
+	sourceRadianceOut = 0.0f;
+	emittedRadianceOut = 0.0f;
+	opacityOut = layer.enabled ? clamp(layer.opacity * opacityScale, 0.0f, 1.0f) : 0.0f;
+	emissivityOut = layer.enabled ? clamp(layer.bandEmissivity.forBand(band), 0.0f, 1.0f) : 0.0f;
+	if (!layer.enabled || opacityOut <= 0.001f || emissivityOut <= 0.001f)
 	{
 		return 0.0f;
 	}
-	const float wavelengthUm = bandCenterUm(band);
-	const float hotRadiance = planckRadiance(wavelengthUm, currentTempK);
-	const float ambientRadiance = planckRadiance(wavelengthUm, ambientMixK);
-	const float targetRadiance = std::max(1.0e-6f,
-		planckRadiance(wavelengthUm, std::max(targetTempK, ambientMixK + 1.0f)) - ambientRadiance);
-	radianceOut = std::max(0.0f, hotRadiance - ambientRadiance);
-	const float normalizedThermal = clamp(radianceOut / targetRadiance, 0.0f, 1.0f);
-	return clamp(normalizedThermal * opacityOut * bandGainOut * displayGain, 0.0f, 1.0f);
+
+	const double sourceRadiance = layerSourceRadianceWm2SrUm(
+		band, currentTempK, ambientMixK, emissivityOut);
+	const double blackbodyTargetRadiance = std::max(1.0e-12,
+		layerSourceRadianceWm2SrUm(
+			band, std::max(targetTempK, ambientMixK + 1.0f), ambientMixK, 1.0));
+	sourceRadianceOut = static_cast<float>(sourceRadiance);
+	// Opacity is deliberately applied exactly once here for the emitted audit
+	// value.  The renderer must use sourceRadianceOut as RGB and opacityOut as
+	// alpha; multiplying RGB by opacity again would be a duplicate attenuation.
+	emittedRadianceOut = static_cast<float>(sourceRadiance * opacityOut);
+	if (displayGain <= 0.0f)
+	{
+		return 0.0f;
+	}
+	const float normalizedThermal = clamp(
+		static_cast<float>(sourceRadiance / blackbodyTargetRadiance), 0.0f, 1.0f);
+	return clamp(normalizedThermal * displayGain, 0.0f, 1.0f);
 }
 
 IREnginePlumeLayerProfile IREnginePlumeModel::deriveHaloLayer(const IREnginePlumeLayerProfile& core)
@@ -683,10 +730,10 @@ IREnginePlumeLayerProfile IREnginePlumeModel::deriveHaloLayer(const IREnginePlum
 	halo.radialDecay = std::max(0.25f, core.radialDecay * 0.42f);
 	halo.noiseScale = std::max(0.5f, core.noiseScale * 0.58f);
 	halo.noiseStrength = clamp(core.noiseStrength + 0.10f, 0.0f, 0.55f);
-	halo.bandGain.vis = core.bandGain.vis * 0.25f;
-	halo.bandGain.nir = core.bandGain.nir * 0.45f;
-	halo.bandGain.swir = core.bandGain.swir * 0.55f;
-	halo.bandGain.mwir = core.bandGain.mwir * 0.52f;
-	halo.bandGain.lwir = core.bandGain.lwir * 0.62f;
+	halo.bandEmissivity.vis = clamp(core.bandEmissivity.vis * 0.25f, 0.0f, 1.0f);
+	halo.bandEmissivity.nir = clamp(core.bandEmissivity.nir * 0.45f, 0.0f, 1.0f);
+	halo.bandEmissivity.swir = clamp(core.bandEmissivity.swir * 0.55f, 0.0f, 1.0f);
+	halo.bandEmissivity.mwir = clamp(core.bandEmissivity.mwir * 0.52f, 0.0f, 1.0f);
+	halo.bandEmissivity.lwir = clamp(core.bandEmissivity.lwir * 0.62f, 0.0f, 1.0f);
 	return halo;
 }

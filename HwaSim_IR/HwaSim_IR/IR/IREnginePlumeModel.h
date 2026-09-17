@@ -8,7 +8,10 @@
 #include <string>
 #include <vector>
 
-struct IREnginePlumeBandGain
+// Effective band emissivity of the unresolved plume gas.  Values are
+// dimensionless and physically bounded to [0, 1].  Opacity is kept separate
+// so the renderer can apply each factor exactly once.
+struct IREnginePlumeBandEmissivity
 {
 	float vis;
 	float nir;
@@ -16,7 +19,7 @@ struct IREnginePlumeBandGain
 	float mwir;
 	float lwir;
 
-	IREnginePlumeBandGain();
+	IREnginePlumeBandEmissivity();
 	float forBand(IRBand band) const;
 };
 
@@ -32,7 +35,7 @@ struct IREnginePlumeLayerProfile
 	float radialDecay;
 	float noiseScale;
 	float noiseStrength;
-	IREnginePlumeBandGain bandGain;
+	IREnginePlumeBandEmissivity bandEmissivity;
 
 	IREnginePlumeLayerProfile();
 };
@@ -116,6 +119,17 @@ struct IREnginePlumeOutput
 	float haloNoiseScale;
 	float coreNoiseStrength;
 	float haloNoiseStrength;
+	// Formal physical outputs.  Source radiance excludes opacity because the
+	// transparent plume layer applies opacity during compositing.  Emitted
+	// radiance is supplied separately for audit/reference calculations.
+	float coreEffectiveEmissivity;
+	float haloEffectiveEmissivity;
+	float coreSourceRadianceWm2SrUm;
+	float haloSourceRadianceWm2SrUm;
+	float coreEmittedRadianceWm2SrUm;
+	float haloEmittedRadianceWm2SrUm;
+	// Compatibility aliases for the pre-P11 application call site.  These now
+	// carry bounded emissivity and SI source radiance, never an empirical gain.
 	float coreBandGain;
 	float haloBandGain;
 	float coreRadiance;
@@ -138,15 +152,19 @@ public:
 	const IREnginePlumeProfile& profileForPlatform(const std::string& platformName) const;
 	void resetRuntime();
 	static IREnginePlumeLayerProfile deriveHaloLayer(const IREnginePlumeLayerProfile& core);
+	static double bandAveragePlanckRadianceWm2SrUm(IRBand band, double temperatureK);
+	static double layerSourceRadianceWm2SrUm(IRBand band, double temperatureK,
+		double ambientTemperatureK, double effectiveEmissivity);
 
 private:
 	std::string normalizePlatformName(const std::string& platformName) const;
 	void warnOnce(const std::string& key, const std::string& message) const;
 	static float clamp(float value, float low, float high);
 	static float approachTemperature(float current, float target, float tauSec, float dtSec);
-	static float planckRadiance(float wavelengthUm, float temperatureK);
-	static float bandCenterUm(IRBand band);
-	static float computeLayerGray(const IREnginePlumeLayerProfile& layer, float currentTempK, float targetTempK, float ambientMixK, IRBand band, float displayGain, float opacityScale, float& radianceOut, float& opacityOut, float& bandGainOut);
+	static float computeLayerGray(const IREnginePlumeLayerProfile& layer, float currentTempK,
+		float targetTempK, float ambientMixK, IRBand band, float displayGain,
+		float opacityScale, float& sourceRadianceOut, float& emittedRadianceOut,
+		float& opacityOut, float& emissivityOut);
 
 	std::map<std::string, IREnginePlumeProfile> m_profiles;
 	std::map<std::string, float> m_runtimeTemperatureK;

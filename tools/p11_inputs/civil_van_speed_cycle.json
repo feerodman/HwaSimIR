@@ -1,0 +1,28 @@
+{
+  "Schema": "ordinary_weather_camera_1",
+  "SimulationEpochMs": 1782014400000,
+  "Description": "P11 civil-van controlled still-air speed ramp. The target position is fixed as a dynamometer-style thermal test while protocol speed ramps 0 to 15 to 30 to 0 m/s; this isolates the declared convective model from range and ground-motion changes.",
+  "InitializationWeather": {
+    "envVisibility": 6000.0,
+    "envHumidity": 60.0
+  },
+  "Keyframes": [
+    [0.0, 39.99550844, 116.00000000, 500.0, 0.0, 0.0, 0.0],
+    [20.0, 39.99550844, 116.00000000, 500.0, 0.0, 0.0, 0.0],
+    [40.0, 39.99550844, 116.00000000, 500.0, 0.0, 0.0, 0.0],
+    [60.0, 39.99550844, 116.00000000, 500.0, 0.0, 0.0, 0.0]
+  ],
+  "SyntheticTelemetryTargets": [
+    [85, 3101, 5501, 40.00000000, 116.00000000, 500.0, 0.0, 0.0, 0.0, 0.0, 1]
+  ],
+  "SyntheticTelemetryKeyframes": [
+    [0.0, 40.00000000, 116.00000000, 500.0, 0.0, 0.0, 0.0, 0.0, 0],
+    [10.0, 40.00000000, 116.00000000, 500.0, 0.0, 0.0, 0.0, 0.0, 0],
+    [20.0, 40.00000000, 116.00000000, 500.0, 0.0, 0.0, 0.0, 54.0, 0],
+    [30.0, 40.00000000, 116.00000000, 500.0, 0.0, 0.0, 0.0, 108.0, 0],
+    [40.0, 40.00000000, 116.00000000, 500.0, 0.0, 0.0, 0.0, 108.0, 0],
+    [50.0, 40.00000000, 116.00000000, 500.0, 0.0, 0.0, 0.0, 0.0, 0],
+    [60.0, 40.00000000, 116.00000000, 500.0, 0.0, 0.0, 0.0, 0.0, 0]
+  ],
+  "LookAtTargetKey": [85, 3101, 5501]
+}

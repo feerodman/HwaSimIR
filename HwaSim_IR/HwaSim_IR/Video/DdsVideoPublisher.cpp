@@ -433,6 +433,10 @@ bool DdsVideoPublisher::flush(int timeoutMs, std::string& error)
 
 bool DdsVideoPublisher::endRound(std::string& error)
 {
+	// A publisher object exists even for TCP-only runs.  Its configured drain
+	// delay is meaningful only after DDS was started; otherwise STOP would pay a
+	// silent multi-second sleep before the TCP control command could be forwarded.
+	if (!m_impl->enabled.load() || !m_impl->running.load()) return true;
 	const auto drainBegin = std::chrono::steady_clock::now();
 	if (!flush((m_impl->config.ackTimeoutSec + 5) * 1000, error)) return false;
 	const auto queueDrained = std::chrono::steady_clock::now();

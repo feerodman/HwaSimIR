@@ -21,6 +21,8 @@ struct IRSolarHeatingResult
 	double diffuseDownIrradianceWm2 = 0.0;
 	std::string irradianceUnit = "W/m^2";
 	std::string interpolationMode = "none";
+	double relativeHumidityPercent = -1.0;
+	std::string humidityMode = "categorical_profile";
 	std::string fallbackReason = "solar_heating_lut_missing";
 	std::string fallbackAxis = "none";
 	double fallbackQuery = 0.0;
@@ -38,6 +40,8 @@ public:
 	const std::string& loadedPath() const;
 	size_t entryCount() const;
 	IRSolarHeatingResult query(const IRSolarHeatingQuery& query) const;
+	IRSolarHeatingResult queryRelativeHumidity(
+		const IRSolarHeatingQuery& query, double relativeHumidityPercent) const;
 
 private:
 	struct Entry

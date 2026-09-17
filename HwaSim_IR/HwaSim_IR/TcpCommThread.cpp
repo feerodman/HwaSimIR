@@ -230,6 +230,7 @@ bool TcpCommThread::stopOutputRound(const char* reason)
 {
 	bool wasActive = false;
 	unsigned long long targetFrame = 0;
+	bool drainComplete = false;
 	{
 		std::unique_lock<std::mutex> lock(m_frameMtx);
 		wasActive = m_outputRoundActive.exchange(false);
@@ -241,18 +242,34 @@ bool TcpCommThread::stopOutputRound(const char* reason)
 			return true;
 		}
 		targetFrame = m_roundFrameSequence.load();
-		m_roundDrainCv.wait(lock, [this, targetFrame] {
+		std::cout << "[OutputRoundDrain] phase=wait_begin reason="
+			<< (reason ? reason : "unknown")
+			<< " targetFrames=" << targetFrame
+			<< " completedFrames=" << m_roundLastCompletedFrame.load()
+			<< " inFlight=" << m_roundFramesInFlight.load()
+			<< " queueDepth=" << m_frameQueue.size() << std::endl;
+		drainComplete = m_roundDrainCv.wait_for(lock, std::chrono::seconds(10), [this, targetFrame] {
 			return m_roundLastCompletedFrame.load() >= targetFrame || !m_bIsRunning.load();
 		});
 	}
 	bool ok = true;
+	if (!drainComplete)
+	{
+		std::cerr << "[OutputRoundDrain][ERROR] phase=wait_timeout reason="
+			<< (reason ? reason : "unknown")
+			<< " targetFrames=" << targetFrame
+			<< " completedFrames=" << m_roundLastCompletedFrame.load()
+			<< " inFlight=" << m_roundFramesInFlight.load()
+			<< " timeoutMs=10000 action=continue_stop_forward_no_false_pass" << std::endl;
+		ok = false;
+	}
 	std::string error;
 	if (m_localRecorder && !m_localRecorder->stopAndFlush(reason, error))
 	{
 		std::cerr << "[LocalRecording][ERROR] flush failed reason=" << error << std::endl;
 		ok = false;
 	}
-	if (m_ddsPublisher && !m_ddsPublisher->endRound(error))
+	if (m_ddsEnabled.load() && m_ddsPublisher && !m_ddsPublisher->endRound(error))
 	{
 		std::cerr << "[DdsVideo][ERROR] round drain failed reason=" << error << std::endl;
 		ok = false;

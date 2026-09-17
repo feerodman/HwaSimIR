@@ -10,10 +10,19 @@
 namespace
 {
 const double kAxisEpsilon = 1.0e-8;
+// Horizontal LOS coupling tolerates centimetre-scale coordinate round-trip
+// noise, but must not reinterpret a physically distinct one-metre altitude as
+// equal.  Units are kilometres.
+const double kEqualAltitudeToleranceKm = 5.0e-5;
 // Protocol geodetic/ECEF round trips produce centimetre-level altitude noise.
 // Treat queries within one metre of an audited grid plane as that plane instead
 // of opening an almost-zero interpolation branch into a geometrically invalid cell.
 const double kAltitudeGridSnapKm = 1.0e-3;
+// Runtime range is reconstructed from geodetic coordinates, target pivot and
+// camera pose.  A designed 100 m LOS can therefore arrive a few decimetres on
+// either side of the audited 0.1 km MODTRAN grid point.  Snap at most one metre;
+// values farther outside the audited grid still fail closed.
+const double kRangeGridSnapKm = 1.0e-3;
 
 std::string Trim(const std::string& value)
 {
@@ -76,7 +85,8 @@ IRModtranRadianceResult::IRModtranRadianceResult()
 	downwardSkyDiffuseIrradianceWm2Um(0.0), pathScatteringRadianceWm2SrUm(0.0),
 	pathRadiance(0.0), skyRadiance(0.0), solarIrradiance(0.0),
 	radianceUnit("W/(m^2 sr um)"), irradianceUnit("W/(m^2 um)"), responseMode("unknown"),
-	interpolationMode("none"), fallbackReason("modtran_si_lut_missing"), fallbackAxis("none"),
+	interpolationMode("none"), relativeHumidityPercent(-1.0), humidityMode("categorical_profile"),
+	fallbackReason("modtran_si_lut_missing"), fallbackAxis("none"),
 	fallbackQuery(0.0), fallbackMin(0.0), fallbackMax(0.0),
 	sourceCaseIds("missing"), sourceFiles("missing")
 {
@@ -111,7 +121,9 @@ bool IRModtranRadianceLut::load(const std::string& filePath)
 		const std::vector<std::string> values = SplitCsv(line);
 		Entry entry;
 		if (!bandFromName(Text(values, columns, "band"), entry.band)) continue;
-		if (entry.band != IRBand::NearInfrared && entry.band != IRBand::MidWaveInfrared) continue;
+		if (entry.band != IRBand::NearInfrared &&
+			entry.band != IRBand::ShortWaveInfrared &&
+			entry.band != IRBand::MidWaveInfrared) continue;
 		entry.atmosphereModel = Text(values, columns, "atmosphere_model");
 		entry.aerosolModel = Text(values, columns, "aerosol_model");
 		entry.humidityProfile = Text(values, columns, "humidity_profile");
@@ -133,16 +145,27 @@ bool IRModtranRadianceLut::load(const std::string& filePath)
 		const bool numericOk = std::isfinite(entry.visibilityKm) && entry.visibilityKm > 0.0 &&
 			std::isfinite(entry.observerAltKm) && std::isfinite(entry.targetAltKm) &&
 			std::isfinite(entry.rangeKm) && entry.rangeKm > 0.0 && std::isfinite(entry.solarZenithDeg) &&
-			std::isfinite(entry.tauUp) && entry.tauUp > 0.0 && entry.tauUp <= 1.0 &&
+			std::isfinite(entry.tauUp) && entry.tauUp >= 0.0 && entry.tauUp <= 1.0 &&
 			std::isfinite(entry.pathThermal) && entry.pathThermal >= 0.0 &&
 			std::isfinite(entry.directSolar) && entry.directSolar >= 0.0 &&
 			std::isfinite(entry.skyDiffuse) && entry.skyDiffuse >= 0.0 &&
 			std::isfinite(entry.pathScattering) && entry.pathScattering >= 0.0;
-		const bool componentsOk = entry.band == IRBand::MidWaveInfrared
-			? !Text(values, columns, "path_thermal_W_m2_sr_um").empty()
-			: !Text(values, columns, "direct_solar_irradiance_at_target_W_m2_um").empty() &&
-			  !Text(values, columns, "downward_sky_diffuse_irradiance_W_m2_um").empty() &&
-			  !Text(values, columns, "los_path_scattering_radiance_W_m2_sr_um").empty();
+		const bool tauPresent = !Text(values, columns, "tau_up").empty();
+		const bool thermalPresent = !Text(values, columns, "path_thermal_W_m2_sr_um").empty();
+		const bool directSolarPresent = !Text(values, columns,
+			"direct_solar_irradiance_at_target_W_m2_um").empty();
+		const bool diffuseSkyPresent = !Text(values, columns,
+			"downward_sky_diffuse_irradiance_W_m2_um").empty();
+		const bool pathScatteringPresent = !Text(values, columns,
+			"los_path_scattering_radiance_W_m2_sr_um").empty();
+		// A formal SWIR or MWIR row is useful only when every term consumed by
+		// the production equation is explicitly present.  A blank component must
+		// not be silently converted to its numeric fallback zero.
+		const bool componentsOk = (entry.band == IRBand::ShortWaveInfrared ||
+			entry.band == IRBand::MidWaveInfrared)
+			? tauPresent && thermalPresent && directSolarPresent &&
+			  diffuseSkyPresent && pathScatteringPresent
+			: tauPresent && directSolarPresent && diffuseSkyPresent && pathScatteringPresent;
 		if (!unitsOk || !numericOk || !componentsOk || entry.responseMode.empty()) continue;
 		entry.tauUp = clampTau(entry.tauUp);
 		loaded.push_back(entry);
@@ -156,6 +179,12 @@ bool IRModtranRadianceLut::load(const std::string& filePath)
 bool IRModtranRadianceLut::empty() const { return m_entries.empty(); }
 const std::string& IRModtranRadianceLut::loadedPath() const { return m_loadedPath; }
 size_t IRModtranRadianceLut::entryCount() const { return m_entries.size(); }
+bool IRModtranRadianceLut::hasBand(IRBand band) const
+{
+	for (size_t index = 0; index < m_entries.size(); ++index)
+		if (m_entries[index].band == band) return true;
+	return false;
+}
 
 IRModtranRadianceResult IRModtranRadianceLut::query(const IRModtranRadianceQuery& query) const
 {
@@ -190,13 +219,21 @@ IRModtranRadianceResult IRModtranRadianceLut::query(const IRModtranRadianceQuery
 		return result;
 	}
 
-	const bool nir = query.band == IRBand::NearInfrared;
+	// Every reflected-solar production band, including MWIR, is keyed by SZA.
+	// Treating MWIR as a four-axis thermal-only table silently selects the first
+	// of several solar cases and makes reflected radiance independent of the sun.
+	const bool solarAware = query.band == IRBand::NearInfrared ||
+		query.band == IRBand::ShortWaveInfrared ||
+		query.band == IRBand::MidWaveInfrared;
+	const bool coupledEqualAltitude =
+		(query.band == IRBand::ShortWaveInfrared || query.band == IRBand::MidWaveInfrared) &&
+		std::abs(query.observerAltKm - query.targetAltKm) <= kEqualAltitudeToleranceKm;
 	for (size_t i = 0; i < candidates.size(); ++i)
 	{
 		const Entry& e = *candidates[i];
 		if (Same(e.targetAltKm, query.targetAltKm) && Same(e.observerAltKm, query.observerAltKm) &&
 			Same(e.rangeKm, query.rangeKm) && Same(e.visibilityKm, query.visibilityKm) &&
-			(!nir || Same(e.solarZenithDeg, query.solarZenithDeg)))
+			(!solarAware || Same(e.solarZenithDeg, query.solarZenithDeg)))
 		{
 			result.valid = true;
 			result.tauUp = e.tauUp;
@@ -204,7 +241,7 @@ IRModtranRadianceResult IRModtranRadianceLut::query(const IRModtranRadianceQuery
 			result.directSolarIrradianceWm2Um = e.directSolar;
 			result.downwardSkyDiffuseIrradianceWm2Um = e.skyDiffuse;
 			result.pathScatteringRadianceWm2SrUm = e.pathScattering;
-			result.pathRadiance = nir ? e.pathScattering : e.pathThermal;
+			result.pathRadiance = query.band == IRBand::MidWaveInfrared ? e.pathThermal : e.pathScattering;
 			result.solarIrradiance = e.directSolar;
 			result.responseMode = e.responseMode;
 			result.interpolationMode = "exact_match";
@@ -217,7 +254,37 @@ IRModtranRadianceResult IRModtranRadianceLut::query(const IRModtranRadianceQuery
 
 	Sample sample;
 	InterpolationError error;
-	if (!interpolate(candidates, query, 0, sample, error))
+	bool interpolated = false;
+	if (coupledEqualAltitude)
+	{
+		// A horizontal LOS table contains only diagonal (observer == target)
+		// altitude planes.  Interpolate those planes as one coupled altitude axis;
+		// never borrow an off-diagonal row to fill a missing horizontal cell.
+		std::vector<const Entry*> horizontalCandidates;
+		for (size_t i = 0; i < candidates.size(); ++i)
+		{
+			if (std::abs(candidates[i]->observerAltKm - candidates[i]->targetAltKm) <=
+				kEqualAltitudeToleranceKm)
+			{
+				horizontalCandidates.push_back(candidates[i]);
+			}
+		}
+		if (horizontalCandidates.empty())
+		{
+			error.reason = "cell_missing";
+			error.axis = "equalAltitudeKm";
+			error.query = 0.5 * (query.observerAltKm + query.targetAltKm);
+		}
+		else
+		{
+			interpolated = interpolateEqualAltitude(horizontalCandidates, query, 0, sample, error);
+		}
+	}
+	else
+	{
+		interpolated = interpolate(candidates, query, 0, sample, error);
+	}
+	if (!interpolated)
 	{
 		result.fallbackReason = error.reason;
 		result.fallbackAxis = error.axis;
@@ -232,23 +299,118 @@ IRModtranRadianceResult IRModtranRadianceLut::query(const IRModtranRadianceQuery
 	result.directSolarIrradianceWm2Um = sample.directSolar;
 	result.downwardSkyDiffuseIrradianceWm2Um = sample.skyDiffuse;
 	result.pathScatteringRadianceWm2SrUm = sample.pathScattering;
-	result.pathRadiance = nir ? sample.pathScattering : sample.pathThermal;
+	result.pathRadiance = query.band == IRBand::MidWaveInfrared ? sample.pathThermal : sample.pathScattering;
 	result.solarIrradiance = sample.directSolar;
 	result.responseMode = "RectangularBand";
-	result.interpolationMode = nir
-		? "staged_linear_target_observer_range_visibility_solarZenith_tau_od"
-		: "staged_linear_target_observer_range_visibility_tau_od";
+	result.interpolationMode = coupledEqualAltitude
+		? "coupled_equal_altitude_range_visibility_solarZenith_tau_od"
+		: (solarAware
+			? "staged_linear_target_observer_range_visibility_solarZenith_tau_od"
+			: "staged_linear_target_observer_range_visibility_tau_od");
 	result.fallbackReason = "none";
 	result.sourceCaseIds = sample.sourceCaseIds;
 	result.sourceFiles = sample.sourceFiles;
 	return result;
 }
 
+IRModtranRadianceResult IRModtranRadianceLut::queryRelativeHumidity(
+	const IRModtranRadianceQuery& query, double relativeHumidityPercent) const
+{
+	IRModtranRadianceResult result;
+	result.relativeHumidityPercent = relativeHumidityPercent;
+	result.humidityMode = "numeric_measured_envelope";
+	static const double kHumidityPercent[] = {30.0, 60.0, 85.0};
+	static const char* kHumidityProfiles[] = {
+		"scaled_mls_surface_rh30",
+		"scaled_mls_surface_rh60",
+		"scaled_mls_surface_rh85"
+	};
+	if (!std::isfinite(relativeHumidityPercent))
+	{
+		result.fallbackReason = "invalid_query";
+		result.fallbackAxis = "relativeHumidityPercent";
+		return result;
+	}
+	if (relativeHumidityPercent < kHumidityPercent[0] - kAxisEpsilon ||
+		relativeHumidityPercent > kHumidityPercent[2] + kAxisEpsilon)
+	{
+		result.fallbackReason = "out_of_range";
+		result.fallbackAxis = "relativeHumidityPercent";
+		result.fallbackQuery = relativeHumidityPercent;
+		result.fallbackMin = kHumidityPercent[0];
+		result.fallbackMax = kHumidityPercent[2];
+		return result;
+	}
+
+	size_t lowIndex = 0;
+	size_t highIndex = 2;
+	for (size_t index = 0; index < 3; ++index)
+	{
+		if (std::abs(relativeHumidityPercent - kHumidityPercent[index]) <= kAxisEpsilon)
+		{
+			lowIndex = highIndex = index;
+			break;
+		}
+		if (kHumidityPercent[index] < relativeHumidityPercent) lowIndex = index;
+		if (kHumidityPercent[index] > relativeHumidityPercent)
+		{
+			highIndex = index;
+			break;
+		}
+	}
+	IRModtranRadianceQuery lowQuery = query;
+	lowQuery.humidityProfile = kHumidityProfiles[lowIndex];
+	const IRModtranRadianceResult low = this->query(lowQuery);
+	if (!low.valid) return low;
+	if (lowIndex == highIndex)
+	{
+		result = low;
+		result.relativeHumidityPercent = relativeHumidityPercent;
+		result.humidityMode = "numeric_exact_profile";
+		result.interpolationMode = "relativeHumidity_exact_profile+" + low.interpolationMode;
+		return result;
+	}
+	IRModtranRadianceQuery highQuery = query;
+	highQuery.humidityProfile = kHumidityProfiles[highIndex];
+	const IRModtranRadianceResult high = this->query(highQuery);
+	if (!high.valid) return high;
+
+	const double t = (relativeHumidityPercent - kHumidityPercent[lowIndex]) /
+		(kHumidityPercent[highIndex] - kHumidityPercent[lowIndex]);
+	const double lowOpticalDepth = -std::log(clampTau(low.tauUp));
+	const double highOpticalDepth = -std::log(clampTau(high.tauUp));
+	result.valid = true;
+	result.relativeHumidityPercent = relativeHumidityPercent;
+	result.humidityMode = "numeric_linear_components_tau_od";
+	result.tauUp = std::exp(-(lowOpticalDepth + (highOpticalDepth - lowOpticalDepth) * t));
+	result.pathThermalWm2SrUm = low.pathThermalWm2SrUm +
+		(high.pathThermalWm2SrUm - low.pathThermalWm2SrUm) * t;
+	result.directSolarIrradianceWm2Um = low.directSolarIrradianceWm2Um +
+		(high.directSolarIrradianceWm2Um - low.directSolarIrradianceWm2Um) * t;
+	result.downwardSkyDiffuseIrradianceWm2Um = low.downwardSkyDiffuseIrradianceWm2Um +
+		(high.downwardSkyDiffuseIrradianceWm2Um - low.downwardSkyDiffuseIrradianceWm2Um) * t;
+	result.pathScatteringRadianceWm2SrUm = low.pathScatteringRadianceWm2SrUm +
+		(high.pathScatteringRadianceWm2SrUm - low.pathScatteringRadianceWm2SrUm) * t;
+	result.pathRadiance = query.band == IRBand::MidWaveInfrared
+		? result.pathThermalWm2SrUm : result.pathScatteringRadianceWm2SrUm;
+	result.skyRadiance = 0.0;
+	result.solarIrradiance = result.directSolarIrradianceWm2Um;
+	result.responseMode = low.responseMode == high.responseMode ? low.responseMode : "RectangularBand";
+	result.interpolationMode = "relativeHumidity_linear_components_tau_od+" + low.interpolationMode;
+	result.fallbackReason = "none";
+	result.fallbackAxis = "none";
+	result.sourceCaseIds = MergeProvenance(low.sourceCaseIds, high.sourceCaseIds);
+	result.sourceFiles = MergeProvenance(low.sourceFiles, high.sourceFiles);
+	return result;
+}
+
 bool IRModtranRadianceLut::interpolate(const std::vector<const Entry*>& entries,
 	const IRModtranRadianceQuery& query, size_t axisIndex, Sample& sample, InterpolationError& error) const
 {
-	const bool nir = query.band == IRBand::NearInfrared;
-	const size_t axisCount = nir ? 5 : 4;
+	const bool solarAware = query.band == IRBand::NearInfrared ||
+		query.band == IRBand::ShortWaveInfrared ||
+		query.band == IRBand::MidWaveInfrared;
+	const size_t axisCount = solarAware ? 5 : 4;
 	if (axisIndex >= axisCount)
 	{
 		if (entries.size() != 1)
@@ -271,16 +433,22 @@ bool IRModtranRadianceLut::interpolate(const std::vector<const Entry*>& entries,
 	std::vector<double> values;
 	for (size_t i = 0; i < entries.size(); ++i)
 	{
-		const double value = axisValue(*entries[i], axisIndex, nir);
+		const double value = axisValue(*entries[i], axisIndex, solarAware);
 		if (std::find_if(values.begin(), values.end(), [value](double x) { return Same(x, value); }) == values.end())
 			values.push_back(value);
 	}
 	std::sort(values.begin(), values.end());
-	const double requested = queryAxisValue(query, axisIndex, nir);
-	if (values.empty() || requested < values.front() - kAxisEpsilon || requested > values.back() + kAxisEpsilon)
+	const double requested = queryAxisValue(query, axisIndex, solarAware);
+	const char* currentAxisName = axisName(axisIndex, solarAware);
+	const double boundaryTolerance =
+		(std::string(currentAxisName) == "targetAltKm" || std::string(currentAxisName) == "observerAltKm")
+			? kAltitudeGridSnapKm
+			: (std::string(currentAxisName) == "rangeKm" ? kRangeGridSnapKm : kAxisEpsilon);
+	if (values.empty() || requested < values.front() - boundaryTolerance ||
+		requested > values.back() + boundaryTolerance)
 	{
 		error.reason = "out_of_range";
-		error.axis = axisName(axisIndex, nir);
+		error.axis = axisName(axisIndex, solarAware);
 		error.query = requested;
 		error.minimum = values.empty() ? 0.0 : values.front();
 		error.maximum = values.empty() ? 0.0 : values.back();
@@ -290,8 +458,7 @@ bool IRModtranRadianceLut::interpolate(const std::vector<const Entry*>& entries,
 	double high = values.back();
 	for (size_t i = 0; i < values.size(); ++i)
 	{
-		const double snapTolerance = (axisName(axisIndex, nir) == std::string("targetAltKm") ||
-			axisName(axisIndex, nir) == std::string("observerAltKm")) ? kAltitudeGridSnapKm : kAxisEpsilon;
+		const double snapTolerance = boundaryTolerance;
 		if (std::abs(values[i] - requested) <= snapTolerance) { low = high = values[i]; break; }
 		if (values[i] < requested) low = values[i];
 		if (values[i] > requested) { high = values[i]; break; }
@@ -299,7 +466,7 @@ bool IRModtranRadianceLut::interpolate(const std::vector<const Entry*>& entries,
 	auto subset = [&](double selected) {
 		std::vector<const Entry*> result;
 		for (size_t i = 0; i < entries.size(); ++i)
-			if (Same(axisValue(*entries[i], axisIndex, nir), selected)) result.push_back(entries[i]);
+			if (Same(axisValue(*entries[i], axisIndex, solarAware), selected)) result.push_back(entries[i]);
 		return result;
 	};
 	if (Same(low, high)) return interpolate(subset(low), query, axisIndex + 1, sample, error);
@@ -308,13 +475,94 @@ bool IRModtranRadianceLut::interpolate(const std::vector<const Entry*>& entries,
 	if (!interpolate(subset(low), query, axisIndex + 1, lowSample, lowError))
 	{
 		error = lowError;
-		if (error.reason.empty()) { error.reason = "cell_missing"; error.axis = axisName(axisIndex, nir); }
+		if (error.reason.empty()) { error.reason = "cell_missing"; error.axis = axisName(axisIndex, solarAware); }
 		return false;
 	}
 	if (!interpolate(subset(high), query, axisIndex + 1, highSample, highError))
 	{
 		error = highError;
-		if (error.reason.empty()) { error.reason = "cell_missing"; error.axis = axisName(axisIndex, nir); }
+		if (error.reason.empty()) { error.reason = "cell_missing"; error.axis = axisName(axisIndex, solarAware); }
+		return false;
+	}
+	sample = mix(lowSample, highSample, (requested - low) / (high - low));
+	return true;
+}
+
+bool IRModtranRadianceLut::interpolateEqualAltitude(
+	const std::vector<const Entry*>& entries, const IRModtranRadianceQuery& query,
+	size_t axisIndex, Sample& sample, InterpolationError& error) const
+{
+	const size_t axisCount = 4; // coupled altitude, range, visibility, solar zenith
+	if (axisIndex >= axisCount)
+	{
+		if (entries.size() != 1)
+		{
+			error.reason = "cell_missing_or_duplicate";
+			error.axis = "cell";
+			return false;
+		}
+		const Entry& e = *entries[0];
+		sample.opticalDepth = -std::log(clampTau(e.tauUp));
+		sample.pathThermal = e.pathThermal;
+		sample.directSolar = e.directSolar;
+		sample.skyDiffuse = e.skyDiffuse;
+		sample.pathScattering = e.pathScattering;
+		sample.sourceCaseIds = e.sourceCaseIds;
+		sample.sourceFiles = e.sourceFiles;
+		return true;
+	}
+
+	std::vector<double> values;
+	for (size_t i = 0; i < entries.size(); ++i)
+	{
+		const double value = equalAltitudeAxisValue(*entries[i], axisIndex);
+		if (std::find_if(values.begin(), values.end(), [value](double x) { return Same(x, value); }) == values.end())
+			values.push_back(value);
+	}
+	std::sort(values.begin(), values.end());
+	const double requested = equalAltitudeQueryAxisValue(query, axisIndex);
+	const double boundaryTolerance = axisIndex == 0 ? kAltitudeGridSnapKm
+		: (axisIndex == 1 ? kRangeGridSnapKm : kAxisEpsilon);
+	if (values.empty() || requested < values.front() - boundaryTolerance ||
+		requested > values.back() + boundaryTolerance)
+	{
+		error.reason = "out_of_range";
+		error.axis = equalAltitudeAxisName(axisIndex);
+		error.query = requested;
+		error.minimum = values.empty() ? 0.0 : values.front();
+		error.maximum = values.empty() ? 0.0 : values.back();
+		return false;
+	}
+
+	double low = values.front();
+	double high = values.back();
+	for (size_t i = 0; i < values.size(); ++i)
+	{
+		const double tolerance = boundaryTolerance;
+		if (std::abs(values[i] - requested) <= tolerance) { low = high = values[i]; break; }
+		if (values[i] < requested) low = values[i];
+		if (values[i] > requested) { high = values[i]; break; }
+	}
+	auto subset = [&](double selected) {
+		std::vector<const Entry*> result;
+		for (size_t i = 0; i < entries.size(); ++i)
+			if (Same(equalAltitudeAxisValue(*entries[i], axisIndex), selected)) result.push_back(entries[i]);
+		return result;
+	};
+	if (Same(low, high)) return interpolateEqualAltitude(subset(low), query, axisIndex + 1, sample, error);
+
+	Sample lowSample, highSample;
+	InterpolationError lowError, highError;
+	if (!interpolateEqualAltitude(subset(low), query, axisIndex + 1, lowSample, lowError))
+	{
+		error = lowError;
+		if (error.reason.empty()) { error.reason = "cell_missing"; error.axis = equalAltitudeAxisName(axisIndex); }
+		return false;
+	}
+	if (!interpolateEqualAltitude(subset(high), query, axisIndex + 1, highSample, highError))
+	{
+		error = highError;
+		if (error.reason.empty()) { error.reason = "cell_missing"; error.axis = equalAltitudeAxisName(axisIndex); }
 		return false;
 	}
 	sample = mix(lowSample, highSample, (requested - low) / (high - low));
@@ -334,9 +582,9 @@ IRModtranRadianceLut::Sample IRModtranRadianceLut::mix(const Sample& low, const 
 	return result;
 }
 
-double IRModtranRadianceLut::axisValue(const Entry& entry, size_t axisIndex, bool nir)
+double IRModtranRadianceLut::axisValue(const Entry& entry, size_t axisIndex, bool solarAware)
 {
-	(void)nir;
+	(void)solarAware;
 	switch (axisIndex)
 	{
 	case 0: return entry.targetAltKm;
@@ -347,9 +595,9 @@ double IRModtranRadianceLut::axisValue(const Entry& entry, size_t axisIndex, boo
 	}
 }
 
-double IRModtranRadianceLut::queryAxisValue(const IRModtranRadianceQuery& query, size_t axisIndex, bool nir)
+double IRModtranRadianceLut::queryAxisValue(const IRModtranRadianceQuery& query, size_t axisIndex, bool solarAware)
 {
-	(void)nir;
+	(void)solarAware;
 	switch (axisIndex)
 	{
 	case 0: return query.targetAltKm;
@@ -360,9 +608,9 @@ double IRModtranRadianceLut::queryAxisValue(const IRModtranRadianceQuery& query,
 	}
 }
 
-const char* IRModtranRadianceLut::axisName(size_t axisIndex, bool nir)
+const char* IRModtranRadianceLut::axisName(size_t axisIndex, bool solarAware)
 {
-	(void)nir;
+	(void)solarAware;
 	switch (axisIndex)
 	{
 	case 0: return "targetAltKm";
@@ -373,9 +621,44 @@ const char* IRModtranRadianceLut::axisName(size_t axisIndex, bool nir)
 	}
 }
 
+double IRModtranRadianceLut::equalAltitudeAxisValue(const Entry& entry, size_t axisIndex)
+{
+	switch (axisIndex)
+	{
+	case 0: return 0.5 * (entry.observerAltKm + entry.targetAltKm);
+	case 1: return entry.rangeKm;
+	case 2: return entry.visibilityKm;
+	default: return entry.solarZenithDeg;
+	}
+}
+
+double IRModtranRadianceLut::equalAltitudeQueryAxisValue(
+	const IRModtranRadianceQuery& query, size_t axisIndex)
+{
+	switch (axisIndex)
+	{
+	case 0: return 0.5 * (query.observerAltKm + query.targetAltKm);
+	case 1: return query.rangeKm;
+	case 2: return query.visibilityKm;
+	default: return query.solarZenithDeg;
+	}
+}
+
+const char* IRModtranRadianceLut::equalAltitudeAxisName(size_t axisIndex)
+{
+	switch (axisIndex)
+	{
+	case 0: return "equalAltitudeKm";
+	case 1: return "rangeKm";
+	case 2: return "visibilityKm";
+	default: return "solarZenithDeg";
+	}
+}
+
 bool IRModtranRadianceLut::bandFromName(const std::string& value, IRBand& band)
 {
 	if (value == "NIR") { band = IRBand::NearInfrared; return true; }
+	if (value == "SWIR") { band = IRBand::ShortWaveInfrared; return true; }
 	if (value == "MWIR") { band = IRBand::MidWaveInfrared; return true; }
 	return false;
 }

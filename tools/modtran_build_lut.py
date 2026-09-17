@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Build the formal HwaSimIR NIR/MWIR SI band LUT.
+"""Build the formal HwaSimIR NIR/SWIR/MWIR SI band LUT.
 
-Accepted physical fields are MWIR COMBIN/PTH_THRML, NIR COMBIN/SOL_SCAT,
-target direct SOL TR, and .flx DOWNWARD diffuse irradiance.  TOTAL_RAD and
-top-of-atmosphere SOLAR are never used as substitutes.
+The historical MWIR COMBIN/PTH_THRML rows remain audit inputs.  Production
+P11 SWIR/MWIR rows require COMBIN, PTH_THRML, target SOL TR, .flx DOWNWARD,
+and LOS SOL_SCAT.  TOTAL_RAD and top-of-atmosphere SOLAR are never substitutes.
 """
 
 from __future__ import annotations
@@ -20,6 +20,9 @@ from modtran_convert_to_si import parse_flux, parse_radiance, parse_solar
 DEFAULT_CANDIDATE = Path("HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed/band_lut_si_candidate.csv")
 DEFAULT_M1_ROOT = Path("HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/raw/m1_nir_mwir_20260906")
 DEFAULT_OUTPUT = Path("HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed/band_lut_si.csv")
+DEFAULT_SWIR_ROWS = Path("logs/p11/modtran/swir_ground_grid/formal_swir_rows.csv")
+DEFAULT_SWIR_ALT1_ROWS = Path("logs/p11/modtran/swir_alt1_grid/merge_candidate_swir_alt1.csv")
+DEFAULT_MWIR_P11_ROWS = Path("logs/p11/modtran/mwir_ground_grid/formal_mwir_rows.csv")
 SZA_VALUES = (20.0, 45.0, 70.0)
 
 FIELDS = [
@@ -102,6 +105,12 @@ def main() -> int:
     ap.add_argument("--candidate", type=Path, default=DEFAULT_CANDIDATE)
     ap.add_argument("--m1-root", type=Path, default=DEFAULT_M1_ROOT)
     ap.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    ap.add_argument("--swir-rows", type=Path, default=DEFAULT_SWIR_ROWS,
+                    help="QC-passed real-MODTRAN SWIR rows appended without regeneration or extrapolation")
+    ap.add_argument("--swir-alt1-rows", type=Path, default=DEFAULT_SWIR_ALT1_ROWS,
+                    help="QC-passed 1 km real-MODTRAN SWIR rows appended without regeneration or extrapolation")
+    ap.add_argument("--mwir-p11-rows", type=Path, default=DEFAULT_MWIR_P11_ROWS,
+                    help="QC-passed five-component close-up MWIR rows appended without replacing legacy audit rows")
     args = ap.parse_args()
 
     candidate = read_csv(args.candidate)
@@ -192,10 +201,42 @@ def main() -> int:
             })
             output.append(row)
 
+    # Keep the long-lived NIR/MWIR audit rows in their established canonical
+    # order, then append the independently published P11 grids.  This mirrors
+    # the atomic publishers and makes a rebuild byte-for-byte reproducible.
     output.sort(key=lambda r: (r["band"], float(r["observer_alt_km"]), float(r["target_alt_km"]),
                                float(r["range_km"]), float(r["visibility_km"]), float(r["solar_zenith_deg"] or 0.0)))
-    if len(output) != 1340:
-        raise ValueError(f"Expected 1340 formal LUT rows, got {len(output)}")
+    if not args.swir_rows.exists():
+        raise ValueError(f"Missing required P11 SWIR formal rows: {args.swir_rows}")
+    swir_rows = read_csv(args.swir_rows)
+    if len(swir_rows) != 18 or any(row.get("band") != "SWIR" or
+                                  not row.get("case_id", "").startswith("P11_SWIR_ground_")
+                                  for row in swir_rows):
+        raise ValueError("Expected 18 provenance-tagged P11 SWIR formal rows")
+    output.extend(swir_rows)
+    if not args.swir_alt1_rows.exists():
+        raise ValueError(f"Missing required P11 SWIR 1 km formal rows: {args.swir_alt1_rows}")
+    swir_alt1_rows = read_csv(args.swir_alt1_rows)
+    if len(swir_alt1_rows) != 18 or any(row.get("band") != "SWIR" or
+                                       not row.get("case_id", "").startswith("P11_SWIR_alt1_")
+                                       for row in swir_alt1_rows):
+        raise ValueError("Expected 18 provenance-tagged P11 SWIR 1 km formal rows")
+    output.extend(swir_alt1_rows)
+    if not args.mwir_p11_rows.exists():
+        raise ValueError(f"Missing required P11 MWIR formal rows: {args.mwir_p11_rows}")
+    mwir_p11_rows = read_csv(args.mwir_p11_rows)
+    required_mwir_fields = [
+        "tau_up", "path_thermal_W_m2_sr_um", "direct_solar_irradiance_at_target_W_m2_um",
+        "downward_sky_diffuse_irradiance_W_m2_um", "los_path_scattering_radiance_W_m2_sr_um",
+    ]
+    if len(mwir_p11_rows) != 36 or any(row.get("band") != "MWIR" or
+                                      not row.get("case_id", "").startswith("P11_MWIR_ground_") or
+                                      any(not row.get(field, "") for field in required_mwir_fields)
+                                      for row in mwir_p11_rows):
+        raise ValueError("Expected 36 five-component P11 MWIR formal rows")
+    output.extend(mwir_p11_rows)
+    if len(output) != 1412:
+        raise ValueError(f"Expected 1412 formal LUT rows, got {len(output)}")
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=FIELDS)

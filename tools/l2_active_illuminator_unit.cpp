@@ -98,7 +98,7 @@ int main(int argc, char** argv)
 		input.rangeM = rangesKm[i] * 1000.0;
 		input.tauInbound = nirTau[i];
 		const IRActiveIlluminatorOutput out = model.evaluate(config, input);
-		const double expected = 0.5 / 3.14159265358979323846 / 0.05 *
+		const double expected = 0.5 / 3.14159265358979323846 / 0.40 *
 			std::pow(1000.0 / input.rangeM, 2.0) * nirTau[i] * nirTau[i];
 		const bool pass = out.activeSensorRadianceWm2SrUm < lastRadiance && near(out.activeSensorRadianceWm2SrUm, expected);
 		Row row = Row{"range_two_way_tau", std::to_string(static_cast<int>(rangesKm[i])) + "km",
@@ -120,6 +120,30 @@ int main(int argc, char** argv)
 	rows.push_back(Row{"intensity", "physical_reference_ignores_protocol_raw_value",
 		physicalIntensity.referenceIrradianceWm2, 2.0, "W/m^2", near(physicalIntensity.referenceIrradianceWm2, 2.0)});
 	config.intensityMode = IRActiveIntensityMode::LegacyNormalized;
+
+	input = baseInput();
+	input.sensorBand = IRBand::ShortWaveInfrared;
+	input.sensorLowUm = 1.1;
+	input.sensorHighUm = 2.5;
+	config.band = IRActiveIlluminatorBand::NearInfrared;
+	config.centerWavelengthUm = 0.85;
+	config.bandwidthUm = 0.05;
+	IRActiveIlluminatorOutput nirIntoSwir = model.evaluate(config, input);
+	rows.push_back(Row{"band", "0p85um_source_SWIR_sensor_zero", nirIntoSwir.activeSensorRadianceWm2SrUm, 0.0,
+		"W/(m^2 sr um)", !nirIntoSwir.spectralOverlap && nirIntoSwir.activeSensorRadianceWm2SrUm == 0.0});
+	config.band = IRActiveIlluminatorBand::ShortWaveInfrared;
+	config.centerWavelengthUm = 1.55;
+	config.bandwidthUm = 0.10;
+	IRActiveIlluminatorOutput swir = model.evaluate(config, input);
+	const double expectedSwir = 0.5 / 3.14159265358979323846 / 1.4 * 0.9 * 0.9;
+	rows.push_back(Row{"band", "SWIR_source_SWIR_sensor", swir.activeSensorRadianceWm2SrUm, expectedSwir,
+		"W/(m^2 sr um)", swir.spectralOverlap && near(swir.activeSensorRadianceWm2SrUm, expectedSwir)});
+	config.centerWavelengthUm = 1.15;
+	config.bandwidthUm = 0.20;
+	IRActiveIlluminatorOutput partialSwir = model.evaluate(config, input);
+	const double expectedPartialSwir = expectedSwir * 0.75;
+	rows.push_back(Row{"band", "SWIR_partial_overlap_normalized_over_sensor", partialSwir.activeSensorRadianceWm2SrUm,
+		expectedPartialSwir, "W/(m^2 sr um)", near(partialSwir.activeSensorRadianceWm2SrUm, expectedPartialSwir)});
 
 	input = baseInput();
 	input.sensorBand = IRBand::MidWaveInfrared;
@@ -154,12 +178,16 @@ int main(int argc, char** argv)
 	const double half = input.protocolAngleMrad * 1.0e-3 * 0.5;
 	const double coneAngles[] = {0.0, half, half * 1.01};
 	const char* coneCases[] = {"center", "edge", "outside"};
+	double unshapedReference = -1.0;
 	for (size_t i = 0; i < 3; ++i)
 	{
 		input.beamAngleRad = coneAngles[i];
 		const IRActiveIlluminatorOutput out = model.evaluate(config, input);
 		const bool pass = i < 2 ? out.activeSensorRadianceWm2SrUm > 0.0 : out.activeSensorRadianceWm2SrUm == 0.0;
 		rows.push_back(Row{"cone", coneCases[i], out.beamFactor, i < 2 ? 1.0 : 0.0, "dimensionless", pass});
+		if (i == 0) unshapedReference = out.unshapedSensorRadianceWm2SrUm;
+		rows.push_back(Row{"cone_gpu_coefficient", coneCases[i], out.unshapedSensorRadianceWm2SrUm,
+			unshapedReference, "W/(m^2 sr um)", near(out.unshapedSensorRadianceWm2SrUm, unshapedReference)});
 	}
 	input = baseInput();
 	input.activeVisibility = 0.0;

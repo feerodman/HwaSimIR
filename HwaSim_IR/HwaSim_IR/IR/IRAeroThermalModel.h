@@ -2,6 +2,7 @@
 
 #include "IRTypes.h"
 
+#include <array>
 #include <string>
 
 struct IRAeroThermalOptions
@@ -62,6 +63,29 @@ struct IRAeroThermalOutput
 	std::string fallbackReason = "not_evaluated";
 };
 
+// Spatial distribution is deliberately separate from the recovery-temperature
+// model.  The recovery model supplies candidate deltas; this contract prevents
+// any of them from being added to the complete target body.
+struct IRAeroSpatialInput
+{
+	std::array<double, 3> localPosition = {{0.0, 0.0, 0.0}};
+	std::array<double, 3> localNormal = {{0.0, 1.0, 0.0}};
+	std::array<double, 3> boundsCenter = {{0.0, 0.0, 0.0}};
+	std::array<double, 3> boundsHalfExtent = {{1.0, 1.0, 1.0}};
+	std::array<double, 3> forwardAxis = {{0.0, 1.0, 0.0}};
+	double noseDeltaK = 0.0;
+	double edgeDeltaK = 0.0;
+	double rearDeltaK = 0.0;
+};
+
+struct IRAeroSpatialOutput
+{
+	double noseMask = 0.0;
+	double edgeMask = 0.0;
+	double rearMask = 0.0;
+	double deltaK = 0.0;
+};
+
 class IRAeroThermalModel
 {
 public:
@@ -72,4 +96,5 @@ public:
 
 	static double isaAirTemperatureK(double altitudeM);
 	static double speedOfSoundMps(double airTempK, double gamma);
+	static IRAeroSpatialOutput evaluateSpatial(const IRAeroSpatialInput& input);
 };

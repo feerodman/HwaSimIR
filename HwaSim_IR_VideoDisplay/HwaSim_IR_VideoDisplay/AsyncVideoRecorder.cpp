@@ -86,6 +86,8 @@ bool AsyncVideoRecorder::startPending(int round, const QString& baseDirectory)
     m_writtenFrames = 0;
     m_droppedFrames = 0;
     m_lastWrittenSourceSeq = 0;
+    m_lastWrittenFrameSeq = 0;
+    m_frameSeqContinuousWritten = true;
     m_sourceSeqContinuousWritten = true;
     m_maxQueueDepthObserved = 0;
     m_writeMsTotal = 0.0;
@@ -102,7 +104,11 @@ bool AsyncVideoRecorder::enqueue(const RecordingFrame& frame)
 {
     std::unique_lock<std::mutex> lock(m_mutex);
     if(m_fileError)return false;
-    if(!frame.product.isEmpty()){
+    // TCP compatibility frames add GUI timing fields to product even though
+    // they do not carry an authoritative DDS FrameProduct identity.  Only a
+    // product that actually declares saveRequested may override the protocol
+    // recorder state established by Init + Start.
+    if(frame.product.contains("saveRequested")){
         if(!frame.product.value("saveRequested").toBool())return false;
         m_enabled=true;m_accepting=true;
         if(!m_initialized)m_pending=true;
@@ -177,10 +183,14 @@ RecorderSnapshot AsyncVideoRecorder::snapshot() const
     result.recordingEnabled = m_enabled && (m_accepting || m_pending || m_initialized);
     result.pending = m_pending;
     result.initialized = m_initialized;
+    result.accepting = m_accepting;
+    result.shutdownRequested = m_shutdownRequested;
+    result.frameSeqContinuousWritten = m_frameSeqContinuousWritten;
     result.sourceSeqContinuousWritten = m_sourceSeqContinuousWritten;
     result.inputFrames = m_inputFrames;
     result.writtenFrames = m_writtenFrames;
     result.droppedFrames = m_droppedFrames;
+    result.frameSeqWritten = m_lastWrittenFrameSeq;
     result.sourceSeqWritten = m_lastWrittenSourceSeq;
     result.queueDepth = static_cast<int>(m_queue.size());
     result.maxQueueDepth = m_maxQueueDepthObserved;
@@ -230,7 +240,8 @@ void AsyncVideoRecorder::threadMain()
         if (haveFrame)
         {
             const QString productKey=frame.product.value("session").toString()+"/"+frame.product.value("generation").toString()+"/"+frame.product.value("run").toString();
-            if(!frame.product.isEmpty()&&productKey!=m_sessionProductKey){
+            if(frame.product.contains("session") && frame.product.contains("generation") &&
+                frame.product.contains("run") && productKey!=m_sessionProductKey){
                 if(!m_sessionProductKey.isEmpty()){logPerf(true);closeSession();}
                 m_sessionProductKey=productKey;
                 std::lock_guard<std::mutex> lock(m_mutex);m_initialized=false;m_pending=true;m_round=frame.product.value("round").toInt();
@@ -471,10 +482,11 @@ bool AsyncVideoRecorder::writeFrame(const RecordingFrame& frame)
     const qint64 bodyOffset=m_bodyFile->pos();
     QJsonObject original=QJsonDocument::fromJson(frame.annotationJson.toUtf8()).object();
     original.remove("_frameProduct");
-    HwaFrameV2::Product wireProduct;
-    const bool exactBody=HwaFrameV2::extract(reinterpret_cast<const std::uint8_t*>(frame.encodedAu.constData()),frame.encodedAu.size(),wireProduct);
-    const QByteArray body=exactBody?QByteArray::fromStdString(wireProduct.annotation):
-        (original.isEmpty()?QByteArray():QJsonDocument(original).toJson(QJsonDocument::Compact));
+    // encodedAu is the received Annex-B access unit, not a FrameV2 envelope.
+    // The annotation JSON was transported as its own TCP/DDS section; remove
+    // only the receiver-added product metadata before preserving that body.
+    const QByteArray body=original.isEmpty()
+        ? QByteArray() : QJsonDocument(original).toJson(QJsonDocument::Compact);
     if(m_bodyFile->write(body)!=body.size()||m_bodyFile->write("\n",1)!=1)return false;
     QJsonObject index=frame.product;
     index.insert("storageIndex",QString::number(recordingFrameIndex));
@@ -487,7 +499,7 @@ bool AsyncVideoRecorder::writeFrame(const RecordingFrame& frame)
     index.insert("annotationBodyOffset",QString::number(bodyOffset));
     index.insert("annotationBodyBytes",body.size());
     index.insert("annotationBodySha256",QString::fromLatin1(QCryptographicHash::hash(body,QCryptographicHash::Sha256).toHex()));
-    index.insert("association",frame.product.isEmpty()?"unmatched":"AU_SEI_V2");
+    index.insert("association",frame.association.isEmpty()?QStringLiteral("unmatched"):frame.association);
     index.insert("receiveTimeNs",QString::number(frame.receiveTimeNs));
     index.insert("displayTimeNs",QString::number(frame.displayTimeNs));
     index.insert("width",frame.image.width());index.insert("height",frame.image.height());
@@ -505,7 +517,8 @@ bool AsyncVideoRecorder::writeFrame(const RecordingFrame& frame)
         ++m_writtenFrames;++m_perfWrittenFrames;++m_storageIndex;
         m_writeMsTotal+=writeMs;m_writeMsMax=std::max(m_writeMsMax,writeMs);
         m_perfWriteMsTotal+=writeMs;m_perfWriteMsMax=std::max(m_perfWriteMsMax,writeMs);
-        if(frame.frameSeq>0&&m_lastWrittenFrameSeq>0&&frame.frameSeq!=m_lastWrittenFrameSeq+1)m_sourceSeqContinuousWritten=false;
+        if(frame.frameSeq==0||(m_lastWrittenFrameSeq>0&&frame.frameSeq!=m_lastWrittenFrameSeq+1))m_frameSeqContinuousWritten=false;
+        if(frame.sourceSeq==0||(m_lastWrittenSourceSeq>0&&frame.sourceSeq!=m_lastWrittenSourceSeq+1))m_sourceSeqContinuousWritten=false;
         m_lastWrittenFrameSeq=frame.frameSeq;m_lastWrittenSourceSeq=frame.sourceSeq;
     }
     logPerf(false);
@@ -526,6 +539,7 @@ void AsyncVideoRecorder::closeSession()
     if(m_indexFile){
         QJsonObject summary;summary.insert("productSession",m_sessionProductKey);summary.insert("completeProducts",QString::number(m_storageIndex));
         summary.insert("lastFrameSeq",QString::number(m_lastWrittenFrameSeq));summary.insert("lastSourceSeq",QString::number(m_lastWrittenSourceSeq));
+        summary.insert("frameSeqContinuous",m_frameSeqContinuousWritten);summary.insert("sourceSeqContinuous",m_sourceSeqContinuousWritten);
         {std::lock_guard<std::mutex> lock(m_mutex);summary.insert("fileError",m_fileError);}
         summary.insert("muxerFinalized",ok);summary.insert("independentValidationRequired",true);
         QFile report(QFileInfo(m_indexFile->fileName()).dir().filePath("recording_status.json"));

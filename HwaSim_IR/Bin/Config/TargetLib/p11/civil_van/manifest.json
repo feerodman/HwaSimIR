@@ -1,0 +1,179 @@
+{
+  "schema": 1,
+  "asset": "P11 Civil Panel Van",
+  "origin": "Project-authored deterministic geometry; no GMC geometry, texture, or conversion output used.",
+  "license": "CC0-1.0",
+  "coordinateSystem": "Z-up, X width, Y length, front +Y",
+  "units": "metres",
+  "nominalBoundsM": {
+    "x": [
+      -1.145,
+      1.145
+    ],
+    "y": [
+      -2.88,
+      2.515
+    ],
+    "z": [
+      0.12,
+      2.34
+    ]
+  },
+  "geometry": {
+    "vertices": 840,
+    "polygons": 175,
+    "materials": 6
+  },
+  "canonicalSource": "p11_civil_van.obj",
+  "derived": [
+    "p11_civil_van.egg",
+    "p11_civil_van.bam"
+  ],
+  "visibleTexture": "p11_civil_van_visible.ppm",
+  "materialIdTexture": "p11_civil_van_material_id.pgm",
+  "materialMap": "p11_civil_van_material_id.pgm.xml",
+  "bandOptics": "p11_civil_van_band_optics.csv",
+  "materialPolicy": "Visible RGB is presentation-only. SWIR/MWIR optics are explicit engineering assumptions and are not inferred from RGB.",
+  "materials": [
+    {
+      "id": 11,
+      "key": "car_paint",
+      "db": "BM_PAINT",
+      "rgb": [
+        0.68,
+        0.08,
+        0.055
+      ],
+      "swir": [
+        0.5,
+        0.5,
+        0.0
+      ],
+      "mwir": [
+        0.25,
+        0.75,
+        0.0
+      ],
+      "temperature_k": 300.0,
+      "thickness_m": 0.0008,
+      "notes": "Painted steel outer panels; surface optics, not visible RGB."
+    },
+    {
+      "id": 12,
+      "key": "metal",
+      "db": "BM_METAL",
+      "rgb": [
+        0.38,
+        0.41,
+        0.45
+      ],
+      "swir": [
+        0.58,
+        0.42,
+        0.0
+      ],
+      "mwir": [
+        0.35,
+        0.65,
+        0.0
+      ],
+      "temperature_k": 303.0,
+      "thickness_m": 0.003,
+      "notes": "Unpainted bumper, grille and wheel-hub metal."
+    },
+    {
+      "id": 13,
+      "key": "glass",
+      "db": "BM_GLASS",
+      "rgb": [
+        0.055,
+        0.18,
+        0.27
+      ],
+      "swir": [
+        0.08,
+        0.07,
+        0.85
+      ],
+      "mwir": [
+        0.05,
+        0.9,
+        0.05
+      ],
+      "temperature_k": 299.0,
+      "thickness_m": 0.005,
+      "notes": "Generic vehicle glazing; transmissive SWIR assumption is explicit."
+    },
+    {
+      "id": 14,
+      "key": "rubber",
+      "db": "BM_RUBBER",
+      "rgb": [
+        0.035,
+        0.035,
+        0.035
+      ],
+      "swir": [
+        0.15,
+        0.85,
+        0.0
+      ],
+      "mwir": [
+        0.05,
+        0.95,
+        0.0
+      ],
+      "temperature_k": 306.0,
+      "thickness_m": 0.035,
+      "notes": "Tyre tread/sidewall engineering assumption pending coupon data."
+    },
+    {
+      "id": 15,
+      "key": "engine_bay",
+      "db": "BM_METAL-IRON",
+      "rgb": [
+        0.63,
+        0.22,
+        0.035
+      ],
+      "swir": [
+        0.4,
+        0.6,
+        0.0
+      ],
+      "mwir": [
+        0.2,
+        0.8,
+        0.0
+      ],
+      "temperature_k": 303.0,
+      "engine_on_temperature_k": 345.0,
+      "thickness_m": 0.004,
+      "notes": "Localized engine/hood sample: 303 K engine-off nominal, 345 K only while engine-on; never applied to the whole vehicle."
+    },
+    {
+      "id": 16,
+      "key": "exhaust_tailpipe",
+      "db": "BM_METAL-IRON",
+      "rgb": [
+        0.78,
+        0.34,
+        0.04
+      ],
+      "swir": [
+        0.35,
+        0.65,
+        0.0
+      ],
+      "mwir": [
+        0.12,
+        0.88,
+        0.0
+      ],
+      "temperature_k": 303.0,
+      "engine_on_temperature_k": 475.0,
+      "thickness_m": 0.002,
+      "notes": "Localized oxidized exhaust/tailpipe: 303 K engine-off nominal, 475 K only while engine-on."
+    }
+  ]
+}

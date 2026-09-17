@@ -19,8 +19,10 @@ bool IRSensorProfileDatabase::loadFromDirectoryCandidates(const std::vector<std:
         // One release root. Never fill invalid/missing profiles from another version.
         m_loadedDirectory=dir;
         for(auto b:bands)loadProfileFromFile(b,join(dir,IRSensorProfileFileName(b)));
-        m_loaded=m_profiles[IRBand::NearInfrared].loadedFromFile&&m_profiles[IRBand::MidWaveInfrared].loadedFromFile;
-        std::cout<<"[SensorProfiles] requiredBands=NIR,MWIR allRequiredValid="<<m_loaded<<" root="<<dir<<" mixedRoots=0"<<std::endl;
+		m_loaded=m_profiles[IRBand::NearInfrared].loadedFromFile&&
+			m_profiles[IRBand::ShortWaveInfrared].loadedFromFile&&
+			m_profiles[IRBand::MidWaveInfrared].loadedFromFile;
+		std::cout<<"[SensorProfiles] requiredBands=NIR,SWIR,MWIR allRequiredValid="<<m_loaded<<" root="<<dir<<" mixedRoots=0"<<std::endl;
         return m_loaded;
     }
     std::cerr<<"[SensorProfiles][ERROR] no_profile_root"<<std::endl;return false;
@@ -32,7 +34,7 @@ const IRSensorProfile& IRSensorProfileDatabase::profileForProtocolBand(int b)con
 std::vector<IRSensorProfile> IRSensorProfileDatabase::allProfiles()const{std::vector<IRSensorProfile> v;for(auto b:bands)v.push_back(profileForBand(b));return v;}
 bool IRSensorProfileDatabase::loaded()const{return m_loaded;}
 bool IRSensorProfileDatabase::supportsProductionProtocolBand(int b)const{
-    if(b!=1 && b!=2)return false;
+	if(b!=0 && b!=1 && b!=2)return false;
     const auto& p=profileForProtocolBand(b);
     return p.loadedFromFile && p.schemaVersion==1 && p.displayPresets.count(p.defaultDisplayPreset)!=0;
 }

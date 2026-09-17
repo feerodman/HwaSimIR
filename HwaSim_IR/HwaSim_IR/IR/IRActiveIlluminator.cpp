@@ -59,6 +59,8 @@ IRActiveIlluminatorOutput::IRActiveIlluminatorOutput()
 	sensorBand("NIR"),
 	sourceLowUm(0.825),
 	sourceHighUm(0.875),
+	sourceBandwidthUm(0.05),
+	sensorBandwidthUm(0.40),
 	protocolAngleMrad(0.0),
 	halfAngleRad(0.0),
 	rangeM(0.0),
@@ -74,8 +76,11 @@ IRActiveIlluminatorOutput::IRActiveIlluminatorOutput()
 	activeSurfaceRadianceWm2Sr(0.0),
 	activeSensorRadianceWm2Sr(0.0),
 	spectralOverlapWidthUm(0.0),
+	spectralOverlapFraction(0.0),
 	activeSurfaceRadianceWm2SrUm(0.0),
 	activeSensorRadianceWm2SrUm(0.0),
+	unshapedSurfaceRadianceWm2SrUm(0.0),
+	unshapedSensorRadianceWm2SrUm(0.0),
 	activeVisibility(1.0),
 	intensitySource("disabled"),
 	outboundTauSource("disabled"),
@@ -114,6 +119,7 @@ IRActiveIlluminatorOutput IRActiveIlluminator::evaluate(
 	}
 	const bool bandCompatible = followSensor ||
 		(config.band == IRActiveIlluminatorBand::NearInfrared && input.sensorBand == IRBand::NearInfrared) ||
+		(config.band == IRActiveIlluminatorBand::ShortWaveInfrared && input.sensorBand == IRBand::ShortWaveInfrared) ||
 		(config.band == IRActiveIlluminatorBand::MidWaveInfrared && input.sensorBand == IRBand::MidWaveInfrared);
 	output.spectralOverlap = bandCompatible &&
 		output.sourceHighUm > input.sensorLowUm && output.sourceLowUm < input.sensorHighUm;
@@ -121,21 +127,36 @@ IRActiveIlluminatorOutput IRActiveIlluminator::evaluate(
 		? std::max(0.0, std::min(output.sourceHighUm, input.sensorHighUm) -
 			std::max(output.sourceLowUm, input.sensorLowUm))
 		: 0.0;
+	output.sourceBandwidthUm = std::max(0.0, output.sourceHighUm - output.sourceLowUm);
+	output.sensorBandwidthUm = std::max(0.0, input.sensorHighUm - input.sensorLowUm);
+	output.spectralOverlapFraction = output.sourceBandwidthUm > 0.0
+		? clamp(output.spectralOverlapWidthUm / output.sourceBandwidthUm, 0.0, 1.0) : 0.0;
 
 	if (!config.enabled) { output.fallbackReason = "config_disabled"; return output; }
 	if (!input.protocolEnabled) { output.fallbackReason = "protocol_illuminator_disabled"; return output; }
-	if (input.sensorBand != IRBand::NearInfrared && input.sensorBand != IRBand::MidWaveInfrared)
+	if (input.sensorBand != IRBand::NearInfrared &&
+		input.sensorBand != IRBand::ShortWaveInfrared &&
+		input.sensorBand != IRBand::MidWaveInfrared)
 	{
-		output.fallbackReason = "sensor_band_not_supported_in_L2";
+		output.fallbackReason = "sensor_band_not_supported_in_formal_active_chain";
 		return output;
 	}
 	if (!output.spectralOverlap) { output.fallbackReason = "spectral_band_mismatch"; return output; }
+	if (!(output.sensorBandwidthUm > 0.0) || !(output.sourceBandwidthUm > 0.0))
+	{
+		output.fallbackReason = "nonpositive_spectral_bandwidth";
+		return output;
+	}
 	if (!(output.halfAngleRad > 0.0)) { output.fallbackReason = "nonpositive_protocol_angle"; return output; }
 	if (!(output.rangeM > 0.0)) { output.fallbackReason = "nonpositive_range"; return output; }
-	if (output.beamAngleRad > output.halfAngleRad) { output.fallbackReason = "outside_beam_cone"; return output; }
 	if (!(output.activeVisibility > 0.0)) { output.fallbackReason = "source_target_occluded"; return output; }
 
-	if (config.beamProfile == IRActiveBeamProfile::TopHat)
+	const bool centerOutsideBeam = output.beamAngleRad > output.halfAngleRad;
+	if (centerOutsideBeam)
+	{
+		output.beamFactor = 0.0;
+	}
+	else if (config.beamProfile == IRActiveBeamProfile::TopHat)
 	{
 		output.beamFactor = 1.0;
 	}
@@ -167,6 +188,7 @@ IRActiveIlluminatorOutput IRActiveIlluminator::evaluate(
 	const double referenceRangeM = std::max(1.0e-6, config.referenceRangeM);
 	const double inverseSquare = (referenceRangeM / output.rangeM) * (referenceRangeM / output.rangeM);
 	output.geometricIrradianceWm2 = output.referenceIrradianceWm2 * inverseSquare * output.beamFactor;
+	const double unshapedGeometricIrradianceWm2 = output.referenceIrradianceWm2 * inverseSquare;
 	if (config.useAtmosphericAttenuation)
 	{
 		if (!input.tauInboundValid || !std::isfinite(input.tauInbound) ||
@@ -188,28 +210,35 @@ IRActiveIlluminatorOutput IRActiveIlluminator::evaluate(
 		output.outboundTauSource = "atmospheric_attenuation_disabled";
 	}
 
-	output.targetIrradianceWm2 = output.geometricIrradianceWm2 * output.tauOutbound;
+	// Eref is integrated over the source band.  Only the rectangular spectral
+	// overlap reaches this sensor, and the formal image stores a mean over the
+	// complete sensor response width (not over the usually narrower source).
+	output.targetIrradianceWm2 = output.geometricIrradianceWm2 * output.tauOutbound *
+		output.spectralOverlapFraction;
 	output.incidentIrradianceWm2 = output.targetIrradianceWm2 *
 		clamp(input.surfaceNdotL, 0.0, 1.0) * output.activeVisibility;
 	output.activeSurfaceRadianceWm2Sr = clamp(input.bandReflectance, 0.0, 1.0) /
 		3.14159265358979323846 * output.incidentIrradianceWm2;
 	output.activeSensorRadianceWm2Sr = output.tauInbound * output.activeSurfaceRadianceWm2Sr;
-	// Protocol/config intensity is band-integrated W/m^2, while the M1 chain
-	// stores band-mean spectral radiance in W/(m^2 sr um).  RectangularBand
-	// therefore divides by the actual source/sensor overlap width.
-	if (output.spectralOverlapWidthUm > 0.0)
-	{
-		output.activeSurfaceRadianceWm2SrUm = output.activeSurfaceRadianceWm2Sr / output.spectralOverlapWidthUm;
-		output.activeSensorRadianceWm2SrUm = output.activeSensorRadianceWm2Sr / output.spectralOverlapWidthUm;
-	}
+	output.activeSurfaceRadianceWm2SrUm = output.activeSurfaceRadianceWm2Sr /
+		output.sensorBandwidthUm;
+	output.activeSensorRadianceWm2SrUm = output.activeSensorRadianceWm2Sr /
+		output.sensorBandwidthUm;
+	const double unshapedIncidentIrradianceWm2 = unshapedGeometricIrradianceWm2 *
+		output.tauOutbound * output.spectralOverlapFraction * output.activeVisibility;
+	output.unshapedSurfaceRadianceWm2SrUm = clamp(input.bandReflectance, 0.0, 1.0) /
+		3.14159265358979323846 * unshapedIncidentIrradianceWm2 / output.sensorBandwidthUm;
+	output.unshapedSensorRadianceWm2SrUm = output.tauInbound * output.unshapedSurfaceRadianceWm2SrUm;
 	output.activeContributionEnabled = output.activeSensorRadianceWm2SrUm > 0.0;
-	output.fallbackReason = output.activeContributionEnabled ? "none" : "zero_physical_contribution";
+	output.fallbackReason = output.activeContributionEnabled ? "none"
+		: (centerOutsideBeam ? "outside_beam_cone" : "zero_physical_contribution");
 	return output;
 }
 
 IRActiveIlluminatorBand IRActiveIlluminator::parseBand(const std::string& value)
 {
 	const std::string v = lower(value);
+	if (v == "swir" || v == "shortwaveinfrared") return IRActiveIlluminatorBand::ShortWaveInfrared;
 	if (v == "mwir" || v == "midwaveinfrared") return IRActiveIlluminatorBand::MidWaveInfrared;
 	if (v == "followsensor" || v == "follow_sensor") return IRActiveIlluminatorBand::FollowSensor;
 	return IRActiveIlluminatorBand::NearInfrared;
@@ -232,6 +261,7 @@ const char* IRActiveIlluminator::bandName(IRActiveIlluminatorBand band)
 	switch (band)
 	{
 	case IRActiveIlluminatorBand::NearInfrared: return "NIR";
+	case IRActiveIlluminatorBand::ShortWaveInfrared: return "SWIR";
 	case IRActiveIlluminatorBand::MidWaveInfrared: return "MWIR";
 	case IRActiveIlluminatorBand::FollowSensor: return "FollowSensor";
 	default: return "NIR";
