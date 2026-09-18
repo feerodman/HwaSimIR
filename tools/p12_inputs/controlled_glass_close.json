@@ -1,0 +1,21 @@
+{
+  "Schema": "ordinary_weather_camera_1",
+  "SimulationEpochMs": 1782014400000,
+  "Description": "P12 C3 fixed near-view fixture for the additive controlled glass rig. The camera/target, full protocol key, epoch and weather stay constant across transmission/background A/B cases.",
+  "InitializationWeather": {
+    "envVisibility": 23000.0,
+    "envHumidity": 60.0,
+    "envMaxHeightRain": 4500.0,
+    "envTransHeightRain": 800.0,
+    "envMaxHeightSnow": 4500.0,
+    "envTransHeightSnow": 800.0,
+    "envRainSnowSpeedScale": 1.0
+  },
+  "Keyframes": [
+    [0.0, 39.99819966081428, 116.0, 1001.0, 0.0, 0.0, 0.0]
+  ],
+  "SyntheticTelemetryTargets": [
+    [102, 3202, 6601, 40.0, 116.0, 1000.0, 180.0, 0.0, 0.0, 0.0, 1]
+  ],
+  "LookAtTargetKey": [102, 3202, 6601]
+}

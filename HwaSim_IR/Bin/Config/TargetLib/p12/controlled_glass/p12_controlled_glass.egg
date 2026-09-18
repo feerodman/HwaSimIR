@@ -1,0 +1,293 @@
+<CoordinateSystem> { Z-Up }
+
+<Comment> {
+  "obj2egg -noabs -nv 42 -uo m -o 'D:\HwaSimIR\HwaSim_IR\Bin\Config\TargetLib\p12\controlled_glass\p12_controlled_glass.egg' 'D:\HwaSimIR\HwaSim_IR\Bin\Config\TargetLib\p12\controlled_glass\p12_controlled_glass.obj'"
+}
+<VertexPool> vpool {
+  <Vertex> 0 {
+    -0.85 -0.42 0.15
+    <UV> { 0.75 0.5 }
+    <Normal> { 0 0 -1 }
+  }
+  <Vertex> 1 {
+    -0.85 -0.42 0.15
+    <UV> { 0.75 0.5 }
+    <Normal> { 0 -1 0 }
+  }
+  <Vertex> 2 {
+    -0.85 -0.42 0.15
+    <UV> { 0.75 0.5 }
+    <Normal> { -1 0 0 }
+  }
+  <Vertex> 3 {
+    -0.85 -0.42 1.85
+    <UV> { 0.75 0.5 }
+    <Normal> { 0 0 1 }
+  }
+  <Vertex> 4 {
+    -0.85 -0.42 1.85
+    <UV> { 0.75 0.5 }
+    <Normal> { 0 -1 0 }
+  }
+  <Vertex> 5 {
+    -0.85 -0.42 1.85
+    <UV> { 0.75 0.5 }
+    <Normal> { -1 0 0 }
+  }
+  <Vertex> 6 {
+    -0.85 -0.38 0.15
+    <UV> { 0.75 0.5 }
+    <Normal> { 0 0 -1 }
+  }
+  <Vertex> 7 {
+    -0.85 -0.38 0.15
+    <UV> { 0.75 0.5 }
+    <Normal> { 0 1 0 }
+  }
+  <Vertex> 8 {
+    -0.85 -0.38 0.15
+    <UV> { 0.75 0.5 }
+    <Normal> { -1 0 0 }
+  }
+  <Vertex> 9 {
+    -0.85 -0.38 1.85
+    <UV> { 0.75 0.5 }
+    <Normal> { 0 0 1 }
+  }
+  <Vertex> 10 {
+    -0.85 -0.38 1.85
+    <UV> { 0.75 0.5 }
+    <Normal> { 0 1 0 }
+  }
+  <Vertex> 11 {
+    -0.85 -0.38 1.85
+    <UV> { 0.75 0.5 }
+    <Normal> { -1 0 0 }
+  }
+  <Vertex> 12 {
+    -0.65 0.18 0.35
+    <UV> { 0.25 0.5 }
+    <Normal> { 0 0 -1 }
+  }
+  <Vertex> 13 {
+    -0.65 0.18 0.35
+    <UV> { 0.25 0.5 }
+    <Normal> { 0 -1 0 }
+  }
+  <Vertex> 14 {
+    -0.65 0.18 0.35
+    <UV> { 0.25 0.5 }
+    <Normal> { -1 0 0 }
+  }
+  <Vertex> 15 {
+    -0.65 0.18 1.65
+    <UV> { 0.25 0.5 }
+    <Normal> { 0 0 1 }
+  }
+  <Vertex> 16 {
+    -0.65 0.18 1.65
+    <UV> { 0.25 0.5 }
+    <Normal> { 0 -1 0 }
+  }
+  <Vertex> 17 {
+    -0.65 0.18 1.65
+    <UV> { 0.25 0.5 }
+    <Normal> { -1 0 0 }
+  }
+  <Vertex> 18 {
+    -0.65 0.22 0.35
+    <UV> { 0.25 0.5 }
+    <Normal> { 0 0 -1 }
+  }
+  <Vertex> 19 {
+    -0.65 0.22 0.35
+    <UV> { 0.25 0.5 }
+    <Normal> { 0 1 0 }
+  }
+  <Vertex> 20 {
+    -0.65 0.22 0.35
+    <UV> { 0.25 0.5 }
+    <Normal> { -1 0 0 }
+  }
+  <Vertex> 21 {
+    -0.65 0.22 1.65
+    <UV> { 0.25 0.5 }
+    <Normal> { 0 0 1 }
+  }
+  <Vertex> 22 {
+    -0.65 0.22 1.65
+    <UV> { 0.25 0.5 }
+    <Normal> { 0 1 0 }
+  }
+  <Vertex> 23 {
+    -0.65 0.22 1.65
+    <UV> { 0.25 0.5 }
+    <Normal> { -1 0 0 }
+  }
+  <Vertex> 24 {
+    0.65 0.18 0.35
+    <UV> { 0.25 0.5 }
+    <Normal> { 0 0 -1 }
+  }
+  <Vertex> 25 {
+    0.65 0.18 0.35
+    <UV> { 0.25 0.5 }
+    <Normal> { 0 -1 0 }
+  }
+  <Vertex> 26 {
+    0.65 0.18 0.35
+    <UV> { 0.25 0.5 }
+    <Normal> { 1 0 0 }
+  }
+  <Vertex> 27 {
+    0.65 0.18 1.65
+    <UV> { 0.25 0.5 }
+    <Normal> { 0 0 1 }
+  }
+  <Vertex> 28 {
+    0.65 0.18 1.65
+    <UV> { 0.25 0.5 }
+    <Normal> { 0 -1 0 }
+  }
+  <Vertex> 29 {
+    0.65 0.18 1.65
+    <UV> { 0.25 0.5 }
+    <Normal> { 1 0 0 }
+  }
+  <Vertex> 30 {
+    0.65 0.22 0.35
+    <UV> { 0.25 0.5 }
+    <Normal> { 0 0 -1 }
+  }
+  <Vertex> 31 {
+    0.65 0.22 0.35
+    <UV> { 0.25 0.5 }
+    <Normal> { 0 1 0 }
+  }
+  <Vertex> 32 {
+    0.65 0.22 0.35
+    <UV> { 0.25 0.5 }
+    <Normal> { 1 0 0 }
+  }
+  <Vertex> 33 {
+    0.65 0.22 1.65
+    <UV> { 0.25 0.5 }
+    <Normal> { 0 0 1 }
+  }
+  <Vertex> 34 {
+    0.65 0.22 1.65
+    <UV> { 0.25 0.5 }
+    <Normal> { 0 1 0 }
+  }
+  <Vertex> 35 {
+    0.65 0.22 1.65
+    <UV> { 0.25 0.5 }
+    <Normal> { 1 0 0 }
+  }
+  <Vertex> 36 {
+    0.85 -0.42 0.15
+    <UV> { 0.75 0.5 }
+    <Normal> { 0 0 -1 }
+  }
+  <Vertex> 37 {
+    0.85 -0.42 0.15
+    <UV> { 0.75 0.5 }
+    <Normal> { 0 -1 0 }
+  }
+  <Vertex> 38 {
+    0.85 -0.42 0.15
+    <UV> { 0.75 0.5 }
+    <Normal> { 1 0 0 }
+  }
+  <Vertex> 39 {
+    0.85 -0.42 1.85
+    <UV> { 0.75 0.5 }
+    <Normal> { 0 0 1 }
+  }
+  <Vertex> 40 {
+    0.85 -0.42 1.85
+    <UV> { 0.75 0.5 }
+    <Normal> { 0 -1 0 }
+  }
+  <Vertex> 41 {
+    0.85 -0.42 1.85
+    <UV> { 0.75 0.5 }
+    <Normal> { 1 0 0 }
+  }
+  <Vertex> 42 {
+    0.85 -0.38 0.15
+    <UV> { 0.75 0.5 }
+    <Normal> { 0 0 -1 }
+  }
+  <Vertex> 43 {
+    0.85 -0.38 0.15
+    <UV> { 0.75 0.5 }
+    <Normal> { 0 1 0 }
+  }
+  <Vertex> 44 {
+    0.85 -0.38 0.15
+    <UV> { 0.75 0.5 }
+    <Normal> { 1 0 0 }
+  }
+  <Vertex> 45 {
+    0.85 -0.38 1.85
+    <UV> { 0.75 0.5 }
+    <Normal> { 0 0 1 }
+  }
+  <Vertex> 46 {
+    0.85 -0.38 1.85
+    <UV> { 0.75 0.5 }
+    <Normal> { 0 1 0 }
+  }
+  <Vertex> 47 {
+    0.85 -0.38 1.85
+    <UV> { 0.75 0.5 }
+    <Normal> { 1 0 0 }
+  }
+}
+<Group> root {
+  <Group> p12_glass_front {
+    <Tag> p11_material_id { 31 }
+    <Tag> p11_material_region { glass }
+    <Polygon> {
+      <VertexRef> { 12 18 30 24 <Ref> { vpool } }
+    }
+    <Polygon> {
+      <VertexRef> { 15 27 33 21 <Ref> { vpool } }
+    }
+    <Polygon> {
+      <VertexRef> { 13 25 28 16 <Ref> { vpool } }
+    }
+    <Polygon> {
+      <VertexRef> { 19 22 34 31 <Ref> { vpool } }
+    }
+    <Polygon> {
+      <VertexRef> { 14 17 23 20 <Ref> { vpool } }
+    }
+    <Polygon> {
+      <VertexRef> { 26 32 35 29 <Ref> { vpool } }
+    }
+  }
+  <Group> p12_background {
+    <Tag> p11_material_id { 32 }
+    <Tag> p11_material_region { background }
+    <Polygon> {
+      <VertexRef> { 0 6 42 36 <Ref> { vpool } }
+    }
+    <Polygon> {
+      <VertexRef> { 3 39 45 9 <Ref> { vpool } }
+    }
+    <Polygon> {
+      <VertexRef> { 1 37 40 4 <Ref> { vpool } }
+    }
+    <Polygon> {
+      <VertexRef> { 7 10 46 43 <Ref> { vpool } }
+    }
+    <Polygon> {
+      <VertexRef> { 2 5 11 8 <Ref> { vpool } }
+    }
+    <Polygon> {
+      <VertexRef> { 38 44 47 41 <Ref> { vpool } }
+    }
+  }
+}

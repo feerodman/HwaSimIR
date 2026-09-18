@@ -32,6 +32,7 @@
 #include <QTableWidget>
 #include <QTableWidgetItem>
 #include <QString>
+#include <QJsonObject>
 #include "CommonData.h"
 #include <iostream>
 #include <cmath>
@@ -68,7 +69,10 @@ public:
 	void configureProtocolForTest(int platID, int sensorID, int simMode, int videoFps);
 	void configureEnvironmentForTest(int envSky, int sensorBand);
 	void setSensorPixelAngleForTest(double pixelAngleUrad);
-	void setUtcHourForTest(double utcHour) { m_testUtcHour = utcHour; }
+	void setUtcHourForTest(double utcHour) {
+		m_testUtcHour = utcHour;
+		m_simulationTimeSource = QStringLiteral("command_line:--utc-hour");
+	}
 	void setFreezeGeometryForTest(bool enabled) { m_freezeGeometryForTest = enabled; }
 	void configureRealtimePauseForTest(double startSec, double durationSec) {
 		m_pauseStartSec = startSec;
@@ -106,6 +110,12 @@ private:
 	void setupDDS();
 	void sendControlCommand(int command);
 	void sendInitCommand();
+	bool validateFormalAtmosphereCoverage(
+		const BYHWICD::InitObjectTrackingParam& initialization,
+		const BYHWICD::trackerSensorParam& sensor,
+		QString& error,
+		QJsonObject& audit) const;
+	void showInitCoverageError(const QString& error, const QJsonObject& audit);
 	void sendRealTimeData();
 	void applyPhase4cAeroMachOverride(BYHWICD::DisplayC2cObjTrackingData& data) const;
 	void logAeroSpeedSend(const BYHWICD::DisplayC2cObjTrackingData& data) const;
@@ -203,6 +213,7 @@ private:
 	double m_phase4cSpeedMps = 0.0;
 	double m_phase4cSpeedKmh = 0.0;
 	double m_testUtcHour = -1.0;
+	QString m_simulationTimeSource = QStringLiteral("wall_clock_utc");
 	double m_protocolIlluminatorAngleMrad = 2.0;
 	double m_protocolIlluminatorSpotRad = 1.0;
 	int m_protocolIlluminatorForceEnabled = 0;

@@ -223,6 +223,12 @@ void HwaSimIR::CaptureP6LinearFrame(const unsigned char* pixels,int width,int he
     }
     if(!IsP6LinearCaptureRequested(seq))return;
 	if(m_stage6LinearCaptureCompletedSourceSeq==seq)return;
+	const auto diagnosticBegin=std::chrono::steady_clock::now();
+	auto elapsedMs=[](const std::chrono::steady_clock::time_point& begin){
+		return std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-begin).count();
+	};
+	IRLinearReadbackTiming statsReadbackTiming,linearReadbackTiming;
+	bool statsRequested=false,statsReadbackOk=true;
 	std::ostringstream captureBase;captureBase<<output;
 	if(multiSample)captureBase<<"_seq"<<seq;
     std::ostringstream mapping;mapping<<std::setprecision(17)<<"[DisplayFrameMapping] sourceSeq="<<seq
@@ -231,11 +237,19 @@ void HwaSimIR::CaptureP6LinearFrame(const unsigned char* pixels,int width,int he
         <<" gamma="<<m_stage5SensorInputDisplayGamma<<" reinhard="<<m_stage6Reinhard<<" whiteHot="<<m_stage6DisplayConfig.whiteHot
         <<" statisticsSourceSeq="<<m_stage6AgcLastUpdateSourceSeq<<" captureBeforeStatisticsUpdate=1 hdrUntilAgc=1";
     std::cout<<mapping.str()<<std::endl;
+	std::shared_ptr<PfmFile> stats;
     if(m_agcSampleBuffer&&m_stage6AgcEnabled){
-        PfmFile stats;if(ReadSceneLinear(m_pFramework->get_graphics_engine(),m_agcSampleTexture,m_agcSampleBuffer,m_agcSampleSize,m_agcSampleSize,stats))
-			stats.write(Filename::from_os_specific(captureBase.str()+"_stats.pfm"));
+		statsRequested=true;
+		stats.reset(new PfmFile);
+		if(ReadSceneLinear(m_pFramework->get_graphics_engine(),m_agcSampleTexture,m_agcSampleBuffer,
+			m_agcSampleSize,m_agcSampleSize,*stats,true,&statsReadbackTiming)){}
+		else{
+			statsReadbackOk=false;stats.reset();
+			std::cerr<<"[P6LinearCapture][ERROR] sourceSeq="<<seq
+				<<" reason=agc_stats_readback_failed action=stats_pfm_not_queued"<<std::endl;
+		}
     }
-    PfmFile linear;
+	std::shared_ptr<PfmFile> linear(new PfmFile);
 	const bool markerMatches=m_stage6LinearReadbackSourceSeq==seq;
 	bool linearReadbackOk=false;
 	const char* linearReadbackRoute="none";
@@ -249,7 +263,7 @@ void HwaSimIR::CaptureP6LinearFrame(const unsigned char* pixels,int width,int he
 			<<" hasRamImage="<<((m_stage6LinearReadbackTex&&m_stage6LinearReadbackTex->has_ram_image())?1:0)
 			<<" action=no_pfm_written"<<std::endl;
 	}else{
-		linearReadbackOk=ReadSceneLinearRamImage(m_stage6LinearReadbackTex,width,height,linear);
+		linearReadbackOk=ReadSceneLinearRamImage(m_stage6LinearReadbackTex,width,height,*linear,&linearReadbackTiming);
 		linearReadbackRoute="RTM_triggered_copy_ram";
 		if(!linearReadbackOk)std::cerr<<"[P6LinearCapture][ERROR] sourceSeq="<<seq
 			<<" reason=triggered_ram_image_decode_failed action=no_pfm_written"<<std::endl;
@@ -263,33 +277,49 @@ void HwaSimIR::CaptureP6LinearFrame(const unsigned char* pixels,int width,int he
 			<<" reason=direct_readback_marker_mismatch action=no_pfm_written"<<std::endl;
 	}else{
 		linearReadbackOk=ReadSceneLinear(m_pFramework->get_graphics_engine(),
-			m_stage6RawSceneTex,m_stage6RawSceneBuffer,width,height,linear,false);
+			m_stage6RawSceneTex,m_stage6RawSceneBuffer,width,height,*linear,false,&linearReadbackTiming);
 		linearReadbackRoute="gles_rgba_float";
 		if(!linearReadbackOk)std::cerr<<"[P6LinearCapture][ERROR] sourceSeq="<<seq
 			<<" reason=gles_rgba_float_readback_failed action=no_pfm_written"<<std::endl;
 	}
 #endif
-	if(linearReadbackOk){
-        PfmFile valid;valid.clear(width,height,3);
-        for(int y=0;y<height;++y)for(int x=0;x<width;++x)valid.set_point3(x,y,linear.get_point3(x,y+linear.get_y_size()-height));
-		const std::string pfmPath=captureBase.str()+".pfm";
-		if(valid.write(Filename::from_os_specific(pfmPath))){
-			m_stage6LinearCaptureCompletedSourceSeq=seq;
-			std::cout<<"[P6LinearCapture] sourceSeq="<<seq<<" size="<<linear.get_x_size()<<"x"<<linear.get_y_size()
-            <<" validViewport="<<width<<"x"<<height<<" stage=pre_display"
-			<<" domain="<<(m_stage6RawSiDomain?"spectral_radiance":"common_scaled_linear")
-			<<" unit="<<(m_stage6RawSiDomain?"W/(m^2_sr_um)":"dimensionless")
-			<<" common_scaled_linear="<<(m_stage6RawSiDomain?0:1)
-			<<" physicalRadiance="<<(m_stage6RawSiDomain?1:0)
-			<<" readbackRoute="<<linearReadbackRoute
-			<<" file="<<pfmPath<<std::endl;
-		}else{
-			std::cerr<<"[P6LinearCapture][ERROR] sourceSeq="<<seq
-				<<" reason=pfm_write_failed file="<<pfmPath<<std::endl;
-		}
-	}
+	if(!linearReadbackOk)linear.reset();
 	m_stage6LinearReadbackSourceSeq=0;
-    cv::Mat rgb(height,width,CV_8UC3,const_cast<unsigned char*>(pixels)),bgr;
-    cv::cvtColor(rgb,bgr,cv::COLOR_RGB2BGR);cv::flip(bgr,bgr,0);
-	cv::imwrite(captureBase.str()+"_rgb8.png",bgr);
+	P12DiagnosticWriteJob job;
+	job.sourceSeq=seq;job.captureBase=captureBase.str();job.readbackRoute=linearReadbackRoute;
+	job.domain=m_stage6RawSiDomain?"spectral_radiance":"common_scaled_linear";
+	job.unit=m_stage6RawSiDomain?"W/(m^2_sr_um)":"dimensionless";
+	job.commonScaledLinear=m_stage6RawSiDomain?0:1;job.physicalRadiance=m_stage6RawSiDomain?1:0;
+	job.width=width;job.height=height;job.linear=linear;job.stats=stats;job.statsRequired=statsRequested;
+	const auto rgbCopyBegin=std::chrono::steady_clock::now();
+	job.rgb.assign(pixels,pixels+static_cast<std::size_t>(width)*height*3u);
+	const double rgbOwnershipCopyMs=elapsedMs(rgbCopyBegin);
+	std::size_t queueDepth=0;
+	const auto enqueueBegin=std::chrono::steady_clock::now();
+	P12DiagnosticWriterQueue& writer=P12DiagnosticWriterQueue::instance();
+	const bool queueAccepted=writer.enqueue(std::move(job),queueDepth);
+	const double queueEnqueueMs=elapsedMs(enqueueBegin);
+	if(queueAccepted)m_stage6LinearCaptureCompletedSourceSeq=seq;
+	else std::cerr<<"[P6LinearCapture][ERROR] sourceSeq="<<seq
+		<<" reason=diagnostic_writer_queue_full queueDepth="<<queueDepth
+		<<" queueCapacity="<<writer.capacity()
+		<<" action=required_artifacts_not_written"<<std::endl;
+	std::cout<<std::fixed<<std::setprecision(3)
+		<<"[P6LinearCapturePerf] sourceSeq="<<seq
+		<<" mode=render_thread_gpu_readback_plus_bounded_async_cpu_writer"
+		<<" renderThreadMs="<<elapsedMs(diagnosticBegin)
+		<<" statsRequested="<<(statsRequested?1:0)
+		<<" statsReadbackOk="<<(statsReadbackOk?1:0)
+		<<" statsGpuWaitReadbackMs="<<statsReadbackTiming.gpuWaitReadbackMs
+		<<" statsCpuCopyMs="<<statsReadbackTiming.cpuCopyMs
+		<<" linearGlSetupMs="<<linearReadbackTiming.glSetupMs
+		<<" gpuWaitReadbackMs="<<linearReadbackTiming.gpuWaitReadbackMs
+		<<" readbackCpuCopyMs="<<linearReadbackTiming.cpuCopyMs
+		<<" linearReadbackOk="<<(linearReadbackOk?1:0)
+		<<" rgbOwnershipCopyMs="<<rgbOwnershipCopyMs
+		<<" queueEnqueueMs="<<queueEnqueueMs
+		<<" queueDepth="<<queueDepth
+		<<" queueCapacity="<<writer.capacity()
+		<<" queueAccepted="<<(queueAccepted?1:0)
+		<<std::endl;
 }

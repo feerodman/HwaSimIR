@@ -9,7 +9,12 @@ void HwaSimIR::UpdateP5GraphicsTestScene()
     const std::string view = viewEnv ? viewEnv : "oblique";
     const char* materialEnv = std::getenv("P5MaterialView");
     const int materialView = materialEnv ? std::atoi(materialEnv) : 0;
-    const bool asset = scene=="f22" || scene=="aim120" || scene=="aim9x";
+    PLATFORM_TYPE assetType = NONE;
+    if (scene=="f35") assetType=F35;
+    else if (scene=="f22") assetType=F22;
+    else if (scene=="aim120") assetType=AIM120;
+    else if (scene=="aim9x") assetType=AIM9;
+    const bool asset = assetType != NONE;
     const bool clouds = scene=="cloud" || scene=="mixed";
     if (m_p5TestRoot.is_empty()) {
         m_p5TestRoot = m_renderRoot.attach_new_node("P5_GraphicsAcceptance_ONLY");
@@ -26,14 +31,13 @@ void HwaSimIR::UpdateP5GraphicsTestScene()
             m_stage7VolumeStreamingCenter = "Camera";
         }
         if (asset) {
-            PLATFORM_TYPE type = scene=="f22" ? F22 : (scene=="aim120" ? AIM120 : AIM9);
-            m_p5TestModel = LoadPlatformAssetNode(type,m_platformResMap[type]);
+            m_p5TestModel = LoadPlatformAssetNode(assetType,m_platformResMap[assetType]);
             m_p5TestModel.reparent_to(m_p5TestRoot);
             const char* bandCase=std::getenv("P5AssetBandCase");
             if(bandCase && *bandCase) {
                 IRMaterialBandOptics testOptics;
                 testOptics.load(std::string("Config/Tests/P5/AssetBandOptics_")+bandCase+".csv");
-                m_irSceneMaterialMapper.bindPlatformNode(m_p5TestModel,m_platformResMap[type],
+                m_irSceneMaterialMapper.bindPlatformNode(m_p5TestModel,m_platformResMap[assetType],
                     m_irMaterialDatabase,testOptics,m_l1DefaultEffectiveThicknessM);
             }
             // No scale change: camera fit only, with explicit diagnostic FOV.
@@ -114,7 +118,11 @@ void HwaSimIR::UpdateP5GraphicsTestScene()
                 node.set_scale(i==0?1.f:1.7f,i==0?8.f:12.f,i==0?1.f:1.7f);
             }
         }
-        std::cout<<"[P5GraphicsTest] scene="<<scene<<" view="<<view<<" diagnosticFovDeg=35 diagnosticNearM=0.1 modelScaleUnchanged=1 values=artificial_game_only center="<<m_p5TestCenter<<std::endl;
+        std::cout<<"[P5GraphicsTest] scene="<<scene<<" view="<<view
+            <<" materialView="<<materialView
+            <<" diagnosticFovDeg=35 diagnosticNearM=0.1 modelScaleUnchanged=1"
+            <<" diagnosticEncoding=scene_wide_window_radiance values=artificial_game_only center="
+            <<m_p5TestCenter<<std::endl;
     }
     m_cameraLens->set_fov(35.f,35.f);
     m_cameraLens->set_near(.1f);
@@ -143,10 +151,9 @@ void HwaSimIR::UpdateP5GraphicsTestScene()
         const IRBand band=IRBandFromProtocol(m_sensorParam.trackerSensorBand);
         m_p5TestModel.set_shader_input("u_ir_band_index",LVecBase2i(int(band),0));
         if(materialView==0 && asset) {
-            const PLATFORM_TYPE type=scene=="f22"?F22:(scene=="aim120"?AIM120:AIM9);
-            auto radiance=EvaluateNodeRadiance(MaterialNameForPlatform(type),m_p5TestModel,false,false,false,false,0.0,1000.0);
+            auto radiance=EvaluateNodeRadiance(MaterialNameForPlatform(assetType),m_p5TestModel,false,false,false,false,0.0,1000.0);
             ApplyRadianceInputs(m_p5TestModel,radiance,0);
-            TargetPlatformData testTarget={}; testTarget.type=type;testTarget.nodePath=m_p5TestModel;
+            TargetPlatformData testTarget={}; testTarget.type=assetType;testTarget.nodePath=m_p5TestModel;
             testTarget.targetState.targetID=1;testTarget.targetState.targetLoc.alt=1000;testTarget.targetState.viewValid=true;
             ApplyStage5RadianceDebug(testTarget,radiance,IRHotspotState(),IRBrightSpotState(),false,0.f,"P5_Asset",0.f);
         }

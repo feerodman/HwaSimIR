@@ -70,6 +70,8 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros">
+    <BundledFFmpegRoot>$([System.IO.Path]::GetFullPath('$(ProjectDir)..\..\.deps\ffmpeg-n8.1-win64-gpl-shared\ffmpeg-n8.1-latest-win64-gpl-shared-8.1'))</BundledFFmpegRoot>
+    <FFMPEG_ROOT Condition="'$(FFMPEG_ROOT)' == '' and Exists('$(BundledFFmpegRoot)\include\libavcodec\avcodec.h') and Exists('$(BundledFFmpegRoot)\lib\avcodec.lib')">$(BundledFFmpegRoot)</FFMPEG_ROOT>
     <FFmpegEnabled Condition="'$(FFMPEG_ROOT)' != '' and Exists('$(FFMPEG_ROOT)\include\libavcodec\avcodec.h') and Exists('$(FFMPEG_ROOT)\lib\avcodec.lib')">true</FFmpegEnabled>
     <FFmpegIncludeDir Condition="'$(FFmpegEnabled)' == 'true'">$(FFMPEG_ROOT)\include;</FFmpegIncludeDir>
     <FFmpegLibraryDir Condition="'$(FFmpegEnabled)' == 'true'">$(FFMPEG_ROOT)\lib;</FFmpegLibraryDir>
@@ -92,9 +94,12 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)Bin\</OutDir>
+    <OutDir>$(ProjectDir)..\Bin\</OutDir>
     <TargetName>$(ProjectName)</TargetName>
   </PropertyGroup>
+	<Target Name="ValidateReleaseRuntimeDependencies" BeforeTargets="PrepareForBuild" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+		<Error Condition="'$(FFmpegEnabled)' != 'true'" Text="Release x64 requires FFmpeg H.264 support. Set FFMPEG_ROOT or restore the repository .deps FFmpeg bundle; a JPEG-only binary cannot satisfy the normal DDS H.264 configuration." />
+	</Target>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>

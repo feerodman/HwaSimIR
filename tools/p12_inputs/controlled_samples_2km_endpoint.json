@@ -1,0 +1,21 @@
+{
+  "Schema": "ordinary_weather_camera_1",
+  "SimulationEpochMs": 1782014400000,
+  "Description": "P12 controlled 0x66 sample-rack nominal 2 km endpoint case. The WGS84 meridional separation is 1999 m so the runtime query remains inside the formal 2.0 km MODTRAN domain despite floating-point/ECEF conversion. The full protocol key and normal DDS tracking path are preserved; this is an engineering sample, not a real-platform calibration.",
+  "InitializationWeather": {
+    "envVisibility": 23000.0,
+    "envHumidity": 60.0,
+    "envMaxHeightRain": 4500.0,
+    "envTransHeightRain": 800.0,
+    "envMaxHeightSnow": 4500.0,
+    "envTransHeightSnow": 800.0,
+    "envRainSnowSpeedScale": 1.0
+  },
+  "Keyframes": [
+    [0.0, 39.98199660814279, 116.0, 1000.0, 0.0, 0.0, 0.0]
+  ],
+  "SyntheticTelemetryTargets": [
+    [102, 3202, 6601, 40.0, 116.0, 1000.0, 180.0, 0.0, 0.0, 0.0, 1]
+  ],
+  "LookAtTargetKey": [102, 3202, 6601]
+}

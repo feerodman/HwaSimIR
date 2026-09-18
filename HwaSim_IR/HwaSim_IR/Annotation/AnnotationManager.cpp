@@ -58,6 +58,31 @@ void AnnotationManager::clear()
 	}
 }
 
+bool AnnotationManager::prewarmCollisionCache(
+	const std::vector<TargetPlatformData>& targets,
+	const NodePath& renderRoot)
+{
+	if (!m_enabled || !m_initialized || renderRoot.is_empty())
+	{
+		return false;
+	}
+
+	const double beginMs = NowMs();
+	m_projector.prewarmCollisionMeshes(targets, m_config, renderRoot);
+	const AnnotationProjector::PerfStats& perf = m_projector.perfStats();
+	std::cout << "[AnnotationPrewarm]"
+		<< " targets=" << targets.size()
+		<< " collisionBuilds=" << perf.collisionBuilds
+		<< " collisionReused=" << perf.collisionReused
+		<< " collisionTriangles=" << perf.collisionTriangles
+		<< " collisionSolids=" << perf.collisionSolids
+		<< " collisionBuildMs=" << perf.collisionBuildMs
+		<< " elapsedMs=" << (NowMs() - beginMs)
+		<< " beforeReady=1 inputConsumed=0"
+		<< std::endl;
+	return perf.collisionBuilds > 0 || perf.collisionReused > 0;
+}
+
 AnnotationFrameRecord AnnotationManager::updateFrame(
 	unsigned long long frameIndex,
 	double simTimeMs,

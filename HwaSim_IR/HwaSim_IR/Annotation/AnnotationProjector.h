@@ -36,6 +36,10 @@ public:
 		const AnnotationConfig& config,
 		const NodePath& renderRoot,
 		bool enableOcclusion = true);
+	void prewarmCollisionMeshes(
+		const std::vector<TargetPlatformData>& allTargets,
+		const AnnotationConfig& config,
+		const NodePath& renderRoot);
 	const PerfStats& perfStats() const;
 
 	bool buildTargetAnnotation(

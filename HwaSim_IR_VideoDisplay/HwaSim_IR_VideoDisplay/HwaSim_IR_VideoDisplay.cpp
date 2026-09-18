@@ -21,6 +21,7 @@
 #include <QDir>
 #include <QDateTime>
 #include <QElapsedTimer>
+#include <QEvent>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonParseError>
@@ -36,6 +37,12 @@ qint64 wallTimeNs()
 {
     return static_cast<qint64>(std::chrono::duration_cast<std::chrono::nanoseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count());
+}
+
+qint64 steadyTimeNs()
+{
+    return static_cast<qint64>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count());
 }
 }
 
@@ -141,6 +148,7 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
     // m_Label_Video 居中 + 自适应缩放
     ui.m_Label_Video->setScaledContents(false);
     ui.m_Label_Video->setAlignment(Qt::AlignCenter);
+	ui.m_Label_Video->installEventFilter(this);
 
     // 设置 dockWidget
     ui.dockWidget_dataShow->setWindowTitle(QString::fromUtf8("数据显示"));
@@ -213,6 +221,12 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
 			this, &HwaSim_IR_VideoDisplay::controlCmdReceivedSlot);
 		connect(m_ddsWorker, &DdsVideoReceiverWorker::videoStatusChanged,
 			this, &HwaSim_IR_VideoDisplay::videoStatusReceivedSlot);
+		connect(m_ddsWorker, &DdsVideoReceiverWorker::fatalError, this,
+			[this](const QString& reason)
+			{
+				m_receiverFatalError = reason;
+				updateLiveFps();
+			});
 		connect(m_workerThread, &QThread::finished, m_ddsWorker, &QObject::deleteLater);
 		connect(m_workerThread, &QThread::started, m_ddsWorker, &DdsVideoReceiverWorker::doWork);
 		ui.dockWidget_dataShow->setWindowTitle(QString::fromUtf8("数据显示 · DDS 全链路"));
@@ -259,6 +273,7 @@ HwaSim_IR_VideoDisplay::HwaSim_IR_VideoDisplay(
 
 HwaSim_IR_VideoDisplay::~HwaSim_IR_VideoDisplay()
 {
+	logGuiPaintPerf("shutdown");
     // 先停止工作线程，确保不再有信号投递到主线程
 	if (m_worker) m_worker->stop();
 	if (m_ddsWorker) m_ddsWorker->stop();
@@ -369,6 +384,45 @@ void HwaSim_IR_VideoDisplay::centerVideoLabel()
             pixels=pixels.scaled(physical.width,physical.height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
         QPixmap pixmap=QPixmap::fromImage(pixels);pixmap.setDevicePixelRatio(dpr);label->setPixmap(pixmap);
     }
+}
+
+bool HwaSim_IR_VideoDisplay::eventFilter(QObject* watched, QEvent* event)
+{
+	if(watched==ui.m_Label_Video&&event&&event->type()==QEvent::Paint&&
+		!m_lastVideoImage.isNull()&&m_pendingPaintFrameSeq>0&&
+		m_pendingPaintFrameSeq!=m_lastPaintedFrameSeq){
+		const qint64 now=steadyTimeNs();
+		if(m_guiPaintFrames==0)m_guiPaintFirstSteadyNs=now;
+		if(m_guiPaintLastSteadyNs>0)m_guiPaintMaxIntervalNs=std::max(
+			m_guiPaintMaxIntervalNs,now-m_guiPaintLastSteadyNs);
+		m_guiPaintLastSteadyNs=now;m_lastPaintedFrameSeq=m_pendingPaintFrameSeq;++m_guiPaintFrames;
+		if(m_pendingPaintFrameSeq>180){
+			if(m_guiPaintSteadyFrames==0)m_guiPaintSteadyFirstNs=now;
+			if(m_guiPaintSteadyLastNs>0)m_guiPaintSteadyMaxIntervalNs=std::max(
+				m_guiPaintSteadyMaxIntervalNs,now-m_guiPaintSteadyLastNs);
+			m_guiPaintSteadyLastNs=now;++m_guiPaintSteadyFrames;
+		}
+		if(m_guiPaintFrames<=3||(m_guiPaintFrames%120u)==0u)logGuiPaintPerf("interval");
+	}
+	return QWidget::eventFilter(watched,event);
+}
+
+void HwaSim_IR_VideoDisplay::logGuiPaintPerf(const char* reason) const
+{
+	const double elapsedSec=m_guiPaintFrames>1&&m_guiPaintLastSteadyNs>m_guiPaintFirstSteadyNs?
+		double(m_guiPaintLastSteadyNs-m_guiPaintFirstSteadyNs)/1.0e9:0.0;
+	const double fps=elapsedSec>0?double(m_guiPaintFrames-1)/elapsedSec:0.0;
+	const double steadyElapsedSec=m_guiPaintSteadyFrames>1&&m_guiPaintSteadyLastNs>m_guiPaintSteadyFirstNs?
+		double(m_guiPaintSteadyLastNs-m_guiPaintSteadyFirstNs)/1.0e9:0.0;
+	const double steadyFps=steadyElapsedSec>0?double(m_guiPaintSteadyFrames-1)/steadyElapsedSec:0.0;
+	qInfo().noquote()<<QStringLiteral(
+		"[GuiPaintPerf] reason=%1 semantic=QLabel_Paint_event_after_setPixmap paintedFrames=%2 submittedFrames=%3 paintFps=%4 maxFrameIntervalMs=%5 lastPaintedFrameSeq=%6 pendingFrameSeq=%7 steadyExclusionThroughFrameSeq=180 steadyPaintedFrames=%8 steadyPaintFps=%9 steadyMaxFrameIntervalMs=%10")
+		.arg(QString::fromLatin1(reason?reason:"unknown"))
+		.arg(m_guiPaintFrames).arg(m_videoPerfFrames).arg(fps,0,'f',3)
+		.arg(double(m_guiPaintMaxIntervalNs)/1.0e6,0,'f',3)
+		.arg(m_lastPaintedFrameSeq).arg(m_pendingPaintFrameSeq)
+		.arg(m_guiPaintSteadyFrames).arg(steadyFps,0,'f',3)
+		.arg(double(m_guiPaintSteadyMaxIntervalNs)/1.0e6,0,'f',3);
 }
 
 void HwaSim_IR_VideoDisplay::resizeEvent(QResizeEvent* event)
@@ -512,6 +566,16 @@ void HwaSim_IR_VideoDisplay::resetVideoPerfStats()
     m_latencyMsMax = 0.0;
     m_latencySamples = 0;
     m_latencyIntervalSamples.clear();
+	m_pendingPaintFrameSeq = 0;
+	m_lastPaintedFrameSeq = 0;
+	m_guiPaintFrames = 0;
+	m_guiPaintFirstSteadyNs = 0;
+	m_guiPaintLastSteadyNs = 0;
+	m_guiPaintMaxIntervalNs = 0;
+	m_guiPaintSteadyFrames = 0;
+	m_guiPaintSteadyFirstNs = 0;
+	m_guiPaintSteadyLastNs = 0;
+	m_guiPaintSteadyMaxIntervalNs = 0;
 }
 
 void HwaSim_IR_VideoDisplay::updateLiveFps()
@@ -548,8 +612,40 @@ void HwaSim_IR_VideoDisplay::updateLiveFps()
         m_metricLabels[3]->setText(valid?QString::fromUtf8("输出延时 ≈%1 ms · 估计 ±%2 ms").arg(metrics.value("outputLatencyMs").toDouble(),0,'f',1).arg(metrics.value("clockErrorMs").toDouble(),0,'f',1):QString::fromUtf8("输出延时 — · 时间基准未就绪/过期"));
     }
     if(m_metricLabels[0])m_metricLabels[0]->setText(QString::fromUtf8("视频 FPS  %1").arg(fps,0,'f',1));
-    m_liveFpsLabel->setText(QString::fromUtf8("实时接收显示 %1 FPS  |  最近 1 秒新图  |  异步请求 %2 FPS (0=不限)  |  %3 × %4")
-        .arg(fps,0,'f',1).arg(m_requestedVideoFps>=0?QString::number(m_requestedVideoFps):QString("?" )).arg(m_maxImageWidth).arg(m_maxImageHeight));
+	const quint64 statusSamples = metrics.value("statusSamples").toString().toULongLong();
+	const quint64 statusAccepted = metrics.value("statusAccepted").toString().toULongLong();
+	const quint64 statusRejected = metrics.value("statusIdentityRejected").toString().toULongLong();
+	const quint64 receivedSamples = metrics.value("receivedSamples").toString().toULongLong();
+	const quint64 decodedFrames = metrics.value("decodedFrames").toString().toULongLong();
+	const quint64 decodeWaits = metrics.value("decodeWaits").toString().toULongLong();
+	const quint64 decodeErrors = metrics.value("decodeErrors").toString().toULongLong();
+	QString receiverState;
+	if (!m_receiverFatalError.isEmpty())
+		receiverState = QString::fromUtf8("接收错误：%1").arg(m_receiverFatalError);
+	else if (statusAccepted == 0 && statusRejected > 0)
+		receiverState = QString::fromUtf8("身份/配置不匹配：期望 %1/%2，已拒绝 %3 条状态")
+			.arg(m_platID).arg(m_sensorID).arg(statusRejected);
+	else if (statusAccepted == 0)
+		receiverState = QString::fromUtf8("等待 VideoStatus：Identity %1/%2 · 已观察 %3 条")
+			.arg(m_platID).arg(m_sensorID).arg(statusSamples);
+	else if (!m_statusRunning)
+		receiverState = QString::fromUtf8("状态已发现，等待有效 INIT/START · %1 · round %2")
+			.arg(m_statusTopic).arg(m_statusRound);
+	else if (receivedSamples == 0)
+		receiverState = QString::fromUtf8("已绑定 %1，但尚无视频样本").arg(m_statusTopic);
+	else if (decodedFrames == 0 && decodeErrors > 0)
+		receiverState = QString::fromUtf8("解码错误 %1 次 · 已收样本 %2").arg(decodeErrors).arg(receivedSamples);
+	else if (decodedFrames == 0 && decodeWaits > 0)
+		receiverState = QString::fromUtf8("已收样本，等待 H.264 关键帧 · %1 次").arg(decodeWaits);
+	else if (m_lastGuiFrameMs >= 0 && now - m_lastGuiFrameMs > 2000)
+		receiverState = QString::fromUtf8("输入中断/画面已过期 · 最后帧 %1").arg(m_lastFrameSeq);
+	else
+		receiverState = QString::fromUtf8("正常显示 · 当前帧 %1 · DDS样本 %2 · 解码 %3")
+			.arg(m_lastFrameSeq).arg(receivedSamples).arg(decodedFrames);
+	m_liveFpsLabel->setText(QString::fromUtf8("%1\n实时接收显示 %2 FPS  |  最近 1 秒新图  |  异步请求 %3 FPS (0=不限)  |  %4 × %5")
+		.arg(receiverState).arg(fps,0,'f',1)
+		.arg(m_requestedVideoFps>=0?QString::number(m_requestedVideoFps):QString("?" ))
+		.arg(m_maxImageWidth).arg(m_maxImageHeight));
     if(m_recorder&&m_recorder->snapshot().fileError)
         m_liveFpsLabel->setText(m_liveFpsLabel->text()+QString::fromUtf8("  |  录像写入失败，请检查日志与存储"));
     if(now-m_lastLiveFpsLogMs>=1000){
@@ -579,6 +675,8 @@ void HwaSim_IR_VideoDisplay::videoStatusReceivedSlot(const QString& topic,
 {
 	m_statusTopic = topic;
 	m_statusCodec = codec;
+	m_statusRunning = running;
+	m_statusRound = currentRound;
 	m_statusWidth = qMax(0, width);
 	m_statusHeight = qMax(0, height);
 	m_videoFps = qMax(1, fps);
@@ -639,9 +737,11 @@ void HwaSim_IR_VideoDisplay::imageReceivedSlot(
 				.arg(m_statusWidth).arg(m_statusHeight).arg(img.width()).arg(img.height());
 		}
 		m_liveFrameTimes.push_back(m_liveFpsClock.elapsed());
+		m_lastGuiFrameMs = m_liveFpsClock.elapsed();
 		m_maxImageWidth = img.width();
 		m_maxImageHeight = img.height();
 		m_lastVideoImage=img;
+		m_pendingPaintFrameSeq=packetFrameSeq?packetFrameSeq:(m_videoPerfFrames+1);
 		centerVideoLabel();
 		if (m_videoPerfFrames < 3 || ((m_videoPerfFrames + 1) % 120) == 0)
 		{

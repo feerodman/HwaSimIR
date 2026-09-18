@@ -30,7 +30,9 @@ Assert-Contains $rendererSource 'm_initSceneData.MissileMaxCountResv1' 'Renderer
 Assert-Contains $rendererSource 'targetPlat.targetState.targetPlatID == targetState.targetPlatID' 'Target mapping no longer checks targetPlatID'
 Assert-Contains $rendererSource 'targetPlat.targetState.targetID == targetState.targetID' 'Target mapping no longer checks targetID'
 Assert-Contains $senderSource 'testTarget==0x55' 'Stimulus does not permit the reserved P11 civil type'
-Assert-Contains $senderSource 'cmd.MissileMaxCountResv1 = p11TargetTypeOk && p11TargetType == 0x55 ? 1 : 0;' 'Stimulus does not provision exactly one explicit P11 civil slot'
+Assert-Contains $senderSource 'const int effectiveTargetType = p11TargetTypeOk ? p11TargetType : m_targetType;' 'Stimulus no longer resolves diagnostic override versus ordinary UI target identity'
+Assert-Contains $senderSource 'cmd.MissileMaxCountResv1 = effectiveTargetType == 0x55 ? 1 : 0;' 'Stimulus does not provision exactly one selected P11 civil slot'
+Assert-Contains $senderSource 'data.targetState[0].targetType = m_targetType;' 'Ordinary UI/INI target type is not wired into realtime data'
 Assert-Contains $fixtureSource 'LookAtTargetKey must exactly match a SyntheticTelemetryTargets full key' 'Fixture full-key guard is missing'
 Assert-Contains $fixtureSource 'data.weaponState.targetPlatID=fixture.lookAtTargetKey[1].toInt();' 'Fixture does not copy targetPlatID to WeaponState'
 Assert-Contains $annotationSource 'case 0x55: return Resv1;' 'Annotation identity does not recognize the P11 civil type'
@@ -106,7 +108,7 @@ $senderInitSmoke = $null
 if (Test-Path -LiteralPath $senderInitLogPath -PathType Leaf) {
     $senderInitLog = Get-Content -LiteralPath $senderInitLogPath -Raw
     Assert-Contains $senderInitLog '[ProtocolLayout] component=DataDrivenTestQT ControlP2cX1ObjTrackingCmd=24 InitP2cObjectTrackingCmd=385 DisplayC2cObjTrackingData=506 InitAckC2pObjectTrackingCmd=17' 'Built sender protocol layout smoke failed'
-    Assert-Contains $senderInitLog '[StimTargetPool] requestedType=0X55 resv1Count=1 resv2Count=0 protocolLayoutUnchanged=1' 'Built sender did not provision only the P11 civil pool'
+    Assert-Contains $senderInitLog '[StimTargetPool] requestedType=0X55 source=P6TestTargetType resv1Count=1 resv2Count=0 protocolLayoutUnchanged=1' 'Built sender did not provision only the P11 civil pool'
     Assert-Contains $senderInitLog '[StimInit]' 'Built sender did not send its loopback init datagram'
     $senderInitSmoke = [ordered]@{
         result = 'PASS'

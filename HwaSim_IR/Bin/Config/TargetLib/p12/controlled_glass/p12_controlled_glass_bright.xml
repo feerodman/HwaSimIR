@@ -1,0 +1,16 @@
+<Composite_Material_Table>
+  <Composite_Material index="31" IsVisibleInClassification="True" IsVisibleInPaint="True">
+    <Name>P12-CONTROLLED-GLASS</Name>
+    <Primary_Substrate><Material><Name>BM_GLASS</Name><Weight>100</Weight></Material><Thickness>0.0100</Thickness></Primary_Substrate>
+    <SWIRReflectance>0.0800</SWIRReflectance><SWIREmissivity>0.0700</SWIREmissivity><SWIRTransmissivity>0.8500</SWIRTransmissivity>
+    <MWIRReflectance>0.0500</MWIRReflectance><MWIREmissivity>0.9000</MWIREmissivity><MWIRTransmissivity>0.0500</MWIRTransmissivity>
+    <NominalTemperatureK>300.0</NominalTemperatureK>
+  </Composite_Material>
+  <Composite_Material index="32" IsVisibleInClassification="True" IsVisibleInPaint="True">
+    <Name>P12-CONTROLLED-BACKGROUND-BRIGHT</Name>
+    <Primary_Substrate><Material><Name>BM_PAINT</Name><Weight>100</Weight></Material><Thickness>0.0200</Thickness></Primary_Substrate>
+    <SWIRReflectance>1.0000</SWIRReflectance><SWIREmissivity>0.0000</SWIREmissivity><SWIRTransmissivity>0.0000</SWIRTransmissivity>
+    <MWIRReflectance>0.0000</MWIRReflectance><MWIREmissivity>1.0000</MWIREmissivity><MWIRTransmissivity>0.0000</MWIRTransmissivity>
+    <NominalTemperatureK>475.0</NominalTemperatureK>
+  </Composite_Material>
+</Composite_Material_Table>

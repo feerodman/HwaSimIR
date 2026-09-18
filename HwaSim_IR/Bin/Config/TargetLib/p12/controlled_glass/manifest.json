@@ -1,0 +1,61 @@
+{
+  "schema": "hwasimir.p12.controlled-glass-rig.v1",
+  "license": "CC0-1.0",
+  "protocolTargetType": "0x66 diagnostic selection only",
+  "units": "metres",
+  "geometry": {
+    "glassMaterialId": 31,
+    "backgroundMaterialId": 32,
+    "glassLocalY": [
+      0.18,
+      0.22
+    ],
+    "backgroundLocalY": [
+      -0.42,
+      -0.38
+    ]
+  },
+  "glass": {
+    "temperatureK": 300.0,
+    "SWIR": {
+      "rho": 0.08,
+      "epsilon": 0.07,
+      "tau": 0.85
+    },
+    "MWIR": {
+      "rho": 0.05,
+      "epsilon": 0.9,
+      "tau": 0.05
+    },
+    "status": "engineering_assumption_NOT_VERIFIED_CALIBRATION"
+  },
+  "backgrounds": {
+    "Bright": {
+      "temperatureK": 475.0,
+      "SWIR": {
+        "rho": 1.0,
+        "epsilon": 0.0,
+        "tau": 0.0
+      },
+      "MWIR": {
+        "rho": 0.0,
+        "epsilon": 1.0,
+        "tau": 0.0
+      }
+    },
+    "Dark": {
+      "temperatureK": 250.0,
+      "SWIR": {
+        "rho": 0.0,
+        "epsilon": 1.0,
+        "tau": 0.0
+      },
+      "MWIR": {
+        "rho": 0.0,
+        "epsilon": 1.0,
+        "tau": 0.0
+      }
+    }
+  },
+  "model": "single straight-through premultiplied-alpha composite; no refraction/Fresnel/multiple reflection"
+}

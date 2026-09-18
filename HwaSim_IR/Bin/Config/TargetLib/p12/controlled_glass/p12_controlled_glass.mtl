@@ -1,0 +1,7 @@
+newmtl P12_glass
+Kd 0.10 0.65 0.85
+illum 2
+
+newmtl P12_background
+Kd 0.90 0.90 0.90
+illum 2

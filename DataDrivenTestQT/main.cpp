@@ -300,7 +300,7 @@ int main(int argc, char *argv[])
     w.configureProtocolForTest(platID, sensorID, simMode, videoFps);
 	w.configureEnvironmentForTest(envSky, sensorBand);
 	w.setSensorPixelAngleForTest(sensorPixelAngleUrad);
-	w.setUtcHourForTest(utcHour);
+	if (utcHour >= 0.0) w.setUtcHourForTest(utcHour);
 	w.setFreezeGeometryForTest(freezeGeometry);
 	w.configureRealtimePauseForTest(pauseStartSec, pauseDurationSec);
 	qInfo().noquote() << QStringLiteral("[StimGeometry] freezeGeometry=%1 protocolLayoutUnchanged=1")

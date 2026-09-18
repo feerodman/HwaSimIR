@@ -72,6 +72,8 @@ private:
     void updateTargetDataTable(const BYHWICD::DisplayC2cObjTrackingData& data);
     void centerVideoLabel();
     void resizeEvent(QResizeEvent* event) override;
+	bool eventFilter(QObject* watched, QEvent* event) override;
+	void logGuiPaintPerf(const char* reason) const;
     QString targetTypeName(int type);
     QString targetStateName(int state);
     void resetVideoPerfStats();
@@ -96,6 +98,10 @@ private:
     std::deque<qint64> m_liveFrameTimes;
     bool m_uiCaptureSaved = false;
     qint64 m_lastLiveFpsLogMs = 0;
+	qint64 m_lastGuiFrameMs = -1;
+	bool m_statusRunning = false;
+	int m_statusRound = 0;
+	QString m_receiverFatalError;
     bool flushRecorder(const char* reason);
 	quint64 receivedFrameCount() const;
 
@@ -148,6 +154,16 @@ private:
     QString m_codecFallbackReason = QStringLiteral("none");
     bool m_h264KeyFrameSeen = false;
     quint64 m_h264DecodeErrors = 0;
+	quint64 m_pendingPaintFrameSeq = 0;
+	quint64 m_lastPaintedFrameSeq = 0;
+	quint64 m_guiPaintFrames = 0;
+	qint64 m_guiPaintFirstSteadyNs = 0;
+	qint64 m_guiPaintLastSteadyNs = 0;
+	qint64 m_guiPaintMaxIntervalNs = 0;
+	quint64 m_guiPaintSteadyFrames = 0;
+	qint64 m_guiPaintSteadyFirstNs = 0;
+	qint64 m_guiPaintSteadyLastNs = 0;
+	qint64 m_guiPaintSteadyMaxIntervalNs = 0;
 
 private:
     Ui::HwaSim_IR_VideoDisplayClass ui;

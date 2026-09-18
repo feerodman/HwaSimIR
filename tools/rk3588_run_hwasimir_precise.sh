@@ -92,16 +92,22 @@ else
     echo "[RunIntegrity] mode=quick result=PASS fullConfigHashScan=0 hint=use_--verify-full_for_explicit_scan"
 fi
 
-expected_elf=$(awk -F= '$1=="ElfSha256" {print $2; exit}' "$version_file")
-expected_manifest=$(awk -F= '$1=="ConfigManifestSha256" {print $2; exit}' "$version_file")
-expected_launcher=$(awk -F= '$1=="LauncherSha256" {print $2; exit}' "$version_file")
-expected_performance_tool=$(awk -F= '$1=="PerformanceToolSha256" {print $2; exit}' "$version_file")
+expected_elf=$(awk -F= '$1=="ElfSha256" {sub(/\r$/, "", $2); print $2; exit}' "$version_file")
+expected_manifest=$(awk -F= '$1=="ConfigManifestSha256" {sub(/\r$/, "", $2); print $2; exit}' "$version_file")
+expected_launcher=$(awk -F= '$1=="LauncherSha256" {sub(/\r$/, "", $2); print $2; exit}' "$version_file")
+expected_performance_tool=$(awk -F= '$1=="PerformanceToolSha256" {sub(/\r$/, "", $2); print $2; exit}' "$version_file")
+actual_elf=$(sha256sum "$app_root/HwaSim_IR" | awk '{print $1}')
 actual_manifest=$(sha256sum "$manifest_file" | awk '{print $1}')
+actual_launcher=$(sha256sum "$app_root/run_precise.sh" | awk '{print $1}')
+actual_performance_tool=$(sha256sum "$performance_tool" | awk '{print $1}')
+[ -n "$expected_elf" ] && [ "$actual_elf" = "$expected_elf" ] || fatal "component=deployment reason=elf_hash_mismatch expected=$expected_elf actual=$actual_elf"
 [ -n "$expected_manifest" ] && [ "$actual_manifest" = "$expected_manifest" ] || fatal "component=deployment reason=manifest_hash_mismatch expected=$expected_manifest actual=$actual_manifest"
-git_commit=$(awk -F= '$1=="GitCommit" {print $2; exit}' "$version_file")
-source_identity=$(awk -F= '$1=="SourceIdentity" {print $2; exit}' "$version_file")
-build_id=$(awk -F= '$1=="BuildId" {print $2; exit}' "$version_file")
-echo "[DeploymentVersion] result=PASS verification=quick gitCommit=$git_commit sourceIdentity=$source_identity expectedElfSha256=$expected_elf buildId=$build_id expectedLauncherSha256=$expected_launcher expectedPerformanceToolSha256=$expected_performance_tool runtimeConfigSha256=$(sha256sum "$app_root/Config/HwaSimIRRuntime.ini" | awk '{print $1}') configManifestSha256=$actual_manifest versionFile=$version_file"
+[ -n "$expected_launcher" ] && [ "$actual_launcher" = "$expected_launcher" ] || fatal "component=deployment reason=launcher_hash_mismatch expected=$expected_launcher actual=$actual_launcher"
+[ -n "$expected_performance_tool" ] && [ "$actual_performance_tool" = "$expected_performance_tool" ] || fatal "component=deployment reason=performance_tool_hash_mismatch expected=$expected_performance_tool actual=$actual_performance_tool"
+git_commit=$(awk -F= '$1=="GitCommit" {sub(/\r$/, "", $2); print $2; exit}' "$version_file")
+source_identity=$(awk -F= '$1=="SourceIdentity" {sub(/\r$/, "", $2); print $2; exit}' "$version_file")
+build_id=$(awk -F= '$1=="BuildId" {sub(/\r$/, "", $2); print $2; exit}' "$version_file")
+echo "[DeploymentVersion] result=PASS verification=quick gitCommit=$git_commit sourceIdentity=$source_identity elfSha256=$actual_elf buildId=$build_id launcherSha256=$actual_launcher performanceToolSha256=$actual_performance_tool runtimeConfigSha256=$(sha256sum "$app_root/Config/HwaSimIRRuntime.ini" | awk '{print $1}') configManifestSha256=$actual_manifest versionFile=$version_file"
 
 export PANDA3D_ROOT=${PANDA3D_ROOT:-/opt/panda3d-aarch64}
 export PRC_DIR=${PRC_DIR:-$PANDA3D_ROOT/etc}

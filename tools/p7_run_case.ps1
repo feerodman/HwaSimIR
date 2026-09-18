@@ -43,7 +43,7 @@ $dir=(Resolve-Path $dir).Path
   volumeOff=[bool]$VolumeOff;sheetOff=[bool]$SheetOff;legacy=[bool]$Legacy;materialView=$MaterialView;
   materialCase=$MaterialCase;assetBandCase=$AssetBandCase;pauseStart=$PauseStart;pauseDuration=$PauseDuration
   noTargets=(!$ExistingTargets -and !$Normal);normal=[bool]$Normal;targetType=$TargetType;legacyNozzleAttachment=[bool]$LegacyNozzleAttachment;repeatWeather=$RepeatWeather;preset=$Preset;clouds=$Clouds;disableMask=$DisableCloudMask;legacyArt=[bool]$LegacyArt;largeClouds=[bool]$LargeClouds;nativeFov=[bool]$NativeFov;vfx=$Vfx;
-  profileSha256=(Get-FileHash (Join-Path "$root\HwaSim_IR\Bin\Config\SensorWave" $(if($Band -eq 1){'default_NVG.json'}else{'default_MWIR.json'}))).Hash;
+  profileSha256=(Get-FileHash (Join-Path "$root\HwaSim_IR\Bin\Config\SensorWave" $(if($Band -eq 0){'default_SWIR.json'}elseif($Band -eq 1){'default_NVG.json'}else{'default_MWIR.json'}))).Hash;
   receiverSha256=(Get-FileHash -Algorithm SHA256 $ReceiverExe).Hash;senderSha256=(Get-FileHash -Algorithm SHA256 $SenderExe).Hash
 } | ConvertTo-Json | Set-Content -Encoding UTF8 "$dir\request.json"
 # Normalize the inherited PATH/Path duplicate seen in Windows PowerShell 5.

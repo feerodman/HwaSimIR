@@ -1,5 +1,6 @@
 """Read-only resource audit. Previews are diagnostics, never replacement assets."""
 import csv
+import argparse
 import hashlib
 import json
 from pathlib import Path
@@ -9,7 +10,12 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / 'HwaSim_IR/Bin/Config'
-OUT = ROOT / 'logs/p5/assets'
+parser = argparse.ArgumentParser()
+parser.add_argument('--output', default='logs/p5/assets')
+args = parser.parse_args()
+OUT = Path(args.output)
+if not OUT.is_absolute():
+    OUT = ROOT / OUT
 OUT.mkdir(parents=True, exist_ok=True)
 
 def file_info(path):
@@ -19,7 +25,7 @@ with (CONFIG / 'Materials/MaterialDatabase.csv').open(encoding='utf-8-sig') as f
     next(f)
     database = {r['Name']: r for r in csv.DictReader(f)}
 assets = []
-for name, obj, base in [('f22','f22.obj','f22.rgb'), ('aim120','AIM120.obj','aim120.jpg'),
+for name, obj, base in [('f35','F35C.obj','f35c.jpg'), ('f22','f22.obj','f22.rgb'), ('aim120','AIM120.obj','aim120.jpg'),
                         ('aim9x','aim9x.obj','TX_AIM9X_Diffuse.png')]:
     folder = CONFIG / 'TargetLib/models' / name
     id_path = next(folder.glob('*_mat.tif'))
@@ -55,6 +61,25 @@ for name, obj, base in [('f22','f22.obj','f22.rgb'), ('aim120','AIM120.obj','aim
         corners_missing_normal=sum(len(x.split('/'))<3 or not x.split('/')[2] for f in faces for x in f))
     assets.append(asset)
     im.save(OUT / (name+'_material_ids.png'))
+
+portable_manifest_path = CONFIG / 'TargetLib/portable_models.json'
+portable_manifest = json.loads(portable_manifest_path.read_text(encoding='utf-8-sig'))
+portable = []
+for item in portable_manifest.get('models', []):
+    source = CONFIG / 'TargetLib' / item['source']
+    derived = CONFIG / 'TargetLib' / item['derived']
+    source_hash = hashlib.sha256(source.read_bytes()).hexdigest()
+    derived_hash = hashlib.sha256(derived.read_bytes()).hexdigest()
+    portable.append(dict(
+        source=str(source.resolve()), derived=str(derived.resolve()),
+        sourceHashExpected=item['sourceSha256'], sourceHashActual=source_hash,
+        derivedHashExpected=item['derivedSha256'], derivedHashActual=derived_hash,
+        sourceHashMatch=source_hash == item['sourceSha256'],
+        derivedHashMatch=derived_hash == item['derivedSha256'],
+        geometryAndUVBytesUnchanged=item.get('geometryAndUVBytesUnchanged') is True,
+        relativeTexturePaths=[entry['relativePath'] for entry in item.get('texturePaths', [])],
+        relativeTextureFilesExist=all((derived.parent / entry['relativePath']).is_file()
+                                      for entry in item.get('texturePaths', []))))
 weather=[]
 for key in ['cloud_scattered','cloud_overcast','cloud_cumulus']:
     path=CONFIG / 'Weather/Textures' / (key+'.png')
@@ -62,5 +87,10 @@ for key in ['cloud_scattered','cloud_overcast','cloud_cumulus']:
     weather.append(dict(file_info(path), key=key, mode=im.mode,size=im.size,extrema=im.getextrema()))
     im.getchannel('A').save(OUT/(key+'_alpha.png'))
     im.convert('L').save(OUT/(key+'_luminance.png'))
-(OUT/'audit.json').write_text(json.dumps(dict(assets=assets,weather=weather),indent=2),encoding='utf-8')
-print(json.dumps(dict(assets=[{k:a[k] for k in ['name','xml_count','truncated','unknown_fraction','degenerate_normals','corners_missing_uv']} for a in assets],output=str(OUT)),indent=2))
+result = dict(assets=assets, portableManifest=file_info(portable_manifest_path),
+              portable=portable, weather=weather)
+(OUT/'audit.json').write_text(json.dumps(result,indent=2),encoding='utf-8')
+print(json.dumps(dict(
+    assets=[{k:a[k] for k in ['name','xml_count','truncated','unknown_fraction','degenerate_normals','corners_missing_uv']} for a in assets],
+    portable=[{k:p[k] for k in ['sourceHashMatch','derivedHashMatch','geometryAndUVBytesUnchanged','relativeTextureFilesExist']} for p in portable],
+    output=str(OUT)),indent=2))

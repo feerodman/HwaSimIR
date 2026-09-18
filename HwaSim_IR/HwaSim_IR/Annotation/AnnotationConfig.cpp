@@ -422,6 +422,7 @@ void AnnotationConfig::resetToFallback()
 
 	m_defaultConfig = MakeFallbackConfig("UNKNOWN", LPoint3f(0.0f, 1.0f, 0.0f), LPoint3f(0.0f, 0.0f, 0.1f));
 	m_configs[F35] = MakeFallbackConfig("F35", LPoint3f(0.0f, 2.8f, 0.2f), LPoint3f(0.0f, 0.0f, 0.5f));
+	m_configs[F22] = MakeFallbackConfig("F22", LPoint3f(0.0f, 9.0f, 0.2f), LPoint3f(0.0f, 0.0f, 0.5f));
 	m_configs[AIM120] = MakeFallbackConfig("AIM120D", LPoint3f(0.0f, 1.1f, 0.0f), LPoint3f(0.0f, 0.0f, 0.08f));
 	m_configs[AIM9] = MakeFallbackConfig("AIM9X", LPoint3f(0.0f, 0.9f, 0.0f), LPoint3f(0.0f, 0.0f, 0.08f));
 	m_configs[MMD] = MakeFallbackConfig("MMD", LPoint3f(0.0f, 1.0f, 0.0f), LPoint3f(0.0f, 0.0f, 0.1f));
@@ -466,7 +467,7 @@ bool AnnotationConfig::loadFromCandidates(const std::vector<std::string>& filePa
 	if (FindJsonObject(text, "platforms", platformsText))
 	{
 		const char* platformNames[] = {
-			"F35", "AIM120D", "AIM120", "AIM9X", "MMD",
+			"F35", "F22", "AIM120D", "AIM120", "AIM9X", "MMD",
 			"P11CivilVan", "P11ControlledSamples"
 		};
 		for (size_t i = 0; i < sizeof(platformNames) / sizeof(platformNames[0]); ++i)
@@ -485,6 +486,10 @@ bool AnnotationConfig::loadFromCandidates(const std::vector<std::string>& filePa
 			if (name == "F35")
 			{
 				m_configs[F35] = config;
+			}
+			else if (name == "F22")
+			{
+				m_configs[F22] = config;
 			}
 			else if (name == "AIM120D" || name == "AIM120")
 			{

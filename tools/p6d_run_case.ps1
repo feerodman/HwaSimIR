@@ -27,7 +27,7 @@ $dir=(Resolve-Path $dir).Path
   volumeOff=[bool]$VolumeOff;sheetOff=[bool]$SheetOff;legacy=[bool]$Legacy;materialView=$MaterialView;
   materialCase=$MaterialCase;assetBandCase=$AssetBandCase;pauseStart=$PauseStart;pauseDuration=$PauseDuration
   noTargets=(!$ExistingTargets -and !$Normal);normal=[bool]$Normal;targetType=$TargetType;legacyNozzleAttachment=[bool]$LegacyNozzleAttachment;repeatWeather=$RepeatWeather;preset=$Preset;clouds=$Clouds;disableMask=$DisableCloudMask;legacyArt=[bool]$LegacyArt;largeClouds=[bool]$LargeClouds;nativeFov=[bool]$NativeFov;vfx=$Vfx;
-  profileSha256=(Get-FileHash (Join-Path "$root\HwaSim_IR\Bin\Config\SensorWave" $(if($Band -eq 1){'default_NVG.json'}else{'default_MWIR.json'}))).Hash;
+  profileSha256=(Get-FileHash (Join-Path "$root\HwaSim_IR\Bin\Config\SensorWave" $(if($Band -eq 0){'default_SWIR.json'}elseif($Band -eq 1){'default_NVG.json'}else{'default_MWIR.json'}))).Hash;
   receiverSha256=(Get-FileHash -Algorithm SHA256 "$root\HwaSim_IR_VideoDisplay\x64\Release\HwaSim_IR_VideoDisplay.exe").Hash
 } | ConvertTo-Json | Set-Content -Encoding UTF8 "$dir\request.json"
 # Normalize the inherited PATH/Path duplicate seen in Windows PowerShell 5.
@@ -119,6 +119,7 @@ $env:P5DdsVideoPath=Join-Path $dir 'received.h264'
 $env:P5DdsVideoSamples="$($Rate*[Math]::Min($CaptureSeconds,$Seconds))"
 $videoExe=Join-Path $root 'HwaSim_IR_VideoDisplay\x64\Release\HwaSim_IR_VideoDisplay.exe'
 $stimExe=Join-Path $root 'build-DataDrivenTestQT-codex-mingw73_64-Release\release\DataDrivenTestQT.exe'
+$stimDir=Split-Path -Parent $stimExe
 $video=$null;$stim=$null;$hwa=$null;$remoteSsh=$null;$thermal=$null
 try {
     if(-not $SkipRemoteCleanup){Remote 'pkill -TERM -x HwaSim_IR 2>/dev/null || true'}
@@ -158,7 +159,7 @@ try {
     Start-Sleep -Seconds 5
     $env:P5NoTargets=$(if($ExistingTargets -or $Normal){'0'}else{'1'})
     $env:P6TestTargetType=$TargetType
-    $stim=Start-Process -FilePath $stimExe -WorkingDirectory "$root\DataDrivenTestQT" -WindowStyle Hidden -PassThru -ArgumentList @(
+    $stim=Start-Process -FilePath $stimExe -WorkingDirectory $stimDir -WindowStyle Hidden -PassThru -ArgumentList @(
         '--channel=precise',"--plat-id=$PlatId","--sensor-id=$SensorId",'--sim-mode=1',"--video-fps=$Rate",
         '--phase1d-h264=1','--save-mp4=0',"--duration-sec=$Seconds","--env-sky=$Weather","--sensor-band=$Band",
         "--sensor-pixel-angle-urad=$PixelAngle",'--engine-state=1','--strike-flag=0','--freeze-geometry','--utc-hour=6.0',"--pause-start-sec=$PauseStart","--pause-duration-sec=$PauseDuration"
@@ -170,7 +171,7 @@ try {
         # Each sender uses the existing RESET -> INIT -> START -> STOP sequence.
         # Keep the renderer and DDS receiver alive to exercise real state reuse.
         Wait-RepeatDrain 1
-        $stim=Start-Process -FilePath $stimExe -WorkingDirectory "$root\DataDrivenTestQT" -WindowStyle Hidden -PassThru -ArgumentList @(
+        $stim=Start-Process -FilePath $stimExe -WorkingDirectory $stimDir -WindowStyle Hidden -PassThru -ArgumentList @(
             '--channel=precise',"--plat-id=$PlatId","--sensor-id=$SensorId",'--sim-mode=1',"--video-fps=$Rate",
             '--phase1d-h264=1','--save-mp4=0',"--duration-sec=$Seconds","--env-sky=$RepeatWeather","--sensor-band=$Band",
             "--sensor-pixel-angle-urad=$PixelAngle",'--engine-state=1','--strike-flag=0','--freeze-geometry','--utc-hour=6.0'

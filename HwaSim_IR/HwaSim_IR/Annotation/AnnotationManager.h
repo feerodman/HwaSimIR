@@ -13,6 +13,9 @@ public:
 	void setEnabled(bool enabled);
 	bool isEnabled() const;
 	void clear();
+	bool prewarmCollisionCache(
+		const std::vector<TargetPlatformData>& targets,
+		const NodePath& renderRoot);
 
 	AnnotationFrameRecord updateFrame(
 		unsigned long long frameIndex,

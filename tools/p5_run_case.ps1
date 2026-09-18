@@ -73,6 +73,7 @@ $env:P5DdsVideoPath=Join-Path $dir 'received.h264'
 $env:P5DdsVideoSamples="$($Rate*6)"
 $videoExe=Join-Path $root 'HwaSim_IR_VideoDisplay\x64\Release\HwaSim_IR_VideoDisplay.exe'
 $stimExe=Join-Path $root 'build-DataDrivenTestQT-codex-mingw73_64-Release\release\DataDrivenTestQT.exe'
+$stimDir=Split-Path -Parent $stimExe
 $video=$null;$stim=$null;$hwa=$null;$remoteSsh=$null
 try {
     Remote 'pkill -TERM -x HwaSim_IR 2>/dev/null || true'
@@ -104,7 +105,10 @@ try {
     }
     Start-Sleep -Seconds 5
     $env:P5NoTargets=if($NoTargets){'1'}else{'0'}
-    $stim=Start-Process -FilePath $stimExe -WorkingDirectory "$root\DataDrivenTestQT" -WindowStyle Hidden -PassThru -ArgumentList @(
+    # ZRDDS resolves its writable trial licence from the process working
+    # directory. Match the production launch contract: EXE, INI, QoS and the
+    # private licence copy all live under the release directory.
+    $stim=Start-Process -FilePath $stimExe -WorkingDirectory $stimDir -WindowStyle Hidden -PassThru -ArgumentList @(
         '--channel=precise','--plat-id=1001','--sensor-id=2','--sim-mode=1',"--video-fps=$Rate",
         '--phase1d-h264=1','--save-mp4=0',"--duration-sec=$Seconds","--env-sky=$Weather","--sensor-band=$Band",
         '--engine-state=1','--strike-flag=0','--freeze-geometry','--utc-hour=6.0',"--pause-start-sec=$PauseStart","--pause-duration-sec=$PauseDuration"
@@ -114,7 +118,7 @@ try {
         # Each sender uses the existing RESET -> INIT -> START -> STOP sequence.
         # Keep the renderer and DDS receiver alive to exercise real state reuse.
         Wait-RepeatDrain 1
-        $stim=Start-Process -FilePath $stimExe -WorkingDirectory "$root\DataDrivenTestQT" -WindowStyle Hidden -PassThru -ArgumentList @(
+        $stim=Start-Process -FilePath $stimExe -WorkingDirectory $stimDir -WindowStyle Hidden -PassThru -ArgumentList @(
             '--channel=precise','--plat-id=1001','--sensor-id=2','--sim-mode=1',"--video-fps=$Rate",
             '--phase1d-h264=1','--save-mp4=0',"--duration-sec=$Seconds","--env-sky=$RepeatWeather","--sensor-band=$Band",
             '--engine-state=1','--strike-flag=0','--freeze-geometry','--utc-hour=6.0'

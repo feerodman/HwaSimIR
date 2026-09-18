@@ -4,32 +4,57 @@
 #include <dlfcn.h>
 #endif
 
-static bool ReadSceneLinearRamImage(Texture* texture,int width,int height,PfmFile& result){
+struct IRLinearReadbackTiming {
+    double textureStoreMs=0.0;
+    double glSetupMs=0.0;
+    double gpuWaitReadbackMs=0.0;
+    double cpuCopyMs=0.0;
+    double totalMs=0.0;
+};
+
+static double IRLinearElapsedMs(const std::chrono::steady_clock::time_point& begin){
+    return std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-begin).count();
+}
+
+static bool ReadSceneLinearRamImage(Texture* texture,int width,int height,PfmFile& result,
+                                    IRLinearReadbackTiming* timing=nullptr){
+    const auto totalBegin=std::chrono::steady_clock::now();
     if(!texture||!texture->has_ram_image())return false;
     PfmFile allocated;
+    const auto storeBegin=std::chrono::steady_clock::now();
     if(!texture->store(allocated))return false;
+    if(timing)timing->textureStoreMs+=IRLinearElapsedMs(storeBegin);
     if(allocated.get_x_size()<width||allocated.get_y_size()<height)return false;
+    const auto copyBegin=std::chrono::steady_clock::now();
     result.clear(width,height,3);
     for(int y=0;y<height;++y)for(int x=0;x<width;++x)
         result.set_point3(x,y,allocated.get_point3(x,y+allocated.get_y_size()-height));
+    if(timing){timing->cpuCopyMs+=IRLinearElapsedMs(copyBegin);timing->totalMs=IRLinearElapsedMs(totalBegin);}
     return true;
 }
 
 // Diagnostic / AGC readback only. The scene's native color/depth attachments
 // are never replaced. Returned rows match the delivered, top-down RGB8 image.
 static bool ReadSceneLinear(GraphicsEngine* engine,Texture* texture,GraphicsOutput* output,
-                            int width,int height,PfmFile& result,bool consumeExistingRam=true){
+                            int width,int height,PfmFile& result,bool consumeExistingRam=true,
+                            IRLinearReadbackTiming* timing=nullptr){
+    const auto totalBegin=std::chrono::steady_clock::now();
     if(!texture||!output||width<=0||height<=0)return false;
-    if(consumeExistingRam&&ReadSceneLinearRamImage(texture,width,height,result)){
+    if(consumeExistingRam&&ReadSceneLinearRamImage(texture,width,height,result,timing)){
         static bool loggedRam=false;if(!loggedRam){
             std::cout<<"[LinearReadback] route=render_target_ram_copy sceneAttachmentsChanged=0 depthReadback=0"<<std::endl;
             loggedRam=true;
         }
+        if(timing)timing->totalMs=IRLinearElapsedMs(totalBegin);
         return true;
     }
 #ifdef _WIN32
+    const auto extractBegin=std::chrono::steady_clock::now();
     if(!engine->extract_texture_data(texture,output->get_gsg()))return false;
-    return ReadSceneLinearRamImage(texture,width,height,result);
+    if(timing)timing->gpuWaitReadbackMs+=IRLinearElapsedMs(extractBegin);
+    const bool ok=ReadSceneLinearRamImage(texture,width,height,result,timing);
+    if(timing)timing->totalMs=IRLinearElapsedMs(totalBegin);
+    return ok;
 #else
 	// Read the bound formal floating-point color texture through a temporary read-only
     // FBO. This path is invoked only for selected diagnostic source sequences;
@@ -48,6 +73,7 @@ static bool ReadSceneLinear(GraphicsEngine* engine,Texture* texture,GraphicsOutp
     auto bindBuffer=reinterpret_cast<void(*)(U,U)>(dlsym(library,"glBindBuffer"));
     auto error=reinterpret_cast<U(*)()>(dlsym(library,"glGetError"));
     if(!get||!gen||!bind||!attach||!check||!read||!erase||!pack||!bindBuffer||!error)return false;
+    const auto setupBegin=std::chrono::steady_clock::now();
     auto* gsg=output->get_gsg();
     TextureContext* tc=texture->prepare_now(0,gsg->get_prepared_objects(),gsg);
     if(!tc||!tc->get_native_id())return false;
@@ -59,10 +85,13 @@ static bool ReadSceneLinear(GraphicsEngine* engine,Texture* texture,GraphicsOutp
     attach(READ_FBO,COLOR0,0x0DE1,U(tc->get_native_id()),0);
     const U status=check(READ_FBO);
     std::vector<float> rgba;
+    if(timing)timing->glSetupMs=IRLinearElapsedMs(setupBegin);
     if(status==0x8CD5){
         rgba.resize(size_t(width)*height*4);
         bindBuffer(PACK_BUFFER,0);pack(0x0D05,1);pack(0x0D02,0);pack(0x0D03,0);pack(0x0D04,0);
+        const auto readBegin=std::chrono::steady_clock::now();
         read(0,0,width,height,0x1908,0x1406,rgba.data()); // RGBA / FLOAT
+        if(timing)timing->gpuWaitReadbackMs=IRLinearElapsedMs(readBegin);
     }
     const U err=error();
     pack(0x0D05,alignment);pack(0x0D02,rowLength);pack(0x0D03,skipRows);pack(0x0D04,skipPixels);
@@ -70,11 +99,13 @@ static bool ReadSceneLinear(GraphicsEngine* engine,Texture* texture,GraphicsOutp
     if(status!=0x8CD5||err){
         std::cerr<<"[LinearReadback][ERROR] framebufferStatus="<<status<<" glError="<<err<<std::endl;return false;
     }
+    const auto copyBegin=std::chrono::steady_clock::now();
     result.clear(width,height,3);
     for(int y=0;y<height;++y)for(int x=0;x<width;++x){
         const float* p=&rgba[(size_t(y)*width+x)*4];
         result.set_point3(x,height-1-y,LVecBase3f(p[0],p[1],p[2]));
     }
+    if(timing){timing->cpuCopyMs=IRLinearElapsedMs(copyBegin);timing->totalMs=IRLinearElapsedMs(totalBegin);}
     static bool logged=false;if(!logged){
         std::cout<<"[LinearReadback] route=gles_rgba_float temporaryReadFbo=1 sceneAttachmentsChanged=0 depthReadback=0"<<std::endl;logged=true;
     }

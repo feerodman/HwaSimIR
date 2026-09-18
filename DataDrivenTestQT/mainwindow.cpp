@@ -28,9 +28,11 @@
 #include <QNetworkInterface>
 #include <QStringList>
 #include <algorithm>
+#include <limits>
 
 #include "ICD/math_algorithm.h"
 #include "OrdinaryWeatherInput.h"
+#include "../HwaSim_IR/HwaSim_IR/IR/IRSolarPosition.h"
 
 //#define M_PI 3.1415926
 
@@ -119,6 +121,24 @@ QString localIpv4Summary()
 		}
 	}
 	return items.isEmpty() ? QStringLiteral("none") : items.join(QStringLiteral(","));
+}
+
+double geodeticLosMeters(const ICD::Position& observer, const ICD::Position& target)
+{
+	const double pi = 3.14159265358979323846;
+	const double radians = pi / 180.0;
+	const double lat1 = observer.lat * radians;
+	const double lat2 = target.lat * radians;
+	const double deltaLat = (target.lat - observer.lat) * radians;
+	const double deltaLon = (target.lon - observer.lon) * radians;
+	const double sinLat = std::sin(deltaLat * 0.5);
+	const double sinLon = std::sin(deltaLon * 0.5);
+	const double haversine = sinLat * sinLat +
+		std::cos(lat1) * std::cos(lat2) * sinLon * sinLon;
+	const double central = 2.0 * std::asin(std::sqrt(clampDouble(haversine, 0.0, 1.0)));
+	const double horizontal = 6371008.8 * central;
+	const double vertical = target.alt - observer.alt;
+	return std::sqrt(horizontal * horizontal + vertical * vertical);
 }
 }
 
@@ -249,6 +269,13 @@ void MainWindow::setupDDS()
 			qInfo().noquote() << QStringLiteral("[StimInitAck] transport=dds received=1 platID=%1 sensorID=%2 ready=%3")
 				.arg(ack.platID).arg(ack.sensorID).arg(ack.trackingReady ? 1 : 0);
 			m_lastReceivedLabel->setText(QStringLiteral("↓ 接收: DDS 初始化应答 (0x37)"));
+			if (!ack.trackingReady)
+			{
+				m_statusLabel->setText(QStringLiteral("● 状态: DDS 初始化被渲染端拒绝 | 未发送 START"));
+				m_statusLabel->setStyleSheet("color: #D32F2F; font-weight: bold;");
+				qCritical().noquote() << QStringLiteral("[StimInitAck][ERROR] ready=0 action=start_suppressed");
+				return;
+			}
 			m_statusLabel->setText(QStringLiteral("● 状态: DDS 初始化完成 | 等待开始指令"));
 			m_statusLabel->setStyleSheet("color: #388E3C; font-weight: bold;");
 			emit initAckReceived();
@@ -560,6 +587,14 @@ void MainWindow::loadNetworkConfig()
     }else m_inputDataPath=QFileInfo(m_inputDataPath).absoluteFilePath();
     if(!QFileInfo(m_inputDataPath).isFile())qFatal("Missing input file: %s",qPrintable(m_inputDataPath));
     m_protocolEnvSky=settings.value("Demo/envSky",0).toInt();
+	bool utcHourOk = false;
+	const double configuredUtcHour = settings.value(QStringLiteral("Demo/UtcHour"), -1.0).toDouble(&utcHourOk);
+	if (!utcHourOk || !std::isfinite(configuredUtcHour) || configuredUtcHour < -1.0 || configuredUtcHour >= 24.0)
+		qFatal("Invalid Demo/UtcHour; expected -1 for wall clock or [0,24)");
+	m_testUtcHour = configuredUtcHour;
+	m_simulationTimeSource = configuredUtcHour >= 0.0
+		? QStringLiteral("NetworkConfig.ini:Demo/UtcHour")
+		: QStringLiteral("wall_clock_utc");
     m_sendStepMs=settings.value("RenderControl/sendStepMs",1000.0/60.0).toDouble();
     if(!std::isfinite(m_sendStepMs)||m_sendStepMs<.1||m_sendStepMs>100000)qFatal("Invalid sendStepMs");
     m_inputHz=1000.0/m_sendStepMs;
@@ -644,6 +679,8 @@ void MainWindow::loadNetworkConfig()
 			.arg(remoteIp)
 			.arg(remotePort)
 			.arg(configExists ? QStringLiteral("ini") : QStringLiteral("generated_default"));
+	qInfo().noquote() << QStringLiteral("[StimTimeConfig] utcHour=%1 source=%2")
+		.arg(m_testUtcHour, 0, 'f', 6).arg(m_simulationTimeSource);
 }
 
 void MainWindow::setupUDP()
@@ -774,6 +811,28 @@ void MainWindow::sendControlCommand(int command)
 
 void MainWindow::sendInitCommand()
 {
+	bool selectedTargetTypeOk = false;
+	const int selectedTargetType = m_targetTypeEdit->text().toInt(&selectedTargetTypeOk, 16);
+	const bool selectedTargetTypeSupported = selectedTargetTypeOk &&
+		(selectedTargetType == 0x11 || selectedTargetType == 0x12 ||
+		 selectedTargetType == 0x22 || selectedTargetType == 0x33 ||
+		 selectedTargetType == 0x44 || selectedTargetType == 0x55 ||
+		 selectedTargetType == 0x66);
+	if (!selectedTargetTypeSupported)
+	{
+		const QString message = QStringLiteral(
+			"目标类型无效：%1；支持 0x11/0x12/0x22/0x33/0x44/0x55/0x66")
+			.arg(m_targetTypeEdit->text());
+		m_statusLabel->setText(QStringLiteral("● 状态: 初始化失败 | ") + message);
+		m_statusLabel->setStyleSheet("color: #D32F2F; font-weight: bold;");
+		qCritical().noquote() << QStringLiteral("[StimInit][ERROR] targetType=%1 reason=unsupported_target_type")
+			.arg(m_targetTypeEdit->text());
+		return;
+	}
+	// The ordinary target selector is part of the production UI/INI contract.
+	// Freeze its value at INIT so the same identity is used for the whole round.
+	m_targetType = selectedTargetType;
+
 	BYHWICD::InitP2cObjectTrackingCmd cmd = {};
 	cmd.flag = 0x36;
 	cmd.JB = 1;
@@ -843,6 +902,14 @@ void MainWindow::sendInitCommand()
     if(!sensorFormSnapshot(cmd.trackingInit.trackerSensor[0],sensorError)){
         qCritical()<<"[StimInit] invalid sensor form"<<sensorError;return;
     }
+	QJsonObject coverageAudit;
+	QString coverageError;
+	if (!validateFormalAtmosphereCoverage(
+		cmd.trackingInit, cmd.trackingInit.trackerSensor[0], coverageError, coverageAudit))
+	{
+		showInitCoverageError(coverageError, coverageAudit);
+		return;
+	}
     QJsonObject sensorAudit;
     for(int i=0;i<HwaSensorFields::count;++i){const auto& field=HwaSensorFields::fields()[i];
         sensorAudit.insert(QString::fromLatin1(field.name),HwaSensorFields::get(cmd.trackingInit.trackerSensor[0],field));}
@@ -873,14 +940,17 @@ void MainWindow::sendInitCommand()
 	// allocated only for its explicit test input.
 	bool p11TargetTypeOk = false;
 	const int p11TargetType = qEnvironmentVariable("P6TestTargetType").toInt(&p11TargetTypeOk, 0);
-	cmd.MissileMaxCountResv1 = p11TargetTypeOk && p11TargetType == 0x55 ? 1 : 0;
-	cmd.MissileMaxCountResv2 = p11TargetTypeOk && p11TargetType == 0x66 ? 1 : 0;
+	const int effectiveTargetType = p11TargetTypeOk ? p11TargetType : m_targetType;
+	cmd.MissileMaxCountResv1 = effectiveTargetType == 0x55 ? 1 : 0;
+	cmd.MissileMaxCountResv2 = effectiveTargetType == 0x66 ? 1 : 0;
 	qInfo().noquote() << QStringLiteral(
-		"[StimTargetPool] requestedType=%1 resv1Count=%2 resv2Count=%3 protocolLayoutUnchanged=1")
-		.arg(p11TargetTypeOk ? targetTypeHex(p11TargetType) : QStringLiteral("default"))
+		"[StimTargetPool] requestedType=%1 source=%2 resv1Count=%3 resv2Count=%4 protocolLayoutUnchanged=1")
+		.arg(targetTypeHex(effectiveTargetType))
+		.arg(p11TargetTypeOk ? QStringLiteral("P6TestTargetType") : QStringLiteral("ordinary_ui_ini"))
 		.arg(cmd.MissileMaxCountResv1)
 		.arg(cmd.MissileMaxCountResv2);
 
+	bool ddsInitSent = false;
 #if defined(HWASIMIR_HAS_ZRDDS)
 	if (m_ddsStim)
 	{
@@ -889,8 +959,11 @@ void MainWindow::sendInitCommand()
 			qCritical().noquote() << QStringLiteral("[StimDDS][ERROR] type=init reason=%1")
 				.arg(QString::fromStdString(error));
 		else
+		{
+			ddsInitSent = true;
 			qInfo().noquote() << QStringLiteral("[StimDDS] type=init sent=1 platID=%1 sensorID=%2")
 				.arg(cmd.platID).arg(cmd.sensorID);
+		}
 	}
 #endif
 
@@ -926,10 +999,182 @@ void MainWindow::sendInitCommand()
 		m_statusLabel->setText(QStringLiteral("● 状态: 初始化发送失败！ | udpSocket错误"));
 		m_statusLabel->setStyleSheet("color: #D32F2F; font-weight: bold;");
 	}
+	else if (ddsInitSent)
+	{
+		m_lastSentLabel->setText(QStringLiteral("↑ 发送: DDS 初始化命令 (0x36)"));
+		m_statusLabel->setText(QStringLiteral("● 状态: 已发送 DDS 初始化 | 等待渲染端应答"));
+		m_statusLabel->setStyleSheet("color: #FF9800; font-weight: bold;");
+	}
 	
 
 
 	initStepSimData();
+}
+
+bool MainWindow::validateFormalAtmosphereCoverage(
+	const BYHWICD::InitObjectTrackingParam& initialization,
+	const BYHWICD::trackerSensorParam& sensor,
+	QString& error,
+	QJsonObject& audit) const
+{
+	audit.insert(QStringLiteral("inputFile"), QFileInfo(m_inputDataPath).absoluteFilePath());
+	audit.insert(QStringLiteral("band"), sensor.trackerSensorBand);
+	audit.insert(QStringLiteral("rows"), realTimeData.size());
+	audit.insert(QStringLiteral("visibilityKm"), initialization.envVisibility / 1000.0);
+	audit.insert(QStringLiteral("relativeHumidityPercent"), initialization.envHumidity);
+	audit.insert(QStringLiteral("utcHour"), m_testUtcHour);
+	audit.insert(QStringLiteral("timeSource"), m_simulationTimeSource);
+
+	// NIR has a separate compatibility table. Explicit WeatherCameraInput is a
+	// diagnostic fixture whose effective geometry is validated by that parser
+	// and by the renderer's formal fail-closed query, not by the legacy CSV rows.
+	if (sensor.trackerSensorBand != 0 && sensor.trackerSensorBand != 2)
+	{
+		audit.insert(QStringLiteral("result"), QStringLiteral("not_applicable_non_swir_mwir"));
+		qInfo().noquote() << QStringLiteral("[StimAtmosphereCoverage] result=NOT_APPLICABLE band=%1 reason=non_swir_mwir")
+			.arg(sensor.trackerSensorBand);
+		return true;
+	}
+	if (!qEnvironmentVariable("WeatherCameraInput").trimmed().isEmpty())
+	{
+		audit.insert(QStringLiteral("result"), QStringLiteral("explicit_fixture_deferred"));
+		qInfo().noquote() << QStringLiteral("[StimAtmosphereCoverage] result=DEFERRED source=WeatherCameraInput reason=effective_geometry_owned_by_explicit_fixture");
+		return true;
+	}
+
+	const double visibilityKm = initialization.envVisibility / 1000.0;
+	const double humidity = initialization.envHumidity;
+	if (!std::isfinite(visibilityKm) || visibilityKm < 6.0 || visibilityKm > 23.0)
+	{
+		error = QStringLiteral("正式 SWIR/MWIR 大气域不覆盖能见度 %1 km（允许 6–23 km）；请修改 NetworkConfig.ini 的 WeatherInit/envVisibility，或补齐对应 MODTRAN 网格。INIT 未发送。")
+			.arg(visibilityKm, 0, 'f', 3);
+		audit.insert(QStringLiteral("failureAxis"), QStringLiteral("visibilityKm"));
+		return false;
+	}
+	if (!std::isfinite(humidity) || humidity < 30.0 || humidity > 85.0)
+	{
+		error = QStringLiteral("正式 SWIR/MWIR 大气域不覆盖相对湿度 %1%%（允许 30–85%%）；请修改 NetworkConfig.ini 的 WeatherInit/envHumidity，或补齐对应 MODTRAN 网格。INIT 未发送。")
+			.arg(humidity, 0, 'f', 3);
+		audit.insert(QStringLiteral("failureAxis"), QStringLiteral("relativeHumidityPercent"));
+		return false;
+	}
+
+	double minRange = std::numeric_limits<double>::infinity();
+	double maxRange = 0.0;
+	double minObserverAlt = std::numeric_limits<double>::infinity();
+	double maxObserverAlt = -std::numeric_limits<double>::infinity();
+	double minTargetAlt = std::numeric_limits<double>::infinity();
+	double maxTargetAlt = -std::numeric_limits<double>::infinity();
+	double minZenith = std::numeric_limits<double>::infinity();
+	double maxZenith = -std::numeric_limits<double>::infinity();
+	const QDateTime currentUtc = QDateTime::currentDateTimeUtc();
+	const QDate currentUtcDate = currentUtc.date();
+	const double configuredHour = m_testUtcHour >= 0.0
+		? m_testUtcHour
+		: currentUtc.time().msecsSinceStartOfDay() / 3600000.0;
+	for (int index = 0; index < realTimeData.size(); ++index)
+	{
+		const realtimeInfo& row = realTimeData.at(index);
+		const double rangeM = geodeticLosMeters(row.platPos, row.tarPos);
+		minRange = std::min(minRange, rangeM);
+		maxRange = std::max(maxRange, rangeM);
+		minObserverAlt = std::min(minObserverAlt, row.platPos.alt);
+		maxObserverAlt = std::max(maxObserverAlt, row.platPos.alt);
+		minTargetAlt = std::min(minTargetAlt, row.tarPos.alt);
+		maxTargetAlt = std::max(maxTargetAlt, row.tarPos.alt);
+
+		IRSolarPositionInput solarInput;
+		solarInput.latitudeDeg = row.platPos.lat;
+		solarInput.longitudeDeg = row.platPos.lon;
+		solarInput.altitudeM = row.platPos.alt;
+		solarInput.utcYear = currentUtcDate.year();
+		solarInput.utcMonth = currentUtcDate.month();
+		solarInput.utcDay = currentUtcDate.day();
+		solarInput.utcHour = configuredHour;
+		const IRSolarPositionOutput solar = IRSolarPosition().evaluate(solarInput);
+		const double zenith = solar.zenithDeg;
+		minZenith = std::min(minZenith, zenith);
+		maxZenith = std::max(maxZenith, zenith);
+
+		QString axis;
+		double value = 0.0;
+		QString allowed;
+		if (!std::isfinite(row.platPos.alt) || row.platPos.alt < 1.0 || row.platPos.alt > 1000.0)
+		{
+			axis = QStringLiteral("observerAltitudeM"); value = row.platPos.alt; allowed = QStringLiteral("1–1000 m");
+		}
+		else if (!std::isfinite(row.tarPos.alt) || row.tarPos.alt < 1.0 || row.tarPos.alt > 1000.0)
+		{
+			axis = QStringLiteral("targetAltitudeM"); value = row.tarPos.alt; allowed = QStringLiteral("1–1000 m");
+		}
+		else if (std::abs(row.platPos.alt - row.tarPos.alt) > 0.05)
+		{
+			axis = QStringLiteral("horizontalEqualAltitudeDeltaM"); value = std::abs(row.platPos.alt - row.tarPos.alt); allowed = QStringLiteral("≤0.05 m（当前正式网格仅含等高水平 LOS）");
+		}
+		else if (!std::isfinite(rangeM) || rangeM < 100.0 || rangeM > 2000.0)
+		{
+			axis = QStringLiteral("losRangeM"); value = rangeM; allowed = QStringLiteral("100–2000 m");
+		}
+		else if (!solar.valid || !std::isfinite(zenith) || zenith < 20.0 || zenith > 70.0)
+		{
+			axis = QStringLiteral("solarZenithDeg"); value = zenith; allowed = QStringLiteral("20–70°");
+		}
+		if (!axis.isEmpty())
+		{
+			audit.insert(QStringLiteral("result"), QStringLiteral("rejected"));
+			audit.insert(QStringLiteral("failureAxis"), axis);
+			audit.insert(QStringLiteral("failureValue"), value);
+			audit.insert(QStringLiteral("firstInvalidDataRow"), index + 2);
+			error = QStringLiteral("正式 SWIR/MWIR 大气域不覆盖输入文件第 %1 行：%2=%3（允许 %4）。请选择 ordinary_demo_1km.txt、调整轨迹/仿真 UTC 到有效域，或补齐对应 MODTRAN 网格。INIT 未发送。")
+			.arg(index + 2).arg(axis).arg(value, 0, 'f', 6).arg(allowed);
+			return false;
+		}
+	}
+	audit.insert(QStringLiteral("result"), QStringLiteral("accepted"));
+	audit.insert(QStringLiteral("rangeMinM"), minRange);
+	audit.insert(QStringLiteral("rangeMaxM"), maxRange);
+	audit.insert(QStringLiteral("observerAltitudeMinM"), minObserverAlt);
+	audit.insert(QStringLiteral("observerAltitudeMaxM"), maxObserverAlt);
+	audit.insert(QStringLiteral("targetAltitudeMinM"), minTargetAlt);
+	audit.insert(QStringLiteral("targetAltitudeMaxM"), maxTargetAlt);
+	audit.insert(QStringLiteral("solarZenithMinDeg"), minZenith);
+	audit.insert(QStringLiteral("solarZenithMaxDeg"), maxZenith);
+	qInfo().noquote() << QStringLiteral("[StimAtmosphereCoverage] result=ACCEPTED band=%1 rows=%2 rangeM=%3..%4 observerAltM=%5..%6 targetAltM=%7..%8 visibilityKm=%9 humidityPercent=%10 solarZenithDeg=%11..%12 timeSource=%13")
+		.arg(sensor.trackerSensorBand).arg(realTimeData.size())
+		.arg(minRange, 0, 'f', 3).arg(maxRange, 0, 'f', 3)
+		.arg(minObserverAlt, 0, 'f', 3).arg(maxObserverAlt, 0, 'f', 3)
+		.arg(minTargetAlt, 0, 'f', 3).arg(maxTargetAlt, 0, 'f', 3)
+		.arg(visibilityKm, 0, 'f', 3).arg(humidity, 0, 'f', 3)
+		.arg(minZenith, 0, 'f', 3).arg(maxZenith, 0, 'f', 3).arg(m_simulationTimeSource);
+	return true;
+}
+
+void MainWindow::showInitCoverageError(const QString& error, const QJsonObject& audit)
+{
+	m_statusLabel->setText(QStringLiteral("● 状态: INIT 未发送 | 大气覆盖域错误"));
+	m_statusLabel->setStyleSheet("color: #D32F2F; font-weight: bold;");
+	m_lastSentLabel->setText(QStringLiteral("↑ 未发送: INIT 被正式大气域预检拒绝"));
+	m_lastReceivedLabel->setText(QStringLiteral("↓ 处理建议: ordinary_demo_1km.txt / 调整轨迹或 UTC / 补 MODTRAN 网格"));
+	qCritical().noquote() << QStringLiteral("[StimAtmosphereCoverage][ERROR] %1 audit=%2")
+		.arg(error, QString::fromUtf8(QJsonDocument(audit).toJson(QJsonDocument::Compact)));
+	QMessageBox* box = new QMessageBox(
+		QMessageBox::Critical,
+		QStringLiteral("INIT 未发送：正式大气域不覆盖"),
+		error,
+		QMessageBox::Ok,
+		this);
+	box->setAttribute(Qt::WA_DeleteOnClose);
+	box->setModal(false);
+	box->show();
+	const QString uiDump = qEnvironmentVariable("P7SenderUiDump");
+	if (!uiDump.isEmpty())
+	{
+		QTimer::singleShot(250, this, [this, uiDump, audit]() {
+			grab().save(uiDump);
+			QFile output(uiDump + ".json");
+			if (output.open(QIODevice::WriteOnly)) output.write(QJsonDocument(audit).toJson());
+		});
+	}
 }
 
 void MainWindow::sendRealTimeData()
@@ -962,7 +1207,7 @@ void MainWindow::sendRealTimeData()
     data.platLoc.speed = realTimeData.at(dataNum-1).platSpeed;
 
 	// Wg信息
-    data.weaponState.targetType = 0x11;
+	data.weaponState.targetType = m_targetType;
 	data.weaponState.targetPlatID = 3;
     data.weaponState.targetID = 3;
 	data.weaponState.xxOutAng[0] = 0.0;
@@ -989,16 +1234,26 @@ void MainWindow::sendRealTimeData()
 
 	// 目标状态（相对平台偏移）
     data.targetNumValid = 1/*5*/;
-    data.targetState[0].targetType = 0x11;
+	data.targetState[0].targetType = m_targetType;
     // Explicit geometry acceptance input; no change to the wire format or default.
     bool testTargetOk=false;
     const int testTarget=qEnvironmentVariable("P6TestTargetType").toInt(&testTargetOk,0);
-    if(testTargetOk&&(testTarget==0x11||testTarget==0x12||testTarget==0x22||testTarget==0x33||testTarget==0x55||testTarget==0x66)){
-        data.targetState[0].targetType=testTarget;
-        data.weaponState.targetType=testTarget;
-    }
+	if(testTargetOk&&(testTarget==0x11||testTarget==0x12||testTarget==0x22||testTarget==0x33||testTarget==0x55||testTarget==0x66)){
+		data.targetState[0].targetType=testTarget;
+		data.weaponState.targetType=testTarget;
+	}
 	data.targetState[0].targetPlatID = 3;
 	data.targetState[0].targetID = 3;
+	if (m_sentFrameCount <= 3 || (m_sentFrameCount % 120) == 0)
+	{
+		qInfo().noquote() << QStringLiteral(
+			"[StimTargetSelection] sourceSeq=%1 targetType=%2 source=%3 targetPlatID=%4 targetID=%5")
+			.arg(m_sentFrameCount + 1)
+			.arg(targetTypeHex(data.targetState[0].targetType))
+			.arg(testTargetOk ? QStringLiteral("P6TestTargetType") : QStringLiteral("ordinary_ui_ini"))
+			.arg(data.targetState[0].targetPlatID)
+			.arg(data.targetState[0].targetID);
+	}
 //    if(current_time > 5){
 //        //5秒后發動機熄火
 		data.targetState[0].engineState = m_testEngineState;

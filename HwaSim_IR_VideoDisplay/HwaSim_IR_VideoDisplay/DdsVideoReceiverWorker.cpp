@@ -172,8 +172,20 @@ public:
 	void on_process_sample(DataReader*, const HwaSimIRDds::VideoStatusV1& sample,
 		const SampleInfo&) override
 	{
-		if (m_owner->m_config.platID >= 0 && sample.platID != m_owner->m_config.platID) return;
-		if (m_owner->m_config.sensorID >= 0 && sample.sensorID != m_owner->m_config.sensorID) return;
+		const quint64 seen = m_owner->m_statusSamples.fetch_add(1) + 1;
+		if ((m_owner->m_config.platID >= 0 && sample.platID != m_owner->m_config.platID) ||
+			(m_owner->m_config.sensorID >= 0 && sample.sensorID != m_owner->m_config.sensorID))
+		{
+			const quint64 rejected = m_owner->m_statusIdentityRejected.fetch_add(1) + 1;
+			if (rejected == 1 || (rejected % 30) == 0)
+			{
+				qWarning().noquote() << QStringLiteral(
+					"[VideoStatus][IDENTITY_MISMATCH] configured=%1/%2 received=%3/%4 seen=%5 rejected=%6")
+					.arg(m_owner->m_config.platID).arg(m_owner->m_config.sensorID)
+					.arg(sample.platID).arg(sample.sensorID).arg(seen).arg(rejected);
+			}
+			return;
+		}
 		if (m_owner->m_config.platID < 0 && m_owner->m_config.sensorID < 0 &&
 			QString::fromLatin1(sample.channel) != m_owner->m_config.channel) return;
 		m_owner->processVideoStatus(sample.platID, sample.sensorID,
@@ -565,6 +577,7 @@ void DdsVideoReceiverWorker::processVideoStatus(int platID, int sensorID,
 	const QString& topic, const QString& codec,
 	const QString& pixelFormat, int width, int height, int fps, bool running, int currentRound)
 {
+	++m_statusAccepted;
 	{
 		std::lock_guard<std::mutex> lock(m_impl->statusMutex);
 		m_impl->pendingTopic = topic;
@@ -709,8 +722,13 @@ void DdsVideoReceiverWorker::processSample(const char* data, int size)
 		QString error;
 		if (!m_impl->h264Decoder->decode(payload, false, ptsMs, decoded, error))
 		{
-			if (error != QStringLiteral("waiting_for_decodable_idr"))
+			if (error == QStringLiteral("waiting_for_decodable_idr"))
 			{
+				++m_decodeWaits;
+			}
+			else
+			{
+				++m_decodeErrors;
 				++m_ddsErrors;
 				qCritical().noquote() << QStringLiteral("[DdsVideoReceiver][ERROR] decode sample=%1 reason=%2")
 					.arg(sampleIndex).arg(error);
@@ -910,6 +928,12 @@ QJsonObject DdsVideoReceiverWorker::telemetrySnapshot() const
     const bool fresh=m_impl->metricsArrivalNs>0&&now-m_impl->metricsArrivalNs<2000000000LL;
     QJsonObject s;s.insert("available",fresh);s.insert("videoFps",static_cast<int>(m_impl->decodedTimes.size()));
     s.insert("receivedSamples",QString::number(m_receivedSamples.load()));s.insert("decodedFrames",QString::number(m_decodedFrames.load()));
+	s.insert("statusSamples", QString::number(m_statusSamples.load()));
+	s.insert("statusAccepted", QString::number(m_statusAccepted.load()));
+	s.insert("statusIdentityRejected", QString::number(m_statusIdentityRejected.load()));
+	s.insert("decodeWaits", QString::number(m_decodeWaits.load()));
+	s.insert("decodeErrors", QString::number(m_decodeErrors.load()));
+	s.insert("ddsErrors", QString::number(m_ddsErrors.load()));
     s.insert("acceptedHz",m_impl->boardMetrics.acceptedHz);s.insert("executedHz",m_impl->boardMetrics.executedHz);
     s.insert("accepted",QString::number(m_impl->boardMetrics.accepted));s.insert("executed",QString::number(m_impl->boardMetrics.executed));
     s.insert("queueWaitMs",m_impl->boardMetrics.queueWaitMs);s.insert("generation",QString::number(m_impl->boardMetrics.generation));

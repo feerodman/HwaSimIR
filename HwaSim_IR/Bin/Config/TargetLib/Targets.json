@@ -32,6 +32,13 @@
 			"model_type":"controlled_ir_samples",
 			"protocol_target_type":"0x66",
 			"model_file_path":"p11/controlled_samples/p11_controlled_samples.bam"
+		},
+		{
+			"model_id": 5,
+			"model_name":"F22",
+			"model_type":"plane",
+			"protocol_target_type":"0x12",
+			"model_file_path":"models/f22/f22.obj"
 		}
 	]
 }

@@ -29,6 +29,15 @@
         }
       }
     },
+    "F22": {
+      "label": "F22",
+      "keypoints": {
+        "points": {
+          "head": { "localPos": [0.0, 9.0, 0.2], "visible": true, "surface": true, "snapToMeshSurface": true, "surfaceSearchMode": "nearest_mesh_vertex" },
+          "middle": { "localPos": [0.0, 0.0, 0.5], "visible": true, "surface": true, "snapToMeshSurface": true, "surfaceSearchMode": "nearest_mesh_vertex" }
+        }
+      }
+    },
     "AIM120D": {
       "label": "AIM120D",
       "keypoints": {

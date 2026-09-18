@@ -115,6 +115,20 @@ std::string TargetKeyText(const TargetPlatformData& targetPlat)
 	return key.str();
 }
 
+std::string CollisionCacheKey(const TargetPlatformData& targetPlat)
+{
+	std::ostringstream key;
+	key << TargetKeyText(targetPlat);
+	// INIT allocates model slots before protocol identities are known.  Keep
+	// those immutable geometry caches distinct by scene node; after the first
+	// full-key mapping ensureCollisionMeshForTarget rekeys the same cache entry.
+	if (targetPlat.targetState.targetPlatID < 0 || targetPlat.targetState.targetID < 0)
+	{
+		key << "_unbound_node_" << targetPlat.nodePath.node();
+	}
+	return key.str();
+}
+
 std::string CollisionNodeName()
 {
 	return "AnnotationCollision_Target";
@@ -224,6 +238,62 @@ void AnnotationProjector::beginFrame(
 		candidate.targetType = targetPlat.targetState.targetType;
 		candidate.collisionPath = collisionPath;
 		m_collisionCandidates.push_back(candidate);
+	}
+	m_perfStats.collisionBuildMs += NowMs() - beginMs;
+}
+
+void AnnotationProjector::prewarmCollisionMeshes(
+	const std::vector<TargetPlatformData>& allTargets,
+	const AnnotationConfig& config,
+	const NodePath& renderRoot)
+{
+	m_perfStats = PerfStats();
+	m_perfStats.targets = static_cast<int>(allTargets.size());
+	if (!config.occlusion().enabled || config.occlusion().mode != "mesh_collision" ||
+		renderRoot.is_empty())
+	{
+		return;
+	}
+
+	const double beginMs = NowMs();
+	if (!ensureCollisionRoot(renderRoot))
+	{
+		m_perfStats.collisionBuildMs += NowMs() - beginMs;
+		return;
+	}
+	for (size_t i = 0; i < allTargets.size(); ++i)
+	{
+		const TargetPlatformData& targetPlat = allTargets[i];
+		if (!targetPlat.isExist || targetPlat.nodePath.is_empty())
+		{
+			continue;
+		}
+		// INIT deliberately hides unbound model slots.  Mesh traversal treats a
+		// hidden root as excluded, so expose it only while building the immutable
+		// collision copy, before READY and before any frame can be published.
+		NodePath mutableTargetNode = targetPlat.nodePath;
+		const bool restoreHidden = mutableTargetNode.is_hidden();
+		if (restoreHidden)
+		{
+			mutableTargetNode.show();
+		}
+		NodePath collisionPath;
+		MeshCollisionStats stats;
+		const bool ready = ensureCollisionMeshForTarget(
+			targetPlat, config, renderRoot, collisionPath, stats);
+		if (restoreHidden)
+		{
+			mutableTargetNode.hide();
+		}
+		if (!ready)
+		{
+			continue;
+		}
+		if (!stats.built)
+		{
+			++m_perfStats.collisionReused;
+		}
+		setCollisionPathActive(collisionPath, config, false);
 	}
 	m_perfStats.collisionBuildMs += NowMs() - beginMs;
 }
@@ -1087,7 +1157,7 @@ bool AnnotationProjector::ensureCollisionMeshForTarget(
 		return false;
 	}
 
-	const std::string key = TargetKeyText(targetPlat);
+	const std::string key = CollisionCacheKey(targetPlat);
 	std::map<std::string, CollisionMeshCache>::iterator cached = m_collisionCache.find(key);
 	if (cached != m_collisionCache.end() && cached->second.sourceNode == targetPlat.nodePath.node() &&
 		!cached->second.collisionPath.is_empty())
@@ -1104,6 +1174,44 @@ bool AnnotationProjector::ensureCollisionMeshForTarget(
 			return stats.available;
 		}
 		return false;
+	}
+	// The same loaded scene node may have been prewarmed while its protocol
+	// identity was still unbound.  Reuse its geometry, then atomically rekey and
+	// retag it with the now-known full protocol key.  This is not an identity
+	// fallback: target selection has already completed before this method runs.
+	if (cached == m_collisionCache.end())
+	{
+		for (std::map<std::string, CollisionMeshCache>::iterator byNode = m_collisionCache.begin();
+			byNode != m_collisionCache.end(); ++byNode)
+		{
+			if (byNode->second.sourceNode != targetPlat.nodePath.node() ||
+				byNode->second.collisionPath.is_empty())
+			{
+				continue;
+			}
+			CollisionMeshCache rebound = byNode->second;
+			m_collisionCache.erase(byNode);
+			rebound.targetID = targetPlat.targetState.targetID;
+			rebound.targetPlatID = targetPlat.targetState.targetPlatID;
+			rebound.targetType = targetPlat.targetState.targetType;
+			outCollisionPath = rebound.collisionPath;
+			outCollisionPath.set_tag("AnnotationCollisionKey", TargetKeyText(targetPlat));
+			outCollisionPath.set_tag("AnnotationTargetID", std::to_string(rebound.targetID));
+			outCollisionPath.set_tag("AnnotationTargetPlatID", std::to_string(rebound.targetPlatID));
+			outCollisionPath.set_tag("AnnotationTargetType", std::to_string(rebound.targetType));
+			outCollisionPath.set_mat(targetPlat.nodePath.get_mat(renderRoot));
+			PandaNode* node = outCollisionPath.node();
+			if (node == nullptr || !node->is_of_type(CollisionNode::get_class_type()))
+			{
+				return false;
+			}
+			CollisionNode* collisionNode = DCAST(CollisionNode, node);
+			stats.available = collisionNode->get_num_solids() > 0;
+			stats.solids = static_cast<int>(collisionNode->get_num_solids());
+			stats.triangles = rebound.triangles;
+			m_collisionCache[key] = rebound;
+			return stats.available;
+		}
 	}
 	if (cached != m_collisionCache.end())
 	{

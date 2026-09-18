@@ -31,6 +31,24 @@ bool FileExistsLocal(const std::string& path)
 	return file.good();
 }
 
+std::string EnvironmentValueLocal(const char* name)
+{
+#if defined(_WIN32)
+	char* value = nullptr;
+	size_t length = 0;
+	if (_dupenv_s(&value, &length, name) != 0 || value == nullptr)
+	{
+		return std::string();
+	}
+	const std::string result(value);
+	std::free(value);
+	return result;
+#else
+	const char* value = std::getenv(name);
+	return value != nullptr ? std::string(value) : std::string();
+#endif
+}
+
 std::string ReadTextFileLocal(const std::string& path)
 {
 	std::ifstream file(path.c_str(), std::ios::binary);
@@ -289,6 +307,18 @@ IRSceneMaterialBinding IRSceneMaterialMapper::bindPlatformNode(NodePath& node, c
 	binding.defaultMaterialName = res.defaultMaterialName.empty() ? "BM_METAL-ALUMINIUM" : res.defaultMaterialName;
 	binding.materialIdTexturePath = res.materialIdTexturePath;
 	binding.materialMapPath = res.materialMapPath;
+	const bool p12ControlledGlassRig = binding.displayName == "P12-CONTROLLED-GLASS-RIG";
+	const std::string p12TransmissionMode = EnvironmentValueLocal("P12ControlledGlassTransmission");
+	const bool p12TransmissionBlocked = p12ControlledGlassRig && p12TransmissionMode == "Blocked";
+	if (p12ControlledGlassRig)
+	{
+		std::cout << "[P12 ControlledGlassComposite]"
+			<< " transmission=" << (p12TransmissionBlocked ? "Blocked" : "On")
+			<< " blockedMode=" << (p12TransmissionBlocked ? "declared_nonphysical_ablation" : "none")
+			<< " model=single_straight_through"
+			<< " calibration=NOT_VERIFIED_CALIBRATION"
+			<< std::endl;
+	}
 
 	if (node.is_empty())
 	{
@@ -335,8 +365,8 @@ IRSceneMaterialBinding IRSceneMaterialMapper::bindPlatformNode(NodePath& node, c
 			// x/w remain compatibility-opaque.  P11 material transmission is only
 			// calibrated and enabled for the formal SWIR/MWIR bands.
 			materialBandTransmissivity.push_back(LVecBase4f(0.0f,
-				static_cast<float>(entry.bandReflectance.mwirTransmissivity),
-				static_cast<float>(entry.bandReflectance.swirTransmissivity), 0.0f));
+				static_cast<float>(p12TransmissionBlocked ? 0.0 : entry.bandReflectance.mwirTransmissivity),
+				static_cast<float>(p12TransmissionBlocked ? 0.0 : entry.bandReflectance.swirTransmissivity), 0.0f));
 			materialTemperatureK.push_back(LVecBase4f(
 				static_cast<float>(entry.nominalTemperatureK),
 				static_cast<float>(entry.engineOnTemperatureK), 0.0f, 0.0f));
@@ -378,8 +408,9 @@ IRSceneMaterialBinding IRSceneMaterialMapper::bindPlatformNode(NodePath& node, c
 	// opaque instead of silently producing a dark, incomplete contribution.
 	for (const auto& entry : binding.entries)
 	{
-		const bool transmissive = entry.bandReflectance.swirTransmissivity > 1.0e-8 ||
-			entry.bandReflectance.mwirTransmissivity > 1.0e-8;
+		const bool transmissive = !p12TransmissionBlocked &&
+			(entry.bandReflectance.swirTransmissivity > 1.0e-8 ||
+			 entry.bandReflectance.mwirTransmissivity > 1.0e-8);
 		if (!transmissive) continue;
 		++binding.transmissiveMaterialCount;
 		const std::string matchPattern = "**/=p11_material_id=" + std::to_string(entry.materialId);

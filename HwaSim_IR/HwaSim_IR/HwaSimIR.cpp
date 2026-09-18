@@ -51,6 +51,7 @@
 #include <sstream>
 #include <thread>
 #include "IR/IRLinearReadback.h"
+#include "IR/P12DiagnosticWriter.h"
 
 #if defined(_WIN32)
 #include <process.h>
@@ -260,7 +261,7 @@ GraphicsOutput* MakeStage6OffscreenOutput(
 }
 
 #if !defined(_WIN32)
-bool ApplyStage6GlesHalfTextureNegotiationWorkaround(GraphicsOutput* output)
+bool ApplyStage6GlesHalfTextureNegotiationWorkaround(GraphicsOutput* output, bool requireAlpha)
 {
 	if (output == nullptr)
 	{
@@ -283,13 +284,15 @@ bool ApplyStage6GlesHalfTextureNegotiationWorkaround(GraphicsOutput* output)
 	textureNegotiationProperties.set_float_color(false);
 	const bool postFloatProperty = output->get_fb_properties().get_float_color();
 	const bool valid = preFloatProperty && !postFloatProperty &&
-		redBits >= 16 && greenBits >= 16 && blueBits >= 16 && alphaBits >= 16;
+		redBits >= 16 && greenBits >= 16 && blueBits >= 16 &&
+		(!requireAlpha || alphaBits >= 16);
 	std::cout << "[Stage6 RawFramebufferCompat]"
 		<< " phase=post_create_pre_attach"
 		<< " preFloatProperty=" << (preFloatProperty ? 1 : 0)
 		<< " postFloatProperty=" << (postFloatProperty ? 1 : 0)
 		<< " actualRgbBits=(" << redBits << "," << greenBits << "," << blueBits << ")"
 		<< " actualAlphaBits=" << alphaBits
+		<< " requiredAlphaBits=" << (requireAlpha ? 16 : 0)
 		<< " eglOutputRecreated=0"
 		<< " valid=" << (valid ? 1 : 0)
 		<< " reason=Panda_rebuild_bitplanes_component_override_avoided"
@@ -1695,7 +1698,7 @@ void HwaSimIR::run() {
 
 		PendingDisplayFrame pendingFrame;
 		bool hasDisplayFrame = false;
-		if (m_bSyncRenderMode.load() && m_isSimRunning.load()) {
+		if (m_bSyncRenderMode.load()) {
 			std::unique_lock<std::mutex> lock(m_mtx);
 			m_cvNewData.wait_for(lock, std::chrono::milliseconds(100), [this] {
 				return !m_pendingDisplayFrames.empty()
@@ -1707,6 +1710,17 @@ void HwaSimIR::run() {
 		}
 
 		ProcessPendingNetworkCommands();
+		// Packet-driven sync has no presentation frame before START or after STOP.
+		// Once the post-INIT discard-only prewarm is complete, do not keep issuing
+		// idle RTM_copy_ram frames: a lazy GPU readback here can hold the render
+		// thread while START and the first realtime samples arrive on independent
+		// DDS topics, manufacturing a cold FIFO backlog before business work begins.
+		if (m_bSyncRenderMode.load() && !m_isSimRunning.load())
+		{
+			m_syncFrameActive.store(false);
+			if (m_requestExit.load()) break;
+			continue;
+		}
 
 		int remainingInputQueueDepth = 0;
 		{
@@ -1739,6 +1753,15 @@ void HwaSimIR::run() {
 				remainingInputQueueDepth = static_cast<int>(m_pendingDisplayFrames.size());
 			}
 		}
+		// A START command and the first Realtime sample are independent DDS
+		// topics.  In synchronous mode START can be consumed one loop before the
+		// sample arrives.  Never issue an unowned RTM_copy_ram frame in that gap;
+		// wait for the source sample that owns the next render/capture pass.
+		if (m_bSyncRenderMode.load() && !hasDisplayFrame)
+		{
+			m_syncFrameActive.store(false);
+			continue;
+		}
 		if (hasDisplayFrame) {
             static HwaInputAuditV1::Ledger executionAudit("execute");
             if(pendingFrame.ddsIngress)executionAudit.record(pendingFrame.data,
@@ -1769,14 +1792,16 @@ void HwaSimIR::run() {
 		m_syncFrameActive.store(businessFrameActive);
 #ifndef _WIN32
 		// On RK, defer the RTM_copy_ram attachment itself (not merely the output's
-		// active flag) until the first owned OrderedQueue frame.  Panda prepares a
-		// newly attached RAM target on the first graphics-engine tick, which is too
-		// early while the sensor texture is still uninitialized.  Latest, sync, and
-		// Windows/TCP retain their existing attachment and activation contracts.
-		if (!m_bSyncRenderMode.load() &&
-			m_asyncInputPolicy == "OrderedQueue" &&
-			hasDisplayFrame &&
-			m_stage6FinalSensorBuffer != nullptr)
+		// active flag) until the first owned OrderedQueue frame.  The pipeline is
+		// created before INIT, so an ordinary simMode=1 INIT can switch that pending
+		// pipeline to synchronous mode.  A pending attachment belongs to the output,
+		// not to the current scheduling mode: release it on the first real business
+		// frame even when INIT has changed OrderedQueue async to sync.  Latest and
+		// already-attached sync/TCP paths keep their existing contracts.
+		if (hasDisplayFrame &&
+			m_stage6FinalSensorBuffer != nullptr &&
+			(m_stage6FinalCopyRamPending ||
+			 (!m_bSyncRenderMode.load() && m_asyncInputPolicy == "OrderedQueue")))
 		{
 			if (m_stage6FinalCopyRamPending)
 			{
@@ -1785,7 +1810,8 @@ void HwaSimIR::run() {
 				m_stage6FinalCopyRamPending = false;
 				std::cout << "[Stage6 FinalReadbackGate] phase=first_business_frame"
 					<< " attached=1 pending=0 sourceSeq=" << m_currentFrameTelemetry.sourceSeq
-					<< " policy=OrderedQueue platform=linux"
+					<< " policy=" << (m_bSyncRenderMode.load() ? "Sync" : m_asyncInputPolicy)
+					<< " platform=linux"
 					<< std::endl;
 			}
 			if (!m_stage6FinalSensorBuffer->is_active())
@@ -3337,7 +3363,8 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 		if (m_stage6RawSceneBuffer != nullptr)
 		{
 #if !defined(_WIN32)
-			if (!ApplyStage6GlesHalfTextureNegotiationWorkaround(m_stage6RawSceneBuffer))
+			if (!ApplyStage6GlesHalfTextureNegotiationWorkaround(
+				m_stage6RawSceneBuffer, formalSiDomainRequested))
 			{
 				std::cerr << "[Stage6 RawFramebufferCompat][ERROR]"
 					<< " failure=post_creation_texture_negotiation_setup"
@@ -5399,16 +5426,16 @@ void HwaSimIR::UpdateStage7VolumetricClouds(const IRStage7WeatherState& weatherS
 {
 	(void)currentTime;
 	if(!m_p6.enabled&&m_cloudFrameReady&&std::getenv("WorldCloudOrdinaryPlate")){
+		const float plateRange=std::getenv("P6DPlateRangeM")?float(std::max(10.0,std::min(20000.0,std::atof(std::getenv("P6DPlateRangeM"))))):1000.f;
 		NodePath plate=m_renderRoot.find("P6B_OrdinaryCloudOccluder");
 		if(plate.is_empty()){
 			CardMaker cm("P6B_OrdinaryCloudOccluder");cm.set_frame(-40,40,-30,30);
 			plate=m_renderRoot.attach_new_node(cm.generate());
 			plate.set_light_off();plate.set_shader_off();plate.set_color(.12f,.12f,.12f,1.f);
 			plate.set_depth_test(true);plate.set_depth_write(true);plate.set_two_sided(true);
-			std::cout<<"[WorldCloudOrdinaryPlate] testOnly=1 cameraOverride=0 cloudDescriptorOverride=0 widthM=80 heightM=60 rangeM=1000 nativeDepthWrite=1"<<std::endl;
+			std::cout<<"[WorldCloudOrdinaryPlate] testOnly=1 cameraOverride=0 cloudDescriptorOverride=0 widthM=80 heightM=60 rangeM="<<plateRange<<" nativeDepthWrite=1"<<std::endl;
 		}
 		plate.set_mat(m_cameraNode.get_mat(m_renderRoot));
-        const float plateRange=std::getenv("P6DPlateRangeM")?float(std::max(10.0,std::min(20000.0,std::atof(std::getenv("P6DPlateRangeM"))))):1000.f;
         plate.set_scale(plateRange/1000.f);
 		plate.set_pos(m_renderRoot,m_cameraNode.get_pos(m_renderRoot)+m_cameraNode.get_quat(m_renderRoot).get_forward()*plateRange);
 	}
@@ -5708,6 +5735,68 @@ void HwaSimIR::UpdateStage7VolumetricClouds(const IRStage7WeatherState& weatherS
 			<< " averageRaySteps=" << m_stage7VolumeAverageRaySteps
 			<< " placement=world_grid parent=m_renderRoot"
 			<< std::endl;
+		// Test-only evidence: describe the actual camera ray against each cloud
+		// selected for rendering.  This does not move the camera, clouds, or
+		// sample; it closes the ambiguity between an active cloud and one that is
+		// genuinely in front of / behind the controlled sample.
+		if (!m_p6.enabled && std::getenv("WorldCloudAudit") && !m_cameraNode.is_empty())
+		{
+			LVector3f cameraForward = m_cameraNode.get_quat(m_renderRoot).get_forward();
+			if (cameraForward.length_squared() > 0.0f) cameraForward.normalize();
+			const LPoint3f publicCamera = CloudRenderToWorld(cameraWorld);
+			const LPoint3f publicAhead = CloudRenderToWorld(cameraWorld + cameraForward);
+			LVector3f publicForward = publicAhead - publicCamera;
+			if (publicForward.length_squared() > 0.0f) publicForward.normalize();
+			const double sampleRange = std::getenv("WorldCloudOrdinaryPlate")
+				? (std::getenv("P6DPlateRangeM") ? std::max(10.0, std::min(20000.0, std::atof(std::getenv("P6DPlateRangeM")))) : 1000.0)
+				: -1.0;
+			const LPoint3f publicSample = sampleRange > 0.0
+				? CloudRenderToWorld(cameraWorld + cameraForward * static_cast<float>(sampleRange))
+				: LPoint3f(0.0f, 0.0f, 0.0f);
+			const std::string hiddenId = std::getenv("WorldCloudAuditHideId") ? std::getenv("WorldCloudAuditHideId") : "";
+			for (size_t order = 0; order < visibleOrder.size(); ++order)
+			{
+				const Stage7CloudVolumeRuntime& volume = m_stage7CloudVolumePool[visibleOrder[order]];
+				const LPoint3f localOrigin = volume.node.get_relative_point(m_renderRoot, cameraWorld);
+				const LVector3f localDirection = volume.node.get_relative_vector(m_renderRoot, cameraForward);
+				const double a = localDirection.dot(localDirection);
+				const double b = 2.0 * localOrigin.dot(localDirection);
+				const double c = localOrigin.dot(localOrigin) - 1.0;
+				const double discriminant = b * b - 4.0 * a * c;
+				bool intersects = a > 1.0e-12 && discriminant >= 0.0;
+				double enterM = -1.0, exitM = -1.0;
+				if (intersects)
+				{
+					const double root = std::sqrt(std::max(0.0, discriminant));
+					enterM = (-b - root) / (2.0 * a);
+					exitM = (-b + root) / (2.0 * a);
+					if (exitM < 0.0) intersects = false;
+					else enterM = std::max(0.0, enterM);
+				}
+				const char* relation = "no_controlled_sample";
+				if (sampleRange > 0.0)
+				{
+					if (!intersects) relation = "off_central_ray";
+					else if (enterM >= sampleRange) relation = "cloud_behind_sample";
+					else if (exitM <= sampleRange) relation = "cloud_in_front_of_sample";
+					else relation = "sample_inside_cloud";
+				}
+				const std::string cloudId = IRWorldCloudStreaming::cloudIdText(volume.descriptor.cloudId);
+				std::ostringstream audit;
+				audit << std::setprecision(17)
+					<< "[CloudLineOfSightAudit] {\"cloudId\":\"" << cloudId
+					<< "\",\"selectedForRender\":true,\"hiddenByAudit\":" << ((!hiddenId.empty() && hiddenId == cloudId) ? "true" : "false")
+					<< ",\"cameraPosition\":[" << publicCamera[0] << "," << publicCamera[1] << "," << publicCamera[2]
+					<< "],\"cameraForward\":[" << publicForward[0] << "," << publicForward[1] << "," << publicForward[2]
+					<< "],\"cloudPosition\":[" << volume.descriptor.worldX << "," << volume.descriptor.worldY << "," << volume.descriptor.worldZ
+					<< "],\"cloudRadius\":[" << volume.descriptor.radiusX << "," << volume.descriptor.radiusY << "," << volume.descriptor.radiusZ
+					<< "],\"centralRayIntersects\":" << (intersects ? "true" : "false")
+					<< ",\"rayEnterM\":" << enterM << ",\"rayExitM\":" << exitM
+					<< ",\"sampleRangeM\":" << sampleRange << ",\"samplePosition\":[" << publicSample[0] << "," << publicSample[1] << "," << publicSample[2]
+					<< "],\"relation\":\"" << relation << "\",\"targetKey\":\"" << targetKey << "\"}";
+				std::cout << audit.str() << std::endl;
+			}
+		}
 	}
 }
 
@@ -7523,6 +7612,47 @@ void HwaSimIR::InitPlatformModels()
 		"P11-CONTROLLED-SAMPLES",
 		"BM_PAINT"
 	};
+
+	// P12 C3 uses an additive, explicitly selected two-layer engineering fixture.
+	// Ordinary 0x66 runs keep the P11 rack above; no original model is replaced.
+	// The diagnostic requires complete values and fails loudly rather than falling
+	// back to an unknown background or transmission state.
+	const char* p12GlassRig = std::getenv("P12ControlledGlassRig");
+	if (p12GlassRig != nullptr && std::string(p12GlassRig) == "1")
+	{
+		const std::string background = std::getenv("P12ControlledGlassBackground")
+			? std::getenv("P12ControlledGlassBackground") : "";
+		const std::string transmission = std::getenv("P12ControlledGlassTransmission")
+			? std::getenv("P12ControlledGlassTransmission") : "";
+		if (background != "Bright" && background != "Dark")
+		{
+			throw std::runtime_error("P12ControlledGlassBackground must be Bright or Dark");
+		}
+		if (transmission != "On" && transmission != "Blocked")
+		{
+			throw std::runtime_error("P12ControlledGlassTransmission must be On or Blocked");
+		}
+		const std::string mapPath = background == "Bright"
+			? "Config/TargetLib/p12/controlled_glass/p12_controlled_glass_bright.xml"
+			: "Config/TargetLib/p12/controlled_glass/p12_controlled_glass_dark.xml";
+		m_platformResMap[Resv2] = {
+			"Config/TargetLib/p12/controlled_glass/p12_controlled_glass.bam",
+			"Config/TargetLib/p12/controlled_glass/p12_controlled_glass_visible.ppm",
+			"Config/TargetLib/p12/controlled_glass/p12_controlled_glass_material_id.pgm",
+			mapPath,
+			"Config/TargetLib/p12/controlled_glass",
+			"P12-CONTROLLED-GLASS-RIG",
+			"BM_GLASS"
+		};
+		std::cout << "[P12 ControlledGlassFixture]"
+			<< " targetType=0x66 selection=explicit_diagnostic"
+			<< " background=" << background
+			<< " transmission=" << transmission
+			<< " geometry=glass_front_plus_known_background"
+			<< " composite=single_straight_through"
+			<< " calibration=NOT_VERIFIED_CALIBRATION"
+			<< std::endl;
+	}
 
 	std::cout << "平台模型路径初始化完成，共加载" << m_platformResMap.size() << "种平台资源" << std::endl;
 
@@ -9966,7 +10096,7 @@ void HwaSimIR::handleDdsInitCmd(const BYHWICD::InitP2cObjectTrackingCmd& cmd)
 
 void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCmd& cmd,
 	const std::string& ingressTransport) {
-	std::lock_guard<std::mutex> lock(m_mtx);
+	std::unique_lock<std::mutex> lock(m_mtx);
 
 	std::cout << "收到成像初始化指令：" << std::endl;
 	std::cout << "  军别：" << cmd.JB << std::endl;
@@ -10103,11 +10233,100 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 
 	//处理成像初始化数据，生成平台
 	ProcessRealSimSceneInitData();
-
 	// 阶段3：初始化后立即合成一次环境状态，保证 UDP 环境参数优先级生效。
 	IRRuntimeEnvironment initEnvironment = BuildRuntimeEnvironment();
 	m_irRadianceModel.setEnvironment(initEnvironment);
 	LogActiveIREnvironment(initEnvironment, "init-command", true);
+
+#if defined(__linux__)
+	// The RK GLES driver performs lazy shader/program setup and the first
+	// RTM_copy_ram attachment on its first post-INIT render.  If that work is
+	// deferred until sourceSeq=1, DDS continues accepting 60 Hz input during a
+	// roughly 220-260 ms GPU stall and the ordered FIFO records a real cold-start
+	// latency burst.  Render exactly one discard-only frame before INIT ACK, when
+	// no realtime source sample can yet belong to the round.  This moves no input,
+	// publishes no video and does not change Latest/OrderedQueue semantics.
+	if (m_pFramework != nullptr && m_stage6FinalPipelineReady &&
+		m_stage6FinalSensorBuffer != nullptr && m_renderTex != nullptr)
+	{
+		bool attachedCopyRam = false;
+		if (m_stage6FinalCopyRamPending && m_headlessCopyRamAttached)
+		{
+			m_stage6FinalSensorBuffer->add_render_texture(
+				m_renderTex, GraphicsOutput::RTM_copy_ram);
+			m_stage6FinalCopyRamPending = false;
+			attachedCopyRam = true;
+		}
+		if (!m_stage6FinalSensorBuffer->is_active())
+		{
+			m_stage6FinalSensorBuffer->set_active(true);
+		}
+		m_syncFrameActive.store(false);
+		const std::int64_t prewarmBeginNs = IRPerfStats::steadyTimeNs();
+		lock.unlock();
+		const bool rendered = m_pFramework->do_frame(Thread::get_current_thread());
+		lock.lock();
+		const double prewarmMs =
+			(IRPerfStats::steadyTimeNs() - prewarmBeginNs) / 1.0e6;
+		std::cout << "[PostInitPrewarm]"
+			<< " rendered=" << (rendered ? 1 : 0)
+			<< " discardOnly=1 publishedVideo=0 acceptedRealtime=0"
+			<< " attachedCopyRam=" << (attachedCopyRam ? 1 : 0)
+			<< " ramImageReady=" << (m_renderTex->has_ram_image() ? 1 : 0)
+			<< " elapsedMs=" << prewarmMs
+			<< " policy=" << (m_bSyncRenderMode.load() ? "Sync" : m_asyncInputPolicy)
+			<< std::endl;
+		if (!rendered)
+		{
+			m_sensorProfileRequestValid = false;
+			std::cerr << "[PostInitPrewarm][ERROR] rendered=0 action=reject_init"
+				<< std::endl;
+			return;
+		}
+	}
+#endif
+	// Panda may finalize model geometry during the first graphics-engine tick.
+	// Build immutable annotation collision meshes after that discard-only tick,
+	// still before INIT ACK/READY and before any realtime source is accepted.
+	m_annotationManager.prewarmCollisionCache(m_targetPlatformList, m_renderRoot);
+#if defined(__linux__)
+	// Collision prewarm attaches immutable collision nodes after the first GLES
+	// tick.  Let Panda process that final scene-graph mutation now; otherwise the
+	// first owned source frame pays the same one-time graphics preparation cost.
+	if (m_pFramework != nullptr && m_stage6FinalPipelineReady)
+	{
+		// The first tick processes the collision-node mutation.  The second tick
+		// retires the resulting graphics work so a SWIR product does not inherit
+		// that one-time cost and queue the following realtime samples.  Both are
+		// explicitly outside the input-owned product stream.
+		for (int graphPrewarmPass = 1; graphPrewarmPass <= 2; ++graphPrewarmPass)
+		{
+			m_syncFrameActive.store(false);
+			const std::int64_t graphPrewarmBeginNs = IRPerfStats::steadyTimeNs();
+			lock.unlock();
+			const bool graphPrewarmRendered =
+				m_pFramework->do_frame(Thread::get_current_thread());
+			lock.lock();
+			const double graphPrewarmMs =
+				(IRPerfStats::steadyTimeNs() - graphPrewarmBeginNs) / 1.0e6;
+			std::cout << "[PostInitSceneGraphPrewarm]"
+				<< " pass=" << graphPrewarmPass
+				<< " rendered=" << (graphPrewarmRendered ? 1 : 0)
+				<< " discardOnly=1 publishedVideo=0 acceptedRealtime=0"
+				<< " elapsedMs=" << graphPrewarmMs
+				<< " afterAnnotationCollisionCache=1 beforeReady=1"
+				<< std::endl;
+			if (!graphPrewarmRendered)
+			{
+				m_sensorProfileRequestValid = false;
+				std::cerr << "[PostInitSceneGraphPrewarm][ERROR]"
+					<< " pass=" << graphPrewarmPass
+					<< " rendered=0 action=reject_init" << std::endl;
+				return;
+			}
+		}
+	}
+#endif
 
 
 
@@ -13430,7 +13649,14 @@ void HwaSimIR::InitInfraredShader() {
 			if (u_p5_material_view == 2) diagnostic = normalize(v_stage5_normal)*.5+.5;
 			if (u_p5_material_view == 3) diagnostic = texColor.rgb*(.2+.8*max(0.0,dot(normalize(v_stage5_normal),normalize(vec3(.3,-.6,.7)))));
 			if (u_p5_material_view == 5) diagnostic = vec3(surface_emissivity);
-			gl_FragColor = vec4(diagnostic,1.0); return;
+			// P5 is an explicit synthetic geometry/material diagnostic.  The raw
+			// scene buffer is SI radiance, so encode the normalized diagnostic in
+			// the public scene-wide display window; otherwise 0..1 is nearly black
+			// after the formal SWIR (0..40) / MWIR (0..64) mapping.
+			float diagnostic_window_max = (u_ir_band_index == 1) ? 350.0
+				: ((u_ir_band_index == 2) ? 40.0
+				: ((u_ir_band_index == 3) ? 64.0 : 1.0));
+			gl_FragColor = vec4(clamp(diagnostic,0.0,1.0)*diagnostic_window_max,1.0); return;
 		}
 		// 计算基础热辐射与范围热源
         float current_temp = u_base_temperature;

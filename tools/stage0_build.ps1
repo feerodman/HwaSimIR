@@ -11,6 +11,14 @@ $ErrorActionPreference = "Stop"
 $root = Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")
 $rootPath = $root.Path
 
+if ([string]::IsNullOrWhiteSpace($FFmpegRoot)) {
+    $bundledFFmpeg = Join-Path $rootPath ".deps\ffmpeg-n8.1-win64-gpl-shared\ffmpeg-n8.1-latest-win64-gpl-shared-8.1"
+    if ((Test-Path -LiteralPath (Join-Path $bundledFFmpeg "include\libavcodec\avcodec.h")) -and
+        (Test-Path -LiteralPath (Join-Path $bundledFFmpeg "lib\avcodec.lib"))) {
+        $FFmpegRoot = $bundledFFmpeg
+    }
+}
+
 $msbuild = "C:\Program Files (x86)\MSBuild\14.0\Bin\MSBuild.exe"
 $qtRoot = "D:\Qt\Qt5.12.12"
 $qmake = Join-Path $qtRoot "5.12.12\mingw73_64\bin\qmake.exe"
@@ -23,7 +31,11 @@ $vsSolution = Join-Path $rootPath "HwaSim_IR\HwaSim_IR.sln"
 $qtProject = Join-Path $rootPath "DataDrivenTestQT\DataDrivenTestQT.pro"
 $qtBuildDir = Join-Path $rootPath "build-DataDrivenTestQT-codex-mingw73_64-$Configuration"
 $qtExe = Join-Path $qtBuildDir "$($Configuration.ToLower())\DataDrivenTestQT.exe"
-$qtDataFile = Join-Path $rootPath "DataDrivenTestQT\1.txt"
+$qtDataFiles = @(
+    (Join-Path $rootPath "DataDrivenTestQT\1.txt"),
+    (Join-Path $rootPath "DataDrivenTestQT\ordinary_demo_1km.txt"),
+    (Join-Path $rootPath "DataDrivenTestQT\ordinary_demo_1km.txt.json")
+)
 $vsExe = Join-Path $rootPath "HwaSim_IR\Bin\HwaSim_IR.exe"
 
 function Assert-Path {
@@ -51,7 +63,7 @@ Write-Host "Configuration: $Configuration"
 Write-Host "Platform: $Platform"
 Write-Host "MSBuild: $msbuild"
 Write-Host "qmake: $qmake"
-Write-Host "FFMPEG_ROOT: $(if ([string]::IsNullOrWhiteSpace($FFmpegRoot)) { '<not configured; JPEG fallback build>' } else { $FFmpegRoot })"
+Write-Host "FFMPEG_ROOT: $(if ([string]::IsNullOrWhiteSpace($FFmpegRoot)) { '<not configured; Release x64 build will fail closed>' } else { $FFmpegRoot })"
 Write-Host ""
 
 if (-not $SkipVs) {
@@ -103,8 +115,10 @@ if (-not $SkipQt) {
         throw "windeployqt failed with exit code $LASTEXITCODE"
     }
 
-    if (Test-Path -LiteralPath $qtDataFile) {
-        Copy-Item -LiteralPath $qtDataFile -Destination (Join-Path (Split-Path -Parent $qtExe) "1.txt") -Force
+    foreach ($qtDataFile in $qtDataFiles) {
+        if (Test-Path -LiteralPath $qtDataFile) {
+            Copy-Item -LiteralPath $qtDataFile -Destination (Join-Path (Split-Path -Parent $qtExe) (Split-Path -Leaf $qtDataFile)) -Force
+        }
     }
 }
 

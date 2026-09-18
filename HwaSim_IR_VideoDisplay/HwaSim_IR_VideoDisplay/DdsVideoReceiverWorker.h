@@ -104,6 +104,11 @@ private:
 	std::atomic<quint64> m_decodedFrames{ 0 };
 	std::atomic<quint64> m_receivedBytes{ 0 };
 	std::atomic<quint64> m_ddsErrors{ 0 };
+	std::atomic<quint64> m_statusSamples{ 0 };
+	std::atomic<quint64> m_statusAccepted{ 0 };
+	std::atomic<quint64> m_statusIdentityRejected{ 0 };
+	std::atomic<quint64> m_decodeWaits{ 0 };
+	std::atomic<quint64> m_decodeErrors{ 0 };
 	bool m_dumpAttempted = false;
     std::mutex m_guiMutex;std::condition_variable m_guiSpace;unsigned m_guiPending=0;
 };

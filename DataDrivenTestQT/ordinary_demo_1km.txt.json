@@ -1,0 +1,20 @@
+{
+  "schema": "hwasimir_p12_ordinary_demo_input_v1",
+  "source": "D:\\HwaSimIR\\DataDrivenTestQT\\1.txt",
+  "source_sha256": "f2c3db00d71012cd28336b5077e03ff8d4ed1eda2698fd900486ae9cdfdd7901",
+  "output": "D:\\HwaSimIR\\DataDrivenTestQT\\ordinary_demo_1km.txt",
+  "output_sha256": "1760265f1d2ffbdf5bc7d0d14dda213588871ce41afba1e995f2a8c18007722a",
+  "rows": 4318,
+  "geometry": {
+    "observer_lat_deg": 39.994604,
+    "observer_lon_deg": 100.0,
+    "observer_alt_m": 1000.0,
+    "target_lat_deg": 40.0,
+    "target_lon_deg": 100.0,
+    "target_alt_m": 1000.0,
+    "declared_los_m": 600.0
+  },
+  "purpose": "ordinary startup and display regression; controlled geometry only",
+  "physical_claim": "none; original timing, attitude and speed columns retained for UI regression",
+  "original_modified": false
+}
