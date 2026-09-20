@@ -454,6 +454,11 @@ private:
 	int m_stage5ModtranLogEveryFrames = 120;
 	bool m_stage5ModtranRadianceReady = false;
 	std::string m_stage5ModtranRadiancePath;
+	bool m_p13AtmosphereIdentityReady = false;
+	std::string m_p13CoverageManifestPath;
+	std::string m_p13ExpectedFormalLutSha256;
+	std::string m_p13ExpectedCoverageManifestSha256;
+	std::string m_p13ExpectedOriginalInputSha256;
 	bool m_m1CompareOnly = false;
 	bool m_m1RuntimeEnabled = false;
 	bool m_m1NirRuntimeEnabled = false;
@@ -715,6 +720,10 @@ private:
 	int m_stage7VolumeActiveCount = 0;
 	int m_stage7VolumeVisibleCount = 0;
 	double m_stage7VolumeAverageRaySteps = 0.0;
+	// INIT-only gate: allow the real configured weather volumes to be selected
+	// for discard-only GPU prewarm before the first realtime frame establishes
+	// the local cloud coordinate frame.  This never marks that frame as ready.
+	bool m_stage7DiscardOnlyWeatherPrewarm = false;
     std::uint64_t m_cloudRenderCallCount=0;
     double m_cloudRenderCallSumMs=0.0,m_cloudRenderCallMaxMs=0.0;
 

@@ -33,6 +33,7 @@
 #include <QTableWidgetItem>
 #include <QString>
 #include <QJsonObject>
+#include <QDate>
 #include "CommonData.h"
 #include <iostream>
 #include <cmath>
@@ -81,13 +82,14 @@ public:
 	void configureIlluminatorForTest(double angleMrad, double spotRad, int forceEnabled,
 		double onStartSec, double onEndSec);
 	void configureTargetThermalFeaturesForTest(int engineState, int strikeFlag, int strikePart) {
-		m_testEngineState = engineState != 0;
-		m_testStrikeFlag = strikeFlag != 0;
+		m_engineStateOverride = engineState;
+		m_strikeFlagOverride = strikeFlag;
 		m_testStrikePart = strikePart;
 	}
 
 signals:
 	void initAckReceived();
+	void roundStopSent();
 
 	private slots:
 	void onResetButtonClicked();
@@ -133,6 +135,10 @@ private:
 	quint16 m_udpRemotePort = 8888;
 	QString m_networkConfigPath;
 	QString m_inputDataPath;
+	QString m_formalAtmosphereLutPath;
+	QString m_atmosphereCoverageManifestPath;
+	QString m_expectedFormalAtmosphereLutSha256;
+	QString m_expectedAtmosphereCoverageManifestSha256;
 	QString m_channel = QStringLiteral("unknown");
 	QString m_controlTransport = QStringLiteral("dds");
 	int m_protocolPlatID = 1001;
@@ -213,14 +219,16 @@ private:
 	double m_phase4cSpeedMps = 0.0;
 	double m_phase4cSpeedKmh = 0.0;
 	double m_testUtcHour = -1.0;
+	QDate m_simulationUtcDate;
+	QString m_simulationDateSource = QStringLiteral("wall_clock_utc");
 	QString m_simulationTimeSource = QStringLiteral("wall_clock_utc");
 	double m_protocolIlluminatorAngleMrad = 2.0;
 	double m_protocolIlluminatorSpotRad = 1.0;
 	int m_protocolIlluminatorForceEnabled = 0;
 	double m_protocolIlluminatorOnStartSec = -1.0;
 	double m_protocolIlluminatorOnEndSec = -1.0;
-	bool m_testEngineState = true;
-	bool m_testStrikeFlag = false;
+	int m_engineStateOverride = -1;
+	int m_strikeFlagOverride = -1;
 	int m_testStrikePart = 2;
 	bool m_freezeGeometryForTest = false;
 	double m_pauseStartSec = -1.0;

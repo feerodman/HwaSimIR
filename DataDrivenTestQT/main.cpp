@@ -38,8 +38,8 @@ int main(int argc, char *argv[])
 	bool initOnly = false;
 	double pauseStartSec = -1.0;
 	double pauseDurationSec = 0.0;
-	int engineState = 1;
-	int strikeFlag = 0;
+	int engineState = -1;
+	int strikeFlag = -1;
 	int strikePart = 2;
 	QString networkConfigPath;
 	QString channel;
@@ -308,7 +308,7 @@ int main(int argc, char *argv[])
 	w.configureIlluminatorForTest(illuminatorAngleMrad, illuminatorSpotRad,
 		illuminatorEnabled, illuminatorOnStartSec, illuminatorOnEndSec);
 	w.configureTargetThermalFeaturesForTest(engineState, strikeFlag, strikePart);
-	qInfo().noquote() << QStringLiteral("[StimTargetThermalFeatures] engineState=%1 strikeFlag=%2 strikePart=%3 protocolLayoutUnchanged=1")
+	qInfo().noquote() << QStringLiteral("[StimTargetThermalFeatures] engineStateOverride=%1 strikeFlagOverride=%2 strikePart=%3 protocolLayoutUnchanged=1")
 		.arg(engineState).arg(strikeFlag).arg(strikePart);
     w.configurePhase4cAeroMachTest(phase4cAeroMach, aeroAltitudeKm, aeroMach);
     if(sendStepMs>=0)w.setSendStepMs(sendStepMs);
@@ -335,6 +335,12 @@ int main(int argc, char *argv[])
     {
 		const int initialDelayMs = controlTransport == QStringLiteral("udp") ? 500 : ddsDiscoveryWaitMs;
 		bool autoStarted = false;
+		QObject::connect(&w, &MainWindow::roundStopSent, &a, [&a]() {
+			// MainWindow's destructor owns the application-level STOP-status and
+			// DDS acknowledgment drain.  Quit as soon as STOP is sent so that the
+			// bounded drain begins at EOF instead of waiting for the duration guard.
+			QTimer::singleShot(0, &a, &QApplication::quit);
+		});
 		QObject::connect(&w, &MainWindow::initAckReceived, &w, [&w, &a, &autoStarted, autoSeconds]() {
 			if (autoStarted) return;
 			autoStarted = true;
@@ -342,7 +348,6 @@ int main(int argc, char *argv[])
 			QTimer::singleShot(autoSeconds * 1000, &w, [&w]() {
 				QMetaObject::invokeMethod(&w, "onStopButtonClicked", Qt::DirectConnection);
 			});
-			QTimer::singleShot(autoSeconds * 1000 + 500, &a, &QApplication::quit);
 		});
         QTimer::singleShot(initialDelayMs, &w, [&w]() {
 			QMetaObject::invokeMethod(&w, "onResetButtonClicked", Qt::DirectConnection);

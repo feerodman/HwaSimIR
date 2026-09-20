@@ -139,7 +139,11 @@ def analyze(case: Path, requested_seconds: int, band: str, weather: str) -> dict
     if not rows:
         raise RuntimeError(f"No products in {index_path}")
 
-    ordinary = case / "ordinary_ui"
+    # P12 packaged the Windows receiver under ordinary_ui/.  P13 keeps the
+    # same files at the case root so every DDS replay is self-contained.
+    # Preserve the old layout while accepting the P13 evidence layout.
+    ordinary_candidate = case / "ordinary_ui"
+    ordinary = ordinary_candidate if ordinary_candidate.is_dir() else case
     board_path = case / "board.log"
     receiver_path = ordinary / "receiver.err.log"
     board_log = board_path.read_text(encoding="utf-8", errors="replace")
@@ -238,7 +242,7 @@ def analyze(case: Path, requested_seconds: int, band: str, weather: str) -> dict
         ingress_peak[field] = max((float(row.get(field, "0")) for row in ingress_rows), default=0.0)
 
     codec_match = re.search(
-        r"(?m)^\[H264EncodeSuccess\][^\r\n]*backend=mpp[^\r\n]*codec=h264_annexb[^\r\n]*resolution=800x800",
+        r"(?m)^(?:\x1b\[[0-9;]*m)*\[H264EncodeSuccess\][^\r\n]*backend=mpp[^\r\n]*codec=h264_annexb[^\r\n]*resolution=800x800",
         board_log)
     hard80_cold = stage_report["acceptedToWriterSubmitMs"]["coldSourceSeq1To180"]["over80Count"]
     hard80_steady = stage_report["acceptedToWriterSubmitMs"]["steadyAfterSourceSeq180"]["over80Count"]

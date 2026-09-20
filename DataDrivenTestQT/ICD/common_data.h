@@ -87,6 +87,8 @@ struct relAngular{
 };
 
 struct realtimeInfo{
+    double sourceTimeMs;
+    int sourceLine;
     double distance;
     Position platPos;
     Euler platEul;

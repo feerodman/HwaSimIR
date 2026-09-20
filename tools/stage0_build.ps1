@@ -33,6 +33,8 @@ $qtBuildDir = Join-Path $rootPath "build-DataDrivenTestQT-codex-mingw73_64-$Conf
 $qtExe = Join-Path $qtBuildDir "$($Configuration.ToLower())\DataDrivenTestQT.exe"
 $qtDataFiles = @(
     (Join-Path $rootPath "DataDrivenTestQT\1.txt"),
+    (Join-Path $rootPath "DataDrivenTestQT\p13_performance_highalt_300s.txt"),
+    (Join-Path $rootPath "DataDrivenTestQT\p13_performance_highalt_300s.txt.json"),
     (Join-Path $rootPath "DataDrivenTestQT\ordinary_demo_1km.txt"),
     (Join-Path $rootPath "DataDrivenTestQT\ordinary_demo_1km.txt.json")
 )

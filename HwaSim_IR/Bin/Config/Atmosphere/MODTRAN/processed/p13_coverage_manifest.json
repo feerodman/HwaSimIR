@@ -1,0 +1,126 @@
+{
+  "schema": "HwaSimIR.P13.SharedAtmosphereCoverage.1",
+  "publishedAtUtc": "2026-09-18T09:05:56.237240+00:00",
+  "dataIdentity": {
+    "formalLutPathRelativeToConfigRoot": "Atmosphere/MODTRAN/processed/band_lut_si.csv",
+    "formalLutSha256": "de72d333dfab19989ba56856075a7d95ea5d9305f84bc1ab2a3ef9e5a97464be",
+    "formalLutBytes": 2278590,
+    "formalLutRows": 2060,
+    "coverageManifestFile": "p13_coverage_manifest.json",
+    "candidateSha256": "a9e3b4a109f93774d511b2a71dbd6ea18760d883315a1fe293d210b2339d332a",
+    "qcSha256": "2dd872b86e9bc7b9a2678d04253dd373455b1d9b81af82c35dbeaf32da02afe2"
+  },
+  "preservation": {
+    "beforeSha256": "6f22d25d32bc00e753b454560af630d09c2e1a130d53835fa505e27d97f5fd99",
+    "beforeRows": 1724,
+    "preExistingBytesPreservedAsExactPrefix": true,
+    "preExistingCanonicalDigestBefore": "f4f784dd088079718a304f3915904361b7f068d41920c347d918287ab5741820",
+    "preExistingCanonicalDigestAfter": "f4f784dd088079718a304f3915904361b7f068d41920c347d918287ab5741820",
+    "archiveBackup": "D:\\HwaSimIR\\HwaSim_IR\\Bin\\Config\\Atmosphere\\MODTRAN\\processed\\Archive\\P13\\band_lut_si_pre_p13_6f22d25d32bc00e7.csv",
+    "archiveBackupSha256": "6f22d25d32bc00e753b454560af630d09c2e1a130d53835fa505e27d97f5fd99",
+    "nirRowsBefore": 1005,
+    "nirRowsAfter": 1005
+  },
+  "immutableInput": {
+    "path": "D:\\HwaSimIR\\DataDrivenTestQT\\1.txt",
+    "sha256": "f2c3db00d71012cd28336b5077e03ff8d4ed1eda2698fd900486ae9cdfdd7901",
+    "bytes": 2057485,
+    "acceptedRows": 4318
+  },
+  "additionalValidatedInputs": [
+    {
+      "name": "p13_performance_highalt_300s.txt",
+      "role": "performance_only_300s_complex_weather",
+      "sha256": "3a17da3a50ae7cfb6441ee1d5111f5ed7aa3ab6817cf19e1dc2505a531f59df1",
+      "bytes": 10212598,
+      "acceptedRows": 18000,
+      "uniqueObserverTargetStates": 18000,
+      "notOriginalReplay": true,
+      "mayReplaceOriginal1Txt": false,
+      "sourceInputSha256": "f2c3db00d71012cd28336b5077e03ff8d4ed1eda2698fd900486ae9cdfdd7901",
+      "fixtureManifestSha256": "9c9c7e6d26416c5426e287b9cbec8e996701ed9317a5b532c589653d520815c8",
+      "queryManifestSha256": "19ef8a177ea4c9cd82598fce9f9a0e2cfb6c2232043f4be5b05777f90e43aee0",
+      "productionQueryCheckLogSha256": "19006be1db1c5b5522f196660f6f600100e3771109190eef957df294f16c1614",
+      "productionQueryRows": 36000,
+      "productionQueryValid": 36000,
+      "productionQueryFailures": 0,
+      "calibrationStatus": "NOT_VERIFIED_CALIBRATION"
+    }
+  ],
+  "original1TxtActualQueryEnvelope": {
+    "observerAltitudeKm": [
+      10.99844238,
+      11.97000586
+    ],
+    "targetAltitudeKm": [
+      9.7335,
+      10.00005371
+    ],
+    "recomputedSlantRangeKm": [
+      2.427569473,
+      22.269183094
+    ],
+    "visibilityKm": [
+      6.0,
+      6.0
+    ],
+    "relativeHumidityPercent": [
+      85.0,
+      85.0
+    ],
+    "solarZenithDegForUtcDate2026_09_06Hour3_5": [
+      41.4269,
+      41.509
+    ],
+    "contains50km": false
+  },
+  "p13MeasuredGrid": {
+    "bands": [
+      "SWIR",
+      "MWIR"
+    ],
+    "atmosphereModel": "Mid-Latitude Summer",
+    "aerosolModel": "Rural",
+    "humidityProfiles": [
+      "scaled_mls_surface_rh30",
+      "scaled_mls_surface_rh60",
+      "scaled_mls_surface_rh85"
+    ],
+    "observerAltitudeKm": [
+      10.95,
+      12.0
+    ],
+    "targetAltitudeKm": [
+      9.7,
+      10.05
+    ],
+    "slantRangeKm": [
+      2.4,
+      5.0,
+      10.0,
+      20.0,
+      23.0,
+      35.0,
+      50.0
+    ],
+    "visibilityKm": [
+      6.0
+    ],
+    "solarZenithDeg": [
+      20.0,
+      45.0
+    ],
+    "completeFiveComponentVertices": 336,
+    "licensedModtranComponentRuns": 720,
+    "interpolation": "linear_components_and_tau_optical_depth_inside_measured_cell_only",
+    "noExtrapolation": true,
+    "noRangeClamp": true,
+    "noMissingFill": true,
+    "noTauOneFallback": true
+  },
+  "separateDeclaredExtension": {
+    "description": "50 km high-altitude unequal-altitude boundary; not present in 1.txt",
+    "maximumSlantRangeKm": 50.0
+  },
+  "calibrationStatus": "NOT_VERIFIED_CALIBRATION"
+}

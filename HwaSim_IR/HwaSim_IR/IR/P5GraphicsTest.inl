@@ -9,6 +9,10 @@ void HwaSimIR::UpdateP5GraphicsTestScene()
     const std::string view = viewEnv ? viewEnv : "oblique";
     const char* materialEnv = std::getenv("P5MaterialView");
     const int materialView = materialEnv ? std::atoi(materialEnv) : 0;
+    const char* heatSourceEnv = std::getenv("P5SyntheticHeatSource");
+    const bool syntheticHeatSourceEnabled = !heatSourceEnv ||
+        (std::string(heatSourceEnv) != "0" && std::string(heatSourceEnv) != "off" &&
+         std::string(heatSourceEnv) != "Off" && std::string(heatSourceEnv) != "OFF");
     PLATFORM_TYPE assetType = NONE;
     if (scene=="f35") assetType=F35;
     else if (scene=="f22") assetType=F22;
@@ -110,7 +114,7 @@ void HwaSimIR::UpdateP5GraphicsTestScene()
                 if(!legacy) IRGameSpriteBatch::apply(node);
                 node.set_transparency(TransparencyAttrib::M_alpha);node.set_depth_write(false);node.set_depth_test(true);node.set_two_sided(true);
                 node.set_shader_input("u_object_kind",LVecBase2i(4,0));node.set_shader_input("u_plume_layer",LVecBase2i(i+1,0));
-                node.set_shader_input("u_plume_enabled",LVecBase2i(1,0));
+                node.set_shader_input("u_plume_enabled",LVecBase2i(syntheticHeatSourceEnabled?1:0,0));
                 node.set_shader_input("u_plume_gray",LVecBase2f(i==0?.8f:.35f,0));
                 node.set_shader_input("u_plume_opacity",LVecBase2f(.8f,0));
                 node.set_shader_input("u_plume_radius_root",LVecBase2f(1,0));node.set_shader_input("u_plume_radius_tail",LVecBase2f(1.5f,0));
@@ -120,6 +124,7 @@ void HwaSimIR::UpdateP5GraphicsTestScene()
         }
         std::cout<<"[P5GraphicsTest] scene="<<scene<<" view="<<view
             <<" materialView="<<materialView
+            <<" syntheticHeatSourceEnabled="<<(syntheticHeatSourceEnabled?1:0)
             <<" diagnosticFovDeg=35 diagnosticNearM=0.1 modelScaleUnchanged=1"
             <<" diagnosticEncoding=scene_wide_window_radiance values=artificial_game_only center="
             <<m_p5TestCenter<<std::endl;
@@ -173,7 +178,7 @@ void HwaSimIR::UpdateP5GraphicsTestScene()
             node.set_shader_input("u_sprite_time",LVecBase2f(elapsed,0));
             node.set_shader_input("u_time",LVecBase2f(elapsed,0));
             ApplyStage7WeatherInputs(node,m_stage7WeatherState);
-            if(scene=="cloud" || view=="off") node.hide(); else node.show();
+            if(scene=="cloud" || view=="off" || !syntheticHeatSourceEnabled) node.hide(); else node.show();
         }
     }
 }

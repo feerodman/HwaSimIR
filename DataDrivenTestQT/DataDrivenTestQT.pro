@@ -27,19 +27,27 @@ CONFIG += c++11
 SOURCES += \
         main.cpp \
         mainwindow.cpp \
-        ../HwaSim_IR/HwaSim_IR/IR/IRSolarPosition.cpp
+        ../HwaSim_IR/HwaSim_IR/IR/IRSolarPosition.cpp \
+        ../HwaSim_IR/HwaSim_IR/IR/IRModtranRadianceLut.cpp
 
 HEADERS += \
         mainwindow.h \
-        ../HwaSim_IR/HwaSim_IR/IR/IRSolarPosition.h
+        ReplayCsvSchema.h \
+        ../Shared/NumericCsvReader.h \
+        ../HwaSim_IR/HwaSim_IR/IR/IRSolarPosition.h \
+        ../HwaSim_IR/HwaSim_IR/IR/IRModtranRadianceLut.h \
+        ../HwaSim_IR/HwaSim_IR/IR/IRTypes.h
 
 FORMS += \
         mainwindow.ui
 
 DISTFILES += \
         NetworkConfig.ini \
+        1.txt \
         ordinary_demo_1km.txt \
         ordinary_demo_1km.txt.json \
+        ../HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed/band_lut_si.csv \
+        ../HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed/p13_coverage_manifest.json \
         ../HwaSim_IR/Bin/Config/DDS/ZRDDS_PROTOCOL_QOS.xml
 
 # DataDrivenTestQT is built with MinGW 7.3.0 and must use the matching ZRDDS
@@ -79,10 +87,14 @@ CONFIG(debug, debug|release) {
 }
 
 win32:QMAKE_POST_LINK += cmd /c copy /Y $$system_path($$PWD/NetworkConfig.ini) $$system_path($$NETWORK_CONFIG_DEST)
+win32:QMAKE_POST_LINK += $$escape_expand(\n\t) cmd /c copy /Y $$system_path($$PWD/1.txt) $$system_path($$OUT_PWD/release/1.txt)
 win32:QMAKE_POST_LINK += $$escape_expand(\n\t) cmd /c copy /Y $$system_path($$PWD/ordinary_demo_1km.txt) $$system_path($$OUT_PWD/release/ordinary_demo_1km.txt)
 win32:QMAKE_POST_LINK += $$escape_expand(\n\t) cmd /c copy /Y $$system_path($$PWD/ordinary_demo_1km.txt.json) $$system_path($$OUT_PWD/release/ordinary_demo_1km.txt.json)
 win32:QMAKE_POST_LINK += $$escape_expand(\n\t) cmd /c if not exist $$system_path($$OUT_PWD/release/Config/DDS) mkdir $$system_path($$OUT_PWD/release/Config/DDS)
 win32:QMAKE_POST_LINK += $$escape_expand(\n\t) cmd /c copy /Y $$system_path($$PWD/../HwaSim_IR/Bin/Config/DDS/ZRDDS_PROTOCOL_QOS.xml) $$system_path($$OUT_PWD/release/Config/DDS/ZRDDS_PROTOCOL_QOS.xml)
+win32:QMAKE_POST_LINK += $$escape_expand(\n\t) cmd /c if not exist $$system_path($$OUT_PWD/release/Config/Atmosphere/MODTRAN/processed) mkdir $$system_path($$OUT_PWD/release/Config/Atmosphere/MODTRAN/processed)
+win32:QMAKE_POST_LINK += $$escape_expand(\n\t) cmd /c copy /Y $$system_path($$PWD/../HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed/band_lut_si.csv) $$system_path($$OUT_PWD/release/Config/Atmosphere/MODTRAN/processed/band_lut_si.csv)
+win32:QMAKE_POST_LINK += $$escape_expand(\n\t) cmd /c copy /Y $$system_path($$PWD/../HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed/p13_coverage_manifest.json) $$system_path($$OUT_PWD/release/Config/Atmosphere/MODTRAN/processed/p13_coverage_manifest.json)
 win32:!isEmpty(ZRDDS_MINGW730_ROOT):QMAKE_POST_LINK += $$escape_expand(\n\t) cmd /c copy /Y $$system_path($$ZRDDS_MINGW730_ROOT/lib/ZRDDSCpp.dll) $$system_path($$OUT_PWD/release/ZRDDSCpp.dll)
 win32:!isEmpty(ZRDDS_LICENSE_FILE):QMAKE_POST_LINK += $$escape_expand(\n\t) cmd /c copy /Y $$system_path($$ZRDDS_LICENSE_FILE) $$system_path($$OUT_PWD/release/zrddslicence.lic)
 

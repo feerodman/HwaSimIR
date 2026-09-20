@@ -126,6 +126,7 @@ $requiredConfig = @(
     'Materials/MaterialDatabase.csv',
     'Materials/MaterialBandOptics.csv',
     'Atmosphere/MODTRAN/processed/band_lut_si.csv',
+    'Atmosphere/MODTRAN/processed/p13_coverage_manifest.json',
     'Atmosphere/MODTRAN/processed/solar_heating_lut_si.csv',
     'SensorWave/default_NVG.json',
     'SensorWave/default_MWIR.json',

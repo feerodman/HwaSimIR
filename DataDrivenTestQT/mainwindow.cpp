@@ -9,6 +9,9 @@
 #include <QDoubleValidator>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonArray>
+#include <QCryptographicHash>
+#include <QFile>
 #include "../DDS/Protocol/SensorFieldSchema.h"
 #include <QGroupBox>
 #include <QVBoxLayout>
@@ -32,7 +35,10 @@
 
 #include "ICD/math_algorithm.h"
 #include "OrdinaryWeatherInput.h"
+#include "ReplayCsvSchema.h"
+#include "../Shared/NumericCsvReader.h"
 #include "../HwaSim_IR/HwaSim_IR/IR/IRSolarPosition.h"
+#include "../HwaSim_IR/HwaSim_IR/IR/IRModtranRadianceLut.h"
 
 //#define M_PI 3.1415926
 
@@ -140,6 +146,36 @@ double geodeticLosMeters(const ICD::Position& observer, const ICD::Position& tar
 	const double vertical = target.alt - observer.alt;
 	return std::sqrt(horizontal * horizontal + vertical * vertical);
 }
+
+QString sha256File(const QString& path, QString& error)
+{
+	QFile file(path);
+	if (!file.open(QIODevice::ReadOnly))
+	{
+		error = QStringLiteral("无法读取文件 %1: %2").arg(path, file.errorString());
+		return QString();
+	}
+	QCryptographicHash digest(QCryptographicHash::Sha256);
+	while (!file.atEnd())
+	{
+		const QByteArray block = file.read(1024 * 1024);
+		if (block.isEmpty() && file.error() != QFile::NoError)
+		{
+			error = QStringLiteral("读取文件失败 %1: %2").arg(path, file.errorString());
+			return QString();
+		}
+		digest.addData(block);
+	}
+	return QString::fromLatin1(digest.result().toHex());
+}
+
+QString resolveApplicationRelativePath(const QString& configured)
+{
+	const QFileInfo info(configured);
+	return info.isAbsolute()
+		? info.absoluteFilePath()
+		: QDir(QCoreApplication::applicationDirPath()).absoluteFilePath(configured);
+}
 }
 
 MainWindow::MainWindow(
@@ -224,11 +260,24 @@ MainWindow::~MainWindow()
         // A transport ACK is not an application STOP acknowledgment. Keep the
         // writers alive while the renderer drains its ordered input queue.
         std::string drainError;
-        if(!m_ddsStim->waitForStopStatus(30000,drainError))
+		QElapsedTimer lifecycleClock;
+		lifecycleClock.start();
+		qInfo().noquote() << QStringLiteral("[StimStopLifecycle] phase=wait_renderer_stop begin=1 timeoutMs=30000");
+		if(!m_ddsStim->waitForStopStatus(30000,drainError))
             qCritical().noquote()<<QString("[StimDrain][ERROR] %1").arg(QString::fromStdString(drainError));
-        if(!m_ddsStim->waitForAcknowledgments(10000,drainError))
+		else
+			qInfo().noquote() << QStringLiteral("[StimStopLifecycle] phase=renderer_stop_status result=PASS elapsedMs=%1")
+				.arg(lifecycleClock.elapsed());
+		qInfo().noquote() << QStringLiteral("[StimStopLifecycle] phase=wait_dds_ack begin=1 timeoutMs=10000 elapsedMs=%1")
+			.arg(lifecycleClock.elapsed());
+		if(!m_ddsStim->waitForAcknowledgments(10000,drainError))
             qCritical().noquote()<<QString("[StimDrain][ERROR] %1").arg(QString::fromStdString(drainError));
+		else
+			qInfo().noquote() << QStringLiteral("[StimStopLifecycle] phase=dds_ack_drain result=PASS elapsedMs=%1")
+				.arg(lifecycleClock.elapsed());
         m_ddsStim->shutdown();
+		qInfo().noquote() << QStringLiteral("[StimStopLifecycle] phase=dds_shutdown result=PASS elapsedMs=%1")
+			.arg(lifecycleClock.elapsed());
     }
 #endif
 	if (m_udpSocket) {
@@ -592,9 +641,37 @@ void MainWindow::loadNetworkConfig()
 	if (!utcHourOk || !std::isfinite(configuredUtcHour) || configuredUtcHour < -1.0 || configuredUtcHour >= 24.0)
 		qFatal("Invalid Demo/UtcHour; expected -1 for wall clock or [0,24)");
 	m_testUtcHour = configuredUtcHour;
+	const QString configuredUtcDate = settings.value(QStringLiteral("Demo/UtcDate"), QString()).toString().trimmed();
+	if (configuredUtcDate.isEmpty())
+	{
+		m_simulationUtcDate = QDateTime::currentDateTimeUtc().date();
+		m_simulationDateSource = QStringLiteral("wall_clock_utc_date");
+	}
+	else
+	{
+		m_simulationUtcDate = QDate::fromString(configuredUtcDate, QStringLiteral("yyyy-MM-dd"));
+		if (!m_simulationUtcDate.isValid() || m_simulationUtcDate.toString(QStringLiteral("yyyy-MM-dd")) != configuredUtcDate)
+			qFatal("Invalid Demo/UtcDate; expected yyyy-MM-dd");
+		m_simulationDateSource = QStringLiteral("NetworkConfig.ini:Demo/UtcDate");
+	}
 	m_simulationTimeSource = configuredUtcHour >= 0.0
 		? QStringLiteral("NetworkConfig.ini:Demo/UtcHour")
 		: QStringLiteral("wall_clock_utc");
+	m_formalAtmosphereLutPath = resolveApplicationRelativePath(
+		settings.value(QStringLiteral("Atmosphere/FormalLut"),
+			QStringLiteral("Config/Atmosphere/MODTRAN/processed/band_lut_si.csv"))
+		.toString().trimmed());
+	m_atmosphereCoverageManifestPath = resolveApplicationRelativePath(
+		settings.value(QStringLiteral("Atmosphere/CoverageManifest"),
+			QStringLiteral("Config/Atmosphere/MODTRAN/processed/p13_coverage_manifest.json"))
+		.toString().trimmed());
+	m_expectedFormalAtmosphereLutSha256 = settings.value(
+		QStringLiteral("Atmosphere/ExpectedFormalLutSha256"), QString()).toString().trimmed().toLower();
+	m_expectedAtmosphereCoverageManifestSha256 = settings.value(
+		QStringLiteral("Atmosphere/ExpectedCoverageManifestSha256"), QString()).toString().trimmed().toLower();
+	if (m_expectedFormalAtmosphereLutSha256.size() != 64 ||
+		m_expectedAtmosphereCoverageManifestSha256.size() != 64)
+		qFatal("Atmosphere expected SHA-256 values must both be configured as 64 hex characters");
     m_sendStepMs=settings.value("RenderControl/sendStepMs",1000.0/60.0).toDouble();
     if(!std::isfinite(m_sendStepMs)||m_sendStepMs<.1||m_sendStepMs>100000)qFatal("Invalid sendStepMs");
     m_inputHz=1000.0/m_sendStepMs;
@@ -679,8 +756,14 @@ void MainWindow::loadNetworkConfig()
 			.arg(remoteIp)
 			.arg(remotePort)
 			.arg(configExists ? QStringLiteral("ini") : QStringLiteral("generated_default"));
-	qInfo().noquote() << QStringLiteral("[StimTimeConfig] utcHour=%1 source=%2")
+	qInfo().noquote() << QStringLiteral("[StimTimeConfig] utcDate=%1 dateSource=%2 utcHour=%3 hourSource=%4 sourceTimeColumn=Time(ms) simulationTime=source_offset sendWallTime=pacing_clock videoPts=encoder_timebase")
+		.arg(m_simulationUtcDate.toString(QStringLiteral("yyyy-MM-dd")))
+		.arg(m_simulationDateSource)
 		.arg(m_testUtcHour, 0, 'f', 6).arg(m_simulationTimeSource);
+	qInfo().noquote() << QStringLiteral(
+		"[StimAtmosphereIdentity] formalLut=%1 expectedLutSha256=%2 coverageManifest=%3 expectedManifestSha256=%4 binding=control_and_renderer_same_identity")
+		.arg(m_formalAtmosphereLutPath, m_expectedFormalAtmosphereLutSha256,
+			m_atmosphereCoverageManifestPath, m_expectedAtmosphereCoverageManifestSha256);
 }
 
 void MainWindow::setupUDP()
@@ -1024,10 +1107,13 @@ bool MainWindow::validateFormalAtmosphereCoverage(
 	audit.insert(QStringLiteral("relativeHumidityPercent"), initialization.envHumidity);
 	audit.insert(QStringLiteral("utcHour"), m_testUtcHour);
 	audit.insert(QStringLiteral("timeSource"), m_simulationTimeSource);
+	audit.insert(QStringLiteral("utcDate"), m_simulationUtcDate.toString(QStringLiteral("yyyy-MM-dd")));
+	audit.insert(QStringLiteral("dateSource"), m_simulationDateSource);
+	audit.insert(QStringLiteral("formalLut"), m_formalAtmosphereLutPath);
+	audit.insert(QStringLiteral("coverageManifest"), m_atmosphereCoverageManifestPath);
 
-	// NIR has a separate compatibility table. Explicit WeatherCameraInput is a
-	// diagnostic fixture whose effective geometry is validated by that parser
-	// and by the renderer's formal fail-closed query, not by the legacy CSV rows.
+	// Other bands use their own compatibility tables.  Explicit camera fixtures
+	// remain diagnostic-only and are validated by the renderer that owns them.
 	if (sensor.trackerSensorBand != 0 && sensor.trackerSensorBand != 2)
 	{
 		audit.insert(QStringLiteral("result"), QStringLiteral("not_applicable_non_swir_mwir"));
@@ -1042,22 +1128,122 @@ bool MainWindow::validateFormalAtmosphereCoverage(
 		return true;
 	}
 
+	QString hashError;
+	const QString manifestHash = sha256File(m_atmosphereCoverageManifestPath, hashError);
+	if (manifestHash.isEmpty() || manifestHash != m_expectedAtmosphereCoverageManifestSha256)
+	{
+		error = manifestHash.isEmpty() ? hashError : QStringLiteral(
+			"大气覆盖 manifest 身份不匹配：实际 %1，配置要求 %2。INIT 未发送。")
+			.arg(manifestHash, m_expectedAtmosphereCoverageManifestSha256);
+		audit.insert(QStringLiteral("failureAxis"), QStringLiteral("coverageManifestSha256"));
+		audit.insert(QStringLiteral("actualManifestSha256"), manifestHash);
+		return false;
+	}
+	QFile manifestFile(m_atmosphereCoverageManifestPath);
+	if (!manifestFile.open(QIODevice::ReadOnly))
+	{
+		error = QStringLiteral("无法读取大气覆盖 manifest：%1。INIT 未发送。").arg(manifestFile.errorString());
+		return false;
+	}
+	QJsonParseError parseError;
+	const QJsonDocument manifestDocument = QJsonDocument::fromJson(manifestFile.readAll(), &parseError);
+	if (parseError.error != QJsonParseError::NoError || !manifestDocument.isObject())
+	{
+		error = QStringLiteral("大气覆盖 manifest 不是有效 JSON：%1。INIT 未发送。").arg(parseError.errorString());
+		return false;
+	}
+	const QJsonObject manifest = manifestDocument.object();
+	const QJsonObject dataIdentity = manifest.value(QStringLiteral("dataIdentity")).toObject();
+	const QJsonObject immutableInput = manifest.value(QStringLiteral("immutableInput")).toObject();
+	const QJsonObject measuredGrid = manifest.value(QStringLiteral("p13MeasuredGrid")).toObject();
+	const QString declaredLutHash = dataIdentity.value(QStringLiteral("formalLutSha256")).toString().toLower();
+	const QString lutHash = sha256File(m_formalAtmosphereLutPath, hashError);
+	if (lutHash.isEmpty() || lutHash != m_expectedFormalAtmosphereLutSha256 || lutHash != declaredLutHash)
+	{
+		error = lutHash.isEmpty() ? hashError : QStringLiteral(
+			"正式 MODTRAN LUT 身份不匹配：实际 %1，配置 %2，manifest %3。INIT 未发送。")
+			.arg(lutHash, m_expectedFormalAtmosphereLutSha256, declaredLutHash);
+		audit.insert(QStringLiteral("failureAxis"), QStringLiteral("formalLutSha256"));
+		audit.insert(QStringLiteral("actualFormalLutSha256"), lutHash);
+		return false;
+	}
+	const QString inputHash = sha256File(m_inputDataPath, hashError);
+	const QString declaredInputHash = immutableInput.value(QStringLiteral("sha256")).toString().toLower();
+	QString inputRole = QStringLiteral("immutable_original_replay");
+	if (inputHash.isEmpty())
+	{
+		error = hashError;
+		audit.insert(QStringLiteral("failureAxis"), QStringLiteral("inputSha256"));
+		audit.insert(QStringLiteral("actualInputSha256"), inputHash);
+		return false;
+	}
+	if (inputHash != declaredInputHash)
+	{
+		bool additionalInputAccepted = false;
+		const QJsonArray additionalInputs = manifest.value(
+			QStringLiteral("additionalValidatedInputs")).toArray();
+		for (const QJsonValue& value : additionalInputs)
+		{
+			const QJsonObject candidate = value.toObject();
+			if (candidate.value(QStringLiteral("sha256")).toString().toLower() != inputHash)
+				continue;
+			const QString expectedName = candidate.value(QStringLiteral("name")).toString();
+			const QString candidateRole = candidate.value(QStringLiteral("role")).toString();
+			const int acceptedRows = candidate.value(QStringLiteral("acceptedRows")).toInt(-1);
+			const int queryRows = candidate.value(QStringLiteral("productionQueryRows")).toInt(-1);
+			const int queryValid = candidate.value(QStringLiteral("productionQueryValid")).toInt(-1);
+			const int queryFailures = candidate.value(QStringLiteral("productionQueryFailures")).toInt(-1);
+			const bool explicitBoundary = candidate.value(QStringLiteral("notOriginalReplay")).toBool(false) &&
+				!candidate.value(QStringLiteral("mayReplaceOriginal1Txt")).toBool(true);
+			const bool provenanceBound = candidate.value(QStringLiteral("sourceInputSha256"))
+				.toString().toLower() == declaredInputHash;
+			const bool queryEvidenceBound =
+				candidate.value(QStringLiteral("queryManifestSha256")).toString().size() == 64 &&
+				candidate.value(QStringLiteral("productionQueryCheckLogSha256")).toString().size() == 64 &&
+				queryRows == realTimeData.size() * 2 && queryValid == queryRows && queryFailures == 0;
+			const bool calibrationBound = candidate.value(QStringLiteral("calibrationStatus"))
+				.toString() == QStringLiteral("NOT_VERIFIED_CALIBRATION");
+			if (QFileInfo(m_inputDataPath).fileName() != expectedName ||
+				candidateRole != QStringLiteral("performance_only_300s_complex_weather") ||
+				acceptedRows != realTimeData.size() || !explicitBoundary || !provenanceBound ||
+				!queryEvidenceBound || !calibrationBound)
+			{
+				error = QStringLiteral(
+					"附加输入身份存在但边界、文件名、行数或逐行生产查询证据不完整；不得改名冒充原 1.txt。INIT 未发送。");
+				audit.insert(QStringLiteral("failureAxis"), QStringLiteral("additionalInputContract"));
+				audit.insert(QStringLiteral("actualInputSha256"), inputHash);
+				return false;
+			}
+			inputRole = candidateRole;
+			additionalInputAccepted = true;
+			break;
+		}
+		if (!additionalInputAccepted)
+		{
+			error = QStringLiteral(
+				"输入文件不属于覆盖 manifest：实际 %1，原始 1.txt 为 %2。不得改名或修改轨迹冒充原 1.txt；INIT 未发送。")
+				.arg(inputHash, declaredInputHash);
+			audit.insert(QStringLiteral("failureAxis"), QStringLiteral("inputSha256"));
+			audit.insert(QStringLiteral("actualInputSha256"), inputHash);
+			return false;
+		}
+	}
+
+	IRModtranRadianceLut lut;
+	if (!lut.load(m_formalAtmosphereLutPath.toStdString()))
+	{
+		error = QStringLiteral("正式 MODTRAN LUT 无法由生产查询器加载。INIT 未发送。");
+		audit.insert(QStringLiteral("failureAxis"), QStringLiteral("formalLutLoad"));
+		return false;
+	}
 	const double visibilityKm = initialization.envVisibility / 1000.0;
 	const double humidity = initialization.envHumidity;
-	if (!std::isfinite(visibilityKm) || visibilityKm < 6.0 || visibilityKm > 23.0)
-	{
-		error = QStringLiteral("正式 SWIR/MWIR 大气域不覆盖能见度 %1 km（允许 6–23 km）；请修改 NetworkConfig.ini 的 WeatherInit/envVisibility，或补齐对应 MODTRAN 网格。INIT 未发送。")
-			.arg(visibilityKm, 0, 'f', 3);
-		audit.insert(QStringLiteral("failureAxis"), QStringLiteral("visibilityKm"));
-		return false;
-	}
-	if (!std::isfinite(humidity) || humidity < 30.0 || humidity > 85.0)
-	{
-		error = QStringLiteral("正式 SWIR/MWIR 大气域不覆盖相对湿度 %1%%（允许 30–85%%）；请修改 NetworkConfig.ini 的 WeatherInit/envHumidity，或补齐对应 MODTRAN 网格。INIT 未发送。")
-			.arg(humidity, 0, 'f', 3);
-		audit.insert(QStringLiteral("failureAxis"), QStringLiteral("relativeHumidityPercent"));
-		return false;
-	}
+	const IRBand requestedBand = sensor.trackerSensorBand == 0
+		? IRBand::ShortWaveInfrared : IRBand::MidWaveInfrared;
+	const std::string atmosphereModel = measuredGrid.value(QStringLiteral("atmosphereModel"))
+		.toString(QStringLiteral("Mid-Latitude Summer")).toStdString();
+	const std::string aerosolModel = measuredGrid.value(QStringLiteral("aerosolModel"))
+		.toString(QStringLiteral("Rural")).toStdString();
 
 	double minRange = std::numeric_limits<double>::infinity();
 	double maxRange = 0.0;
@@ -1067,8 +1253,11 @@ bool MainWindow::validateFormalAtmosphereCoverage(
 	double maxTargetAlt = -std::numeric_limits<double>::infinity();
 	double minZenith = std::numeric_limits<double>::infinity();
 	double maxZenith = -std::numeric_limits<double>::infinity();
+	double minTau = std::numeric_limits<double>::infinity();
+	double maxTau = 0.0;
+	QString interpolationMode;
 	const QDateTime currentUtc = QDateTime::currentDateTimeUtc();
-	const QDate currentUtcDate = currentUtc.date();
+	const QDate currentUtcDate = m_simulationUtcDate.isValid() ? m_simulationUtcDate : currentUtc.date();
 	const double configuredHour = m_testUtcHour >= 0.0
 		? m_testUtcHour
 		: currentUtc.time().msecsSinceStartOfDay() / 3600000.0;
@@ -1096,41 +1285,51 @@ bool MainWindow::validateFormalAtmosphereCoverage(
 		minZenith = std::min(minZenith, zenith);
 		maxZenith = std::max(maxZenith, zenith);
 
-		QString axis;
-		double value = 0.0;
-		QString allowed;
-		if (!std::isfinite(row.platPos.alt) || row.platPos.alt < 1.0 || row.platPos.alt > 1000.0)
-		{
-			axis = QStringLiteral("observerAltitudeM"); value = row.platPos.alt; allowed = QStringLiteral("1–1000 m");
-		}
-		else if (!std::isfinite(row.tarPos.alt) || row.tarPos.alt < 1.0 || row.tarPos.alt > 1000.0)
-		{
-			axis = QStringLiteral("targetAltitudeM"); value = row.tarPos.alt; allowed = QStringLiteral("1–1000 m");
-		}
-		else if (std::abs(row.platPos.alt - row.tarPos.alt) > 0.05)
-		{
-			axis = QStringLiteral("horizontalEqualAltitudeDeltaM"); value = std::abs(row.platPos.alt - row.tarPos.alt); allowed = QStringLiteral("≤0.05 m（当前正式网格仅含等高水平 LOS）");
-		}
-		else if (!std::isfinite(rangeM) || rangeM < 100.0 || rangeM > 2000.0)
-		{
-			axis = QStringLiteral("losRangeM"); value = rangeM; allowed = QStringLiteral("100–2000 m");
-		}
-		else if (!solar.valid || !std::isfinite(zenith) || zenith < 20.0 || zenith > 70.0)
-		{
-			axis = QStringLiteral("solarZenithDeg"); value = zenith; allowed = QStringLiteral("20–70°");
-		}
-		if (!axis.isEmpty())
+		IRModtranRadianceQuery query;
+		query.band = requestedBand;
+		query.atmosphereModel = atmosphereModel;
+		query.aerosolModel = aerosolModel;
+		query.observerAltKm = row.platPos.alt / 1000.0;
+		query.targetAltKm = row.tarPos.alt / 1000.0;
+		query.rangeKm = rangeM / 1000.0;
+		query.visibilityKm = visibilityKm;
+		query.solarZenithDeg = zenith;
+		const IRModtranRadianceResult result = (solar.valid && std::isfinite(zenith))
+			? lut.queryRelativeHumidity(query, humidity)
+			: IRModtranRadianceResult();
+		if (!solar.valid || !result.valid)
 		{
 			audit.insert(QStringLiteral("result"), QStringLiteral("rejected"));
-			audit.insert(QStringLiteral("failureAxis"), axis);
-			audit.insert(QStringLiteral("failureValue"), value);
-			audit.insert(QStringLiteral("firstInvalidDataRow"), index + 2);
-			error = QStringLiteral("正式 SWIR/MWIR 大气域不覆盖输入文件第 %1 行：%2=%3（允许 %4）。请选择 ordinary_demo_1km.txt、调整轨迹/仿真 UTC 到有效域，或补齐对应 MODTRAN 网格。INIT 未发送。")
-			.arg(index + 2).arg(axis).arg(value, 0, 'f', 6).arg(allowed);
+			audit.insert(QStringLiteral("failureAxis"), QString::fromStdString(result.fallbackAxis));
+			audit.insert(QStringLiteral("failureReason"), solar.valid
+				? QString::fromStdString(result.fallbackReason) : QStringLiteral("invalid_solar_position"));
+			audit.insert(QStringLiteral("failureValue"), result.fallbackQuery);
+			audit.insert(QStringLiteral("failureMinimum"), result.fallbackMin);
+			audit.insert(QStringLiteral("failureMaximum"), result.fallbackMax);
+			audit.insert(QStringLiteral("firstInvalidDataRow"), row.sourceLine);
+			error = QStringLiteral(
+				"正式 SWIR/MWIR LUT 不覆盖原输入第 %1 行：reason=%2 axis=%3 value=%4 bounds=%5..%6；"
+				"必须补齐真实 MODTRAN 数据，不能夹距、填零或改成 tau=1。INIT 未发送。")
+				.arg(row.sourceLine)
+				.arg(solar.valid ? QString::fromStdString(result.fallbackReason)
+					: QStringLiteral("invalid_solar_position"))
+				.arg(QString::fromStdString(result.fallbackAxis))
+				.arg(result.fallbackQuery, 0, 'g', 12)
+				.arg(result.fallbackMin, 0, 'g', 12)
+				.arg(result.fallbackMax, 0, 'g', 12);
 			return false;
 		}
+		minTau = std::min(minTau, result.tauUp);
+		maxTau = std::max(maxTau, result.tauUp);
+		interpolationMode = QString::fromStdString(result.interpolationMode);
 	}
 	audit.insert(QStringLiteral("result"), QStringLiteral("accepted"));
+	audit.insert(QStringLiteral("validationMethod"), QStringLiteral("production_IRModtranRadianceLut_query_every_input_row"));
+	audit.insert(QStringLiteral("formalLutSha256"), lutHash);
+	audit.insert(QStringLiteral("coverageManifestSha256"), manifestHash);
+	audit.insert(QStringLiteral("inputSha256"), inputHash);
+	audit.insert(QStringLiteral("inputRole"), inputRole);
+	audit.insert(QStringLiteral("validQueries"), realTimeData.size());
 	audit.insert(QStringLiteral("rangeMinM"), minRange);
 	audit.insert(QStringLiteral("rangeMaxM"), maxRange);
 	audit.insert(QStringLiteral("observerAltitudeMinM"), minObserverAlt);
@@ -1139,13 +1338,18 @@ bool MainWindow::validateFormalAtmosphereCoverage(
 	audit.insert(QStringLiteral("targetAltitudeMaxM"), maxTargetAlt);
 	audit.insert(QStringLiteral("solarZenithMinDeg"), minZenith);
 	audit.insert(QStringLiteral("solarZenithMaxDeg"), maxZenith);
-	qInfo().noquote() << QStringLiteral("[StimAtmosphereCoverage] result=ACCEPTED band=%1 rows=%2 rangeM=%3..%4 observerAltM=%5..%6 targetAltM=%7..%8 visibilityKm=%9 humidityPercent=%10 solarZenithDeg=%11..%12 timeSource=%13")
+	audit.insert(QStringLiteral("tauMin"), minTau);
+	audit.insert(QStringLiteral("tauMax"), maxTau);
+	audit.insert(QStringLiteral("interpolationMode"), interpolationMode);
+	qInfo().noquote() << QStringLiteral("[StimAtmosphereCoverage] result=ACCEPTED band=%1 rows=%2 validQueries=%3 rangeM=%4..%5 observerAltM=%6..%7 targetAltM=%8..%9 visibilityKm=%10 humidityPercent=%11 solarZenithDeg=%12..%13 tau=%14..%15 mode=%16 lutSha256=%17 manifestSha256=%18 inputSha256=%19 inputRole=%20 timeSource=%21")
 		.arg(sensor.trackerSensorBand).arg(realTimeData.size())
-		.arg(minRange, 0, 'f', 3).arg(maxRange, 0, 'f', 3)
+		.arg(realTimeData.size()).arg(minRange, 0, 'f', 3).arg(maxRange, 0, 'f', 3)
 		.arg(minObserverAlt, 0, 'f', 3).arg(maxObserverAlt, 0, 'f', 3)
 		.arg(minTargetAlt, 0, 'f', 3).arg(maxTargetAlt, 0, 'f', 3)
 		.arg(visibilityKm, 0, 'f', 3).arg(humidity, 0, 'f', 3)
-		.arg(minZenith, 0, 'f', 3).arg(maxZenith, 0, 'f', 3).arg(m_simulationTimeSource);
+		.arg(minZenith, 0, 'f', 3).arg(maxZenith, 0, 'f', 3)
+		.arg(minTau, 0, 'g', 10).arg(maxTau, 0, 'g', 10).arg(interpolationMode)
+		.arg(lutHash, manifestHash, inputHash, inputRole, m_simulationTimeSource);
 	return true;
 }
 
@@ -1154,7 +1358,7 @@ void MainWindow::showInitCoverageError(const QString& error, const QJsonObject& 
 	m_statusLabel->setText(QStringLiteral("● 状态: INIT 未发送 | 大气覆盖域错误"));
 	m_statusLabel->setStyleSheet("color: #D32F2F; font-weight: bold;");
 	m_lastSentLabel->setText(QStringLiteral("↑ 未发送: INIT 被正式大气域预检拒绝"));
-	m_lastReceivedLabel->setText(QStringLiteral("↓ 处理建议: ordinary_demo_1km.txt / 调整轨迹或 UTC / 补 MODTRAN 网格"));
+	m_lastReceivedLabel->setText(QStringLiteral("↓ 处理建议: 补齐正式 MODTRAN 网格或修正身份；不得替换原 1.txt"));
 	qCritical().noquote() << QStringLiteral("[StimAtmosphereCoverage][ERROR] %1 audit=%2")
 		.arg(error, QString::fromUtf8(QJsonDocument(audit).toJson(QJsonDocument::Compact)));
 	QMessageBox* box = new QMessageBox(
@@ -1185,11 +1389,14 @@ void MainWindow::sendRealTimeData()
 	data.sensorID = m_protocolSensorID;
 	if (m_testUtcHour >= 0.0)
 	{
-		QDateTime utc = QDateTime::currentDateTimeUtc();
+		QDateTime utc(m_simulationUtcDate, QTime(0, 0), Qt::UTC);
 		const int totalMs = qBound(0, static_cast<int>(m_testUtcHour * 3600000.0), 86399999);
 		utc.setTime(QTime(0, 0).addMSecs(totalMs));
-		// Select the test's starting solar time, but keep animation time advancing.
-		data.time = utc.toMSecsSinceEpoch() + (m_sendClock.isValid() ? m_sendClock.elapsed() : 0);
+		// Preserve the immutable source time scale even when rows are paced at 60 Hz.
+		// The first source row maps to the configured UTC instant; no row is skipped.
+		const realtimeInfo& currentSample = realTimeData.at(dataNum - 1);
+		data.time = utc.toMSecsSinceEpoch() +
+			(currentSample.sourceTimeMs - realTimeData.first().sourceTimeMs);
 	}
 	else
 	{
@@ -1227,9 +1434,11 @@ void MainWindow::sendRealTimeData()
 //    }else{
 //        data.weaponState.strikeFlag = false;
 //    }
-	data.weaponState.strikeFlag = m_testStrikeFlag;
+	const realtimeInfo& currentSample = realTimeData.at(dataNum - 1);
+	data.weaponState.strikeFlag = m_strikeFlagOverride >= 0
+		? m_strikeFlagOverride != 0 : currentSample.strikeFlag;
 	data.weaponState.strikePart = m_testStrikePart;
-    data.weaponState.viewValid = 1/*realTimeData.at(dataNum-1).viewValid*/;
+	data.weaponState.viewValid = currentSample.viewValid;
 
 
 	// 目标状态（相对平台偏移）
@@ -1256,12 +1465,13 @@ void MainWindow::sendRealTimeData()
 	}
 //    if(current_time > 5){
 //        //5秒后發動機熄火
-		data.targetState[0].engineState = m_testEngineState;
+		data.targetState[0].engineState = m_engineStateOverride >= 0
+			? m_engineStateOverride != 0 : true;
 //    }else{
 //        data.targetState[0].engineState = false;
 //    }
 
-    data.targetState[0].viewValid = realTimeData.at(dataNum-1).viewValid;
+	data.targetState[0].viewValid = currentSample.viewValid;
 
 	data.targetState[0].targetLoc.lat = m_currMissile_pos.x;
 	data.targetState[0].targetLoc.lon = m_currMissile_pos.y;
@@ -1274,7 +1484,19 @@ void MainWindow::sendRealTimeData()
     data.targetState[0].targetLoc.yaw = m_currMissile_att.yaw/*+adddate*/;
 	data.targetState[0].targetLoc.pitch = m_currMissile_att.pitch;
 	data.targetState[0].targetLoc.roll = m_currMissile_att.roll;
+	data.targetState[0].targetLoc.speed = targetUsesRedSpeed(data.targetState[0].targetType)
+		? currentSample.platSpeed : currentSample.tarSpeed;
 	data.targetState[0].targetState = 0x01;
+	if (m_sentFrameCount < 3 || dataNum == realTimeData.size() || (m_sentFrameCount % 600) == 0)
+	{
+		qInfo().noquote() << QStringLiteral("[StimFrameTime] sourceSeq=%1 rowIndex=%2 sourceLine=%3 sourceTimeMs=%4 sourceOffsetMs=%5 simulationEpochMs=%6 sendWallMs=%7 nominalVideoPtsMs=%8 noRowSkip=1")
+			.arg(m_sentFrameCount + 1).arg(dataNum - 1).arg(currentSample.sourceLine)
+			.arg(currentSample.sourceTimeMs, 0, 'f', 3)
+			.arg(currentSample.sourceTimeMs - realTimeData.first().sourceTimeMs, 0, 'f', 3)
+			.arg(data.time, 0, 'f', 3)
+			.arg(m_sendClock.isValid() ? m_sendClock.elapsed() : 0)
+			.arg(static_cast<double>(m_sentFrameCount) * 1000.0 / std::max(1, m_targetVideoFps), 0, 'f', 3);
+	}
 
 
 //    data.targetState[1].targetType = 0x22;
@@ -1659,6 +1881,9 @@ void MainWindow::onStopButtonClicked()
         qInfo().noquote()<<QString("[StimFinal] transport=%1 successfulRealtimeWrites=%2 elapsedMs=%3 targetHz=%4")
             .arg(m_ddsStim?"dds":"compat").arg(m_sentFrameCount).arg(m_sendClock.elapsed()).arg(m_inputHz);
 		sendControlCommand(3); // 发送停止命令
+		qInfo().noquote() << QStringLiteral("[StimStopLifecycle] phase=stop_command_sent result=PASS successfulRealtimeWrites=%1 elapsedMs=%2")
+			.arg(m_sentFrameCount).arg(m_sendClock.elapsed());
+		emit roundStopSent();
 		m_startButton->setEnabled(true);
 		m_stopButton->setEnabled(false);
 		m_statusLabel->setText(QStringLiteral("● 状态: 仿真已停止"));
@@ -1672,6 +1897,12 @@ bool MainWindow::step(BYHWICD::CartesianCoordinate& plane_pos, BYHWICD::Euler& p
 	// 如果已相撞，直接返回
 	if (is_collided) {
 		std::cout << "已相撞，停止模拟！" << std::endl;
+		return true;
+	}
+	if (!m_freezeGeometryForTest && dataNum >= realTimeData.size())
+	{
+		is_collided = true;
+		std::cout << "===== data is over; all accepted rows were sent =====" << std::endl;
 		return true;
 	}
 
@@ -1728,15 +1959,13 @@ bool MainWindow::step(BYHWICD::CartesianCoordinate& plane_pos, BYHWICD::Euler& p
 		missile_att.yaw = realTimeData.at(dataNum).tarEul.yaw;
 		missile_att.roll = realTimeData.at(dataNum).tarEul.roll;
 
-		if (dataNum >= (realTimeData.size()-1)) {
-			is_collided = true;
-			std::cout << "===== data is over =====" << std::endl;
-		}
+		// Do not stop when the last row is merely loaded: it still must be sent.
 		dataNum++;
 	}
 
-	// 更新时间步
-	current_time += 1.0 / m_inputHz;
+	// Physical simulation time follows the source Time(ms), not the 60 Hz wall pacing.
+	current_time = (realTimeData.at(dataNum - 1).sourceTimeMs -
+		realTimeData.first().sourceTimeMs) / 1000.0;
 	return is_collided;
 }
 
@@ -1780,90 +2009,75 @@ void MainWindow::initStepSimData()
 
 void MainWindow::readData(QString tmp)
 {
-    QFile file(tmp);
-    QByteArray fileValueTmp;
+	QFile file(tmp);
+	if (!file.open(QIODevice::ReadOnly))
+		qFatal("Cannot open replay input: %s", qPrintable(QFileInfo(tmp).absoluteFilePath()));
+	const QByteArray bytes = file.readAll();
+	const QVector<int> integerColumns = {17, 28, 29, 53, 54, 55, 62};
+	const NumericCsv::Result parsed = NumericCsv::read(
+		QString::fromUtf8(bytes), replayCsvSchema(), integerColumns);
+	if (!parsed.ok())
+	{
+		for (const NumericCsv::Error& parseError : parsed.errors)
+		{
+			qCritical().noquote() << QStringLiteral(
+				"[StimInputParse][ERROR] sourceLine=%1 column=%2 field=%3 reason=%4")
+				.arg(parseError.sourceLine).arg(parseError.column)
+				.arg(parseError.field.isEmpty() ? QStringLiteral("line") : parseError.field)
+				.arg(parseError.reason);
+		}
+		qFatal("Replay input rejected; malformed files are never partially replayed: %s",
+			qPrintable(QFileInfo(tmp).absoluteFilePath()));
+	}
 
-    realtimeInfo data;
-//    QVector<realtimeInfo> coeOpaPgVector;
-//    qDebug() << "当前工作目录:" << QDir::currentPath();
-    if(file.open(QIODevice::ReadOnly))
-    {
-        //读取所有数据
-        fileValueTmp=file.readAll();
-        //将QByteArray转换为QString
-        QString QStringTmp(fileValueTmp);
-        //将QString的内容用\r\n进行切分，存入QStringList
-//        QStringList list = QStringTmp.split("\r\n");
-        QStringList list = QStringTmp.split("\n");
-
-        //迭代器代替for循环，不用计算循环的次数
-        //QList的迭代器，定义如下，对list进行迭代
-        QListIterator<QString> i(list);
-
-        //将QStringList的内容放至coeRis
-       //将\r\n获得的数据进行拆分，存入QStringList
-        QStringList list1;
-        int index=0;
-
-        while (i.hasNext())
-        {
-            list1 = i.next().split(",");
-            if(list1.length()==63 && index != 0)
-            {
-                data.distance = list1[1].toDouble();
-                //redplat
-                data.platPos.lat = list1[2].toDouble();
-                data.platPos.lon = list1[3].toDouble();
-                data.platPos.alt = list1[4].toDouble();
-                data.platEul.yaw = list1[5].toDouble();
-                data.platEul.pitch = list1[6].toDouble();
-                data.platEul.roll = list1[7].toDouble();
-                data.platSpeed = list1[8].toDouble();
-
-                //mission
-                data.tarPos.lat = list1[10].toDouble();
-                data.tarPos.lon = list1[11].toDouble();
-                data.tarPos.alt = list1[12].toDouble();
-                data.tarEul.yaw = list1[13].toDouble();
-                data.tarEul.pitch = list1[14].toDouble();
-                data.tarEul.roll = list1[15].toDouble();
-                data.tarSpeed = list1[16].toDouble();
-//                data.target2plat.azimuth = list1[30].toDouble();
-//                data.target2plat.pitch = list1[31].toDouble();
-                switch (list1[17].toInt()) {
-                case 0:{
-                    data.targetType = 0x22;
-                    break;
-                }
-                case 1:{
-                    data.targetType = 0x33;
-                    break;
-                }
-                default:{
-                    qDebug()<<"unknown target type!";
-                    break;
-                }
-                }
-                //data.viewValid = list1[53].toInt();
-                data.viewValid = 1;
-                data.damageFlag = list1[29].toInt();
-                data.strikeFlag = list1[28].toInt();
-
-                realTimeData.push_back(data);
-            }
-            else
-            {
-                qDebug()<<"OpaPg data error,the line number is"<<index;
-            }
-            index++;
-        }
-    }
-    else
-    {
-        qDebug()<<"open OpaPg file error";
-        return;
-    }
-    qDebug()<<"the data is ready!";
+	realTimeData.clear();
+	realTimeData.reserve(parsed.rows.size());
+	for (const NumericCsv::Row& row : parsed.rows)
+	{
+		const QStringList& fields = row.fields;
+		realtimeInfo data;
+		data.sourceLine = row.sourceLine;
+		data.sourceTimeMs = fields[0].toDouble();
+		data.distance = fields[1].toDouble();
+		data.platPos.lat = fields[2].toDouble();
+		data.platPos.lon = fields[3].toDouble();
+		data.platPos.alt = fields[4].toDouble();
+		data.platEul.yaw = fields[5].toDouble();
+		data.platEul.pitch = fields[6].toDouble();
+		data.platEul.roll = fields[7].toDouble();
+		data.platSpeed = fields[8].toDouble();
+		data.tarPos.lat = fields[10].toDouble();
+		data.tarPos.lon = fields[11].toDouble();
+		data.tarPos.alt = fields[12].toDouble();
+		data.tarEul.yaw = fields[13].toDouble();
+		data.tarEul.pitch = fields[14].toDouble();
+		data.tarEul.roll = fields[15].toDouble();
+		data.tarSpeed = fields[16].toDouble();
+		switch (fields[17].toInt())
+		{
+		case 0: data.targetType = 0x22; break;
+		case 1: data.targetType = 0x33; break;
+		default:
+			qFatal("Unsupported MissileType at source line %d: %s",
+				row.sourceLine, qPrintable(fields[17]));
+		}
+		data.strikeFlag = fields[28].toInt() != 0;
+		data.damageFlag = fields[29].toInt() != 0; // retained for audit; not connected to rendering
+		data.viewValid = fields[53].toInt() != 0;
+		realTimeData.push_back(data);
+	}
+	for (int index = 1; index < realTimeData.size(); ++index)
+	{
+		if (realTimeData[index].sourceTimeMs <= realTimeData[index - 1].sourceTimeMs)
+			qFatal("Non-increasing Time(ms) at source line %d", realTimeData[index].sourceLine);
+	}
+	qInfo().noquote() << QStringLiteral(
+		"[StimInputParse] result=ACCEPTED path=%1 bytes=%2 headerLine=%3 blankLines=%4 rows=%5 columns=%6 sourceLineFirst=%7 sourceLineLast=%8 sourceTimeMs=%9..%10 malformedRows=0 partialReplay=0")
+		.arg(QFileInfo(tmp).absoluteFilePath()).arg(bytes.size()).arg(parsed.headerLine)
+		.arg(parsed.blankLines).arg(realTimeData.size()).arg(replayCsvSchema().size())
+		.arg(realTimeData.first().sourceLine).arg(realTimeData.last().sourceLine)
+		.arg(realTimeData.first().sourceTimeMs, 0, 'f', 3)
+		.arg(realTimeData.last().sourceTimeMs, 0, 'f', 3);
 }
 
 #include "p7_sensor_form.inl"

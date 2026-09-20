@@ -1,0 +1,70 @@
+{
+  "schema": "hwasimir.p13.performance-fixture.v1",
+  "purpose": "performance_only_300s_complex_weather",
+  "identity": {
+    "name": "p13_performance_highalt_300s.txt",
+    "sha256": "3a17da3a50ae7cfb6441ee1d5111f5ed7aa3ab6817cf19e1dc2505a531f59df1",
+    "rows": 18000,
+    "uniqueObserverTargetStates": 18000
+  },
+  "provenance": {
+    "source": "DataDrivenTestQT/1.txt",
+    "sourceSha256": "f2c3db00d71012cd28336b5077e03ff8d4ed1eda2698fd900486ae9cdfdd7901",
+    "sourceRows": 4318,
+    "sourceTraversalCount": 1,
+    "sourceCycles": 0,
+    "interpolation": "single_pass_linear_with_shortest_arc_yaw",
+    "timeScale": 0.14390799488860492
+  },
+  "time": {
+    "firstMs": 20.0,
+    "lastMs": 300003.3333333333,
+    "sourceDurationMs": 299983.3333333333,
+    "nominalSendFps": 60,
+    "nominalVideoDurationSec": 300.0
+  },
+  "queryRanges": {
+    "observerAltitudeM": {
+      "min": 10998.44238,
+      "max": 11970.00586
+    },
+    "targetAltitudeM": {
+      "min": 9733.5,
+      "max": 10000.05371
+    },
+    "productionLosM": {
+      "min": 2427.569472577322,
+      "max": 22269.18309390087
+    },
+    "horizontalM": {
+      "min": 943.9995139696848,
+      "max": 22246.71947478203
+    }
+  },
+  "formalSupport": {
+    "result": "PASS",
+    "bands": [
+      "SWIR",
+      "MWIR"
+    ],
+    "visibilityKm": 6.0,
+    "observerAltitudeKm": [
+      10.95,
+      12.0
+    ],
+    "targetAltitudeKm": [
+      9.7,
+      10.05
+    ],
+    "rangeKm": [
+      2.4,
+      50.0
+    ]
+  },
+  "boundaries": {
+    "notOriginalReplay": true,
+    "mustNotReplaceOrBeRenamedAs1Txt": true,
+    "physicalClaim": "none",
+    "calibrationStatus": "NOT_VERIFIED_CALIBRATION"
+  }
+}

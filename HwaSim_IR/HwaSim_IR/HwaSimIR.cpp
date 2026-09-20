@@ -52,6 +52,13 @@
 #include <thread>
 #include "IR/IRLinearReadback.h"
 #include "IR/P12DiagnosticWriter.h"
+#ifdef _WIN32
+#include "../../Shared/Sha256File.h"
+#else
+// The reproducible RK3588 source archive places repository-shared headers in
+// <archive-root>/Shared next to the flattened renderer source tree.
+#include "Shared/Sha256File.h"
+#endif
 
 #if defined(_WIN32)
 #include <process.h>
@@ -5445,7 +5452,8 @@ void HwaSimIR::UpdateStage7VolumetricClouds(const IRStage7WeatherState& weatherS
 	}
 	LPoint3f streamingCenter(0.0f, 0.0f, 0.0f);
 	std::string targetKey;
-	const bool centerReady = GetStage7StreamingCenter(streamingCenter, targetKey)&&(m_p6.enabled||m_cloudFrameReady);
+	const bool centerReady = GetStage7StreamingCenter(streamingCenter, targetKey) &&
+		(m_p6.enabled || m_cloudFrameReady || m_stage7DiscardOnlyWeatherPrewarm);
     streamingCenter=CloudRenderToWorld(streamingCenter);
 	const bool weatherAllowsCloud = centerReady && weatherState.cloudEnable &&
 		weatherState.volumeCloudProbability > 0.0;
@@ -6212,6 +6220,15 @@ void HwaSimIR::CreateEnginePlumeForTarget(TargetPlatformData& targetPlat)
 	}
 	if (plumeNodeCount + 2 > m_stage5PlumeOptions.maxPlumeNodes)
 	{
+		// INIT builds an asset pool with unbound target IDs.  Do not repeatedly
+		// move the fixed node reservation from early slots to every later asset;
+		// that leaves the first protocol-bound target paying a reparent/draw cost.
+		// Once a real full-key mapping exists, the same bounded donor reuse below
+		// remains available and the configured node ceiling is still unchanged.
+		if (targetPlat.targetState.targetID < 0)
+		{
+			return;
+		}
 		// INIT reserves batches in asset order. Reuse an unbound reservation when
 		// a later asset (for example F22) becomes active; keep the same node budget.
 		for(auto& donor:m_targetPlatformList){
@@ -6260,15 +6277,38 @@ void HwaSimIR::CreateEnginePlumeForTarget(TargetPlatformData& targetPlat)
 
 void HwaSimIR::HideEnginePlume(TargetPlatformData& targetPlat)
 {
-	if (!targetPlat.enginePlumeCoreNodePath.is_empty() && !targetPlat.enginePlumeCoreNodePath.is_hidden())
+	// On the RK GLES path, an already mapped target can remain logically hidden
+	// for tens of seconds before it first enters the sensor view.  Fully removing
+	// its plume draw calls lets the driver discard the formal M1/plume program and
+	// texture state, charging the later visibility transition to an accepted
+	// realtime frame.  Keep the mapped plume nodes submitted with every vertex
+	// clipped outside the frustum instead.  This produces no fragments, depth, or
+	// pixel contribution and does not substitute a tau value or display gain.
+	const bool keepMappedPlumeWarm =
+#if defined(__linux__)
+		m_stage6RawSiDomain &&
+		targetPlat.targetState.targetID >= 0 &&
+		!targetPlat.nodePath.is_hidden();
+#else
+		false;
+#endif
+	if (!targetPlat.enginePlumeCoreNodePath.is_empty() &&
+		(!targetPlat.enginePlumeCoreNodePath.is_hidden() || keepMappedPlumeWarm))
 	{
 		targetPlat.enginePlumeCoreNodePath.set_shader_input("u_plume_enabled", LVecBase2i(0, 0));
-		targetPlat.enginePlumeCoreNodePath.hide();
+		targetPlat.enginePlumeCoreNodePath.set_shader_input("u_draw_enabled", LVecBase2i(keepMappedPlumeWarm ? 0 : 1, 0));
+		targetPlat.enginePlumeCoreNodePath.set_tag("irDrawEnabled", keepMappedPlumeWarm ? "0" : "1");
+		if (keepMappedPlumeWarm) targetPlat.enginePlumeCoreNodePath.show();
+		else targetPlat.enginePlumeCoreNodePath.hide();
 	}
-	if (!targetPlat.enginePlumeHaloNodePath.is_empty() && !targetPlat.enginePlumeHaloNodePath.is_hidden())
+	if (!targetPlat.enginePlumeHaloNodePath.is_empty() &&
+		(!targetPlat.enginePlumeHaloNodePath.is_hidden() || keepMappedPlumeWarm))
 	{
 		targetPlat.enginePlumeHaloNodePath.set_shader_input("u_plume_enabled", LVecBase2i(0, 0));
-		targetPlat.enginePlumeHaloNodePath.hide();
+		targetPlat.enginePlumeHaloNodePath.set_shader_input("u_draw_enabled", LVecBase2i(keepMappedPlumeWarm ? 0 : 1, 0));
+		targetPlat.enginePlumeHaloNodePath.set_tag("irDrawEnabled", keepMappedPlumeWarm ? "0" : "1");
+		if (keepMappedPlumeWarm) targetPlat.enginePlumeHaloNodePath.show();
+		else targetPlat.enginePlumeHaloNodePath.hide();
 	}
 }
 
@@ -6359,14 +6399,25 @@ IREnginePlumeOutput HwaSimIR::UpdateEnginePlumeForTarget(TargetPlatformData& tar
 		}
 		if (!visible)
 		{
-			if (!node.is_hidden())
+			const bool keepMappedPlumeWarm =
+#if defined(__linux__)
+				m_stage6RawSiDomain &&
+				targetPlat.targetState.targetID >= 0 &&
+				!targetPlat.nodePath.is_hidden();
+#else
+				false;
+#endif
+			if (!node.is_hidden() || keepMappedPlumeWarm)
 			{
 				node.set_shader_input("u_plume_enabled", LVecBase2i(0, 0));
-				node.hide();
+				node.set_shader_input("u_draw_enabled", LVecBase2i(keepMappedPlumeWarm ? 0 : 1, 0));
+				node.set_tag("irDrawEnabled", keepMappedPlumeWarm ? "0" : "1");
+				if (keepMappedPlumeWarm) node.show();
+				else node.hide();
 			}
 			return;
 		}
-		const bool becomingVisible = node.is_hidden();
+		const bool becomingVisible = node.is_hidden() || node.get_tag("irDrawEnabled") != "1";
 		if (becomingVisible)
 		{
 			node.set_pos(output.localPos.x, output.localPos.y, output.localPos.z);
@@ -6398,6 +6449,8 @@ IREnginePlumeOutput HwaSimIR::UpdateEnginePlumeForTarget(TargetPlatformData& tar
 			node.set_shader_input("u_object_kind", LVecBase2i(4, 0));
 			node.set_shader_input("u_plume_layer", LVecBase2i(layer, 0));
 			node.set_shader_input("u_plume_enabled", LVecBase2i(1, 0));
+			node.set_shader_input("u_draw_enabled", LVecBase2i(1, 0));
+			node.set_tag("irDrawEnabled", "1");
 			node.set_shader_input("u_plume_length", LVecBase2f(lengthM, 0.0f));
 			node.set_shader_input("u_plume_radius_root", LVecBase2f(radiusRootM, 0.0f));
 			node.set_shader_input("u_plume_radius_tail", LVecBase2f(radiusTailM, 0.0f));
@@ -7825,6 +7878,49 @@ void HwaSimIR::ProcessRealSimSceneInitData()
 	m_stage5PlumePerfSamples = 0;
 	m_lastStage4UpdateTime = -1.0;
 
+	// The INIT packet carries the observer platform's actual initial spatial
+	// state (the sender fills it from the first accepted input row).  Establish
+	// both scene and cloud tangent frames before creating platform nodes.  This
+	// does not consume or synthesize a realtime row; INIT and sourceSeq=1 then
+	// use the same transforms during discard-only prewarm and formal rendering.
+	const BYHWICD::SpatialState& initCloudSpatial = m_initSceneData.platParamInit.spatial;
+	const bool initCloudSpatialValid =
+		std::isfinite(initCloudSpatial.lat) &&
+		std::isfinite(initCloudSpatial.lon) &&
+		std::isfinite(initCloudSpatial.alt) &&
+		initCloudSpatial.lat >= -90.0 && initCloudSpatial.lat <= 90.0 &&
+		initCloudSpatial.lon >= -180.0 && initCloudSpatial.lon <= 180.0;
+	if (initCloudSpatialValid)
+	{
+		m_geoTrans.InitReferencePoint(
+			initCloudSpatial.lat,
+			initCloudSpatial.lon,
+			initCloudSpatial.alt);
+		m_isInitReferencePoint = true;
+		m_stage7GeoReferenceAltitudeM = initCloudSpatial.alt;
+		m_cloudFrame.setLocal(
+			initCloudSpatial.lat,
+			initCloudSpatial.lon,
+			initCloudSpatial.alt);
+		m_cloudFrameReady = true;
+		RefreshCloudWorldFrame();
+		std::cout << "[InitReferencePrewarm]"
+			<< " source=protocol_init_platform"
+			<< " platID=" << m_initSceneData.platParamInit.id
+			<< " localOrigin=" << initCloudSpatial.lat << ","
+			<< initCloudSpatial.lon << "," << initCloudSpatial.alt
+			<< " sceneReferenceReady=1 cloudFrameReady=1"
+			<< " realtimeRowsConsumed=0 inputModified=0"
+			<< " beforeReady=1" << std::endl;
+	}
+	else
+	{
+		std::cout << "[InitReferencePrewarm]"
+			<< " source=protocol_init_platform valid=0 action=defer_to_first_realtime"
+			<< " realtimeRowsConsumed=0 inputModified=0"
+			<< std::endl;
+	}
+
 	// 调用增删逻辑生成平台
 	ProcessAddRemovePakPlatform();
 	ProcessAddRemoveWeaponPlatform();
@@ -7879,11 +7975,21 @@ void HwaSimIR::ProcessRealSimSceneDrivenData(
 		{
 			m_geoTrans.InitReferencePoint(platSpatial.lat, platSpatial.lon, platSpatial.alt);
 			m_stage7GeoReferenceAltitudeM = std::isfinite(platSpatial.alt) ? platSpatial.alt : 0.0;
-            m_cloudFrame.setLocal(platSpatial.lat,platSpatial.lon,platSpatial.alt);
-            m_cloudFrameReady=true;RefreshCloudWorldFrame();
-            std::cout<<"[CloudWorldFrame] publicOrigin="<<m_cloudAppearance.latitude<<","<<m_cloudAppearance.longitude<<","<<m_cloudAppearance.altitude
-                <<" localOrigin="<<platSpatial.lat<<","<<platSpatial.lon<<","<<platSpatial.alt
-                <<" frame=WGS84_ENU_tangent altitudeDatum=origin_ellipsoid_plus_ENU_z physicalAnimation=static firstInputDefinesWorld=0"<<std::endl;
+			const bool cloudFrameChanged = !m_cloudFrameReady ||
+				std::abs(m_cloudFrame.local.lat - platSpatial.lat) > 1.0e-12 ||
+				std::abs(m_cloudFrame.local.lon - platSpatial.lon) > 1.0e-12 ||
+				std::abs(m_cloudFrame.local.alt - platSpatial.alt) > 1.0e-6;
+			if (cloudFrameChanged)
+			{
+				m_cloudFrame.setLocal(platSpatial.lat,platSpatial.lon,platSpatial.alt);
+				m_cloudFrameReady=true;
+				RefreshCloudWorldFrame();
+			}
+			std::cout<<"[CloudWorldFrame] publicOrigin="<<m_cloudAppearance.latitude<<","<<m_cloudAppearance.longitude<<","<<m_cloudAppearance.altitude
+				<<" localOrigin="<<platSpatial.lat<<","<<platSpatial.lon<<","<<platSpatial.alt
+				<<" frame=WGS84_ENU_tangent altitudeDatum=origin_ellipsoid_plus_ENU_z physicalAnimation=static firstInputDefinesWorld=0"
+				<<" prewarmedFromInit="<<(cloudFrameChanged?0:1)
+				<<" renderTransformChanged="<<(cloudFrameChanged?1:0)<<std::endl;
 			m_stage7CloudGridOriginReady = false;
 			std::cout << "初始化仿真中心原点：ID=" << m_initSceneData.platParamInit.id
 				<< " 位置(" << platSpatial.lat << "," << platSpatial.lon << "," << platSpatial.alt << ")" << std::endl;
@@ -8054,12 +8160,30 @@ void HwaSimIR::ProcessRealSimSceneDrivenData(
 				<< std::endl;
 			m_stage7NearFarClipWarningLogged = true;
 		}
-		if (m_targetUpdateCullInvisible ? renderRenderable : renderVisible)
+		const bool targetDrawEnabled = m_targetUpdateCullInvisible ? renderRenderable : renderVisible;
+		const bool keepMappedTargetWarm =
+#if defined(__linux__)
+			m_stage6RawSiDomain && !m_targetUpdateCullInvisible && !targetDrawEnabled;
+#else
+			false;
+#endif
+		SetShaderInputCached(targetPlat->nodePath, "u_draw_enabled",
+			LVecBase2i(targetDrawEnabled ? 1 : 0, 0));
+		targetPlat->nodePath.set_tag("irDrawEnabled", targetDrawEnabled ? "1" : "0");
+		if (targetDrawEnabled || keepMappedTargetWarm)
 		{
 			if (targetPlat->nodePath.is_hidden())
 			{
 				targetPlat->nodePath.show();
 				++m_lastVisibilityShowCalls;
+			}
+			if (keepMappedTargetWarm && frameSeq == 1)
+			{
+				std::cout << "[MappedTargetShaderKeepalive]"
+					<< " enabled=1 mode=vertex_clip_no_fragments"
+					<< " publishedPixelContribution=0 targetInputModified=0"
+					<< " tauModified=0 displayGainModified=0"
+					<< std::endl;
 			}
 		}
 		else
@@ -8118,6 +8242,12 @@ void HwaSimIR::ProcessRealSimSceneDrivenData(
 				<< std::endl;
 		}
 	}
+	// Keep the type-first INIT slots submitted (but vertex-clipped) through the
+	// first three accepted frames.  The full-key mapper selects the first free
+	// slot of the requested type, so the ordinary trajectory binds an already
+	// submitted target/program/plume set.  Retire the unmatched keepalive slots
+	// one per later frame to avoid another concentrated draw-tree mutation.
+	int initSlotHideBudget = frameSeq > 3 ? 1 : 0;
 	for (auto& targetPlat : m_targetPlatformList)
 	{
 		if (!targetPlat.isExist ||
@@ -8125,8 +8255,26 @@ void HwaSimIR::ProcessRealSimSceneDrivenData(
 		{
 			continue;
 		}
+		if (targetPlat.nodePath.get_tag("initSlotKeepalive") == "1")
+		{
+			if (initSlotHideBudget == 0)
+			{
+				SetShaderInputCached(targetPlat.nodePath, "u_draw_enabled", LVecBase2i(0, 0));
+				targetPlat.nodePath.set_tag("irDrawEnabled", "0");
+				if (targetPlat.nodePath.is_hidden())
+				{
+					targetPlat.nodePath.show();
+					++m_lastVisibilityShowCalls;
+				}
+				continue;
+			}
+			targetPlat.nodePath.set_tag("initSlotKeepalive", "0");
+			--initSlotHideBudget;
+		}
 		if (!targetPlat.nodePath.is_hidden())
 		{
+			SetShaderInputCached(targetPlat.nodePath, "u_draw_enabled", LVecBase2i(1, 0));
+			targetPlat.nodePath.set_tag("irDrawEnabled", "1");
 			targetPlat.nodePath.hide();
 			++m_lastVisibilityHideCalls;
 		}
@@ -8405,8 +8553,15 @@ void HwaSimIR::ProcessAddRemovePakPlatform()
 
 		// 设置初始位置/姿态（从协议SpatialState读取）
 		const BYHWICD::SpatialState& spatial = platParam.spatial;
-		modelNode.set_pos(spatial.lat, spatial.lon, spatial.alt);
-		modelNode.set_hpr(-spatial.yaw, spatial.pitch, spatial.roll);
+		if (m_isInitReferencePoint)
+		{
+			modelNode.set_mat(LMatrix4(m_geoTrans.GetPandaMatrix(spatial)));
+		}
+		else
+		{
+			modelNode.set_pos(spatial.lat, spatial.lon, spatial.alt);
+			modelNode.set_hpr(-spatial.yaw, spatial.pitch, spatial.roll);
+		}
 
 		// 添加到列表并显示
 		m_pakPlatformList.push_back(newPakPlat);
@@ -10233,6 +10388,14 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 
 	//处理成像初始化数据，生成平台
 	ProcessRealSimSceneInitData();
+	// IRNozzleAttachments is a function-local immutable database.  Load and
+	// validate it before READY so JSON parsing and mesh-derived attachment cache
+	// construction are never charged to the first accepted visible-target frame.
+	const IRNozzleAttachment* prewarmedNozzleAttachment = FindNozzleAttachment("AIM120D");
+	std::cout << "[NozzleAttachmentPrewarm]"
+		<< " asset=AIM120D ready=" << (prewarmedNozzleAttachment != nullptr ? 1 : 0)
+		<< " beforeReady=1 acceptedRealtime=0 thermalParametersChanged=0"
+		<< std::endl;
 	// 阶段3：初始化后立即合成一次环境状态，保证 UDP 环境参数优先级生效。
 	IRRuntimeEnvironment initEnvironment = BuildRuntimeEnvironment();
 	m_irRadianceModel.setEnvironment(initEnvironment);
@@ -10295,10 +10458,161 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 	// first owned source frame pays the same one-time graphics preparation cost.
 	if (m_pFramework != nullptr && m_stage6FinalPipelineReady)
 	{
-		// The first tick processes the collision-node mutation.  The second tick
-		// retires the resulting graphics work so a SWIR product does not inherit
-		// that one-time cost and queue the following realtime samples.  Both are
-		// explicitly outside the input-owned product stream.
+		// The ordinary Snow/Cloudy path cannot establish its local cloud frame until
+		// sourceSeq=1, but deferring the first visible volume draw to that accepted
+		// frame causes a real GLES shader/texture cold-start and ordered-FIFO backlog.
+		// Select the actual INIT weather volumes in the still-identity cloud frame,
+		// then let the discard-only ticks below compile/draw them.  The realtime
+		// cloud-frame readiness bit remains false and no input or output identity is
+		// synthesized.  sourceSeq=1 will rebase the same stable cloud IDs normally.
+		const bool weatherPrewarmRequested =
+			m_stage7VolumeCloudEnabled && !m_stage7CloudVolumePool.empty() &&
+			m_stage7WeatherState.cloudEnable &&
+			m_stage7WeatherState.volumeCloudProbability > 0.0;
+		if (weatherPrewarmRequested)
+		{
+			const bool cloudFrameReadyBefore = m_cloudFrameReady;
+			m_stage7DiscardOnlyWeatherPrewarm = true;
+			UpdateStage7WeatherNodes(
+				m_stage7WeatherState,
+				ClockObject::get_global_clock()->get_frame_time(),
+				true);
+			m_stage7DiscardOnlyWeatherPrewarm = false;
+			std::cout << "[PostInitWeatherPrewarm]"
+				<< " profile=" << m_stage7WeatherState.weatherName
+				<< " requested=1"
+				<< " activeVolumes=" << m_stage7VolumeActiveCount
+				<< " visibleVolumes=" << m_stage7VolumeVisibleCount
+				<< " cloudFrameReadyBefore=" << (cloudFrameReadyBefore ? 1 : 0)
+				<< " cloudFrameReadyAfter=" << (m_cloudFrameReady ? 1 : 0)
+				<< " discardOnly=1 publishedVideo=0 acceptedRealtime=0"
+				<< " coordinateFrameModified=0 weatherParametersModified=0"
+				<< " beforeReady=1" << std::endl;
+		}
+		// Target slots deliberately stay hidden until their full protocol key is
+		// mapped.  On GLES, leaving every slot hidden also defers model textures,
+		// material programs and plume-billboard state until the first target becomes
+		// renderable.  The ordinary 1.txt trajectory does that well after startup,
+		// so the resulting lazy work would be charged to accepted source frames.
+		// Temporarily stage every INIT-created target in front of the sensor for the
+		// discard-only ticks below, then restore its parent, transform and visibility
+		// before READY.  No realtime sample is accepted or video product published.
+		struct PostInitTargetPrewarmState
+		{
+			size_t index;
+			NodePath parent;
+			LMatrix4 localMat;
+			bool targetHidden;
+			bool coreHidden;
+			bool haloHidden;
+		};
+		std::vector<PostInitTargetPrewarmState> targetPrewarmStates;
+		if (!m_cameraNode.is_empty())
+		{
+			for (size_t i = 0; i < m_targetPlatformList.size(); ++i)
+			{
+				TargetPlatformData& target = m_targetPlatformList[i];
+				if (!target.isExist || target.nodePath.is_empty())
+				{
+					continue;
+				}
+				PostInitTargetPrewarmState state;
+				state.index = i;
+				state.parent = target.nodePath.get_parent();
+				state.localMat = target.nodePath.get_mat();
+				state.targetHidden = target.nodePath.is_hidden();
+				state.coreHidden = target.enginePlumeCoreNodePath.is_empty() ||
+					target.enginePlumeCoreNodePath.is_hidden();
+				state.haloHidden = target.enginePlumeHaloNodePath.is_empty() ||
+					target.enginePlumeHaloNodePath.is_hidden();
+				targetPrewarmStates.push_back(state);
+
+				target.nodePath.reparent_to(m_cameraNode);
+				const float lateralM = (static_cast<float>(targetPrewarmStates.size()) -
+					(static_cast<float>(m_targetPlatformList.size()) + 1.0f) * 0.5f) * 1.5f;
+				target.nodePath.set_pos(lateralM, 1000.0f, 0.0f);
+				target.nodePath.set_hpr(0.0f, 0.0f, 0.0f);
+				target.nodePath.show();
+				if (!target.enginePlumeCoreNodePath.is_empty())
+				{
+					target.enginePlumeCoreNodePath.set_shader_input("u_plume_enabled", LVecBase2i(1, 0));
+					target.enginePlumeCoreNodePath.show();
+				}
+				if (!target.enginePlumeHaloNodePath.is_empty())
+				{
+					target.enginePlumeHaloNodePath.set_shader_input("u_plume_enabled", LVecBase2i(1, 0));
+					target.enginePlumeHaloNodePath.show();
+				}
+			}
+		}
+		std::unordered_set<int> warmPlatformTypes;
+		size_t initSlotKeepaliveCount = 0;
+		auto restoreTargetPrewarmState = [&]()
+		{
+			for (size_t stateIndex = 0; stateIndex < targetPrewarmStates.size(); ++stateIndex)
+			{
+				const PostInitTargetPrewarmState& state = targetPrewarmStates[stateIndex];
+				TargetPlatformData& target = m_targetPlatformList[state.index];
+				const int platformType = static_cast<int>(target.type);
+				const bool keepWarmSlot =
+#if defined(__linux__)
+					m_stage6RawSiDomain && !m_targetUpdateCullInvisible &&
+					warmPlatformTypes.insert(platformType).second;
+#else
+					false;
+#endif
+				target.nodePath.reparent_to(state.parent);
+				target.nodePath.set_mat(state.localMat);
+				if (keepWarmSlot)
+				{
+					target.nodePath.set_shader_input("u_draw_enabled", LVecBase2i(0, 0));
+					target.nodePath.set_tag("irDrawEnabled", "0");
+					target.nodePath.set_tag("initSlotKeepalive", "1");
+					target.nodePath.show();
+					++initSlotKeepaliveCount;
+				}
+				else
+				{
+					target.nodePath.set_tag("initSlotKeepalive", "0");
+					if (state.targetHidden) target.nodePath.hide(); else target.nodePath.show();
+				}
+				if (!target.enginePlumeCoreNodePath.is_empty())
+				{
+					target.enginePlumeCoreNodePath.set_shader_input("u_plume_enabled", LVecBase2i(0, 0));
+					if (keepWarmSlot)
+					{
+						target.enginePlumeCoreNodePath.set_shader_input("u_draw_enabled", LVecBase2i(0, 0));
+						target.enginePlumeCoreNodePath.set_tag("irDrawEnabled", "0");
+						target.enginePlumeCoreNodePath.show();
+					}
+					else if (state.coreHidden) target.enginePlumeCoreNodePath.hide(); else target.enginePlumeCoreNodePath.show();
+				}
+				if (!target.enginePlumeHaloNodePath.is_empty())
+				{
+					target.enginePlumeHaloNodePath.set_shader_input("u_plume_enabled", LVecBase2i(0, 0));
+					if (keepWarmSlot)
+					{
+						target.enginePlumeHaloNodePath.set_shader_input("u_draw_enabled", LVecBase2i(0, 0));
+						target.enginePlumeHaloNodePath.set_tag("irDrawEnabled", "0");
+						target.enginePlumeHaloNodePath.show();
+					}
+					else if (state.haloHidden) target.enginePlumeHaloNodePath.hide(); else target.enginePlumeHaloNodePath.show();
+				}
+			}
+			std::cout << "[InitSlotShaderKeepalive]"
+				<< " slots=" << initSlotKeepaliveCount
+				<< " policy=first_slot_per_platform_type mode=vertex_clip_no_fragments"
+				<< " publishedPixelContribution=0 acceptedRealtime=0 inputModified=0"
+				<< " tauModified=0 displayGainModified=0"
+				<< std::endl;
+		};
+		std::cout << "[PostInitTargetPrewarm]"
+			<< " stagedTargets=" << targetPrewarmStates.size()
+			<< " discardOnly=1 publishedVideo=0 acceptedRealtime=0"
+			<< " beforeReady=1" << std::endl;
+
+		// The first tick processes collision-node and visible-target mutations.  The
+		// second retires their graphics work.  Both are outside the input-owned stream.
 		for (int graphPrewarmPass = 1; graphPrewarmPass <= 2; ++graphPrewarmPass)
 		{
 			m_syncFrameActive.store(false);
@@ -10318,12 +10632,36 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 				<< std::endl;
 			if (!graphPrewarmRendered)
 			{
+				restoreTargetPrewarmState();
 				m_sensorProfileRequestValid = false;
 				std::cerr << "[PostInitSceneGraphPrewarm][ERROR]"
 					<< " pass=" << graphPrewarmPass
 					<< " rendered=0 action=reject_init" << std::endl;
 				return;
 			}
+		}
+		restoreTargetPrewarmState();
+		// Retire the restore/hide mutation as well.  This frame is still before the
+		// INIT ACK, so it cannot consume, skip or publish an accepted source row.
+		m_syncFrameActive.store(false);
+		const std::int64_t cleanupPrewarmBeginNs = IRPerfStats::steadyTimeNs();
+		lock.unlock();
+		const bool cleanupPrewarmRendered =
+			m_pFramework->do_frame(Thread::get_current_thread());
+		lock.lock();
+		const double cleanupPrewarmMs =
+			(IRPerfStats::steadyTimeNs() - cleanupPrewarmBeginNs) / 1.0e6;
+		std::cout << "[PostInitTargetPrewarm]"
+			<< " restored=1 cleanupRendered=" << (cleanupPrewarmRendered ? 1 : 0)
+			<< " discardOnly=1 publishedVideo=0 acceptedRealtime=0"
+			<< " elapsedMs=" << cleanupPrewarmMs
+			<< " beforeReady=1" << std::endl;
+		if (!cleanupPrewarmRendered)
+		{
+			m_sensorProfileRequestValid = false;
+			std::cerr << "[PostInitTargetPrewarm][ERROR]"
+				<< " cleanupRendered=0 action=reject_init" << std::endl;
+			return;
 		}
 	}
 #endif
@@ -10728,6 +11066,12 @@ void HwaSimIR::InitInfraredSimulation()
 		"HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed/band_lut_si.csv",
 		"../HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed/band_lut_si.csv"
 	});
+	std::string p13CoverageManifestPath = FirstExistingPath({
+		"Config/Atmosphere/MODTRAN/processed/p13_coverage_manifest.json",
+		"../Bin/Config/Atmosphere/MODTRAN/processed/p13_coverage_manifest.json",
+		"HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed/p13_coverage_manifest.json",
+		"../HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed/p13_coverage_manifest.json"
+	});
 	std::string weatherPath = FirstExistingPath({
 		"temperatures/Temperatures_Yemen_Summer.csv",
 		"../temperatures/Temperatures_Yemen_Summer.csv",
@@ -10742,6 +11086,7 @@ void HwaSimIR::InitInfraredSimulation()
 	solarHeatingLutPath = AbsolutePathForLog(solarHeatingLutPath);
 	transmittancePath = AbsolutePathForLog(transmittancePath);
 	modtranBandLutPath = AbsolutePathForLog(modtranBandLutPath);
+	p13CoverageManifestPath = AbsolutePathForLog(p13CoverageManifestPath);
 	weatherPath = AbsolutePathForLog(weatherPath);
 	std::vector<std::string> hotspotConfigPaths;
 	hotspotConfigPaths.push_back("Config/IRHotspots/target_hotspots.json");
@@ -10779,6 +11124,54 @@ void HwaSimIR::InitInfraredSimulation()
 	m_m1AtmosphereModel = m_runtimeConfig.getString("M1NirMwirPhysics", "AtmosphereModel", "M1AtmosphereModel", "Mid-Latitude Summer", nullptr);
 	m_m1AerosolModel = m_runtimeConfig.getString("M1NirMwirPhysics", "AerosolModel", "M1AerosolModel", "Rural", nullptr);
 	m_m1HumidityProfile = m_runtimeConfig.getString("M1NirMwirPhysics", "HumidityProfile", "M1HumidityProfile", "default", nullptr);
+	m_p13ExpectedFormalLutSha256 = m_runtimeConfig.getString(
+		"M1NirMwirPhysics", "FormalLutSha256", "P13FormalLutSha256", "", nullptr);
+	m_p13ExpectedCoverageManifestSha256 = m_runtimeConfig.getString(
+		"M1NirMwirPhysics", "CoverageManifestSha256", "P13CoverageManifestSha256", "", nullptr);
+	m_p13ExpectedOriginalInputSha256 = m_runtimeConfig.getString(
+		"M1NirMwirPhysics", "OriginalInputSha256", "P13OriginalInputSha256", "", nullptr);
+	m_p13CoverageManifestPath = p13CoverageManifestPath;
+	if (m_p13ExpectedFormalLutSha256.size() != 64 ||
+		m_p13ExpectedCoverageManifestSha256.size() != 64 ||
+		m_p13ExpectedOriginalInputSha256.size() != 64)
+	{
+		throw std::runtime_error("P13 atmosphere identity requires three 64-character SHA-256 values");
+	}
+	const std::string actualFormalLutSha256 = HwaHash::Sha256File(modtranBandLutPath);
+	const std::string actualCoverageManifestSha256 = HwaHash::Sha256File(p13CoverageManifestPath);
+	IRJson::Document p13CoverageManifest;
+	p13CoverageManifest.load(p13CoverageManifestPath);
+	const std::string manifestSchema = p13CoverageManifest.string("schema");
+	const std::string manifestFormalLutSha256 = p13CoverageManifest.string("dataIdentity.formalLutSha256");
+	const std::string manifestOriginalInputSha256 = p13CoverageManifest.string("immutableInput.sha256");
+	const std::string manifestAtmosphereModel = p13CoverageManifest.string("p13MeasuredGrid.atmosphereModel");
+	const std::string manifestAerosolModel = p13CoverageManifest.string("p13MeasuredGrid.aerosolModel");
+	const std::string manifestCalibrationStatus = p13CoverageManifest.string("calibrationStatus");
+	m_p13AtmosphereIdentityReady =
+		manifestSchema == "HwaSimIR.P13.SharedAtmosphereCoverage.1" &&
+		actualFormalLutSha256 == m_p13ExpectedFormalLutSha256 &&
+		actualCoverageManifestSha256 == m_p13ExpectedCoverageManifestSha256 &&
+		manifestFormalLutSha256 == actualFormalLutSha256 &&
+		manifestOriginalInputSha256 == m_p13ExpectedOriginalInputSha256 &&
+		manifestAtmosphereModel == m_m1AtmosphereModel &&
+		manifestAerosolModel == m_m1AerosolModel &&
+		manifestCalibrationStatus == "NOT_VERIFIED_CALIBRATION";
+	std::cout << "[P13 AtmosphereIdentity] status=" << (m_p13AtmosphereIdentityReady ? "PASS" : "FAIL")
+		<< " formalLut=" << modtranBandLutPath
+		<< " actualLutSha256=" << actualFormalLutSha256
+		<< " expectedLutSha256=" << m_p13ExpectedFormalLutSha256
+		<< " manifest=" << p13CoverageManifestPath
+		<< " actualManifestSha256=" << actualCoverageManifestSha256
+		<< " expectedManifestSha256=" << m_p13ExpectedCoverageManifestSha256
+		<< " originalInputSha256=" << manifestOriginalInputSha256
+		<< " expectedOriginalInputSha256=" << m_p13ExpectedOriginalInputSha256
+		<< " calibrationStatus=" << manifestCalibrationStatus
+		<< " binding=control_and_renderer_same_identity"
+		<< std::endl;
+	if (!m_p13AtmosphereIdentityReady)
+	{
+		throw std::runtime_error("P13 atmosphere LUT/manifest/input identity mismatch");
+	}
 	m_m1SunVisibility = ClampStage5Double(m_runtimeConfig.getDouble("M1NirMwirPhysics", "SunVisibility", "M1SunVisibility", 1.0, nullptr), 0.0, 1.0);
 	m_m1SkyVisibility = ClampStage5Double(m_runtimeConfig.getDouble("M1NirMwirPhysics", "SkyVisibility", "M1SkyVisibility", 1.0, nullptr), 0.0, 1.0);
 	m_l1NaturalSolarEnabled = m_runtimeConfig.getBool("NaturalSolar", "Enable", "NaturalSolarEnable", false, nullptr);
@@ -12301,7 +12694,8 @@ void HwaSimIR::InitInfraredSimulation()
 			<< std::endl;
 	}
 	m_stage5ModtranRadiancePath = modtranBandLutPath;
-	m_stage5ModtranRadianceReady = !m_stage5ModtranRadiancePath.empty() &&
+	m_stage5ModtranRadianceReady = m_p13AtmosphereIdentityReady &&
+		!m_stage5ModtranRadiancePath.empty() &&
 		m_stage5ModtranRadianceLut.load(m_stage5ModtranRadiancePath);
 	if (m_stage5ModtranRadianceReady)
 	{
@@ -13104,6 +13498,7 @@ void HwaSimIR::InitInfraredShader() {
     uniform mat4 p3d_ModelViewProjectionMatrix;
     uniform mat4 p3d_ModelMatrix;
     uniform highp mat4 p3d_ModelViewMatrix;
+	uniform ivec2 u_draw_enabled;
     uniform mat4 u_cloud_render_to_world;
     uniform highp vec2 u_cloud_world_uv_reciprocal;
     attribute vec4 p3d_Vertex;
@@ -13121,6 +13516,13 @@ void HwaSimIR::InitInfraredShader() {
     varying highp vec3 v_cloud_eye;
 
     void main() {
+		if (u_draw_enabled.x == 0) {
+			// Submit the real program/resource state without rasterizing hidden
+			// mapped targets.  All vertices lie outside the clip volume, so this
+			// path has no color, alpha, or depth contribution.
+			gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+			return;
+		}
         gl_Position = p3d_ModelViewProjectionMatrix * p3d_Vertex;
         texcoord = p3d_MultiTexCoord0;
         v_local_pos = p3d_Vertex.xyz; // 提取局部坐标
@@ -13948,6 +14350,8 @@ void HwaSimIR::ApplyInfraredShader(NodePath& node, bool isBackground) {
 	// 为所有声明过的 uniform 赋初值，防止 HwaSimIR 渲染器报 not present 错误！
 
 	// 全局与环境参数
+	node.set_shader_input("u_draw_enabled", LVecBase2i(1, 0));
+	node.set_tag("irDrawEnabled", "1");
 	node.set_shader_input("u_is_background", LVecBase2i(isBackground ? 1 : 0, 0));
 	node.set_shader_input("u_object_kind", LVecBase2i(isBackground ? 1 : 0, 0));
 	node.set_shader_input("u_wave_band", LVecBase2i(3, 0));       // deprecated compatibility: internal IRBand index
@@ -17158,8 +17562,35 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 			}
 			if (targetPlat.targetState.targetID < 0)
 			{
-				targetPlat.nodePath.hide();
-				HideEnginePlume(targetPlat);
+				if (targetPlat.nodePath.get_tag("initSlotKeepalive") == "1")
+				{
+					// ProcessRealSimSceneDrivenData owns the three-frame retirement
+					// schedule.  Until then, preserve the zero-fragment submission;
+					// this path must not undo the INIT GPU warm state later in the
+					// same accepted frame.
+					SetShaderInputCached(targetPlat.nodePath, "u_draw_enabled", LVecBase2i(0, 0));
+					targetPlat.nodePath.set_tag("irDrawEnabled", "0");
+					if (targetPlat.nodePath.is_hidden()) targetPlat.nodePath.show();
+					if (!targetPlat.enginePlumeCoreNodePath.is_empty())
+					{
+						targetPlat.enginePlumeCoreNodePath.set_shader_input("u_plume_enabled", LVecBase2i(0, 0));
+						targetPlat.enginePlumeCoreNodePath.set_shader_input("u_draw_enabled", LVecBase2i(0, 0));
+						targetPlat.enginePlumeCoreNodePath.set_tag("irDrawEnabled", "0");
+						targetPlat.enginePlumeCoreNodePath.show();
+					}
+					if (!targetPlat.enginePlumeHaloNodePath.is_empty())
+					{
+						targetPlat.enginePlumeHaloNodePath.set_shader_input("u_plume_enabled", LVecBase2i(0, 0));
+						targetPlat.enginePlumeHaloNodePath.set_shader_input("u_draw_enabled", LVecBase2i(0, 0));
+						targetPlat.enginePlumeHaloNodePath.set_tag("irDrawEnabled", "0");
+						targetPlat.enginePlumeHaloNodePath.show();
+					}
+				}
+				else
+				{
+					targetPlat.nodePath.hide();
+					HideEnginePlume(targetPlat);
+				}
 				continue;
 			}
 			const std::string targetUpdateKey = H4TargetRuntimeKey(targetPlat);

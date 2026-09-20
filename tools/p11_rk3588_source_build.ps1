@@ -19,8 +19,9 @@ if (-not $RepoRoot) { $RepoRoot = Split-Path -Parent $PSScriptRoot }
 $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 $sourceRoot = Join-Path $RepoRoot 'HwaSim_IR\HwaSim_IR'
 $ddsRoot = Join-Path $RepoRoot 'DDS'
+$sharedRoot = Join-Path $RepoRoot 'Shared'
 $askPass = Join-Path $PSScriptRoot 'p5_ssh_askpass.cmd'
-foreach ($required in @($sourceRoot, $ddsRoot, $askPass)) {
+foreach ($required in @($sourceRoot, $ddsRoot, $sharedRoot, $askPass)) {
     if (-not (Test-Path -LiteralPath $required)) { throw "Missing required source: $required" }
 }
 if (-not $StageId) { $StageId = 'p11-' + (Get-Date -Format 'yyyyMMdd-HHmmss') }
@@ -133,6 +134,7 @@ $ddsDirectories = @('Runtime', 'Protocol', 'Generated\HwaSimIRProtocolV1')
 $ddsFiles = foreach ($directory in $ddsDirectories) {
     Get-ChildItem -LiteralPath (Join-Path $ddsRoot $directory) -Recurse -File
 }
+$sharedFiles = Get-ChildItem -LiteralPath $sharedRoot -Recurse -File
 $manifestLines = New-Object System.Collections.Generic.List[string]
 foreach ($file in ($sourceFiles | Sort-Object FullName)) {
     $relative = Get-UnixRelativePath -Root $sourceRoot -Path $file.FullName
@@ -141,6 +143,11 @@ foreach ($file in ($sourceFiles | Sort-Object FullName)) {
 }
 foreach ($file in ($ddsFiles | Sort-Object FullName)) {
     $relative = 'DDS/' + (Get-UnixRelativePath -Root $ddsRoot -Path $file.FullName)
+    $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+    $manifestLines.Add("$hash  $relative")
+}
+foreach ($file in ($sharedFiles | Sort-Object FullName)) {
+    $relative = 'Shared/' + (Get-UnixRelativePath -Root $sharedRoot -Path $file.FullName)
     $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
     $manifestLines.Add("$hash  $relative")
 }
@@ -155,8 +162,9 @@ $plan = [ordered]@{
     stage_id = $StageId
     git_head = $gitHead
     working_tree = if ($gitStatus.Count -eq 0) { 'clean' } else { 'dirty' }
-    source_file_count = $sourceFiles.Count
+    source_file_count = $sourceFiles.Count + $sharedFiles.Count
     dds_file_count = @($ddsFiles).Count
+    shared_file_count = $sharedFiles.Count
     source_manifest_sha256 = (Get-FileHash -LiteralPath $manifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
     remote_source_root = $remoteRoot
     remote_build_root = $remoteBuild
@@ -188,6 +196,7 @@ else {
         '--exclude=cmake-build-*', '--exclude=build-*',
         '-C', $sourceRoot, '.',
         '-C', $RepoRoot, 'DDS/Runtime', 'DDS/Protocol', 'DDS/Generated/HwaSimIRProtocolV1',
+        '-C', $RepoRoot, 'Shared',
         '-C', $OutputDirectory, 'source_manifest.sha256'
     )
     Invoke-Native -FilePath 'tar.exe' -Arguments $tarArguments
