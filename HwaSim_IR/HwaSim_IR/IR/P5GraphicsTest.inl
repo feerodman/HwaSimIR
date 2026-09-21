@@ -113,18 +113,29 @@ void HwaSimIR::UpdateP5GraphicsTestScene()
                 ApplyInfraredShader(node,false);
                 if(!legacy) IRGameSpriteBatch::apply(node);
                 node.set_transparency(TransparencyAttrib::M_alpha);node.set_depth_write(false);node.set_depth_test(true);node.set_two_sided(true);
+                // Match the production composition order: diffuse smoke first,
+                // hot core second.  Leaving both fixture layers in Panda's
+                // distance-sorted default let the larger cold halo overwrite
+                // the core at identical depth and made a valid heat source look
+                // like an all-black plume.
+                node.set_bin("fixed",i==0?71:70);
                 node.set_shader_input("u_object_kind",LVecBase2i(4,0));node.set_shader_input("u_plume_layer",LVecBase2i(i+1,0));
                 node.set_shader_input("u_plume_enabled",LVecBase2i(syntheticHeatSourceEnabled?1:0,0));
                 node.set_shader_input("u_plume_gray",LVecBase2f(i==0?.8f:.35f,0));
                 node.set_shader_input("u_plume_opacity",LVecBase2f(.8f,0));
                 node.set_shader_input("u_plume_radius_root",LVecBase2f(1,0));node.set_shader_input("u_plume_radius_tail",LVecBase2f(1.5f,0));
                 node.set_shader_input("u_plume_axial_decay",LVecBase2f(2,0));node.set_shader_input("u_plume_radial_decay",LVecBase2f(3,0));
+                // This flag selects the compact, deterministic ordinary-nozzle
+                // fixture envelope.  Production target nodes keep x==0 and are
+                // still driven solely by their plume profile and protocol state.
+                node.set_shader_input("u_game_sprite",LVecBase4f(1,1,2.2f,0));
                 node.set_scale(i==0?1.f:1.7f,i==0?8.f:12.f,i==0?1.f:1.7f);
             }
         }
         std::cout<<"[P5GraphicsTest] scene="<<scene<<" view="<<view
             <<" materialView="<<materialView
             <<" syntheticHeatSourceEnabled="<<(syntheticHeatSourceEnabled?1:0)
+            <<" plumeOrder=fixed_halo70_then_core71 fixtureEnvelope=ordinary_nozzle"
             <<" diagnosticFovDeg=35 diagnosticNearM=0.1 modelScaleUnchanged=1"
             <<" diagnosticEncoding=scene_wide_window_radiance values=artificial_game_only center="
             <<m_p5TestCenter<<std::endl;

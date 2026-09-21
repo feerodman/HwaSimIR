@@ -39,6 +39,7 @@ inline NodePath create(const NodePath& camera, int count) {
     node.set_shader_input("u_precip_velocity",LVecBase3f(0,0,-1));
     node.set_shader_input("u_precip_up",LVecBase3f(0,0,1));
     node.set_shader_input("u_precip_height",LVecBase3f(0,0,0));
+    node.set_shader_input("u_precip_viewport",LVecBase2f(800,800));
     node.set_shader_input("u_stage6_raw_si_domain",LVecBase2i(0,0));
     node.hide();
     std::cout<<"[PrecipitationBatch] particles="<<count<<" draws=1 vertices="<<count*4

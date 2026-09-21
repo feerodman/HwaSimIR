@@ -13,6 +13,7 @@
 #include "transparencyAttrib.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdlib>
 #include <fstream>
@@ -24,6 +25,88 @@
 namespace
 {
 const int kMaxShaderMaterialParams = 8;
+
+unsigned char CategoricalMode2x2(unsigned char a, unsigned char b,
+	unsigned char c, unsigned char d)
+{
+	const std::array<unsigned char, 4> values = { a, b, c, d };
+	unsigned char best = values[0];
+	int bestCount = 0;
+	for (size_t i = 0; i < values.size(); ++i)
+	{
+		int count = 0;
+		for (size_t j = 0; j < values.size(); ++j)
+		{
+			if (values[j] == values[i]) ++count;
+		}
+		// Deterministic numeric tie-break affects only a mathematically equal
+		// 2x2 boundary footprint; it never invents a material ID.
+		if (count > bestCount || (count == bestCount && values[i] < best))
+		{
+			best = values[i];
+			bestCount = count;
+		}
+	}
+	return best;
+}
+
+int ConfigureCategoricalMaterialIdMipmaps(const PT(Texture)& texture)
+{
+	static std::set<const Texture*> prepared;
+	if (texture == nullptr) return 0;
+	texture->set_magfilter(SamplerState::FT_nearest);
+	texture->set_anisotropic_degree(1);
+	if (!prepared.insert(texture.p()).second)
+	{
+		texture->set_minfilter(texture->get_num_ram_mipmap_images() > 1
+			? SamplerState::FT_nearest_mipmap_nearest : SamplerState::FT_nearest);
+		return texture->get_num_ram_mipmap_images();
+	}
+
+	if (!texture->has_ram_image() || texture->get_num_components() != 1 ||
+		texture->get_component_width() != 1)
+	{
+		texture->set_minfilter(SamplerState::FT_nearest);
+		return texture->get_num_ram_mipmap_images();
+	}
+
+	int width = texture->get_x_size();
+	int height = texture->get_y_size();
+	CPTA_uchar base = texture->get_ram_mipmap_image(0);
+	if (width <= 0 || height <= 0 || base.size() < static_cast<size_t>(width * height))
+	{
+		texture->set_minfilter(SamplerState::FT_nearest);
+		return texture->get_num_ram_mipmap_images();
+	}
+	std::vector<unsigned char> current(base.begin(), base.begin() + width * height);
+	int level = 1;
+	while (width > 1 || height > 1)
+	{
+		const int nextWidth = std::max(1, width / 2);
+		const int nextHeight = std::max(1, height / 2);
+		PTA_uchar mip = PTA_uchar::empty_array(static_cast<size_t>(nextWidth * nextHeight));
+		for (int y = 0; y < nextHeight; ++y)
+		{
+			const int y0 = std::min(height - 1, y * 2);
+			const int y1 = std::min(height - 1, y0 + 1);
+			for (int x = 0; x < nextWidth; ++x)
+			{
+				const int x0 = std::min(width - 1, x * 2);
+				const int x1 = std::min(width - 1, x0 + 1);
+				mip[y * nextWidth + x] = CategoricalMode2x2(
+					current[y0 * width + x0], current[y0 * width + x1],
+					current[y1 * width + x0], current[y1 * width + x1]);
+			}
+		}
+		texture->set_ram_mipmap_image(level, mip);
+		current.assign(mip.begin(), mip.end());
+		width = nextWidth;
+		height = nextHeight;
+		++level;
+	}
+	texture->set_minfilter(SamplerState::FT_nearest_mipmap_nearest);
+	return texture->get_num_ram_mipmap_images();
+}
 
 bool FileExistsLocal(const std::string& path)
 {
@@ -452,9 +535,6 @@ IRSceneMaterialBinding IRSceneMaterialMapper::bindPlatformNode(NodePath& node, c
 		PT(Texture) materialIdTexture = TexturePool::load_texture(materialIdPath);
 		if (materialIdTexture != nullptr)
 		{
-			// 材质编号必须逐像素读取，不能让线性过滤把相邻材质 ID 混合。
-			materialIdTexture->set_minfilter(SamplerState::FT_nearest);
-			materialIdTexture->set_magfilter(SamplerState::FT_nearest);
 			// ID data must stay linear even when global color-texture policy changes.
 			if (materialIdTexture->get_num_components() == 1)
 			{
@@ -464,10 +544,19 @@ IRSceneMaterialBinding IRSceneMaterialMapper::bindPlatformNode(NodePath& node, c
 				materialIdTexture->set_format(Texture::F_red);
 				std::cout << "[MaterialIdTexture] name=asset"
 					<< " path=" << binding.materialIdTexturePath
-					<< " format=R8_UNORM components=1 sampler=nearest"
+					<< " format=R8_UNORM components=1"
 					<< " reason=gles3_legacy_luminance_unsupported"
 					<< std::endl;
 			}
+			// Linear color mipmaps are invalid for categorical material numbers.
+			// Build a mode-reduced R8 chain: every texel remains one source ID,
+			// while minification no longer selects a different full-resolution
+			// texel on every sub-pixel movement.
+			const int materialIdMipLevels = ConfigureCategoricalMaterialIdMipmaps(materialIdTexture);
+			std::cout << "[MaterialIdSampling] path=" << binding.materialIdTexturePath
+				<< " min=nearest_mipmap_nearest mag=nearest reduction=mode_2x2"
+				<< " tieBreak=lowest_existing_id mipLevels=" << materialIdMipLevels
+				<< std::endl;
 			node.set_shader_input("u_material_id_texture", materialIdTexture);
 			// 绑定到第二纹理通道，shader 通过 Panda3D 内置 sampler p3d_Texture1 读取。
 			PT(TextureStage) materialIdStage = new TextureStage("material_id_stage");
@@ -491,7 +580,7 @@ IRSceneMaterialBinding IRSceneMaterialMapper::bindPlatformNode(NodePath& node, c
 		<< " materialIdTex=" << (binding.hasMaterialIdTexture ? "OK" : "fallback")
 		<< " materialMap=" << (binding.hasMaterialMap ? "OK" : "fallback")
 		<< " entries=" << binding.entries.size()
-		<< " gpuSlots=" << shaderCount << " capacity=8 truncated=0 sampler=nearest_linear_data"
+		<< " gpuSlots=" << shaderCount << " capacity=8 truncated=0 sampler=categorical_mode_mip_nearest"
 		<< " transmissiveMaterials=" << binding.transmissiveMaterialCount
 		<< " transmissiveNodes=" << binding.transmissiveNodeCount
 		<< " transmissionCompositeReady=" << (binding.transmissionCompositeReady ? 1 : 0)

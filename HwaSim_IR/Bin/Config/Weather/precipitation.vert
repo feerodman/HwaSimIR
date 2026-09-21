@@ -5,6 +5,7 @@ uniform vec2 u_precip_fov; // tan(horizontal/vertical half FOV)
 uniform vec3 u_precip_velocity; // world wind and vertical fall transformed to camera axes
 uniform vec3 u_precip_up;
 uniform vec3 u_precip_height; // camera public-world altitude, maximum, transition thickness
+uniform vec2 u_precip_viewport; // final sensor pixels, not the window/widget size
 in vec4 p3d_Vertex;
 in vec3 p3d_Normal;
 in vec2 p3d_MultiTexCoord0;
@@ -32,7 +33,14 @@ void main() {
     // Preserve the front-facing quad winding for every wind direction.
     vec2 crossAxis=vec2(along.y,-along.x);
     float lengthScale=snow?1.0:mix(40.0,70.0,p3d_Normal.z);
-    vec2 corner=(crossAxis*p3d_Vertex.x+along*p3d_Vertex.z*lengthScale)*size;
+    // Preserve authored metric size, but keep a rain shaft from disappearing
+    // between raster samples.  This is a screen-space coverage floor, not an
+    // opacity/radiance gain, and follows the actual sensor resolution.
+    vec2 viewport=max(u_precip_viewport,vec2(1.0));
+    float onePixelWorldX=(halfExtent.x*2.0)/viewport.x;
+    float crossSize=snow?size:max(size,onePixelWorldX*.72);
+    float alongSize=snow?size:size*lengthScale;
+    vec2 corner=crossAxis*p3d_Vertex.x*crossSize+along*p3d_Vertex.z*alongSize;
     if(snow) {
         float a=p3d_Normal.z*6.2831853+u_precip_time.x*.35;
         corner=mat2(cos(a),-sin(a),sin(a),cos(a))*p3d_Vertex.xz*size;

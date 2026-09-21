@@ -105,7 +105,9 @@ void AnnotationOverlay::drawFrame(const AnnotationFrameRecord& record, const Ann
 					<< " name=" << point.name << " reason=missing_stable_definition_index" << std::endl;
 				continue;
 			}
-			addText(std::to_string(point.displayIndex), point.x + 6, point.y - 6,
+			std::ostringstream label;
+			label << point.displayIndex << "(" << point.x << "," << point.y << ")";
+			addText(label.str(), point.x + 6, point.y - 6,
 				record.width, record.height, 0.028f, true);
 		}
 	}

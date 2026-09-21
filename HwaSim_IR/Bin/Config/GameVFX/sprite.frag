@@ -1,5 +1,6 @@
 uniform vec3 u_sprite_art; // length, radius, luminous art multipliers only
 uniform sampler2D u_sprite_atlas;
+uniform sampler2D u_weather_smoke;
 uniform int u_plume_enabled;
 uniform int u_plume_layer;
 uniform vec4 u_game_sprite;
@@ -14,8 +15,13 @@ in float sprite_weight;
 out vec4 fragColor;
 void main() {
     if (u_plume_enabled != 1) discard;
-    float mask = texture(u_sprite_atlas, sprite_uv).r;
     bool smoke = u_plume_layer == 2;
+    // Core keeps the authored thermal sprite.  The diffuse halo uses the
+    // Weather smoke alpha strictly as spatial coverage; RGB never becomes a
+    // radiance, temperature, gain, or atmospheric substitute.
+    vec2 smokeUv=vec2(clamp((sprite_uv.x-.5)*2.0,0.0,1.0),sprite_uv.y);
+    float mask = smoke ? texture(u_weather_smoke,smokeUv).a
+                       : texture(u_sprite_atlas,sprite_uv).r;
     float opacity = clamp(u_plume_opacity,0.0,1.0);
     float densityWeight = max(0.0,mask*sprite_weight);
     // The profile value is a layer opacity, not optical depth.  This conversion

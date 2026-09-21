@@ -7,9 +7,9 @@ param(
     [string]$Weather = 'Clear',
     [ValidateSet('Original','P13Performance300s','P14GroundWeather')]
     [string]$InputMode = 'Original',
-    [ValidateSet('','materials','nozzle')]
+    [ValidateSet('','materials','nozzle','cloud')]
     [string]$P5Scene = '',
-    [ValidateSet('oblique','end','side','near','far')]
+    [ValidateSet('oblique','end','side','near','far','below','above','behind','occluded')]
     [string]$P5View = 'end',
     [ValidateSet('A','B')]
     [string]$P5MaterialCase = 'A',

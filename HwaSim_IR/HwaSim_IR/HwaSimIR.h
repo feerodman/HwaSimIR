@@ -782,6 +782,8 @@ private:
     NodePath m_p7IlluminationNode;
 	double m_gameSpriteTimeOrigin = -1.0;
 	double m_gameSpriteLastTime = -1.0;
+	double m_stage7PrecipitationTimeOrigin = -1.0;
+	double m_stage7PrecipitationLastTime = -1.0;
 	double m_stage7CloudTextureWorldSizeM = 5000.0;
 	void UpdateP5GraphicsTestScene();
 	void UpdateP6GraphicsTestScene();

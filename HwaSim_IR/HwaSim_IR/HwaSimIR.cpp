@@ -5919,10 +5919,18 @@ int HwaSimIR::RefreshStage7WeatherTextureCache(const IRStage7WeatherState& weath
 	int loadCount = 0;
 	if (!m_cloudNodes.empty())
 	{
-		const std::string resolvedCloudTexturePath = !m_p6.enabled&&m_cloudAppearance.enabled
-            ? m_cloudAppearance.root+"/"+m_cloudAppearance.sheetTexture : weatherState.cloudTexturePath.empty()
+		// Ordinary weather must honor the active profile (scattered/storm/
+		// overcast/etc.). CustomerDemo previously replaced every profile with
+		// one scattered sheet, so Rain and Snow loaded valid Weather assets but
+		// never drew them. Keep the appearance sheet only as a fallback.
+		std::string requestedCloudTexturePath = weatherState.cloudTexturePath;
+		if (requestedCloudTexturePath.empty() && m_cloudAppearance.enabled)
+		{
+			requestedCloudTexturePath = m_cloudAppearance.root + "/" + m_cloudAppearance.sheetTexture;
+		}
+		const std::string resolvedCloudTexturePath = requestedCloudTexturePath.empty()
 			? std::string()
-			: FirstExistingPath(BuildRuntimeConfigPathCandidates(weatherState.cloudTexturePath));
+			: FirstExistingPath(BuildRuntimeConfigPathCandidates(requestedCloudTexturePath));
 		if (resolvedCloudTexturePath != m_stage7CachedCloudTexturePath)
 		{
 			m_stage7CachedCloudTexturePath = resolvedCloudTexturePath;
@@ -5951,11 +5959,12 @@ int HwaSimIR::RefreshStage7WeatherTextureCache(const IRStage7WeatherState& weath
 		{
 			m_stage7CloudTexture->set_wrap_u(SamplerState::WM_repeat);
 			m_stage7CloudTexture->set_wrap_v(SamplerState::WM_repeat);
-			if(!m_p6.enabled&&m_cloudAppearance.enabled){
-				m_stage7CloudTexture->set_minfilter(SamplerState::FT_linear_mipmap_linear);
-				m_stage7CloudTexture->set_magfilter(SamplerState::FT_linear);
-				m_stage7CloudTexture->set_anisotropic_degree(4);
-			}
+			if (m_stage7CloudTexture->has_ram_image() &&
+				m_stage7CloudTexture->get_num_ram_mipmap_images() <= 1)
+				m_stage7CloudTexture->generate_ram_mipmap_images();
+			m_stage7CloudTexture->set_minfilter(SamplerState::FT_linear_mipmap_linear);
+			m_stage7CloudTexture->set_magfilter(SamplerState::FT_linear);
+			m_stage7CloudTexture->set_anisotropic_degree(4);
 			for (size_t i = 0; i < m_cloudNodes.size(); ++i)
 			{
 				if (!m_cloudNodes[i].is_empty())
@@ -5998,6 +6007,12 @@ int HwaSimIR::RefreshStage7WeatherTextureCache(const IRStage7WeatherState& weath
 			: m_stage7RainTexture;
 		if (activeTexture)
 		{
+			if (activeTexture->has_ram_image() && activeTexture->get_num_ram_mipmap_images() <= 1)
+				activeTexture->generate_ram_mipmap_images();
+			activeTexture->set_minfilter(SamplerState::FT_linear_mipmap_linear);
+			activeTexture->set_magfilter(SamplerState::FT_linear);
+			activeTexture->set_wrap_u(SamplerState::WM_clamp);
+			activeTexture->set_wrap_v(SamplerState::WM_clamp);
 			for (size_t i = 0; i < m_stage7PrecipitationNodes.size(); ++i)
 			{
 				if (!m_stage7PrecipitationNodes[i].is_empty())
@@ -6059,7 +6074,7 @@ void HwaSimIR::UpdateStage7CloudWorldGrid(const IRStage7WeatherState& weatherSta
 		static_cast<float>(std::cos(windRadians)),
 		static_cast<float>(std::sin(windRadians)));
 	const float windSpeedUv = static_cast<float>(
-		(m_p6.enabled?weatherState.windV:0.0) * m_stage7CloudUvSpeedScale / m_stage7CloudTextureWorldSizeM);
+		weatherState.windV * m_stage7CloudUvSpeedScale / m_stage7CloudTextureWorldSizeM);
 	const double cloudTopM = (m_p6.enabled?m_stage7GroundReferenceZ:0.0) + m_stage7CloudBaseAltitudeM +
 		(m_stage7CloudRenderMode == CloudRenderMode::World2D ? 0.0 : m_stage7CloudThicknessM);
 	const double transitionM = std::max(50.0, m_stage7CloudThicknessM * 0.25);
@@ -6112,12 +6127,14 @@ void HwaSimIR::UpdateStage7CloudWorldGrid(const IRStage7WeatherState& weatherSta
 			SetShaderInputCached(cloud, "u_cloud_wind_direction", windDirection);
 			SetShaderInputCached(cloud, "u_cloud_wind_speed_uv", LVecBase2f(windSpeedUv, 0.0f));
 		}
-        if(!m_p6.enabled&&m_cloudAppearance.enabled){
-            const auto band=IRBandFromProtocol(m_sensorParam.trackerSensorBand);
-            cloud.set_shader_input("u_stage7_cloud_mask_channel",LVecBase2i(1,0));
-            cloud.set_shader_input("u_game_sheet",LVecBase4f(1,float(band==IRBand::NearInfrared?m_cloudAppearance.cloudNir:m_cloudAppearance.cloudMwir),float(m_cloudAppearance.sheetDepth),m_cloudAppearance.bounded?float(std::sin(m_cloudAppearance.sheetGrazingFadeDegrees*0.017453292519943295)):0.f));
-            cloud.set_shader_input("u_cloud_base_scale",LVecBase2f(1,0));
-        }
+		if(!m_p6.enabled&&m_cloudAppearance.enabled){
+			// Keep the bounded world-sheet grazing fade, but leave source,
+			// optical depth, coverage and mask channel owned by weather_profiles.
+			// u_game_sheet.x remains reserved for the explicit P6 art fixture.
+			cloud.set_shader_input("u_game_sheet",LVecBase4f(0,0,1,
+				m_cloudAppearance.bounded?float(std::sin(m_cloudAppearance.sheetGrazingFadeDegrees*0.017453292519943295)):0.f));
+			cloud.set_shader_input("u_cloud_base_scale",LVecBase2f(1,0));
+		}
 		if ((std::getenv("P5SheetOff") && std::string(std::getenv("P5SheetOff"))=="1") ||
             (std::getenv("WorldCloudSheetOff") && std::string(std::getenv("WorldCloudSheetOff"))=="1")) cloud.hide();
 		SetShaderInputCached(cloud, "u_cloud_inside_factor", LVecBase2f(static_cast<float>(insideFactor), 0.0f));
@@ -6281,7 +6298,12 @@ void HwaSimIR::CreateEnginePlumeForTarget(TargetPlatformData& targetPlat)
 	targetPlat.enginePlumeHaloNodePath.set_depth_write(false);
 	targetPlat.enginePlumeHaloNodePath.set_depth_test(true);
 	targetPlat.enginePlumeHaloNodePath.set_two_sided(true);
-	targetPlat.enginePlumeHaloNodePath.set_bin("transparent", 5);
+	// Both layers share the same attachment depth.  The transparent bin sorts by
+	// depth and does not provide a stable inter-layer order for its draw-sort
+	// value, so the larger cold halo could be submitted after (and cover) the hot
+	// core.  A fixed order with depth testing retained gives deterministic
+	// medium-first, emission-last composition without changing either radiance.
+	targetPlat.enginePlumeHaloNodePath.set_bin("fixed", 70);
 	ApplyInfraredShader(targetPlat.enginePlumeHaloNodePath, false);
 	targetPlat.enginePlumeHaloNodePath.set_shader_input("u_object_kind", LVecBase2i(4, 0));
 	targetPlat.enginePlumeHaloNodePath.set_shader_input("u_plume_layer", LVecBase2i(2, 0));
@@ -6296,7 +6318,7 @@ void HwaSimIR::CreateEnginePlumeForTarget(TargetPlatformData& targetPlat)
 	targetPlat.enginePlumeCoreNodePath.set_depth_write(false);
 	targetPlat.enginePlumeCoreNodePath.set_depth_test(true);
 	targetPlat.enginePlumeCoreNodePath.set_two_sided(true);
-	targetPlat.enginePlumeCoreNodePath.set_bin("transparent", 6);
+	targetPlat.enginePlumeCoreNodePath.set_bin("fixed", 71);
 	ApplyInfraredShader(targetPlat.enginePlumeCoreNodePath, false);
 	targetPlat.enginePlumeCoreNodePath.set_shader_input("u_object_kind", LVecBase2i(4, 0));
 	targetPlat.enginePlumeCoreNodePath.set_shader_input("u_plume_layer", LVecBase2i(1, 0));
@@ -6576,6 +6598,7 @@ IREnginePlumeOutput HwaSimIR::UpdateEnginePlumeForTarget(TargetPlatformData& tar
 			<< " formalPathRadiance=" << cache.formalPathRadiance
 			<< " spriteRgbEquation=tau_times_source_plus_path"
 			<< " blend=straight_alpha"
+			<< " drawOrder=fixed_halo70_then_core71"
 			<< " noLegacyFallback=" << ((formalPlumeRequested && !formalPlumeReady) ? 1 : 0)
 			<< " coreOpacity=" << output.coreOpacity
 			<< " haloOpacity=" << output.haloOpacity
@@ -6713,9 +6736,11 @@ void HwaSimIR::LogStage7Weather(const IRStage7WeatherState& weatherState, const 
 	const double sensorFovDeg = std::max(m_sensorDisplayConfig.horizontalFovDeg, m_sensorDisplayConfig.verticalFovDeg);
 	const bool overlayActive = m_stage7WeatherEnabled &&
 		m_stage7PrecipitationEnabled &&
-		m_stage7PrecipitationMode == 1 &&
+		m_stage7PrecipitationMode == 2 &&
+		!m_stage7PrecipitationNodes.empty() &&
 		weatherState.precipitationType != IRStage7PrecipitationType::None &&
-		weatherState.precipitationDensity > 0.001;
+		weatherState.precipitationDensity > 0.001 &&
+		weatherState.maxHeight > 0.0;
 	std::cout << "[Stage7 PrecipitationOverlay]"
 		<< " mode=" << m_stage7PrecipitationModeName
 		<< " active=" << (overlayActive ? "1" : "0")
@@ -8496,7 +8521,18 @@ NodePath HwaSimIR::LoadPlatformAssetNode(PLATFORM_TYPE type, const PlatformResPa
 		PT(Texture) texture = TexturePool::load_texture(texturePath);
 		if (texture != nullptr)
 		{
+			// Imported 1K--4K color maps previously used the global single-level
+			// default. Explicit trilinear mip filtering prevents high-frequency
+			// texels from alternating as a model crosses sub-pixel footprints.
+			if (texture->has_ram_image() && texture->get_num_ram_mipmap_images() <= 1)
+				texture->generate_ram_mipmap_images();
+			texture->set_minfilter(SamplerState::FT_linear_mipmap_linear);
+			texture->set_magfilter(SamplerState::FT_linear);
+			texture->set_anisotropic_degree(4);
 			modelNode.set_texture(TextureStage::get_default(), texture, 100);
+			std::cout << "[ModelTextureSampling] path=" << res.texturePath
+				<< " min=linear_mipmap_linear mag=linear anisotropy=4 mipLevels="
+				<< texture->get_num_ram_mipmap_images() << std::endl;
 		}
 		else
 		{
@@ -14073,14 +14109,11 @@ void HwaSimIR::InitInfraredShader() {
             vec2 wind_detail = detail_dir * u_cloud_wind_speed_uv.x * 1.31 * u_time;
             highp float base_scale = max(0.05, u_cloud_base_scale.x);
             highp float detail_scale = max(1.0, u_cloud_detail_scale.x);
-            highp vec2 base_uv = fract(v_cloud_world_uv * base_scale + u_cloud_uv_offset + wind_base);
-            highp vec2 detail_uv = fract(v_cloud_world_uv * base_scale * detail_scale
-                                 + u_cloud_uv_offset * 2.17 + wind_detail);
-            if(u_game_sheet.x>0.5){
-                // Repeat sampler owns wrapping: preserve derivatives for mip filtering.
-                base_uv=v_cloud_world_uv*base_scale+u_cloud_uv_offset+wind_base;
-                detail_uv=v_cloud_world_uv*base_scale*detail_scale+u_cloud_uv_offset*2.17+wind_detail;
-            }
+            // The repeat sampler owns wrapping. Calling fract() before sampling
+            // breaks derivatives at every tile boundary and produces cloud
+            // shimmer. Unwrapped UVs preserve the mip/anisotropic footprint.
+            highp vec2 base_uv=v_cloud_world_uv*base_scale+u_cloud_uv_offset+wind_base;
+            highp vec2 detail_uv=v_cloud_world_uv*base_scale*detail_scale+u_cloud_uv_offset*2.17+wind_detail;
             vec4 base_texel = texture2D(p3d_Texture0, base_uv);
             vec4 detail_texel = texture2D(p3d_Texture0, detail_uv);
             float base_luma = clamp(dot(base_texel.rgb, vec3(0.299, 0.587, 0.114)), 0.0, 1.0);
@@ -18169,6 +18202,7 @@ void HwaSimIR::OnTcpFrameSent(
 void HwaSimIR::ResetGameGraphicsState()
 {
 	m_gameSpriteTimeOrigin=-1.0; m_gameSpriteLastTime=-1.0;
+	m_stage7PrecipitationTimeOrigin=-1.0; m_stage7PrecipitationLastTime=-1.0;
 	if(!m_p5TestRoot.is_empty()) m_p5TestRoot.remove_node();
 	m_p5TestRoot=NodePath();m_p5TestModel=NodePath();m_p5TestCore=NodePath();m_p5TestHalo=NodePath();
     m_p6WorldCloudOriginReady=false;
@@ -18184,11 +18218,32 @@ void HwaSimIR::UpdateStage7PrecipitationBatch()
     const bool visible=m_stage7PrecipitationEnabled && m_stage7PrecipitationMode==2 &&
         weather.precipitationType!=IRStage7PrecipitationType::None && weather.precipitationDensity>.001 && weather.maxHeight>0;
     NodePath& node=m_stage7PrecipitationNodes[0];
+    // Batch precipitation shares the depth-tested Stage7 volume display
+    // region.  That region used to be activated solely by visible volumetric
+    // clouds, so a ground-level horizontal view (zero visible cloud proxies)
+    // updated rain/snow every frame but never submitted its draw.  Bind the
+    // composite lifetime to either consumer; this does not change density,
+    // radiance, opacity, trajectory or the authored Weather texture.
+    if(m_stage7VolumeRegion != nullptr)
+        m_stage7VolumeRegion->set_active(m_stage7VolumeVisibleCount > 0 || visible);
     if(!visible){node.hide();return;}
     node.show();
     node.set_mat(m_cameraNode.get_mat(m_renderRoot));
+	const auto seq=m_currentFrameTelemetry.sourceSeq;
     const double simTime=m_realTimeSceneData.time*.001;
-    const double elapsed=std::isfinite(simTime)?simTime:0.0;
+	// INIT/RESET calls use sourceSeq=0 and a zero placeholder time.  They must
+	// not commit the generation's animation origin before the first accepted
+	// realtime sample arrives.
+	if(seq > 0 && std::isfinite(simTime) &&
+		(m_stage7PrecipitationTimeOrigin < 0.0 || simTime < m_stage7PrecipitationLastTime))
+		m_stage7PrecipitationTimeOrigin=simTime;
+	if(seq > 0) m_stage7PrecipitationLastTime=simTime;
+	// Protocol time is epoch-based and is about 1.8e9 seconds in current DDS
+	// fixtures.  Passing that absolute value through a float uniform destroys
+	// the fractional phase (and made fadeEdge zero for every particle).  Keep
+	// deterministic protocol timing, but express it relative to this generation.
+	const double elapsed=seq > 0 && std::isfinite(simTime) && m_stage7PrecipitationTimeOrigin >= 0.0
+		? std::max(0.0,simTime-m_stage7PrecipitationTimeOrigin) : 0.0;
     const bool snow=weather.precipitationType==IRStage7PrecipitationType::Snow;
     const double angle=weather.windDir*3.141592653589793/180.0;
     const float speed=float(std::max(0.0,weather.precipitationSpeed));
@@ -18199,24 +18254,41 @@ void HwaSimIR::UpdateStage7PrecipitationBatch()
     const auto position=CloudRenderToWorld(m_cameraNode.get_pos(m_renderRoot));
     const auto fov=m_cameraLens->get_fov();
 	const float legacySource=m_sensorParam.trackerSensorBand==1?(snow?.55f:.38f):(snow?.39f:.34f);
-	// A local droplet/flake is represented as an emission/absorption layer.  In
-	// formal SI mode reuse the current weather source function already evaluated
-	// at the sensor plane (thermal + reflected terms and one atmospheric path),
-	// rather than writing an arbitrary 0..1 gray into the float radiance FBO.
+	// Rain and snow are near-field extinction/emission layers.  Reusing the
+	// 250 K high-cloud source function here made ordinary rain nearly identical
+	// to the sky behind it, so the correctly submitted Weather texture vanished
+	// after the final display mapping.  Use the current protocol environment for
+	// the hydrometeor temperature and keep opacity in alpha; this is a physical
+	// source-function correction, not a display gain or forced-white override.
+	const IRRuntimeEnvironment precipitationEnvironment=BuildRuntimeEnvironment();
+	const IRBand precipitationBand=IRBandFromProtocol(
+		std::max(0,std::min(4,m_sensorParam.trackerSensorBand)));
+	const double ambientTemperatureK=ClampStage5Double(
+		precipitationEnvironment.airTemperatureC+273.15,180.0,330.0);
+	// A falling snow particle cannot remain warmer than the melting point in the
+	// generic phase model.  Rain follows the measured/current ambient sample.
+	const double sourceTemperatureK=snow
+		? std::min(273.15,ambientTemperatureK) : ambientTemperatureK;
 	const float source=m_stage6RawSiDomain
-		? static_cast<float>(std::max(0.0,weather.cloudGray)) : legacySource;
+		? static_cast<float>(std::max(0.0,
+			IRRadianceModelV2::bandAveragePlanckRadianceWm2SrUm(
+				precipitationBand,sourceTemperatureK))) : legacySource;
 	SetShaderInputCached(node,"u_precip_time",LVecBase2f(float(elapsed),0));
 	node.set_shader_input("u_precip_state",LVecBase4f(snow?2.f:1.f,float(weather.precipitationDensity),speed,source));
 	SetShaderInputCached(node,"u_stage6_raw_si_domain",LVecBase2i(m_stage6RawSiDomain?1:0,0));
     SetShaderInputCached(node,"u_precip_fov",LVecBase2f(float(std::tan(fov[0]*3.141592653589793/360.0)),float(std::tan(fov[1]*3.141592653589793/360.0))));
     SetShaderInputCached(node,"u_precip_velocity",velocity);
     SetShaderInputCached(node,"u_precip_up",up);
-    SetShaderInputCached(node,"u_precip_height",LVecBase3f(position[2],float(weather.maxHeight),float(weather.transHeight)));
-    const auto seq=m_currentFrameTelemetry.sourceSeq;
+	SetShaderInputCached(node,"u_precip_height",LVecBase3f(position[2],float(weather.maxHeight),float(weather.transHeight)));
+	SetShaderInputCached(node,"u_precip_viewport",LVecBase2f(
+		float(std::max(1,m_stage6FinalWidth)),float(std::max(1,m_stage6FinalHeight))));
     if(seq<=3 || seq%3600==0) {
 		std::ostringstream line;line<<"[PrecipitationFrame] sourceSeq="<<seq<<" type="<<(snow?"snow":"rain")
-			<<" simTime="<<simTime<<" density="<<weather.precipitationDensity<<" speed="<<speed
+			<<" simTime="<<simTime<<" elapsedSec="<<elapsed<<" timeOrigin="<<m_stage7PrecipitationTimeOrigin
+			<<" dtSource=protocol_time_ms_relative density="<<weather.precipitationDensity<<" speed="<<speed
 			<<" source="<<source<<" sourceUnit="<<(m_stage6RawSiDomain?"W_per_m2_sr_um":"legacy_linear")
+			<<" sourceTemperatureK="<<sourceTemperatureK
+			<<" sourceModel="<<(m_stage6RawSiDomain?"local_hydrometeor_planck":"legacy_linear")
 			<<" cameraAltitude="<<position[2]<<" ceiling="<<weather.maxHeight<<" transitionBelow="<<weather.transHeight
             <<" batchCount=1 cloudVisible="<<m_stage7VolumeVisibleCount<<" worldWind="<<velocityWorld;
         std::cout<<line.str()<<std::endl;

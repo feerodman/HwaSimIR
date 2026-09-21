@@ -9,6 +9,8 @@ uniform vec4 u_game_sprite; // explicit ordinary-nozzle art only, zero in produc
 uniform vec3 u_sprite_nozzle_offset; // normalized second mesh nozzle, zero for one
 uniform vec2 u_sprite_aspect; // vertical/horizontal radius; second value enables asset attachment
 uniform float u_sprite_emitters;
+uniform float u_plume_radius_root;
+uniform float u_plume_radius_tail;
 in vec4 p3d_Vertex;
 in vec3 p3d_Normal; // pool index and deterministic phase, not surface normals
 in vec2 p3d_MultiTexCoord0;
@@ -23,14 +25,19 @@ void main() {
     float phase = (p3d_Normal.z * 32.0 + .5) / 32.0;
     float age = fract(u_sprite_time * .65 + phase);
     float halo = u_plume_layer == 2 ? 1.0 : 0.0;
+    // The node scale is the authored root radius.  The former sprite path did
+    // not consume radiusTail at all, collapsing long plumes to a root-width
+    // line.  Expand particle centres and quads by the profile radius envelope.
+    float safeRoot=max(u_plume_radius_root,.001);
+    float radiusEnvelope=mix(1.0,clamp(max(u_plume_radius_tail,safeRoot)/safeRoot,.5,6.0),age);
     float angle = p3d_Normal.y * 6.2831853 + age * 1.4;
-    vec3 center = vec3(cos(angle), 0.0, sin(angle)) * age * (.10 + halo * .15);
+    vec3 center = vec3(cos(angle), 0.0, sin(angle)) * age * (.10 + halo * .15) * radiusEnvelope;
     center.y = -age;
     center.y *= u_sprite_art.x;
     center.xz *= u_sprite_art.y;
     center += u_sprite_nozzle_offset * p3d_Vertex.z;
     vec4 eye = p3d_ModelViewMatrix * vec4(center, 1.0);
-    float radius = length(p3d_ModelViewMatrix[0].xyz) * mix(.32, .57 + halo*.18, age);
+    float radius = length(p3d_ModelViewMatrix[0].xyz) * mix(.32, .57 + halo*.18, age) * radiusEnvelope;
     if(u_game_sprite.x>0.5)radius=length(p3d_ModelViewMatrix[0].xyz)*mix(.6,.35+halo*.7,age);
     radius *= u_sprite_art.y;
     // Each soft sprite faces the view. The emission axis and center remain in model space.
