@@ -19,6 +19,10 @@ $cmakePath = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\CMakeLists.txt"
 $vcxprojPath = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSim_IR.vcxproj"
 $filtersPath = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\HwaSim_IR.vcxproj.filters"
 $displayCheck = Join-Path $rootPath "tools\stage6_sensor_display_check.ps1"
+$precipitationBatch = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\IR\IRPrecipitationBatch.h"
+$precipitationShader = Join-Path $rootPath "HwaSim_IR\Bin\Config\Weather\precipitation.frag"
+$spriteBatch = Join-Path $rootPath "HwaSim_IR\HwaSim_IR\IR\IRGameSpriteBatch.h"
+$spriteShader = Join-Path $rootPath "HwaSim_IR\Bin\Config\GameVFX\sprite.frag"
 
 function Read-Text {
     param([string]$Path)
@@ -54,11 +58,18 @@ $cmakeText = Read-Text $cmakePath
 $vcxprojText = Read-Text $vcxprojPath
 $filtersText = Read-Text $filtersPath
 $displayCheckText = Read-Text $displayCheck
+$precipitationBatchText = Read-Text $precipitationBatch
+$precipitationShaderText = Read-Text $precipitationShader
+$spriteBatchText = Read-Text $spriteBatch
+$spriteShaderText = Read-Text $spriteShader
 
 $checks = New-Object System.Collections.Generic.List[object]
 
 $checks.Add((Add-Check "IRWeatherEffects header exists" (Test-Path -LiteralPath $weatherHeader -PathType Leaf) $weatherHeader)) | Out-Null
 $checks.Add((Add-Check "IRWeatherEffects source exists" (Test-Path -LiteralPath $weatherSource -PathType Leaf) $weatherSource)) | Out-Null
+$checks.Add((Add-Check "IRPrecipitationBatch header exists" (Test-Path -LiteralPath $precipitationBatch -PathType Leaf) $precipitationBatch)) | Out-Null
+$checks.Add((Add-Check "production precipitation shader exists" (Test-Path -LiteralPath $precipitationShader -PathType Leaf) $precipitationShader)) | Out-Null
+$checks.Add((Add-Check "production sprite shader exists" (Test-Path -LiteralPath $spriteShader -PathType Leaf) $spriteShader)) | Out-Null
 $checks.Add((Add-Check "weather_profiles.json exists" (Test-Path -LiteralPath $weatherProfiles -PathType Leaf) $weatherProfiles)) | Out-Null
 $checks.Add((Add-Check "weather_textures.json exists" (Test-Path -LiteralPath $weatherTextures -PathType Leaf) $weatherTextures)) | Out-Null
 $checks.Add((Add-Check "weather textures directory exists" (Test-Path -LiteralPath $texturesDir -PathType Container) $texturesDir)) | Out-Null
@@ -71,7 +82,7 @@ $runtimeOk = ($runtimeIniText -match "\[Stage7Weather\]") -and
     ($runtimeIniText -match "WeatherProfilePath=Config/Weather/weather_profiles\.json") -and
     ($runtimeIniText -match "WeatherTextureConfig=Config/Weather/weather_textures\.json") -and
     ($runtimeIniText -match "EnableCloudLayer=1") -and
-    ($runtimeIniText -match "CloudRenderMode=Layered2_5D") -and
+    ($runtimeIniText -match "CloudRenderMode=StreamedWorld3D") -and
     ($runtimeIniText -match "CloudLayerCount=3") -and
     ($runtimeIniText -match "CloudUpdateHz=10") -and
     ($runtimeIniText -match "CloudBaseAltitudeM=2500") -and
@@ -80,9 +91,9 @@ $runtimeOk = ($runtimeIniText -match "\[Stage7Weather\]") -and
     ($runtimeIniText -match "CloudTileSizeM=5000") -and
     ($runtimeIniText -match "CloudOpticalDepthScale=1\.0") -and
     ($runtimeIniText -match "EnableFog=1") -and
-    ($runtimeIniText -match "EnablePrecipitation=0") -and
-    ($runtimeIniText -match "Stage7PrecipitationMode=ScreenOverlay") -and
-    ($runtimeIniText -match "PrecipitationMaxParticles=0") -and
+    ($runtimeIniText -match "EnablePrecipitation=1") -and
+    ($runtimeIniText -match "Stage7PrecipitationMode=Batch") -and
+    ($runtimeIniText -match "PrecipitationMaxParticles=128") -and
     ($runtimeIniText -match "UseWeatherUdpInput=1")
 $checks.Add((Add-Check "RuntimeConfig has Stage7Weather section" $runtimeOk $runtimeIni)) | Out-Null
 
@@ -157,27 +168,44 @@ $logsOk = ($appSourceText -match "\[Stage7 Weather\]") -and
 $checks.Add((Add-Check "Stage7 weather logs exist" $logsOk $appSource)) | Out-Null
 
 $rawSceneOk = ($appSourceText -match "Stage7PrecipitationMode") -and
-    ($appSourceText -match "Stage7_Precipitation_Card") -and
+    ($appSourceText -match "IRPrecipitationBatch::create") -and
     ($appSourceText -match "m_stage7PrecipitationMode == 2") -and
-    ($appSourceText -match "u_stage7_final_precipitation_mode") -and
-    ($appSourceText -match "Stage7RainOverlay") -and
-    ($appSourceText -match "Stage7SnowOverlay") -and
+    ($precipitationBatchText -match 'set_shader\(shader,\s*100\)') -and
+    ($precipitationBatchText -match 'Config/Weather/precipitation\.frag') -and
+    ($precipitationBatchText -match 'set_depth_test\(true\)') -and
+    ($precipitationBatchText -match 'set_depth_write\(false\)') -and
+    ($precipitationBatchText -match 'set_bin\("transparent",\s*30\)') -and
     ($displayCheckText -match "windowSource=final_sensor") -and
     ($displayCheckText -match "tcpSource=final_sensor")
-$checks.Add((Add-Check "precipitation uses screen overlay by default with optional Cards diagnostic" $rawSceneOk $appSource)) | Out-Null
+$checks.Add((Add-Check "precipitation uses one priority-100 Batch draw in the final sensor path" $rawSceneOk "$appSource; $precipitationBatch")) | Out-Null
 
-$shaderOk = ($appSourceText -match "u_stage7_weather_type") -and
+$weatherShaderOk = ($appSourceText -match "u_stage7_weather_type") -and
     ($appSourceText -match "u_stage7_cloud_coverage") -and
     ($appSourceText -match "u_stage7_cloud_optical_depth") -and
     ($appSourceText -match "v_cloud_world_uv") -and
     ($appSourceText -match "raw_density") -and
-    ($appSourceText -match "tau_cloud = exp\(-extinction\)") -and
+    ($appSourceText -match "tau_cloud\s*=\s*exp\(-extinction") -and
     ($appSourceText -match "u_stage7_fog_density") -and
     ($appSourceText -match "u_stage7_precipitation_type") -and
     ($appSourceText -match "u_stage7_final_precipitation_density") -and
     ($appSourceText -match "ApplyStage7WeatherDisplay") -and
     ($appSourceText -match "ApplyStage7FinalPrecipitationOverlay")
-$checks.Add((Add-Check "Stage7 weather shader uniforms and branches exist" $shaderOk $appSource)) | Out-Null
+$checks.Add((Add-Check "Stage7 cloud/fog shader uniforms and physical tau branch exist" $weatherShaderOk $appSource)) | Out-Null
+
+$precipitationSiOk = ($precipitationShaderText -match 'uniform\s+int\s+u_stage6_raw_si_domain') -and
+    ($precipitationShaderText -match 'W/\(m\^2 sr um\)') -and
+    ($precipitationShaderText -match 'u_stage6_raw_si_domain==1\?max\(0\.0,u_precip_state\.w\)') -and
+    ($precipitationShaderText -match 'fragColor=vec4\(vec3\(source\),alpha\)') -and
+    ($precipitationShaderText -notmatch 'u_stage6_raw_si_domain==1[^\r\n]*clamp\([^\r\n]*0\.0\s*,\s*1\.0')
+$checks.Add((Add-Check "external precipitation shader preserves formal SI RGB and straight alpha" $precipitationSiOk $precipitationShader)) | Out-Null
+
+$spriteSiOk = ($spriteBatchText -match 'set_shader\(shader,\s*100\)') -and
+    ($spriteBatchText -match 'Config/GameVFX/sprite\.frag') -and
+    ($spriteShaderText -match 'u_stage6_raw_si_domain==1') -and
+    ($spriteShaderText -match 'source=max\(0\.0,u_plume_gray\)') -and
+    ($spriteShaderText -match 'fragColor\s*=\s*vec4\(vec3\(source\),alpha\)') -and
+    ($spriteShaderText -notmatch 'u_stage6_raw_si_domain==1[^\}]*source\s*=\s*clamp\(u_plume_gray\s*,\s*0\.0\s*,\s*1\.0\)')
+$checks.Add((Add-Check "priority-100 sprite shader preserves formal SI plume RGB" $spriteSiOk "$spriteBatch; $spriteShader")) | Out-Null
 
 $boundariesOk = ($weatherText -notmatch "path_radiance|sky_radiance|solar_irradiance|pathRadiance|skyRadiance|solarIrradiance") -and
     ($appSourceText -notmatch "Stage7C[^\r\n]*(AGC|MTF|blur|H264|UDP video)") -and

@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('pilot','track50')]
+    [ValidateSet('pilot','track50','p14mix')]
     [string]$Mode='pilot',
     [string]$CaseRoot='',
     [string]$PcModBin='F:\Programs\PcModWin5\Bin',
@@ -8,7 +8,11 @@ param(
 
 $ErrorActionPreference='Stop'
 $repoRoot=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$allowedRoot=[IO.Path]::GetFullPath((Join-Path $repoRoot "logs\p13\atmosphere\$Mode"))
+$allowedRoot=[IO.Path]::GetFullPath($(if($Mode -eq 'p14mix'){
+    Join-Path $repoRoot 'logs\p14\atmosphere\highalt_vis23'
+}else{
+    Join-Path $repoRoot "logs\p13\atmosphere\$Mode"
+}))
 $resolvedRoot=[IO.Path]::GetFullPath($(if([string]::IsNullOrWhiteSpace($CaseRoot)){$allowedRoot}else{$CaseRoot}))
 if($resolvedRoot -ne $allowedRoot){throw "Refusing unexpected CaseRoot: $resolvedRoot"}
 $expectedBin=[IO.Path]::GetFullPath('F:\Programs\PcModWin5\Bin')
@@ -152,7 +156,7 @@ try {
     }
     $runs | Export-Csv -LiteralPath $priorManifest -NoTypeInformation -Encoding UTF8
     [ordered]@{
-        schema='HwaSimIR.P13.RealModtranRun.1';mode=$Mode
+        schema=$(if($Mode -eq 'p14mix'){'HwaSimIR.P14.RealModtranRun.1'}else{'HwaSimIR.P13.RealModtranRun.1'});mode=$Mode
         checked_at_utc=[DateTime]::UtcNow.ToString('o');executable=$exe
         file_version=$engineVersion;sha256=$engineHash
         run_status='SUCCESS_REAL_MODTRAN_OUTPUT';requested_component_runs=$cases.Count

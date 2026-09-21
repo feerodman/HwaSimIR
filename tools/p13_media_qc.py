@@ -9,6 +9,7 @@ import csv
 import datetime as dt
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -89,6 +90,10 @@ def main() -> int:
     probe = json.loads(subprocess.check_output(probe_command, text=True, encoding="utf-8"))
     stream = probe["streams"][0]
     fmt = probe["format"]
+    full_decode = subprocess.run(
+        [tool_path("ffmpeg"), "-v", "error", "-i", str(mp4), "-map", "0:v:0", "-f", "null", os.devnull],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="replace",
+    )
     status = json.loads(status_path.read_text(encoding="utf-8"))
 
     with input_path.open("r", encoding="utf-8-sig", newline="") as stream_in:
@@ -177,7 +182,10 @@ def main() -> int:
         "renderer_stop_status": "[StimStopLifecycle] phase=renderer_stop_status result=PASS" in sender_text,
         "dds_ack_drain": "[StimStopLifecycle] phase=dds_ack_drain result=PASS" in sender_text,
         "board_output_drain": bool(re.search(rf"\[OutputRoundDrain\] reason=stop round=1 targetFrames={expected} completedFrames={expected}", board_text)),
-        "p13_identity": "[P13 AtmosphereIdentity] status=PASS" in board_text,
+        "atmosphere_identity": (
+            "[P14 AtmosphereIdentity] status=PASS" in board_text or
+            "[P13 AtmosphereIdentity] status=PASS" in board_text
+        ),
         "formal_m1": "[M1 PhysicsConfig] CompareOnly=0 EnableRuntime=1" in board_text,
         "normal_material_view_requested": int(plan["materialView"]) == 0,
         "video_status_auto_applied": bool(re.search(r"\[VideoStatus\] applied=1 .*width=800 height=800 fps=60", receiver_text)),
@@ -193,12 +201,13 @@ def main() -> int:
         "mp4_h264": stream["codec_name"] == "h264",
         "mp4_800x800": int(stream["width"]) == 800 and int(stream["height"]) == 800,
         "mp4_frame_count": int(stream["nb_read_frames"]) == expected,
+        "mp4_full_decode": full_decode.returncode == 0 and not full_decode.stderr.strip(),
         "mp4_duration_matches_accepted_rows": abs(float(fmt["duration"]) - expected_duration) <= duration_tolerance,
         "received_annexb_present": received_h264.is_file() and received_h264.stat().st_size > 0,
     }
 
     evidence_patterns = (
-        "[P13 AtmosphereIdentity]", "[M1 PhysicsConfig]", "[Stage6 FinalPipeline]",
+        "[P14 AtmosphereIdentity]", "[P13 AtmosphereIdentity]", "[M1 PhysicsConfig]", "[Stage6 FinalPipeline]",
         "[DisplayEffective]", "[Stage5 Plume]", "[Stage7 Weather]", "[OutputRoundDrain]",
     )
     evidence_lines = [line for line in board_text.splitlines() if any(p in line for p in evidence_patterns)]
@@ -234,11 +243,12 @@ def main() -> int:
         keyframes.append({"label": label, "seconds": seconds, "path": str(output), "sha256": sha256(output)})
 
     report = {
-        "schema": "hwasimir.p13.media-qc.v1",
+        "schema": "hwasimir.p14.media-qc.v1" if str(plan.get("schema", "")).startswith("hwasimir.p14") else "hwasimir.p13.media-qc.v1",
         "case": plan["name"], "band": plan["band"], "weather": plan["weather"],
         "result": "PASS" if all(checks.values()) else "FAIL",
         "checks": checks,
         "probe": probe,
+        "fullDecode": {"returnCode": full_decode.returncode, "stderr": full_decode.stderr.strip()},
         "expectedVideo": {
             "acceptedRows": expected,
             "fps": 60,
@@ -257,7 +267,7 @@ def main() -> int:
         "calibrationStatus": "NOT_VERIFIED_CALIBRATION",
     }
     (case_dir / "media_qc.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-    print(f"[P13 MediaQC] result={report['result']} case={plan['name']} frames={len(frame_rows)} durationSec={float(fmt['duration']):.3f} mp4={mp4}")
+    print(f"[MediaQC] result={report['result']} case={plan['name']} frames={len(frame_rows)} durationSec={float(fmt['duration']):.3f} mp4={mp4}")
     if report["result"] != "PASS":
         for name, passed in checks.items():
             if not passed:

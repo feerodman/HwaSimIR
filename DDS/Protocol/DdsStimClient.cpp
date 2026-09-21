@@ -64,7 +64,10 @@ struct DdsStimClient::Impl
             if(sample.platID != impl->statusPlatID || sample.sensorID != impl->statusSensorID ||
                sample.currentRound != impl->statusRound ||
                (!impl->statusChannel.empty() && impl->statusChannel != (sample.channel ? sample.channel : ""))) return;
-            if(sample.running) impl->runningObserved = true;
+            if(sample.running) {
+                impl->runningObserved = true;
+                impl->ackReady.notify_all();
+            }
             if(impl->stopPending && impl->runningObserved && !sample.running) {
                 impl->stopObserved = true;
                 impl->ackReady.notify_all();
@@ -293,6 +296,20 @@ bool DdsStimClient::waitForStopStatus(int timeoutMs, std::string& error)
               << " platID=" << m_impl->statusPlatID << " sensorID=" << m_impl->statusSensorID
               << " round=" << m_impl->statusRound << " source=existing_video_status" << std::endl;
     if(!completed) error = "renderer did not confirm STOP before application drain timeout";
+    return completed;
+}
+
+bool DdsStimClient::waitForRunningStatus(int timeoutMs, std::string& error)
+{
+    std::unique_lock<std::mutex> lock(m_impl->mutex);
+    if(!m_impl->observeStopStatus) return true;
+    const bool completed = m_impl->ackReady.wait_for(lock, std::chrono::milliseconds(timeoutMs),
+        [this] { return m_impl->runningObserved; });
+    std::cout << "[StimStartStatus] observed=" << (completed ? 1 : 0)
+              << " platID=" << m_impl->statusPlatID << " sensorID=" << m_impl->statusSensorID
+              << " round=" << m_impl->statusRound
+              << " source=existing_video_status noRealtimePublishedBeforeReady=1" << std::endl;
+    if(!completed) error = "renderer did not confirm START readiness before realtime publication timeout";
     return completed;
 }
 

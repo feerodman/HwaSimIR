@@ -214,6 +214,9 @@ private:
 		const std::string& ingressTransport = "udp");
 	void ProcessDisplayDataOnMainThread(const BYHWICD::DisplayC2cObjTrackingData& data,
 		const std::string& ingressTransport = "udp");
+	void CommitFormalReferenceFromRealtime(
+		const BYHWICD::DisplayC2cObjTrackingData& data,
+		std::uint64_t sourceSeq);
 	bool AcceptProtocolIngress(const std::string& transport, const std::string& type,
 		const std::string& semanticKey, int platID, int sensorID);
 #if defined(HWASIMIR_HAS_ZRDDS)
@@ -230,6 +233,7 @@ private:
 		BYHWICD::DisplayC2cObjTrackingData data{};
 		IRFrameTelemetry telemetry;
 		bool ddsIngress = false;
+		std::uint64_t referenceGeneration = 0;
 	};
 
 	struct ShaderInputCachedValue
@@ -528,6 +532,9 @@ private:
 		IRBand lastBand = IRBand::MidWaveInfrared;
 		bool formalTauReady = false;
 		double formalTau = 0.0;
+		double formalPathRadiance = 0.0;
+		double lastAppliedFormalTau = 0.0;
+		double lastAppliedFormalPathRadiance = 0.0;
 	};
 	std::map<std::string, Stage5PlumeRuntimeCache> m_stage5PlumeRuntimeCache;
 	double m_stage5PlumeUpdateHz = 30.0;
@@ -1041,7 +1048,13 @@ private:
 	std::string m_lastStage6AgcLogState;
 
 	bool m_isInitTargetPlatID;	//TargetState平台初始化ID映射标记
-	bool m_isInitReferencePoint = false; //初始化仿真中心原点标记
+	bool m_isInitReferencePoint = false; // formal reference committed by first valid realtime sample
+	bool m_prewarmReferenceActive = false; // temporary INIT-only transform; never formal
+	std::uint64_t m_referenceGeneration = 0;
+	std::uint64_t m_referenceCommitCount = 0;
+	std::uint64_t m_referenceSourceSeq = 0;
+	double m_referenceSourceTimeMs = 0.0;
+	BYHWICD::SpatialState m_prewarmReferenceSpatial{};
 
 	// 协议数据缓存
 	BYHWICD::InitP2cObjectTrackingCmd m_initSceneData;       // 初始化数据缓存
@@ -1049,6 +1062,10 @@ private:
 	BYHWICD::trackerSensorParam m_sensorParam;               // 传感器参数缓存
 	unsigned long long m_stage0DisplayFrameCount;            // 阶段0基线诊断：实时数据包计数
 	std::uint64_t m_udpSequence = 0;
+	std::uint64_t m_realtimeReceivedCount = 0;
+	std::uint64_t m_realtimeRejectedPlaceholderCount = 0;
+	std::uint64_t m_realtimeRejectedStructureCount = 0;
+	std::uint64_t m_realtimeRejectedStaleGenerationCount = 0;
     bool m_inputRoundPreparedByInit = false; // guarded by m_mtx
 	std::atomic<std::uint64_t> m_latestUdpSourceSeq{ 0 };
 	// Steady-clock timestamp of the most recently accepted realtime sample.

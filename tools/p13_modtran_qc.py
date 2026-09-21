@@ -139,10 +139,13 @@ def find_one(manifest: list[dict[str, str]], *, band: str, profile: str,
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--mode", choices=("pilot", "track50"), default="pilot")
+    parser.add_argument("--mode", choices=("pilot", "track50", "p14mix"), default="pilot")
     parser.add_argument("--root", type=Path)
     args = parser.parse_args()
-    root = (args.root or Path(f"logs/p13/atmosphere/{args.mode}")).resolve()
+    default_root = (Path("logs/p14/atmosphere/highalt_vis23")
+                    if args.mode == "p14mix"
+                    else Path(f"logs/p13/atmosphere/{args.mode}"))
+    root = (args.root or default_root).resolve()
     manifest = read_csv(root / "case_manifest.csv")
     expected_components, expected_vertices = generator.expected_counts(args.mode)
     a = generator.axes(args.mode)
@@ -260,7 +263,8 @@ def main() -> int:
         values = [integrated[row["case_id"]] for row in components]
         ids = [row["case_id"] for row in components]
         files = [str(sources[case_id].resolve()) for case_id in ids]
-        case_id = (f"P13_{args.mode.upper()}_{band}_{profile}_"
+        release_prefix = "P14_MIX" if args.mode == "p14mix" else f"P13_{args.mode.upper()}"
+        case_id = (f"{release_prefix}_{band}_{profile}_"
                    f"obs{generator.token(observer)}_tar{generator.token(target)}_"
                    f"rng{generator.token(range_km)}_vis{generator.token(visibility)}_"
                    f"sza{generator.token(sza)}")
@@ -349,7 +353,9 @@ def main() -> int:
         check("tau_strict_humidity_response", not failures,
               {"responsive": response_count, "failures": failures}, "RH30>RH60>RH85 tau")
 
-    output = root / ("pilot_candidate_rows.csv" if args.mode == "pilot" else "formal_track50_rows.csv")
+    output = root / ("pilot_candidate_rows.csv" if args.mode == "pilot" else
+                     "formal_p14mix_rows.csv" if args.mode == "p14mix" else
+                     "formal_track50_rows.csv")
     with output.open("w", newline="", encoding="utf-8") as stream:
         writer = csv.DictWriter(stream, fieldnames=FORMAL_FIELDS)
         writer.writeheader(); writer.writerows(formal_rows)
@@ -363,7 +369,8 @@ def main() -> int:
             writer.writeheader(); writer.writerows(rows)
 
     status = "PASS" if all(item["passed"] for item in checks) else "FAIL"
-    results = {"schema": "HwaSimIR.P13.ModtranQC.1", "status": status,
+    results = {"schema": ("HwaSimIR.P14.ModtranQC.1" if args.mode == "p14mix"
+                           else "HwaSimIR.P13.ModtranQC.1"), "status": status,
                "mode": args.mode, "componentRuns": expected_components,
                "formalVertices": expected_vertices, "checks": checks}
     (root / "qc_results.json").write_text(
@@ -372,7 +379,7 @@ def main() -> int:
         writer = csv.DictWriter(stream, fieldnames=["check", "passed", "measured", "expected"])
         writer.writeheader(); writer.writerows(checks)
     readme = [
-        f"# P13 real MODTRAN {args.mode}", "", f"- status: {status}",
+        f"# {'P14' if args.mode == 'p14mix' else 'P13'} real MODTRAN {args.mode}", "", f"- status: {status}",
         f"- licensed component executions: {expected_components}",
         f"- complete five-component vertices: {expected_vertices}",
         "- no missing-value fill, empirical range extension, or tau=1 fallback is accepted",

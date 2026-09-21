@@ -5,7 +5,7 @@ param(
     [string]$Band,
     [ValidateSet('Clear','Cloudy','Rain','Snow')]
     [string]$Weather = 'Clear',
-    [ValidateSet('Original','P13Performance300s')]
+    [ValidateSet('Original','P13Performance300s','P14GroundWeather')]
     [string]$InputMode = 'Original',
     [ValidateSet('','materials','nozzle')]
     [string]$P5Scene = '',
@@ -15,14 +15,22 @@ param(
     [string]$P5MaterialCase = 'A',
     [ValidateSet('On','Off')]
     [string]$P5SyntheticHeatSource = 'On',
+    [ValidateSet('0x22','0x55','0x66')]
+    [string]$TargetTypeCode = '0x22',
     [ValidateSet(0,1,2)]
     [int]$CloudMaxVisibleVolumes = 0,
     [switch]$RenderPerfProbe,
     [string]$LinearDiagnosticSeqs = '',
     [switch]$EnableAgcDiagnostic,
+    [ValidateRange(0.1,100.0)]
+    [double]$VisibilityKm = 6.0,
+    [ValidateRange(0.0,100.0)]
+    [double]$RelativeHumidityPercent = 85.0,
+    [ValidateRange(0.0,23.999999)]
+    [double]$UtcHour = 3.5,
     [int]$DurationGuardSec = 100,
     [string]$Name = '',
-    [string]$OutputRoot = 'logs\p13\runs',
+    [string]$OutputRoot = 'logs\p14\runs',
     [string]$BoardHost = '192.168.1.116',
     [string]$BoardUser = 'root',
     [string]$BoardPassword = $env:HWASIMIR_SSH_PASSWORD
@@ -37,12 +45,16 @@ $senderExe = Join-Path $senderDir 'DataDrivenTestQT.exe'
 $receiverExe = Join-Path $receiverDir 'HwaSim_IR_VideoDisplay.exe'
 $senderConfig = Join-Path $senderDir 'NetworkConfig.ini'
 $receiverConfig = Join-Path $receiverDir 'NetworkConfig.ini'
-$inputName = if($InputMode -eq 'Original'){'1.txt'}else{'p13_performance_highalt_300s.txt'}
+$inputName = switch($InputMode) {
+    'Original' {'1.txt'}
+    'P13Performance300s' {'p13_performance_highalt_300s.txt'}
+    'P14GroundWeather' {'p14_ground_truck_weather_30s.txt'}
+}
 $runtimeInput = Join-Path $senderDir $inputName
 $sourceInput = Join-Path $repo ("DataDrivenTestQT\"+$inputName)
-$inputManifest = if($InputMode -eq 'P13Performance300s'){"$sourceInput.json"}else{''}
-$expectedRows = if($InputMode -eq 'Original'){4318}else{18000}
-$minimumDurationGuardSec = if($InputMode -eq 'Original'){80}else{320}
+$inputManifest = if($InputMode -eq 'Original'){''}else{"$sourceInput.json"}
+$expectedRows = switch($InputMode) {'Original' {4318} 'P13Performance300s' {18000} 'P14GroundWeather' {1800}}
+$minimumDurationGuardSec = switch($InputMode) {'Original' {80} 'P13Performance300s' {320} 'P14GroundWeather' {45}}
 $askPass = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot 'p5_ssh_askpass.cmd')).Path
 if (-not $BoardPassword) { $BoardPassword = '123' }
 $requiredFiles = @($senderExe,$receiverExe,$senderConfig,$receiverConfig,$runtimeInput,$sourceInput,$askPass)
@@ -131,13 +143,28 @@ if($InputMode -eq 'Original') {
     if($inputHash -ne 'f2c3db00d71012cd28336b5077e03ff8d4ed1eda2698fd900486ae9cdfdd7901') {
         throw 'Original 1.txt identity mismatch; refusing replay'
     }
-} else {
+} elseif($InputMode -eq 'P13Performance300s') {
     $fixtureManifest=Get-Content -LiteralPath $inputManifest -Raw|ConvertFrom-Json
     if($fixtureManifest.purpose -ne 'performance_only_300s_complex_weather' -or
        -not [bool]$fixtureManifest.boundaries.notOriginalReplay -or
        [string]$fixtureManifest.identity.sha256 -ne $inputHash -or
        [int]$fixtureManifest.identity.rows -ne $expectedRows) {
         throw 'P13 performance fixture manifest/identity mismatch'
+    }
+} else {
+    $fixtureManifest=Get-Content -LiteralPath $inputManifest -Raw|ConvertFrom-Json
+    $query=$fixtureManifest.productionQueryEvidence
+    if($fixtureManifest.purpose -ne 'p14_ground_truck_mixed_weather_30s' -or
+       -not [bool]$fixtureManifest.boundaries.notOriginalReplay -or
+       [bool]$fixtureManifest.boundaries.mayReplaceOriginal1Txt -or
+       [bool]$fixtureManifest.provenance.readsOriginal1Txt -or
+       [bool]$fixtureManifest.provenance.sourceInputBusinessDependency -or
+       [string]$fixtureManifest.identity.sha256 -ne $inputHash -or
+       [int]$fixtureManifest.identity.rows -ne $expectedRows -or
+       [string]$query.result -ne 'PASS' -or [int]$query.productionQueryRows -ne 14400 -or
+       [int]$query.productionQueryValid -ne 14400 -or [int]$query.productionQueryFailures -ne 0 -or
+       [string]$fixtureManifest.boundaries.calibrationStatus -ne 'NOT_VERIFIED_CALIBRATION') {
+        throw 'P14 ground-weather fixture manifest/identity/query evidence mismatch'
     }
 }
 
@@ -157,8 +184,11 @@ $caseSucceeded = $false
 try {
     $text=[IO.File]::ReadAllText($senderConfig)
     $text=Set-IniValue $text 'InputFile' $inputName
-    $text=Set-IniValue $text 'TargetType' '0x22'
+    $text=Set-IniValue $text 'TargetType' $TargetTypeCode
     $text=Set-IniValue $text 'envSky' ([string]$envSky)
+    $text=Set-IniValue $text 'envVisibility' ([string]($VisibilityKm*1000.0))
+    $text=Set-IniValue $text 'envHumidity' ([string]$RelativeHumidityPercent)
+    $text=Set-IniValue $text 'UtcHour' ([string]$UtcHour)
     $text=Set-IniValue $text 'trackerSensorBand' ([string]$bandNumber)
     $text=Set-IniValue $text 'trackerSensorWidth' '800'
     $text=Set-IniValue $text 'trackerSensorHeight' '800'
@@ -168,14 +198,20 @@ try {
 
     Copy-Item -LiteralPath $senderConfig -Destination (Join-Path $out 'DataDrivenTestQT.NetworkConfig.ini')
     Copy-Item -LiteralPath $receiverConfig -Destination (Join-Path $out 'VideoDisplay.NetworkConfig.ini')
-    $preflight=Invoke-Board "set -eu; cd /userdata/HwaSimIR; ! pgrep -x HwaSim_IR >/dev/null; test -x HwaSim_IR; echo ElfSha256=`$(sha256sum HwaSim_IR|awk '{print `$1}'); echo BuildId=`$(readelf -n HwaSim_IR|awk '/Build ID:/ {print `$3;exit}'); echo RuntimeConfigSha256=`$(sha256sum Config/HwaSimIRRuntime.ini|awk '{print `$1}'); echo ConfigManifestSha256=`$(sha256sum Config/deployment_manifest.sha256|awk '{print `$1}'); echo FormalLutSha256=`$(sha256sum Config/Atmosphere/MODTRAN/processed/band_lut_si.csv|awk '{print `$1}'); echo CoverageManifestSha256=`$(sha256sum Config/Atmosphere/MODTRAN/processed/p13_coverage_manifest.json|awk '{print `$1}')"
+    $preflight=Invoke-Board "set -eu; cd /userdata/HwaSimIR; ! pgrep -x HwaSim_IR >/dev/null; test -x HwaSim_IR; echo ElfSha256=`$(sha256sum HwaSim_IR|awk '{print `$1}'); echo BuildId=`$(readelf -n HwaSim_IR|awk '/Build ID:/ {print `$3;exit}'); echo RuntimeConfigSha256=`$(sha256sum Config/HwaSimIRRuntime.ini|awk '{print `$1}'); echo ConfigManifestSha256=`$(sha256sum Config/deployment_manifest.sha256|awk '{print `$1}'); echo FormalLutSha256=`$(sha256sum Config/Atmosphere/MODTRAN/processed/band_lut_si.csv|awk '{print `$1}'); echo CoverageManifestSha256=`$(sha256sum Config/Atmosphere/MODTRAN/processed/p14_coverage_manifest.json|awk '{print `$1}')"
     [IO.File]::WriteAllLines((Join-Path $out 'board_preflight.log'),@($preflight|ForEach-Object{[string]$_}),$utf8)
 
     $plan=[ordered]@{
-        schema='hwasimir.p13.original-dds-case.v1'; name=$Name; band=$Band; protocolBand=$bandNumber
+        schema='hwasimir.p14.dds-case.v2'; name=$Name; band=$Band; protocolBand=$bandNumber
         weather=$Weather; envSky=$envSky; inputMode=$InputMode; input=("DataDrivenTestQT/"+$inputName); inputSha256=$inputHash
+        environment=[ordered]@{visibilityKm=$VisibilityKm;relativeHumidityPercent=$RelativeHumidityPercent;utcDate='2026-09-06';utcHour=$UtcHour}
+        targetTypeProtocolCode=$TargetTypeCode
         inputRows=$expectedRows; resolution='800x800'; materialView=0; ddsOnly=$true
-        inputBoundary=if($InputMode -eq 'Original'){'immutable_original_replay'}else{'performance_only_not_original_no_physical_claim'}
+        inputBoundary=switch($InputMode) {
+            'Original' {'immutable_original_replay'}
+            'P13Performance300s' {'performance_only_not_original_no_physical_claim'}
+            'P14GroundWeather' {'independent_synthetic_civil_ground_fixture_not_original_no_calibration_claim'}
+        }
         controlledFixture=if($P5Scene){[ordered]@{scene=$P5Scene;view=$P5View;materialCase=$P5MaterialCase;syntheticHeatSource=$P5SyntheticHeatSource;values='artificial_not_measurement'}}else{$null}
         cloudMaxVisibleVolumes=if($CloudMaxVisibleVolumes -gt 0){$CloudMaxVisibleVolumes}else{'runtime_ini'}
         renderPerfProbe=[bool]$RenderPerfProbe
@@ -203,7 +239,7 @@ try {
     $env:P7RecordingRoot=$recordingRoot
     $env:P6ReceiverUiDump=Join-Path $out 'receiver_normal_material.png'
     $env:P6ReceiverUiResponsiveCapture='1'
-    $env:P7SenderUiDump=Join-Path $out 'sender_original_1.png'
+    $env:P7SenderUiDump=Join-Path $out ($(if($InputMode -eq 'Original'){'sender_original_1.png'}else{'sender_fixture.png'}))
     $env:P5DdsVideoPath=Join-Path $out 'received.h264'
     $env:P5DdsVideoSamples=[string]($expectedRows+100)
 
@@ -217,7 +253,7 @@ try {
     $fixtureEnv=if($P5Scene){"P5Scene=$P5Scene P5View=$P5View P5MaterialCase=$P5MaterialCase P5SyntheticHeatSource=$P5SyntheticHeatSource"}else{''}
     $cloudEnv=if($CloudMaxVisibleVolumes -gt 0){"Stage7VolumetricCloudMaxVisibleVolumes=$CloudMaxVisibleVolumes"}else{''}
     $perfProbeEnv=if($RenderPerfProbe){'RenderPerfProbe=1'}else{''}
-    $remoteDiagnosticBase="/userdata/HwaSimIR/logs/p13_${Name}_linear"
+    $remoteDiagnosticBase="/userdata/HwaSimIR/logs/p14_${Name}_linear"
     $linearDiagnosticEnv=if($LinearDiagnosticSeqs){"LinearDiagnosticPath=$remoteDiagnosticBase LinearDiagnosticSeqs=$LinearDiagnosticSeqs"}else{''}
     $agcDiagnosticEnv=if($EnableAgcDiagnostic){'EnableAGC=true Stage6DiagnosticsEnable=true AGCDebugLog=true'}else{''}
     $remote="cd /userdata/HwaSimIR && timeout -s TERM -k 15s ${remoteTimeout}s env RenderPresentationMode=HeadlessOffscreen P5MaterialView=0 $fixtureEnv $cloudEnv $perfProbeEnv $linearDiagnosticEnv $agcDiagnosticEnv HwaSimIRExitOnStop=true HwaSimIRLocalRecordingEnable=false ./run_precise.sh"
@@ -270,15 +306,32 @@ try {
     $receiverText=(Get-Content -LiteralPath (Join-Path $out 'receiver.out.log') -Raw)+"`n"+(Get-Content -LiteralPath (Join-Path $out 'receiver.err.log') -Raw)
     if($senderText -notmatch ('\[StimInputParse\] result=ACCEPTED.*rows='+$expectedRows+'.*malformedRows=0 partialReplay=0')){throw "Strict parser did not accept exactly $expectedRows complete rows"}
     if($senderText -notmatch ('\[StimFinal\].*successfulRealtimeWrites='+$expectedRows)){throw "Sender did not write all $expectedRows accepted rows"}
+    $rolePattern=switch($InputMode) {
+        'Original' {'immutable_original_replay'}
+        'P13Performance300s' {'performance_only_300s_complex_weather'}
+        'P14GroundWeather' {'p14_ground_truck_mixed_weather_30s'}
+    }
+    if($senderText -notmatch ('\[StimAtmosphereCoverage\] result=ACCEPTED.*visibilityKm='+[regex]::Escape(([string]$VisibilityKm))+'.*humidityPercent='+[regex]::Escape(([string]$RelativeHumidityPercent))+'.*inputRole='+$rolePattern)){
+        throw 'Controller did not prove current-row production atmosphere queries for the requested environment/input role'
+    }
     if($senderText -match '\[StimDrain\]\[ERROR\]|\[StimDDS\]\[ERROR\]|\[StimInitAck\]\[FATAL\]'){throw 'Sender reported DDS or drain failure'}
     if($senderText -notmatch '\[StimStopLifecycle\] phase=renderer_stop_status result=PASS' -or
        $senderText -notmatch '\[StimStopLifecycle\] phase=dds_ack_drain result=PASS'){throw 'STOP response and DDS acknowledgment drain are not both proven'}
-    if($boardText -notmatch '\[P13 AtmosphereIdentity\] status=PASS'){throw 'Renderer did not bind the P13 atmosphere identity'}
+    if($boardText -notmatch '\[P14 AtmosphereIdentity\] status=PASS'){throw 'Renderer did not bind the P14 atmosphere identity'}
     if($boardText -notmatch '\[M1 PhysicsConfig\] CompareOnly=0 EnableRuntime=1'){throw 'Renderer did not run formal M1 output'}
     if($P5Scene -and $boardText -notmatch ('\[P5GraphicsTest\] scene='+[regex]::Escape($P5Scene)+'.*materialView=0')){throw 'Controlled fixture did not run in normal material view 0'}
     $expectedHeatSourceFlag = if($P5SyntheticHeatSource -eq 'On'){'1'}else{'0'}
     if($P5Scene -and $boardText -notmatch ('\[P5GraphicsTest\] scene='+[regex]::Escape($P5Scene)+'.*syntheticHeatSourceEnabled='+$expectedHeatSourceFlag)){throw 'Controlled fixture heat-source state was not applied'}
-    if($boardText -notmatch '\[H264EncodeSuccess\].*backend=mpp.*resolution=800x800'){throw 'Renderer did not prove 800x800 RK MPP H.264 output'}
+    # Renderer worker and main-thread diagnostics may interleave at character
+    # granularity on the shared PTY.  Bind the codec backend and geometry with
+    # two independently emitted runtime facts instead of depending on one
+    # vulnerable compound line; both remain mandatory.
+    if($boardText -notmatch '\[H264EncodeSuccess\].*backend=mpp.*codec=h264_annexb'){
+        throw 'Renderer did not prove RK MPP H.264 encoding success'
+    }
+    if($boardText -notmatch '\[VideoStatus\] published=1 running=1 codec=h264.*width=800 height=800 fps=60'){
+        throw 'Renderer did not publish an 800x800@60 H.264 VideoStatus'
+    }
     if($receiverText -notmatch '\[VideoStatus\].*applied=1.*width=800 height=800 fps=60'){throw 'Receiver did not auto-apply 800x800@60 VideoStatus'}
     if($receiverText -match '"decodeErrors"\s*:\s*"?[1-9][0-9]*'){throw 'Receiver reported H.264 decode errors'}
 
@@ -302,7 +355,7 @@ try {
     }
     [IO.File]::WriteAllText((Join-Path $out 'case_result.json'),($plan|ConvertTo-Json -Depth 10)+"`n",$utf8)
     $caseSucceeded=$true
-    Write-Output "[P13 DDS] result=PASS name=$Name band=$Band weather=$Weather inputMode=$InputMode inputRows=$expectedRows mp4=$($mp4[0].FullName) output=$out"
+    Write-Output "[P14 DDS] result=PASS name=$Name band=$Band weather=$Weather inputMode=$InputMode inputRows=$expectedRows mp4=$($mp4[0].FullName) output=$out"
 }
 finally {
     [IO.File]::WriteAllBytes($senderConfig,$senderConfigBackup)
@@ -325,6 +378,6 @@ finally {
     $env:P5DdsVideoSamples=$oldVideoSamples
     [Environment]::SetEnvironmentVariable('Path',$oldPath,'Process')
     if(-not $caseSucceeded){
-        [IO.File]::WriteAllText((Join-Path $out 'FAILED.txt'),"P13 case did not satisfy all acceptance checks.`n",$utf8)
+        [IO.File]::WriteAllText((Join-Path $out 'FAILED.txt'),"P14 case did not satisfy all acceptance checks.`n",$utf8)
     }
 }

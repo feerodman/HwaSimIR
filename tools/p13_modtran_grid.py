@@ -38,6 +38,12 @@ TRACK_VISIBILITY_KM = (6.0,)
 TRACK_SOLAR_ZENITH_DEG = (20.0, 45.0)
 TRACK_HUMIDITY_PERCENT = (30.0, 60.0, 85.0)
 
+# P14 extends the already-published 50 km high-altitude cell along the
+# visibility axis.  Keeping this mode in the audited generator avoids a second
+# implementation of the MODTRAN deck format; the P13 modes remain byte-for-byte
+# unchanged.
+P14_MIX_VISIBILITY_KM = (23.0,)
+
 PILOT_OBSERVER_ALT_KM = (11.5,)
 PILOT_TARGET_ALT_KM = (9.9,)
 PILOT_RANGE_KM = (20.0,)
@@ -101,11 +107,13 @@ def axes(mode: str) -> dict[str, tuple[float, ...]]:
             "sza": PILOT_SOLAR_ZENITH_DEG,
             "rh": PILOT_HUMIDITY_PERCENT,
         }
+    # ``p14mix`` reuses the P13 high-altitude geometry/RH/SZA vertices and adds
+    # the missing 23 km visibility face.  The existing vis=6 face is not rerun.
     return {
         "observer": TRACK_OBSERVER_ALT_KM,
         "target": TRACK_TARGET_ALT_KM,
         "range": TRACK_RANGE_KM,
-        "visibility": TRACK_VISIBILITY_KM,
+        "visibility": P14_MIX_VISIBILITY_KM if mode == "p14mix" else TRACK_VISIBILITY_KM,
         "sza": TRACK_SOLAR_ZENITH_DEG,
         "rh": TRACK_HUMIDITY_PERCENT,
     }
@@ -168,7 +176,8 @@ def add_case(rows: list[dict[str, str]], root: Path, *, case_id: str,
 def generate(mode: str, root: Path) -> list[dict[str, str]]:
     a = axes(mode)
     rows: list[dict[str, str]] = []
-    prefix = "P13PILOT" if mode == "pilot" else "P13TRACK50"
+    prefix = ("P13PILOT" if mode == "pilot" else
+              "P14MIX" if mode == "p14mix" else "P13TRACK50")
     for band, rh in itertools.product(p11.BANDS, a["rh"]):
         profile = p11.humidity_profile(rh)
         for observer, target, range_km, visibility in itertools.product(
@@ -225,11 +234,13 @@ def generate(mode: str, root: Path) -> list[dict[str, str]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--mode", choices=("pilot", "track50"), default="pilot")
+    parser.add_argument("--mode", choices=("pilot", "track50", "p14mix"), default="pilot")
     parser.add_argument("--output-root", type=Path)
     args = parser.parse_args()
-    root = (args.output_root or
-            Path(f"logs/p13/atmosphere/{args.mode}")).resolve()
+    default_root = (Path("logs/p14/atmosphere/highalt_vis23")
+                    if args.mode == "p14mix"
+                    else Path(f"logs/p13/atmosphere/{args.mode}"))
+    root = (args.output_root or default_root).resolve()
     root.mkdir(parents=True, exist_ok=True)
     rows = generate(args.mode, root)
     expected_components, formal_vertices = expected_counts(args.mode)
@@ -243,7 +254,8 @@ def main() -> int:
     (root / "case_manifest.json").write_text(
         json.dumps(rows, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     provenance = {
-        "schema": "HwaSimIR.P13.ModtranGrid.1",
+        "schema": ("HwaSimIR.P14.ModtranGrid.1" if args.mode == "p14mix"
+                   else "HwaSimIR.P13.ModtranGrid.1"),
         "mode": args.mode,
         "componentRuns": len(rows),
         "formalVertices": formal_vertices,

@@ -69,7 +69,7 @@ inline bool apply(NodePath& node) {
     static bool logged=false;
     if(!logged) {
         logged=true;
-        std::cout<<"[GameSpriteResources] shaderReady=1 atlas="<<atlas->get_fullpath()<<" size="<<atlas->get_x_size()<<"x"<<atlas->get_y_size()<<" vertices=128 particles=32 domain=common_linear"<<std::endl;
+        std::cout<<"[GameSpriteResources] shaderReady=1 priority=100 shader=Config/GameVFX/sprite.frag atlas="<<atlas->get_fullpath()<<" size="<<atlas->get_x_size()<<"x"<<atlas->get_y_size()<<" vertices=128 particles=32 rgbContract=formal_W_per_m2_sr_um_or_explicit_legacy_linear alpha=straight_medium_opacity depthTest=1 depthWrite=0"<<std::endl;
     }
     node.set_shader(shader, 100);
     node.set_shader_input("u_sprite_atlas", atlas);

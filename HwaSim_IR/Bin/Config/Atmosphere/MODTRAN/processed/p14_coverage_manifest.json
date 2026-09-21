@@ -1,0 +1,267 @@
+{
+  "schema": "HwaSimIR.P14.SharedAtmosphereCoverage.1",
+  "publishedAtUtc": "2026-09-20T17:39:36.214827+00:00",
+  "dataIdentity": {
+    "formalLutPathRelativeToConfigRoot": "Atmosphere/MODTRAN/processed/band_lut_si.csv",
+    "formalLutSha256": "48432459ac56dbb6980f3ca25e2d1e4701763ba3674703051cb0fd45da8c7cd7",
+    "formalLutBytes": 2792395,
+    "formalLutRows": 2396,
+    "coverageManifestFile": "p14_coverage_manifest.json",
+    "candidateSha256": "ab33e483c6027bce0e1a58e9a4036e40ce596917977cd4d0ee4fdc2d27582708",
+    "qcSha256": "d138841786d89214a0cbbc0dddfdd419afe8ee763404ead9e9478684fdf12d92",
+    "realModtranRunEvidenceSha256": "ba89724b88a2bae98c8fc81831d158a685e5df7e5bade49c6e8bf32511acfa17",
+    "priorP13ManifestSha256": "be2cf0d2e7f89827b44ba0952c89dceb3c040b13c28881ab92ebb7fef4c752dc"
+  },
+  "preservation": {
+    "beforeSha256": "de72d333dfab19989ba56856075a7d95ea5d9305f84bc1ab2a3ef9e5a97464be",
+    "beforeRows": 2060,
+    "addedRows": 336,
+    "preExistingBytesPreservedAsExactPrefix": true,
+    "preExistingCanonicalDigestBefore": "d94c994d58678c780c1cffd6f3618ef93a0e13c1ce5b99749bd498eaf16b228a",
+    "preExistingCanonicalDigestAfter": "d94c994d58678c780c1cffd6f3618ef93a0e13c1ce5b99749bd498eaf16b228a",
+    "archiveBackup": "D:\\HwaSimIR\\HwaSim_IR\\Bin\\Config\\Atmosphere\\MODTRAN\\processed\\Archive\\P14\\band_lut_si_pre_p14_de72d333dfab1998.csv",
+    "archiveBackupSha256": "de72d333dfab19989ba56856075a7d95ea5d9305f84bc1ab2a3ef9e5a97464be",
+    "nirRowsBefore": 1005,
+    "nirRowsAfter": 1005
+  },
+  "immutableInput": {
+    "path": "D:\\HwaSimIR\\DataDrivenTestQT\\1.txt",
+    "sha256": "f2c3db00d71012cd28336b5077e03ff8d4ed1eda2698fd900486ae9cdfdd7901",
+    "bytes": 2057485,
+    "acceptedRows": 4318,
+    "role": "test_lineage_only_not_external_sender_business_dependency"
+  },
+  "externalSenderContract": {
+    "querySource": "current_accepted_realtime_sample",
+    "requiresOriginal1TxtHash": false,
+    "rejectsInvalidPlaceholderBeforeQuery": true,
+    "noRangeClamp": true,
+    "noExtrapolation": true,
+    "noMissingFill": true,
+    "noTauOneFallback": true
+  },
+  "additionalValidatedInputs": [
+    {
+      "name": "p13_performance_highalt_300s.txt",
+      "role": "performance_only_300s_complex_weather",
+      "sha256": "3a17da3a50ae7cfb6441ee1d5111f5ed7aa3ab6817cf19e1dc2505a531f59df1",
+      "bytes": 10212598,
+      "acceptedRows": 18000,
+      "uniqueObserverTargetStates": 18000,
+      "notOriginalReplay": true,
+      "mayReplaceOriginal1Txt": false,
+      "sourceInputSha256": "f2c3db00d71012cd28336b5077e03ff8d4ed1eda2698fd900486ae9cdfdd7901",
+      "fixtureManifestSha256": "9c9c7e6d26416c5426e287b9cbec8e996701ed9317a5b532c589653d520815c8",
+      "queryManifestSha256": "19ef8a177ea4c9cd82598fce9f9a0e2cfb6c2232043f4be5b05777f90e43aee0",
+      "productionQueryCheckLogSha256": "19006be1db1c5b5522f196660f6f600100e3771109190eef957df294f16c1614",
+      "productionQueryRows": 36000,
+      "productionQueryValid": 36000,
+      "productionQueryFailures": 0,
+      "calibrationStatus": "NOT_VERIFIED_CALIBRATION"
+    },
+    {
+      "name": "p14_ground_truck_weather_30s.txt",
+      "role": "p14_ground_truck_mixed_weather_30s",
+      "sha256": "c2e8b06909e6c5149680b477004cda5f216475116df3fe411c126ae292d5183a",
+      "bytes": 373302,
+      "acceptedRows": 1800,
+      "uniqueObserverTargetStates": 1800,
+      "notOriginalReplay": true,
+      "mayReplaceOriginal1Txt": false,
+      "independentGeneratedInput": true,
+      "sourceInputBusinessDependency": false,
+      "fixtureManifestSha256": "bf544a33807d11519f6928964d2ea9076616413d8ab0b1b8e7ddb6c7bd080fda",
+      "queryManifestSha256": "bbbe157df66e22428c1ed188667b4ce277b3e0cb234e8d840a3fd35189c649a1",
+      "productionQueryCheckLogSha256": "bc9c6ad7dbffb5d9062dba9655147c5095e26329944bd3efe1c97975a57f629d",
+      "productionQueryRows": 14400,
+      "productionQueryValid": 14400,
+      "productionQueryFailures": 0,
+      "validatedVisibilityKm": [
+        6.0,
+        12.0,
+        23.0
+      ],
+      "validatedRelativeHumidityPercent": [
+        30.0,
+        60.0,
+        85.0
+      ],
+      "validatedSolarZenithDeg": [
+        33.820116843038655,
+        66.49198564881218
+      ],
+      "observerAltitudeKm": [
+        0.001,
+        0.001
+      ],
+      "targetAltitudeKm": [
+        0.001,
+        0.001
+      ],
+      "slantRangeKm": [
+        0.4999997977784455,
+        0.4999997977784455
+      ],
+      "calibrationStatus": "NOT_VERIFIED_CALIBRATION"
+    }
+  ],
+  "original1TxtActualQueryEnvelope": {
+    "observerAltitudeKm": [
+      10.99844238,
+      11.97000586
+    ],
+    "targetAltitudeKm": [
+      9.7335,
+      10.00005371
+    ],
+    "recomputedSlantRangeKm": [
+      2.427569473,
+      22.269183094
+    ],
+    "visibilityKm": [
+      6.0,
+      6.0
+    ],
+    "relativeHumidityPercent": [
+      85.0,
+      85.0
+    ],
+    "solarZenithDegForUtcDate2026_09_06Hour3_5": [
+      41.4269,
+      41.509
+    ],
+    "contains50km": false
+  },
+  "p13MeasuredGrid": {
+    "bands": [
+      "SWIR",
+      "MWIR"
+    ],
+    "atmosphereModel": "Mid-Latitude Summer",
+    "aerosolModel": "Rural",
+    "humidityProfiles": [
+      "scaled_mls_surface_rh30",
+      "scaled_mls_surface_rh60",
+      "scaled_mls_surface_rh85"
+    ],
+    "observerAltitudeKm": [
+      10.95,
+      12.0
+    ],
+    "targetAltitudeKm": [
+      9.7,
+      10.05
+    ],
+    "slantRangeKm": [
+      2.4,
+      5.0,
+      10.0,
+      20.0,
+      23.0,
+      35.0,
+      50.0
+    ],
+    "visibilityKm": [
+      6.0,
+      23.0
+    ],
+    "solarZenithDeg": [
+      20.0,
+      45.0
+    ],
+    "completeFiveComponentVertices": 672,
+    "licensedModtranComponentRunsP13": 720,
+    "licensedModtranComponentRunsP14Increment": 720,
+    "interpolation": "linear_components_and_tau_optical_depth_inside_measured_cell_only",
+    "noExtrapolation": true,
+    "noRangeClamp": true,
+    "noMissingFill": true,
+    "noTauOneFallback": true
+  },
+  "coverageDomains": {
+    "highAltitudeUnequalAltitudeTo50Km": {
+      "bands": [
+        "SWIR",
+        "MWIR"
+      ],
+      "observerAltitudeKm": [
+        10.95,
+        12.0
+      ],
+      "targetAltitudeKm": [
+        9.7,
+        10.05
+      ],
+      "slantRangeKm": [
+        2.4,
+        5.0,
+        10.0,
+        20.0,
+        23.0,
+        35.0,
+        50.0
+      ],
+      "visibilityKm": [
+        6.0,
+        23.0
+      ],
+      "validatedInterpolatedVisibilityKm": [
+        12.0
+      ],
+      "solarZenithDeg": [
+        20.0,
+        45.0
+      ],
+      "humidityPercent": [
+        30.0,
+        60.0,
+        85.0
+      ]
+    },
+    "groundMixedWeather": {
+      "bands": [
+        "SWIR",
+        "MWIR"
+      ],
+      "observerAltitudeKm": [
+        0.001,
+        1.0
+      ],
+      "targetAltitudeKm": [
+        0.001,
+        1.0
+      ],
+      "slantRangeKm": [
+        0.1,
+        0.5,
+        1.0,
+        2.0
+      ],
+      "visibilityKm": [
+        6.0,
+        23.0
+      ],
+      "validatedInterpolatedVisibilityKm": [
+        12.0
+      ],
+      "solarZenithDeg": [
+        20.0,
+        45.0,
+        70.0
+      ],
+      "humidityPercent": [
+        30.0,
+        60.0,
+        85.0
+      ],
+      "completeFiveComponentRowsPerBand": 192,
+      "source": "preserved_pre_P13_licensed_MODTRAN_rows"
+    },
+    "notACartesianUnion": true
+  },
+  "separateDeclaredExtension": {
+    "description": "50 km high-altitude unequal-altitude boundary; not present in 1.txt",
+    "maximumSlantRangeKm": 50.0
+  },
+  "calibrationStatus": "NOT_VERIFIED_CALIBRATION"
+}

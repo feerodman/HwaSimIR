@@ -1,0 +1,119 @@
+{
+  "schema": "hwasimir.p14.ground-truck-weather-fixture.v1",
+  "purpose": "p14_ground_truck_mixed_weather_30s",
+  "identity": {
+    "name": "p14_ground_truck_weather_30s.txt",
+    "sha256": "c2e8b06909e6c5149680b477004cda5f216475116df3fe411c126ae292d5183a",
+    "bytes": 373302,
+    "rows": 1800,
+    "uniqueObserverTargetStates": 1800
+  },
+  "provenance": {
+    "kind": "independently_generated_civil_ground_weather_fixture",
+    "readsOriginal1Txt": false,
+    "sourceInputBusinessDependency": false,
+    "schemaSource": "D:\\HwaSimIR\\DataDrivenTestQT\\ReplayCsvSchema.h",
+    "schemaSha256": "466d69fc22f47549a06cf8e450817e13f6c141d449fa7271e9e0c6c5949be37d",
+    "generator": "D:\\HwaSimIR\\tools\\p14_generate_ground_weather_fixture.py",
+    "generatorSha256": "a7bbe7dd1f17581d7bb72ddc2a5e567eec047b36a7226e6509865bef883457f5"
+  },
+  "time": {
+    "firstMs": 20.0,
+    "lastMs": 30003.333333333332,
+    "rowsPerSecond": 60.0,
+    "nominalDurationSec": 30.0,
+    "oneAcceptedRowPerPacket": true
+  },
+  "geometry": {
+    "observerAltitudeM": [
+      1.0,
+      1.0
+    ],
+    "targetAltitudeM": [
+      1.0,
+      1.0
+    ],
+    "slantRangeM": [
+      499.9997977784455,
+      499.9997977784455
+    ],
+    "horizontalRangeM": [
+      499.9997977784455,
+      499.9997977784455
+    ],
+    "observerSpeedKmh": 36.0,
+    "targetSpeedKmh": 36.0,
+    "viewValid": 1,
+    "targetProtocolCodeAppliedByUi": "0x55",
+    "physicalClaim": "generic synthetic civil geometry only"
+  },
+  "environments": [
+    {
+      "name": "clear",
+      "envSky": 0,
+      "visibilityKm": 23.0,
+      "relativeHumidityPercent": 30.0,
+      "utcHour": 5.0,
+      "solarZenithDeg": [
+        33.820116843038655,
+        33.82019426916059
+      ]
+    },
+    {
+      "name": "cloud_visibility",
+      "envSky": 1,
+      "visibilityKm": 12.0,
+      "relativeHumidityPercent": 60.0,
+      "utcHour": 3.5,
+      "solarZenithDeg": [
+        41.42651728875289,
+        41.426886451801685
+      ]
+    },
+    {
+      "name": "rain",
+      "envSky": 2,
+      "visibilityKm": 6.0,
+      "relativeHumidityPercent": 85.0,
+      "utcHour": 1.0,
+      "solarZenithDeg": [
+        66.49145768931385,
+        66.49198564881218
+      ]
+    },
+    {
+      "name": "snow",
+      "envSky": 3,
+      "visibilityKm": 6.0,
+      "relativeHumidityPercent": 85.0,
+      "utcHour": 3.0,
+      "solarZenithDeg": [
+        45.670392147669105,
+        45.67081773374666
+      ]
+    }
+  ],
+  "productionQueryEvidence": {
+    "queryManifest": "D:\\HwaSimIR\\logs\\p14\\ground_fixture_query\\p14_ground_query_manifest.csv",
+    "queryManifestSha256": "bbbe157df66e22428c1ed188667b4ce277b3e0cb234e8d840a3fd35189c649a1",
+    "productionQueryRows": 14400,
+    "productionQueryValid": 14400,
+    "productionQueryFailures": 0,
+    "result": "PASS",
+    "productionQueryCheckLog": "D:\\HwaSimIR\\logs\\p14\\ground_fixture_query\\query_check\\p13_track_query.log",
+    "productionQueryCheckLogSha256": "bc9c6ad7dbffb5d9062dba9655147c5095e26329944bd3efe1c97975a57f629d",
+    "loadedEntries": 2061,
+    "vertexFailures": 0,
+    "boundaryFailures": 0,
+    "tauMin": 0.619106882573,
+    "tauMax": 0.772095134885
+  },
+  "boundaries": {
+    "notOriginalReplay": true,
+    "mayReplaceOriginal1Txt": false,
+    "mustNotBeRenamedAs1Txt": true,
+    "sourceInputBusinessDependency": false,
+    "notEquipmentSpecific": true,
+    "calibrationStatus": "NOT_VERIFIED_CALIBRATION"
+  }
+}

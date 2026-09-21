@@ -21,6 +21,7 @@
 #include "VideoTopicResolver.h"
 #include "InputAuditV1.h"
 #include "StageAuditV1.h"
+#include "RealtimeSampleValidity.h"
 #include "lvecBase4.h"
 #include "pta_LVecBase4.h"
 #include "pta_float.h"
@@ -1732,6 +1733,21 @@ void HwaSimIR::run() {
 		int remainingInputQueueDepth = 0;
 		{
 			std::unique_lock<std::mutex> lock(m_mtx);
+			while (!m_pendingDisplayFrames.empty() &&
+				m_pendingDisplayFrames.front().referenceGeneration != m_referenceGeneration)
+			{
+				const PendingDisplayFrame stale = m_pendingDisplayFrames.front();
+				m_pendingDisplayFrames.pop_front();
+				++m_realtimeRejectedStaleGenerationCount;
+				std::cout << "[RealtimeValidity] transport="
+					<< (stale.ddsIngress ? "dds" : "udp")
+					<< " accepted=0 reason=stale_reference_generation"
+					<< " sampleGeneration=" << stale.referenceGeneration
+					<< " activeGeneration=" << m_referenceGeneration
+					<< " sourceTimeMs=" << stale.data.time
+					<< " rejectedStaleGeneration=" << m_realtimeRejectedStaleGenerationCount
+					<< " outputFramesCreated=0" << std::endl;
+			}
 			// Preserve INIT->START realtime samples.  START (and the deferred STOP
 			// drain) leave m_isSimRunning true before this point, so only genuinely
 			// pre-start input remains queued rather than being silently consumed.
@@ -5147,6 +5163,7 @@ uniform vec3 u_noise_offset;
 uniform float u_density_scale;
 uniform float u_optical_depth;
 uniform float u_cloud_gray;
+uniform int u_stage6_raw_si_domain;
 uniform float u_spawn_fade;
 uniform int u_ray_steps;
 uniform int u_camera_inside;
@@ -5216,7 +5233,8 @@ void main() {
         if(P6D_CLOUD_MODE==6.0)shape=0.0;
         float density = shape * (u_game_cloud>0?1.0:smoothstep(0.0, 0.30, ellipsoidEdge)) * u_density_scale * u_spawn_fade;
         float segmentT=exp(-max(0.0,u_optical_depth)*density*stepLength);
-        float artLight=u_game_cloud>0?(.42+.62*clamp((cloudTexel.g-.60)/.35,0.0,1.0)+.18*(samplePoint.z*.5+.5)):1.0;
+        float artLight=(u_stage6_raw_si_domain==1)?1.0:
+            (u_game_cloud>0?(.42+.62*clamp((cloudTexel.g-.60)/.35,0.0,1.0)+.18*(samplePoint.z*.5+.5)):1.0);
         if(u_game_cloud==3)artLight=cloudTexel.g*1.4;
         if(P6D_CLOUD_MODE==1.0||P6D_CLOUD_MODE==2.0)artLight=1.0;
         float source=u_cloud_gray*artLight;
@@ -5229,7 +5247,9 @@ void main() {
     }
     float alpha = clamp(1.0 - transmittance, 0.0, 0.96);
     if (alpha < 0.002) discard;
-    fragColor = vec4(vec3(clamp(accumulated/max(1.0-transmittance,.0001),0.0,1.0)),alpha);
+    float sourceFunction=accumulated/max(1.0-transmittance,.0001);
+    if(u_stage6_raw_si_domain!=1)sourceFunction=clamp(sourceFunction,0.0,1.0);
+    fragColor = vec4(vec3(max(0.0,sourceFunction)),alpha);
 }
 )";
 	m_stage7VolumeShader = Shader::make(Shader::SL_GLSL, vertexShader, fragmentShader);
@@ -5352,6 +5372,7 @@ void HwaSimIR::InitStage7VolumetricCloudRenderer()
 		volume.node.set_shader_input("u_density_scale", LVecBase2f(0.0f, 0.0f));
 		volume.node.set_shader_input("u_optical_depth", LVecBase2f(0.0f, 0.0f));
 		volume.node.set_shader_input("u_cloud_gray", LVecBase2f(0.5f, 0.0f));
+		volume.node.set_shader_input("u_stage6_raw_si_domain", LVecBase2i(m_stage6RawSiDomain ? 1 : 0, 0));
 		volume.node.set_shader_input("u_spawn_fade", LVecBase2f(0.0f, 0.0f));
 		volume.node.set_shader_input("u_ray_steps", LVecBase2i(m_stage7VolumeRaymarchStepsFar, 0));
 		volume.node.set_shader_input("u_camera_inside", LVecBase2i(0, 0));
@@ -5672,10 +5693,20 @@ void HwaSimIR::UpdateStage7VolumetricClouds(const IRStage7WeatherState& weatherS
 			weatherState.cloudOpticalDepth * weatherState.cloudOpacity * m_stage7CloudOpticalDepthScale), 0.0f));
 		const IRBand band = IRBandFromProtocol(std::max(0, std::min(4, m_sensorParam.trackerSensorBand)));
 		double cloudGray = Stage7CloudLinearValue(band,weatherState.cloudTemperatureK + volume.descriptor.temperatureOffsetK,weatherState);
+		if (m_stage6RawSiDomain)
+		{
+			const double basePlanck = std::max(1.0e-12,
+				IRRadianceModelV2::bandAveragePlanckRadianceWm2SrUm(
+					band, weatherState.cloudTemperatureK));
+			const double offsetPlanck = std::max(0.0,
+				IRRadianceModelV2::bandAveragePlanckRadianceWm2SrUm(
+					band, weatherState.cloudTemperatureK + volume.descriptor.temperatureOffsetK));
+			cloudGray = std::max(0.0, weatherState.cloudGray) * offsetPlanck / basePlanck;
+		}
 		const char* legacy = std::getenv("P5LegacyVisuals");
 		if (legacy && std::string(legacy)=="1")
 			cloudGray = IRWeatherEffects::cloudEmissionGray(band,weatherState.cloudTemperatureK+volume.descriptor.temperatureOffsetK,weatherState.cloudBackgroundGray,weatherState.skyDiffuseScale);
-		else {
+		else if (!m_stage6RawSiDomain) {
 			// Same linear contrast/fog operation as slice and sky before alpha blend.
 			cloudGray = ClampStage5Double(weatherState.fogGray+(cloudGray-weatherState.fogGray)*ClampStage5Double(weatherState.targetContrastScale,.05,1.5),0.0,1.0);
 			const double fog = ClampStage5Double(weatherState.fogDensity,0.0,.78);
@@ -6461,11 +6492,17 @@ IREnginePlumeOutput HwaSimIR::UpdateEnginePlumeForTarget(TargetPlatformData& tar
 			node.set_shader_input("u_plume_band_gain", LVecBase2f(bandGain, 0.0f));
 			node.show();
 		}
+		// A foreground sprite is alpha-composited over an already-at-sensor-plane
+		// background.  Its RGB therefore has to be the source radiance transported
+		// to that same plane: tau*S + L_path.  Supplying only tau*S made the alpha
+		// blend remove the background path term and could turn a hot plume darker.
 		const float shaderRadiance = formalPlumeRequested
-			? static_cast<float>(cache.formalTau * static_cast<double>(sourceRadianceWm2SrUm))
+			? static_cast<float>(cache.formalTau * static_cast<double>(sourceRadianceWm2SrUm) +
+				cache.formalPathRadiance)
 			: gray;
 		const float previousShaderRadiance = formalPlumeRequested
-			? static_cast<float>(cache.formalTau * static_cast<double>(previousSourceRadianceWm2SrUm))
+			? static_cast<float>(cache.lastAppliedFormalTau * static_cast<double>(previousSourceRadianceWm2SrUm) +
+				cache.lastAppliedFormalPathRadiance)
 			: previousGray;
 		const bool dynamicChanged = !cache.hasAppliedOutput ||
 			std::fabs(tempK - previousTempK) > 0.25f ||
@@ -6493,6 +6530,8 @@ IREnginePlumeOutput HwaSimIR::UpdateEnginePlumeForTarget(TargetPlatformData& tar
 		cache.lastAppliedOutput.coreSourceRadianceWm2SrUm, cache.lastAppliedOutput.coreOpacity);
 	cache.lastAppliedOutput = output;
 	cache.hasAppliedOutput = true;
+	cache.lastAppliedFormalTau = cache.formalTau;
+	cache.lastAppliedFormalPathRadiance = cache.formalPathRadiance;
 
 	const std::uint64_t frameSeq = m_currentFrameTelemetry.sourceSeq > 0
 		? m_currentFrameTelemetry.sourceSeq : m_stage0DisplayFrameCount;
@@ -6534,6 +6573,9 @@ IREnginePlumeOutput HwaSimIR::UpdateEnginePlumeForTarget(TargetPlatformData& tar
 			<< " unit=W/(m^2_sr_um)"
 			<< " formalTauReady=" << (cache.formalTauReady ? 1 : 0)
 			<< " formalTau=" << cache.formalTau
+			<< " formalPathRadiance=" << cache.formalPathRadiance
+			<< " spriteRgbEquation=tau_times_source_plus_path"
+			<< " blend=straight_alpha"
 			<< " noLegacyFallback=" << ((formalPlumeRequested && !formalPlumeReady) ? 1 : 0)
 			<< " coreOpacity=" << output.coreOpacity
 			<< " haloOpacity=" << output.haloOpacity
@@ -6983,8 +7025,14 @@ void HwaSimIR::UpdateStage7SkyHorizon(const IRRuntimeEnvironment& environment, c
 	// GeoTransform rebases WGS84 altitude around the first realtime platform
 	// sample.  Keep the physical cloud altitude stable across that rebase: sea
 	// level is -referenceAltitude in the local ENU frame.
-	m_stage7GroundReferenceZ = m_stage7GroundZOffset -
-		(m_isInitReferencePoint ? m_stage7GeoReferenceAltitudeM : 0.0);
+	// INIT is allowed to use its position as a discard-only prewarm reference,
+	// but it must not occupy the formal realtime-origin lock.  Use that temporary
+	// altitude while building/prewarming the same local scene that the first
+	// valid realtime sample will promote (or rebase) later.
+	const double activeReferenceAltitudeM = m_isInitReferencePoint
+		? m_stage7GeoReferenceAltitudeM
+		: (m_prewarmReferenceActive ? m_prewarmReferenceSpatial.alt : 0.0);
+	m_stage7GroundReferenceZ = m_stage7GroundZOffset - activeReferenceAltitudeM;
 
 	const bool skyVisible = m_stage7DebugMode != 2;
 	const bool lowerShellVisible = m_stage7DebugMode != 1;
@@ -7088,10 +7136,18 @@ void HwaSimIR::LogStage7SkyGround(const IRRuntimeEnvironment& environment, int e
 			<< "," << (m_cameraNode.is_empty() ? 0.0f : m_cameraNode.get_pos(m_renderRoot)[2])
 			<< " backgroundMode=real_3d"
 			<< std::endl;
+		const double activeReferenceAltitudeM = m_isInitReferencePoint
+			? m_stage7GeoReferenceAltitudeM
+			: (m_prewarmReferenceActive ? m_prewarmReferenceSpatial.alt : 0.0);
 		std::cout << "[Stage7 GroundReference]"
-			<< " mode=" << (m_isInitReferencePoint ? "geo_reference_altitude" : "absolute_before_geo_reference")
+			<< " mode=" << (m_isInitReferencePoint
+				? "formal_realtime_reference_altitude"
+				: (m_prewarmReferenceActive
+					? "temporary_init_prewarm_reference_altitude"
+					: "absolute_before_reference"))
 			<< " groundZOffset=" << m_stage7GroundZOffset
-			<< " geoReferenceAltitudeM=" << m_stage7GeoReferenceAltitudeM
+			<< " activeReferenceAltitudeM=" << activeReferenceAltitudeM
+			<< " formalReferenceCommitted=" << (m_isInitReferencePoint ? 1 : 0)
 			<< " finalGroundReferenceZ=" << groundReferenceZ
 			<< std::endl;
 		const LPoint3f cameraPos = m_cameraNode.is_empty()
@@ -7878,11 +7934,11 @@ void HwaSimIR::ProcessRealSimSceneInitData()
 	m_stage5PlumePerfSamples = 0;
 	m_lastStage4UpdateTime = -1.0;
 
-	// The INIT packet carries the observer platform's actual initial spatial
-	// state (the sender fills it from the first accepted input row).  Establish
-	// both scene and cloud tangent frames before creating platform nodes.  This
-	// does not consume or synthesize a realtime row; INIT and sourceSeq=1 then
-	// use the same transforms during discard-only prewarm and formal rendering.
+	// INIT may carry a useful resource-prewarm hint, but an external sender is
+	// not required to know its first realtime position yet.  Seed the transform
+	// used by INIT-only scene construction without occupying the formal lock.
+	// The first valid realtime platform sample rebases every dependent node on
+	// the render thread before that sample is drawn.
 	const BYHWICD::SpatialState& initCloudSpatial = m_initSceneData.platParamInit.spatial;
 	const bool initCloudSpatialValid =
 		std::isfinite(initCloudSpatial.lat) &&
@@ -7896,27 +7952,24 @@ void HwaSimIR::ProcessRealSimSceneInitData()
 			initCloudSpatial.lat,
 			initCloudSpatial.lon,
 			initCloudSpatial.alt);
-		m_isInitReferencePoint = true;
-		m_stage7GeoReferenceAltitudeM = initCloudSpatial.alt;
-		m_cloudFrame.setLocal(
-			initCloudSpatial.lat,
-			initCloudSpatial.lon,
-			initCloudSpatial.alt);
-		m_cloudFrameReady = true;
-		RefreshCloudWorldFrame();
+		m_prewarmReferenceSpatial = initCloudSpatial;
+		m_prewarmReferenceActive = true;
 		std::cout << "[InitReferencePrewarm]"
-			<< " source=protocol_init_platform"
+			<< " source=protocol_init_platform temporary=1 formal=0"
+			<< " referenceGeneration=" << m_referenceGeneration
 			<< " platID=" << m_initSceneData.platParamInit.id
-			<< " localOrigin=" << initCloudSpatial.lat << ","
+			<< " temporaryOrigin=" << initCloudSpatial.lat << ","
 			<< initCloudSpatial.lon << "," << initCloudSpatial.alt
-			<< " sceneReferenceReady=1 cloudFrameReady=1"
+			<< " sceneReferenceReady=0 cloudFrameReady=0"
 			<< " realtimeRowsConsumed=0 inputModified=0"
 			<< " beforeReady=1" << std::endl;
 	}
 	else
 	{
 		std::cout << "[InitReferencePrewarm]"
-			<< " source=protocol_init_platform valid=0 action=defer_to_first_realtime"
+			<< " source=protocol_init_platform valid=0 temporary=0 formal=0"
+			<< " referenceGeneration=" << m_referenceGeneration
+			<< " action=defer_to_first_realtime"
 			<< " realtimeRowsConsumed=0 inputModified=0"
 			<< std::endl;
 	}
@@ -7937,7 +7990,13 @@ void HwaSimIR::ProcessRealSimSceneInitData()
 	UpdateStage7WeatherNodes(m_stage7WeatherState, ClockObject::get_global_clock()->get_frame_time(), true);
 	/*BYHWICD::SpatialState spatial;
 	spatial = m_initSceneData.platParam[0].spatial;
-	m_geoTrans.InitReferencePoint(spatial.lat, spatial.lon, spatial.alt);
+	// If INIT happened to name the same origin, promote the already-prewarmed
+	// local frame without rebuilding it on the first owned source frame.  A
+	// different external first position still performs the required full rebase.
+	if (differedFromPrewarm)
+	{
+		m_geoTrans.InitReferencePoint(spatial.lat, spatial.lon, spatial.alt);
+	}
 
 	std::cout << "初始化仿真中心原点：ID=" << m_initSceneData.platParam[0].id
 		<< " 位置(" << spatial.lat << "," << spatial.lon << "," << spatial.alt << ")" << std::endl;*/
@@ -7945,6 +8004,57 @@ void HwaSimIR::ProcessRealSimSceneInitData()
 	std::cout << "成像初始化完成：军别=" << m_initSceneData.JB
 		<< " 挂载平台ID=" << m_initSceneData.platID
 		<< " 仿真回合=" << m_currentRound << std::endl;
+}
+
+void HwaSimIR::CommitFormalReferenceFromRealtime(
+	const BYHWICD::DisplayC2cObjTrackingData& data,
+	std::uint64_t sourceSeq)
+{
+	if (m_isInitReferencePoint)
+	{
+		return;
+	}
+	// RealtimeSampleValidity already checked every component before the sample
+	// entered the accepted FIFO.  Commit all dependent transforms on this render
+	// thread before any scene update or atmosphere query consumes the sample.
+	const BYHWICD::SpatialState& spatial = data.platLoc;
+	const bool differedFromPrewarm = !m_prewarmReferenceActive ||
+		std::abs(m_prewarmReferenceSpatial.lat - spatial.lat) > 1.0e-12 ||
+		std::abs(m_prewarmReferenceSpatial.lon - spatial.lon) > 1.0e-12 ||
+		std::abs(m_prewarmReferenceSpatial.alt - spatial.alt) > 1.0e-6;
+	m_geoTrans.InitReferencePoint(spatial.lat, spatial.lon, spatial.alt);
+	m_stage7GeoReferenceAltitudeM = spatial.alt;
+	m_stage7GroundReferenceZ = m_stage7GroundZOffset - spatial.alt;
+	m_cloudFrame.setLocal(spatial.lat, spatial.lon, spatial.alt);
+	m_cloudFrameReady = true;
+	RefreshCloudWorldFrame();
+	if (differedFromPrewarm)
+	{
+		m_stage7CloudGridOriginReady = false;
+		m_stage5ModtranRadianceCache.clear();
+	}
+	m_l2ActiveVisibilityByTarget.clear();
+	m_referenceSourceSeq = sourceSeq;
+	m_referenceSourceTimeMs = data.time;
+	++m_referenceCommitCount;
+	m_prewarmReferenceActive = false;
+	// Publish readiness last.  All readers of this state run on the same render
+	// thread, so no consumer can observe a half-rebased reference.
+	m_isInitReferencePoint = true;
+	std::cout << "[FormalReferenceCommit]"
+		<< " referenceGeneration=" << m_referenceGeneration
+		<< " commitCount=" << m_referenceCommitCount
+		<< " sourceSeq=" << sourceSeq
+		<< " sourceTimeMs=" << data.time
+		<< " platform=" << spatial.lat << "," << spatial.lon << "," << spatial.alt
+		<< " initTemporaryDifferent=" << (differedFromPrewarm ? 1 : 0)
+		<< " inputViewValid=" << (data.weaponState.viewValid ? 1 : 0)
+		<< " viewValidUsedForPosition=0"
+		<< " cloudFrameReady=1 groundReferenceZ=" << m_stage7GroundReferenceZ
+		<< " prewarmFramePromoted=" << (differedFromPrewarm ? 0 : 1)
+		<< " atmosphereCacheInvalidated=" << (differedFromPrewarm ? 1 : 0)
+		<< " beforeFirstDraw=1"
+		<< std::endl;
 }
 
 void HwaSimIR::ProcessRealSimSceneDrivenData(
@@ -7961,6 +8071,7 @@ void HwaSimIR::ProcessRealSimSceneDrivenData(
 	// update.  Passing it directly avoids a second mutex acquisition and copy.
 	const std::uint64_t frameSeq = m_currentFrameTelemetry.sourceSeq > 0
 		? m_currentFrameTelemetry.sourceSeq : m_stage0DisplayFrameCount;
+	CommitFormalReferenceFromRealtime(currentData, frameSeq);
 	m_lastVisibilityHideCalls = 0;
 	m_lastVisibilityShowCalls = 0;
 
@@ -7971,33 +8082,6 @@ void HwaSimIR::ProcessRealSimSceneDrivenData(
 
 		// 更新平台位置/姿态（从实时数据的platLoc读取）
 		const BYHWICD::SpatialState& platSpatial = currentData.platLoc;
-		if (!m_isInitReferencePoint)
-		{
-			m_geoTrans.InitReferencePoint(platSpatial.lat, platSpatial.lon, platSpatial.alt);
-			m_stage7GeoReferenceAltitudeM = std::isfinite(platSpatial.alt) ? platSpatial.alt : 0.0;
-			const bool cloudFrameChanged = !m_cloudFrameReady ||
-				std::abs(m_cloudFrame.local.lat - platSpatial.lat) > 1.0e-12 ||
-				std::abs(m_cloudFrame.local.lon - platSpatial.lon) > 1.0e-12 ||
-				std::abs(m_cloudFrame.local.alt - platSpatial.alt) > 1.0e-6;
-			if (cloudFrameChanged)
-			{
-				m_cloudFrame.setLocal(platSpatial.lat,platSpatial.lon,platSpatial.alt);
-				m_cloudFrameReady=true;
-				RefreshCloudWorldFrame();
-			}
-			std::cout<<"[CloudWorldFrame] publicOrigin="<<m_cloudAppearance.latitude<<","<<m_cloudAppearance.longitude<<","<<m_cloudAppearance.altitude
-				<<" localOrigin="<<platSpatial.lat<<","<<platSpatial.lon<<","<<platSpatial.alt
-				<<" frame=WGS84_ENU_tangent altitudeDatum=origin_ellipsoid_plus_ENU_z physicalAnimation=static firstInputDefinesWorld=0"
-				<<" prewarmedFromInit="<<(cloudFrameChanged?0:1)
-				<<" renderTransformChanged="<<(cloudFrameChanged?1:0)<<std::endl;
-			m_stage7CloudGridOriginReady = false;
-			std::cout << "初始化仿真中心原点：ID=" << m_initSceneData.platParamInit.id
-				<< " 位置(" << platSpatial.lat << "," << platSpatial.lon << "," << platSpatial.alt << ")" << std::endl;
-			m_isInitReferencePoint = true;
-		}
-		
-
-
 		/*double px, py, pz;
 		m_geoTrans.Wgs84ToPandaXYZ(platSpatial, px, py, pz);
 		pakPlat.nodePath.set_pos(px, py, pz);*/
@@ -8553,7 +8637,7 @@ void HwaSimIR::ProcessAddRemovePakPlatform()
 
 		// 设置初始位置/姿态（从协议SpatialState读取）
 		const BYHWICD::SpatialState& spatial = platParam.spatial;
-		if (m_isInitReferencePoint)
+		if (m_isInitReferencePoint || m_prewarmReferenceActive)
 		{
 			modelNode.set_mat(LMatrix4(m_geoTrans.GetPandaMatrix(spatial)));
 		}
@@ -9690,8 +9774,15 @@ bool HwaSimIR::PublishDdsFrameProducts(const DdsVideoFrameMeta& meta,
 bool HwaSimIR::DrainDdsFrameProducts(std::string& error)
 {
 	if (!m_ddsProtocolEndpoint || !m_ddsProtocolEndpoint->running()) return true;
+	// TcpCommThread drains the H.264 writer immediately before these auxiliary
+	// writers.  Its bounded grace period is process-wide transport protection,
+	// not a per-writer delay.  Repeating it for metadata/annotations made every
+	// clean STOP pay two identical 5 s sleeps after all acknowledgments had
+	// already returned.  Keep the one video-writer grace and still wait for ACKs
+	// on both auxiliary writers, but do not sleep a second time.
+	const int auxiliaryBoundedDrainMs = 0;
 	const bool ok = m_ddsProtocolEndpoint->drainFrameOutputs(
-		m_ddsVideoConfig.ackTimeoutSec, m_ddsVideoConfig.shutdownDrainMs, error);
+		m_ddsVideoConfig.ackTimeoutSec, auxiliaryBoundedDrainMs, error);
 	const DdsFrameAuxStats stats = m_ddsProtocolEndpoint->frameStats();
 	std::cout << std::fixed << std::setprecision(3)
 		<< "[DdsFrameProductsFinal] videoMeta=" << stats.metaCount
@@ -9701,6 +9792,8 @@ bool HwaSimIR::DrainDdsFrameProducts(std::string& error)
 		<< " annotationWriteMsAvg=" << (stats.annotationCount ?
 			stats.annotationWriteMsTotal / stats.annotationCount : 0.0)
 		<< " annotationWriteMsMax=" << stats.annotationWriteMsMax
+		<< " ackWaited=1 auxiliaryBoundedDrainMs=" << auxiliaryBoundedDrainMs
+		<< " sharedVideoDrainMs=" << m_ddsVideoConfig.shutdownDrainMs
 		<< " writeErrors=" << stats.writeErrors << std::endl;
 	return ok;
 }
@@ -10011,11 +10104,15 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 	// ========== 业务逻辑（后续填充） ==========
 	switch (cmd.simCommand) {
 	case 1: // 复位
-        m_inputRoundPreparedByInit=false;
+		m_inputRoundPreparedByInit=false;
 		std::cout << "执行复位逻辑..." << std::endl;
 		if (m_pTcpThread) m_pTcpThread->stopOutputRound("reset");
 		m_stage0DisplayFrameCount = 0;
 		m_udpSequence = 0;
+		m_realtimeReceivedCount = 0;
+		m_realtimeRejectedPlaceholderCount = 0;
+		m_realtimeRejectedStructureCount = 0;
+		m_realtimeRejectedStaleGenerationCount = 0;
 		m_inputQueueBackpressureLogCount = 0;
 		m_annotationLastProjectionSourceSeq = 0;
 		m_lastIrUpdateSourceSeq = 0;
@@ -10039,9 +10136,15 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		m_isAddPlatform = false;
 		// 设置TargetState平台初始化ID映射标记
 		m_isInitTargetPlatID = false;
-		// 设置初始化仿真中心原点标记
+		// RESET creates a new reference generation.  STOP/START deliberately does
+		// not touch this state, so a same-generation restart retains the origin.
+		++m_referenceGeneration;
+		m_referenceCommitCount = 0;
+		m_referenceSourceSeq = 0;
+		m_referenceSourceTimeMs = 0.0;
+		m_prewarmReferenceActive = false;
 		m_isInitReferencePoint = false;
-        m_cloudFrameReady=false;RefreshCloudWorldFrame();
+		m_cloudFrameReady=false;RefreshCloudWorldFrame();
 		m_stage7GeoReferenceAltitudeM = 0.0;
 		m_stage7GroundReferenceZ = m_stage7GroundZOffset;
 		m_stage7CloudGridOriginReady = false;
@@ -10110,9 +10213,13 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 			m_pTcpThread->resetInitCompleted();
 			std::cout << "TCP线程初始化标志已重置，下一回合可重新发送初始化命令" << std::endl;
 		}
+		std::cout << "[FormalReferenceState] event=reset referenceGeneration="
+			<< m_referenceGeneration
+			<< " committed=0 sceneReferenceReady=0" << std::endl;
 		std::cout << "复位完成：所有平台已删除，数据已清空" << std::endl;
 		break;
 	case 2: // 开始
+	{
 		std::cout << "执行开始仿真逻辑..." << std::endl;
         if(!m_sensorProfileRequestValid){std::cerr<<"[SensorProfileRequest][ERROR] start_rejected invalid_previous_init"<<std::endl;break;}
         // INIT already created this input round. DDS realtime may arrive after
@@ -10136,8 +10243,41 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		m_lastOutputSourceSeq.store(0);
 		m_lastSourceSeqContinuous.store(true);
 		m_perfStats.configure(m_bSyncRenderMode.load(), static_cast<double>(m_targetVideoFps.load()));
-		// TODO: 实现开始仿真逻辑（启动渲染、数据采集等）
+		// Retire GPU idle/down-clock work immediately at START, while the INIT
+		// reference is still explicitly temporary and before running=true is
+		// advertised.  A status-driven external sender therefore cannot publish a
+		// realtime sample whose accepted->writer interval includes this work.  These
+		// frames are discard-only: they neither consume an input nor create a product.
+		bool startBoundaryReady = m_pFramework != nullptr;
+		for (int pass = 1; startBoundaryReady && pass <= 2; ++pass)
+		{
+			m_syncFrameActive.store(false);
+			const std::int64_t beginNs = IRPerfStats::steadyTimeNs();
+			const bool rendered = m_pFramework->do_frame(Thread::get_current_thread());
+			const double elapsedMs = (IRPerfStats::steadyTimeNs() - beginNs) / 1.0e6;
+			std::cout << "[StartBoundaryPrewarm]"
+				<< " pass=" << pass
+				<< " rendered=" << (rendered ? 1 : 0)
+				<< " elapsedMs=" << elapsedMs
+				<< " discardOnly=1 publishedVideo=0 acceptedRealtime=0"
+				<< " formalReferenceCommitted=" << (m_isInitReferencePoint ? 1 : 0)
+				<< " temporaryReference=" << (m_prewarmReferenceActive ? 1 : 0)
+				<< " beforeRunningStatus=1" << std::endl;
+			startBoundaryReady = rendered;
+		}
+		if (!startBoundaryReady)
+		{
+			std::cerr << "[StartBoundaryPrewarm][ERROR] rendered=0 action=start_rejected"
+				<< " realtimeAccepted=0" << std::endl;
+			break;
+		}
 		m_isSimRunning.store(true);
+		std::cout << "[FormalReferenceState] event=start referenceGeneration="
+			<< m_referenceGeneration
+			<< " committed=" << (m_isInitReferencePoint ? 1 : 0)
+			<< " sourceSeq=" << m_referenceSourceSeq
+			<< " action=" << (m_isInitReferencePoint ? "retain_same_generation" : "wait_first_valid_realtime")
+			<< std::endl;
 		// Stage2B：同步转发开始控制命令，触发显示端开始录制和创建保存目录。
 		if (m_pTcpThread) {
 			m_pTcpThread->resetFrameCounters();
@@ -10152,6 +10292,7 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		
 		std::cout << "仿真开始：当前回合=" << m_currentRound << std::endl;
 		break;
+	}
 	case 3: // 停止
 	{
 		std::cout<<"[ControlStopPhase] phase=finalizing beginNs="<<executeNs
@@ -10174,6 +10315,14 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 			<< " acceptance=" << (outputDrainOk && stopForwardOk ? "pass" : "fail")
 			<< " stopTotalMs=" << (IRPerfStats::steadyTimeNs() - executeNs) / 1.e6
 			<< std::endl;
+		std::cout << "[FormalReferenceState] event=stop referenceGeneration="
+			<< m_referenceGeneration
+			<< " committed=" << (m_isInitReferencePoint ? 1 : 0)
+			<< " sourceSeq=" << m_referenceSourceSeq
+			<< " acceptedRealtime=" << m_udpSequence
+			<< " rejectedPlaceholder=" << m_realtimeRejectedPlaceholderCount
+			<< " rejectedStructure=" << m_realtimeRejectedStructureCount
+			<< " retainedForSameGenerationRestart=1" << std::endl;
         HwaInputAuditV1::flushAll();
 		std::cout << "[SyncRoundConservation]"
 			<< " mode=" << (m_bSyncRenderMode.load() ? "sync" : "async")
@@ -10298,7 +10447,29 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
     if(m_boardTelemetry)m_boardTelemetry->counters.reset();
 #endif
 	ApplyRenderControl(cmd.trackingInit.simMode, cmd.trackingInit.videoFps, renderControlSource.c_str());
-    m_inputRoundPreparedByInit=true;
+	const std::size_t staleRealtimeAtInit = m_pendingDisplayFrames.size();
+	m_pendingDisplayFrames.clear();
+	++m_referenceGeneration;
+	m_referenceCommitCount = 0;
+	m_referenceSourceSeq = 0;
+	m_referenceSourceTimeMs = 0.0;
+	m_prewarmReferenceActive = false;
+	m_isInitReferencePoint = false;
+	m_cloudFrameReady = false;
+	m_stage7GeoReferenceAltitudeM = 0.0;
+	m_stage7GroundReferenceZ = m_stage7GroundZOffset;
+	m_stage7CloudGridOriginReady = false;
+	RefreshCloudWorldFrame();
+	m_realtimeReceivedCount = 0;
+	m_realtimeRejectedPlaceholderCount = 0;
+	m_realtimeRejectedStructureCount = 0;
+	m_realtimeRejectedStaleGenerationCount = 0;
+	std::cout << "[ReferenceGeneration] event=new_init referenceGeneration="
+		<< m_referenceGeneration
+		<< " staleRealtimeDiscarded=" << staleRealtimeAtInit
+		<< " formalCommitted=0 cloudFrameReady=0"
+		<< " initAckMeansResourcesReadyOnly=1" << std::endl;
+	m_inputRoundPreparedByInit=true;
 	const int targetVideoFps = m_targetVideoFps.load();
 	m_inputQueueBackpressureLogCount = 0;
 	m_annotationLastProjectionSourceSeq = 0;
@@ -10385,6 +10556,7 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 	m_initSceneData = cmd;
 	m_currentRound = 0; // 重置回合数
 	m_stage0DisplayFrameCount = 0;
+	m_udpSequence = 0;
 
 	//处理成像初始化数据，生成平台
 	ProcessRealSimSceneInitData();
@@ -10734,14 +10906,44 @@ void HwaSimIR::ProcessDisplayDataOnMainThread(
 	const std::string& ingressTransport) {
 	const std::int64_t receiveTimeNs = IRPerfStats::wallTimeNs();
 	const std::int64_t acceptedSteadyNs = IRPerfStats::steadyTimeNs();
+	const bool ddsIngress = ingressTransport == "dds";
+	if (ddsIngress)
+		m_perfStats.recordDdsRealtimeIngress(acceptedSteadyNs);
+	const HwaRealtimeValidity::Result validity = HwaRealtimeValidity::Classify(data);
+	std::unique_lock<std::mutex> lock(m_mtx);
+	const std::uint64_t receivedOrdinal = ++m_realtimeReceivedCount;
+	if (!validity.valid())
+	{
+		const bool placeholder =
+			validity.status == HwaRealtimeValidity::Status::PlaceholderAllZero;
+		if (placeholder) ++m_realtimeRejectedPlaceholderCount;
+		else ++m_realtimeRejectedStructureCount;
+		static HwaInputAuditV1::Ledger rejectionAudit("rejected");
+		if (ddsIngress)
+			rejectionAudit.record(data, 0, acceptedSteadyNs,
+				IRPerfStats::steadyTimeNs(), false,
+				static_cast<int>(m_pendingDisplayFrames.size()));
+		std::cout << "[RealtimeValidity]"
+			<< " transport=" << ingressTransport
+			<< " receivedOrdinal=" << receivedOrdinal
+			<< " referenceGeneration=" << m_referenceGeneration
+			<< " accepted=0"
+			<< " reason=" << HwaRealtimeValidity::StatusText(validity.status)
+			<< " targetIndex=" << validity.targetIndex
+			<< " sourceTimeMs=" << data.time
+			<< " platform=" << data.platLoc.lat << "," << data.platLoc.lon << "," << data.platLoc.alt
+			<< " inputViewValid=" << (data.weaponState.viewValid ? 1 : 0)
+			<< " viewValidUsedForPosition=0"
+			<< " rejectedPlaceholder=" << m_realtimeRejectedPlaceholderCount
+			<< " rejectedStructure=" << m_realtimeRejectedStructureCount
+			<< " outputFramesCreated=0 formalReferenceChanged=0"
+			<< std::endl;
+		return;
+	}
 #if defined(HWASIMIR_HAS_ZRDDS)
     if(m_boardTelemetry && ingressTransport=="dds")m_boardTelemetry->counters.accept(acceptedSteadyNs);
 #endif
-	m_lastRealtimeIngressSteadyNs.store(IRPerfStats::steadyTimeNs());
-	const bool ddsIngress = ingressTransport == "dds";
-	if (ddsIngress)
-		m_perfStats.recordDdsRealtimeIngress(IRPerfStats::steadyTimeNs());
-	std::unique_lock<std::mutex> lock(m_mtx);
+	m_lastRealtimeIngressSteadyNs.store(acceptedSteadyNs);
 	++m_stage0DisplayFrameCount;
 	const std::uint64_t udpSeq = ++m_udpSequence;
     static HwaInputAuditV1::Ledger acceptanceAudit("accepted");
@@ -10934,6 +11136,7 @@ void HwaSimIR::ProcessDisplayDataOnMainThread(
 	PendingDisplayFrame pending;
 	pending.data = data;
 	pending.ddsIngress = ddsIngress;
+	pending.referenceGeneration = m_referenceGeneration;
 	m_latestUdpSourceSeq.store(udpSeq);
 	pending.telemetry.sourceSeq = udpSeq;
 	pending.telemetry.udpReceiveTimeNs = receiveTimeNs;
@@ -11067,6 +11270,10 @@ void HwaSimIR::InitInfraredSimulation()
 		"../HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed/band_lut_si.csv"
 	});
 	std::string p13CoverageManifestPath = FirstExistingPath({
+		"Config/Atmosphere/MODTRAN/processed/p14_coverage_manifest.json",
+		"../Bin/Config/Atmosphere/MODTRAN/processed/p14_coverage_manifest.json",
+		"HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed/p14_coverage_manifest.json",
+		"../HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed/p14_coverage_manifest.json",
 		"Config/Atmosphere/MODTRAN/processed/p13_coverage_manifest.json",
 		"../Bin/Config/Atmosphere/MODTRAN/processed/p13_coverage_manifest.json",
 		"HwaSim_IR/Bin/Config/Atmosphere/MODTRAN/processed/p13_coverage_manifest.json",
@@ -11132,10 +11339,9 @@ void HwaSimIR::InitInfraredSimulation()
 		"M1NirMwirPhysics", "OriginalInputSha256", "P13OriginalInputSha256", "", nullptr);
 	m_p13CoverageManifestPath = p13CoverageManifestPath;
 	if (m_p13ExpectedFormalLutSha256.size() != 64 ||
-		m_p13ExpectedCoverageManifestSha256.size() != 64 ||
-		m_p13ExpectedOriginalInputSha256.size() != 64)
+		m_p13ExpectedCoverageManifestSha256.size() != 64)
 	{
-		throw std::runtime_error("P13 atmosphere identity requires three 64-character SHA-256 values");
+		throw std::runtime_error("P14 atmosphere identity requires LUT and manifest SHA-256 values");
 	}
 	const std::string actualFormalLutSha256 = HwaHash::Sha256File(modtranBandLutPath);
 	const std::string actualCoverageManifestSha256 = HwaHash::Sha256File(p13CoverageManifestPath);
@@ -11147,16 +11353,19 @@ void HwaSimIR::InitInfraredSimulation()
 	const std::string manifestAtmosphereModel = p13CoverageManifest.string("p13MeasuredGrid.atmosphereModel");
 	const std::string manifestAerosolModel = p13CoverageManifest.string("p13MeasuredGrid.aerosolModel");
 	const std::string manifestCalibrationStatus = p13CoverageManifest.string("calibrationStatus");
+	const bool supportedCoverageSchema =
+		manifestSchema == "HwaSimIR.P14.SharedAtmosphereCoverage.1" ||
+		manifestSchema == "HwaSimIR.P13.SharedAtmosphereCoverage.1";
 	m_p13AtmosphereIdentityReady =
-		manifestSchema == "HwaSimIR.P13.SharedAtmosphereCoverage.1" &&
+		supportedCoverageSchema &&
 		actualFormalLutSha256 == m_p13ExpectedFormalLutSha256 &&
 		actualCoverageManifestSha256 == m_p13ExpectedCoverageManifestSha256 &&
 		manifestFormalLutSha256 == actualFormalLutSha256 &&
-		manifestOriginalInputSha256 == m_p13ExpectedOriginalInputSha256 &&
 		manifestAtmosphereModel == m_m1AtmosphereModel &&
 		manifestAerosolModel == m_m1AerosolModel &&
 		manifestCalibrationStatus == "NOT_VERIFIED_CALIBRATION";
-	std::cout << "[P13 AtmosphereIdentity] status=" << (m_p13AtmosphereIdentityReady ? "PASS" : "FAIL")
+	std::cout << "[P14 AtmosphereIdentity] status=" << (m_p13AtmosphereIdentityReady ? "PASS" : "FAIL")
+		<< " schema=" << manifestSchema
 		<< " formalLut=" << modtranBandLutPath
 		<< " actualLutSha256=" << actualFormalLutSha256
 		<< " expectedLutSha256=" << m_p13ExpectedFormalLutSha256
@@ -11165,12 +11374,14 @@ void HwaSimIR::InitInfraredSimulation()
 		<< " expectedManifestSha256=" << m_p13ExpectedCoverageManifestSha256
 		<< " originalInputSha256=" << manifestOriginalInputSha256
 		<< " expectedOriginalInputSha256=" << m_p13ExpectedOriginalInputSha256
+		<< " originalInputRole=test_lineage_only"
+		<< " originalInputBusinessDependency=0"
 		<< " calibrationStatus=" << manifestCalibrationStatus
 		<< " binding=control_and_renderer_same_identity"
 		<< std::endl;
 	if (!m_p13AtmosphereIdentityReady)
 	{
-		throw std::runtime_error("P13 atmosphere LUT/manifest/input identity mismatch");
+		throw std::runtime_error("P14 atmosphere LUT/manifest identity mismatch");
 	}
 	m_m1SunVisibility = ClampStage5Double(m_runtimeConfig.getDouble("M1NirMwirPhysics", "SunVisibility", "M1SunVisibility", 1.0, nullptr), 0.0, 1.0);
 	m_m1SkyVisibility = ClampStage5Double(m_runtimeConfig.getDouble("M1NirMwirPhysics", "SkyVisibility", "M1SkyVisibility", 1.0, nullptr), 0.0, 1.0);
@@ -13922,7 +14133,7 @@ void HwaSimIR::InitInfraredShader() {
 			if (u_stage6_raw_si_domain == 1) {
 				// Texture data shapes cloud occupancy only; its visible RGB values are
 				// never interpreted as spectral radiance or material emissivity.
-				cloud_intensity = max(0.0, cloud_intensity * (0.85 + 0.30 * raw_density));
+				cloud_intensity = max(0.0, cloud_intensity);
 			} else if (u_ir_band_class == 0) {
                 cloud_intensity = clamp(cloud_intensity + (raw_density - 0.5) * 0.12, 0.0, 1.0);
             }
@@ -16148,6 +16359,9 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 			(stage5Band == IRBand::ShortWaveInfrared || stage5Band == IRBand::MidWaveInfrared);
 		plumeAtmosphere.formalTau = plumeAtmosphere.formalTauReady
 			? ClampStage5Double(components.m1TauUp, 0.0, 1.0) : 0.0;
+		plumeAtmosphere.formalPathRadiance = plumeAtmosphere.formalTauReady
+			? std::max(0.0, components.pathThermalRadiance + components.pathScatteringRadiance)
+			: 0.0;
 	}
 	const bool stage5DisplayGateEffective = useSensorInputForDisplayEffective ||
 		m_enableStage5RadianceDebug || stage5Input.m1RuntimeAffectsImage || formalM1FailClosed;
@@ -17984,18 +18198,26 @@ void HwaSimIR::UpdateStage7PrecipitationBatch()
     const auto up=m_cameraNode.get_relative_vector(m_renderRoot,LVecBase3f(0,0,1));
     const auto position=CloudRenderToWorld(m_cameraNode.get_pos(m_renderRoot));
     const auto fov=m_cameraLens->get_fov();
-    const float source=m_sensorParam.trackerSensorBand==1?(snow?.55f:.38f):(snow?.39f:.34f);
-    SetShaderInputCached(node,"u_precip_time",LVecBase2f(float(elapsed),0));
-    node.set_shader_input("u_precip_state",LVecBase4f(snow?2.f:1.f,float(weather.precipitationDensity),speed,source));
+	const float legacySource=m_sensorParam.trackerSensorBand==1?(snow?.55f:.38f):(snow?.39f:.34f);
+	// A local droplet/flake is represented as an emission/absorption layer.  In
+	// formal SI mode reuse the current weather source function already evaluated
+	// at the sensor plane (thermal + reflected terms and one atmospheric path),
+	// rather than writing an arbitrary 0..1 gray into the float radiance FBO.
+	const float source=m_stage6RawSiDomain
+		? static_cast<float>(std::max(0.0,weather.cloudGray)) : legacySource;
+	SetShaderInputCached(node,"u_precip_time",LVecBase2f(float(elapsed),0));
+	node.set_shader_input("u_precip_state",LVecBase4f(snow?2.f:1.f,float(weather.precipitationDensity),speed,source));
+	SetShaderInputCached(node,"u_stage6_raw_si_domain",LVecBase2i(m_stage6RawSiDomain?1:0,0));
     SetShaderInputCached(node,"u_precip_fov",LVecBase2f(float(std::tan(fov[0]*3.141592653589793/360.0)),float(std::tan(fov[1]*3.141592653589793/360.0))));
     SetShaderInputCached(node,"u_precip_velocity",velocity);
     SetShaderInputCached(node,"u_precip_up",up);
     SetShaderInputCached(node,"u_precip_height",LVecBase3f(position[2],float(weather.maxHeight),float(weather.transHeight)));
     const auto seq=m_currentFrameTelemetry.sourceSeq;
     if(seq<=3 || seq%3600==0) {
-        std::ostringstream line;line<<"[PrecipitationFrame] sourceSeq="<<seq<<" type="<<(snow?"snow":"rain")
-            <<" simTime="<<simTime<<" density="<<weather.precipitationDensity<<" speed="<<speed
-            <<" cameraAltitude="<<position[2]<<" ceiling="<<weather.maxHeight<<" transitionBelow="<<weather.transHeight
+		std::ostringstream line;line<<"[PrecipitationFrame] sourceSeq="<<seq<<" type="<<(snow?"snow":"rain")
+			<<" simTime="<<simTime<<" density="<<weather.precipitationDensity<<" speed="<<speed
+			<<" source="<<source<<" sourceUnit="<<(m_stage6RawSiDomain?"W_per_m2_sr_um":"legacy_linear")
+			<<" cameraAltitude="<<position[2]<<" ceiling="<<weather.maxHeight<<" transitionBelow="<<weather.transHeight
             <<" batchCount=1 cloudVisible="<<m_stage7VolumeVisibleCount<<" worldWind="<<velocityWorld;
         std::cout<<line.str()<<std::endl;
     }

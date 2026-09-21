@@ -39,9 +39,12 @@ inline NodePath create(const NodePath& camera, int count) {
     node.set_shader_input("u_precip_velocity",LVecBase3f(0,0,-1));
     node.set_shader_input("u_precip_up",LVecBase3f(0,0,1));
     node.set_shader_input("u_precip_height",LVecBase3f(0,0,0));
+    node.set_shader_input("u_stage6_raw_si_domain",LVecBase2i(0,0));
     node.hide();
     std::cout<<"[PrecipitationBatch] particles="<<count<<" draws=1 vertices="<<count*4
-        <<" allocation=INIT alpha=straight depthWrite=0 time=protocol_simulation\n";
+        <<" allocation=INIT priority=100 shader=Config/Weather/precipitation.frag"
+        <<" rgbContract=formal_W_per_m2_sr_um_or_explicit_legacy_linear"
+        <<" alpha=straight_coverage depthTest=1 depthWrite=0 time=protocol_simulation\n";
     return node;
 }
 }

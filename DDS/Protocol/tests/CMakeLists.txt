@@ -52,3 +52,9 @@ endif()
 
 enable_testing()
 add_test(NAME dds_protocol_roundtrip COMMAND dds_protocol_roundtrip_test)
+
+add_executable(realtime_sample_validity_test realtime_sample_validity_test.cpp)
+target_include_directories(realtime_sample_validity_test PRIVATE
+    ..
+    "${REPO_ROOT}/HwaSim_IR/HwaSim_IR/Common")
+add_test(NAME realtime_sample_validity COMMAND realtime_sample_validity_test)

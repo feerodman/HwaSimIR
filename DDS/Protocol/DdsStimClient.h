@@ -45,6 +45,10 @@ public:
     bool waitForInitAck(int timeoutMs, BYHWICD::InitAckC2pObjectTrackingCmd& value);
     bool waitForInitAcks(int timeoutMs, std::size_t expectedCount,
         std::vector<BYHWICD::InitAckC2pObjectTrackingCmd>& values);
+    // Wait for the renderer's existing VideoStatus.running=true transition.
+    // This is the START readiness barrier: callers must not begin realtime
+    // publication merely because the START write itself returned successfully.
+    bool waitForRunningStatus(int timeoutMs, std::string& error);
     bool waitForAcknowledgments(int timeoutMs, std::string& error);
     bool waitForStopStatus(int timeoutMs, std::string& error);
     void setAckCallback(const std::function<void(const BYHWICD::InitAckC2pObjectTrackingCmd&)>& callback);

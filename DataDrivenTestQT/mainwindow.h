@@ -42,6 +42,7 @@
 #include <memory>
 #include <QMap>
 #include <QComboBox>
+#include <QCheckBox>
 #include "ICD/common_data.h"
 
 #if defined(HWASIMIR_HAS_ZRDDS)
@@ -146,6 +147,8 @@ private:
 	int m_protocolSimMode = 2;
 	int m_protocolVideoFps = 60;
 	int m_protocolEnvSky = 0;
+	double m_protocolEnvVisibilityM = 6000.0;
+	double m_protocolEnvHumidityPercent = 85.0;
 	int m_protocolSensorBand = 2;
     double m_protocolSensorPixelAngleUrad = 25;
 
@@ -181,7 +184,8 @@ private:
 	QLineEdit *m_timeStep;
 	QLineEdit *m_fovHEdit;
 	QLineEdit *m_fovVEdit;
-	QLineEdit *m_targetTypeEdit;
+	QComboBox *m_targetTypeBox;
+	QCheckBox *m_forceVisibleForDemoCheck;
 	QLineEdit *m_videoFpsEdit;
 
 
@@ -235,6 +239,8 @@ private:
 	double m_pauseDurationSec = 0.0;
 	bool m_pauseActiveLogged = false;
 	bool m_pauseResumeLogged = false;
+	bool m_forceVisibleForDemo = false;
+	bool m_initSelectionFrozen = false;
 
 	// Current Position
 	double m_currentLat;

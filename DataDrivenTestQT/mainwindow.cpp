@@ -218,11 +218,8 @@ MainWindow::MainWindow(
 		qFatal("实时激励文件没有有效数据行: %s", qPrintable(QFileInfo(tmp).absoluteFilePath()));
 	}
 
-	QRegularExpression regExp(R"(0x[0-9A-Fa-f]+|[0-9A-Fa-f]+)");
-	QRegularExpressionValidator *validator = new QRegularExpressionValidator(regExp, this);
-	m_targetTypeEdit->setValidator(validator);
 	// 初始化位置参数（构造时同步UI初始值）
-	m_targetType= m_targetTypeEdit->text().toInt(nullptr,16);
+	m_targetType = m_targetTypeBox->currentData().toInt();
 	m_fovH = m_fovHEdit->text().toDouble();
 	m_fovV = m_fovVEdit->text().toDouble();
     plane_init_pos.x = realTimeData.at(0).platPos.lat;
@@ -325,7 +322,7 @@ void MainWindow::setupDDS()
 				qCritical().noquote() << QStringLiteral("[StimInitAck][ERROR] ready=0 action=start_suppressed");
 				return;
 			}
-			m_statusLabel->setText(QStringLiteral("● 状态: DDS 初始化完成 | 等待开始指令"));
+			m_statusLabel->setText(QStringLiteral("● 状态: DDS 初始化完成 | 等待 START/首个有效实时位置（INIT 仅预热）"));
 			m_statusLabel->setStyleSheet("color: #388E3C; font-weight: bold;");
 			emit initAckReceived();
 		}, Qt::QueuedConnection);
@@ -526,6 +523,10 @@ void MainWindow::setupUI()
 	m_initButton = new QPushButton(QStringLiteral("○ 初始化 (0x36)"));
 	m_startButton = new QPushButton(QStringLiteral("▲▼ 开始仿真 (2)"));
 	m_stopButton = new QPushButton(QStringLiteral("■ 停止仿真 (3)"));
+	m_resetButton->setObjectName(QStringLiteral("resetButton"));
+	m_initButton->setObjectName(QStringLiteral("initButton"));
+	m_startButton->setObjectName(QStringLiteral("startButton"));
+	m_stopButton->setObjectName(QStringLiteral("stopButton"));
 
 	// 按钮样式
 	m_startButton->setStyleSheet("background-color: #4CAF50; color: white;");
@@ -541,7 +542,27 @@ void MainWindow::setupUI()
 	// 实时数据组
 	m_realTimeDataGroup = new QGroupBox(QStringLiteral("文件数据与身份 · 位置来自输入文件"));
 	QFormLayout *realTimeLayout = new QFormLayout;
-	realTimeLayout->addRow(QStringLiteral("目标类型:"), m_targetTypeEdit = new QLineEdit(QSettings(m_networkConfigPath,QSettings::IniFormat).value("Demo/TargetType","0x11").toString()));
+	m_targetTypeBox = new QComboBox;
+	m_targetTypeBox->setObjectName(QStringLiteral("targetTypeCombo"));
+	m_targetTypeBox->addItem(QStringLiteral("F-35 飞机 — 协议 0x11"), 0x11);
+	m_targetTypeBox->addItem(QStringLiteral("F-22 飞机 — 协议 0x12"), 0x12);
+	m_targetTypeBox->addItem(QStringLiteral("AIM-120 通用雷达弹模型 — 协议 0x22"), 0x22);
+	m_targetTypeBox->addItem(QStringLiteral("AIM-9 通用红外弹模型 — 协议 0x33"), 0x33);
+	m_targetTypeBox->addItem(QStringLiteral("MMD — 协议 0x44"), 0x44);
+	m_targetTypeBox->addItem(QStringLiteral("民用厢式车/卡车测试载体 — 协议 0x55"), 0x55);
+	m_targetTypeBox->addItem(QStringLiteral("通用材料/热源样件 — 协议 0x66"), 0x66);
+	bool configuredTargetOk = false;
+	const int configuredTarget = QSettings(m_networkConfigPath, QSettings::IniFormat)
+		.value(QStringLiteral("Demo/TargetType"), QStringLiteral("0x22"))
+		.toString().toInt(&configuredTargetOk, 0);
+	const int configuredTargetIndex = configuredTargetOk ? m_targetTypeBox->findData(configuredTarget) : -1;
+	m_targetTypeBox->setCurrentIndex(configuredTargetIndex >= 0 ? configuredTargetIndex : m_targetTypeBox->findData(0x22));
+	realTimeLayout->addRow(QStringLiteral("目标类型（INIT 后冻结）:"), m_targetTypeBox);
+	m_forceVisibleForDemoCheck = new QCheckBox(QStringLiteral("演示强制显示（测试端覆盖 ViewValid；不修改 1.txt）"));
+	m_forceVisibleForDemoCheck->setObjectName(QStringLiteral("forceVisibleForDemoCheck"));
+	m_forceVisibleForDemoCheck->setChecked(false);
+	m_forceVisibleForDemoCheck->setToolTip(QStringLiteral("默认关闭并严格回放源 ViewValid。仅显式勾选时，把发送包中的显示标志强制为 1；位置有效性仍独立检查。"));
+	realTimeLayout->addRow(QStringLiteral("显示策略:"), m_forceVisibleForDemoCheck);
 	m_videoFpsEdit = new QLineEdit(QString::number(m_protocolVideoFps));
     realTimeLayout->addRow(QStringLiteral("横向视场角:"), m_fovHEdit = new QLineEdit("0.1"));
     realTimeLayout->addRow(QStringLiteral("纵向视场角:"), m_fovVEdit = new QLineEdit("0.1"));
@@ -636,6 +657,17 @@ void MainWindow::loadNetworkConfig()
     }else m_inputDataPath=QFileInfo(m_inputDataPath).absoluteFilePath();
     if(!QFileInfo(m_inputDataPath).isFile())qFatal("Missing input file: %s",qPrintable(m_inputDataPath));
     m_protocolEnvSky=settings.value("Demo/envSky",0).toInt();
+	bool visibilityOk = false;
+	bool humidityOk = false;
+	m_protocolEnvVisibilityM = settings.value(
+		QStringLiteral("WeatherInit/envVisibility"), 6000.0).toDouble(&visibilityOk);
+	m_protocolEnvHumidityPercent = settings.value(
+		QStringLiteral("WeatherInit/envHumidity"), 85.0).toDouble(&humidityOk);
+	if (!visibilityOk || !std::isfinite(m_protocolEnvVisibilityM) || m_protocolEnvVisibilityM <= 0.0)
+		qFatal("Invalid WeatherInit/envVisibility; expected finite metres > 0");
+	if (!humidityOk || !std::isfinite(m_protocolEnvHumidityPercent) ||
+		m_protocolEnvHumidityPercent < 0.0 || m_protocolEnvHumidityPercent > 100.0)
+		qFatal("Invalid WeatherInit/envHumidity; expected percent in [0,100]");
 	bool utcHourOk = false;
 	const double configuredUtcHour = settings.value(QStringLiteral("Demo/UtcHour"), -1.0).toDouble(&utcHourOk);
 	if (!utcHourOk || !std::isfinite(configuredUtcHour) || configuredUtcHour < -1.0 || configuredUtcHour >= 24.0)
@@ -663,7 +695,7 @@ void MainWindow::loadNetworkConfig()
 		.toString().trimmed());
 	m_atmosphereCoverageManifestPath = resolveApplicationRelativePath(
 		settings.value(QStringLiteral("Atmosphere/CoverageManifest"),
-			QStringLiteral("Config/Atmosphere/MODTRAN/processed/p13_coverage_manifest.json"))
+			QStringLiteral("Config/Atmosphere/MODTRAN/processed/p14_coverage_manifest.json"))
 		.toString().trimmed());
 	m_expectedFormalAtmosphereLutSha256 = settings.value(
 		QStringLiteral("Atmosphere/ExpectedFormalLutSha256"), QString()).toString().trimmed().toLower();
@@ -764,6 +796,10 @@ void MainWindow::loadNetworkConfig()
 		"[StimAtmosphereIdentity] formalLut=%1 expectedLutSha256=%2 coverageManifest=%3 expectedManifestSha256=%4 binding=control_and_renderer_same_identity")
 		.arg(m_formalAtmosphereLutPath, m_expectedFormalAtmosphereLutSha256,
 			m_atmosphereCoverageManifestPath, m_expectedAtmosphereCoverageManifestSha256);
+	qInfo().noquote() << QStringLiteral(
+		"[StimWeatherInitConfig] envSky=%1 visibilityM=%2 relativeHumidityPercent=%3 source=NetworkConfig.ini noHiddenOverride=1")
+		.arg(m_protocolEnvSky).arg(m_protocolEnvVisibilityM, 0, 'f', 3)
+		.arg(m_protocolEnvHumidityPercent, 0, 'f', 3);
 }
 
 void MainWindow::setupUDP()
@@ -835,7 +871,7 @@ void MainWindow::setupUDP()
 							.arg(sender.toString()).arg(senderPort).arg(datagram.size());
 					m_lastReceivedLabel->setText(QString(QStringLiteral("↓ 接收: 初始化应答 (0x37) 来自 %1:%2"))
 						.arg(sender.toString()).arg(senderPort));
-					m_statusLabel->setText(QStringLiteral("● 状态: 初始化完成 | 等待开始指令"));
+					m_statusLabel->setText(QStringLiteral("● 状态: 初始化完成 | 等待 START/首个有效实时位置（INIT 仅预热）"));
 					m_statusLabel->setStyleSheet("color: #388E3C; font-weight: bold;");
 					emit initAckReceived();
 				}
@@ -894,9 +930,8 @@ void MainWindow::sendControlCommand(int command)
 
 void MainWindow::sendInitCommand()
 {
-	bool selectedTargetTypeOk = false;
-	const int selectedTargetType = m_targetTypeEdit->text().toInt(&selectedTargetTypeOk, 16);
-	const bool selectedTargetTypeSupported = selectedTargetTypeOk &&
+	const int selectedTargetType = m_targetTypeBox->currentData().toInt();
+	const bool selectedTargetTypeSupported =
 		(selectedTargetType == 0x11 || selectedTargetType == 0x12 ||
 		 selectedTargetType == 0x22 || selectedTargetType == 0x33 ||
 		 selectedTargetType == 0x44 || selectedTargetType == 0x55 ||
@@ -905,16 +940,17 @@ void MainWindow::sendInitCommand()
 	{
 		const QString message = QStringLiteral(
 			"目标类型无效：%1；支持 0x11/0x12/0x22/0x33/0x44/0x55/0x66")
-			.arg(m_targetTypeEdit->text());
+			.arg(targetTypeHex(selectedTargetType));
 		m_statusLabel->setText(QStringLiteral("● 状态: 初始化失败 | ") + message);
 		m_statusLabel->setStyleSheet("color: #D32F2F; font-weight: bold;");
 		qCritical().noquote() << QStringLiteral("[StimInit][ERROR] targetType=%1 reason=unsupported_target_type")
-			.arg(m_targetTypeEdit->text());
+			.arg(targetTypeHex(selectedTargetType));
 		return;
 	}
 	// The ordinary target selector is part of the production UI/INI contract.
 	// Freeze its value at INIT so the same identity is used for the whole round.
 	m_targetType = selectedTargetType;
+	m_forceVisibleForDemo = m_forceVisibleForDemoCheck->isChecked();
 
 	BYHWICD::InitP2cObjectTrackingCmd cmd = {};
 	cmd.flag = 0x36;
@@ -972,8 +1008,8 @@ void MainWindow::sendInitCommand()
 	cmd.trackingInit.simMode = m_simModeBox?m_simModeBox->currentData().toInt():m_protocolSimMode;
 	cmd.trackingInit.videoFps = targetVideoFps();
 
-    cmd.trackingInit.envVisibility = 6000;
-    cmd.trackingInit.envHumidity = 85;
+    cmd.trackingInit.envVisibility = m_protocolEnvVisibilityM;
+    cmd.trackingInit.envHumidity = m_protocolEnvHumidityPercent;
     cmd.trackingInit.envWindV = 8;
     cmd.trackingInit.envWindDir = 30;
     cmd.trackingInit.envRadScaleSky = 1.0;
@@ -1018,22 +1054,22 @@ void MainWindow::sendInitCommand()
     cmd.MissileMaxCountF35 = 3;
     cmd.MissileMaxCountF22 = 3;
 	cmd.MissileMaxCountMMD = 0;
-	// P11 uses the protocol's existing reserved capacity fields.  Resv1 is the
-	// civil van (0x55) and Resv2 is the controlled sample rack (0x66); each is
-	// allocated only for its explicit test input.
-	bool p11TargetTypeOk = false;
-	const int p11TargetType = qEnvironmentVariable("P6TestTargetType").toInt(&p11TargetTypeOk, 0);
-	const int effectiveTargetType = p11TargetTypeOk ? p11TargetType : m_targetType;
-	cmd.MissileMaxCountResv1 = effectiveTargetType == 0x55 ? 1 : 0;
-	cmd.MissileMaxCountResv2 = effectiveTargetType == 0x66 ? 1 : 0;
+	// Reserved pools are selected by the visible UI identity.  A hidden process
+	// environment variable must not silently change production INIT or realtime keys.
+	cmd.MissileMaxCountResv1 = m_targetType == 0x55 ? 1 : 0;
+	cmd.MissileMaxCountResv2 = m_targetType == 0x66 ? 1 : 0;
 	qInfo().noquote() << QStringLiteral(
-		"[StimTargetPool] requestedType=%1 source=%2 resv1Count=%3 resv2Count=%4 protocolLayoutUnchanged=1")
-		.arg(targetTypeHex(effectiveTargetType))
-		.arg(p11TargetTypeOk ? QStringLiteral("P6TestTargetType") : QStringLiteral("ordinary_ui_ini"))
+		"[StimTargetPool] requestedType=%1 source=visible_ui_selection resv1Count=%2 resv2Count=%3 protocolLayoutUnchanged=1 hiddenEnvOverride=disabled")
+		.arg(targetTypeHex(m_targetType))
 		.arg(cmd.MissileMaxCountResv1)
 		.arg(cmd.MissileMaxCountResv2);
+	qInfo().noquote() << QStringLiteral(
+		"[StimViewPolicy] event=init_frozen source=visible_ui_selection targetType=%1 inputPolicy=%2 productionFilterUnchanged=1 originalFileModified=0")
+		.arg(targetTypeHex(m_targetType))
+		.arg(m_forceVisibleForDemo ? QStringLiteral("force_visible_demo") : QStringLiteral("follow_input_view_valid"));
 
 	bool ddsInitSent = false;
+	bool udpInitSent = false;
 #if defined(HWASIMIR_HAS_ZRDDS)
 	if (m_ddsStim)
 	{
@@ -1055,6 +1091,7 @@ void MainWindow::sendInitCommand()
 		QHostAddress remoteIp(m_remoteIpEdit->text());
 		quint16 remotePort = m_remotePortEdit->text().toUShort();
 		qint64 sent = m_udpSocket->writeDatagram(reinterpret_cast<const char*>(&cmd), sizeof(cmd), remoteIp, remotePort);
+		udpInitSent = sent >= 0;
 
 		m_lastSentLabel->setText(QString(QStringLiteral("↑ 发送: 初始化命令 (0x36) | %1 bytes")).arg(sent));
 		m_statusLabel->setText(QStringLiteral("● 状态: 已发送初始化 | 等待边缘端应答"));
@@ -1087,6 +1124,13 @@ void MainWindow::sendInitCommand()
 		m_lastSentLabel->setText(QStringLiteral("↑ 发送: DDS 初始化命令 (0x36)"));
 		m_statusLabel->setText(QStringLiteral("● 状态: 已发送 DDS 初始化 | 等待渲染端应答"));
 		m_statusLabel->setStyleSheet("color: #FF9800; font-weight: bold;");
+	}
+	const bool initSent = ddsInitSent || udpInitSent;
+	if (initSent)
+	{
+		m_initSelectionFrozen = true;
+		m_targetTypeBox->setEnabled(false);
+		m_forceVisibleForDemoCheck->setEnabled(false);
 	}
 	
 
@@ -1195,18 +1239,38 @@ bool MainWindow::validateFormalAtmosphereCoverage(
 			const int queryFailures = candidate.value(QStringLiteral("productionQueryFailures")).toInt(-1);
 			const bool explicitBoundary = candidate.value(QStringLiteral("notOriginalReplay")).toBool(false) &&
 				!candidate.value(QStringLiteral("mayReplaceOriginal1Txt")).toBool(true);
-			const bool provenanceBound = candidate.value(QStringLiteral("sourceInputSha256"))
-				.toString().toLower() == declaredInputHash;
+			const bool performanceRole = candidateRole ==
+				QStringLiteral("performance_only_300s_complex_weather");
+			const bool groundRole = candidateRole ==
+				QStringLiteral("p14_ground_truck_mixed_weather_30s");
+			const bool provenanceBound = performanceRole
+				? candidate.value(QStringLiteral("sourceInputSha256")).toString().toLower() == declaredInputHash
+				: groundRole && candidate.value(QStringLiteral("independentGeneratedInput")).toBool(false) &&
+					!candidate.value(QStringLiteral("sourceInputBusinessDependency")).toBool(true);
 			const bool queryEvidenceBound =
 				candidate.value(QStringLiteral("queryManifestSha256")).toString().size() == 64 &&
 				candidate.value(QStringLiteral("productionQueryCheckLogSha256")).toString().size() == 64 &&
-				queryRows == realTimeData.size() * 2 && queryValid == queryRows && queryFailures == 0;
+				queryRows >= realTimeData.size() * 2 && queryValid == queryRows && queryFailures == 0;
 			const bool calibrationBound = candidate.value(QStringLiteral("calibrationStatus"))
 				.toString() == QStringLiteral("NOT_VERIFIED_CALIBRATION");
+			bool environmentBound = true;
+			if (groundRole)
+			{
+				auto containsNumber = [](const QJsonArray& values, double expected) {
+					for (const QJsonValue& item : values)
+						if (std::abs(item.toDouble(std::numeric_limits<double>::quiet_NaN()) - expected) < 1.0e-6)
+							return true;
+					return false;
+				};
+				environmentBound = containsNumber(candidate.value(
+					QStringLiteral("validatedVisibilityKm")).toArray(), initialization.envVisibility / 1000.0) &&
+					containsNumber(candidate.value(
+						QStringLiteral("validatedRelativeHumidityPercent")).toArray(), initialization.envHumidity);
+			}
 			if (QFileInfo(m_inputDataPath).fileName() != expectedName ||
-				candidateRole != QStringLiteral("performance_only_300s_complex_weather") ||
+				(!performanceRole && !groundRole) ||
 				acceptedRows != realTimeData.size() || !explicitBoundary || !provenanceBound ||
-				!queryEvidenceBound || !calibrationBound)
+				!queryEvidenceBound || !calibrationBound || !environmentBound)
 			{
 				error = QStringLiteral(
 					"附加输入身份存在但边界、文件名、行数或逐行生产查询证据不完整；不得改名冒充原 1.txt。INIT 未发送。");
@@ -1438,19 +1502,14 @@ void MainWindow::sendRealTimeData()
 	data.weaponState.strikeFlag = m_strikeFlagOverride >= 0
 		? m_strikeFlagOverride != 0 : currentSample.strikeFlag;
 	data.weaponState.strikePart = m_testStrikePart;
-	data.weaponState.viewValid = currentSample.viewValid;
+	const bool inputViewValid = currentSample.viewValid;
+	const bool effectiveViewValid = m_forceVisibleForDemo || inputViewValid;
+	data.weaponState.viewValid = effectiveViewValid;
 
 
 	// 目标状态（相对平台偏移）
     data.targetNumValid = 1/*5*/;
 	data.targetState[0].targetType = m_targetType;
-    // Explicit geometry acceptance input; no change to the wire format or default.
-    bool testTargetOk=false;
-    const int testTarget=qEnvironmentVariable("P6TestTargetType").toInt(&testTargetOk,0);
-	if(testTargetOk&&(testTarget==0x11||testTarget==0x12||testTarget==0x22||testTarget==0x33||testTarget==0x55||testTarget==0x66)){
-		data.targetState[0].targetType=testTarget;
-		data.weaponState.targetType=testTarget;
-	}
 	data.targetState[0].targetPlatID = 3;
 	data.targetState[0].targetID = 3;
 	if (m_sentFrameCount <= 3 || (m_sentFrameCount % 120) == 0)
@@ -1459,7 +1518,7 @@ void MainWindow::sendRealTimeData()
 			"[StimTargetSelection] sourceSeq=%1 targetType=%2 source=%3 targetPlatID=%4 targetID=%5")
 			.arg(m_sentFrameCount + 1)
 			.arg(targetTypeHex(data.targetState[0].targetType))
-			.arg(testTargetOk ? QStringLiteral("P6TestTargetType") : QStringLiteral("ordinary_ui_ini"))
+			.arg(QStringLiteral("init_frozen_visible_ui_selection"))
 			.arg(data.targetState[0].targetPlatID)
 			.arg(data.targetState[0].targetID);
 	}
@@ -1471,7 +1530,24 @@ void MainWindow::sendRealTimeData()
 //        data.targetState[0].engineState = false;
 //    }
 
-	data.targetState[0].viewValid = currentSample.viewValid;
+	data.targetState[0].viewValid = effectiveViewValid;
+	if (m_sentFrameCount < 3 || inputViewValid != effectiveViewValid ||
+		(m_sentFrameCount % 120) == 0)
+	{
+		qInfo().noquote() << QStringLiteral(
+			"[StimViewPolicy] sourceSeq=%1 sourceLine=%2 inputViewValid=%3 effectiveViewValid=%4 policy=%5 geometryRowAccepted=1 noRowSkip=1")
+			.arg(m_sentFrameCount + 1)
+			.arg(currentSample.sourceLine)
+			.arg(inputViewValid ? 1 : 0)
+			.arg(effectiveViewValid ? 1 : 0)
+			.arg(m_forceVisibleForDemo ? QStringLiteral("force_visible_demo") : QStringLiteral("follow_input_view_valid"));
+		m_statusLabel->setText(!inputViewValid && !m_forceVisibleForDemo
+			? QStringLiteral("● 状态: 位置有效；源显示标志为 0，目标隐藏（业务行仍发送）")
+			: (!inputViewValid
+				? QStringLiteral("● 状态: 位置有效；演示强制显示已覆盖源标志 0")
+				: QStringLiteral("● 状态: 位置有效；显示标志为 1")));
+		m_statusLabel->setStyleSheet("color: #388E3C; font-weight: bold;");
+	}
 
 	data.targetState[0].targetLoc.lat = m_currMissile_pos.x;
 	data.targetState[0].targetLoc.lon = m_currMissile_pos.y;
@@ -1802,7 +1878,11 @@ void MainWindow::onResetButtonClicked()
 
     dataNum = 1;
 
-	m_targetTypeEdit->setText("0x" + QString::number(m_targetType, 16));
+	const int targetIndex = m_targetTypeBox->findData(m_targetType);
+	if (targetIndex >= 0) m_targetTypeBox->setCurrentIndex(targetIndex);
+	m_targetTypeBox->setEnabled(true);
+	m_forceVisibleForDemoCheck->setEnabled(true);
+	m_initSelectionFrozen = false;
 	m_fovHEdit->setText(QString::number(m_fovH, 'f', 2));
 	m_fovVEdit->setText(QString::number(m_fovV, 'f', 2));
     m_latEdit->setText(QString::number(plane_init_pos.x, 'f', 6));
@@ -1852,6 +1932,30 @@ void MainWindow::onStartButtonClicked()
 
 	sendControlCommand(2); // 发送开始命令
 
+#if defined(HWASIMIR_HAS_ZRDDS)
+	// START is accepted on an independent DDS topic.  Wait for the renderer's
+	// status transition before publishing source row 1 so its latency does not
+	// include resource/GPU readiness work and no initial FIFO burst is created.
+	// This barrier is sender-agnostic: it does not inspect or predict 1.txt.
+	if (m_ddsStim)
+	{
+		std::string startError;
+		qInfo().noquote() << QStringLiteral(
+			"[StimStartLifecycle] phase=wait_renderer_running begin=1 timeoutMs=5000 realtimePublished=0");
+		if (!m_ddsStim->waitForRunningStatus(5000, startError))
+		{
+			qCritical().noquote() << QStringLiteral(
+				"[StimStartLifecycle][ERROR] phase=renderer_running result=FAIL reason=%1 realtimePublished=0")
+				.arg(QString::fromStdString(startError));
+			m_statusLabel->setText(QStringLiteral("● 状态: START 未就绪 | 未发送实时行"));
+			m_statusLabel->setStyleSheet("color: #D32F2F; font-weight: bold;");
+			return;
+		}
+		qInfo().noquote() << QStringLiteral(
+			"[StimStartLifecycle] phase=renderer_running result=PASS realtimePublished=0 action=begin_source_pacing");
+	}
+#endif
+
 	if (!m_isRealtimeSending) {
 		m_targetVideoFps = targetVideoFps();
 		setSendStepMs(m_timeStep->text().toDouble());
@@ -1867,7 +1971,7 @@ void MainWindow::onStartButtonClicked()
 		m_uiUpdateEveryFrames = qMax(1, static_cast<int>(m_inputHz / 5));
 		m_startButton->setEnabled(false);
 		m_stopButton->setEnabled(true);
-		m_statusLabel->setText(QString(QStringLiteral("● 状态: 仿真运行中 (%1 FPS)")).arg(m_inputHz));
+		m_statusLabel->setText(QString(QStringLiteral("● 状态: START 已发；等待/发送首个有效实时位置 (%1 FPS)")).arg(m_inputHz));
 		m_statusLabel->setStyleSheet("color: #388E3C; font-weight: bold;");
 		onSendRealTimeData();
 	}
@@ -1878,8 +1982,13 @@ void MainWindow::onStopButtonClicked()
 	if (m_isRealtimeSending || m_realTimeTimer->isActive()) {
 		m_isRealtimeSending = false;
 		m_realTimeTimer->stop();
+		QString transportName = QStringLiteral("compat");
+#if defined(HWASIMIR_HAS_ZRDDS)
+		if (m_ddsStim)
+			transportName = QStringLiteral("dds");
+#endif
         qInfo().noquote()<<QString("[StimFinal] transport=%1 successfulRealtimeWrites=%2 elapsedMs=%3 targetHz=%4")
-            .arg(m_ddsStim?"dds":"compat").arg(m_sentFrameCount).arg(m_sendClock.elapsed()).arg(m_inputHz);
+			.arg(transportName).arg(m_sentFrameCount).arg(m_sendClock.elapsed()).arg(m_inputHz);
 		sendControlCommand(3); // 发送停止命令
 		qInfo().noquote() << QStringLiteral("[StimStopLifecycle] phase=stop_command_sent result=PASS successfulRealtimeWrites=%1 elapsedMs=%2")
 			.arg(m_sentFrameCount).arg(m_sendClock.elapsed());
@@ -1974,7 +2083,11 @@ void MainWindow::initStepSimData()
 	is_collided = false;
 	current_time = 0.0;
 	dataNum = 1;
-	m_targetType = m_targetTypeEdit->text().toInt(nullptr, 16);
+	if (!m_initSelectionFrozen)
+	{
+		m_targetType = m_targetTypeBox->currentData().toInt();
+		m_forceVisibleForDemo = m_forceVisibleForDemoCheck->isChecked();
+	}
 	m_fovH = m_fovHEdit->text().toDouble();
 	m_fovV = m_fovVEdit->text().toDouble();
 	const realtimeInfo& firstSample = realTimeData.at(0);

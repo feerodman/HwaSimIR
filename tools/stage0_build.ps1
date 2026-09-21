@@ -35,6 +35,8 @@ $qtDataFiles = @(
     (Join-Path $rootPath "DataDrivenTestQT\1.txt"),
     (Join-Path $rootPath "DataDrivenTestQT\p13_performance_highalt_300s.txt"),
     (Join-Path $rootPath "DataDrivenTestQT\p13_performance_highalt_300s.txt.json"),
+    (Join-Path $rootPath "DataDrivenTestQT\p14_ground_truck_weather_30s.txt"),
+    (Join-Path $rootPath "DataDrivenTestQT\p14_ground_truck_weather_30s.txt.json"),
     (Join-Path $rootPath "DataDrivenTestQT\ordinary_demo_1km.txt"),
     (Join-Path $rootPath "DataDrivenTestQT\ordinary_demo_1km.txt.json")
 )
