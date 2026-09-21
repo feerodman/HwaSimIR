@@ -99,9 +99,14 @@ void AnnotationOverlay::drawFrame(const AnnotationFrameRecord& record, const Ann
 			}
 
 			drawCross(point, record.width, record.height);
-			std::ostringstream label;
-			label << point.name << "(" << point.x << "," << point.y << ")";
-			addText(label.str(), point.x + 6, point.y - 6, record.width, record.height, 0.028f);
+			if (point.displayIndex <= 0)
+			{
+				std::cerr << "[AnnotationDisplayIndex][ERROR] target=" << m_labelIdentity
+					<< " name=" << point.name << " reason=missing_stable_definition_index" << std::endl;
+				continue;
+			}
+			addText(std::to_string(point.displayIndex), point.x + 6, point.y - 6,
+				record.width, record.height, 0.028f, true);
 		}
 	}
 	flushText(record);
@@ -162,7 +167,7 @@ void AnnotationOverlay::drawCross(const AnnotationPoint2D& point, int width, int
 	lineNode.set_depth_write(false);
 }
 
-void AnnotationOverlay::addText(const std::string& text, int x, int y, int width, int height, float scale)
+void AnnotationOverlay::addText(const std::string& text, int x, int y, int width, int height, float scale, bool keyPoint)
 {
 	const int safeX = ClampPixel(x, 0, std::max(0, width - 1));
 	const int safeY = ClampPixel(y, 0, std::max(0, height - 1));
@@ -175,7 +180,7 @@ void AnnotationOverlay::addText(const std::string& text, int x, int y, int width
 
 	const char* legacy=std::getenv("P10LabelLegacy");
 	if(!legacy || std::string(legacy)!="1"){
-		AnnotationLabelRequest r;r.text=text;
+		AnnotationLabelRequest r;r.text=text;r.keyPoint=keyPoint;
 		r.key=m_labelIdentity+text.substr(0,text.find('('));r.anchorX=float(x);r.anchorY=float(y);
 		r.w=std::ceil((textNode->get_right()-textNode->get_left())*scale*width*.5f)+3;
 		r.h=std::ceil((textNode->get_top()-textNode->get_bottom())*scale*height*.5f)+3;
@@ -198,10 +203,9 @@ void AnnotationOverlay::flushText(const AnnotationFrameRecord& record){
         const int y=int(std::lround(b.y+1+t->get_top()*s*record.height*.5f));
         NodePath p=m_frameRoot.attach_new_node(t);p.set_pos(pixelToOverlayCoord(x,y,record.width,record.height));p.set_scale(s);
         p.set_bin("fixed",103);p.set_depth_test(false);p.set_depth_write(false);
-        // Original keypoint call used (+6,-6); restore only the visual leader
-        // anchor. Required coordinate text and AnnotationFrameRecord stay intact.
-        const bool point=r.text.find('(')!=std::string::npos;
-        if(point){
+		// Preserve the existing keypoint leader anchor even though the displayed
+		// text is now the stable numeric presentation index only.
+		if(r.keyPoint){
             const float ax=r.anchorX-6,ay=r.anchorY+6;
             const float ex=std::max(b.x,std::min(b.x+b.w,ax)),ey=std::max(b.y,std::min(b.y+b.h,ay));
             LineSegs l("Annotation_TextLeader");l.set_color(0,1,.2f,.85f);l.set_thickness(1);

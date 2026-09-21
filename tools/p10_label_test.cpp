@@ -28,7 +28,7 @@ int main(int argc,char**argv){
                 int x=c==0?r.width/2:c==1?r.width/2+i*3:c==2?(i%2?r.width-6:6):(i+1)*r.width/6;
                 int y=c==2?(i<2?7:r.height-7):r.height/2+i*(c==3?25:0);
                 t.bbox.x=x-15;t.bbox.y=y-12;
-                for(int k=0;k<3;++k){AnnotationPoint2D p;p.name="marker"+std::to_string(k);p.x=x+(c==0?0:k);p.y=y;p.visible=true;t.keyPoints.push_back(p);}r.targets.push_back(t);
+                for(int k=0;k<3;++k){AnnotationPoint2D p;p.name="marker"+std::to_string(k);p.displayIndex=k+1;p.x=x+(c==0?0:k);p.y=y;p.visible=true;t.keyPoints.push_back(p);}r.targets.push_back(t);
             }
             const auto original=identity(r);AnnotationDrawOptions options;
             _putenv_s("P10LabelLegacy","0");overlay.drawFrame(r,options);
@@ -64,6 +64,37 @@ int main(int argc,char**argv){
                 std::ofstream record(dir+"/labels_"+std::to_string(c)+"_original_coordinates.txt");record<<original;
             }
         }
+		if(size.first==800&&size.second==800){
+			AnnotationFrameRecord stable;stable.width=800;stable.height=800;stable.frameIndex=900;
+			TargetAnnotation t;t.targetType=0x55;t.targetPlatID=1001;t.targetID=7;t.modelLabel="CIVIL";
+			t.bbox.visible=true;t.bbox.x=330;t.bbox.y=330;t.bbox.width=140;t.bbox.height=90;
+			for(int k=0;k<3;++k){AnnotationPoint2D p;p.name="part"+std::to_string(k+1);p.displayIndex=k+1;
+				p.x=360+k*35;p.y=380;p.visible=(k!=1);t.keyPoints.push_back(p);}stable.targets.push_back(t);
+			const std::string hiddenOriginal=identity(stable);AnnotationDrawOptions options;overlay.drawFrame(stable,options);
+			assert(hiddenOriginal==identity(stable));
+			std::string hiddenLabels;for(const auto& request:overlay.labelRequests())hiddenLabels+=request.text+",";
+			assert(hiddenLabels.find("1,")!=std::string::npos&&hiddenLabels.find("2,")==std::string::npos&&hiddenLabels.find("3,")!=std::string::npos);
+			for(int n=0;n<3;++n)f.get_graphics_engine()->render_frame();PNMImage hiddenImage;
+			assert(w->get_graphics_output()->get_screenshot(hiddenImage));
+			hiddenImage.write(Filename::from_os_specific(dir+"/p15_numeric_hidden_2.png"));
+			stable.targets[0].keyPoints[1].visible=true;std::reverse(stable.targets[0].keyPoints.begin(),stable.targets[0].keyPoints.end());
+			const std::string restoredOriginal=identity(stable);overlay.drawFrame(stable,options);assert(restoredOriginal==identity(stable));std::map<std::string,int> numeric;
+			for(const auto& request:overlay.labelRequests())if(request.keyPoint)numeric[request.text]++;
+			assert(numeric.size()==3&&numeric["1"]==1&&numeric["2"]==1&&numeric["3"]==1);
+			// Apply an explicit 90-degree projected rotation around the image centre;
+			// numbering must remain definition-bound rather than screen-position-bound.
+			for(auto& point:stable.targets[0].keyPoints){const int oldX=point.x,oldY=point.y;
+				point.x=400-(oldY-400);point.y=400+(oldX-400);}
+			const std::string rebuiltOriginal=identity(stable);AnnotationOverlay rebuilt;rebuilt.initialize(w->get_render_2d());rebuilt.drawFrame(stable,options);assert(rebuiltOriginal==identity(stable));
+			std::map<std::string,int> rebuiltNumeric;
+			for(const auto& request:rebuilt.labelRequests())if(request.keyPoint)rebuiltNumeric[request.text]++;
+			assert(rebuiltNumeric.size()==3&&rebuiltNumeric["1"]==1&&rebuiltNumeric["2"]==1&&rebuiltNumeric["3"]==1);
+			for(int n=0;n<3;++n)f.get_graphics_engine()->render_frame();PNMImage image;
+			assert(w->get_graphics_output()->get_screenshot(image));
+			image.write(Filename::from_os_specific(dir+"/p15_numeric_1_2_3.png"));
+			std::ofstream stableOut(dir+"/p15_stable_numbering.txt");
+			stableOut<<"hidden_2_labels="<<hiddenLabels<<"\nrestored_reordered=1,2,3\nrotated_90deg_rebuilt=1,2,3\nnon_display_fields_unchanged=1\nnon_display_identity="<<identity(stable)<<"\n";
+		}
         f.close_window(w);
     }
     f.close_framework();std::cout<<"[P10Labels] cases="<<tests<<" realTextNodeFontBounds=1 unchangedRecords=1 allLabelsRetained=1 PASS\n";

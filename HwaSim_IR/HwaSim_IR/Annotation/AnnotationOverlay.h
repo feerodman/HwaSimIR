@@ -18,7 +18,7 @@ private:
 	LPoint3f pixelToOverlayCoord(int x, int y, int width, int height) const;
 	void drawRect(const AnnotationRect2D& rect, int width, int height);
 	void drawCross(const AnnotationPoint2D& point, int width, int height);
-	void addText(const std::string& text, int x, int y, int width, int height, float scale);
+	void addText(const std::string& text, int x, int y, int width, int height, float scale, bool keyPoint = false);
 
 	NodePath m_overlayRoot;
 	NodePath m_frameRoot;

@@ -7,6 +7,10 @@
 struct AnnotationPoint2D
 {
 	std::string name;
+	// Presentation-only stable index assigned from the definition order.  It is
+	// deliberately not serialized; original name/coordinates/visibility remain
+	// the annotation identity and data contract.
+	int displayIndex = 0;
 	int x = 0;
 	int y = 0;
 	bool visible = false;

@@ -155,6 +155,7 @@ private:
 	// UI Components
 	QGroupBox *m_configGroup;
 	QGroupBox *m_controlGroup;
+	QGroupBox *m_testTargetGroup;
 	QGroupBox *m_realTimeDataGroup;
 	QGroupBox *m_statusGroup;
 

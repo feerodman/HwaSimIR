@@ -366,12 +366,14 @@ bool AnnotationProjector::buildTargetAnnotation(
 	if (targetConfig.keyPointsEnabled && targetConfig.headPoint.visible &&
 		buildKeyPoint("head", headLocal, targetConfig.headPoint, targetPlat, allTargets, config, targetPlat.nodePath, renderRoot, cameraNode, cameraLens, width, height, headPoint))
 	{
+		headPoint.displayIndex = 1;
 		outAnnotation.keyPoints.push_back(headPoint);
 	}
 
 	if (targetConfig.keyPointsEnabled && targetConfig.middlePoint.visible &&
 		buildKeyPoint("middle", middleLocal, targetConfig.middlePoint, targetPlat, allTargets, config, targetPlat.nodePath, renderRoot, cameraNode, cameraLens, width, height, middlePoint))
 	{
+		middlePoint.displayIndex = 2;
 		outAnnotation.keyPoints.push_back(middlePoint);
 	}
 

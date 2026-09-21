@@ -9,7 +9,7 @@
 // to AnnotationFrameRecord, projected geometry, identities or saved coordinates.
 struct AnnotationLabelBox { float x=0,y=0,w=0,h=0; };
 struct AnnotationLabelRequest {
-    std::string key,text; float anchorX=0,anchorY=0,w=0,h=0;
+    std::string key,text; float anchorX=0,anchorY=0,w=0,h=0; bool keyPoint=false;
 };
 struct AnnotationLabelPlacement {
     AnnotationLabelBox box; int candidate=-1; bool overflow=false;

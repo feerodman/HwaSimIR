@@ -169,6 +169,12 @@ QString sha256File(const QString& path, QString& error)
 	return QString::fromLatin1(digest.result().toHex());
 }
 
+QString p15BuildIdentifier()
+{
+	return QStringLiteral("P15-UI-NUMERIC | base 633048417108 | built ") +
+		QString::fromLatin1(__DATE__) + QStringLiteral(" ") + QString::fromLatin1(__TIME__);
+}
+
 QString resolveApplicationRelativePath(const QString& configured)
 {
 	const QFileInfo info(configured);
@@ -523,10 +529,12 @@ void MainWindow::setupUI()
 	m_initButton = new QPushButton(QStringLiteral("○ 初始化 (0x36)"));
 	m_startButton = new QPushButton(QStringLiteral("▲▼ 开始仿真 (2)"));
 	m_stopButton = new QPushButton(QStringLiteral("■ 停止仿真 (3)"));
+	QPushButton *versionInfoButton = new QPushButton(QStringLiteral("ⓘ 版本信息"));
 	m_resetButton->setObjectName(QStringLiteral("resetButton"));
 	m_initButton->setObjectName(QStringLiteral("initButton"));
 	m_startButton->setObjectName(QStringLiteral("startButton"));
 	m_stopButton->setObjectName(QStringLiteral("stopButton"));
+	versionInfoButton->setObjectName(QStringLiteral("versionInfoButton"));
 
 	// 按钮样式
 	m_startButton->setStyleSheet("background-color: #4CAF50; color: white;");
@@ -536,14 +544,19 @@ void MainWindow::setupUI()
 	controlLayout->addWidget(m_initButton);
 	controlLayout->addWidget(m_startButton);
 	controlLayout->addWidget(m_stopButton);
+	controlLayout->addWidget(versionInfoButton);
 	controlLayout->addStretch();
 	m_controlGroup->setLayout(controlLayout);
 
-	// 实时数据组
-	m_realTimeDataGroup = new QGroupBox(QStringLiteral("文件数据与身份 · 位置来自输入文件"));
-	QFormLayout *realTimeLayout = new QFormLayout;
+	// 测试目标是普通操作入口，必须始终位于折叠的文件预览之外。
+	m_testTargetGroup = new QGroupBox(QStringLiteral("测试目标"));
+	m_testTargetGroup->setObjectName(QStringLiteral("testTargetGroup"));
+	QFormLayout *testTargetLayout = new QFormLayout;
+	testTargetLayout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
 	m_targetTypeBox = new QComboBox;
 	m_targetTypeBox->setObjectName(QStringLiteral("targetTypeCombo"));
+	m_targetTypeBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+	m_targetTypeBox->setMinimumContentsLength(22);
 	m_targetTypeBox->addItem(QStringLiteral("F-35 飞机 — 协议 0x11"), 0x11);
 	m_targetTypeBox->addItem(QStringLiteral("F-22 飞机 — 协议 0x12"), 0x12);
 	m_targetTypeBox->addItem(QStringLiteral("AIM-120 通用雷达弹模型 — 协议 0x22"), 0x22);
@@ -557,12 +570,18 @@ void MainWindow::setupUI()
 		.toString().toInt(&configuredTargetOk, 0);
 	const int configuredTargetIndex = configuredTargetOk ? m_targetTypeBox->findData(configuredTarget) : -1;
 	m_targetTypeBox->setCurrentIndex(configuredTargetIndex >= 0 ? configuredTargetIndex : m_targetTypeBox->findData(0x22));
-	realTimeLayout->addRow(QStringLiteral("目标类型（INIT 后冻结）:"), m_targetTypeBox);
+	testTargetLayout->addRow(QStringLiteral("目标类型（INIT 后冻结）:"), m_targetTypeBox);
 	m_forceVisibleForDemoCheck = new QCheckBox(QStringLiteral("演示强制显示（测试端覆盖 ViewValid；不修改 1.txt）"));
 	m_forceVisibleForDemoCheck->setObjectName(QStringLiteral("forceVisibleForDemoCheck"));
 	m_forceVisibleForDemoCheck->setChecked(false);
 	m_forceVisibleForDemoCheck->setToolTip(QStringLiteral("默认关闭并严格回放源 ViewValid。仅显式勾选时，把发送包中的显示标志强制为 1；位置有效性仍独立检查。"));
-	realTimeLayout->addRow(QStringLiteral("显示策略:"), m_forceVisibleForDemoCheck);
+	testTargetLayout->addRow(QStringLiteral("显示策略:"), m_forceVisibleForDemoCheck);
+	m_testTargetGroup->setLayout(testTargetLayout);
+
+	// 文件位置/姿态只读预览仍可折叠，但不再拥有或隐藏目标选择控件。
+	m_realTimeDataGroup = new QGroupBox(QStringLiteral("文件数据与身份 · 位置来自输入文件"));
+	m_realTimeDataGroup->setObjectName(QStringLiteral("fileDataPreviewGroup"));
+	QFormLayout *realTimeLayout = new QFormLayout;
 	m_videoFpsEdit = new QLineEdit(QString::number(m_protocolVideoFps));
     realTimeLayout->addRow(QStringLiteral("横向视场角:"), m_fovHEdit = new QLineEdit("0.1"));
     realTimeLayout->addRow(QStringLiteral("纵向视场角:"), m_fovVEdit = new QLineEdit("0.1"));
@@ -597,15 +616,21 @@ void MainWindow::setupUI()
 	m_statusLabel->setStyleSheet("color: #1976D2; font-weight: bold;");
 	m_lastSentLabel = new QLabel(QStringLiteral("↑ 最后发送: 无"));
 	m_lastReceivedLabel = new QLabel(QStringLiteral("↓ 最后接收: 无"));
+	QLabel *versionSummaryLabel = new QLabel(QStringLiteral("版本: ") + p15BuildIdentifier());
+	versionSummaryLabel->setObjectName(QStringLiteral("programIdentityLabel"));
+	versionSummaryLabel->setWordWrap(true);
+	versionSummaryLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
 	statusLayout->addWidget(m_statusLabel);
 	statusLayout->addWidget(m_lastSentLabel);
 	statusLayout->addWidget(m_lastReceivedLabel);
+	statusLayout->addWidget(versionSummaryLabel);
 	m_statusGroup->setLayout(statusLayout);
 
 	// 主布局
 	QVBoxLayout *mainLayout = new QVBoxLayout;
 	mainLayout->addWidget(m_configGroup);
 	mainLayout->addWidget(m_controlGroup);
+	mainLayout->addWidget(m_testTargetGroup);
 	    setupSensorForm(mainLayout);
     auto* realtimeGroup=new QGroupBox(QStringLiteral("实时发送配置"));
     auto* pacing=new QFormLayout(realtimeGroup);pacing->addRow(QStringLiteral("发送步长 (ms)"),m_timeStep);mainLayout->addWidget(realtimeGroup);
@@ -639,6 +664,21 @@ void MainWindow::setupUI()
 	connect(m_initButton, &QPushButton::clicked, this, &MainWindow::onInitButtonClicked);
 	connect(m_startButton, &QPushButton::clicked, this, &MainWindow::onStartButtonClicked);
 	connect(m_stopButton, &QPushButton::clicked, this, &MainWindow::onStopButtonClicked);
+	connect(versionInfoButton, &QPushButton::clicked, this, [this]() {
+		QString hashError;
+		const QString programPath = QFileInfo(QCoreApplication::applicationFilePath()).absoluteFilePath();
+		const QString programHash = sha256File(programPath, hashError);
+		QString details = QStringLiteral(
+			"程序路径：%1\n\n构建标识：%2\n\n实际配置路径：%3\n\n工作目录：%4\n\n程序 SHA-256：%5")
+			.arg(programPath, p15BuildIdentifier(), QFileInfo(m_networkConfigPath).absoluteFilePath(),
+				QDir::currentPath(), programHash.isEmpty() ? hashError : programHash);
+		QMessageBox *box = new QMessageBox(QMessageBox::Information,
+			QStringLiteral("DataDrivenTestQT 版本信息"), details, QMessageBox::Ok, this);
+		box->setObjectName(QStringLiteral("versionInfoDialog"));
+		box->setTextFormat(Qt::PlainText);
+		box->setAttribute(Qt::WA_DeleteOnClose);
+		box->show();
+	});
 }
 
 void MainWindow::loadNetworkConfig()
