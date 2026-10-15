@@ -617,6 +617,12 @@ IREnginePlumeOutput IREnginePlumeModel::update(const IREnginePlumeInput& input)
 	output.haloNodeVisible = output.haloEnabled && output.haloEmittedRadianceWm2SrUm > 1.0e-9f;
 	output.enabled = output.coreEnabled || output.haloEnabled;
 	output.nodeVisible = output.coreNodeVisible || output.haloNodeVisible;
+	// Preserve stored cooling-state diagnostics while hiding the node immediately.
+	// At off-state equilibrium retain the historical zero-contribution receipt.
+	if (!output.coreEnabled && std::fabs(coreCurrent - ambientMixK) < .001f)
+		output.coreSourceRadianceWm2SrUm = output.coreEmittedRadianceWm2SrUm = output.coreRadiance = 0.0f;
+	if (!output.haloEnabled && std::fabs(haloCurrent - ambientMixK) < .001f)
+		output.haloSourceRadianceWm2SrUm = output.haloEmittedRadianceWm2SrUm = output.haloRadiance = 0.0f;
 	return output;
 }
 
@@ -681,7 +687,12 @@ double IREnginePlumeModel::layerSourceRadianceWm2SrUm(IRBand band, double temper
 	const double emissivity = std::max(0.0, std::min(1.0, effectiveEmissivity));
 	const double hot = bandAveragePlanckRadianceWm2SrUm(band, temperatureK);
 	const double ambient = bandAveragePlanckRadianceWm2SrUm(band, ambientTemperatureK);
-	return emissivity * std::max(0.0, hot - ambient);
+	// Absolute source for straight medium compositing, not a positive excess.
+	// The existing band coefficient is a thermal coupling fraction; the
+	// remainder sees an isotropic ambient blackbody engineering proxy.  This
+	// preserves equilibrium S=B(Tambient) and permits cold absorption.  It is
+	// not a measured exhaust scattering model (NOT_VERIFIED_CALIBRATION).
+	return emissivity * hot + (1.0 - emissivity) * ambient;
 }
 
 float IREnginePlumeModel::computeLayerGray(const IREnginePlumeLayerProfile& layer,
@@ -700,9 +711,9 @@ float IREnginePlumeModel::computeLayerGray(const IREnginePlumeLayerProfile& laye
 
 	const double sourceRadiance = layerSourceRadianceWm2SrUm(
 		band, currentTempK, ambientMixK, emissivityOut);
+	const double ambientRadiance = bandAveragePlanckRadianceWm2SrUm(band, ambientMixK);
 	const double blackbodyTargetRadiance = std::max(1.0e-12,
-		layerSourceRadianceWm2SrUm(
-			band, std::max(targetTempK, ambientMixK + 1.0f), ambientMixK, 1.0));
+		bandAveragePlanckRadianceWm2SrUm(band, std::max(targetTempK, ambientMixK + 1.0f)) - ambientRadiance);
 	sourceRadianceOut = static_cast<float>(sourceRadiance);
 	// Opacity is deliberately applied exactly once here for the emitted audit
 	// value.  The renderer must use sourceRadianceOut as RGB and opacityOut as
@@ -713,7 +724,7 @@ float IREnginePlumeModel::computeLayerGray(const IREnginePlumeLayerProfile& laye
 		return 0.0f;
 	}
 	const float normalizedThermal = clamp(
-		static_cast<float>(sourceRadiance / blackbodyTargetRadiance), 0.0f, 1.0f);
+		static_cast<float>((sourceRadiance - ambientRadiance) / blackbodyTargetRadiance), 0.0f, 1.0f);
 	return clamp(normalizedThermal * displayGain, 0.0f, 1.0f);
 }
 

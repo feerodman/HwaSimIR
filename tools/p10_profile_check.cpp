@@ -43,7 +43,7 @@ int main(int argc,char** argv){
             const std::string presets="HwaSimIR.Display.Presets.";
             std::string presetName;
             if(path.find(presets)==0){const auto rest=path.substr(presets.size());const auto dot=rest.find('.');
-                if(dot!=std::string::npos && display.count(rest.substr(dot+1))){presetName=rest.substr(0,dot);state="public_display";consumer="ApplyStage6DisplayConfig / final shader / sampled statistics";}}
+                if(dot!=std::string::npos && (display.count(rest.substr(dot+1)) || rest.substr(dot+1)=="WhiteReferenceTemperatureK" || rest.substr(dot+1)=="KneeReferenceTemperatureK")){presetName=rest.substr(0,dot);state="public_display";consumer="ApplyStage6DisplayConfig / final shader / sampled statistics";}}
             if(path=="HwaSimIR.Display.DefaultPreset"){state="public_display";consumer="default selection";}
             if(path=="HwaSimIR.SchemaVersion"||path=="HwaSimIR.Band"||path=="HwaSimIR.Revision"||path=="HwaSimIR.SpectralUnit"){state="validation_or_provenance";consumer="IRConfig";}
             out<<"{"<<"path"<<path<<"type"<<std::string(1,f.second)<<"contract"<<state<<"consumer"<<consumer

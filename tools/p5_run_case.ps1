@@ -5,7 +5,7 @@ param(
     [switch]$Windows, [switch]$SmallClouds, [double]$PauseStart=-1,
     [double]$PauseDuration=0, [switch]$VolumeOff, [switch]$SheetOff,
     [switch]$Blend, [double]$Gamma=1.0, [switch]$RawDump, [string]$AssetBandCase='', [switch]$NoTargets,
-    [int]$RepeatWeather=-1
+    [int]$RepeatWeather=-1, [switch]$AdvanceInputTime
 )
 $ErrorActionPreference='Stop'
 $caseStartUtc=[DateTime]::UtcNow
@@ -21,7 +21,7 @@ $dir=(Resolve-Path $dir).Path
   band=$Band;weather=$Weather;gamma=$Gamma;simMode=1;utcHour=6.0;smallClouds=[bool]$SmallClouds;
   volumeOff=[bool]$VolumeOff;sheetOff=[bool]$SheetOff;legacy=[bool]$Legacy;materialView=$MaterialView;
   materialCase=$MaterialCase;assetBandCase=$AssetBandCase;pauseStart=$PauseStart;pauseDuration=$PauseDuration
-  noTargets=[bool]$NoTargets;repeatWeather=$RepeatWeather;
+  noTargets=[bool]$NoTargets;repeatWeather=$RepeatWeather;advanceInputTime=[bool]$AdvanceInputTime;
   receiverSha256=(Get-FileHash -Algorithm SHA256 "$root\HwaSim_IR_VideoDisplay\x64\Release\HwaSim_IR_VideoDisplay.exe").Hash
 } | ConvertTo-Json | Set-Content -Encoding UTF8 "$dir\request.json"
 # Normalize the inherited PATH/Path duplicate seen in Windows PowerShell 5.
@@ -108,11 +108,13 @@ try {
     # ZRDDS resolves its writable trial licence from the process working
     # directory. Match the production launch contract: EXE, INI, QoS and the
     # private licence copy all live under the release directory.
-    $stim=Start-Process -FilePath $stimExe -WorkingDirectory $stimDir -WindowStyle Hidden -PassThru -ArgumentList @(
+    $stimArguments=@(
         '--channel=precise','--plat-id=1001','--sensor-id=2','--sim-mode=1',"--video-fps=$Rate",
         '--phase1d-h264=1','--save-mp4=0',"--duration-sec=$Seconds","--env-sky=$Weather","--sensor-band=$Band",
-        '--engine-state=1','--strike-flag=0','--freeze-geometry','--utc-hour=6.0',"--pause-start-sec=$PauseStart","--pause-duration-sec=$PauseDuration"
-    ) -RedirectStandardOutput "$dir\stim.out.log" -RedirectStandardError "$dir\stim.err.log"
+        '--engine-state=1','--strike-flag=0','--utc-hour=6.0',"--pause-start-sec=$PauseStart","--pause-duration-sec=$PauseDuration"
+    )
+    if(-not $AdvanceInputTime){$stimArguments+='--freeze-geometry'}
+    $stim=Start-Process -FilePath $stimExe -WorkingDirectory $stimDir -WindowStyle Hidden -PassThru -ArgumentList $stimArguments -RedirectStandardOutput "$dir\stim.out.log" -RedirectStandardError "$dir\stim.err.log"
     while(-not $stim.WaitForExit(1000)){}
     if($RepeatWeather -ge 0){
         # Each sender uses the existing RESET -> INIT -> START -> STOP sequence.

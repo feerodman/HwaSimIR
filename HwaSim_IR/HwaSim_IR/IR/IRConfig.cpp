@@ -73,7 +73,16 @@ bool IRSensorProfileDatabase::loadProfileFromFile(IRBand band,const std::string&
                 if(mode!="Fixed"&&mode!="Auto")throw std::runtime_error("unknown_display_mode: "+q);
                 v.automatic=mode=="Auto";
                 if(d.has(q+"ToneMap"))v.toneMap=d.string(q+"ToneMap");
-                if(v.toneMap!="LinearClamp"&&v.toneMap!="Reinhard")throw std::runtime_error("unknown ToneMap");
+                if(v.toneMap!="LinearClamp"&&v.toneMap!="Reinhard"&&v.toneMap!="LogHDR")throw std::runtime_error("unknown ToneMap");
+                if(v.toneMap=="LogHDR") {
+                    if(v.automatic)throw std::runtime_error("LogHDR requires Fixed display mode");
+                    v.logHdrWhiteTemperatureK=d.number(q+"WhiteReferenceTemperatureK",180,6000);
+                    if(d.has(q+"KneeReferenceTemperatureK")) {
+                        v.logHdrKneeTemperatureK=d.number(q+"KneeReferenceTemperatureK",180,6000);
+                        if(v.logHdrKneeTemperatureK>=v.logHdrWhiteTemperatureK)
+                            throw std::runtime_error("LogHDR knee must be below white reference");
+                    }
+                }
                 if(d.has(q+"Statistics")){
                     if(d.string(q+"Statistics.Method")!="stratified_pixel_centers")throw std::runtime_error("unsupported Auto sampling definition");
                     v.statisticsSize=d.integer(q+"Statistics.Size",16,128);

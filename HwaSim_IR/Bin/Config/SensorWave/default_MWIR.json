@@ -22,10 +22,10 @@
   "HwaSimIR": {
     "SchemaVersion": 1,
     "Band": "MWIR",
-    "Revision": "P6C-display-release-1",
+    "Revision": "P17-fixed-HDR-weather-knee-2",
     "LegacyArchive": "Archive/P5/default_MWIR.json",
     "Display": {
-      "DefaultPreset": "Game",
+      "DefaultPreset": "HDR",
       "Presets": {
         "Legacy": {
           "Gamma": 1.0,
@@ -75,6 +75,17 @@
           "WhiteHot": false,
           "Mode": "Fixed",
           "ToneMap": "Reinhard"
+        },
+        "HDR": {
+          "Gamma": 2.2,
+          "Gain": 3.0,
+          "OffsetGray": 0.0,
+          "WhiteHot": true,
+          "Mode": "Fixed",
+          "ToneMap": "LogHDR",
+          "WhiteReferenceTemperatureK": 1800.0,
+          "KneeReferenceTemperatureK": 273.15,
+          "ReferenceBasis": "Fixed display knee at the existing precipitation reference temperature, preserving cold-scene contrast; white remains the maximum authored plume temperature. Neither reference changes scene temperatures, source radiance, gain or atmospheric data; NOT_VERIFIED_CALIBRATION"
         }
       }
     }

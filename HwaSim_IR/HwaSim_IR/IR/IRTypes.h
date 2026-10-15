@@ -32,6 +32,8 @@ struct IRDisplayPreset
     double highPercentile = 98.0;
     double smoothingAlpha = 0.15;
     std::string toneMap = "LinearClamp"; // Public display only; no temperature conversion.
+    double logHdrWhiteTemperatureK = 0.0; // Display white reference only; never a scene temperature.
+    double logHdrKneeTemperatureK = 0.0; // Optional fixed cold-scene knee; zero preserves the original curve.
     double minimumInputSpan = 0.02; // Common scaled linear input after fixed gain/offset.
     double targetLow = 0.05, targetHigh = 0.95;
     double minGain = 0.25, maxGain = 8.0, minOffset = -1.0, maxOffset = 1.0;

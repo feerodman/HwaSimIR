@@ -1,4 +1,5 @@
 param(
+    [ValidateSet('run_precise.sh','run_precise_p17_gdb.sh','run_precise_p17_core.sh')][string]$RemoteLauncher='run_precise.sh',
     [ValidateSet('p7','p8','p10')][string]$LogGroup='p7', [switch]$NoDuplicateH264, [string]$PerformancePolicy='', [switch]$InputAudit, [switch]$FreezeTelemetryTables,
     [string]$Name='smoke', [double]$ReceiverJoinDelay=0, [double]$ReceiverRestartAt=0, [double]$ReceiverRestartGap=2, [string]$ReceiverFaultConfig='', [int]$SaveMp4=1, [ValidateSet(1,2)][int]$SimMode=1, [int]$OutputFps=60, [string]$SensorFieldsJson='', [string]$DiagnosticJson='', [int]$DisplayCase=0, [int]$FreezeAfter=0, [int]$DumpSeq=0, [switch]$ProductionDefaults, [string]$Scene='mixed', [string]$View='oblique',
     [int]$MaterialView=0, [string]$MaterialCase='A', [int]$Band=2,
@@ -12,8 +13,8 @@ param(
     [int]$PlatId=1001, [int]$SensorId=2, [string]$RendererExe='', [string]$ReceiverExe='', [string]$SenderExe='', [switch]$SkipRemoteCleanup, [switch]$UseRuntimeWeather, [switch]$UseRuntimeStreaming, [switch]$AgcTiming, [switch]$OrdinaryPlate, [Nullable[double]]$AutoTargetHigh=$null
 )
 $ErrorActionPreference='Stop'
-if($Weather -lt 0 -or $Weather -gt 3 -or $RepeatWeather -lt -1 -or $RepeatWeather -gt 3){
-    throw 'Weather must use the existing protocol enum: Clear=0, Cloudy=1, Rain=2, Snow=3; repeat=-1 disables the second run.'
+if($Weather -notin @(0,1,2,3,5) -or $RepeatWeather -notin @(-1,0,1,2,3,5)){
+    throw 'Weather must use the existing protocol enum: Clear=0, Cloudy=1, Rain=2, Snow=3, Overcast=5; repeat=-1 disables the second run.'
 }
 $taskInheritedPath=[Environment]::GetEnvironmentVariable('Path','Process')
 [Environment]::SetEnvironmentVariable('PATH',$null,'Process')
@@ -180,7 +181,7 @@ try {
         # prevent the stimulus from ever being started.
         $remoteSsh=Start-Process -FilePath 'ssh.exe' -WindowStyle Hidden -PassThru -ArgumentList @(
             '-o','StrictHostKeyChecking=yes','root@192.168.1.116',
-            "cd /userdata/HwaSimIR && $assignments ./run_precise.sh >logs/p5_$Name.log 2>&1"
+            "cd /userdata/HwaSimIR && $assignments ./$RemoteLauncher >logs/p5_$Name.log 2>&1"
         ) -RedirectStandardOutput "$dir\ssh.out.log" -RedirectStandardError "$dir\ssh.err.log"
     }
     Start-Sleep -Seconds 5

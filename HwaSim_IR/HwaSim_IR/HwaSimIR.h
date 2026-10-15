@@ -589,6 +589,15 @@ private:
 	// beginning of every protocol round so sequence numbers may restart at one.
 	std::uint64_t m_stage6LinearCaptureCompletedSourceSeq = 0;
 	PT(Texture) m_stage7SceneDepthTex;
+	GraphicsOutput* m_stage7DepthBuffer = nullptr;
+    GraphicsOutput* m_cloudPresentationBuffer = nullptr;
+    PT(Texture) m_cloudPresentationTexture;
+    NodePath m_cloudPresentationRoot,m_cloudPresentationCamera;
+    void SetupCloudPresentation();
+    void UpdateCloudPresentation();
+	NodePath m_stage7DepthCameraNode;
+	PT(Shader) m_stage7DepthShader;
+	double m_stage7DepthNear = -1.0, m_stage7DepthFar = -1.0;
 	PT(GraphicsOutput) m_stage6RawSceneBuffer;
 	PT(GraphicsOutput) m_stage6FinalSensorBuffer;
     PT(GraphicsOutput) m_agcSampleBuffer;
@@ -672,6 +681,8 @@ private:
 	std::string m_stage7WeatherProfilePath = "Config/Weather/weather_profiles.json";
 	std::string m_stage7WeatherTextureConfigPath = "Config/Weather/weather_textures.json";
 	IRStage7WeatherState m_stage7WeatherState;
+	// Temperature offsets affect emission only, not reflected light or path.
+	double m_stage7CloudThermalCoefficient = 0.0;
 	int m_stage7WeatherLogCounter = 0;
 	int m_stage7CloudSpatialLogCounter = 0;
 	std::string m_stage7LastWeatherState;
@@ -1034,6 +1045,8 @@ private:
 	double m_stage6AgcTargetOffset = 0.0;
 	int m_stage6AgcSampleCount = 0;
     bool m_stage6Reinhard = false;
+    double m_stage6LogHdrWhiteTemperatureK = 0.0;
+    double m_stage6LogHdrKneeTemperatureK = 0.0;
     double m_stage6AgcMinimumSpan = 0.02;
 	bool m_stage6AgcValid = false;
 	bool m_stage6AgcInitialized = false;

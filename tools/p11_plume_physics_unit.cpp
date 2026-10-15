@@ -176,10 +176,10 @@ int main(int argc, char** argv)
 			profile.halo.bandEmissivity.forBand(band));
 		log.numeric("core_source_radiance", bandName(band), output.coreTempK,
 			output.coreSourceRadianceWm2SrUm, coreExpected, 2.0e-6, 1.0e-8,
-			"emissivity times band-mean Planck excess; opacity excluded");
+			"absolute thermal plus isotropic ambient source; opacity excluded");
 		log.numeric("halo_source_radiance", bandName(band), output.haloTempK,
 			output.haloSourceRadianceWm2SrUm, haloExpected, 2.0e-6, 1.0e-8,
-			"emissivity times band-mean Planck excess; opacity excluded");
+			"absolute thermal plus isotropic ambient source; opacity excluded");
 		log.numeric("core_opacity_applied_once", bandName(band), output.coreTempK,
 			output.coreEmittedRadianceWm2SrUm,
 			output.coreSourceRadianceWm2SrUm * output.coreOpacity, 2.0e-6, 1.0e-8,
@@ -349,10 +349,10 @@ int main(int argc, char** argv)
 			"even engineState=true cannot add a non-sample heat source");
 	}
 
-	log.numeric("zero_emissivity_zero_source", "SWIR", 1200.0,
+	log.numeric("zero_thermal_coupling_ambient_source", "SWIR", 1200.0,
 		IREnginePlumeModel::layerSourceRadianceWm2SrUm(
 			IRBand::ShortWaveInfrared, 1200.0, 300.0, 0.0),
-		0.0, 0.0, 1.0e-12, "emissivity is a physical coefficient not a gain");
+		IREnginePlumeModel::bandAveragePlanckRadianceWm2SrUm(IRBand::ShortWaveInfrared, 300.0), 0.0, 1.0e-12, "zero thermal coupling returns ambient source; runtime zero-coupling layer remains disabled");
 
 	if (log.failures() != 0)
 	{

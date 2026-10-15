@@ -18,8 +18,9 @@ void HwaSimIR::UpdateP5GraphicsTestScene()
     else if (scene=="f22") assetType=F22;
     else if (scene=="aim120") assetType=AIM120;
     else if (scene=="aim9x") assetType=AIM9;
+    else if (scene=="f22cloud") assetType=F22;
     const bool asset = assetType != NONE;
-    const bool clouds = scene=="cloud" || scene=="mixed";
+    const bool clouds = scene=="cloud" || scene=="mixed" || scene=="f22cloud";
     if (m_p5TestRoot.is_empty()) {
         m_p5TestRoot = m_renderRoot.attach_new_node("P5_GraphicsAcceptance_ONLY");
         m_p5TestCenter = LPoint3f(0,0,100);
@@ -33,6 +34,9 @@ void HwaSimIR::UpdateP5GraphicsTestScene()
                 m_p5TestCenter = LPoint3f(float(c.worldX),float(c.worldY),float(c.worldZ));
             }
             m_stage7VolumeStreamingCenter = "Camera";
+            if(scene=="f22cloud")for(const auto& volume:m_stage7CloudVolumePool)if(volume.active){
+                m_p5TestCenter=volume.node.get_pos(m_renderRoot);break;
+            }
         }
         if (asset) {
             m_p5TestModel = LoadPlatformAssetNode(assetType,m_platformResMap[assetType]);
@@ -46,7 +50,8 @@ void HwaSimIR::UpdateP5GraphicsTestScene()
             }
             // No scale change: camera fit only, with explicit diagnostic FOV.
             LPoint3f lo,hi;
-            if (m_p5TestModel.calc_tight_bounds(lo,hi)) m_p5TestCenter=(lo+hi)*.5f;
+            if (!clouds && m_p5TestModel.calc_tight_bounds(lo,hi)) m_p5TestCenter=(lo+hi)*.5f;
+            if(clouds)m_p5TestModel.set_pos(m_renderRoot,m_p5TestCenter);
         } else if (scene=="materials") {
             CardMaker card("P5_TwoMaterialPlate"); card.set_frame(-2,2,-2,2);
             m_p5TestModel = m_p5TestRoot.attach_new_node(card.generate());
@@ -142,6 +147,8 @@ void HwaSimIR::UpdateP5GraphicsTestScene()
     }
     m_cameraLens->set_fov(35.f,35.f);
     m_cameraLens->set_near(.1f);
+    m_renderRoot.set_shader_input("u_ir_log_depth",LVecBase2f(float(std::log2(1.1)),
+        float(1.0/(std::log2(1.0+m_cameraLens->get_far())-std::log2(1.1)))));
     LPoint3f focus=m_p5TestCenter;
     double distance=20.0;
     if(asset) {
@@ -158,10 +165,19 @@ void HwaSimIR::UpdateP5GraphicsTestScene()
     if(view=="below") offset=LVecBase3f(0,float(-distance),float(-distance*.55));
     if(view=="above") offset=LVecBase3f(0,float(-distance),float(distance*.65));
     if(view=="parallax") offset[0]+=float(std::sin(m_realTimeSceneData.time*.001)*distance*.25);
+    const float cloudTestTime=float((m_currentFrameTelemetry.sourceSeq-1)/60.0);
+    if(clouds && view=="through")offset=LVecBase3f(0,-1600.f+cloudTestTime*40.f,30.f);
+    if(clouds && view=="parallax")offset=LVecBase3f(std::sin(cloudTestTime*.12f)*800.f,-1600.f,300.f);
     m_cameraNode.set_pos(m_renderRoot,focus+offset);
     m_cameraNode.look_at(m_renderRoot,focus);
     UpdateStage7SkyHorizonPositionOnly();
     if(asset || scene=="materials") {
+        if(scene=="f22cloud"){
+            // Explicit geometry/occlusion diagnostic only. Keep the original
+            // F22 asset and texture; this fixture is not radiometric acceptance.
+            m_p5TestModel.set_shader_input("u_p5_material_view",LVecBase2i(3,0));
+            return;
+        }
         m_p5TestModel.set_shader_input("u_p5_material_view",LVecBase2i(materialView,0));
         m_p5TestModel.set_shader_input("u_debug_material_id",LVecBase2i(materialView==6?1:0,0));
         const IRBand band=IRBandFromProtocol(m_sensorParam.trackerSensorBand);

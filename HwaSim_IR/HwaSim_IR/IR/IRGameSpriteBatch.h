@@ -14,20 +14,21 @@
 #include <sstream>
 #include <iostream>
 #include "IRJson.h"
+#include "IRDepthPrecision.h"
 
-// Artistic sprite geometry only. No calibrated plume or sensor parameters.
-// A fixed pool of 32 quads per layer is expanded in eye space on the GPU.
+// One conservative proxy per nozzle/layer; shader integrates a continuous gas.
+// Geometry is an engineering envelope, not calibrated exhaust spectroscopy.
 namespace IRGameSpriteBatch {
 inline PT(PandaNode) makeGeometry(int emitters=1) {
-    PT(GeomVertexData) data = new GeomVertexData("GameSpritePool32", GeomVertexFormat::get_v3n3t2(), Geom::UH_static);
+    PT(GeomVertexData) data = new GeomVertexData("PlumeContinuousProxy", GeomVertexFormat::get_v3n3t2(), Geom::UH_static);
     GeomVertexWriter vertex(data, "vertex"), seed(data, "normal"), uv(data, "texcoord");
     PT(GeomTriangles) triangles = new GeomTriangles(Geom::UH_static);
-    for (int i = 0; i < 32*emitters; ++i) {
+    for (int i = 0; i < emitters; ++i) {
         for (int j = 0; j < 4; ++j) {
             const float x = (j == 1 || j == 2) ? 1.f : -1.f;
             const float y = j >= 2 ? 1.f : -1.f;
-            vertex.add_data3f(x, y, float(i/32));
-            seed.add_data3f(float(i%32), float((i * 13) % 32) / 32.f, float((i * 7) % 32) / 32.f);
+            vertex.add_data3f(x, y, float(i));
+            seed.add_data3f(0.f, 0.f, 0.f);
             uv.add_data2f(x * .5f + .5f, y * .5f + .5f);
         }
         triangles->add_vertices(i*4, i*4+1, i*4+2);
@@ -36,9 +37,11 @@ inline PT(PandaNode) makeGeometry(int emitters=1) {
     triangles->close_primitive();
     PT(Geom) geom = new Geom(data);
     geom->add_primitive(triangles);
-    PT(GeomNode) node = new GeomNode("GameSpriteBatch32");
+    PT(GeomNode) node = new GeomNode("PlumeContinuousBatch");
     node->add_geom(geom);
-    node->set_bounds(new BoundingSphere(LPoint3f(0.f,-.5f,0.f), 2.5f));
+    // Shader bounds include radiusTail/root <= 6, art radius <= 1.5 and
+    // both authored nozzle offsets.  The old radius 2.5 excluded expanded gas.
+    node->set_bounds(new BoundingSphere(LPoint3f(0.f,-.5f,0.f), 24.f));
     node->set_final(true);
     return node;
 }
@@ -48,54 +51,28 @@ inline std::string read(const char* path) {
 }
 inline bool apply(NodePath& node) {
     static PT(Shader) shader;
-    static PT(Texture) atlas;
-    static PT(Texture) weatherSmoke;
     if (!shader) {
 #ifdef _WIN32
         const std::string version = "#version 130\n";
 #else
         const std::string version = "#version 300 es\nprecision highp float;\nprecision highp int;\n";
 #endif
-        shader = Shader::make(Shader::SL_GLSL,
-            version + read("Config/GameVFX/sprite.vert"), version + read("Config/GameVFX/sprite.frag"));
-        atlas = TexturePool::load_texture("Config/GameVFX/soft_sprite_atlas.png");
-        weatherSmoke = TexturePool::load_texture("Config/Weather/Textures/smoke.png");
-        if (atlas) {
-            if (atlas->has_ram_image() && atlas->get_num_ram_mipmap_images() <= 1)
-                atlas->generate_ram_mipmap_images();
-            atlas->set_minfilter(SamplerState::FT_linear_mipmap_linear);
-            atlas->set_magfilter(SamplerState::FT_linear);
-            atlas->set_wrap_u(SamplerState::WM_clamp);
-            atlas->set_wrap_v(SamplerState::WM_clamp);
-            atlas->set_anisotropic_degree(4);
-        }
-        if (weatherSmoke) {
-            if (weatherSmoke->has_ram_image() && weatherSmoke->get_num_ram_mipmap_images() <= 1)
-                weatherSmoke->generate_ram_mipmap_images();
-            weatherSmoke->set_minfilter(SamplerState::FT_linear_mipmap_linear);
-            weatherSmoke->set_magfilter(SamplerState::FT_linear);
-            weatherSmoke->set_wrap_u(SamplerState::WM_clamp);
-            weatherSmoke->set_wrap_v(SamplerState::WM_clamp);
-            weatherSmoke->set_anisotropic_degree(4);
-        }
+        std::string vertex=version+read("Config/GameVFX/sprite.vert");
+        std::string fragment=version+read("Config/GameVFX/sprite.frag");
+        IRDepthPrecision::apply(vertex,fragment);
+        shader = Shader::make(Shader::SL_GLSL,vertex,fragment);
     }
-    if (!shader || !atlas) return false;
-    // Weather smoke is a shape/coverage texture only.  Keep a deterministic
-    // atlas fallback so a missing optional file cannot manufacture radiance or
-    // silently change the plume's thermal source term.
-    if (!weatherSmoke) weatherSmoke = atlas;
+    if (!shader) return false;
     static bool logged=false;
     if(!logged) {
         logged=true;
-        std::cout<<"[GameSpriteResources] shaderReady=1 priority=100 shader=Config/GameVFX/sprite.frag atlas="<<atlas->get_fullpath()<<" size="<<atlas->get_x_size()<<"x"<<atlas->get_y_size()
-            <<" haloMask="<<weatherSmoke->get_fullpath()<<" haloMaskSize="<<weatherSmoke->get_x_size()<<"x"<<weatherSmoke->get_y_size()
-            <<" sampler=linear_mipmap_linear_aniso4 vertices=128 particles=32 rgbContract=formal_W_per_m2_sr_um_or_explicit_legacy_linear alpha=straight_medium_opacity depthTest=1 depthWrite=0"<<std::endl;
+        std::cout<<"[GameSpriteResources] shaderReady=1 priority=100 shader=Config/GameVFX/sprite.frag"
+            <<" representation=continuous_local_density proxiesPerLayerPerEmitter=1 coreSteps=24 wakeSteps=40 wakeLengthRatio=2.6 atlasUsed=0 lodPhaseSwitch=0"
+            <<" rgbContract=formal_W_per_m2_sr_um_or_explicit_legacy_linear alpha=straight_medium_opacity depthTest=1 depthWrite=0"<<std::endl;
     }
     node.set_shader(shader, 100);
-    node.set_shader_input("u_sprite_atlas", atlas);
-    node.set_shader_input("u_weather_smoke", weatherSmoke);
     node.set_shader_input("u_sprite_time", LVecBase2f(0,0));
-    node.set_shader_input("u_sprite_lod", LVecBase2f(32,0));
+    node.set_shader_input("u_sprite_lod", LVecBase2f(1,0));
     node.set_shader_input("u_game_sprite", LVecBase4f(0,1,1,0));
     static const LVecBase3f art=[](){
         LVecBase3f value(1,1,1);

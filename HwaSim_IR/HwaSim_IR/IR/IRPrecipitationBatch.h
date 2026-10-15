@@ -27,9 +27,10 @@ inline NodePath create(const NodePath& camera, int count) {
 #else
     const std::string version="#version 300 es\nprecision highp float;\nprecision highp int;\n";
 #endif
-    PT(Shader) shader=Shader::make(Shader::SL_GLSL,
-        version+IRGameSpriteBatch::read("Config/Weather/precipitation.vert"),
-        version+IRGameSpriteBatch::read("Config/Weather/precipitation.frag"));
+    std::string vertexSource=version+IRGameSpriteBatch::read("Config/Weather/precipitation.vert");
+    std::string fragmentSource=version+IRGameSpriteBatch::read("Config/Weather/precipitation.frag");
+    IRDepthPrecision::apply(vertexSource,fragmentSource);
+    PT(Shader) shader=Shader::make(Shader::SL_GLSL,vertexSource,fragmentSource);
     if(!shader) {node.remove_node();return NodePath();}
     node.set_shader(shader,100);node.set_transparency(TransparencyAttrib::M_alpha);
     node.set_depth_test(true);node.set_depth_write(false);node.set_bin("transparent",30);

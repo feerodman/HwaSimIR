@@ -9,7 +9,7 @@
 // Shared normal/test appearance resource description. No positions or camera.
 struct IRCloudAppearance {
     struct Template {std::string key,path,sha256,fnv,source,sourceSha;};
-    bool enabled=false,bounded=true,densityLighting=false;
+    bool enabled=false,bounded=true,densityLighting=false,densityColumns=false,whitePresentation=false;
     std::string root,revision,hash,buildVersion,sheetTexture;
     std::vector<Template> templates;
     double latitude=40,longitude=116,altitude=0;
@@ -42,6 +42,9 @@ struct IRCloudAppearance {
         geometry.minRadiusZM=d.number("World.MinRadiusZM",10,5000);
         geometry.maxRadiusZM=d.number("World.MaxRadiusZM",geometry.minRadiusZM,5000);
         size=d.integer("Appearance.DensitySize",16,128);
+        const std::string presentation=d.has("Appearance.Presentation")?d.string("Appearance.Presentation"):"Radiometric";
+        if(presentation!="Radiometric" && presentation!="WhiteCloud")throw std::runtime_error("unknown cloud presentation");
+        whitePresentation=presentation=="WhiteCloud";
         nearSteps=d.integer("Appearance.NearSteps",2,64);mediumSteps=d.integer("Appearance.MediumSteps",2,nearSteps);
         farSteps=d.integer("Appearance.FarSteps",2,mediumSteps);
         nearDiameterPx=d.has("Appearance.NearDiameterPx")?d.number("Appearance.NearDiameterPx",1,10000):0;
@@ -50,8 +53,9 @@ struct IRCloudAppearance {
         opticalDepth=d.number("Appearance.OpticalDepth",.01,10);
         cloudNir=d.number("Appearance.LinearSourceNIR",0,1);cloudMwir=d.number("Appearance.LinearSourceMWIR",0,1);
         const std::string light=d.has("Appearance.ArtLightEncoding")?d.string("Appearance.ArtLightEncoding"):"LegacyPNG";
-        if(light!="LegacyPNG" && light!="DensityCoefficientGx1.4")throw std::runtime_error("unsupported cloud art light encoding");
-        densityLighting=light=="DensityCoefficientGx1.4" && (preset=="GameWorld"||preset=="CustomerDemo") && !legacyReference;
+        if(light!="LegacyPNG" && light!="DensityCoefficientGx1.4" && light!="DensityColumns")throw std::runtime_error("unsupported cloud art light encoding");
+        densityColumns=light=="DensityColumns" && !legacyReference;
+        densityLighting=(light=="DensityCoefficientGx1.4" || densityColumns) && (preset=="GameWorld"||preset=="CustomerDemo") && !legacyReference;
         sheetTexture=d.string("Sheet.Texture");sheetPeriod=d.number("Sheet.PeriodM",100,50000);
         sheetCoverage=d.number("Sheet.CoverageM",sheetPeriod,200000);
         sheetAltitude=d.number("Sheet.AltitudeM",0,20000);sheetDepth=d.number("Sheet.OpticalDepthScale",.01,8);
@@ -59,7 +63,7 @@ struct IRCloudAppearance {
         bounded=preset!="GameWorldLegacyArt";
         IRJson::Document m;m.load(root+"/"+(legacyReference?"Weather/Derived/cloud_manifest.json":bounded?d.string("Appearance.Manifest"):"Weather/Derived/cloud_manifest_p6a.json"));
         buildVersion=m.string("BuildVersion");
-        if(densityLighting && buildVersion!="P6D-density-light-1" && buildVersion!="P7-asymmetric-alpha-puffs-2")throw std::runtime_error("cloud lighting/cache version mismatch");
+        if(densityLighting && buildVersion!="P6D-density-light-1" && buildVersion!="P7-asymmetric-alpha-puffs-2" && buildVersion!="P17-density-columns-1")throw std::runtime_error("cloud lighting/cache version mismatch");
         if(m.integer("Size",16,128)!=size)throw std::runtime_error("cloud cache size mismatch");
         int count=m.integer("Count",1,16);templates.clear();
         for(int i=0;i<count;++i){

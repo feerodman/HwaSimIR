@@ -1,9 +1,9 @@
 {
-  "version": 3,
+  "version": 4,
   "notes": "P11 EnginePlume is an independent local two-layer thermal gas body. bandEmissivity is a dimensionless engineering assumption bounded to 0..1 and is not fitted to legacy gray. opacity is applied separately once. SWIR 1.10-2.50 um and MWIR 3.00-5.00 um use band-mean Planck radiance in W/(m^2 sr um). These generic values are not calibrated exhaust spectroscopy. EngineState control remains independent of BrightSpot and rear ThermalHotspot.",
   "radiometry": {
     "sourceRadianceUnit": "W/(m^2 sr um)",
-    "sourceRadianceDefinition": "bandEmissivity * max(B_band(T) - B_band(Tambient), 0)",
+    "sourceRadianceDefinition": "bandEmissivity * B_band(T) + (1-bandEmissivity) * B_band(Tambient)",
     "emittedRadianceDefinition": "opacity * sourceRadiance",
     "SWIRBandUm": [1.10, 2.50],
     "MWIRBandUm": [3.00, 5.00],

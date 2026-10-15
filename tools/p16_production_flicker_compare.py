@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Compare deterministic RK3588 P5 model captures before/after texture sampling changes.
+"""Audit legacy RK3588 P5 captures; adjacent MAD is NOT motion flicker acceptance.
 
-The input clips use the same fixture, camera path, 800x800 output and 60 Hz
-timeline.  Metrics are restricted to decoded foreground pixels so the black
-background cannot dilute temporal deltas.  This is a renderer diagnostic, not
-an assertion about sensor calibration or an ordinary M1 scene.
+P17 found --freeze-geometry also freezes the protocol time used by P5 parallax.
+Check board logs before calling a clip moving. MAD has no reprojection, includes
+encoder convergence, and must never close an ordinary rendering issue.
 """
 
 from __future__ import annotations
@@ -13,6 +12,7 @@ import csv
 import hashlib
 import json
 import subprocess
+import re
 from pathlib import Path
 
 import numpy as np
@@ -75,11 +75,23 @@ def percentile(values: list[float], value: float) -> float:
     return float(np.percentile(np.asarray(values, dtype=np.float64), value)) if values else 0.0
 
 
+def motion_evidence(path: Path) -> dict:
+    log=path.parent/'board.log'
+    text=log.read_text(encoding='utf-8',errors='replace') if log.exists() else ''
+    elapsed=[float(v) for v in re.findall(r'\[GameSpriteAnimation\][^\r\n]*elapsedSec=([0-9.e+-]+)',text)]
+    advancing=len(elapsed)>1 and max(elapsed)>min(elapsed)
+    return dict(protocolClockAdvancing=advancing,observedElapsedSamples=elapsed,
+                validMotionAcceptance=False,reason='reprojection_and_occlusion_masks_not_available',
+                clockStatus='ADVANCING' if advancing else 'FROZEN_OR_UNPROVEN')
+
+
 def analyze(path: Path, review_indices: set[int]) -> tuple[dict, dict[int, np.ndarray]]:
     info = probe(path)
     previous = None
     temporal_mad: list[float] = []
     temporal_changed2: list[float] = []
+    nonzero_mad: list[float] = []
+    repeat_pairs=0
     foreground_mean: list[float] = []
     spatial_hf: list[float] = []
     hashes: set[str] = set()
@@ -113,10 +125,12 @@ def analyze(path: Path, review_indices: set[int]) -> tuple[dict, dict[int, np.nd
                 spatial_hf.append(float(np.concatenate(contributions).mean()))
 
         if previous is not None:
+            if np.array_equal(previous,frame): repeat_pairs+=1
             pair_mask = (previous > 4) | mask
             if pair_mask.any():
                 delta = np.abs(frame.astype(np.int16) - previous.astype(np.int16))[pair_mask]
                 temporal_mad.append(float(delta.mean()))
+                if np.any(delta): nonzero_mad.append(float(delta.mean()))
                 temporal_changed2.append(float(np.count_nonzero(delta > 2) / delta.size))
         if decoded in review_indices:
             selected[decoded] = frame.copy()
@@ -131,15 +145,20 @@ def analyze(path: Path, review_indices: set[int]) -> tuple[dict, dict[int, np.nd
         "probe": info,
         "decodedFrames": decoded,
         "uniqueDecodedFrames": len(hashes),
+        "adjacentExactRepeatPairs": repeat_pairs,
+        "adjacentExactRepeatFraction": repeat_pairs/max(1,decoded-1),
+        "nonzeroPairsMadMean": float(np.mean(nonzero_mad)) if nonzero_mad else 0.0,
+        "motionEvidence": motion_evidence(path),
+        "metricDomain": "decoded_uncompensated_not_render_fps_or_flicker_acceptance",
         "decodedSequenceSha256": decoded_sequence.hexdigest(),
         "foregroundThreshold": 4,
         "foregroundUnionBbox": bbox_union,
-        "foregroundMeanStd": float(np.std(np.asarray(foreground_mean, dtype=np.float64))),
-        "spatialHighFrequencyMean": float(np.mean(spatial_hf)),
-        "temporalForegroundMadMean": float(np.mean(temporal_mad)),
+        "foregroundMeanStd": float(np.std(np.asarray(foreground_mean, dtype=np.float64))) if foreground_mean else None,
+        "spatialHighFrequencyMean": float(np.mean(spatial_hf)) if spatial_hf else None,
+        "temporalForegroundMadMean": float(np.mean(temporal_mad)) if temporal_mad else None,
         "temporalForegroundMadP95": percentile(temporal_mad, 95),
         "temporalForegroundMadP99": percentile(temporal_mad, 99),
-        "temporalForegroundChangedOver2Mean": float(np.mean(temporal_changed2)),
+        "temporalForegroundChangedOver2Mean": float(np.mean(temporal_changed2)) if temporal_changed2 else None,
         "temporalForegroundChangedOver2P99": percentile(temporal_changed2, 99),
     }, selected
 
@@ -192,7 +211,8 @@ def main() -> int:
             "selectedDecodedFramesExactlyEqual": selected_equal,
             "temporalForegroundMadReductionFraction": temporal_reduction,
             "interpretation": (
-                "TEXTURE_SAMPLING_CHANGED_COMPARE_METRICS" if case_id == "parallax_texture" else
+                "UNCOMPENSATED_COMPARISON_NOT_ACCEPTANCE" if case_id == "parallax_texture" and before['motionEvidence']['protocolClockAdvancing'] and after['motionEvidence']['protocolClockAdvancing'] else
+                "FROZEN_CLOCK_INVALID_MOTION_TEST" if case_id.startswith('parallax') else
                 "UNCHANGED_CONTROL_EXPECTED"
             ),
         }

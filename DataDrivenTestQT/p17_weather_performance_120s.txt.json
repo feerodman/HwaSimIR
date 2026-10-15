@@ -1,0 +1,15 @@
+{
+  "purpose": "independent_weather_performance_not_original",
+  "sourceTemplate": "DataDrivenTestQT\\p14_ground_truck_weather_30s.txt",
+  "sourceTemplateSha256": "c2e8b06909e6c5149680b477004cda5f216475116df3fe411c126ae292d5183a",
+  "rows": 7200,
+  "requestedFps": 60,
+  "durationSeconds": 120,
+  "observerAltitudeM": 1,
+  "targetAltitudeM": 1,
+  "rangeM": 499.999797778,
+  "sharedEastVelocityMps": 2,
+  "targetType": "0x22_AIM120",
+  "calibration": "NOT_VERIFIED_CALIBRATION",
+  "sha256": "f7870b2982ffe7f55fcce9f38ab9c3670012a6a5f6690734890a0cfdfabece8b"
+}

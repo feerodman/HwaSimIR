@@ -1,0 +1,55 @@
+{
+  "BuildVersion": "P17-density-columns-1",
+  "Size": 96,
+  "Count": 4,
+  "AxisOrder": "Z,Y,X,RGBA",
+  "Templates": {
+    "T0": {
+      "Key": "cloud-alpha-001",
+      "Path": "Weather/Derived/cloud_001_p17.rgba",
+      "SHA256": "abdf5ed8e15b27c4146724207f3dae1a9ea13aeda0072ca456f8e00d0ee76594",
+      "FNV64": "c11ca4286a4731b4",
+      "Source": "Weather/Textures/cloud3d_001.png",
+      "SourceSHA256": "61c7d2f68f800df58f2749d7b39f5f6317821c89a86ce1c712139502980ef8d1",
+      "ParentPath": "Weather/Derived/cloud_001_p7.rgba",
+      "ParentSHA256": "c6796271f445bbfe1e0dc454785395aacb6c08899f6aff96f0d3760fbdf571b8"
+    },
+    "T1": {
+      "Key": "cloud-alpha-002",
+      "Path": "Weather/Derived/cloud_002_p17.rgba",
+      "SHA256": "26736bc8844f5783e4cd01ddc3dfd714f96a58d45d3e28827cbc06cb6a2776c0",
+      "FNV64": "98e0c370f2896cf4",
+      "Source": "Weather/Textures/cloud3d_002.png",
+      "SourceSHA256": "b0d35c988fb03ffab90efa2b30efc8ed589afb54ca814f4b1227c83e47f4df56",
+      "ParentPath": "Weather/Derived/cloud_002_p7.rgba",
+      "ParentSHA256": "5fca1be24ccd1590c25961883143aea5f52b6f47585f586c49cd4464e8663644"
+    },
+    "T2": {
+      "Key": "cloud-alpha-014",
+      "Path": "Weather/Derived/cloud_014_p17.rgba",
+      "SHA256": "c8e92e3deb7a5d03ffcf8df00c100492b459b000f61f1a37bf8f18ed822b7e3c",
+      "FNV64": "f89b091673cf5de0",
+      "Source": "Weather/Textures/cloud3d_014.png",
+      "SourceSHA256": "9311c134c292d1a0e4a12ea6f203f58b89386392aa38ccd9f9123ad0e1f264ad",
+      "ParentPath": "Weather/Derived/cloud_014_p7.rgba",
+      "ParentSHA256": "f91dd939a9d976d3dcc74db90ffb5751f646cb3c87d3066e85e63ea6a1372862"
+    },
+    "T3": {
+      "Key": "cloud-alpha-020",
+      "Path": "Weather/Derived/cloud_020_p17.rgba",
+      "SHA256": "141c6b11296e9a6761883546c7ea693ccea23cbc6d5e15c6f2d092c2c6a88ad1",
+      "FNV64": "28e62ab6909bf87c",
+      "Source": "Weather/Textures/cloud3d_020.png",
+      "SourceSHA256": "53e9bd6c9f95127739e5cb1c88541cce410ac7aa7fc1db8ceb88c8d1dd50887f",
+      "ParentPath": "Weather/Derived/cloud_020_p7.rgba",
+      "ParentSHA256": "e98d3280bf8921920fecc24ea2f06920f0942704a41c8a1ae59d419a89fdea70"
+    }
+  },
+  "LightMeaning": "Deterministic cloud light-column cache; preserve P7 density and originals.\n\nR=density, G/B=up/down integrated density divided by two local units,\nA=prior legacy appearance. No measured optical coefficients are introduced.",
+  "DensityMeaning": "R: asymmetric multiscale 3D puffs selected by source alpha, wholly inside the existing sphere proxy",
+  "BuildEnvironment": {
+    "Python": "3.13.5",
+    "NumPy": "2.1.3"
+  },
+  "ParentManifestSHA256": "ef04e5a1c2a7c47eb950fd477b31ea6227d970ad59fb03d3aa30a58b220f38b2"
+}

@@ -27,26 +27,30 @@ void main() {
     float top=u_precip_height.y,thickness=max(1.0,u_precip_height.z);
     // Maximum is the zero-precipitation ceiling; transition lies below it.
     float heightFade=top>0.0?1.0-smoothstep(top-thickness,top,altitude):0.0;
-    float size=snow?mix(.026,.075,p3d_Normal.z):mix(.0015,.0035,p3d_Normal.z);
+    // Metric half-size. The previous 26..75 mm snow radius produced discs
+    // tens/hundreds of pixels wide in the ordinary narrow sensor FOV.
+    float size=snow?mix(.0026,.0075,p3d_Normal.z):mix(.0015,.0035,p3d_Normal.z);
     vec2 along=u_precip_velocity.xz;
     along=length(along)>.0001?normalize(along):vec2(0,-1);
     // Preserve the front-facing quad winding for every wind direction.
     vec2 crossAxis=vec2(along.y,-along.x);
-    float lengthScale=snow?1.0:mix(40.0,70.0,p3d_Normal.z);
     // Preserve authored metric size, but keep a rain shaft from disappearing
     // between raster samples.  This is a screen-space coverage floor, not an
     // opacity/radiance gain, and follows the actual sensor resolution.
     vec2 viewport=max(u_precip_viewport,vec2(1.0));
     float onePixelWorldX=(halfExtent.x*2.0)/viewport.x;
-    float crossSize=snow?size:max(size,onePixelWorldX*.72);
-    float alongSize=snow?size:size*lengthScale;
+    float crossSize=max(size,onePixelWorldX*.72);
+    // Half-length of the swept droplet during a 1/60 s reference exposure.
+    // Keep the authored particle density/thermal source independent of footprint.
+    float alongSize=snow?size:size+length(u_precip_velocity.xz)*(0.5/60.0);
+    float footprintCoverage=snow?pow(size/crossSize,2.0):size/max(crossSize,size);
     vec2 corner=crossAxis*p3d_Vertex.x*crossSize+along*p3d_Vertex.z*alongSize;
     if(snow) {
         float a=p3d_Normal.z*6.2831853+u_precip_time.x*.35;
-        corner=mat2(cos(a),-sin(a),sin(a),cos(a))*p3d_Vertex.xz*size;
+        corner=mat2(cos(a),-sin(a),sin(a),cos(a))*p3d_Vertex.xz*crossSize;
     }
     center.xz+=corner;
     gl_Position=p3d_ModelViewProjectionMatrix*vec4(center,1);
     particle_uv=p3d_MultiTexCoord0;
-    particle_alpha=fadeEdge*heightFade*clamp(u_precip_state.y,0.0,1.0)*(snow?.48:.23)*mix(1.0,.45,p3d_Normal.z);
+    particle_alpha=footprintCoverage*fadeEdge*heightFade*clamp(u_precip_state.y,0.0,1.0)*(snow?.48:.23)*mix(1.0,.45,p3d_Normal.z);
 }

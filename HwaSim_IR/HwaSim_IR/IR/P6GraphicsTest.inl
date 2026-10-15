@@ -235,6 +235,7 @@ void HwaSimIR::CaptureP6LinearFrame(const unsigned char* pixels,int width,int he
         <<" agcGain="<<m_stage6AgcGain<<" agcOffset="<<m_stage6AgcOffset
         <<" fixedGain="<<m_stage6DisplayConfig.displayGain<<" offsetGray="<<m_stage6DisplayConfig.displayOffset
         <<" gamma="<<m_stage5SensorInputDisplayGamma<<" reinhard="<<m_stage6Reinhard<<" whiteHot="<<m_stage6DisplayConfig.whiteHot
+        <<" logHdrWhiteReferenceTemperatureK="<<m_stage6LogHdrWhiteTemperatureK
         <<" statisticsSourceSeq="<<m_stage6AgcLastUpdateSourceSeq<<" captureBeforeStatisticsUpdate=1 hdrUntilAgc=1";
     std::cout<<mapping.str()<<std::endl;
 	std::shared_ptr<PfmFile> stats;
@@ -285,6 +286,26 @@ void HwaSimIR::CaptureP6LinearFrame(const unsigned char* pixels,int width,int he
 #endif
 	if(!linearReadbackOk)linear.reset();
 	m_stage6LinearReadbackSourceSeq=0;
+	// Same submitted scene state as this float/Stage6 capture. Diagnostic only;
+	// no production readback or geometry changes are introduced.
+	{
+		std::ofstream geometry((captureBase.str()+"_geometry.json").c_str());
+		geometry<<std::setprecision(10)<<"{\"sourceSeq\":"<<seq<<",\"width\":"<<width<<",\"height\":"<<height;
+		auto matrix=[&](const LMatrix4f& m){geometry<<'[';for(int r=0;r<4;++r)for(int c=0;c<4;++c){if(r||c)geometry<<',';geometry<<m(r,c);}geometry<<']';};
+		geometry<<",\"cameraToWorld\":";matrix(m_cameraNode.get_mat(m_renderRoot));
+		geometry<<",\"projection\":";matrix(m_cameraLens->get_projection_mat());
+		const auto fov=m_cameraLens->get_fov();
+		geometry<<",\"fovDeg\":["<<fov[0]<<','<<fov[1]<<"],\"models\":[";
+		bool first=true;
+		for(const auto& t:m_targetPlatformList)if(t.isExist && !t.nodePath.is_empty() && t.targetState.viewValid){
+			if(!first)geometry<<',';first=false;
+			geometry<<"{\"type\":"<<t.targetState.targetType<<",\"platID\":"<<t.targetState.targetPlatID
+				<<",\"targetID\":"<<t.targetState.targetID<<",\"toWorld\":";
+			matrix(t.nodePath.get_mat(m_renderRoot));geometry<<",\"toCamera\":";
+			matrix(t.nodePath.get_mat(m_cameraNode));geometry<<'}';
+		}
+		geometry<<"]}\n";
+	}
 	P12DiagnosticWriteJob job;
 	job.sourceSeq=seq;job.captureBase=captureBase.str();job.readbackRoute=linearReadbackRoute;
 	job.domain=m_stage6RawSiDomain?"spectral_radiance":"common_scaled_linear";

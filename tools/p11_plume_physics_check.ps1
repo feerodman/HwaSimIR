@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$OutputDirectory = ""
 )
 
@@ -92,7 +92,7 @@ $summary = [ordered]@{
     radianceUnit = "W/(m^2 sr um)"
     integrationReference = "independent composite Simpson 16384 intervals"
     productionIntegration = "IRRadianceModelV2 shared band-mean Planck implementation"
-    sourceRadianceDefinition = "bandEmissivity * max(B_band(T) - B_band(Tambient), 0)"
+    sourceRadianceDefinition = "bandEmissivity * B_band(T) + (1-bandEmissivity) * B_band(Tambient)"
     emittedRadianceDefinition = "opacity * sourceRadiance"
     opacityApplicationCount = 1
     civilVan = [ordered]@{
