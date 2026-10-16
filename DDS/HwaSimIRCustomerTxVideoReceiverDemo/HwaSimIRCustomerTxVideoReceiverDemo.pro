@@ -1,0 +1,14 @@
+QT += core gui widgets
+CONFIG += console c++11
+CONFIG -= app_bundle
+TARGET = HwaSimIRCustomerTxVideoReceiverDemo
+TEMPLATE = app
+ZRDDS_ROOT = $$(ZRDDS_MINGW730_ROOT)
+isEmpty(ZRDDS_ROOT): ZRDDS_ROOT = F:/Programs/ZRDDS/ZRDDS_MinGW7.3.0/ZRDDS-2.4.5
+FFMPEG_ROOT = $$(FFMPEG_ROOT)
+isEmpty(FFMPEG_ROOT): FFMPEG_ROOT = $$PWD/../../.deps/ffmpeg-n8.1-win64-gpl-shared/ffmpeg-n8.1-latest-win64-gpl-shared-8.1
+DEFINES += _ZRDDSCPPINTERFACE _ZRDDSDLLIMPORT
+INCLUDEPATH += $$PWD/../CustomerTX $$PWD/../../Shared $$ZRDDS_ROOT/include/CPlusPlusInterface $$ZRDDS_ROOT/include/ZRDDSCoreInterface $$FFMPEG_ROOT/include
+SOURCES += main.cpp ../CustomerTX/Generated/CustomerTxVideo.cpp ../CustomerTX/Generated/CustomerTxVideoTypeSupport.cpp
+HEADERS += CustomerAvSha256.h
+LIBS += -L$$ZRDDS_ROOT/lib -lZRDDSCpp -L$$FFMPEG_ROOT/lib -lavcodec -lavutil -lswscale

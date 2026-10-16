@@ -1,4 +1,5 @@
-﻿// mainwindow.cpp
+﻿#include <QThread>
+// mainwindow.cpp
 #include "mainwindow.h"
 #include <QSpinBox>
 #include <QScreen>
@@ -266,7 +267,8 @@ MainWindow::~MainWindow()
 		QElapsedTimer lifecycleClock;
 		lifecycleClock.start();
 		qInfo().noquote() << QStringLiteral("[StimStopLifecycle] phase=wait_renderer_stop begin=1 timeoutMs=30000");
-		if(!m_ddsStim->waitForStopStatus(30000,drainError))
+		if(m_startWithoutVideoStatus)qInfo()<<"[StimStopLifecycle] renderer_stop_status=NOT_OBSERVED oldVideoDisabled=1 verify_board_drain_separately=1";
+        else if(!m_ddsStim->waitForStopStatus(30000,drainError))
             qCritical().noquote()<<QString("[StimDrain][ERROR] %1").arg(QString::fromStdString(drainError));
 		else
 			qInfo().noquote() << QStringLiteral("[StimStopLifecycle] phase=renderer_stop_status result=PASS elapsedMs=%1")
@@ -317,7 +319,7 @@ void MainWindow::setupDDS()
 	m_ddsStim.reset(new DdsStimClient());
 	m_ddsStim->setAckCallback([this](const BYHWICD::InitAckC2pObjectTrackingCmd& ack) {
 		QMetaObject::invokeMethod(this, [this, ack]() {
-            if (ack.platID != m_protocolPlatID || ack.sensorID != m_protocolSensorID) return;
+            if (ack.platID != m_protocolPlatID || (m_dualCustomerChannels ? (ack.sensorID!=1 && ack.sensorID!=2) : ack.sensorID != m_protocolSensorID)) return;
 			qInfo().noquote() << QStringLiteral("[StimInitAck] transport=dds received=1 platID=%1 sensorID=%2 ready=%3")
 				.arg(ack.platID).arg(ack.sensorID).arg(ack.trackingReady ? 1 : 0);
 			m_lastReceivedLabel->setText(QStringLiteral("↓ 接收: DDS 初始化应答 (0x37)"));
@@ -330,6 +332,11 @@ void MainWindow::setupDDS()
 			}
 			m_statusLabel->setText(QStringLiteral("● 状态: DDS 初始化完成 | 等待 START/首个有效实时位置（INIT 仅预热）"));
 			m_statusLabel->setStyleSheet("color: #388E3C; font-weight: bold;");
+            if(m_dualCustomerChannels){
+                m_dualAckMask |= 1 << (ack.sensorID-1);
+                qInfo()<<"[StimDualInitBarrier] ackMask="<<m_dualAckMask<<" expectedMask=3";
+                if(m_dualAckMask!=3)return;
+            }
 			emit initAckReceived();
 		}, Qt::QueuedConnection);
 	});
@@ -361,6 +368,20 @@ void MainWindow::configurePhase4cAeroMachTest(bool enabled, double altitudeKm, d
 	}
 }
 
+void MainWindow::disableVideoStatusBarrier() {
+    m_startWithoutVideoStatus=true;
+#if defined(HWASIMIR_HAS_ZRDDS)
+    if(m_ddsStim)m_ddsStim->setVideoStatusObservation(false);
+#endif
+}
+void MainWindow::enableDualCustomerChannels() {
+    if(m_controlTransport!=QStringLiteral("dds"))qFatal("Dual customer replay requires DDS-only control");
+    m_dualCustomerChannels=true;m_dualAckMask=0;
+#if defined(HWASIMIR_HAS_ZRDDS)
+    if(m_ddsStim)m_ddsStim->setExpectedSensors({1,2});
+#endif
+    setWindowTitle("P18 dual replay: plat 1001 | coarse 320 raw + precise 800 H264 | Realtime broadcast 255");
+}
 void MainWindow::configureProtocolForTest(int platID, int sensorID, int simMode, int videoFps)
 {
 	if (platID >= 0)
@@ -929,8 +950,8 @@ void MainWindow::sendControlCommand(int command)
 	cmd.simCommand = command;
 	//cmd.roundCut = m_roundCutEdit->text().toInt();
 	//cmd.currentRound = m_currentRoundEdit->text().toInt();
-	cmd.roundCut = 1;
-	cmd.currentRound = 1;
+	cmd.roundCut = m_autoRounds;
+	cmd.currentRound = m_autoRound;
 #if defined(HWASIMIR_HAS_ZRDDS)
 	if (m_ddsStim)
 	{
@@ -1114,7 +1135,20 @@ void MainWindow::sendInitCommand()
 	if (m_ddsStim)
 	{
 		std::string error;
-		if (!m_ddsStim->sendInit(cmd, error))
+        bool sent=false;
+        if(m_dualCustomerChannels){
+            m_dualAckMask=0;sent=true;
+            for(int sensorId=1;sensorId<=2;++sensorId){
+                auto perSensor=cmd;perSensor.sensorID=sensorId;
+                auto& sensor=perSensor.trackingInit.trackerSensor[0];
+                sensor.trackerSensorWidth=sensor.trackerSensorHeight=sensorId==1?320:800;
+                sensor.h264En=sensorId==2; sensor.saveMP4En=false;
+                const bool ok=m_ddsStim->sendInit(perSensor,error);sent=sent && ok;
+                qInfo()<<"[StimDualInit] platID="<<perSensor.platID<<" sensorID="<<sensorId
+                       <<" width="<<sensor.trackerSensorWidth<<" height="<<sensor.trackerSensorHeight<<" h264="<<sensor.h264En<<" sent="<<ok;
+            }
+        }else sent=m_ddsStim->sendInit(cmd,error);
+		if (!sent)
 			qCritical().noquote() << QStringLiteral("[StimDDS][ERROR] type=init reason=%1")
 				.arg(QString::fromStdString(error));
 		else
@@ -1490,7 +1524,7 @@ void MainWindow::sendRealTimeData()
 	BYHWICD::DisplayC2cObjTrackingData data = {};
 	data.flag = 0x38;
 	data.platID = m_protocolPlatID;
-	data.sensorID = m_protocolSensorID;
+	data.sensorID = m_dualCustomerChannels ? 255 : m_protocolSensorID;
 	if (m_testUtcHour >= 0.0)
 	{
 		QDateTime utc(m_simulationUtcDate, QTime(0, 0), Qt::UTC);
@@ -1910,6 +1944,22 @@ void MainWindow::updatePosition()
 	}
 }
 
+bool MainWindow::prepareNextAutoRound(int round, int total)
+{
+#if defined(HWASIMIR_HAS_ZRDDS)
+    if(m_ddsStim && round>1){
+        std::string error;
+        if(m_startWithoutVideoStatus || !m_ddsStim->waitForStopStatus(30000,error) ||
+           !m_ddsStim->waitForAcknowledgments(10000,error)){
+            qCritical()<<"[StimMultiRound] prior drain failed"<<QString::fromStdString(error);return false;
+        }
+    }
+#endif
+    m_autoRound=round;m_autoRounds=total;m_dualAckMask=0;
+    qInfo()<<"[StimMultiRound] nextRound="<<round<<" total="<<total<<" previousRoundDrained="<<(round>1);
+    return true;
+}
+
 void MainWindow::onResetButtonClicked()
 {
 	sendControlCommand(1);
@@ -1982,7 +2032,12 @@ void MainWindow::onStartButtonClicked()
 		std::string startError;
 		qInfo().noquote() << QStringLiteral(
 			"[StimStartLifecycle] phase=wait_renderer_running begin=1 timeoutMs=5000 realtimePublished=0");
-		if (!m_ddsStim->waitForRunningStatus(5000, startError))
+		if(m_startWithoutVideoStatus){
+            if(!m_ddsStim->waitForAcknowledgments(5000,startError)){qCritical()<<"[StimStartLifecycle] control ACK failed";return;}
+            qInfo()<<"[StimStartLifecycle] oldVideoDisabled=1 barrier=DDS_control_ack_plus_2000ms_settle applicationReadyClaim=0";
+            QThread::msleep(2000);
+        }
+        if (!m_ddsStim->waitForRunningStatus(5000, startError))
 		{
 			qCritical().noquote() << QStringLiteral(
 				"[StimStartLifecycle][ERROR] phase=renderer_running result=FAIL reason=%1 realtimePublished=0")
@@ -1991,7 +2046,8 @@ void MainWindow::onStartButtonClicked()
 			m_statusLabel->setStyleSheet("color: #D32F2F; font-weight: bold;");
 			return;
 		}
-		qInfo().noquote() << QStringLiteral(
+		if(m_startWithoutVideoStatus)qInfo()<<"[StimStartLifecycle] phase=controlled_settle_complete applicationReadyClaim=0 action=begin_source_pacing";
+        else qInfo().noquote() << QStringLiteral(
 			"[StimStartLifecycle] phase=renderer_running result=PASS realtimePublished=0 action=begin_source_pacing");
 	}
 #endif

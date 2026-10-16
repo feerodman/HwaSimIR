@@ -23,7 +23,7 @@ void main() {
     float tail=clamp(u_plume_radius_tail/max(u_plume_radius_root,.001),.5,6.0);
     float root=u_sprite_aspect.y>.5?.4:1.0;
     bool wake=u_plume_layer==2;
-    float wakeEnd=wake?2.6:1.2;
+    float wakeEnd=wake?2.6:1.5;
     float bound=root*max(1.0,tail)*u_sprite_art.y*(wake?2.6:1.0);
     vec3 extent=vec3(bound,.5*u_sprite_art.x*wakeEnd,bound*gas_aspect);
     vec3 center=vec3(0,-extent.y,0);
@@ -41,20 +41,23 @@ void main() {
         if(i>=steps)break;
         vec3 p=gas_ray_origin+ray*(enter+(float(i)+.5)*stepSize);
         float axial=max(0.0,-p.y/max(u_sprite_art.x,.001));
-        float downstream=max(0.0,axial-.6);
-        float radius=root*mix(1.0,tail,min(axial,1.0))*u_sprite_art.y*(wake?1.0+.65*downstream:1.0);
-        // Advected, continuous broadening; no respawn slices or hard end cap.
+        // P18: a continuous slender core, with a restrained dilute sheath.
+        // Do not grow the configured tail radius into a bright expanding bulb.
+        // The conservative P17 bounds remain, while density vanishes inside them.
+        float downstream=max(0.0,axial-.45);
+        float taper=1.0-smoothstep(.25,wake?2.2:1.5,axial);
+        float radius=root*u_sprite_art.y*(wake?mix(.35,1.25,taper):mix(.35,1.0,taper));
         float phase=axial*6.0-u_sprite_time*1.8;
-        vec2 drift=wake?vec2(sin(phase),sin(phase*.73+1.2))*radius*.10*smoothstep(.5,1.6,axial):vec2(0);
+        vec2 drift=wake?vec2(sin(phase),sin(phase*.73+1.2))*radius*.06*smoothstep(.5,1.6,axial):vec2(0);
         vec2 radial=(p.xz-drift)/vec2(radius,radius*gas_aspect);
         float r2=dot(radial,radial);
-        float density=exp(-axial*max(.001,u_plume_axial_decay)-r2*max(.001,u_plume_radial_decay));
+        float density=exp(-axial*max(.001,u_plume_axial_decay)*(wake?1.0:.28)-r2*max(.001,u_plume_radial_decay));
         density*=(1.0-smoothstep(.65,1.0,r2));
-        density*=wake?exp(-3.2*downstream*downstream)*(1.0-smoothstep(1.65,2.6,axial)):
-            (1.0-smoothstep(.45,1.2,axial));
+        density*=wake?.22*exp(-1.8*downstream*downstream)*(1.0-smoothstep(1.2,2.2,axial)):
+            (1.0-smoothstep(.55,1.5,axial));
         float n=sin(p.x*u_plume_noise_scale+axial*7.0-u_sprite_time*1.7)
                *sin(p.z*u_plume_noise_scale-axial*5.0+u_sprite_time*1.1);
-        density*=max(0.0,1.0+n*clamp(u_plume_noise_strength,0.0,.55)*axial);
+        density*=max(0.0,1.0+n*clamp(u_plume_noise_strength,0.0,wake?.25:.08)*axial);
         integral+=density*stepSize;
     }
     // Optical depth per root diameter, independent of integration step count.

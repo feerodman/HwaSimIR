@@ -68,6 +68,13 @@ public:
 	void configurePhase4cAeroMachTest(bool enabled, double altitudeKm, double mach);
 	bool setSensorField(const QString& name,double value);
 	void setSendStepMs(double milliseconds);
+	void enableDualCustomerChannels();
+    void disableVideoStatusBarrier();
+    bool prepareNextAutoRound(int round, int total);
+    int m_autoRound=1, m_autoRounds=1;
+    bool m_startWithoutVideoStatus=false;
+	bool m_dualCustomerChannels=false;
+	int m_dualAckMask=0;
 	void configureProtocolForTest(int platID, int sensorID, int simMode, int videoFps);
 	void configureEnvironmentForTest(int envSky, int sensorBand);
 	void setSensorPixelAngleForTest(double pixelAngleUrad);

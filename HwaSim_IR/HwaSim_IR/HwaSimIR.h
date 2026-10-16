@@ -350,6 +350,7 @@ private:
 	bool m_tcpSendRealtimeData = false;
 	bool m_tcpForwardInitControl = false;
 	DdsVideoPublisherConfig m_ddsVideoConfig;
+	CustomerDdsVideoConfig m_customerVideoConfig;
 	LocalMp4RecorderConfig m_localRecordingConfig;
 	std::string m_commandTransportInput = "dds";
 	std::string m_commandTransportAck = "match_input";

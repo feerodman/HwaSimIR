@@ -184,6 +184,7 @@ add_executable(HwaSim_IR
         Video/H264FfmpegEncoder.cpp
         Video/JpegFrameEncoder.cpp
         Video/DdsVideoPublisher.cpp
+        Video/CustomerDdsVideoPublisher.cpp
         Video/LocalMp4Recorder.cpp
 )
 
@@ -219,6 +220,8 @@ endif()
 
 if (HWASIMIR_ENABLE_ZRDDS)
     target_sources(HwaSim_IR PRIVATE
+            ${HWASIMIR_DDS_SOURCE_ROOT}/CustomerTX/Generated/CustomerTxVideo.cpp
+            ${HWASIMIR_DDS_SOURCE_ROOT}/CustomerTX/Generated/CustomerTxVideoTypeSupport.cpp
             ${HWASIMIR_DDS_SOURCE_ROOT}/Runtime/DdsRuntimeManager.cpp
             ${HWASIMIR_DDS_SOURCE_ROOT}/Protocol/CommonDataDdsAdapter.cpp
             ${HWASIMIR_DDS_SOURCE_ROOT}/Protocol/HwaSimIRProtocolEndpoint.cpp
@@ -228,6 +231,7 @@ if (HWASIMIR_ENABLE_ZRDDS)
     target_include_directories(HwaSim_IR PRIVATE
             ${ZRDDS_CPP_INCLUDE_DIR} ${ZRDDS_CORE_INCLUDE_DIR}
             ${HWASIMIR_DDS_SOURCE_ROOT}/Runtime
+            ${HWASIMIR_DDS_SOURCE_ROOT}/CustomerTX
             ${HWASIMIR_DDS_SOURCE_ROOT}/Protocol
             ${HWASIMIR_DDS_SOURCE_ROOT}/Generated/HwaSimIRProtocolV1)
     target_link_libraries(HwaSim_IR PRIVATE ${ZRDDS_CPP_LIBRARY})
@@ -273,3 +277,9 @@ set_target_properties(HwaSim_IR PROPERTIES
 		INSTALL_RPATH "${PANDA3D_ROOT}/lib;${ZRDDS_ROOT}/lib;${RKMPP_ROOT}/usr/lib/aarch64-linux-gnu"
         BUILD_WITH_INSTALL_RPATH ON
 )
+
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../DDS/CustomerTX/CustomerVideoContract.h")
+  target_include_directories(HwaSim_IR PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../../DDS/CustomerTX" "${CMAKE_CURRENT_SOURCE_DIR}/../../Shared")
+else()
+  target_include_directories(HwaSim_IR PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/DDS/CustomerTX" "${CMAKE_CURRENT_SOURCE_DIR}/Shared")
+endif()

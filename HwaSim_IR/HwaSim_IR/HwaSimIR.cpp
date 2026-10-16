@@ -198,6 +198,8 @@ std::string H4TargetRuntimeKey(const TargetPlatformData& targetPlat)
 std::vector<std::string> BuildRuntimeConfigCandidatePaths()
 {
 	std::vector<std::string> runtimeConfigPaths;
+	const char* overridePath=std::getenv("HWASIMIR_RUNTIME_CONFIG");
+	if(overridePath && *overridePath){runtimeConfigPaths.push_back(overridePath);return runtimeConfigPaths;}
 	runtimeConfigPaths.push_back("Config/HwaSimIRRuntime.ini");
 	runtimeConfigPaths.push_back("../Bin/Config/HwaSimIRRuntime.ini");
 	runtimeConfigPaths.push_back("HwaSim_IR/Bin/Config/HwaSimIRRuntime.ini");
@@ -1375,7 +1377,8 @@ HwaSimIR::HwaSimIR(int argc, char** argv, const HwaSimIRLaunchOptions& launchOpt
 	std::memset(&m_realTimeSceneData, 0, sizeof(m_realTimeSceneData));
 	std::memset(&m_sensorParam, 0, sizeof(m_sensorParam));
 	m_launchOptions = launchOptions;
-	m_runtimeConfig.loadFromCandidates(BuildRuntimeConfigCandidatePaths());
+	if (!m_runtimeConfig.loadFromCandidates(BuildRuntimeConfigCandidatePaths()) && std::getenv("HWASIMIR_RUNTIME_CONFIG"))
+        throw std::runtime_error("explicit HWASIMIR_RUNTIME_CONFIG is unreadable");
 	LoadD2VideoOutputConfig();
 	LoadF1ProtocolConfig();
 	LoadRenderControlConfig();
@@ -1508,7 +1511,7 @@ HwaSimIR::HwaSimIR(int argc, char** argv, const HwaSimIRLaunchOptions& launchOpt
 			<< (IRPerfStats::steadyTimeNs() - m_startupBeginTimeNs) / 1.0e6
 			<< std::endl;
 		#else
-		if (m_ddsProtocolEnabled || m_ddsVideoConfig.enabled)
+		if (m_ddsProtocolEnabled || m_ddsVideoConfig.enabled || m_customerVideoConfig.enabled)
 		{
 			std::cerr << "[StartupFatal] DDS enabled but binary lacks HWASIMIR_HAS_ZRDDS" << std::endl;
 			m_startupSucceeded = false;
@@ -9659,8 +9662,12 @@ bool HwaSimIR::InitUdpThread() {
 
 bool HwaSimIR::PreflightDdsVideoConfig()
 {
+    if(m_customerVideoConfig.enabled && !((m_localSensorID==1 && m_channel=="coarse") || (m_localSensorID==2 && m_channel=="precise"))) {
+        std::cerr<<"[CustomerTX][FATAL] channel_sensor_mismatch expected=coarse:1,precise:2"<<std::endl;return false;
+    }
+
 	if (!m_startupSucceeded) return false;
-	if (!m_ddsVideoConfig.enabled && !m_ddsProtocolConfig.enabled)
+	if (!m_ddsVideoConfig.enabled && !m_ddsProtocolConfig.enabled && !m_customerVideoConfig.enabled)
 	{
 		return true;
 	}
@@ -9690,7 +9697,15 @@ bool HwaSimIR::PreflightDdsVideoConfig()
 
 void HwaSimIR::LoadD2VideoOutputConfig()
 {
-	m_ddsVideoConfig.enabled = m_runtimeConfig.getBool("DdsVideo", "Enable", "HwaSimIRDdsVideoEnable", true, 0);
+	m_customerVideoConfig.enabled=m_runtimeConfig.getBool("CustomerDdsVideo","Enable","HwaSimIRCustomerVideoEnable",false,0);
+    m_customerVideoConfig.diagnosticColorCard=m_runtimeConfig.getBool("CustomerDdsVideo","DiagnosticColorCard","HwaSimIRCustomerDiagnosticColorCard",false,0);
+    m_customerVideoConfig.mode=ToLowerAscii(m_runtimeConfig.getString("CustomerDdsVideo","Mode","HwaSimIRCustomerVideoMode","auto",0));
+    m_customerVideoConfig.pixelFormat=ToLowerAscii(m_runtimeConfig.getString("CustomerDdsVideo","PixelFormat","HwaSimIRCustomerPixelFormat","gray8",0));
+    m_customerVideoConfig.queueMaxFrames=m_runtimeConfig.getInt("CustomerDdsVideo","QueueMaxFrames","HwaSimIRCustomerQueueMaxFrames",32,0);
+    m_customerVideoConfig.drainMs=m_runtimeConfig.getInt("CustomerDdsVideo","DrainMs","HwaSimIRCustomerDrainMs",5000,0);
+    m_customerVideoConfig.discoverySettleMs=m_runtimeConfig.getInt("CustomerDdsVideo","DiscoverySettleMs","HwaSimIRCustomerDiscoverySettleMs",1000,0);
+    m_customerVideoConfig.auditPrefix=m_runtimeConfig.getString("CustomerDdsVideo","AuditPrefix","HwaSimIRCustomerAuditPrefix","",0);
+    m_ddsVideoConfig.enabled = m_runtimeConfig.getBool("DdsVideo", "Enable", "HwaSimIRDdsVideoEnable", true, 0);
 	m_ddsVideoConfig.codec = ToLowerAscii(m_runtimeConfig.getString("DdsVideo", "Codec", "HwaSimIRDdsVideoCodec", "auto", 0));
 	m_ddsVideoConfig.rawPixelFormat = ToLowerAscii(m_runtimeConfig.getString(
 		"DdsVideo", "RawPixelFormat", "HwaSimIRDdsVideoRawPixelFormat", "gray8", 0));
@@ -9874,7 +9889,7 @@ void HwaSimIR::LoadF1ProtocolConfig()
 #if defined(HWASIMIR_HAS_ZRDDS)
 bool HwaSimIR::InitDdsProtocol()
 {
-	if (!m_ddsVideoConfig.enabled && !m_ddsProtocolConfig.enabled) return true;
+	if (!m_ddsVideoConfig.enabled && !m_ddsProtocolConfig.enabled && !m_customerVideoConfig.enabled) return true;
 	// Runtime configuration is loaded before the instance network identity.  Re-resolve
 	// per-stream typed Topics here, after LoadNetworkConfig(), so the Writer never stays
 	// attached to the temporary 0/0 identity used during early configuration parsing.
@@ -10093,6 +10108,7 @@ bool HwaSimIR::InitTcpThread()
 		m_tcpSendRealtimeData,
 		m_tcpForwardInitControl);
 	m_pTcpThread->configureDdsVideo(m_ddsVideoConfig);
+    m_pTcpThread->configureCustomerVideo(m_customerVideoConfig);
 #if defined(HWASIMIR_HAS_ZRDDS)
 	m_pTcpThread->configureDdsRuntime(m_ddsRuntime);
 #endif
@@ -10661,6 +10677,14 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 	std::cout << "  传感器ID：" << cmd.sensorID << std::endl;
 	//std::cout << "  有效平台数：" << cmd.platNumValid << std::endl;
 	const BYHWICD::trackerSensorParam& sensor = cmd.trackingInit.trackerSensor[0];
+    std::string customerInitError;
+    if(!CustomerDdsVideoPublisher::validate(m_customerVideoConfig,sensor.trackerSensorWidth,sensor.trackerSensorHeight,sensor.h264En,customerInitError)) {
+        m_sensorProfileRequestValid=false;m_isSimRunning.store(false);
+        if(m_pTcpThread)m_pTcpThread->stopOutputRound("customer_init_rejected");
+        std::cerr<<"[CustomerTXInit][ERROR] action=reject_init ackSuccess=0 reason="<<customerInitError<<std::endl;
+        return;
+    }
+
 	if(!m_irSensorProfiles.supportsProductionProtocolBand(sensor.trackerSensorBand)){
 		m_sensorProfileRequestValid=false;m_isSimRunning.store(false);
 		std::cerr<<"[SensorProfileRequest][ERROR] requestedProtocolBand="<<sensor.trackerSensorBand
@@ -11565,7 +11589,8 @@ void HwaSimIR::InitInfraredSimulation()
 	stage5DebugConfigPaths.push_back("../HwaSim_IR/Bin/Config/IRRadiance/stage5_debug_display.json");
 	if (!m_runtimeConfig.loaded())
 	{
-		m_runtimeConfig.loadFromCandidates(BuildRuntimeConfigCandidatePaths());
+		if (!m_runtimeConfig.loadFromCandidates(BuildRuntimeConfigCandidatePaths()) && std::getenv("HWASIMIR_RUNTIME_CONFIG"))
+        throw std::runtime_error("explicit HWASIMIR_RUNTIME_CONFIG is unreadable");
 	}
 	m_m1CompareOnly = m_runtimeConfig.getBool("M1NirMwirPhysics", "CompareOnly", "M1CompareOnly", false, nullptr);
 	m_m1RuntimeEnabled = m_runtimeConfig.getBool("M1NirMwirPhysics", "EnableRuntime", "M1EnableRuntime", false, nullptr);

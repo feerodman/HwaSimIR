@@ -162,7 +162,11 @@ bool TcpCommThread::start()
 		m_bIsRunning = false;
 		return false;
 	}
-	m_sendThread = std::thread(&TcpCommThread::sendFrameThreadFunc, this);
+	if (!m_customerPublisher.start(m_customerConfig,m_ddsRuntime,m_localSensorID==2,outputError)) {
+        std::cerr<<"[CustomerTX][FATAL] startup="<<outputError<<std::endl;
+        m_bIsRunning=false;return false;
+    }
+    m_sendThread = std::thread(&TcpCommThread::sendFrameThreadFunc, this);
 
 	return true;
 }
@@ -182,6 +186,7 @@ void TcpCommThread::stop()
 	std::string outputError;
 	if (m_localRecorder) m_localRecorder->stopAndFlush("process_stop", outputError);
 	if (m_localRecorder) m_localRecorder->shutdown();
+	m_customerPublisher.shutdown();
 	if (m_ddsPublisher) m_ddsPublisher->shutdown();
 	disconnectFromServer();
 	std::cout << "TCP通讯线程已停止" << std::endl;
@@ -212,6 +217,13 @@ void TcpCommThread::setLocalRecordingProtocolEnabled(bool enabled)
 
 bool TcpCommThread::startOutputRound(int round)
 {
+    VideoEncoderConfig customerEncoder;
+    customerEncoder.fps=m_videoFps.load();customerEncoder.bitrateKbps=m_h264BitrateKbps.load();
+    customerEncoder.gopFrames=m_h264GopFrames.load();customerEncoder.lowLatency=m_h264LowLatency.load();
+    std::string customerError;
+    if(!m_customerPublisher.beginRound(round,m_h264Requested.load(),customerEncoder,m_h264EncoderConfig,customerError))
+        std::cerr<<"[CustomerTX][ERROR] beginRound="<<customerError<<" old_branch_continues=1"<<std::endl;
+
 	{
 		std::lock_guard<std::mutex> lock(m_frameMtx);
 		m_outputRound.store(round);
@@ -290,6 +302,9 @@ bool TcpCommThread::stopOutputRound(const char* reason)
 		ok = false;
 	}
 #endif
+    if(!m_customerPublisher.endRound(error)) {
+        std::cerr<<"[CustomerTX][ERROR] drain="<<error<<std::endl;ok=false;
+    }
 	std::cout << "[OutputRoundDrain] reason=" << (reason ? reason : "unknown")
 		<< " round=" << m_outputRound.load() << " targetFrames=" << targetFrame
 		<< " completedFrames=" << m_roundLastCompletedFrame.load() << std::endl;
@@ -1102,7 +1117,7 @@ void TcpCommThread::sendFrameThreadFunc()
 		const bool legacyTcpEnabled = m_packetVersion.load() == 2 ||
 			m_sendVideo.load() || m_sendAnnotation.load() ||
 			m_sendRealtimeData.load() || m_forwardInitControl.load();
-		const bool independentOutput = m_ddsEnabled.load() ||
+		const bool independentOutput = m_customerConfig.enabled || m_ddsEnabled.load() ||
 			(m_localRecorder && m_localRecorder->effectiveEnabled());
 		if (!legacyTcpEnabled && m_bIsConnected)
 		{
@@ -1229,7 +1244,8 @@ void TcpCommThread::sendFrameThreadFunc()
 		const bool ddsRaw = ddsCodec == "raw_gray8" || ddsCodec == "raw_bgr24";
 		const bool recording = frame.roundActive && m_localRecorder &&
 			m_localRecorder->effectiveEnabled();
-		const bool needH264 = tcpH264 || ddsH264 || (recording && m_localRecorder->wantsH264());
+		const bool needH264 = tcpH264 || ddsH264 || (recording && m_localRecorder->wantsH264()) ||
+            (frame.roundActive && m_customerPublisher.wantsSharedH264(m_h264Requested.load()));
 		bool needJpeg = includeVideo && !tcpH264;
 		if (ddsRoundActive)
 		{
@@ -1282,6 +1298,9 @@ void TcpCommThread::sendFrameThreadFunc()
             frame.annotationRecord, frame.annotationEnabled, frame.width, frame.height,
             frame.telemetry, logicalFrameSeq, 0, packetVersion,
             ddsCodec, h264RequestedBackend, h264Frame),frame.telemetry.sourceSeq,frame.width,frame.height);
+        // Branch before any private SEI insertion. submit owns its own bytes.
+        if(frame.roundActive && m_customerConfig.enabled)
+            m_customerPublisher.submit(rawFrame,logicalFrameSeq,frame.telemetry.sourceSeq,&h264Frame.payload);
         if (h264Ok && frame.roundActive) {
             HwaFrameV2::Product product;
             product.session=m_productSession; product.channel=m_channel;
@@ -1668,7 +1687,7 @@ IRFrameEnqueueResult TcpCommThread::updateFrame(
 	const auto waitBegin = std::chrono::steady_clock::now();
 	std::unique_lock<std::mutex> lock(m_frameMtx);
 	const bool recordingNoDrop = m_localRecorder && m_localRecorder->effectiveEnabled();
-	const bool noDropOutputRequired = m_ddsEnabled.load() || recordingNoDrop;
+	const bool noDropOutputRequired = m_customerConfig.enabled || m_ddsEnabled.load() || recordingNoDrop;
 	if (m_syncMode.load() || noDropOutputRequired)
 	{
 		result.queueWasFull = m_frameQueue.size() >= kMaxFrameQueue;
@@ -1700,6 +1719,7 @@ IRFrameEnqueueResult TcpCommThread::updateFrame(
 	const bool copyVideo =
 		m_packetVersion.load() == 2 ||
 		m_sendVideo.load() ||
+		m_customerConfig.enabled ||
 		m_ddsEnabled.load() ||
 		recordingNoDrop;
 	if (copyVideo)

@@ -25,7 +25,7 @@ void main() {
     }
     // Authored nozzle node scale is radiusX / .4 (the old unit sprite root).
     float root=u_sprite_aspect.y>.5?.4:1.0;
-    float wakeEnd=u_plume_layer==2?2.6:1.2;
+    float wakeEnd=u_plume_layer==2?2.6:1.5;
     float wakeWidth=u_plume_layer==2?2.6:1.0;
     float radius=root*max(1.0,clamp(u_plume_radius_tail/max(u_plume_radius_root,.001),.5,6.0))*u_sprite_art.y*wakeWidth;
     gas_aspect=u_sprite_aspect.y>.5?max(.1,u_sprite_aspect.x):1.0;

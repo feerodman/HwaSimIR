@@ -21,6 +21,24 @@ void HwaSimIR::UpdateP5GraphicsTestScene()
     else if (scene=="f22cloud") assetType=F22;
     const bool asset = assetType != NONE;
     const bool clouds = scene=="cloud" || scene=="mixed" || scene=="f22cloud";
+    // Generated opaque fixtures must use the same P17 logarithmic depth as gas.
+    // Production assets and their material/radiance shaders are unchanged.
+    auto bindOpaqueFixtureDepth=[](NodePath& node,float gray) {
+        static PT(Shader) opaqueShader;
+        if(!opaqueShader) {
+#ifdef _WIN32
+            const std::string version="#version 130\n";
+#else
+            const std::string version="#version 300 es\nprecision highp float;\nprecision highp int;\n";
+#endif
+            std::string vertex=version+"uniform mat4 p3d_ModelViewProjectionMatrix;\nin vec4 p3d_Vertex;\nvoid main(){gl_Position=p3d_ModelViewProjectionMatrix*p3d_Vertex;}\n";
+            std::string fragment=version+"uniform vec4 u_p18_fixture_color;\nout vec4 fragColor;\nvoid main(){fragColor=u_p18_fixture_color;}\n";
+            IRDepthPrecision::apply(vertex,fragment);
+            opaqueShader=Shader::make(Shader::SL_GLSL,vertex,fragment);
+        }
+        node.set_shader(opaqueShader,100);
+        node.set_shader_input("u_p18_fixture_color",LVecBase4f(gray,gray,gray,1));
+    };
     if (m_p5TestRoot.is_empty()) {
         m_p5TestRoot = m_renderRoot.attach_new_node("P5_GraphicsAcceptance_ONLY");
         m_p5TestCenter = LPoint3f(0,0,100);
@@ -88,6 +106,7 @@ void HwaSimIR::UpdateP5GraphicsTestScene()
             PT(GeomNode) gn=new GeomNode("P5_Nozzle");gn->add_geom(g);
             m_p5TestModel=m_p5TestRoot.attach_new_node(gn);
             m_p5TestModel.set_color(.32,.32,.32,1); m_p5TestModel.set_light_off(); m_p5TestModel.set_two_sided(true);
+            if(!clouds)bindOpaqueFixtureDepth(m_p5TestModel,.32f);
             if(clouds && view=="behind") {
                 CardMaker screen("P5_OpaquePropBehindCloud");screen.set_frame(-700,700,-700,700);
                 NodePath blocker=m_p5TestRoot.attach_new_node(screen.generate());
@@ -110,6 +129,7 @@ void HwaSimIR::UpdateP5GraphicsTestScene()
                 NodePath blocker=m_p5TestModel.attach_new_node(cap.generate());
                 blocker.set_pos(0,2,0);blocker.set_two_sided(true);
                 blocker.set_depth_test(true);blocker.set_depth_write(true);
+                if(!clouds)bindOpaqueFixtureDepth(blocker,.32f);
             }
             const bool legacy=std::getenv("P5LegacyVisuals") && std::string(std::getenv("P5LegacyVisuals"))=="1";
             NodePath* layers[]={&m_p5TestCore,&m_p5TestHalo};

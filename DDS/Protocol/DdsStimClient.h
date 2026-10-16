@@ -52,6 +52,9 @@ public:
     bool waitForAcknowledgments(int timeoutMs, std::string& error);
     bool waitForStopStatus(int timeoutMs, std::string& error);
     void setAckCallback(const std::function<void(const BYHWICD::InitAckC2pObjectTrackingCmd&)>& callback);
+    // Optional multi-instance lifecycle barrier, using existing status only.
+    void setExpectedSensors(const std::vector<int>& sensors);
+    void setVideoStatusObservation(bool enabled);
     unsigned long long ackCount() const;
     int runtimeInitCount() const;
     bool hasTransportFault() const;

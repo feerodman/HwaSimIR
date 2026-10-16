@@ -45,6 +45,28 @@
         <history><kind>KEEP_ALL_HISTORY_QOS</kind></history>
         <resource_limits><max_samples>4096</max_samples><max_samples_per_instance>4096</max_samples_per_instance></resource_limits>
       </datareader_qos>
+
+      <!-- P18 customer-only profiles; existing writer/reader policies are unchanged. -->
+      <datawriter_qos name="customer_tx_h264_writer">
+        <reliability><kind>RELIABLE_RELIABILITY_QOS</kind><max_blocking_time><sec>0</sec><nanosec>100000000</nanosec></max_blocking_time></reliability>
+        <history><kind>KEEP_ALL_HISTORY_QOS</kind></history>
+        <resource_limits><max_samples>4096</max_samples><max_samples_per_instance>4096</max_samples_per_instance></resource_limits>
+      </datawriter_qos>
+      <datareader_qos name="customer_tx_h264_reader">
+        <reliability><kind>RELIABLE_RELIABILITY_QOS</kind><max_blocking_time><sec>0</sec><nanosec>100000000</nanosec></max_blocking_time></reliability>
+        <history><kind>KEEP_ALL_HISTORY_QOS</kind></history>
+        <resource_limits><max_samples>4096</max_samples><max_samples_per_instance>4096</max_samples_per_instance></resource_limits>
+      </datareader_qos>
+      <datawriter_qos name="customer_tx_raw_writer">
+        <reliability><kind>RELIABLE_RELIABILITY_QOS</kind><max_blocking_time><sec>0</sec><nanosec>100000000</nanosec></max_blocking_time></reliability>
+        <history><kind>KEEP_ALL_HISTORY_QOS</kind></history>
+        <resource_limits><max_samples>16</max_samples><max_samples_per_instance>16</max_samples_per_instance></resource_limits>
+      </datawriter_qos>
+      <datareader_qos name="customer_tx_raw_reader">
+        <reliability><kind>RELIABLE_RELIABILITY_QOS</kind><max_blocking_time><sec>0</sec><nanosec>100000000</nanosec></max_blocking_time></reliability>
+        <history><kind>KEEP_ALL_HISTORY_QOS</kind></history>
+        <resource_limits><max_samples>16</max_samples><max_samples_per_instance>16</max_samples_per_instance></resource_limits>
+      </datareader_qos>
     </qos_profile>
   </qos_library>
 </zrdds_qos>

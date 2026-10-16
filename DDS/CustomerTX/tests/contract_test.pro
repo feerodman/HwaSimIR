@@ -1,0 +1,10 @@
+QT -= gui
+QT += core
+CONFIG += console c++11
+TARGET = customer_tx_contract_test
+TEMPLATE = app
+ZRDDS_ROOT = F:/Programs/ZRDDS/ZRDDS_MinGW7.3.0/ZRDDS-2.4.5
+DEFINES += _ZRDDSCPPINTERFACE _ZRDDSDLLIMPORT
+INCLUDEPATH += .. $$ZRDDS_ROOT/include/CPlusPlusInterface $$ZRDDS_ROOT/include/ZRDDSCoreInterface
+SOURCES += contract_test.cpp ../Generated/CustomerTxVideo.cpp ../Generated/CustomerTxVideoTypeSupport.cpp
+LIBS += -L$$ZRDDS_ROOT/lib -lZRDDSCpp

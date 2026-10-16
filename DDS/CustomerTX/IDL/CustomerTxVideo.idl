@@ -1,0 +1,16 @@
+struct HD264Stream {
+    unsigned long DataLength;
+    octet VedioStream[1400];
+};
+struct LD264Stream {
+    unsigned long DataLength;
+    octet VedioStream[1400];
+};
+struct HDDecoder {
+    long frameId;
+    sequence<char,640000> stream;
+};
+struct LDDecoder {
+    long frameId;
+    sequence<char,640000> stream;
+};

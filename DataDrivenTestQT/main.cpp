@@ -1,4 +1,4 @@
-#include "mainwindow.h"
+﻿#include "mainwindow.h"
 #include <QApplication>
 #include <QDir>
 #include <QTimer>
@@ -298,6 +298,8 @@ int main(int argc, char *argv[])
     if(h264Explicit)w.setH264EnabledForTest(h264Enabled);
 	if(saveExplicit)w.setSaveMP4EnabledForTest(saveMP4Enabled);
     w.configureProtocolForTest(platID, sensorID, simMode, videoFps);
+    if(arguments.contains("--dual-channel=1"))w.enableDualCustomerChannels();
+    if(arguments.contains("--no-video-status-barrier=1"))w.disableVideoStatusBarrier();
 	w.configureEnvironmentForTest(envSky, sensorBand);
 	w.setSensorPixelAngleForTest(sensorPixelAngleUrad);
 	if (utcHour >= 0.0) w.setUtcHourForTest(utcHour);
@@ -334,19 +336,36 @@ int main(int argc, char *argv[])
     else if (autoSeconds > 0)
     {
 		const int initialDelayMs = controlTransport == QStringLiteral("udp") ? 500 : ddsDiscoveryWaitMs;
-		bool autoStarted = false;
-		QObject::connect(&w, &MainWindow::roundStopSent, &a, [&a]() {
-			// MainWindow's destructor owns the application-level STOP-status and
-			// DDS acknowledgment drain.  Quit as soon as STOP is sent so that the
-			// bounded drain begins at EOF instead of waiting for the duration guard.
-			QTimer::singleShot(0, &a, &QApplication::quit);
-		});
-		QObject::connect(&w, &MainWindow::initAckReceived, &w, [&w, &a, &autoStarted, autoSeconds]() {
-			if (autoStarted) return;
-			autoStarted = true;
+		struct AutoState {bool started=false;int round=1,total=1,nextWidth=0,pauseMs=0;};
+        auto state=std::make_shared<AutoState>();
+        for(const auto& arg:arguments)if(arg.startsWith("--rounds="))state->total=qBound(1,arg.mid(9).toInt(),10);
+        for(const auto& arg:arguments){
+            if(arg.startsWith("--second-round-width="))state->nextWidth=arg.mid(21).toInt();
+            if(arg.startsWith("--inter-round-ms="))state->pauseMs=qBound(0,arg.mid(17).toInt(),60000);
+        }
+        w.prepareNextAutoRound(1,state->total);
+        QObject::connect(&w, &MainWindow::roundStopSent, &a, [&w,&a,state]() {
+            QTimer::singleShot(0,&w,[&w,&a,state](){
+                if(state->round>=state->total){a.quit();return;}
+                if(!w.prepareNextAutoRound(++state->round,state->total)){a.exit(7);return;}
+                state->started=false;
+                if(state->nextWidth){
+                    if(w.m_dualCustomerChannels){qCritical()<<"Resize option requires a single explicit sensor";a.exit(8);return;}
+                    if(!w.setSensorField("trackerSensorWidth",state->nextWidth)||!w.setSensorField("trackerSensorHeight",state->nextWidth)){a.exit(8);return;}
+                }
+                QTimer::singleShot(state->pauseMs,&w,[&w](){QMetaObject::invokeMethod(&w,"onResetButtonClicked",Qt::DirectConnection);});
+                QTimer::singleShot(state->pauseMs+500,&w,[&w](){QMetaObject::invokeMethod(&w,"onInitButtonClicked",Qt::DirectConnection);});
+                const int expected=state->round;
+                QTimer::singleShot(state->pauseMs+30500,&a,[&a,state,expected](){if(state->round==expected&&!state->started)a.exit(6);});
+            });
+        });
+		QObject::connect(&w, &MainWindow::initAckReceived, &w, [&w, &a, state, autoSeconds]() {
+			if (state->started) return;
+			state->started = true;
 			QMetaObject::invokeMethod(&w, "onStartButtonClicked", Qt::DirectConnection);
-			QTimer::singleShot(autoSeconds * 1000, &w, [&w]() {
-				QMetaObject::invokeMethod(&w, "onStopButtonClicked", Qt::DirectConnection);
+			const int expected=state->round;
+            QTimer::singleShot(autoSeconds * 1000, &w, [&w,state,expected]() {
+				if(state->round==expected)QMetaObject::invokeMethod(&w, "onStopButtonClicked", Qt::DirectConnection);
 			});
 		});
         QTimer::singleShot(initialDelayMs, &w, [&w]() {
@@ -355,8 +374,8 @@ int main(int argc, char *argv[])
         QTimer::singleShot(initialDelayMs + 500, &w, [&w]() {
             QMetaObject::invokeMethod(&w, "onInitButtonClicked", Qt::DirectConnection);
         });
-		QTimer::singleShot(initialDelayMs + 30500, &a, [&a, &autoStarted]() {
-			if (!autoStarted) {
+		QTimer::singleShot(initialDelayMs + 30500, &a, [&a, state]() {
+			if (!state->started && state->round==1) {
 				qCritical().noquote() << QStringLiteral("[StimInitAck][FATAL] timeout=30000ms");
 				a.exit(6);
 			}

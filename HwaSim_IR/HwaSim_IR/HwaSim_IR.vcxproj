@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -152,7 +152,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>$(FFmpegDefinitions)$(ZrddsDefinitions)NDEBUG;_CONSOLE;GEOGRAPHICLIB_SHARED_LIB=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(FFmpegIncludeDir)$(ZrddsIncludeDirs)..\..\DDS\Protocol;..\..\DDS\Runtime;..\..\DDS\Generated\HwaSimIRProtocolV1;.\opencv2-440;.\CoordinateConverter;.\Eigen;.\Common;$(PANDA3D_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(FFmpegIncludeDir)$(ZrddsIncludeDirs)..\..\DDS\CustomerTX;..\..\Shared;..\..\DDS\Protocol;..\..\DDS\Runtime;..\..\DDS\Generated\HwaSimIRProtocolV1;.\opencv2-440;.\CoordinateConverter;.\Eigen;.\Common;$(PANDA3D_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -218,6 +218,7 @@
     <ClInclude Include="UdpCommThread.h" />
     <ClInclude Include="Video\VideoEncoder.h" />
     <ClInclude Include="Video\DdsVideoPublisher.h" />
+    <ClInclude Include="Video\CustomerDdsVideoPublisher.h" />
     <ClInclude Include="Video\LocalMp4Recorder.h" />
     <ClInclude Include="..\..\DDS\Protocol\HwaSimIRProtocolEndpoint.h" />
     <ClInclude Include="..\..\DDS\Runtime\DdsRuntimeManager.h" Condition="'$(ZrddsEnabled)' == 'true'" />
@@ -263,6 +264,9 @@
     <ClCompile Include="Video\H264FfmpegEncoder.cpp" />
     <ClCompile Include="Video\JpegFrameEncoder.cpp" />
     <ClCompile Include="Video\DdsVideoPublisher.cpp" />
+    <ClCompile Include="Video\CustomerDdsVideoPublisher.cpp" />
+    <ClCompile Include="..\..\DDS\CustomerTX\Generated\CustomerTxVideo.cpp" Condition="'$(ZrddsEnabled)' == 'true'" />
+    <ClCompile Include="..\..\DDS\CustomerTX\Generated\CustomerTxVideoTypeSupport.cpp" Condition="'$(ZrddsEnabled)' == 'true'" />
     <ClCompile Include="Video\LocalMp4Recorder.cpp" />
     <ClCompile Include="..\..\DDS\Runtime\DdsRuntimeManager.cpp" Condition="'$(ZrddsEnabled)' == 'true'" />
     <ClCompile Include="..\..\DDS\Protocol\CommonDataDdsAdapter.cpp" Condition="'$(ZrddsEnabled)' == 'true'" />

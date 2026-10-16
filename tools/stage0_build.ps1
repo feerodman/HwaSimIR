@@ -3,7 +3,8 @@ param(
     [string]$Platform = "x64",
     [string]$FFmpegRoot = $env:FFMPEG_ROOT,
     [switch]$SkipQt,
-    [switch]$SkipVs
+    [switch]$SkipVs,
+    [string]$QtBuildDirectory = ''
 )
 
 $ErrorActionPreference = "Stop"
@@ -30,6 +31,7 @@ $windeployqt = Join-Path $qtBin "windeployqt.exe"
 $vsSolution = Join-Path $rootPath "HwaSim_IR\HwaSim_IR.sln"
 $qtProject = Join-Path $rootPath "DataDrivenTestQT\DataDrivenTestQT.pro"
 $qtBuildDir = Join-Path $rootPath "build-DataDrivenTestQT-codex-mingw73_64-$Configuration"
+if ($QtBuildDirectory) { $qtBuildDir = Join-Path $rootPath $QtBuildDirectory }
 $qtExe = Join-Path $qtBuildDir "$($Configuration.ToLower())\DataDrivenTestQT.exe"
 $qtDataFiles = @(
     (Join-Path $rootPath "DataDrivenTestQT\1.txt"),

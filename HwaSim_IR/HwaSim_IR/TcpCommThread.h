@@ -23,6 +23,7 @@
 #include "Video/VideoEncoder.h"
 #include "FrameProductV2.h"
 #include "Video/DdsVideoPublisher.h"
+#include "Video/CustomerDdsVideoPublisher.h"
 #include "Video/LocalMp4Recorder.h"
 
 class HwaSimIR;
@@ -73,6 +74,7 @@ public:
 		bool sendRealtimeData,
 		bool forwardInitControl);
 	void configureDdsVideo(const DdsVideoPublisherConfig& config);
+	void configureCustomerVideo(const CustomerDdsVideoConfig& config) { m_customerConfig=config; }
 	void configureDdsRuntime(const std::shared_ptr<DdsRuntimeManager>& runtime);
 	void configureLocalRecording(const LocalMp4RecorderConfig& config);
 	void setH264Requested(bool enabled, int videoFps = 60);
@@ -219,6 +221,8 @@ private:
 	std::atomic<unsigned long long> m_tcpPacketCounter{ 0 };
 	std::int64_t m_lastTcpPerfLogNs = 0;
 	DdsVideoPublisherConfig m_ddsConfig;
+	CustomerDdsVideoConfig m_customerConfig;
+	CustomerDdsVideoPublisher m_customerPublisher;
 	LocalMp4RecorderConfig m_recordingConfig;
 	std::unique_ptr<DdsVideoPublisher> m_ddsPublisher;
 	std::shared_ptr<DdsRuntimeManager> m_ddsRuntime;

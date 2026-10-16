@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [ValidateSet('Plan', 'Build')]
     [string]$Mode = 'Plan',
@@ -130,7 +130,7 @@ $sourceFiles = Get-ChildItem -LiteralPath $sourceRoot -Recurse -File | Where-Obj
     $relative = Get-UnixRelativePath -Root $sourceRoot -Path $_.FullName
     -not ($excludedPrefixes | Where-Object { $relative.StartsWith($_, [StringComparison]::OrdinalIgnoreCase) })
 }
-$ddsDirectories = @('Runtime', 'Protocol', 'Generated\HwaSimIRProtocolV1')
+$ddsDirectories = @('Runtime', 'Protocol', 'Generated\HwaSimIRProtocolV1', 'CustomerTX')
 $ddsFiles = foreach ($directory in $ddsDirectories) {
     Get-ChildItem -LiteralPath (Join-Path $ddsRoot $directory) -Recurse -File
 }
@@ -195,7 +195,7 @@ else {
         '--exclude=Debug', '--exclude=Release', '--exclude=opencv2-440',
         '--exclude=cmake-build-*', '--exclude=build-*',
         '-C', $sourceRoot, '.',
-        '-C', $RepoRoot, 'DDS/Runtime', 'DDS/Protocol', 'DDS/Generated/HwaSimIRProtocolV1',
+        '-C', $RepoRoot, 'DDS/Runtime', 'DDS/Protocol', 'DDS/Generated/HwaSimIRProtocolV1', 'DDS/CustomerTX',
         '-C', $RepoRoot, 'Shared',
         '-C', $OutputDirectory, 'source_manifest.sha256'
     )
