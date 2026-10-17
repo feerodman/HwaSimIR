@@ -65,7 +65,10 @@ int main(int argc,char** argv){
             // Deliberately split at 1/1399/... bytes so real start codes/NALs cross samples.
             const size_t sizes[]={1,1399,1400,1401,2800,2801};size_t offset=0,index=0;
             const int pauseMs=argc==5?std::stoi(argv[4]):0;require(pauseMs>=0 && pauseMs<=5000,"fixture pause range");bool paused=false;
-            while(offset<stream.size()){const auto n=(std::min)(sizes[index++%6],stream.size()-offset);
+            while(offset<stream.size()){auto n=(std::min)(sizes[index++%6],stream.size()-offset);
+                // P19: force the final five-byte standard end NAL across five Samples.
+                if(stream.size()>=5){const auto endStart=stream.size()-5;
+                    if(offset<endStart)n=(std::min)(n,endStart-offset);else n=1;}
                 if(pauseMs && !paused && offset>=stream.size()/2){std::this_thread::sleep_for(std::chrono::milliseconds(pauseMs));paused=true;}
                 require(writer.send(stream.data()+offset,n,1,samples,sent,cancel),"fixture write");offset+=n;
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));}

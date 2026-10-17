@@ -13,6 +13,7 @@ DdsRuntimeManager::~DdsRuntimeManager()
 bool DdsRuntimeManager::start(const DdsRuntimeConfig& config, std::string& error)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
+    if (config.domainId < 0 || config.domainId > 232) { error = "DDS DomainId must be 0..232"; return false; }
     if (m_running.load())
     {
         if (m_config.domainId != config.domainId || m_config.qosFile != config.qosFile ||
@@ -45,6 +46,7 @@ bool DdsRuntimeManager::start(const DdsRuntimeConfig& config, std::string& error
         return false;
     }
     m_config = config;
+    m_participants[config.domainId] = m_participant;
     DDS::DomainParticipantQos actualQos;
     const DDS::ReturnCode_t qosResult = m_participant->get_qos(actualQos);
     if (qosResult == DDS::RETCODE_OK)
@@ -72,6 +74,7 @@ void DdsRuntimeManager::shutdown()
               << static_cast<int>(result) << std::endl;
     m_factory = nullptr;
     m_participant = nullptr;
+    m_participants.clear();
 #endif
     m_running.store(false);
 }
@@ -103,5 +106,21 @@ DDS::DomainParticipant* DdsRuntimeManager::participant() const
 {
     std::lock_guard<std::mutex> lock(m_mutex);
     return m_participant;
+}
+
+DDS::DomainParticipant* DdsRuntimeManager::participantForDomain(int domainId, std::string& error)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (!m_running.load()) { error = "DDS Runtime is not ready"; return nullptr; }
+    if (domainId < 0 || domainId > 232) { error = "DDS DomainId must be 0..232"; return nullptr; }
+    const auto found = m_participants.find(domainId);
+    if (found != m_participants.end()) return found->second;
+    DDS::DomainParticipant* participant = DDS::DDSIF::CreateDP(domainId, m_config.participantProfile.c_str());
+    if (!participant) { error = "DDSIF::CreateDP failed domain=" + std::to_string(domainId); return nullptr; }
+    m_participants[domainId] = participant;
+    std::cout << "[DdsRuntime] participantCreated=1 domain=" << domainId
+              << " participantCount=" << m_participants.size() << " initCount=" << m_initCount.load()
+              << " qos=" << m_config.qosFile << std::endl;
+    return participant;
 }
 #endif

@@ -1,21 +1,3 @@
-﻿//#pragma once
-//
-//#include <QtWidgets/QMainWindow>
-//#include "ui_MainWindow.h"
-//
-//class MainWindow : public QMainWindow
-//{
-//    Q_OBJECT
-//
-//public:
-//    MainWindow(QWidget *parent = Q_NULLPTR);
-//
-//private:
-//    Ui::MainWindowClass ui;
-//};
-
-
-// mainwindow.h
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 //#define _USE_MATH_DEFINES
@@ -51,6 +33,7 @@
 
 using namespace ICD;
 
+class DualSensorPanel;
 class MainWindow : public QMainWindow
 {
 	Q_OBJECT
@@ -63,18 +46,19 @@ public:
 		const QString& controlTransport = QStringLiteral("dds"),
 		QWidget *parent = nullptr);
 	~MainWindow();
+    DualSensorPanel* dualPanel() const { return m_dualPanel; }
+protected:
+    void closeEvent(QCloseEvent* event) override;
+public:
 	void setH264EnabledForTest(bool enabled) { m_h264Enabled = enabled; setSensorField("h264En",enabled?1:0); }
 	void setSaveMP4EnabledForTest(bool enabled) { m_saveMP4Enabled = enabled; setSensorField("saveMP4En",enabled?1:0); }
 	void configurePhase4cAeroMachTest(bool enabled, double altitudeKm, double mach);
 	bool setSensorField(const QString& name,double value);
 	void setSendStepMs(double milliseconds);
-	void enableDualCustomerChannels();
     void disableVideoStatusBarrier();
     bool prepareNextAutoRound(int round, int total);
     int m_autoRound=1, m_autoRounds=1;
     bool m_startWithoutVideoStatus=false;
-	bool m_dualCustomerChannels=false;
-	int m_dualAckMask=0;
 	void configureProtocolForTest(int platID, int sensorID, int simMode, int videoFps);
 	void configureEnvironmentForTest(int envSky, int sensorBand);
 	void setSensorPixelAngleForTest(double pixelAngleUrad);
@@ -108,6 +92,8 @@ signals:
 	void updatePosition();
 
 private:
+    DualSensorPanel* m_dualPanel=nullptr;
+    bool m_closePending=false;
     void setupSensorForm(QVBoxLayout* layout);
     bool sensorFormSnapshot(BYHWICD::trackerSensorParam& sensor,QString& error) const;
     QMap<QString,QWidget*> m_sensorControls;
@@ -124,7 +110,7 @@ private:
 		const BYHWICD::InitObjectTrackingParam& initialization,
 		const BYHWICD::trackerSensorParam& sensor,
 		QString& error,
-		QJsonObject& audit) const;
+		QJsonObject& audit, const QVector<realtimeInfo>* source = nullptr, const QString& sourcePath = QString()) const;
 	void showInitCoverageError(const QString& error, const QJsonObject& audit);
 	void sendRealTimeData();
 	void applyPhase4cAeroMachOverride(BYHWICD::DisplayC2cObjTrackingData& data) const;

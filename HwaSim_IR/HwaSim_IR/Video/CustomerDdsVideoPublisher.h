@@ -5,7 +5,9 @@
 class DdsRuntimeManager;
 struct CustomerDdsVideoConfig {
     bool enabled=false;
+    int domainId=-1; // -1 inherits the process primary domain for standalone callers.
     bool diagnosticColorCard=false;
+    int diagnosticFailAfterFramesOnce=0; // Explicit application-failure test; never an SDK return code.
     std::string mode="auto",pixelFormat="gray8",auditPrefix;
     int queueMaxFrames=32,drainMs=5000,discoverySettleMs=1000;
 };

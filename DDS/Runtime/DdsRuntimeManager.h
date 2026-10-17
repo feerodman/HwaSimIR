@@ -3,6 +3,7 @@
 #include <atomic>
 #include <mutex>
 #include <string>
+#include <map>
 
 #if defined(HWASIMIR_HAS_ZRDDS)
 #include "ZRDDSCppSimpleInterface.h"
@@ -17,7 +18,7 @@ struct DdsRuntimeConfig
 };
 
 // One instance is owned by each process. All protocol and video endpoints in
-// that process borrow the same participant; only this class calls Init,
+// that process reuse one participant per domain; only this class calls Init,
 // CreateDP and Finalize.
 class DdsRuntimeManager
 {
@@ -34,6 +35,8 @@ public:
 #if defined(HWASIMIR_HAS_ZRDDS)
     DDS::DomainParticipantFactory* factory() const;
     DDS::DomainParticipant* participant() const;
+    // Borrowed until shutdown. Creating another domain never calls global Init.
+    DDS::DomainParticipant* participantForDomain(int domainId, std::string& error);
 #endif
 
 private:
@@ -44,5 +47,6 @@ private:
 #if defined(HWASIMIR_HAS_ZRDDS)
     DDS::DomainParticipantFactory* m_factory = nullptr;
     DDS::DomainParticipant* m_participant = nullptr;
+    std::map<int, DDS::DomainParticipant*> m_participants;
 #endif
 };

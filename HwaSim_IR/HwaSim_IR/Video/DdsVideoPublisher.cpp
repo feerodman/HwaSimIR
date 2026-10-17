@@ -226,13 +226,14 @@ bool DdsVideoPublisher::start(const DdsVideoPublisherConfig& config, std::string
 	DdsRuntimeConfig runtimeConfig;
 	runtimeConfig.domainId = config.domainId;
 	runtimeConfig.qosFile = config.qosFile;
-	if (!m_impl->runtime->start(runtimeConfig, error))
+	if (m_impl->ownsRuntime && !m_impl->runtime->start(runtimeConfig, error))
 	{
 		m_impl->healthy.store(false);
 		std::cerr << "[DdsVideo][FATAL] " << error << std::endl;
 		return false;
 	}
-	m_impl->participant = m_impl->runtime->participant();
+	m_impl->participant = m_impl->runtime->participantForDomain(config.domainId, error);
+	if (!m_impl->participant) { m_impl->healthy.store(false); return false; }
 	if (!config.auditPath.empty())
 	{
 		m_impl->audit.open(config.auditPath.c_str(), std::ios::binary | std::ios::trunc);
@@ -457,9 +458,9 @@ bool DdsVideoPublisher::endRound(std::string& error)
 	}
 #endif
 	const auto ackReturned = std::chrono::steady_clock::now();
-	const int boundedDrainMs = std::max(0, m_impl->config.shutdownDrainMs);
-	if (boundedDrainMs > 0)
-		std::this_thread::sleep_for(std::chrono::milliseconds(boundedDrainMs));
+	// Between rounds the writer stays alive. Queue completion and reliable
+    // acknowledgments are the boundary; shutdown grace applies at destruction.
+    const int boundedDrainMs = 0;
 	const auto drainComplete = std::chrono::steady_clock::now();
 	const double queueDrainMs = std::chrono::duration<double, std::milli>(queueDrained - drainBegin).count();
 	const double ackWaitMs = std::chrono::duration<double, std::milli>(ackReturned - queueDrained).count();

@@ -95,7 +95,7 @@ renderer `main.cpp` 选择启动配置的顺序为：显式 `--network-config`�
 | 顶层 INIT/Realtime platID+sensorID | 接收路由身份；255仅为允许的sensor广播 |
 | platParamInit.id | 初始化平台对象/模型状态中的平台标识，不替代传感器路由 |
 | targetPlatID、targetID | 被观测目标的完整身份组成部分；连同targetType解析目标 |
-| channel | coarse/precise实例角色；P18强制与sensor1/2匹配 |
+| channel | coarse/precise实例角色；P19与合法sensorID（1..254）解耦，原始身份Topic仍使用platID/sensorID |
 
 Control 无 sensorID，同平台两个实例都处理 RESET/START/STOP；现协议不能单独 STOP 1001 的某 sensor。Init/Realtime 先验 platID，再接受精确 sensor 或启用的255广播；本地状态和 ACK 始终报1/2，不能报255。目标查找继续使用完整 targetType+targetPlatID+targetID；数字标注与稳定编号(x,y)不改。
 
@@ -119,7 +119,7 @@ STOP先完成已接受输入与读回/输出，再分别排空旧DDS及客户队
 |---|---|
 | HwaSim_IR/HwaSim_IR/main.cpp | main / ReadOptionValue：CLI和环境实例选择 |
 | HwaSim_IR/HwaSim_IR/HwaSimIR.cpp | BuildRuntimeConfigCandidatePaths、LoadNetworkConfig、LoadD2VideoOutputConfig、INIT处理、capture_task：配置/本地身份/容量拒绝/读回 |
-| DDS/Runtime/DdsRuntimeManager.cpp | start、participant、shutdown：一次Init/CreateDP/Finalize |
+| DDS/Runtime/DdsRuntimeManager.cpp | start、participantForDomain、shutdown：一次Init/Finalize，按域缓存CreateDP |
 | DDS/Protocol/ProtocolRoute.h | EvaluateProtocolRoute：平台/传感器过滤 |
 | DDS/Protocol/HwaSimIRProtocolEndpoint.cpp | start及发布函数：typed旧协议endpoint |
 | DDS/Protocol/CommonDataDdsAdapter.cpp | ToDds/FromDds：旧布局转换 |
@@ -139,3 +139,11 @@ STOP先完成已接受输入与读回/输出，再分别排空旧DDS及客户队
 | HwaSim_IR/HwaSim_IR/IR/P5GraphicsTest.inl | bindOpaqueFixtureDepth：生成的诊断喷口/遮挡板使用现有P17对数深度；生产模型与天气不变 |
 
 具体可复制命令、实例配置和依赖见 [双路操作手册](HwaSimIR_P18_DualChannel_Runbook.md)；接口约定见 [客户ICD](HwaSimIR_Customer_TX_DDS_ICD.md)。实际计数、失败记录和性能结论见 [P18结项记录](HwaSimIR_P18_Closeout.md)。
+
+## P19 更新
+
+客户raw故障仅停止客户本回合，STOP/RESET/独立INIT/ACK/START可在同PID恢复；进程级DDS运行时不重复初始化。客户H264正常STOP追加标准结束NAL并优先排空；旧分支SEI/实时数据/标注保留，健康Writer不再执行固定5秒STOP等待。Domain1现场与Domain150实验配置分开导出。当前启动、测试与限制以[P19结项](HwaSimIR_P19_Closeout.md)和[源码索引](HwaSimIR_P19_Source_Index.md)为准。
+
+## P19 恢复测试后的独立域支持
+
+控制、原VideoDisplay视频、客户TX视频现在分别由 DdsProtocol / DdsVideo / CustomerDdsVideo 的 DomainId 控制。同域复用Participant，异域在同一个Factory下创建Participant；完整默认值、环境覆盖、状态镜像及实测见 [DDS域配置](HwaSimIR_P19_DDS_Domains.md)。

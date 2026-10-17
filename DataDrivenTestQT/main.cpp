@@ -1,4 +1,5 @@
-﻿#include "mainwindow.h"
+#include "mainwindow.h"
+#include "DualSensorPanel.h"
 #include <QApplication>
 #include <QDir>
 #include <QTimer>
@@ -294,11 +295,42 @@ int main(int argc, char *argv[])
 		.arg(controlTransport)
 		.arg(controlTransportExplicit ? QStringLiteral("command_line") : QStringLiteral("production_default"));
 	MainWindow w(networkConfigPath, channel, inputDataPath, controlTransport);
-	w.show();
+    w.show();
+    if(auto* panel=w.dualPanel()) {
+        for(const auto& arg:arguments)if(arg.startsWith("--channels-json="))if(!panel->loadConfig(arg.mid(16)))return 2;
+        if(h264Explicit)panel->setSensorFieldAll("h264En",h264Enabled);
+        if(saveExplicit)panel->setSensorFieldAll("saveMP4En",saveMP4Enabled);
+        if(sensorBand>=0)panel->setSensorFieldAll("trackerSensorBand",sensorBand);
+        if(sensorPixelAngleUrad>0)panel->setSensorFieldAll("trackerSensorPixelAngle",sensorPixelAngleUrad);
+        if(envSky>=0)panel->setEnvironmentAll("envSky",envSky);
+        if(videoFps>=0)panel->setEnvironmentAll("videoFps",videoFps);
+        if(simMode>0)panel->setEnvironmentAll("simMode",simMode);
+        if(sendStepMs>0)panel->setStepMs(sendStepMs);
+        if(!inputDataPath.isEmpty())panel->setSource(QFileInfo(inputDataPath).absoluteFilePath());
+        if(arguments.contains("--no-video-status-barrier=1"))panel->setStatusBarrier(false);
+        for(const auto& arg:arguments)if(arg.startsWith("--export-dual="))if(!panel->exportDeployment(arg.mid(14)))return 2;
+        if(arguments.contains("--validate-dual")){QString error;if(!panel->validateConfiguration(error)){qCritical().noquote()<<"[P19Validation] REJECTED"<<error;return 2;}qInfo()<<"[P19Validation] ACCEPTED";return 0;}
+        if(arguments.contains("--export-only"))return 0;
+        if(autoSeconds>0) {
+            struct Run {int round=1,total=1;bool active=false;};auto run=std::make_shared<Run>();
+            for(const auto& arg:arguments)if(arg.startsWith("--rounds="))run->total=qBound(1,arg.mid(9).toInt(),10);
+            panel->setRound(run->round,run->total);
+            QObject::connect(panel,&DualSensorPanel::allInitialized,panel,[panel,run,autoSeconds]{
+                run->active=true;panel->start();const int expected=run->round;
+                QTimer::singleShot(autoSeconds*1000,panel,[panel,run,expected]{if(run->round==expected)panel->stop();});
+            });
+            QObject::connect(panel,&DualSensorPanel::roundStopped,&a,[panel,run,&a]{
+                if(run->round>=run->total){a.quit();return;}
+                ++run->round;run->active=false;panel->setRound(run->round,run->total);panel->reset();QTimer::singleShot(500,panel,&DualSensorPanel::initialize);
+            });
+            QTimer::singleShot(ddsDiscoveryWaitMs,panel,[panel]{panel->reset();QTimer::singleShot(500,panel,&DualSensorPanel::initialize);});
+            QTimer::singleShot((ddsDiscoveryWaitMs+40000+autoSeconds*1000)*run->total,&a,[&a]{a.exit(6);});
+        }
+        return a.exec();
+    }
     if(h264Explicit)w.setH264EnabledForTest(h264Enabled);
 	if(saveExplicit)w.setSaveMP4EnabledForTest(saveMP4Enabled);
     w.configureProtocolForTest(platID, sensorID, simMode, videoFps);
-    if(arguments.contains("--dual-channel=1"))w.enableDualCustomerChannels();
     if(arguments.contains("--no-video-status-barrier=1"))w.disableVideoStatusBarrier();
 	w.configureEnvironmentForTest(envSky, sensorBand);
 	w.setSensorPixelAngleForTest(sensorPixelAngleUrad);
@@ -350,7 +382,7 @@ int main(int argc, char *argv[])
                 if(!w.prepareNextAutoRound(++state->round,state->total)){a.exit(7);return;}
                 state->started=false;
                 if(state->nextWidth){
-                    if(w.m_dualCustomerChannels){qCritical()<<"Resize option requires a single explicit sensor";a.exit(8);return;}
+                    if(w.dualPanel()!=nullptr){qCritical()<<"Resize option requires a single explicit sensor";a.exit(8);return;}
                     if(!w.setSensorField("trackerSensorWidth",state->nextWidth)||!w.setSensorField("trackerSensorHeight",state->nextWidth)){a.exit(8);return;}
                 }
                 QTimer::singleShot(state->pauseMs,&w,[&w](){QMetaObject::invokeMethod(&w,"onResetButtonClicked",Qt::DirectConnection);});

@@ -10,5 +10,5 @@ isEmpty(FFMPEG_ROOT): FFMPEG_ROOT = $$PWD/../../.deps/ffmpeg-n8.1-win64-gpl-shar
 DEFINES += _ZRDDSCPPINTERFACE _ZRDDSDLLIMPORT
 INCLUDEPATH += $$PWD/../CustomerTX $$PWD/../../Shared $$ZRDDS_ROOT/include/CPlusPlusInterface $$ZRDDS_ROOT/include/ZRDDSCoreInterface $$FFMPEG_ROOT/include
 SOURCES += main.cpp ../CustomerTX/Generated/CustomerTxVideo.cpp ../CustomerTX/Generated/CustomerTxVideoTypeSupport.cpp
-HEADERS += CustomerAvSha256.h
+HEADERS += CustomerAvSha256.h CustomerReceiver.h CustomerDdsSubscription.h ReceiverOptions.h ../CustomerTX/AnnexBEndScanner.h
 LIBS += -L$$ZRDDS_ROOT/lib -lZRDDSCpp -L$$FFMPEG_ROOT/lib -lavcodec -lavutil -lswscale

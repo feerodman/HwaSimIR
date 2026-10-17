@@ -153,7 +153,7 @@ bool TcpCommThread::start() {
 		m_bIsRunning = false;
 		return false;
 	}
-	if (!m_customerPublisher.start(m_customerConfig,m_ddsRuntime,m_localSensorID==2,outputError)) {
+	if (!m_customerPublisher.start(m_customerConfig,m_ddsRuntime,m_channel=="precise",outputError)) {
         std::cerr<<"[CustomerTX][FATAL] startup="<<outputError<<std::endl;
         m_bIsRunning=false;return false;
     }
@@ -208,7 +208,7 @@ void TcpCommThread::setLocalRecordingProtocolEnabled(bool enabled)
 
 bool TcpCommThread::startOutputRound(int round)
 {
-    VideoEncoderConfig customerEncoder;
+    VideoEncoderConfig customerEncoder=m_h264Options;
     customerEncoder.fps=m_videoFps.load();customerEncoder.bitrateKbps=m_h264BitrateKbps.load();
     customerEncoder.gopFrames=m_h264GopFrames.load();customerEncoder.lowLatency=m_h264LowLatency.load();
     std::string customerError;
@@ -276,6 +276,9 @@ bool TcpCommThread::stopOutputRound(const char* reason)
 		ok = false;
 	}
 	std::string error;
+    if(!m_customerPublisher.endRound(error)) {
+        std::cerr<<"[CustomerTX][ERROR] drain="<<error<<std::endl;ok=false;
+    }
 	if (m_localRecorder && !m_localRecorder->stopAndFlush(reason, error))
 	{
 		std::cerr << "[LocalRecording][ERROR] flush failed reason=" << error << std::endl;
@@ -293,9 +296,6 @@ bool TcpCommThread::stopOutputRound(const char* reason)
 		ok = false;
 	}
 #endif
-    if(!m_customerPublisher.endRound(error)) {
-        std::cerr<<"[CustomerTX][ERROR] drain="<<error<<std::endl;ok=false;
-    }
 	std::cout << "[OutputRoundDrain] reason=" << (reason ? reason : "unknown")
 		<< " round=" << m_outputRound.load() << " targetFrames=" << targetFrame
 		<< " completedFrames=" << m_roundLastCompletedFrame.load() << std::endl;
@@ -470,7 +470,7 @@ bool TcpCommThread::encodeFrame(
 		m_lastCodecFallbackReason.clear();
 	}
 
-	VideoEncoderConfig config;
+	VideoEncoderConfig config=m_h264Options;
 	config.width = rawFrame.width;
 	config.height = rawFrame.height;
 	config.fps = std::max(1, m_videoFps.load());

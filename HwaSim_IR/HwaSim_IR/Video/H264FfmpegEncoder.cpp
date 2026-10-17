@@ -1,9 +1,11 @@
 #include "VideoEncoder.h"
+#include "H264Compatibility.h"
 
 #include <algorithm>
 #include <chrono>
 #include <cstring>
 #include <sstream>
+#include <iostream>
 
 #if defined(HWASIM_HAS_FFMPEG)
 extern "C"
@@ -158,6 +160,8 @@ bool H264FfmpegEncoder::configure(const VideoEncoderConfig& config, std::string&
 	error = "ffmpeg_sdk_not_compiled";
 	return false;
 #else
+	int effectiveLevel=0;
+	if(!ResolveH264Level(config,false,effectiveLevel,error))return false;
 	if (config.width <= 0 || config.height <= 0 ||
 		(config.width & 1) != 0 || (config.height & 1) != 0 || config.fps <= 0)
 	{
@@ -191,22 +195,35 @@ bool H264FfmpegEncoder::configure(const VideoEncoderConfig& config, std::string&
 	context->bit_rate = static_cast<std::int64_t>(std::max(100, config.bitrateKbps)) * 1000LL;
 	context->gop_size = std::max(1, config.gopFrames);
 	context->max_b_frames = 0;
+	context->refs=config.h264ReferenceFrames;
+	context->level=effectiveLevel;
+	if(config.h264RateControl=="cbr") {
+		context->rc_max_rate=context->bit_rate;context->rc_min_rate=context->bit_rate;
+		context->rc_buffer_size=static_cast<int>(context->bit_rate);
+	}
 	context->thread_count = 1;
 	context->flags &= ~AV_CODEC_FLAG_GLOBAL_HEADER;
 
 	AVDictionary* options = nullptr;
-	av_dict_set(&options, "preset", "ultrafast", 0);
+	bool optionOk=true;
+	auto option=[&](const char* key,const char* value) {
+		const int rc=av_dict_set(&options,key,value,0);
+		if(rc<0){error=std::string("av_dict_set ")+key+":"+FfmpegError(rc);optionOk=false;}
+	};
+	option("preset", "ultrafast");
 	if (config.lowLatency)
 	{
-		av_dict_set(&options, "tune", "zerolatency", 0);
+		option("tune", "zerolatency");
 	}
-	av_dict_set(&options, "profile", "baseline", 0);
-	av_dict_set(&options, "x264-params", "annexb=1:repeat-headers=1:scenecut=0:bframes=0", 0);
+	option("profile", config.h264Profile.c_str());
+	option("x264-params", "annexb=1:repeat-headers=1:scenecut=0:bframes=0:ref=1");
+	if(!optionOk){av_dict_free(&options);reset();return false;}
 	const int openResult = avcodec_open2(context, codec, &options);
+	const bool unused=av_dict_count(options)!=0;
 	av_dict_free(&options);
-	if (openResult < 0)
+	if (openResult < 0 || unused)
 	{
-		error = "avcodec_open2_failed:" + FfmpegError(openResult);
+		error = unused?"unrecognized_ffmpeg_encoder_options":"avcodec_open2_failed:" + FfmpegError(openResult);
 		reset();
 		return false;
 	}
@@ -234,6 +251,10 @@ bool H264FfmpegEncoder::configure(const VideoEncoderConfig& config, std::string&
 	m_impl->configured = true;
 	m_impl->frameIndex = 0;
 	m_impl->encoderName = std::string("ffmpeg/") + codec->name;
+	std::cout<<"[H264Effective] backend=ffmpeg requestedProfile="<<config.h264Profile
+	    <<" requestedLevel="<<config.h264Level<<" requestedLevelIdc="<<effectiveLevel
+	    <<" refs="<<context->refs<<" bFrames="<<context->max_b_frames<<" rc="<<config.h264RateControl
+	    <<" aud="<<config.h264Aud<<" standardEnd="<<config.h264StandardEnd<<" finalProof=SPS_PPS"<<std::endl;
 	m_forceKeyFrame.store(config.forceKeyFrameOnStart);
 	error.clear();
 	return true;
@@ -370,6 +391,7 @@ bool H264FfmpegEncoder::encode(
 		return false;
 	}
 	encoded.payloadCodec = "h264_annexb";
+	if(m_impl->config.h264Aud)AddH264Aud(encoded.payload);
 	encoded.encoderName = name();
 	encoded.ptsMs = raw.ptsMs;
 	encoded.inputChannels = raw.pixelFormat == RawVideoPixelFormat::Gray8 ? 1 : 3;

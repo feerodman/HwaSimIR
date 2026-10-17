@@ -43,8 +43,11 @@ public:
         if(running.load())return true;domain=domainId;
         const auto base="HwaSimIR.Diagnostics.V2."+std::to_string(platID)+"."+std::to_string(sensorID);
         responseTopic=base+".Board";
-        writer=DDS::DDSIF::PubTopic(runtime->participant(),responseTopic.c_str(),DDS::BytesTypeSupport::get_instance(),"hwasimir_protocol_writer",nullptr);
-        reader=DDS::DDSIF::SubTopic(runtime->participant(),(base+".ClockRequest").c_str(),DDS::BytesTypeSupport::get_instance(),"hwasimir_protocol_reader",&listener);
+        std::string error;auto* participant=runtime->participantForDomain(domainId,error);
+        if(!participant){std::cerr<<"[TelemetryV2][ERROR] "<<error<<std::endl;return false;}
+        writer=DDS::DDSIF::PubTopic(participant,responseTopic.c_str(),DDS::BytesTypeSupport::get_instance(),"hwasimir_protocol_writer",nullptr);
+        reader=DDS::DDSIF::SubTopic(participant,(base+".ClockRequest").c_str(),DDS::BytesTypeSupport::get_instance(),"hwasimir_protocol_reader",&listener);
+        std::cout<<"[TelemetryV2] domain="<<domainId<<" follows=old_video runtimeInitCount="<<runtime->initCount()<<std::endl;
         if(!writer||!reader)return false;
         running=true;thread=std::thread([this]{
             auto last=HwaTelemetryV2::nowNs();

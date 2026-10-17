@@ -1,4 +1,5 @@
 #include "VideoEncoder.h"
+#include "H264Compatibility.h"
 #include "Nv12Neon.h"
 
 #if !defined(__linux__) || !defined(__aarch64__) || !defined(HWASIMIR_HAS_RKMPP)
@@ -293,6 +294,8 @@ void H264MppEncoder::requestKeyFrame()
 bool H264MppEncoder::configure(const VideoEncoderConfig& config, std::string& error)
 {
 	reset();
+	int effectiveLevel=0;
+	if(!ResolveH264Level(config,true,effectiveLevel,error))return false;
 	if (config.width <= 0 || config.height <= 0 || config.fps <= 0 ||
 		(config.width & 1) != 0 || (config.height & 1) != 0)
 	{
@@ -357,8 +360,8 @@ bool H264MppEncoder::configure(const VideoEncoderConfig& config, std::string& er
 		!SetCfgS32(m_impl->encoderConfig, "rc:bps_min", bitrate * 15 / 16, error) ||
 		!SetCfgS32(m_impl->encoderConfig, "rc:bps_max", bitrate * 17 / 16, error) ||
 		!SetCfgS32(m_impl->encoderConfig, "codec:type", MPP_VIDEO_CodingAVC, error) ||
-		!SetCfgS32(m_impl->encoderConfig, "h264:profile", 66, error) ||
-		!SetCfgS32(m_impl->encoderConfig, "h264:level", 40, error) ||
+		!SetCfgS32(m_impl->encoderConfig, "h264:profile", config.h264Profile=="high"?100:config.h264Profile=="main"?77:66, error) ||
+		!SetCfgS32(m_impl->encoderConfig, "h264:level", effectiveLevel, error) ||
 		!SetCfgS32(m_impl->encoderConfig, "h264:cabac_en", 0, error) ||
 		!SetCfgS32(m_impl->encoderConfig, "h264:trans8x8", 0, error))
 	{
@@ -372,6 +375,18 @@ bool H264MppEncoder::configure(const VideoEncoderConfig& config, std::string& er
 		reset();
 		return false;
 	}
+    result=m_impl->api->control(m_impl->context,MPP_ENC_GET_CFG,m_impl->encoderConfig);
+    if(result!=MPP_OK){error=MppFailure("mpp_enc_get_cfg_after_set",result);reset();return false;}
+    const std::pair<const char*,RK_S32> expected[]={
+        {"prep:width",config.width},{"prep:height",config.height},
+        {"h264:profile",config.h264Profile=="high"?100:config.h264Profile=="main"?77:66},
+        {"h264:level",effectiveLevel},{"h264:cabac_en",0},{"h264:trans8x8",0},
+        {"rc:fps_out_num",config.fps},{"rc:gop",std::max(1,config.gopFrames)},
+        {"rc:bps_target",bitrate}};
+    for(const auto& item:expected){RK_S32 actual=0;result=mpp_enc_cfg_get_s32(m_impl->encoderConfig,item.first,&actual);
+        std::cout<<"[H264MppReadback] key="<<item.first<<" requested="<<item.second<<" actual="<<actual<<" apiReturn="<<result<<std::endl;
+        if(result!=MPP_OK||actual!=item.second){error=std::string("MPP effective config mismatch: ")+item.first;reset();return false;}
+    }
 	RK_U32 headerMode = MPP_ENC_HEADER_MODE_EACH_IDR;
 	result = m_impl->api->control(
 		m_impl->context,
@@ -459,6 +474,10 @@ bool H264MppEncoder::configure(const VideoEncoderConfig& config, std::string& er
 	}
 
 	m_impl->config = config;
+	std::cout<<"[H264Effective] backend=mpp requestedProfile="<<config.h264Profile
+	    <<" requestedLevel="<<config.h264Level<<" requestedLevelIdc="<<effectiveLevel
+	    <<" refs=1 bFrames=0 rc=cbr cabac=0 trans8x8=0 repeatHeaders=1"
+	    <<" aud="<<config.h264Aud<<" standardEnd="<<config.h264StandardEnd<<" finalProof=SPS_PPS"<<std::endl;
 	m_impl->configured = true;
 	m_forceKeyFrame.store(config.forceKeyFrameOnStart);
 	error.clear();
@@ -622,6 +641,7 @@ bool H264MppEncoder::encode(
 	}
 
 	encoded.payloadCodec = "h264_annexb";
+	if(m_impl->config.h264Aud)AddH264Aud(encoded.payload);
 	encoded.encoderName = name();
 	encoded.ptsMs = raw.ptsMs;
 	encoded.inputChannels = raw.pixelFormat == RawVideoPixelFormat::Gray8 ? 1 : 3;

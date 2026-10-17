@@ -24,15 +24,20 @@ struct CustomerDdsVideoPublisher::Impl {
     std::mutex mutex;std::condition_variable cv,drained;std::deque<Frame> queue;std::thread worker;
     bool running=false,accepting=false,inFlight=false,failed=false,precise=true,h264=false;
     std::atomic<bool> cancel{false};
+    bool diagnosticFailureConsumed=false;
     std::string failure;int round=0;VideoEncoderConfig encoderConfig;std::string backend;
     std::unique_ptr<IVideoEncoder> encoder;bool encoderReady=false;
     std::uint64_t accepted=0,sent=0,samples=0,bytes=0,aborted=0,rejected=0,maxDepth=0;
     std::ofstream audit,payload;HwaHash::Sha256 streamHash;
 #if defined(HWASIMIR_HAS_ZRDDS)
     CustomerTX::Writer writer;
+    DDS::DomainParticipant* participant=nullptr;
 #endif
     void failLocked(const std::string& reason) {
-        if(!failed)std::cerr<<"[CustomerTX][ERROR] reason="<<reason<<" action=abort_customer_round old_branch_continues=1"<<std::endl;
+        if(!failed)std::cerr<<"[CustomerTX][ERROR] reason="<<reason<<" round="<<round
+            <<" role="<<(precise?"precise":"coarse")<<" queueDepth="<<queue.size()
+            <<" accepted="<<accepted<<" sent="<<sent<<" aborted="<<aborted<<" rejected="<<rejected
+            <<" action=abort_customer_round old_branch_continues=1"<<std::endl;
         failure=reason;failed=true;cancel.store(true);accepting=false;aborted+=queue.size();queue.clear();cv.notify_all();drained.notify_all();
     }
     void run() {
@@ -77,7 +82,10 @@ struct CustomerDdsVideoPublisher::Impl {
                 if(ok && (wire->empty() || (!h264 && wire->size()>CustomerTX::RawCapacity))) {ok=false;error="invalid_payload_size";}
                 const auto writeBegin=nowNs();
 #if defined(HWASIMIR_HAS_ZRDDS)
-                if(ok)ok=writer.send(wire->data(),wire->size(),static_cast<std::int32_t>(frame.seq),frameSamples,frameBytes,cancel);
+                if(ok) {
+                    ok=writer.send(wire->data(),wire->size(),static_cast<std::int32_t>(frame.seq),frameSamples,frameBytes,cancel);
+                    if(!ok)error=writer.result().describe();
+                }
 #else
                 ok=false;error="ZRDDS_unavailable";
 #endif
@@ -127,8 +135,12 @@ bool CustomerDdsVideoPublisher::start(const CustomerDdsVideoConfig& c,const std:
     error="customer requires ZRDDS build";return false;
 #else
     if(!runtime || !runtime->running()){error="customer requires existing DDS runtime";return false;}
+    m->config.domainId=c.domainId<0?runtime->config().domainId:c.domainId;
+    m->participant=runtime->participantForDomain(m->config.domainId,error);
+    if(!m->participant)return false;
     m->running=true;m->worker=std::thread(&Impl::run,m.get());
-    std::cout<<"[CustomerTX] enabled=1 sharedRuntime=1 runtimeInitCount="<<runtime->initCount()<<" mode="<<c.mode
+    std::cout<<"[CustomerTX] enabled=1 sharedRuntime=1 runtimeInitCount="<<runtime->initCount()
+        <<" domain="<<m->config.domainId<<" qos="<<runtime->config().qosFile<<" mode="<<c.mode
         <<" pixelFormat="<<c.pixelFormat<<" queueMaxFrames="<<c.queueMaxFrames<<" writeTimeoutMs=100 drainMs="<<c.drainMs<<std::endl;
     return true;
 #endif
@@ -138,12 +150,13 @@ bool CustomerDdsVideoPublisher::beginRound(int round,bool requested,const VideoE
     endRound(error);
     std::lock_guard<std::mutex> lock(m->mutex);
     if(m->inFlight || !m->queue.empty()){error="previous customer round still draining";return false;}
+    std::cout<<"[CustomerTXState] previous="<<(m->failed?"Failed":"Ready")<<" next=Recovering globalReinit=0"<<std::endl;
     error.clear();m->cancel.store(false);
     m->round=round;m->h264=compressed(m->config,requested);m->encoderConfig=config;m->backend=backend;
     m->encoder.reset();m->encoderReady=false;m->failed=false;m->failure.clear();
     m->accepted=m->sent=m->samples=m->bytes=m->aborted=m->rejected=m->maxDepth=0;m->streamHash=HwaHash::Sha256();
 #if defined(HWASIMIR_HAS_ZRDDS)
-    if(!m->writer.open(m->runtime->participant(),m->precise,m->h264,error)){m->failLocked(error);return false;}
+    if(!m->writer.open(m->participant,m->precise,m->h264,error)){m->failLocked(error);return false;}
 #endif
     if(!m->config.auditPrefix.empty()) {
         const std::string prefix=m->config.auditPrefix+"_round"+std::to_string(round);
@@ -153,6 +166,9 @@ bool CustomerDdsVideoPublisher::beginRound(int round,bool requested,const VideoE
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(m->config.discoverySettleMs));
     m->accepting=true;
+#if defined(HWASIMIR_HAS_ZRDDS)
+    std::cout<<"[CustomerTXState] next=Running runtimeInitCount="<<m->runtime->initCount()<<std::endl;
+#endif
     std::cout<<"[CustomerTXRound] round="<<round<<" topic="<<CustomerTX::topic(m->precise,m->h264)<<" type="<<CustomerTX::type(m->precise,m->h264)
         <<" requestedH264="<<requested<<" actualH264="<<m->h264<<" frameIdReset=1 privateSei=0"<<std::endl;
     return true;
@@ -161,6 +177,11 @@ bool CustomerDdsVideoPublisher::submit(const RawVideoFrame& raw,std::uint64_t se
     if(!enabled())return true;
     std::lock_guard<std::mutex> lock(m->mutex);
     if(!m->accepting || m->failed){++m->rejected;return false;}
+    if(m->config.diagnosticFailAfterFramesOnce>0 && !m->diagnosticFailureConsumed &&
+       m->accepted>=static_cast<std::uint64_t>(m->config.diagnosticFailAfterFramesOnce)) {
+        m->diagnosticFailureConsumed=true;++m->rejected;
+        m->failLocked("diagnostic_application_failure_once_NOT_SDK_RETURN_CODE");return false;
+    }
     if(!seq || seq>2147483647ULL || m->queue.size()>=static_cast<std::size_t>(m->config.queueMaxFrames)) {
         ++m->rejected;m->failLocked("frame_id_or_queue_capacity_exceeded");return false;
     }
@@ -198,14 +219,38 @@ bool CustomerDdsVideoPublisher::endRound(std::string& error) {
     }
 #if defined(HWASIMIR_HAS_ZRDDS)
     if(m->round) {
+        if(!m->failed && m->h264 && m->sent && m->encoderConfig.h264StandardEnd) {
+            // Real normal end only. H.264 end_of_seq RBSP is empty; this is
+            // a standard NAL, not a customer application EOS sample/header.
+            const std::uint8_t endSequence[]={0,0,0,1,10};
+            std::uint64_t endSamples=0,endBytes=0;
+            const auto endBegin=nowNs();
+            if(!m->writer.send(endSequence,sizeof(endSequence),0,endSamples,endBytes,m->cancel))
+                m->failLocked(m->writer.result().describe());
+            else {
+                m->samples+=endSamples;m->bytes+=endBytes;
+                m->streamHash.update(endSequence,sizeof(endSequence));
+                if(m->payload.is_open())m->payload.write(reinterpret_cast<const char*>(endSequence),sizeof(endSequence));
+                std::cout<<"[CustomerTXEndSequence] round="<<m->round<<" nalType=10 bytes="<<endBytes
+                    <<" writeBeginNs="<<endBegin<<" writeEndNs="<<nowNs()<<" pictureCountAdded=0"<<std::endl;
+            }
+        }
         const int remaining=(std::max)(0,m->config.drainMs-static_cast<int>((nowNs()-start)/1000000));
-        if(!m->writer.drain(remaining))m->failLocked("dds_ack_drain_timeout");
+        if(!m->failed && !m->writer.drain(remaining))m->failLocked(m->writer.result().describe());
     }
 #endif
     if(m->round)std::cout<<"[CustomerTXDrain] round="<<m->round<<" accepted="<<m->accepted<<" sentFrames="<<m->sent<<" samples="<<m->samples
         <<" bytes="<<m->bytes<<" aborted="<<m->aborted<<" rejected="<<m->rejected<<" maxQueueDepth="<<m->maxDepth
         <<" drainMs="<<(nowNs()-start)/1e6<<" streamSha256="<<m->streamHash.finishHex()<<" failed="<<m->failed<<std::endl;
-    m->audit.close();m->payload.close();m->round=0;error=m->failure;return !m->failed;
+    m->audit.close();m->payload.close();m->round=0;
+#if defined(HWASIMIR_HAS_ZRDDS)
+    // Keep one healthy Writer through STOP. TCP Readers in this SDK can report
+    // BEST_EFFORT despite the requested RELIABLE profile, so ACK completion is
+    // not a delivery proof. Immediate UnPubTopic can discard the final sample.
+    // Failed entities are released here; beginRound safely rebuilds either case.
+    if(m->failed)m->writer.close();
+#endif
+    error=m->failure;return !m->failed;
 }
 void CustomerDdsVideoPublisher::shutdown() {
     if(!m->running)return;

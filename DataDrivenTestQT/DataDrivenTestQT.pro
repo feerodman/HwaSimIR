@@ -113,3 +113,8 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 #qnx: icd.path = ./ICD
 #!isEmpty(icd.path): INSTALLS += target
+
+SOURCES += $$PWD/DualSensorPanel.cpp
+HEADERS += $$PWD/DualSensorPanel.h $$PWD/ReplaySource.h
+
+win32:QMAKE_POST_LINK += $$escape_expand(\n\t) cmd /c copy /Y $$system_path($$PWD/../HwaSim_IR/Bin/Config/HwaSimIRRuntime.ini) $$system_path($$OUT_PWD/release/Config/HwaSimIRRuntime.ini)

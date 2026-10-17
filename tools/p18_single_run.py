@@ -4,6 +4,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--name',required=True);ap.add_argument('--deployment',default='candidate4')
+    ap.add_argument('--domain',type=int,default=150)
     ap.add_argument('--role',choices=['coarse','precise'],default='precise');ap.add_argument('--width',type=int,default=800)
     ap.add_argument('--codec',choices=['raw','h264'],default='h264');ap.add_argument('--pixels',choices=['gray8','rgb24'],default='gray8')
     ap.add_argument('--band',choices=['SWIR','MWIR'],default='MWIR');ap.add_argument('--customer-only',action='store_true')
@@ -37,6 +38,7 @@ def main():
     rxdir=ROOT/a.receiver_build/'release';stimdir=ROOT/a.stimulator_build/'release'
     sensor=1 if a.role=='coarse' else 2;topic='TX/'+(('LD264' if sensor==1 else 'HD264') if a.codec=='h264' else ('LDecode' if sensor==1 else 'HDecode'))
     config=(ROOT/'logs/p18/before/p18_before_swir_25urad_p17v12/DataDrivenTestQT.NetworkConfig.ini').read_text(encoding='utf-8-sig')
+    config=re.sub(r'(?m)^DomainId=.*$',f'DomainId={a.domain}',config)
     for key,value in dict(sensorID=sensor,trackerSensorBand=0 if a.band=='SWIR' else 2,envSky=a.weather).items():config=re.sub(r'(?m)^'+key+'=.*$',key+'='+str(value),config)
     (out/'sender.ini').write_text(config,encoding='utf-8')
     fields=dict(trackerSensorWidth=a.width,trackerSensorHeight=a.width,h264En=(a.codec=='h264' if a.init_h264 is None else bool(a.init_h264)),saveMP4En=a.old_display)
@@ -51,7 +53,7 @@ def main():
         d=out/('customer_reconnected' if restarted else 'customer');d.mkdir();shutil.copy2(rxdir/'zrddslicence.lic',d/'zrddslicence.lic')
         width=a.second_width if restarted and a.second_width else a.width
         return launch([str(rxdir/'HwaSimIRCustomerTxVideoReceiverDemo.exe'),'--topic',topic,'--codec',a.codec,'--pixel-format',a.pixels,'--width',str(width),'--height',str(width),'--fps','60',
-            '--domain','150','--qos',str(rxdir/'ZRDDS_PROTOCOL_QOS.xml'),'--output',str(d),'--idle-ms','10000','--timeout-ms',('40000' if a.reconnect and not restarted else '200000'),'--slow-ms',str(a.slow_ms),'--display','1','--ffmpeg',str(rxdir/'ffmpeg.exe')]+(['--callback-block-ms',str(a.callback_block_ms)] if a.callback_block_ms else []),d,'receiver_reconnected' if restarted else 'receiver',visible=True)
+            '--domain',str(a.domain),'--qos',str(rxdir/'ZRDDS_PROTOCOL_QOS.xml'),'--output',str(d),'--idle-ms','10000','--timeout-ms',('40000' if a.reconnect and not restarted else '200000'),'--slow-ms',str(a.slow_ms),'--display','1','--ffmpeg',str(rxdir/'ffmpeg.exe')]+(['--callback-block-ms',str(a.callback_block_ms)] if a.callback_block_ms else []),d,'receiver_reconnected' if restarted else 'receiver',visible=True)
     started=time.monotonic();rx=None;vd=None;paused=None;holder=None
     try:
         if not (a.reject or a.disabled or a.absent) and not a.late_seconds:rx=receiver()

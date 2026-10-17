@@ -1,0 +1,134 @@
+int IRSenceNodeWidget::Initffmpeg(int index, int w, int h, int fps)
+{
+	/************************************************************************/
+	// 1. 创建MP4格式的输出上下文
+	avformat_alloc_output_context2(&m_formatCtx[index], nullptr, nullptr, m_trackerSensorMP4OutputFilePath[index]);
+	if (!m_formatCtx[index]) {
+		fprintf(stderr, "Could not create output context\n");
+		return -1;
+	}
+	/************************************************************************/
+
+	m_myPts[index] = 0;
+
+	// 2. 创建编码器
+	m_myCodec[index] = avcodec_find_encoder(AV_CODEC_ID_H264);
+	if (!m_myCodec[index]) {
+		fprintf(stderr, "H.264 encoder not found\n");
+		return -1;
+	};
+	m_myContext[index] = avcodec_alloc_context3(m_myCodec[index]);
+	if (!m_myContext[index]) {
+		fprintf(stderr, "Could not allocate codec context\n");
+		return -1;
+	};
+
+	// 配置低延迟编码参数
+	m_myContext[index]->width = w;
+	m_myContext[index]->height = h;
+	m_myContext[index]->time_base = { 1, fps };
+	m_myContext[index]->framerate = { fps, 1 };
+	m_myContext[index]->pix_fmt = AV_PIX_FMT_YUV420P;
+	//m_myContext->gop_size = 0;       // 禁用GOP，每帧独立编码
+	//m_myContext->max_b_frames = 0;   // 禁用B帧
+	//m_myContext->delay = 0;          // 无编码延迟
+
+	m_myContext[index]->gop_size = 250;
+	m_myContext[index]->max_b_frames = 1;
+
+	av_opt_set(m_myContext[index]->priv_data, "profile", "high", 0);
+	av_opt_set(m_myContext[index]->priv_data, "preset", "medium", 0);
+	av_opt_set(m_myContext[index]->priv_data, "crf", "23", 0);
+	av_opt_set(m_myContext[index]->priv_data, "cabac", "1", 0);
+	av_opt_set(m_myContext[index]->priv_data, "refs", "3", 0);
+	av_opt_set(m_myContext[index]->priv_data, "me_method", "hex", 0);
+	av_opt_set(m_myContext[index]->priv_data, "subme", "7", 0);
+	av_opt_set(m_myContext[index]->priv_data, "trellis", "1", 0);
+	av_opt_set(m_myContext[index]->priv_data, "bframes", "3", 0);
+	av_opt_set(m_myContext[index]->priv_data, "b_pyramid", "normal", 0);
+	av_opt_set(m_myContext[index]->priv_data, "rc_lookahead", "40", 0);
+	av_opt_set(m_myContext[index]->priv_data, "scenecut", "40", 0);
+	av_opt_set(m_myContext[index]->priv_data, "weightb", "1", 0);
+	av_opt_set(m_myContext[index]->priv_data, "weightp", "2", 0);
+
+	av_opt_set(m_myContext[index]->priv_data, "preset", "ultrafast", 0);
+	av_opt_set(m_myContext[index]->priv_data, "tune", "zerolatency", 0);
+	av_opt_set(m_myContext[index]->priv_data, "crf", "20", 0);
+
+	/************************************************************************/
+	// 3. 添加视频流到MP4容器
+	m_videoStream[index] = avformat_new_stream(m_formatCtx[index], m_myCodec[index]);
+	if (!m_videoStream[index]) {
+		fprintf(stderr, "Could not create video stream\n");
+		avcodec_free_context(&m_myContext[index]);
+		avformat_free_context(m_formatCtx[index]);
+		return -1;
+	}
+
+	m_videoStream[index]->id = m_formatCtx[index]->nb_streams - 1;
+	m_videoStream[index]->time_base = m_myContext[index]->time_base;
+	// 复制编码器参数到流
+	avcodec_parameters_from_context(m_videoStream[index]->codecpar, m_myContext[index]);
+	/************************************************************************/
+
+	// 打开编码器
+	if (avcodec_open2(m_myContext[index], m_myCodec[index], NULL) < 0) {
+		fprintf(stderr, "Could not open codec\n");
+		avcodec_free_context(&m_myContext[index]);
+		return -1;
+	}
+
+	/************************************************************************/
+	// 4. 打开输出文件
+	if (!(m_formatCtx[index]->oformat->flags & AVFMT_NOFILE)) {
+		if (avio_open(&m_formatCtx[index]->pb, m_trackerSensorMP4OutputFilePath[index], AVIO_FLAG_WRITE) < 0) {
+			/*fprintf(stderr, "Could not open output file\n");
+			avcodec_free_context(&m_myContext[index]);
+			avformat_free_context(m_formatCtx[index]);
+			return -1;*/
+			avio_open(&m_formatCtx[index]->pb, "laser.mp4", AVIO_FLAG_WRITE);
+			fprintf(stderr, "Could not open output file, create laser.mp4\n");
+		}
+	}
+
+	// 5. 写入MP4文件头
+	if (avformat_write_header(m_formatCtx[index], nullptr) < 0) {
+		fprintf(stderr, "Error writing header\n");
+		avio_closep(&m_formatCtx[index]->pb);
+		avcodec_free_context(&m_myContext[index]);
+		avformat_free_context(m_formatCtx[index]);
+		return -1;
+	}
+	/************************************************************************/
+
+	m_myFrame[index] = av_frame_alloc();
+	m_myFrame[index]->format = m_myContext[index]->pix_fmt;
+	m_myFrame[index]->width = w;
+	m_myFrame[index]->height = h;
+	if (av_frame_get_buffer(m_myFrame[index], 32) < 0) {
+		fprintf(stderr, "Could not allocate frame buffer\n");
+		avcodec_free_context(&m_myContext[index]);
+		return -1;
+	};
+	m_myPkt[index] = av_packet_alloc();
+	if (!m_myPkt[index]) {
+		fprintf(stderr, "Could not allocate packet\n");
+		av_frame_free(&m_myFrame[index]);
+		avcodec_free_context(&m_myContext[index]);
+		return -1;
+	};
+
+	m_mySwsCtx[index] = sws_getContext(
+		m_myContext[index]->width, m_myContext[index]->height, m_myContext[index]->pix_fmt,
+		m_myContext[index]->width, m_myContext[index]->height, AV_PIX_FMT_BGR24,
+		SWS_BILINEAR, NULL, NULL, NULL);
+
+	if (!m_mySwsCtx[index]) {
+		fprintf(stderr, "Could not allocate sws_getContext\n");
+		av_frame_free(&m_myFrame[index]);
+		avcodec_free_context(&m_myContext[index]);
+		return -1;
+	}
+
+	return 0;
+}

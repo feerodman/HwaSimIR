@@ -1,3 +1,5 @@
+> 此文保留P18历史构建和测试命令。P19默认双路UI、任意ID、Domain1及当前版本启动请用[P19说明](HwaSimIR_P19_DualSensor_UI_Guide.md)。板端保留的P18实例实际有效域为1（按归档配置和启动日志核实），此文历史Domain150示例需显式匹配配置后使用。
+
 # P18 双通道运行手册
 
 工作区 `D:\HwaSimIR`；板卡 `192.168.1.116`；构建 VM `192.168.203.128`；Windows 接收机 `192.168.1.188`。凭据仅放当前进程的安全环境/SSH agent，不写入命令清单、配置或交付包。实际执行命令和每轮覆盖值见 `logs/p18/runs/<case>/commands.json`、`sender.ini`、`sensor.json` 及板端 effective-config 日志。
@@ -18,21 +20,21 @@ python tools/p18_prepare_instances.py --name candidate_new `
 
 构建前关闭同名运行中的 EXE；否则 Windows 链接器会报 Permission denied。AArch64 工具使用 VM 密钥或 `P11_VM_PASSWORD`，板端部署使用 `HWASIMIR_SSH_PASSWORD`；本文件不提供密码值。主程序、当前库和板端资源的 SHA256、Build ID、manifest 在 `logs/p18/deployment/candidate4/receipt.json` 及两个实例的 verification.log/deployment_version.env 中。
 
-当前已部署的 P18 ELF：`f7dddbdb4e19f4e3676f9e288255c59ee86cf41ae0817a3aa724bc09e044e40d`，位于 `/userdata/HwaSimIR/p18/candidate4/HwaSim_IR`。两实例硬链接该 ELF，各自 cwd/Config/network.ini/logs/licence 运行副本；新资源替换独立 inode，不写回保留的 `/userdata/HwaSimIR` P17v12 基线。资源 manifest 摘要与逐文件校验以 `logs/p18/deployment/candidate4/receipt.json` 及 verification.log 为准。
+当前保留用于回滚的 P18 ELF：`f7dddbdb4e19f4e3676f9e288255c59ee86cf41ae0817a3aa724bc09e044e40d`，位于 `/userdata/HwaSimIR/releases/P18/HwaSim_IR`。两实例硬链接该 ELF，各自 cwd/Config/network.ini/logs/licence 运行副本；新资源替换独立 inode，不写回保留的 `/userdata/HwaSimIR` P17v12 基线。资源 manifest 摘要与逐文件校验以 `logs/p18/deployment/candidate4/receipt.json` 及 verification.log 为准。
 
 ## 正式双路
 
 | 实例 | 绝对工作目录 | 本地身份 | 有效INIT | 客户输出 |
 |---|---|---|---|---|
-| coarse | /userdata/HwaSimIR/p18/candidate4/coarse | 1001/1 | 320×320、h264En=false | TX/LDecode、Gray8、102400字节/帧 |
-| precise | /userdata/HwaSimIR/p18/candidate4/precise | 1001/2 | 800×800、h264En=true | TX/HD264、灰度H264、有效片≤1400字节 |
+| coarse | /userdata/HwaSimIR/releases/P18/coarse | 1001/1 | 320×320、h264En=false | TX/LDecode、Gray8、102400字节/帧 |
+| precise | /userdata/HwaSimIR/releases/P18/precise | 1001/2 | 800×800、h264En=true | TX/HD264、灰度H264、有效片≤1400字节 |
 
 两份完整 runtime INI 位于 `logs/p18/deployment/candidate4/coarse/` 与 `precise/`；network.ini 配置也在同目录。当前隔离配置 coarse UDP 8888 / TCP5554、precise UDP8889 / TCP5555，均彼此独立；生产控制走 DDS，不依赖这些 TCP 连接。角色默认模板的端口与隔离实例可能不同，必须看实际 network.ini。
 
 分别在两个板端 shell 启动（日志目录预先创建，不能覆写已有验收目录）：
 
 ```sh
-cd /userdata/HwaSimIR/p18/candidate4/coarse
+cd /userdata/HwaSimIR/releases/P18/coarse
 env HWASIMIR_ROOT="$PWD" HWASIMIR_CHANNEL=coarse \
   HWASIMIR_NETWORK_CONFIG="$PWD/network.ini" \
   HWASIMIR_RUNTIME_CONFIG="$PWD/Config/HwaSimIRRuntime.ini" ZRDDS_HOME="$PWD/zrdds" \
@@ -42,7 +44,7 @@ env HWASIMIR_ROOT="$PWD" HWASIMIR_CHANNEL=coarse \
 ```
 
 ```sh
-cd /userdata/HwaSimIR/p18/candidate4/precise
+cd /userdata/HwaSimIR/releases/P18/precise
 env HWASIMIR_ROOT="$PWD" HWASIMIR_CHANNEL=precise \
   HWASIMIR_NETWORK_CONFIG="$PWD/network.ini" \
   HWASIMIR_RUNTIME_CONFIG="$PWD/Config/HwaSimIRRuntime.ini" ZRDDS_HOME="$PWD/zrdds" \
@@ -98,7 +100,7 @@ python tools/p18_analyze_dual.py logs/p18/runs/dual_manual_new
 
 ## 生命周期与其它路径
 
-正常顺序：接收端→renderer→发现→RESET→两个INIT→两份ACK→START→两路running→Realtime→STOP→板端输出排空→接收本地idle flush→ffprobe/摘要核验。无 VideoDisplay 时这一流程完整可用。原分支与新分支同时启用时可另开原 VideoDisplay，其关闭不构成 renderer 输出开关。
+P18历史顺序：接收端→renderer→发现→RESET→两个INIT→两份ACK→START→两路running→Realtime→STOP→板端输出排空→接收本地idle flush→ffprobe/摘要核验。P19已替换为标准H264结束NAL收尾，不能用此处P18 idle命令验收P19。无 VideoDisplay 时这一流程完整可用。原分支与新分支同时启用时可另开原 VideoDisplay，其关闭不构成 renderer 输出开关。
 
 客户独开示例：
 
@@ -113,7 +115,7 @@ python tools/p18_single_run.py --name independent_new --role coarse --width 320 
 
 ## 回滚与失败定位
 
-P18 没覆盖板端保留的 P17v12 主目录，停止已确认 cwd 位于candidate4的实例后，从 `/userdata/HwaSimIR` 用原 launcher启动即可恢复P17。原始输入、模型、旧协议和历史证据保留；不要删除失败目录后重跑同名案例。当前工作区恢复客户开关只需 `[CustomerDdsVideo] Enable=false`；尾焰单独回退可用 baseline/sprite.vert、sprite.frag 对照，不能整体回退P17。
+P19已将P17完整归档到板外并验证恢复，板端仅保留 `releases/P19` 和 `releases/P18`。不要再使用旧根目录作为P17入口，也不要回退已认可的尾焰。使用 `use_release.sh P18` / `use_release.sh P19` 切换当前入口，详见[P19板端版本说明](HwaSimIR_P19_Board_Releases.md)。
 
 先看 RuntimeInstance、DeploymentVersion、CustomerTX sharedRuntime/runtimeInitCount、INIT requested/actual mode、StimDualInitBarrier、原生缓冲几何、CustomerTXDrain。raw容量拒绝的ACK超时是预期失败，不得算正向通过。连接reset时API OK不保证送达，保留端点日志和部分载荷，再排查连接/进程；禁止把缺失帧删掉后宣称完整。
 

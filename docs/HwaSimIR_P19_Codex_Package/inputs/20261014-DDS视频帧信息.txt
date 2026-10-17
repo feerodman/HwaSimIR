@@ -1,0 +1,40 @@
+/*压缩后视频数据TOPIC */
+//精跟
+#define TOPIC_VEDIO_HD264	"TX/HD264"
+//粗跟
+#define TOPIC_VEDIO_LD264	"TX/LD264"
+
+/*未压缩视频数据TOPIC */
+//精跟
+#define TOPIC_VEDIO_HDECODE	"TX/HDecode"
+//粗跟
+#define TOPIC_VEDIO_LDECODE	"TX/LDecode"
+
+
+//精跟踪压缩后视频数据结构
+struct HD264Stream
+{
+	unsigned long DataLength;
+	octet    VedioStream[1400];
+};
+
+//粗跟踪压缩后视频数据结构
+struct LD264Stream
+{
+	unsigned long DataLength;
+	octet    VedioStream[1400];
+};
+
+//精跟踪未压缩视频数据结构
+struct HDDecoder
+{
+	long frameId;
+	sequence<char,640000> stream;
+};
+
+//粗跟踪未压缩视频数据结构
+struct LDDecoder
+{
+	long frameId;
+	sequence<char,640000> stream;
+};

@@ -13,6 +13,7 @@
 #include <mutex>
 #include <vector>
 #include <set>
+#include <map>
 
 #if defined(HWASIMIR_HAS_ZRDDS)
 #include "ZRDDSCppSimpleInterface.h"
@@ -53,6 +54,8 @@ struct DdsStimClient::Impl
     int statusPlatID = -1, statusSensorID = -1, statusRound = -1;
     std::string statusChannel;
     std::set<int> expectedSensors, runningSensors, stoppedSensors;
+    std::map<std::pair<int,int>,std::string> expectedRoutes;
+    std::set<std::pair<int,int>> runningRoutes,stoppedRoutes;
 #if defined(HWASIMIR_HAS_ZRDDS)
     class StatusListener : public DDS::SimpleDataReaderListener<HwaSimIRDds::VideoStatusV1,
         HwaSimIRDds::VideoStatusV1Seq, HwaSimIRDds::VideoStatusV1DataReader>
@@ -63,11 +66,20 @@ struct DdsStimClient::Impl
                                const DDS::SampleInfo&) override
         {
             std::lock_guard<std::mutex> lock(impl->mutex);
+            if(!impl->expectedRoutes.empty()) {
+                const auto key=std::make_pair(int(sample.platID),int(sample.sensorID));
+                const auto found=impl->expectedRoutes.find(key);
+                if(found==impl->expectedRoutes.end() || sample.currentRound!=impl->statusRound ||
+                    found->second!=(sample.channel?sample.channel:""))return;
+                if(sample.running)impl->runningRoutes.insert(key);
+                if(impl->stopPending && impl->runningRoutes.count(key) && !sample.running)impl->stoppedRoutes.insert(key);
+                impl->runningObserved=impl->runningRoutes.size()==impl->expectedRoutes.size();
+                impl->stopObserved=impl->stoppedRoutes.size()==impl->expectedRoutes.size();
+                impl->ackReady.notify_all();return;
+            }
             if(!impl->expectedSensors.empty()) {
                 if(sample.platID!=impl->statusPlatID || sample.currentRound!=impl->statusRound ||
                     !impl->expectedSensors.count(sample.sensorID))return;
-                const std::string channel=sample.channel?sample.channel:"";
-                if((sample.sensorID==1 && channel!="coarse") || (sample.sensorID==2 && channel!="precise"))return;
                 if(sample.running)impl->runningSensors.insert(sample.sensorID);
                 if(impl->stopPending && impl->runningSensors.count(sample.sensorID) && !sample.running)impl->stoppedSensors.insert(sample.sensorID);
                 impl->runningObserved=impl->runningSensors==impl->expectedSensors;
@@ -209,6 +221,10 @@ bool DdsStimClient::sendControl(const BYHWICD::ControlP2cX1ObjTrackingCmd& value
         m_impl->stoppedSensors.clear();
         if(value.simCommand == 1 || value.simCommand == 2)m_impl->runningSensors.clear();
         if(value.simCommand == 1 || value.simCommand == 2) m_impl->runningObserved = false;
+        for(const auto& entry:m_impl->expectedRoutes)if(entry.first.first==value.platID) {
+            m_impl->stoppedRoutes.erase(entry.first);
+            if(value.simCommand==1 || value.simCommand==2)m_impl->runningRoutes.erase(entry.first);
+        }
     }
     return WriteTyped(m_impl->control, HwaSimIRDdsAdapter::ToDds(value), "Control", error);
 #else
@@ -385,6 +401,19 @@ void DdsStimClient::setExpectedSensors(const std::vector<int>& sensors)
     std::lock_guard<std::mutex> lock(m_impl->mutex);
     m_impl->expectedSensors=std::set<int>(sensors.begin(),sensors.end());
     m_impl->runningSensors.clear();m_impl->stoppedSensors.clear();
+}
+void DdsStimClient::setExpectedRoutes(const std::vector<DdsStimRoute>& routes) {
+    std::lock_guard<std::mutex> lock(m_impl->mutex);
+    m_impl->expectedSensors.clear();m_impl->expectedRoutes.clear();
+    for(const auto& route:routes)m_impl->expectedRoutes[std::make_pair(route.platID,route.sensorID)]=route.role;
+    m_impl->runningRoutes.clear();m_impl->stoppedRoutes.clear();
+    m_impl->runningObserved=false;m_impl->stopObserved=false;
+}
+bool DdsStimClient::runningStatusObserved() const {
+    std::lock_guard<std::mutex> lock(m_impl->mutex);return m_impl->runningObserved;
+}
+bool DdsStimClient::stoppedStatusObserved() const {
+    std::lock_guard<std::mutex> lock(m_impl->mutex);return m_impl->stopObserved;
 }
 void DdsStimClient::setVideoStatusObservation(bool enabled)
 {

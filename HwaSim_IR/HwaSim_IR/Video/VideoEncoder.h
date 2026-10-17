@@ -25,6 +25,9 @@ struct RawVideoFrame
 
 struct VideoEncoderConfig
 {
+    std::string h264Profile="baseline",h264Level="auto",h264RateControl="backend_default";
+    int h264ReferenceFrames=1;
+    bool h264RepeatHeaders=true,h264Aud=false,h264StandardEnd=true;
 	int width = 0;
 	int height = 0;
 	int fps = 60;

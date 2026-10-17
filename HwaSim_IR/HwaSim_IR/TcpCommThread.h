@@ -24,6 +24,7 @@
 #include "FrameProductV2.h"
 #include "Video/DdsVideoPublisher.h"
 #include "Video/CustomerDdsVideoPublisher.h"
+#include "Video/H264Compatibility.h"
 #include "Video/LocalMp4Recorder.h"
 
 class HwaSimIR;
@@ -75,6 +76,11 @@ public:
 		bool forwardInitControl);
 	void configureDdsVideo(const DdsVideoPublisherConfig& config);
 	void configureCustomerVideo(const CustomerDdsVideoConfig& config) { m_customerConfig=config; }
+    void configureH264Options(const VideoEncoderConfig& config) { m_h264Options=config; }
+    bool validateH264Options(int w,int h,int fps,std::string& error) const {
+        auto c=m_h264Options;c.width=w;c.height=h;c.fps=fps;c.bitrateKbps=m_h264BitrateKbps.load();
+        int level=0;return ResolveH264Level(c,false,level,error);
+    }
 	void configureDdsRuntime(const std::shared_ptr<DdsRuntimeManager>& runtime);
 	void configureLocalRecording(const LocalMp4RecorderConfig& config);
 	void setH264Requested(bool enabled, int videoFps = 60);
@@ -221,6 +227,7 @@ private:
 	std::atomic<unsigned long long> m_tcpPacketCounter{ 0 };
 	std::int64_t m_lastTcpPerfLogNs = 0;
 	DdsVideoPublisherConfig m_ddsConfig;
+	VideoEncoderConfig m_h264Options;
 	CustomerDdsVideoConfig m_customerConfig;
 	CustomerDdsVideoPublisher m_customerPublisher;
 	LocalMp4RecorderConfig m_recordingConfig;

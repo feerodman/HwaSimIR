@@ -94,6 +94,8 @@ struct HwaSimIRProtocolEndpoint::Impl
     HwaSimIRDds::InitAckV1DataWriter* ackWriter = nullptr;
     DDS::DataWriter* statusWriterBase = nullptr;
     HwaSimIRDds::VideoStatusV1DataWriter* statusWriter = nullptr;
+    DDS::DataWriter* controlStatusWriterBase = nullptr;
+    HwaSimIRDds::VideoStatusV1DataWriter* controlStatusWriter = nullptr;
     DDS::DataWriter* metaWriterBase = nullptr;
     HwaSimIRDds::VideoFrameMetaV1DataWriter* metaWriter = nullptr;
     DDS::DataWriter* annotationWriterBase = nullptr;
@@ -142,7 +144,10 @@ bool HwaSimIRProtocolEndpoint::start(
                 m_impl->callbacks.realtime(HwaSimIRDdsAdapter::FromDds(sample));
         }));
 
-    DDS::DomainParticipant* participant = runtime->participant();
+    DDS::DomainParticipant* participant = runtime->participantForDomain(config.domainId, error);
+    const int videoDomain = config.videoDomainId < 0 ? config.domainId : config.videoDomainId;
+    DDS::DomainParticipant* videoParticipant = runtime->participantForDomain(videoDomain, error);
+    if (!participant || !videoParticipant) { shutdown(); return false; }
     m_impl->controlReader = Subscribe<HwaSimIRDds::ControlCommandV1TypeSupport>(
         participant, config.topicControl, config.readerProfile, m_impl->controlListener.get());
     m_impl->initReader = Subscribe<HwaSimIRDds::InitCommandV1TypeSupport>(
@@ -152,18 +157,25 @@ bool HwaSimIRProtocolEndpoint::start(
     m_impl->ackWriterBase = Publish<HwaSimIRDds::InitAckV1TypeSupport>(
         participant, config.topicInitAck, config.writerProfile);
     m_impl->statusWriterBase = Publish<HwaSimIRDds::VideoStatusV1TypeSupport>(
-        participant, config.topicVideoStatus, config.statusWriterProfile);
+        videoParticipant, config.topicVideoStatus, config.statusWriterProfile);
+    // The stimulus UI observes status in the control domain. Mirror only this
+    // existing status type when domains differ; never create customer metadata.
+    if (videoDomain != config.domainId) {
+        m_impl->controlStatusWriterBase = Publish<HwaSimIRDds::VideoStatusV1TypeSupport>(
+            participant, config.topicVideoStatus, config.statusWriterProfile);
+        m_impl->controlStatusWriter = dynamic_cast<HwaSimIRDds::VideoStatusV1DataWriter*>(m_impl->controlStatusWriterBase);
+    }
     m_impl->metaWriterBase = Publish<HwaSimIRDds::VideoFrameMetaV1TypeSupport>(
-        participant, config.topicVideoMeta, config.writerProfile);
+        videoParticipant, config.topicVideoMeta, config.writerProfile);
     m_impl->annotationWriterBase = Publish<HwaSimIRDds::AnnotationFrameV1TypeSupport>(
-        participant, config.topicAnnotation, config.writerProfile);
+        videoParticipant, config.topicAnnotation, config.writerProfile);
     m_impl->ackWriter = dynamic_cast<HwaSimIRDds::InitAckV1DataWriter*>(m_impl->ackWriterBase);
     m_impl->statusWriter = dynamic_cast<HwaSimIRDds::VideoStatusV1DataWriter*>(m_impl->statusWriterBase);
     m_impl->metaWriter = dynamic_cast<HwaSimIRDds::VideoFrameMetaV1DataWriter*>(m_impl->metaWriterBase);
     m_impl->annotationWriter = dynamic_cast<HwaSimIRDds::AnnotationFrameV1DataWriter*>(m_impl->annotationWriterBase);
     if (!m_impl->controlReader || !m_impl->initReader || !m_impl->realtimeReader ||
         !m_impl->ackWriter || !m_impl->statusWriter || !m_impl->metaWriter ||
-        !m_impl->annotationWriter)
+        !m_impl->annotationWriter || (videoDomain != config.domainId && !m_impl->controlStatusWriter))
     {
         error = "DDS protocol reader/writer creation failed";
         shutdown();
@@ -171,6 +183,7 @@ bool HwaSimIRProtocolEndpoint::start(
     }
     m_impl->running = true;
     std::cout << "[DdsProtocol] ready=1 runtimeInitCount=" << runtime->initCount()
+              << " controlDomain=" << config.domainId << " videoAuxDomain=" << videoDomain
               << " control=" << config.topicControl
               << " init=" << config.topicInit
               << " realtime=" << config.topicRealtime
@@ -377,6 +390,10 @@ bool HwaSimIRProtocolEndpoint::publishVideoStatus(
     {
         std::lock_guard<std::mutex> lock(m_impl->writeMutex);
         result = m_impl->statusWriter->write(sample, DDS::HANDLE_NIL_NATIVE);
+        if (m_impl->controlStatusWriter) {
+            const auto controlResult=m_impl->controlStatusWriter->write(sample, DDS::HANDLE_NIL_NATIVE);
+            if (result==DDS::RETCODE_OK) result=controlResult;
+        }
     }
     HwaSimIRDds::VideoStatusV1Finalize(&sample);
     if (result != DDS::RETCODE_OK)
@@ -401,6 +418,7 @@ void HwaSimIRProtocolEndpoint::shutdown()
     if (m_impl->realtimeReader) DDS::DDSIF::UnSubTopic(m_impl->realtimeReader);
     if (m_impl->ackWriterBase) DDS::DDSIF::UnPubTopic(m_impl->ackWriterBase);
     if (m_impl->statusWriterBase) DDS::DDSIF::UnPubTopic(m_impl->statusWriterBase);
+    if (m_impl->controlStatusWriterBase) DDS::DDSIF::UnPubTopic(m_impl->controlStatusWriterBase);
     if (m_impl->metaWriterBase) DDS::DDSIF::UnPubTopic(m_impl->metaWriterBase);
     if (m_impl->annotationWriterBase) DDS::DDSIF::UnPubTopic(m_impl->annotationWriterBase);
     m_impl->controlReader = nullptr;
@@ -410,6 +428,8 @@ void HwaSimIRProtocolEndpoint::shutdown()
     m_impl->ackWriter = nullptr;
     m_impl->statusWriterBase = nullptr;
     m_impl->statusWriter = nullptr;
+    m_impl->controlStatusWriterBase = nullptr;
+    m_impl->controlStatusWriter = nullptr;
     m_impl->metaWriterBase = nullptr;
     m_impl->metaWriter = nullptr;
     m_impl->annotationWriterBase = nullptr;

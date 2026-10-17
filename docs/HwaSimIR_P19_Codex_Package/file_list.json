@@ -1,0 +1,70 @@
+[
+  {
+    "path": "HwaSimIR_P19_Codex_Prompt.md",
+    "bytes": 35106
+  },
+  {
+    "path": "README.md",
+    "bytes": 875
+  },
+  {
+    "path": "analysis/DDS_ffprobe.json",
+    "bytes": 504
+  },
+  {
+    "path": "analysis/DDS_nal_summary.json",
+    "bytes": 431
+  },
+  {
+    "path": "analysis/DDS_trace_headers.txt",
+    "bytes": 89858
+  },
+  {
+    "path": "analysis/H264参考文件_解析说明.md",
+    "bytes": 6173
+  },
+  {
+    "path": "analysis/UDP_ffprobe.json",
+    "bytes": 489
+  },
+  {
+    "path": "analysis/UDP_nal_summary.json",
+    "bytes": 441
+  },
+  {
+    "path": "analysis/UDP_trace_headers.txt",
+    "bytes": 107322
+  },
+  {
+    "path": "analysis/analysis_tool_versions.txt",
+    "bytes": 1560
+  },
+  {
+    "path": "inputs/20261014-DDS视频帧信息.txt",
+    "bytes": 752
+  },
+  {
+    "path": "inputs/H264_reference/264/DDS.264",
+    "bytes": 26047574
+  },
+  {
+    "path": "inputs/H264_reference/264/UDP.264",
+    "bytes": 971899
+  },
+  {
+    "path": "inputs/H264_reference/新建文本文档.txt",
+    "bytes": 5373
+  },
+  {
+    "path": "inputs/P18_plume_keep_unchanged.png",
+    "bytes": 18239
+  },
+  {
+    "path": "inputs/board_directory.png",
+    "bytes": 92706
+  },
+  {
+    "path": "inputs/粗跟DDS错误.md",
+    "bytes": 22236
+  }
+]

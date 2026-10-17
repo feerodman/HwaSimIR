@@ -1,0 +1,24 @@
+{
+    "programs": [
+
+    ],
+    "stream_groups": [
+
+    ],
+    "streams": [
+        {
+            "codec_name": "h264",
+            "profile": "High",
+            "width": 640,
+            "height": 512,
+            "has_b_frames": 2,
+            "pix_fmt": "yuv420p",
+            "level": 32,
+            "field_order": "progressive",
+            "refs": 4,
+            "r_frame_rate": "200/1",
+            "avg_frame_rate": "25/1",
+            "nb_read_frames": "9341"
+        }
+    ]
+}

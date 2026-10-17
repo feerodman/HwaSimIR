@@ -13,6 +13,7 @@ struct DdsProtocolConfig
 {
     bool enabled = false;
     int domainId = 150;
+    int videoDomainId = -1; // Video status/meta/annotation accompany the old video domain.
     std::string topicControl = "HwaSimIR.Control";
     std::string topicInit = "HwaSimIR.Init";
     std::string topicRealtime = "HwaSimIR.Realtime";

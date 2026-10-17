@@ -9662,8 +9662,8 @@ bool HwaSimIR::InitUdpThread() {
 
 bool HwaSimIR::PreflightDdsVideoConfig()
 {
-    if(m_customerVideoConfig.enabled && !((m_localSensorID==1 && m_channel=="coarse") || (m_localSensorID==2 && m_channel=="precise"))) {
-        std::cerr<<"[CustomerTX][FATAL] channel_sensor_mismatch expected=coarse:1,precise:2"<<std::endl;return false;
+    if(m_customerVideoConfig.enabled && (m_localSensorID<1 || m_localSensorID>254)) {
+        std::cerr<<"[CustomerTX][FATAL] local sensorID must be 1..254; role is independent"<<std::endl;return false;
     }
 
 	if (!m_startupSucceeded) return false;
@@ -9699,6 +9699,7 @@ void HwaSimIR::LoadD2VideoOutputConfig()
 {
 	m_customerVideoConfig.enabled=m_runtimeConfig.getBool("CustomerDdsVideo","Enable","HwaSimIRCustomerVideoEnable",false,0);
     m_customerVideoConfig.diagnosticColorCard=m_runtimeConfig.getBool("CustomerDdsVideo","DiagnosticColorCard","HwaSimIRCustomerDiagnosticColorCard",false,0);
+    m_customerVideoConfig.diagnosticFailAfterFramesOnce=m_runtimeConfig.getInt("CustomerDdsVideo","DiagnosticFailAfterFramesOnce","HwaSimIRCustomerDiagnosticFailAfterFramesOnce",0,0);
     m_customerVideoConfig.mode=ToLowerAscii(m_runtimeConfig.getString("CustomerDdsVideo","Mode","HwaSimIRCustomerVideoMode","auto",0));
     m_customerVideoConfig.pixelFormat=ToLowerAscii(m_runtimeConfig.getString("CustomerDdsVideo","PixelFormat","HwaSimIRCustomerPixelFormat","gray8",0));
     m_customerVideoConfig.queueMaxFrames=m_runtimeConfig.getInt("CustomerDdsVideo","QueueMaxFrames","HwaSimIRCustomerQueueMaxFrames",32,0);
@@ -9809,8 +9810,10 @@ void HwaSimIR::LoadF1ProtocolConfig()
 	m_ddsProtocolConfig.enabled = m_ddsProtocolEnabled &&
 		(m_commandTransportInput == "dds" || m_commandTransportInput == "both" ||
 		 m_ddsVideoConfig.enabled);
+	std::string protocolDomainSource, videoDomainSource, customerDomainSource;
 	m_ddsProtocolConfig.domainId = m_runtimeConfig.getInt(
-		"DdsProtocol", "DomainId", "HwaSimIRDdsProtocolDomainId", 150, 0);
+		"DdsProtocol", "DomainId", "HwaSimIRDdsProtocolDomainId", 150, &protocolDomainSource);
+	m_ddsVideoConfig.domainId=m_runtimeConfig.getInt("DdsVideo","DomainId","HwaSimIRDdsVideoDomainId",150,&videoDomainSource);
 	const std::string protocolQos = m_runtimeConfig.getString(
 		"DdsProtocol", "QosFile", "HwaSimIRDdsProtocolQosFile",
 		"Config/DDS/ZRDDS_PROTOCOL_QOS.xml", 0);
@@ -9874,9 +9877,24 @@ void HwaSimIR::LoadF1ProtocolConfig()
 	}
 	if (m_ddsProtocolConfig.enabled && m_ddsVideoConfig.enabled)
 	{
+		if (m_ddsVideoConfig.qosFile != protocolQos)
+			std::cout << "[DdsConfig] sharedFactoryQos=" << protocolQos
+				<< " videoQosRequest=" << m_ddsVideoConfig.qosFile << " action=use_shared_factory_profiles" << std::endl;
 		m_ddsVideoConfig.qosFile = protocolQos;
-		m_ddsVideoConfig.domainId = m_ddsProtocolConfig.domainId;
 	}
+	m_ddsProtocolConfig.videoDomainId = m_ddsVideoConfig.enabled ? m_ddsVideoConfig.domainId : m_ddsProtocolConfig.domainId;
+	m_customerVideoConfig.domainId = m_runtimeConfig.getInt("CustomerDdsVideo", "DomainId", "HwaSimIRCustomerDomainId", -1, &customerDomainSource);
+	if (m_customerVideoConfig.domainId == -1) { m_customerVideoConfig.domainId = m_ddsVideoConfig.domainId; customerDomainSource += ":inherit_DdsVideo"; }
+	if (m_ddsProtocolConfig.domainId < 0 || m_ddsProtocolConfig.domainId > 232 ||
+		m_ddsVideoConfig.domainId < 0 || m_ddsVideoConfig.domainId > 232 ||
+		m_customerVideoConfig.domainId < 0 || m_customerVideoConfig.domainId > 232) {
+		std::cerr << "[DdsConfig][FATAL] DomainId must be 0..232; customer -1 inherits DdsVideo" << std::endl;
+		m_startupSucceeded = false;
+	}
+	std::cout << "[DdsDomains] control=" << m_ddsProtocolConfig.domainId
+		<< " oldVideo=" << m_ddsVideoConfig.domainId << " customerVideo=" << m_customerVideoConfig.domainId
+		<< " controlSource=" << protocolDomainSource << " oldVideoSource=" << videoDomainSource << " customerSource=" << customerDomainSource
+		<< " file=" << m_runtimeConfig.loadedPath() << " globalInit=once participantPerDomain=1" << std::endl;
 	std::cout << "[CommandTransport] input=" << m_commandTransportInput
 		<< " ack=" << m_commandTransportAck
 		<< " ddsProtocolEnable=" << (m_ddsProtocolConfig.enabled ? 1 : 0)
@@ -9950,7 +9968,7 @@ bool HwaSimIR::InitDdsProtocol()
 			return false;
 		}
         m_boardTelemetry.reset(new BoardTelemetryService());
-        if(!m_boardTelemetry->start(m_ddsRuntime,runtimeConfig.domainId,m_localPlatID,m_localSensorID))
+        if(!m_boardTelemetry->start(m_ddsRuntime,m_ddsProtocolConfig.videoDomainId,m_localPlatID,m_localSensorID))
             std::cerr<<"[TelemetryV2] available=0 reason=diagnostic_topic_creation"<<std::endl;
         PublishDdsVideoStatus(false, "dds_ready");
 	}
@@ -10108,6 +10126,15 @@ bool HwaSimIR::InitTcpThread()
 		m_tcpSendRealtimeData,
 		m_tcpForwardInitControl);
 	m_pTcpThread->configureDdsVideo(m_ddsVideoConfig);
+    VideoEncoderConfig h264Options;
+    h264Options.h264Profile=ToLowerAscii(m_runtimeConfig.getString("TcpOutput","H264Profile","H264Profile","baseline",0));
+    h264Options.h264Level=ToLowerAscii(m_runtimeConfig.getString("TcpOutput","H264Level","H264Level","auto",0));
+    h264Options.h264RateControl=ToLowerAscii(m_runtimeConfig.getString("TcpOutput","H264RateControl","H264RateControl","backend_default",0));
+    h264Options.h264ReferenceFrames=m_runtimeConfig.getInt("TcpOutput","H264ReferenceFrames","H264ReferenceFrames",1,0);
+    h264Options.h264RepeatHeaders=m_runtimeConfig.getBool("TcpOutput","H264RepeatHeaders","H264RepeatHeaders",true,0);
+    h264Options.h264Aud=m_runtimeConfig.getBool("TcpOutput","H264Aud","H264Aud",false,0);
+    h264Options.h264StandardEnd=m_runtimeConfig.getBool("TcpOutput","H264StandardEnd","H264StandardEnd",true,0);
+    m_pTcpThread->configureH264Options(h264Options);
     m_pTcpThread->configureCustomerVideo(m_customerVideoConfig);
 #if defined(HWASIMIR_HAS_ZRDDS)
 	m_pTcpThread->configureDdsRuntime(m_ddsRuntime);
@@ -10678,6 +10705,13 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 	//std::cout << "  有效平台数：" << cmd.platNumValid << std::endl;
 	const BYHWICD::trackerSensorParam& sensor = cmd.trackingInit.trackerSensor[0];
     std::string customerInitError;
+    if(m_pTcpThread && (sensor.h264En || (m_customerVideoConfig.enabled && m_customerVideoConfig.mode=="h264")) &&
+       !m_pTcpThread->validateH264Options(sensor.trackerSensorWidth,sensor.trackerSensorHeight,
+           cmd.trackingInit.videoFps>0?cmd.trackingInit.videoFps:60,customerInitError)) {
+        m_sensorProfileRequestValid=false;m_isSimRunning.store(false);
+        m_pTcpThread->stopOutputRound("h264_init_rejected");
+        std::cerr<<"[H264Init][ERROR] "<<customerInitError<<" ackSuppressed=1"<<std::endl;return;
+    }
     if(!CustomerDdsVideoPublisher::validate(m_customerVideoConfig,sensor.trackerSensorWidth,sensor.trackerSensorHeight,sensor.h264En,customerInitError)) {
         m_sensorProfileRequestValid=false;m_isSimRunning.store(false);
         if(m_pTcpThread)m_pTcpThread->stopOutputRound("customer_init_rejected");

@@ -10,6 +10,7 @@
 #include <vector>
 
 class DdsRuntimeManager;
+struct DdsStimRoute {int platID=0,sensorID=0;std::string role;};
 
 struct DdsStimConfig
 {
@@ -54,6 +55,9 @@ public:
     void setAckCallback(const std::function<void(const BYHWICD::InitAckC2pObjectTrackingCmd&)>& callback);
     // Optional multi-instance lifecycle barrier, using existing status only.
     void setExpectedSensors(const std::vector<int>& sensors);
+    void setExpectedRoutes(const std::vector<DdsStimRoute>& routes);
+    bool runningStatusObserved() const;
+    bool stoppedStatusObserved() const;
     void setVideoStatusObservation(bool enabled);
     unsigned long long ackCount() const;
     int runtimeInitCount() const;

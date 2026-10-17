@@ -1,0 +1,22 @@
+{
+  "README.txt": {
+    "bytes": 375,
+    "sha256": "15242c0ed58e69c2e4f7f48efc2f05df831e766349e38ed3313c63b436214d6b"
+  },
+  "HwaSimIR_P18_Codex_Prompt.md": {
+    "bytes": 26242,
+    "sha256": "4f67200c76f0acc46061dd419e412841bdc2fea818a3530bd6de233acdf1f754"
+  },
+  "inputs/20261014-DDS视频帧信息.txt": {
+    "bytes": 752,
+    "sha256": "44486bb5994d20d356a6e4d14a9a8e78f6a0d6757ab6305d1c46ad0debc66ce7"
+  },
+  "inputs/plume_reference_1.png": {
+    "bytes": 631936,
+    "sha256": "34b9e1b0ef9d9caf493d1f029b41be289d5cdca8286fb7c75890f3f5819353d6"
+  },
+  "inputs/plume_reference_2.png": {
+    "bytes": 631936,
+    "sha256": "411391fd0ed95f63093af9845f2fbbc8cac362dcd0ba240eb4f189385600010a"
+  }
+}

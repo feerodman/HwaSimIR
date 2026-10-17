@@ -1,0 +1,1 @@
+候选：800×800@60，Baseline/CAVLC、Level 3.2、B=0、refs=1、GOP30、CBR 4Mbps、重复 SPS/PPS、AUD、标准结束 NAL。须配套 customer_domain1 的精路 network/QoS 和完整冻结资源。未知客户硬件 NOT_VERIFIED；1024×1024@60 不得沿用 3.2。修改完整性受控部署时需重新生成清单，不能绕过 launcher 校验。
