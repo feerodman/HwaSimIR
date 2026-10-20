@@ -42,4 +42,4 @@ CMakeLists.txt text
 *.egg text -diff
 
 # Versioned engineering parameters are byte-hashed across Windows and Linux.
-HwaSim_IR/Bin/Config/Atmosphere/Engineering/*/parameters.txt -text
+HwaSim_IR/Bin/Config/Atmosphere/Engineering/*/parameters.txt binary
