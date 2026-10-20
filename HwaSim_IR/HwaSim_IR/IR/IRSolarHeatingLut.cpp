@@ -37,7 +37,9 @@ bool IRSolarHeatingLut::load(const std::string& filePath)
 		e.direct=Number(values,columns,"direct_shortwave_solar_irradiance_W_m2"); e.diffuse=Number(values,columns,"diffuse_shortwave_down_irradiance_W_m2"); e.sourceCaseIds=Text(values,columns,"source_case_ids"); e.sourceFiles=Text(values,columns,"source_files");
 		if(std::isfinite(e.targetAltKm)&&std::isfinite(e.visibilityKm)&&e.visibilityKm>0.0&&std::isfinite(e.solarZenithDeg)&&std::isfinite(e.direct)&&e.direct>=0.0&&std::isfinite(e.diffuse)&&e.diffuse>=0.0)loaded.push_back(e);
 	}
-	if(loaded.empty())return false; m_entries.swap(loaded); m_loadedPath=filePath; return true;
+	if(loaded.empty())return false; m_entries.swap(loaded); m_index.clear();
+	for(size_t i=0;i<m_entries.size();++i){const Entry&e=m_entries[i];m_index[Category(e.atmosphereModel,e.aerosolModel,e.humidityProfile)].add({e.targetAltKm,e.visibilityKm,e.solarZenithDeg},i);}
+	m_loadedPath=filePath; return true;
 }
 bool IRSolarHeatingLut::empty()const{return m_entries.empty();}
 const std::string& IRSolarHeatingLut::loadedPath()const{return m_loadedPath;}
@@ -47,10 +49,21 @@ IRSolarHeatingResult IRSolarHeatingLut::query(const IRSolarHeatingQuery& query)c
 {
 	IRSolarHeatingResult r; if(m_entries.empty())return r;
 	if(!std::isfinite(query.targetAltKm)||!std::isfinite(query.visibilityKm)||query.visibilityKm<=0.0||!std::isfinite(query.solarZenithDeg)){r.fallbackReason="invalid_query";return r;}
-	std::vector<const Entry*> candidates;
-	for(size_t i=0;i<m_entries.size();++i){const Entry&e=m_entries[i];if(e.atmosphereModel==query.atmosphereModel&&e.aerosolModel==query.aerosolModel&&e.humidityProfile==query.humidityProfile)candidates.push_back(&e);}
-	if(candidates.empty()){r.fallbackReason="category_missing";return r;}
-	Sample sample; if(!interpolate(candidates,query,0,sample,r))return r;
+	const auto category=m_index.find(Category(query.atmosphereModel,query.aerosolModel,query.humidityProfile));
+	if(category==m_index.end()){r.fallbackReason="category_missing";return r;}
+	std::vector<IRLutAxisIndex::WeightedRow> rows; rows.reserve(8); IRLutAxisIndex::Error error;
+	if(!category->second.query({query.targetAltKm,query.visibilityKm,query.solarZenithDeg},
+		{kEps,kEps,kEps},rows,error))
+	{
+		r.fallbackReason=error.reason;r.fallbackAxis=error.axis>=3?"cell":axisName(error.axis);
+		r.fallbackQuery=error.value;r.fallbackMin=error.minimum;r.fallbackMax=error.maximum;return r;
+	}
+	Sample sample;
+	for(size_t i=0;i<rows.size();++i){const Entry&e=m_entries[rows[i].row];const double w=rows[i].weight;
+		sample.direct+=e.direct*w;sample.diffuse+=e.diffuse*w;
+		sample.cases=i?Merge(sample.cases,e.sourceCaseIds):e.sourceCaseIds;
+		sample.files=i?Merge(sample.files,e.sourceFiles):e.sourceFiles;}
+
 	r.valid=true;r.directIrradianceWm2=sample.direct;r.diffuseDownIrradianceWm2=sample.diffuse;r.interpolationMode="staged_linear_targetAlt_visibility_solarZenith";r.fallbackReason="none";r.sourceCaseIds=sample.cases;r.sourceFiles=sample.files;return r;
 }
 

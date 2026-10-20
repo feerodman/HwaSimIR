@@ -1,10 +1,12 @@
 #pragma once
 
 #include "IRTypes.h"
+#include "IRLutAxisIndex.h"
 
 #include <cstddef>
 #include <string>
 #include <vector>
+#include <tuple>
 
 struct IRModtranRadianceQuery
 {
@@ -124,5 +126,8 @@ private:
 	static const char* equalAltitudeAxisName(size_t axisIndex);
 
 	std::vector<Entry> m_entries;
+	typedef std::tuple<int, std::string, std::string, std::string> Category;
+	std::map<Category, IRLutAxisIndex> m_index;
+	std::map<Category, IRLutAxisIndex> m_horizontalIndex;
 	std::string m_loadedPath;
 };

@@ -58,6 +58,7 @@
 #include "IR/IRPerfStats.h"
 #include "IR/IRSceneMaterialMapper.h"
 #include "IR/IRSolarPosition.h"
+#include "IR/IRSimulationUtc.h"
 #include "IR/IRSolarHeatingLut.h"
 #include "IR/IRRadianceModelV2.h"
 #include "IR/IRRuntimeConfig.h"
@@ -470,7 +471,11 @@ private:
 	bool m_m1NirRuntimeEnabled = false;
 	bool m_m1SwirRuntimeEnabled = false;
 	bool m_m1MwirRuntimeEnabled = false;
-	std::string m_m1FallbackUtcDate = "2026-09-06";
+	std::string m_m1FallbackUtcDate;
+	std::string m_m1UtcTimeMode = "UnixEpochMs";
+	IRSimulationUtc m_simulationUtc;
+	std::string m_lastMissingCameraKey;
+	std::uint64_t m_missingCameraReferenceCount = 0;
 	std::string m_m1AtmosphereModel = "Mid-Latitude Summer";
 	std::string m_m1AerosolModel = "Rural";
 	std::string m_m1HumidityProfile = "default";

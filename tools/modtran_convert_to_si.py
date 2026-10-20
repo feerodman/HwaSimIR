@@ -10,7 +10,7 @@ import re
 from pathlib import Path
 
 
-NUM = re.compile(r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][-+]?\d+)?")
+NUM = re.compile(r"[-+]?(?:(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][-+]?\d+)?|nan|inf(?:inity)?)", re.I)
 RADIANCE_FIELDS = [
     ("wavenumber_cm1", 0, 9), ("tau_los", 9, 20), ("path_thermal_native", 20, 31),
     ("thermal_scatter_native", 31, 42), ("surface_emission_native", 42, 53),
@@ -30,7 +30,12 @@ def si_to_native_cm1(value: float, wavelength_um: float) -> float:
 
 def maybe_float(text: str) -> float | None:
     text = text.strip()
-    return float(text) if text else None
+    if not text:
+        return None
+    value = float(text)
+    if not math.isfinite(value):
+        raise ValueError(f"Non-finite MODTRAN spectral value: {text}")
+    return value
 
 
 def spectral_lines(path: Path, marker: str) -> tuple[list[str], int]:
@@ -74,6 +79,8 @@ def parse_solar(path: Path) -> list[dict[str, object]]:
         if len(values) < 4 or values[0] < 100.0:
             continue
         wn, tau, transmitted, toa = values[:4]
+        if not all(math.isfinite(v) for v in (wn, tau, transmitted, toa)):
+            raise ValueError(f"Non-finite SOL TR spectrum in {path}")
         wavelength = 10000.0 / wn
         rows.append({
             "wavenumber_cm1": wn,
@@ -95,11 +102,16 @@ def parse_transmittance(path: Path) -> list[dict[str, object]]:
         if len(values) < 2 or values[0] < 100.0:
             continue
         wn, tau = values[:2]
+        if not math.isfinite(wn) or not math.isfinite(tau):
+            raise ValueError(f"Non-finite COMBIN TRANS spectrum in {path}")
         rows.append({"wavenumber_cm1": wn, "wavelength_um": 10000.0 / wn, "tau_los": tau})
     return rows
 
 
-def parse_flux(path: Path, target_alt_km: float = 5.0) -> list[dict[str, object]]:
+def parse_flux(path: Path, target_alt_km: float = 5.0,
+               required_components: tuple[str, ...] = ("upward", "downward", "direct")) -> list[dict[str, object]]:
+    if not set(required_components) <= {"upward", "downward", "direct"}:
+        raise ValueError("Unknown required flux component")
     lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
     altitude_text = " ".join(lines[:35])
     altitudes = [float(x) for x in re.findall(r"([-+]?\d+(?:\.\d+)?)\s+KM", altitude_text)]
@@ -115,25 +127,49 @@ def parse_flux(path: Path, target_alt_km: float = 5.0) -> list[dict[str, object]
     rows = []
     i = start
     while i < len(lines):
-        first = [float(m.group(0)) for m in NUM.finditer(lines[i])]
-        if len(first) < 7:
+        # Keep overflow placeholders in their columns. Regex numeric extraction
+        # shifts all later levels when an unrelated altitude prints ***********.
+        first = lines[i].split()
+        if len(first) != 7:
             i += 1
             continue
-        wavelength_nm = first[0]
+        try:
+            wavelength_nm = float(first[0])
+        except ValueError:
+            i += 1
+            continue
         if wavelength_nm <= 0.0:
             i += 1
             continue
         values = first[1:]
         j = i + 1
         while len(values) < len(altitudes) * 3 and j < len(lines):
-            more = [float(m.group(0)) for m in NUM.finditer(lines[j])]
+            more = lines[j].split()
             if len(more) != 6:
                 break
             values.extend(more)
             j += 1
         if len(values) < len(altitudes) * 3:
             raise ValueError(f"Incomplete flux block at wavelength {wavelength_nm} nm")
-        upward, downward, direct = values[level * 3:level * 3 + 3]
+        selected = values[level * 3:level * 3 + 3]
+        parsed_values = []
+        valid_components = {}
+        for component, token in zip(("upward", "downward", "direct"), selected):
+            try:
+                value = float(token)
+                valid = math.isfinite(value)
+            except ValueError:
+                valid = False
+            if not valid and component in required_components:
+                raise ValueError(
+                    f"Invalid flux at actual altitude {altitudes[level]} km, "
+                    f"wavelength {wavelength_nm} nm, component {component}: {token}")
+            # Missing diagnostic is explicitly absent, never zero.
+            parsed_values.append(value if valid else "")
+            valid_components[component+"_valid"] = valid
+        upward, downward, direct = parsed_values
+        if not math.isfinite(wavelength_nm):
+            raise ValueError(f"Non-finite flux wavelength in {path}")
         # The .flx header states W cm^-2 / nm.  1 cm^-2=1e4 m^-2 and
         # one micrometre contains 1000 nanometres, hence the exact 1e7 factor.
         rows.append({
@@ -143,9 +179,10 @@ def parse_flux(path: Path, target_alt_km: float = 5.0) -> list[dict[str, object]
             "upward_diffuse_native_W_cm2_nm": upward,
             "downward_diffuse_native_W_cm2_nm": downward,
             "direct_solar_native_W_cm2_nm": direct,
-            "upward_diffuse_W_m2_um": upward * 1.0e7,
-            "downward_diffuse_W_m2_um": downward * 1.0e7,
-            "direct_solar_W_m2_um": direct * 1.0e7,
+            "upward_diffuse_W_m2_um": upward * 1.0e7 if upward != "" else "",
+            "downward_diffuse_W_m2_um": downward * 1.0e7 if downward != "" else "",
+            "direct_solar_W_m2_um": direct * 1.0e7 if direct != "" else "",
+            **valid_components,
         })
         i = j
     return rows

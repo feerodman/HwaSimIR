@@ -1,8 +1,10 @@
 #pragma once
+#include "IRLutAxisIndex.h"
 
 #include <cstddef>
 #include <string>
 #include <vector>
+#include <tuple>
 
 struct IRSolarHeatingQuery
 {
@@ -65,5 +67,7 @@ private:
 	static const char* axisName(size_t axis);
 
 	std::vector<Entry> m_entries;
+	typedef std::tuple<std::string, std::string, std::string> Category;
+	std::map<Category, IRLutAxisIndex> m_index;
 	std::string m_loadedPath;
 };

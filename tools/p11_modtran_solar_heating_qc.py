@@ -41,29 +41,8 @@ def trapz(rows: list[dict[str, object]], x: str, y: str) -> float:
 
 
 def flux_at_altitude(path: Path, altitude: float) -> list[dict[str, object]]:
-    if abs(altitude - 1.0) <= 1e-12:
-        rows = convert.parse_flux(path, 1.0)
-        for row in rows:
-            row["vertical_interpolation"] = "none_exact_real_1km_level"
-        return rows
-    low = convert.parse_flux(path, 0.0)
-    high = convert.parse_flux(path, 1.0)
-    if len(low) != len(high):
-        raise ValueError(f"Flux level mismatch in {path}")
-    rows = []
-    for a, b in zip(low, high):
-        if abs(float(a["wavelength_um"]) - float(b["wavelength_um"])) > 1e-12:
-            raise ValueError(f"Flux wavelength mismatch in {path}")
-        row = dict(a)
-        for field in [
-            "upward_diffuse_native_W_cm2_nm", "downward_diffuse_native_W_cm2_nm",
-            "direct_solar_native_W_cm2_nm", "upward_diffuse_W_m2_um",
-            "downward_diffuse_W_m2_um", "direct_solar_W_m2_um",
-        ]:
-            row[field] = float(a[field]) + (float(b[field]) - float(a[field])) * altitude
-        row["altitude_km"] = altitude
-        row["vertical_interpolation"] = "linear_between_real_0km_and_1km_levels"
-        rows.append(row)
+    from modtran_flux import parse_flux_at_target
+    rows, _ = parse_flux_at_target(path, altitude)
     return rows
 
 

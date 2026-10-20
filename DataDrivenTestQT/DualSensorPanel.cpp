@@ -57,8 +57,11 @@ DualSensorPanel::DualSensorPanel(DdsStimClient* client,const QString& config,con
 {
     setObjectName("dualSensorPanel");
     QSettings ini(config,QSettings::IniFormat); ini.setIniCodec("UTF-8");
-    epoch=QDateTime(QDate::fromString(ini.value("Demo/UtcDate","2026-09-06").toString(),"yyyy-MM-dd"),QTime(0,0),Qt::UTC)
-        .addMSecs(qint64(ini.value("Demo/UtcHour",3.5).toDouble()*3600000));
+    const QString dateText=ini.value("Demo/UtcDate").toString();
+    const QDate date=QDate::fromString(dateText,"yyyy-MM-dd");
+    bool hourOk=false;const double hour=ini.value("Demo/UtcHour").toDouble(&hourOk);
+    if(date.isValid()&&date.toString("yyyy-MM-dd")==dateText&&hourOk&&std::isfinite(hour)&&hour>=0.0&&hour<24.0)
+        epoch=QDateTime(date,QTime(0,0),Qt::UTC).addMSecs(qint64(hour*3600000));
     auto* root=new QVBoxLayout(this);
     auto* title=new QLabel("双传感器 DDS 测试 · P19"); title->setStyleSheet("font-size:20px;font-weight:bold"); root->addWidget(title);
     auto* warning=new QLabel("发送勾选只控制 INIT / Realtime；START / STOP / RESET 按 platID 联动同平台实例。独立控制请使用不同 platID。\nID、role、像素格式、Domain 是部署配置：导出后按说明启动 renderer；INIT 不会修改其本地身份。无事务号 ACK 不能区分延迟的旧应答。");
@@ -204,7 +207,8 @@ void DualSensorPanel::reset(){if(busy()){fail("请先 STOP 并等待排空，再
     phase=Editable;freeze(false);for(int i=0;i<channels.size();++i){auto& c=channels[i];c.pending=c.ready=c.eof=false;c.sent=0;status(i,"已 RESET / 可编辑");}
     message->setText("已发送平台级 RESET；可修改设置，再分别 INIT。");message->setStyleSheet("");
 }
-void DualSensorPanel::initialize(){if(phase!=Editable){fail("INIT 前请 STOP / RESET，避免覆盖仍有效的回合");return;}QString error;
+void DualSensorPanel::initialize(){if(phase!=Editable){fail("INIT 前请 STOP / RESET，避免覆盖仍有效的回合");return;}
+    if(!epoch.isValid()){fail("CSV回放需要显式有效的Demo/UtcDate和Demo/UtcHour；INIT未发送");return;}QString error;
     if(!collect(error,true)){fail(error);return;}
     QSettings actual(network,QSettings::IniFormat);
     if(domain->value()!=actual.value("DdsProtocol/DomainId",150).toInt()||qos->text()!=actual.value("DdsProtocol/QosFile","Config/DDS/ZRDDS_PROTOCOL_QOS.xml").toString()){

@@ -127,30 +127,8 @@ def convert_case(row: dict[str, str]) -> tuple[Path, list[dict[str, object]]]:
     case_dir = Path(row["input_file"]).parent
     if row["mode"] == "SpectralFlux":
         source = case_dir / "spectral_flux.flx"
-        altitude = float(row["target_alt_km"])
-        if abs(altitude - 1.0) <= 1e-12:
-            parsed = convert.parse_flux(source, 1.0)
-            for item in parsed:
-                item["vertical_interpolation"] = "none_exact_real_1km_level"
-        else:
-            low = convert.parse_flux(source, 0.0)
-            high = convert.parse_flux(source, 1.0)
-            if len(low) != len(high):
-                raise ValueError(f"Flux level row mismatch in {source}")
-            parsed = []
-            for a, b in zip(low, high):
-                if abs(float(a["wavelength_um"]) - float(b["wavelength_um"])) > 1e-12:
-                    raise ValueError(f"Flux wavelength mismatch in {source}")
-                item = dict(a)
-                for field in [
-                    "upward_diffuse_native_W_cm2_nm", "downward_diffuse_native_W_cm2_nm",
-                    "direct_solar_native_W_cm2_nm", "upward_diffuse_W_m2_um",
-                    "downward_diffuse_W_m2_um", "direct_solar_W_m2_um",
-                ]:
-                    item[field] = float(a[field]) + (float(b[field]) - float(a[field])) * altitude
-                item["altitude_km"] = altitude
-                item["vertical_interpolation"] = "linear_between_real_0km_and_1km_levels"
-                parsed.append(item)
+        from modtran_flux import parse_flux_at_target
+        parsed, _ = parse_flux_at_target(source, float(row["target_alt_km"]))
     else:
         source = case_dir / "MODOUT2.txt"
         parser = {

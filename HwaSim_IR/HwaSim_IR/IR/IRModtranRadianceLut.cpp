@@ -172,6 +172,16 @@ bool IRModtranRadianceLut::load(const std::string& filePath)
 	}
 	if (loaded.empty()) return false;
 	m_entries.swap(loaded);
+	m_index.clear();
+	m_horizontalIndex.clear();
+	for (size_t i = 0; i < m_entries.size(); ++i)
+	{
+		const Entry& e = m_entries[i];
+		const Category key(static_cast<int>(e.band), e.atmosphereModel, e.aerosolModel, e.humidityProfile);
+		m_index[key].add({e.targetAltKm, e.observerAltKm, e.rangeKm, e.visibilityKm, e.solarZenithDeg}, i);
+		if (std::abs(e.observerAltKm-e.targetAltKm) <= kAxisEpsilon)
+			m_horizontalIndex[key].add({e.targetAltKm, e.rangeKm, e.visibilityKm, e.solarZenithDeg}, i);
+	}
 	m_loadedPath = filePath;
 	return true;
 }
@@ -203,96 +213,49 @@ IRModtranRadianceResult IRModtranRadianceLut::query(const IRModtranRadianceQuery
 		return result;
 	}
 
-	std::vector<const Entry*> candidates;
-	for (size_t i = 0; i < m_entries.size(); ++i)
-	{
-		const Entry& entry = m_entries[i];
-		if (entry.band == query.band && entry.atmosphereModel == query.atmosphereModel &&
-			entry.aerosolModel == query.aerosolModel && entry.humidityProfile == query.humidityProfile)
-		{
-			candidates.push_back(&entry);
-		}
-	}
-	if (candidates.empty())
-	{
-		result.fallbackReason = "category_missing";
-		return result;
-	}
-
-	// Every reflected-solar production band, including MWIR, is keyed by SZA.
-	// Treating MWIR as a four-axis thermal-only table silently selects the first
-	// of several solar cases and makes reflected radiance independent of the sun.
-	const bool solarAware = query.band == IRBand::NearInfrared ||
-		query.band == IRBand::ShortWaveInfrared ||
-		query.band == IRBand::MidWaveInfrared;
+	const bool solarAware = true;
 	const bool coupledEqualAltitude =
 		(query.band == IRBand::ShortWaveInfrared || query.band == IRBand::MidWaveInfrared) &&
-		std::abs(query.observerAltKm - query.targetAltKm) <= kEqualAltitudeToleranceKm;
-	for (size_t i = 0; i < candidates.size(); ++i)
-	{
-		const Entry& e = *candidates[i];
-		if (Same(e.targetAltKm, query.targetAltKm) && Same(e.observerAltKm, query.observerAltKm) &&
-			Same(e.rangeKm, query.rangeKm) && Same(e.visibilityKm, query.visibilityKm) &&
-			(!solarAware || Same(e.solarZenithDeg, query.solarZenithDeg)))
-		{
-			result.valid = true;
-			result.tauUp = e.tauUp;
-			result.pathThermalWm2SrUm = e.pathThermal;
-			result.directSolarIrradianceWm2Um = e.directSolar;
-			result.downwardSkyDiffuseIrradianceWm2Um = e.skyDiffuse;
-			result.pathScatteringRadianceWm2SrUm = e.pathScattering;
-			result.pathRadiance = query.band == IRBand::MidWaveInfrared ? e.pathThermal : e.pathScattering;
-			result.solarIrradiance = e.directSolar;
-			result.responseMode = e.responseMode;
-			result.interpolationMode = "exact_match";
-			result.fallbackReason = "none";
-			result.sourceCaseIds = e.sourceCaseIds;
-			result.sourceFiles = e.sourceFiles;
-			return result;
-		}
-	}
-
-	Sample sample;
-	InterpolationError error;
-	bool interpolated = false;
-	if (coupledEqualAltitude)
-	{
-		// A horizontal LOS table contains only diagonal (observer == target)
-		// altitude planes.  Interpolate those planes as one coupled altitude axis;
-		// never borrow an off-diagonal row to fill a missing horizontal cell.
-		std::vector<const Entry*> horizontalCandidates;
-		for (size_t i = 0; i < candidates.size(); ++i)
-		{
-			if (std::abs(candidates[i]->observerAltKm - candidates[i]->targetAltKm) <=
-				kEqualAltitudeToleranceKm)
-			{
-				horizontalCandidates.push_back(candidates[i]);
-			}
-		}
-		if (horizontalCandidates.empty())
-		{
-			error.reason = "cell_missing";
-			error.axis = "equalAltitudeKm";
-			error.query = 0.5 * (query.observerAltKm + query.targetAltKm);
-		}
-		else
-		{
-			interpolated = interpolateEqualAltitude(horizontalCandidates, query, 0, sample, error);
-		}
-	}
-	else
-	{
-		interpolated = interpolate(candidates, query, 0, sample, error);
-	}
-	if (!interpolated)
+		std::abs(query.observerAltKm-query.targetAltKm) <= std::min(kEqualAltitudeToleranceKm, query.rangeKm*1e-4);
+	const Category key(static_cast<int>(query.band), query.atmosphereModel, query.aerosolModel, query.humidityProfile);
+	const auto& index = coupledEqualAltitude ? m_horizontalIndex : m_index;
+	const auto category = index.find(key);
+	if (category == index.end()) { result.fallbackReason = "category_missing"; return result; }
+	const double altitudeTolerance = std::min(kAltitudeGridSnapKm, query.rangeKm*0.01);
+	const double rangeTolerance = std::min(kRangeGridSnapKm, query.rangeKm*0.01);
+	const std::vector<double> axes = coupledEqualAltitude
+		? std::vector<double>{.5*(query.targetAltKm+query.observerAltKm), query.rangeKm, query.visibilityKm, query.solarZenithDeg}
+		: std::vector<double>{query.targetAltKm, query.observerAltKm, query.rangeKm, query.visibilityKm, query.solarZenithDeg};
+	const std::vector<double> tolerances = coupledEqualAltitude
+		? std::vector<double>{altitudeTolerance, rangeTolerance, kAxisEpsilon, kAxisEpsilon}
+		: std::vector<double>{altitudeTolerance, altitudeTolerance, rangeTolerance, kAxisEpsilon, kAxisEpsilon};
+	std::vector<IRLutAxisIndex::WeightedRow> rows;
+	rows.reserve(32);
+	IRLutAxisIndex::Error error;
+	if (!category->second.query(axes, tolerances, rows, error))
 	{
 		result.fallbackReason = error.reason;
-		result.fallbackAxis = error.axis;
-		result.fallbackQuery = error.query;
+		result.fallbackAxis = error.axis >= axes.size() ? "cell" :
+			(coupledEqualAltitude ? equalAltitudeAxisName(error.axis) : axisName(error.axis, true));
+		result.fallbackQuery = error.value;
 		result.fallbackMin = error.minimum;
 		result.fallbackMax = error.maximum;
 		return result;
 	}
+	Sample sample = {};
+	for (size_t i = 0; i < rows.size(); ++i)
+	{
+		const Entry& e = m_entries[rows[i].row];
+		const double w = rows[i].weight;
+		sample.opticalDepth += -std::log(clampTau(e.tauUp))*w;
+		sample.pathThermal += e.pathThermal*w;
+		sample.directSolar += e.directSolar*w;
+		sample.skyDiffuse += e.skyDiffuse*w;
+		sample.pathScattering += e.pathScattering*w;
+		sample.sourceCaseIds = i ? MergeProvenance(sample.sourceCaseIds,e.sourceCaseIds) : e.sourceCaseIds;
+		sample.sourceFiles = i ? MergeProvenance(sample.sourceFiles,e.sourceFiles) : e.sourceFiles;
+	}
+
 	result.valid = true;
 	result.tauUp = std::exp(-sample.opticalDepth);
 	result.pathThermalWm2SrUm = sample.pathThermal;
@@ -302,7 +265,7 @@ IRModtranRadianceResult IRModtranRadianceLut::query(const IRModtranRadianceQuery
 	result.pathRadiance = query.band == IRBand::MidWaveInfrared ? sample.pathThermal : sample.pathScattering;
 	result.solarIrradiance = sample.directSolar;
 	result.responseMode = "RectangularBand";
-	result.interpolationMode = coupledEqualAltitude
+	result.interpolationMode = rows.size() == 1 ? "exact_match" : coupledEqualAltitude
 		? "coupled_equal_altitude_range_visibility_solarZenith_tau_od"
 		: (solarAware
 			? "staged_linear_target_observer_range_visibility_solarZenith_tau_od"

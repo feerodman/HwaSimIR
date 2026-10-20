@@ -27,8 +27,24 @@ ap.add_argument('--receipt',default='logs/p19/deployment/current.json')
 ap.add_argument('--tmp-board-logs',action='store_true',help='后续测试日志写入 /tmp，结束后仍复制到本机；不删除旧证据')
 ap.add_argument('--sender-tcp-nodelay',action='store_true',help='受控诊断：激励侧协议Writer启用SDK push_on_write/TCP_NODELAY')
 ap.add_argument('--band',type=int,choices=[0,2],default=2)
+ap.add_argument('--precise-band',type=int,choices=[0,2],default=None)
+ap.add_argument('--fps',type=int,default=60)
+ap.add_argument('--input-hz',type=float,default=None,help='Packet send rate; independent of configured video FPS')
+ap.add_argument('--stim-directory',default='build-p19-stim/release')
+ap.add_argument('--utc-date',default=None,help='Explicit replay start date, yyyy-MM-dd')
+ap.add_argument('--utc-hour',type=float,default=None)
+ap.add_argument('--direct-dds-sender',default=None,help='Independent sender executable; does not disable production stim preflight')
+ap.add_argument('--diagnostic-reference-mismatch',action='store_true')
 ap.add_argument('--scheduling',choices=['original','performance'],default='original')
 a=ap.parse_args()
+if not 1<=a.fps<=240:raise SystemExit('invalid configured video FPS')
+if a.input_hz is None:a.input_hz=float(a.fps)
+if not 0<a.input_hz<=1000:raise SystemExit('invalid packet input rate')
+if (a.utc_date is None)!=(a.utc_hour is None):raise SystemExit('Both replay UTC date and hour are required')
+if a.utc_date is not None:
+    import datetime
+    datetime.date.fromisoformat(a.utc_date)
+    if not 0<=a.utc_hour<24:raise SystemExit('invalid UTC hour')
 if any(not re.fullmatch('[A-Za-z][A-Za-z0-9_]*=[A-Za-z0-9_./,:-]+',v) for v in a.render_env):raise SystemExit('invalid render environment')
 if a.fault_reader and (a.roles!='coarse' or a.rounds!=2 or a.frames<900):raise SystemExit('fault test requires coarse, two rounds, >=900 frames')
 if not re.fullmatch('[A-Za-z0-9_]+',a.name):raise SystemExit('invalid name')
@@ -38,7 +54,7 @@ opts=['-o','UpdateHostKeys=no','-o','ConnectTimeout=10']
 def ssh(command):return subprocess.check_output(['ssh',*opts,'root@192.168.1.116',command],env=env,text=True)
 def board_audit(role):
     return ('/tmp/hwasimir-p20-logs/'+a.name+'/'+role if a.tmp_board_logs else receipt['instances'][role]['root']+'/logs/'+a.name)
-rxdir=ROOT/'build-p19-customer-receiver/release';stimdir=ROOT/'build-p19-stim/release'
+rxdir=ROOT/'build-p19-customer-receiver/release';stimdir=ROOT/a.stim_directory
 ffdir=ROOT/'.deps/ffmpeg-n8.1-win64-gpl-shared/ffmpeg-n8.1-latest-win64-gpl-shared-8.1/bin'
 env['PATH']=str(rxdir)+os.pathsep+env['PATH']
 testQos=out/'qos.xml';testQos.write_text((ROOT/'HwaSim_IR/Bin/Config/DDS/ZRDDS_PROTOCOL_QOS.xml').read_text(encoding='utf-8-sig').replace('tcpv4://default//0',a.transport+'://default//0'),encoding='utf-8')
@@ -64,22 +80,26 @@ source=out/'ordinary_replay_subset.csv';source.write_text(lines[header]+'\n'+'\n
 config=(ROOT/'DataDrivenTestQT/NetworkConfig.ini').read_text(encoding='utf-8-sig')
 config=re.sub(r'(?m)^DomainId=.*$','DomainId='+str(a.control_domain),config)
 config=re.sub(r'(?m)^QosFile=.*$','QosFile='+str(testQos).replace('\\','/'),config)
+if a.utc_date is not None:
+    config=re.sub(r'(?m)^UtcDate=.*$','UtcDate='+a.utc_date,config)
+    config=re.sub(r'(?m)^UtcHour=.*$','UtcHour='+str(a.utc_hour),config)
 (out/'sender.ini').write_text(config,encoding='utf-8')
 channels=[];selected=[]
 for index,role in enumerate(('coarse','precise')):
     enabled=a.roles in ('both',role);width=a.width or (320 if index==0 else 800);codec=a.coarse_codec if index==0 else a.precise_codec
     item=dict(enabled=enabled,role=role,platID=1001 if index==0 else a.precise_plat,sensorID=a.coarse_sensor if index==0 else a.precise_sensor,
               source=str(source),followSource=True,model=0x22 if index==0 else 0x33,followModel=not a.different_models,pixelFormat=a.pixels,platformFromSource=True,
-              init=dict(trackerSensorWidth=width,trackerSensorHeight=width,h264En=int(codec=='h264'),saveMP4En=int(a.old_display),simMode=1,videoFps=60,trackerSensorBand=a.band))
+              init=dict(trackerSensorWidth=width,trackerSensorHeight=width,h264En=int(codec=='h264'),saveMP4En=int(a.old_display),simMode=1,videoFps=a.fps,trackerSensorBand=a.precise_band if index==1 and a.precise_band is not None else a.band))
     channels.append(item)
     if a.sky is not None:item['init']['envSky']=a.sky
     if a.different_sources and index==1:
         other=out/'precise_alternative_data.txt';other.write_text(lines[header]+'\n'+'\n'.join(rows[10:10+a.frames])+'\n',encoding='utf-8')
         item.update(source=str(other),followSource=False)
     if enabled:selected.append((role,item,codec,width))
-dual=dict(version=19,domain=a.control_domain,source=str(source),model=0x22,stepMs=1000/60,qos=str(testQos).replace('\\','/'),observeStatus=not a.customer_only,channels=channels)
+dual=dict(version=19,domain=a.control_domain,source=str(source),model=0x22,stepMs=1000/a.input_hz,qos=str(testQos).replace('\\','/'),observeStatus=not a.customer_only,channels=channels)
+dual['diagnosticReferenceMismatch']=a.diagnostic_reference_mismatch
 (out/'dual.json').write_text(json.dumps(dual,indent=2))
-processes=[];files=[];commands={};results=dict(options=vars(a),status='FAIL',customerHardware='NOT_VERIFIED',actualCustomerRaw='NOT_VERIFIED');rxs={};boards={}
+processes=[];files=[];commands={};results=dict(options=vars(a),status='FAIL',customerHardware='NOT_VERIFIED',actualCustomerRaw='NOT_VERIFIED',physicalAcceptance='NOT_ASSESSED',configuredVideoFps=a.fps,inputPacketHz=a.input_hz);rxs={};boards={}
 def launch(command,cwd,name,customEnv=None):
     log=(out/(name+'.log')).open('wb');files.append(log);si=subprocess.STARTUPINFO();si.dwFlags|=subprocess.STARTF_USESHOWWINDOW;si.wShowWindow=0
     p=subprocess.Popen(command,cwd=cwd,env=customEnv or env,stdout=log,stderr=subprocess.STDOUT,startupinfo=si);processes.append(p);commands[name]=command;return p
@@ -109,7 +129,7 @@ for i in range(900):
     for role,item,codec,width in selected:
         local=out/role;local.mkdir();shutil.copy2(rxdir/'zrddslicence.lic',local/'zrddslicence.lic')
         topic='TX/'+('H' if role=='precise' else 'L')+('D264' if codec=='h264' else 'Decode')
-        rxs[role]=launch([str(rxdir/'HwaSimIRCustomerTxVideoReceiverDemo.exe'),'--topic',topic,'--codec',codec,'--pixel-format',a.pixels,'--width',str(width),'--height',str(width),'--fps','60','--domain',str(a.customer_domain),'--qos',str(testQos),'--output',str(local),'--display','0','--audit','1','--timeout-ms',str(max(90000,int(a.frames*a.rounds/60*1000)+90000)),'--idle-ms',('25000' if a.rounds>1 else '4000') if codec=='raw' else '0','--exit-after-ends',str(a.rounds) if codec=='h264' else '0','--ffmpeg',str(ffdir/'ffmpeg.exe')],local,role+'_receiver')
+        rxs[role]=launch([str(rxdir/'HwaSimIRCustomerTxVideoReceiverDemo.exe'),'--topic',topic,'--codec',codec,'--pixel-format',a.pixels,'--width',str(width),'--height',str(width),'--fps',str(a.fps),'--domain',str(a.customer_domain),'--qos',str(testQos),'--output',str(local),'--display','0','--audit','1','--timeout-ms',str(max(90000,int(a.frames*a.rounds/a.input_hz*1000)+90000)),'--idle-ms',('25000' if a.rounds>1 else '4000') if codec=='raw' else '0','--exit-after-ends',str(a.rounds) if codec=='h264' else '0','--ffmpeg',str(ffdir/'ffmpeg.exe')],local,role+'_receiver')
         remote=receipt['instances'][role]['root'];audit=board_audit(role)
         # Identity is changed in a per-test local network file, never claimed to be sent by INIT.
         net=ssh('cat '+shlex.quote(remote+'/network.ini'));net=re.sub(r'(?m)^platID=.*$',f"platID={item['platID']}",net);net=re.sub(r'(?m)^sensorID=.*$',f"sensorID={item['sensorID']}",net)
@@ -124,7 +144,7 @@ for i in range(900):
             extra+=f' HwaSimIRDdsProtocolDomainId={a.control_domain} HwaSimIRDdsVideoDomainId={a.video_domain} HwaSimIRCustomerDomainId={a.customer_domain}'
         if a.application_fault:extra+=' HwaSimIRCustomerDiagnosticFailAfterFramesOnce=60'
         if a.customer_only:extra+=' HwaSimIRDdsVideoEnable=false TcpSendVideo=false TcpSendRealtimeData=false TcpSendAnnotation=false TcpForwardInitControl=false'
-        command=f"cd '{remote}' && timeout -s TERM -k 10s {max(180,int(a.frames*a.rounds/60)+180)}s env HWASIMIR_ROOT='{remote}' HWASIMIR_CHANNEL={role} HWASIMIR_NETWORK_CONFIG='{audit}/network.ini' HWASIMIR_RUNTIME_CONFIG='{remote}/Config/HwaSimIRRuntime.ini' ZRDDS_HOME='{remote}/zrdds' RenderPresentationMode=HeadlessOffscreen HwaSimIRExitOnStop=false HwaSimIRLocalRecordingEnable=false HwaSimIRCustomerAuditPrefix='{audit}/customer' HwaInputAuditDirectory='{audit}' HwaStageAuditDirectory='{audit}' {extra} ./run_precise.sh"
+        command=f"cd '{remote}' && timeout -s TERM -k 10s {max(180,int(a.frames*a.rounds/a.input_hz)+180)}s env HWASIMIR_ROOT='{remote}' HWASIMIR_CHANNEL={role} HWASIMIR_NETWORK_CONFIG='{audit}/network.ini' HWASIMIR_RUNTIME_CONFIG='{remote}/Config/HwaSimIRRuntime.ini' ZRDDS_HOME='{remote}/zrdds' RenderPresentationMode=HeadlessOffscreen HwaSimIRExitOnStop=false HwaSimIRLocalRecordingEnable=false HwaSimIRCustomerAuditPrefix='{audit}/customer' HwaInputAuditDirectory='{audit}' HwaStageAuditDirectory='{audit}' {extra} ./run_precise.sh"
         command+=f" >'{audit}/board.log' 2>&1; echo $? >'{audit}/board.exit'"
         boards[role]=launch(['ssh',*opts,'root@192.168.1.116','sh -c '+shlex.quote(command)],ROOT,role+'_transport')
     time.sleep(4)
@@ -145,10 +165,11 @@ for i in range(900):
         def old_receiver(reopened=False):
             suffix='old_reopened' if reopened else 'old_receiver'
             vdenv=env.copy();vdenv.update(P7RecordingRoot=str(out/suffix),P5DdsVideoPath=str(out/(suffix+'.h264')),P5DdsVideoSamples='10000')
-            return launch([str(vdDir/'HwaSim_IR_VideoDisplay.exe'),'--network-config='+str(oldIni),'--dds-domain',str(a.video_domain),'--acceptance-exit-ms','18000' if a.old_reopen and not reopened else str(max(35000,int(a.frames*a.rounds/60*1000)+25000))],vdDir,suffix,vdenv)
+            return launch([str(vdDir/'HwaSim_IR_VideoDisplay.exe'),'--network-config='+str(oldIni),'--dds-domain',str(a.video_domain),'--acceptance-exit-ms','18000' if a.old_reopen and not reopened else str(max(35000,int(a.frames*a.rounds/a.input_hz*1000)+25000))],vdDir,suffix,vdenv)
         vd=old_receiver()
     stimEnv=env.copy();stimEnv['HwaInputAuditDirectory']=str(out)
-    sender=launch([str(stimdir/'DataDrivenTestQT.exe'),'--network-config='+str(out/'sender.ini'),'--channels-json='+str(out/'dual.json'),'--rounds='+str(a.rounds),'--duration-sec='+str(max(15,int(a.frames/60)+8))],stimdir,'sender',stimEnv)
+    senderExe=ROOT/a.direct_dds_sender if a.direct_dds_sender else stimdir/'DataDrivenTestQT.exe'
+    sender=launch([str(senderExe),'--network-config='+str(out/'sender.ini'),'--channels-json='+str(out/'dual.json'),'--rounds='+str(a.rounds),'--duration-sec='+str(max(15,int(a.frames/a.input_hz)+8))],stimdir,'sender',stimEnv)
     if a.fault_reader:
         def induce_fault():
             events=[]
@@ -167,10 +188,10 @@ for i in range(900):
     (out/'commands.json').write_text(json.dumps(commands,indent=2))
     if a.old_reopen:
         results['oldInitialExit']=vd.wait(timeout=45);vd=old_receiver(True)
-    results['senderExit']=sender.wait(timeout=max(120,int(a.frames*a.rounds/60)+120))
+    results['senderExit']=sender.wait(timeout=max(120,int(a.frames*a.rounds/a.input_hz)+120))
     results['rendererPidsAfter']=ssh('pgrep -a HwaSim_IR')
     for role,p in rxs.items():results[role+'ReceiverExit']=p.wait(timeout=35)
-    if a.old_display:results['oldReceiverExit']=vd.wait(timeout=max(75,int(a.frames*a.rounds/60)+40))
+    if a.old_display:results['oldReceiverExit']=vd.wait(timeout=max(75,int(a.frames*a.rounds/a.input_hz)+40))
     for role,item,codec,width in selected:
         remote=receipt['instances'][role]['root'];audit=board_audit(role)
         subprocess.run(['scp',*opts,'-r','root@192.168.1.116:'+audit,str(out/role/'board')],env=env,check=True)

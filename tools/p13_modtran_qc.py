@@ -44,55 +44,7 @@ def read_csv(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(stream))
 
 
-def flux_altitudes(path: Path) -> list[float]:
-    lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
-    header = " ".join(lines[:35])
-    levels = [float(value) for value in re.findall(
-        r"([-+]?\d+(?:\.\d+)?)\s+KM", header)]
-    if not levels:
-        raise ValueError(f"No flux altitude levels in {path}")
-    return levels
-
-
-def parse_flux_at_target(path: Path, target_alt_km: float) -> tuple[list[dict[str, object]], dict[str, object]]:
-    levels = sorted(set(flux_altitudes(path)))
-    exact = next((value for value in levels if abs(value - target_alt_km) <= 1e-9), None)
-    if exact is not None:
-        rows = convert.parse_flux(path, exact)
-        for row in rows:
-            row["vertical_interpolation"] = "none_exact_real_level"
-        return rows, {"targetAltKm": target_alt_km, "lowLevelKm": exact,
-                      "highLevelKm": exact, "fraction": 0.0,
-                      "method": "exact_real_flux_level"}
-    lower = [value for value in levels if value < target_alt_km]
-    upper = [value for value in levels if value > target_alt_km]
-    if not lower or not upper:
-        raise ValueError(
-            f"Target altitude {target_alt_km} is outside real flux levels in {path}")
-    low_level, high_level = max(lower), min(upper)
-    low = convert.parse_flux(path, low_level)
-    high = convert.parse_flux(path, high_level)
-    if len(low) != len(high):
-        raise ValueError(f"Flux level row mismatch in {path}")
-    fraction = (target_alt_km - low_level) / (high_level - low_level)
-    numeric = [
-        "upward_diffuse_native_W_cm2_nm", "downward_diffuse_native_W_cm2_nm",
-        "direct_solar_native_W_cm2_nm", "upward_diffuse_W_m2_um",
-        "downward_diffuse_W_m2_um", "direct_solar_W_m2_um",
-    ]
-    rows: list[dict[str, object]] = []
-    for a, b in zip(low, high):
-        if abs(float(a["wavelength_um"]) - float(b["wavelength_um"])) > 1e-12:
-            raise ValueError(f"Flux wavelength mismatch in {path}")
-        item = dict(a)
-        for field in numeric:
-            item[field] = float(a[field]) + (float(b[field]) - float(a[field])) * fraction
-        item["altitude_km"] = target_alt_km
-        item["vertical_interpolation"] = "linear_between_adjacent_real_flux_levels"
-        rows.append(item)
-    return rows, {"targetAltKm": target_alt_km, "lowLevelKm": low_level,
-                  "highLevelKm": high_level, "fraction": fraction,
-                  "method": "linear_between_adjacent_real_flux_levels"}
+from modtran_flux import flux_altitudes, parse_flux_at_target
 
 
 def convert_case(row: dict[str, str]) -> tuple[Path, list[dict[str, object]], dict[str, object] | None]:

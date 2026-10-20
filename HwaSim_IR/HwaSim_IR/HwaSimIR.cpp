@@ -11728,7 +11728,8 @@ void HwaSimIR::InitInfraredSimulation()
 	m_m1NirRuntimeEnabled = m_runtimeConfig.getBool("M1NirMwirPhysics", "EnableNIRRuntime", "M1EnableNIRRuntime", false, nullptr);
 	m_m1SwirRuntimeEnabled = m_runtimeConfig.getBool("M1NirMwirPhysics", "EnableSWIRRuntime", "M1EnableSWIRRuntime", false, nullptr);
 	m_m1MwirRuntimeEnabled = m_runtimeConfig.getBool("M1NirMwirPhysics", "EnableMWIRRuntime", "M1EnableMWIRRuntime", false, nullptr);
-	m_m1FallbackUtcDate = m_runtimeConfig.getString("M1NirMwirPhysics", "FallbackUtcDate", "M1FallbackUtcDate", "2026-09-06", nullptr);
+	m_m1FallbackUtcDate = m_runtimeConfig.getString("M1NirMwirPhysics", "FallbackUtcDate", "M1FallbackUtcDate", "", nullptr);
+	m_m1UtcTimeMode = m_runtimeConfig.getString("M1NirMwirPhysics", "UtcTimeMode", "M1UtcTimeMode", "UnixEpochMs", nullptr);
 	m_m1SolarOverrideEnabled = m_runtimeConfig.getBool("M1NirMwirPhysics", "SolarOverrideEnable", "M1SolarOverrideEnable", false, nullptr);
 	m_m1SolarOverrideAzimuthDeg = m_runtimeConfig.getDouble("M1NirMwirPhysics", "SolarOverrideAzimuthDeg", "M1SolarOverrideAzimuthDeg", 180.0, nullptr);
 	m_m1SolarOverrideElevationDeg = m_runtimeConfig.getDouble("M1NirMwirPhysics", "SolarOverrideElevationDeg", "M1SolarOverrideElevationDeg", 45.0, nullptr);
@@ -15454,13 +15455,32 @@ void HwaSimIR::ApplyWeaponCameraControl(const BYHWICD::DisplayC2cObjTrackingData
 	{
 		if (lookAtTarget == nullptr)
 		{
+			++m_missingCameraReferenceCount;
+			std::ostringstream missingKey;
+			missingKey << weaponState.targetType << '/' << weaponState.targetPlatID << '/' << weaponState.targetID;
+			if (m_lastMissingCameraKey != missingKey.str() || frameSeq <= 3 || (frameSeq % 120) == 0)
+			{
 			std::cout << "[CameraControl][WARN] lookat_target_not_found"
+				<< " sourceSeq=" << frameSeq
+				<< " failures=" << m_missingCameraReferenceCount
 				<< " targetType=0x" << std::hex << weaponState.targetType << std::dec
 				<< " targetPlatID=" << weaponState.targetPlatID
 				<< " targetID=" << weaponState.targetID
-				<< std::endl;
+				<< " inputTargets=";
+			const size_t capacity = sizeof(currentData.targetState) / sizeof(currentData.targetState[0]);
+			const size_t count = std::min(capacity, static_cast<size_t>(std::max(0, static_cast<int>(currentData.targetNumValid))));
+			for (size_t i = 0; i < count; ++i)
+			{
+				const BYHWICD::TargetState& target = currentData.targetState[i];
+				std::cout << (i ? ";" : "") << "0x" << std::hex << target.targetType << std::dec
+					<< '/' << target.targetPlatID << '/' << target.targetID;
+			}
+			std::cout << " action=reject_reference_no_id_alias" << std::endl;
+			m_lastMissingCameraKey = missingKey.str();
+			}
 			return;
 		}
+		m_lastMissingCameraKey.clear();
 
 		const BYHWICD::SpatialState& platSpatial = currentData.platLoc;
 		const BYHWICD::SpatialState& targetSpatial = lookAtTarget->targetState.targetLoc;
@@ -17139,7 +17159,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 				(components.rearHotspotRadiance + components.brightspotRadiance))
 			<< " m1Sensor=" << components.m1SensorRadiance
 			<< " legacySensor=" << components.sensorInputLegacy
-			<< " finalOutput=" << (stage5Input.m1RuntimeAffectsImage ? "M1" : "legacy")
+			<< " finalOutput=" << (stage5Input.m1RuntimeAffectsImage ? "M1" : (formalM1FailClosed ? "formal_fail_closed" : "legacy"))
 			<< " compareOnly=" << (m_m1CompareOnly ? 1 : 0)
 			<< " interpolation=" << modtranRadiance.interpolationMode
 			<< " valid=" << (modtranRadiance.valid ? 1 : 0)
@@ -17554,16 +17574,15 @@ void HwaSimIR::UpdateM1SolarPosition(IRRuntimeEnvironment& environment, bool for
 			? m_initSceneData.platParamInit.spatial.alt : 0.0;
 		positionSource = "protocol_init_platform";
 	}
-	if (!IRSolarPosition::parseUtcDate(m_m1FallbackUtcDate, input.utcYear, input.utcMonth, input.utcDay))
-	{
-		input.utcYear = 2026;
-		input.utcMonth = 9;
-		input.utcDay = 6;
-		std::cout << "[M1 SolarPosition][WARN] FallbackUtcDate=" << m_m1FallbackUtcDate
-			<< " fallback=2026-09-06 reason=invalid_yyyy_mm_dd" << std::endl;
-	}
-	input.utcHour = CurrentSimulationHour();
-	m_m1SolarState = m_m1SolarPosition.evaluate(input);
+	const IRSimulationUtc::Result utc = m_simulationUtc.resolve(
+		m_stage0DisplayFrameCount > 0 ? m_realTimeSceneData.time : -1.0,
+		m_m1UtcTimeMode, m_m1FallbackUtcDate);
+	input.utcYear = utc.year;
+	input.utcMonth = utc.month;
+	input.utcDay = utc.day;
+	input.utcHour = utc.hour;
+	m_m1SolarState = utc.valid ? m_m1SolarPosition.evaluate(input) : IRSolarPositionOutput();
+	if (!utc.valid) m_m1SolarState.fallbackReason = utc.reason;
 	if (m_m1SolarOverrideEnabled)
 	{
 		const double radiansPerDegree = 3.14159265358979323846 / 180.0;
@@ -17610,7 +17629,10 @@ void HwaSimIR::UpdateM1SolarPosition(IRRuntimeEnvironment& environment, bool for
 		<< " sunDirection=(" << m_m1SolarState.east << ',' << m_m1SolarState.north << ',' << m_m1SolarState.up << ')'
 		<< " frame=" << m_m1SolarState.coordinateFrame << " positionSource=" << positionSource
 		<< " solarOverride=" << (m_m1SolarOverrideEnabled ? 1 : 0)
-		<< " dateSource=config_fallback protocolTimeSource=time_ms_since_midnight"
+		<< " dateSource=" << utc.source
+		<< " protocolTimeSource=DisplayC2cObjTrackingData.time"
+		<< " sourceSeq=" << sourceSeq
+		<< " sourceTimeMs=" << m_realTimeSceneData.time
 		<< " valid=" << (m_m1SolarState.valid ? 1 : 0)
 		<< " fallbackReason=" << m_m1SolarState.fallbackReason << std::endl;
 }
@@ -18378,6 +18400,9 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 }
 void HwaSimIR::ResetRenderSchedulingState()
 {
+	m_simulationUtc.reset();
+	m_lastMissingCameraKey.clear();
+	m_missingCameraReferenceCount = 0;
     m_inputRoundPreparedByInit=false;
 	const std::size_t inputQueueDepth = m_pendingDisplayFrames.size();
 	m_pendingDisplayFrames.clear();

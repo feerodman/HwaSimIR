@@ -2,7 +2,7 @@
 import argparse,bisect,csv,json,re,statistics
 from pathlib import Path
 root=Path(__file__).resolve().parents[1];ap=argparse.ArgumentParser();ap.add_argument('name');args=ap.parse_args()
-p=root/'logs/p20/runs'/args.name;r=json.loads((p/'result.json').read_text());report={'case':args.name,'functionalResult':r['status'],'screenPresentation':'NOT_VERIFIED','targetFps':60,'targetLatencyMs':80,'streams':{}}
+p=root/'logs/p20/runs'/args.name;r=json.loads((p/'result.json').read_text());report={'case':args.name,'functionalResult':r['status'],'screenPresentation':'NOT_VERIFIED','targetFps':r.get('configuredVideoFps',60),'inputPacketHz':r.get('inputPacketHz',60),'targetLatencyMs':80,'streams':{}}
 def csvs(d,pat):return [x for f in sorted(d.glob(pat)) for x in csv.DictReader(f.open(encoding='utf-8-sig'))]
 def lines(f):return [json.loads(x) for x in f.read_text().splitlines()]
 def stats(x):
@@ -50,7 +50,12 @@ for index,role in enumerate(roles):
  rejected=csvs(d/'board','input_rejected*.csv')
  s['queueConservation']={'stimulusWrites':len(own),'accepted':len(accepted),'executed':len(execute),'completed':len(render),'sent':len(tx),'decoded':len(frames),'saved':summary.get('savedFramesVerified'),'explicitRejected':len(rejected),'pass':len(own)==len(accepted)==len(execute)==len(render)==len(tx)==len(frames)==summary.get('savedFramesVerified') and not rejected}
  report['streams'][role]=s
-report['sustainedBacklogCriteria']='queue peak >8 AND (new-frame FPS <59.5 OR median pending in last quarter >8); all cold frames retained; separate latency percentiles still apply'
-report['sustainedBacklog']=any(s['maximumPendingInputFrames']>8 and (s['renderFps']<59.5 or s['medianPendingLastQuarter']>8) for s in report['streams'].values())
+backlogRate=report['inputPacketHz']*.99
+report['sustainedBacklogCriteria']=f'queue peak >8 AND (new-frame FPS <{backlogRate} OR median pending in last quarter >8); diagnostic threshold only, not FPS acceptance; all cold frames retained'
+report['sustainedBacklog']=any(s['maximumPendingInputFrames']>8 and ((s['renderFps'] or 0)<backlogRate or s.get('medianPendingLastQuarter',0)>8) for s in report['streams'].values())
+for s in report['streams'].values():
+ s['strictConfiguredFpsMet']=s['renderFps'] is not None and s['renderFps']>=report['targetFps']
+ latency=s.get('windowsStimulusToDecodedImageMs')
+ s['p95Latency80msMet']=latency['p95']<=80 if isinstance(latency,dict) else None
 report['performanceStatus']='FAIL_SUSTAINED_BACKLOG' if report['sustainedBacklog'] else 'RECORDED'
 (p/'performance.json').write_text(json.dumps(report,indent=2));print(json.dumps(report,indent=2))

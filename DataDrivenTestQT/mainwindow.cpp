@@ -41,6 +41,7 @@
 #include "ReplayCsvSchema.h"
 #include "../Shared/NumericCsvReader.h"
 #include "../HwaSim_IR/HwaSim_IR/IR/IRSolarPosition.h"
+#include "../HwaSim_IR/HwaSim_IR/IR/IRSimulationUtc.h"
 #include "../HwaSim_IR/HwaSim_IR/IR/IRModtranRadianceLut.h"
 
 //#define M_PI 3.1415926
@@ -1316,11 +1317,15 @@ bool MainWindow::validateFormalAtmosphereCoverage(
 	double minTau = std::numeric_limits<double>::infinity();
 	double maxTau = 0.0;
 	QString interpolationMode;
-	const QDateTime currentUtc = QDateTime::currentDateTimeUtc();
-	const QDate currentUtcDate = m_simulationUtcDate.isValid() ? m_simulationUtcDate : currentUtc.date();
-	const double configuredHour = m_testUtcHour >= 0.0
-		? m_testUtcHour
-		: currentUtc.time().msecsSinceStartOfDay() / 3600000.0;
+	if (m_testUtcHour < 0.0 || m_simulationDateSource != QStringLiteral("NetworkConfig.ini:Demo/UtcDate"))
+	{
+		error = QStringLiteral("CSV回放需要显式Demo/UtcDate和Demo/UtcHour；不能用运行时墙钟替代回放起始UTC。INIT未发送。");
+		audit.insert(QStringLiteral("failureReason"), QStringLiteral("explicit_replay_utc_required"));
+		return false;
+	}
+	const qint64 replayStartMs = QDateTime(m_simulationUtcDate, QTime(0, 0), Qt::UTC).toMSecsSinceEpoch()
+		+ static_cast<qint64>(m_testUtcHour * 3600000.0);
+	IRSimulationUtc simulationUtc;
 	for (int index = 0; index < samples.size(); ++index)
 	{
 		const realtimeInfo& row = samples.at(index);
@@ -1336,10 +1341,12 @@ bool MainWindow::validateFormalAtmosphereCoverage(
 		solarInput.latitudeDeg = row.platPos.lat;
 		solarInput.longitudeDeg = row.platPos.lon;
 		solarInput.altitudeM = row.platPos.alt;
-		solarInput.utcYear = currentUtcDate.year();
-		solarInput.utcMonth = currentUtcDate.month();
-		solarInput.utcDay = currentUtcDate.day();
-		solarInput.utcHour = configuredHour;
+		const IRSimulationUtc::Result utc = simulationUtc.resolve(
+			replayStartMs + row.sourceTimeMs - samples.first().sourceTimeMs, "UnixEpochMs", "");
+		solarInput.utcYear = utc.year;
+		solarInput.utcMonth = utc.month;
+		solarInput.utcDay = utc.day;
+		solarInput.utcHour = utc.hour;
 		const IRSolarPositionOutput solar = IRSolarPosition().evaluate(solarInput);
 		const double zenith = solar.zenithDeg;
 		minZenith = std::min(minZenith, zenith);
@@ -1354,7 +1361,7 @@ bool MainWindow::validateFormalAtmosphereCoverage(
 		query.rangeKm = rangeM / 1000.0;
 		query.visibilityKm = visibilityKm;
 		query.solarZenithDeg = zenith;
-		const IRModtranRadianceResult result = (solar.valid && std::isfinite(zenith))
+		const IRModtranRadianceResult result = (utc.valid && solar.valid && std::isfinite(zenith))
 			? lut.queryRelativeHumidity(query, humidity)
 			: IRModtranRadianceResult();
 		if (!solar.valid || !result.valid)
