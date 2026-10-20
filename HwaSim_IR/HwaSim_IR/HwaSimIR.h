@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "pandaFramework.h"
+#include "callbackObject.h"
 #include "IR/P6GameConfig.h"
 #include "IR/P8OrdinaryAnnotationScene.h"
 #include "windowFramework.h"
@@ -594,6 +595,19 @@ private:
     GraphicsOutput* m_cloudPresentationBuffer = nullptr;
     PT(Texture) m_cloudPresentationTexture;
     NodePath m_cloudPresentationRoot,m_cloudPresentationCamera;
+    GraphicsOutput* m_puffSiBuffer=nullptr;
+    PT(Texture) m_puffSiTexture;
+    NodePath m_puffSiRoot,m_puffSiCard;
+    PT(Texture) m_puffPrefixRecords;
+    NodePath m_puffOpticalRoot;
+    bool m_puffPrefixGather=false;
+    std::map<PandaNode*,NodePath> m_puffTransparentInstances;
+    CPT(RenderState) m_puffDiscardState;
+    void SetupPuffTransparent();
+    void UpdatePuffTransparent();
+    void SetupPuffSiComposite();
+    Texture* EffectiveStage6SiTexture() const;
+    GraphicsOutput* EffectiveStage6SiBuffer() const;
     void SetupCloudPresentation();
     void UpdateCloudPresentation();
 	NodePath m_stage7DepthCameraNode;
@@ -601,6 +615,7 @@ private:
 	double m_stage7DepthNear = -1.0, m_stage7DepthFar = -1.0;
 	PT(GraphicsOutput) m_stage6RawSceneBuffer;
 	PT(GraphicsOutput) m_stage6FinalSensorBuffer;
+    PT(CallbackObject) m_directRgbReadback;
     PT(GraphicsOutput) m_agcSampleBuffer;
     PT(Texture) m_agcSampleTexture;
     NodePath m_agcSampleRoot,m_agcSampleCard;
@@ -703,6 +718,9 @@ private:
 	IRWorldCloudStreamingConfig m_stage7VolumeConfig;
 	IRWorldCloudStreaming m_stage7VolumeStreaming;
     IRCloudAppearance m_cloudAppearance;
+    bool m_cloudPuffHybrid=false;
+    int m_cloudPuffCount=24;
+    void UpdatePuffVolumeConsumers();
     IRCloudWorldFrame m_cloudFrame;
     bool m_cloudFrameReady=false;
     NodePath m_cloudVolumeWorldRoot,m_cloudSheetWorldRoot;
@@ -732,6 +750,8 @@ private:
 		double fadeTarget = 0.0;
 		double cameraDistanceM = 0.0;
 		int raySteps = 0;
+        // 每个池节点最多一个精确参数键；重置/回收时同时清空，不缓存屏幕图像。
+        std::string puffUniformKey;
 	};
 	std::vector<Stage7CloudVolumeRuntime> m_stage7CloudVolumePool;
 	double m_stage7VolumeLastAnimationTime = -1.0;
@@ -744,6 +764,8 @@ private:
 	// the local cloud coordinate frame.  This never marks that frame as ready.
 	bool m_stage7DiscardOnlyWeatherPrewarm = false;
     std::uint64_t m_cloudRenderCallCount=0;
+    std::uint64_t m_renderCacheFrameCount=0;
+    int m_renderCacheMaintenanceFrames=60;
     double m_cloudRenderCallSumMs=0.0,m_cloudRenderCallMaxMs=0.0;
 
 	void InitInfraredShader();                              // 初始化着色器代码
@@ -751,6 +773,7 @@ private:
 	void InitHeadlessSceneCamera(int width, int height);
 	void SetupStage6FinalPipeline(int width, int height, const char* reason);
 	void SetupAnnotationOverlayRegion(const char* reason);
+    void SetupDirectRgbReadback();
 	void ApplyStage6FinalPostprocessInputs();
 	bool IsStage6MtfEffective() const;
 	bool IsStage6DetectorNoiseEffective() const;

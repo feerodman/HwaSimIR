@@ -1,4 +1,4 @@
-#include "DdsStimClient.h"
+﻿#include "DdsStimClient.h"
 #include "InputAuditV1.h"
 
 #include "CommonDataDdsAdapter.h"
@@ -171,6 +171,13 @@ bool DdsStimClient::start(const DdsStimConfig& config, std::string& error)
     }
     std::cout << "[DdsStim] ready=1 runtimeInitCount=" << runtimeInitCount()
               << " domain=" << config.domainId << std::endl;
+    DDS::DataWriterQos actualQos;
+    const auto qosRc=m_impl->realtimeBase->get_qos(actualQos);
+    std::cout<<"[DdsStimEffectiveQos] getReturn="<<static_cast<int>(qosRc);
+    if(qosRc==DDS::RETCODE_OK)std::cout<<" pushOnWrite="<<actualQos.protocol.push_on_write
+        <<" reliability="<<actualQos.reliability.kind<<" history="<<actualQos.history.kind
+        <<" maxSamples="<<actualQos.resource_limits.max_samples;
+    std::cout<<" profile="<<config.writerProfile<<" domain="<<config.domainId<<std::endl;
     return true;
 #endif
 }
@@ -212,6 +219,21 @@ static bool WriteTyped(Writer* writer, const Sample& sample, const char* name, s
 bool DdsStimClient::sendControl(const BYHWICD::ControlP2cX1ObjTrackingCmd& value, std::string& error)
 {
 #if defined(HWASIMIR_HAS_ZRDDS)
+    // Control 与 Realtime 是不同 Topic；write 返回不代表最后一条已送达。
+    // 正常 STOP 前先有界等待实时 Writer 的传输确认，避免 STOP 越过末条数据。
+    // 这不是应用排空确认；仍需 renderer 状态和逐帧计数证明完整性。
+    bool realtimeDrainOk=true;
+    if(value.simCommand==3 && m_impl->realtimeBase && m_impl->realtimeWriteCalls>0){
+        DDS::Duration_t timeout;timeout.sec=0;timeout.nanosec=250000000;
+        const auto begin=std::chrono::steady_clock::now();
+        const auto rc=m_impl->realtimeBase->wait_for_acknowledgments(timeout);
+        realtimeDrainOk=rc==DDS::RETCODE_OK && !m_impl->transportFaultObserved;
+        std::cout<<"[StimPreStopDrain] realtimeAckReturn="<<static_cast<int>(rc)
+            <<" waitMs="<<std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-begin).count()
+            <<" boundMs=250 transportFaultObserved="<<m_impl->transportFaultObserved
+            <<" applicationCompletionImplied=0"<<std::endl;
+        if(!realtimeDrainOk)error="Realtime transport drain failed before STOP; STOP still sent for bounded cleanup";
+    }
     {
         std::lock_guard<std::mutex> lock(m_impl->mutex);
         m_impl->statusPlatID = value.platID;
@@ -226,7 +248,8 @@ bool DdsStimClient::sendControl(const BYHWICD::ControlP2cX1ObjTrackingCmd& value
             if(value.simCommand==1 || value.simCommand==2)m_impl->runningRoutes.erase(entry.first);
         }
     }
-    return WriteTyped(m_impl->control, HwaSimIRDdsAdapter::ToDds(value), "Control", error);
+    const bool sent=WriteTyped(m_impl->control, HwaSimIRDdsAdapter::ToDds(value), "Control", error);
+    return sent && realtimeDrainOk;
 #else
     (void)value; error = "DDS unavailable"; return false;
 #endif

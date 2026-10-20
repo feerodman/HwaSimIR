@@ -1,0 +1,16 @@
+{
+  "candidate": "/userdata/HwaSimIR/candidates/P20_aarch64_40_prefix_prewarm",
+  "currentReleaseChanged": false,
+  "processes": [
+    {
+      "role": "coarse",
+      "pid": 16612,
+      "root": "/userdata/HwaSimIR/candidates/P20_aarch64_40_prefix_prewarm/coarse"
+    },
+    {
+      "role": "precise",
+      "pid": 16613,
+      "root": "/userdata/HwaSimIR/candidates/P20_aarch64_40_prefix_prewarm/precise"
+    }
+  ]
+}

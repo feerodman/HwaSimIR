@@ -71,6 +71,7 @@ inline bool apply(NodePath& node) {
             <<" rgbContract=formal_W_per_m2_sr_um_or_explicit_legacy_linear alpha=straight_medium_opacity depthTest=1 depthWrite=0"<<std::endl;
     }
     node.set_shader(shader, 100);
+    node.set_tag("p20TransparentKind","plume");
     node.set_shader_input("u_sprite_time", LVecBase2f(0,0));
     node.set_shader_input("u_sprite_lod", LVecBase2f(1,0));
     node.set_shader_input("u_game_sprite", LVecBase4f(0,1,1,0));

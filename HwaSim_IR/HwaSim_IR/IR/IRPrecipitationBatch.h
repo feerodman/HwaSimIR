@@ -33,6 +33,7 @@ inline NodePath create(const NodePath& camera, int count) {
     PT(Shader) shader=Shader::make(Shader::SL_GLSL,vertexSource,fragmentSource);
     if(!shader) {node.remove_node();return NodePath();}
     node.set_shader(shader,100);node.set_transparency(TransparencyAttrib::M_alpha);
+    node.set_tag("p20TransparentKind","rain");
     node.set_depth_test(true);node.set_depth_write(false);node.set_bin("transparent",30);
     node.set_shader_input("u_precip_time",LVecBase2f(0,0));
     node.set_shader_input("u_precip_state",LVecBase4f(0,0,0,0));

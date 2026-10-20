@@ -1,0 +1,20 @@
+{
+  "/sys/devices/system/cpu/cpufreq/policy6/scaling_governor": "ondemand",
+  "/sys/devices/system/cpu/cpufreq/policy4/scaling_governor": "ondemand",
+  "/sys/devices/system/cpu/cpufreq/policy0/scaling_governor": "ondemand",
+  "/sys/devices/system/cpu/cpufreq/policy6/scaling_min_freq": "408000",
+  "/sys/devices/system/cpu/cpufreq/policy4/scaling_min_freq": "408000",
+  "/sys/devices/system/cpu/cpufreq/policy0/scaling_min_freq": "800000",
+  "/sys/devices/system/cpu/cpufreq/policy6/scaling_max_freq": "2016000",
+  "/sys/devices/system/cpu/cpufreq/policy4/scaling_max_freq": "2016000",
+  "/sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq": "1704000",
+  "/sys/class/devfreq/fdab0000.npu/governor": "rknpu_ondemand",
+  "/sys/class/devfreq/fb000000.gpu/governor": "simple_ondemand",
+  "/sys/class/devfreq/dmc/governor": "dmc_ondemand",
+  "/sys/class/devfreq/fdab0000.npu/min_freq": "300000000",
+  "/sys/class/devfreq/fb000000.gpu/min_freq": "300000000",
+  "/sys/class/devfreq/dmc/min_freq": "528000000",
+  "/sys/class/devfreq/fdab0000.npu/max_freq": "950000000",
+  "/sys/class/devfreq/fb000000.gpu/max_freq": "1000000000",
+  "/sys/class/devfreq/dmc/max_freq": "2112000000"
+}

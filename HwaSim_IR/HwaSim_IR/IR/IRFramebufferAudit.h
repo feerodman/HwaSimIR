@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "callbackObject.h"
 #include "callbackData.h"
 #include <iostream>
@@ -23,8 +23,9 @@ class IRFramebufferAudit : public CallbackObject {
         auto tex=(void(*)(U,I,U,I*))dlsym(lib,"glGetTexLevelParameteriv");
         auto error=(U(*)())dlsym(lib,"glGetError");
         if(!get||!check||!attachment||!bind||!rb||!error){dlclose(lib);return;}
+        I viewport[4]={0,0,0,0};get(0x0BA2,viewport);
         I fbo=0,samples=0,previous=0;get(0x8CA6,&fbo);get(0x80A9,&samples);get(0x8CA7,&previous);
-        std::cout<<"[P10Fbo] phase="<<phase<<" rawDrawFbo="<<fbo<<" status="<<check(0x8CA9)<<" GL_SAMPLES="<<samples;
+        std::cout<<"[P10Fbo] phase="<<phase<<" rawDrawFbo="<<fbo<<" status="<<check(0x8CA9)<<" GL_SAMPLES="<<samples<<" viewport="<<viewport[0]<<","<<viewport[1]<<","<<viewport[2]<<","<<viewport[3];
         for(U a:{U(0x8CE0),U(0x8D00)}){
             I type=0,name=0,format=0,n=0,w=0,h=0;attachment(0x8CA9,a,0x8CD0,&type);
             if(type){attachment(0x8CA9,a,0x8CD1,&name);}

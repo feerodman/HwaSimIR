@@ -14,6 +14,8 @@
       </participant_qos>
 
       <datawriter_qos name="hwasimir_protocol_writer">
+        <!-- SDK 将 push_on_write 映射到 TCP_NODELAY；避免末条激励滞留发送缓冲。 -->
+        <protocol><push_on_write>true</push_on_write></protocol>
         <reliability><kind>RELIABLE_RELIABILITY_QOS</kind></reliability>
         <history><kind>KEEP_ALL_HISTORY_QOS</kind></history>
         <resource_limits><max_samples>4096</max_samples><max_samples_per_instance>4096</max_samples_per_instance></resource_limits>

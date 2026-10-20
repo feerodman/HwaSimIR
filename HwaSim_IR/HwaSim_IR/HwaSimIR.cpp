@@ -9,6 +9,7 @@
 #include "IR/IRGameSpriteBatch.h"
 #include "IR/IRJson.h"
 #include "IR/IRFramebufferAudit.h"
+#include "IR/IRDirectRgbReadback.h"
 #include "IR/IRPortableModel.h"
 #include "IR/IRPrecipitationBatch.h"
 #include "IR/IRNativeRgbCopy.h"
@@ -574,7 +575,7 @@ PT(PandaNode) CreateStage7CloudWorldGridNode(double requestedWorldSizeM, double 
 	return node;
 }
 
-PT(PandaNode) CreateStage7CloudVolumeProxyNode(int poolIndex)
+PT(PandaNode) CreateStage7CloudVolumeProxyNode(int poolIndex,float proxyInflation=1.f)
 {
 	const int slices = 18;
 	const int stacks = 10;
@@ -599,7 +600,7 @@ PT(PandaNode) CreateStage7CloudVolumeProxyNode(int poolIndex)
 			const float x = static_cast<float>(ring * std::cos(longitude));
 			const float y = static_cast<float>(ring * std::sin(longitude));
 			const float zz = static_cast<float>(z);
-			vertex.add_data3f(x, y, zz);
+			vertex.add_data3f(x*proxyInflation,y*proxyInflation,zz*proxyInflation);
 			normal.add_data3f(x, y, zz);
 			texcoord.add_data2f(
 				static_cast<float>(slice) / static_cast<float>(slices),
@@ -1864,6 +1865,25 @@ void HwaSimIR::run() {
 			break;
 		}
 		VerifyStage6RawAttachment();
+#ifndef _WIN32
+        if(m_directRgbReadback)static_cast<IRDirectRgbReadback*>(m_directRgbReadback.p())->compareAfterPanda();
+#endif
+        // Panda 1.10 的组合缓存可长期持有已脱离场景的状态。本项目动态
+        // shader input 下实测会逐帧增长；单纯 garbage_collect 未能释放。
+        // 在完成本帧绘制的主线程定期断开缓存引用，再回收未使用状态。
+        // clear_cache 不删除仍由节点/当前绘制持有的状态，不改变像素输入。
+        if(hasDisplayFrame && m_renderCacheMaintenanceFrames>0 &&
+            ++m_renderCacheFrameCount%static_cast<unsigned>(m_renderCacheMaintenanceFrames)==0){
+            const auto cacheBegin=std::chrono::steady_clock::now();
+            const int before=RenderState::get_num_states();
+            RenderState::clear_cache();
+            RenderState::garbage_collect();
+            if(m_renderCacheFrameCount<=60 || m_renderCacheFrameCount%600==0)
+                std::cout<<"[RenderCacheMaintenance] frame="<<m_renderCacheFrameCount
+                    <<" before="<<before<<" after="<<RenderState::get_num_states()
+                    <<" ms="<<std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-cacheBegin).count()
+                    <<" cadence="<<m_renderCacheMaintenanceFrames<<std::endl;
+        }
         const auto renderDone=std::chrono::steady_clock::now();
         if(hasDisplayFrame && m_isSimRunning.load()){
             const double callMs=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-renderBegin).count();
@@ -2770,6 +2790,7 @@ void HwaSimIR::InitStage6FinalPostShader()
     uniform float u_stage6_log_hdr_knee;
     uniform sampler2D u_cloud_presentation_texture;
     uniform int u_cloud_presentation_enabled;
+    uniform int u_cloud_shared_optics;
     uniform vec2 u_cloud_presentation_texel;
     uniform float u_stage6_final_display_gain;
     uniform float u_stage6_final_display_offset;
@@ -2829,7 +2850,12 @@ void HwaSimIR::InitStage6FinalPostShader()
     float Stage6RawLuma(vec2 uv){
         vec2 halfPixel=u_stage6_mtf_texel_size*.5;
 		float raw=dot(texture2D(p3d_Texture0,clamp(uv,halfPixel,max(halfPixel,u_stage6_mtf_uv_max-halfPixel))).rgb,vec3(.299,.587,.114));
-		return u_stage6_raw_si_domain==1
+		if(u_cloud_shared_optics>0){
+            vec4 cloud=texture2D(u_cloud_presentation_texture,uv);
+            raw=raw*(1.0-cloud.a)+cloud.r;
+            if(u_cloud_presentation_enabled==1)raw=max(0.0,raw-cloud.b);
+        }
+        return u_stage6_raw_si_domain==1
 			? raw*u_stage6_raw_to_display_scale+u_stage6_raw_to_display_offset
 			: raw;
     }
@@ -3053,7 +3079,7 @@ void HwaSimIR::InitStage6FinalPostShader()
         gray = ApplyStage7FinalPrecipitationOverlay(gray, texcoord);
         if(u_cloud_presentation_enabled==1){
             vec4 cloud=texture2D(u_cloud_presentation_texture,gl_FragCoord.xy*u_cloud_presentation_texel);
-            gray=cloud.r+gray*(1.0-cloud.a);
+            gray=u_cloud_shared_optics>0?gray+cloud.g:cloud.r+gray*(1.0-cloud.a);
         }
         gl_FragColor = vec4(gray, gray, gray, rawColor.a);
     }
@@ -3210,6 +3236,7 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 		SetupStage6AgcSampler();
 		LogStage6FinalPipeline(reason);
 		SetupAnnotationOverlayRegion(reason);
+        SetupDirectRgbReadback();
 		return;
 	}
 
@@ -3224,6 +3251,7 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 	if (IsHeadlessOffscreenMode() && m_stage6FinalSensorBuffer != nullptr)
 	{
 		GraphicsEngine::get_global_ptr()->remove_window(m_stage6FinalSensorBuffer);
+        m_directRgbReadback=nullptr;
 		m_stage6FinalSensorBuffer = nullptr;
 		m_stage6FinalRegion = nullptr;
 		m_annotationRegion = nullptr;
@@ -3244,6 +3272,15 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 	if(m_stage7DepthBuffer){m_pFramework->get_graphics_engine()->remove_window(m_stage7DepthBuffer);m_stage7DepthBuffer=nullptr;}
     if(m_cloudPresentationBuffer){m_pFramework->get_graphics_engine()->remove_window(m_cloudPresentationBuffer);m_cloudPresentationBuffer=nullptr;}
     m_cloudPresentationRoot=NodePath();m_cloudPresentationCamera=NodePath();m_cloudPresentationTexture=nullptr;
+    if(m_puffSiBuffer){m_pFramework->get_graphics_engine()->remove_window(m_puffSiBuffer);m_puffSiBuffer=nullptr;}
+    if(!m_puffSiRoot.is_empty())m_puffSiRoot.remove_node();
+    m_puffSiRoot=NodePath();m_puffSiCard=NodePath();m_puffSiTexture=nullptr;
+    if(!m_puffOpticalRoot.is_empty())m_puffOpticalRoot.remove_node();
+    m_puffTransparentInstances.clear();
+    m_puffOpticalRoot=NodePath();m_puffPrefixRecords=nullptr;m_puffDiscardState=nullptr;
+    m_renderRoot.show(BitMask32::bit(27));
+    for(auto& target:m_targetPlatformList){if(!target.enginePlumeCoreNodePath.is_empty())target.enginePlumeCoreNodePath.hide(BitMask32::bit(27));if(!target.enginePlumeHaloNodePath.is_empty())target.enginePlumeHaloNodePath.hide(BitMask32::bit(27));}
+    for(auto& node:m_stage7PrecipitationNodes)if(!node.is_empty())node.hide(BitMask32::bit(27));
 	if(!m_stage7DepthCameraNode.is_empty()){m_stage7DepthCameraNode.remove_node();m_stage7DepthCameraNode=NodePath();}
 	m_stage7VolumeRegion = nullptr;
 
@@ -3310,6 +3347,7 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 		}
 #endif
 		m_stage6FinalSensorBuffer->remove_all_display_regions();
+        m_directRgbReadback=nullptr;
 		m_stage6PresentationOutput = m_stage6FinalSensorBuffer;
 		m_stage6FinalRegion = m_stage6FinalSensorBuffer->make_display_region(0.0f, 1.0f, 0.0f, 1.0f);
 		m_stage6FinalRegion->set_dimensions(0.0f, 1.0f, 0.0f, 1.0f);
@@ -3326,6 +3364,7 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 		SetupStage7VolumetricComposite(reason);
 		LogStage6FinalPipeline(reason);
 		SetupAnnotationOverlayRegion(reason);
+        SetupDirectRgbReadback();
 		return;
 	}
 
@@ -3675,6 +3714,7 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 		}
 #endif
 		m_stage6FinalSensorBuffer->remove_all_display_regions();
+        m_directRgbReadback=nullptr;
 		m_stage6PresentationOutput = m_stage6FinalSensorBuffer;
 		m_stage6FinalRegion = m_stage6FinalSensorBuffer->make_display_region(0.0f, 1.0f, 0.0f, 1.0f);
 	}
@@ -3710,6 +3750,7 @@ void HwaSimIR::SetupStage6FinalPipeline(int width, int height, const char* reaso
 	SetupStage6AgcSampler();
 	LogStage6FinalPipeline(reason);
 	SetupAnnotationOverlayRegion(reason);
+    SetupDirectRgbReadback();
 }
 
 void HwaSimIR::SetupAnnotationOverlayRegion(const char* reason)
@@ -4099,7 +4140,7 @@ void HwaSimIR::LogStage6FinalPipeline(const char* reason)
 		<< " readbackMode=" << HeadlessReadbackModeText()
 		<< " readbackEveryN=" << m_headlessReadbackEveryN
 		<< " copyRamAttached=" << (m_headlessCopyRamAttached ? "1" : "0")
-		<< " copyRamMode=" << (m_headlessCopyRamAttached ? "RTM_copy_ram" : "disabled_for_perf_probe")
+		<< " copyRamMode=" << (m_directRgbReadback ? "DirectRGB8" : (m_headlessCopyRamAttached ? "RTM_copy_ram" : "disabled_for_perf_probe"))
 		<< " sameOutput=1"
 		<< std::endl;
 	LogStage6ViewportDiag(reason);
@@ -4422,7 +4463,7 @@ void HwaSimIR::UpdateStage6AgcFromFrame(const unsigned char* frameData, int fram
         const bool fullReference=std::getenv("AgcFullReadbackReference")&&std::string(std::getenv("AgcFullReadbackReference"))=="1";
         const int sampleW=fullReference?m_stage6FinalWidth:m_agcSampleSize;
         const int sampleH=fullReference?m_stage6FinalHeight:m_agcSampleSize;
-        if(!ReadSceneLinear(m_pFramework->get_graphics_engine(),fullReference?m_stage6RawSceneTex.p():m_agcSampleTexture.p(),
+        if(!ReadSceneLinear(m_pFramework->get_graphics_engine(),fullReference?EffectiveStage6SiTexture():m_agcSampleTexture.p(),
                 fullReference?m_stage6RawSceneBuffer.p():m_agcSampleBuffer.p(),sampleW,sampleH,linear)) {
             m_stage6AgcValid=false;m_stage6AgcFallbackReason="raw_linear_readback_failed";return;
         }
@@ -5214,7 +5255,8 @@ void main(){
 	m_stage7VolumeRegion->set_clear_depth_active(false);
 	// An empty extra display region still costs a measurable amount on Mali.
 	// Activate it only while at least one pooled proxy is actually visible.
-	m_stage7VolumeRegion->set_active(m_stage7VolumeVisibleCount > 0);
+	if(m_cloudPuffHybrid)UpdatePuffVolumeConsumers();
+        else m_stage7VolumeRegion->set_active(m_stage7VolumeVisibleCount > 0);
 	for (size_t i = 0; i < m_stage7CloudVolumePool.size(); ++i)
 	{
 		if (!m_stage7CloudVolumePool[i].node.is_empty())
@@ -5236,7 +5278,13 @@ void main(){
 }
 
 #include "IR/IRCloudWorldRuntime.inl"
+#include "IR/IRCloudPuffComposite.inl"
 #include "IR/IRCloudPresentation.inl"
+
+#include "IR/IRCloudPuffTemplates.h"
+#include "IR/IRCloudPuffGeometry.h"
+#include "IR/IRCloudTransparentRuntime.inl"
+#include "IR/IRDirectRgbReadbackRuntime.inl"
 
 void HwaSimIR::InitStage7VolumetricCloudShader()
 {
@@ -5249,6 +5297,19 @@ void HwaSimIR::InitStage7VolumetricCloudShader()
 #else
 	std::string version = "#version 300 es\nprecision highp float;\nprecision highp sampler3D;\n";
 #endif
+    const std::string cloudAlgorithm=m_runtimeConfig.getString("Stage7Weather","CloudAlgorithm","HwaSimIRCloudAlgorithm","LegacyVolume");
+    m_renderCacheMaintenanceFrames=m_runtimeConfig.getInt("Performance","RenderStateCacheMaintenanceFrames","HwaSimIRRenderStateCacheMaintenanceFrames",60);
+    if(m_renderCacheMaintenanceFrames<0 || m_renderCacheMaintenanceFrames>600)
+        throw std::runtime_error("RenderStateCacheMaintenanceFrames must be 0..600 (0=diagnostic disable)");
+    std::cout<<"[RenderCacheConfig] maintenanceFrames="<<m_renderCacheMaintenanceFrames
+        <<" scope=unused_composition_cache image_inputs_unchanged=1"<<std::endl;
+    if(cloudAlgorithm!="LegacyVolume" && cloudAlgorithm!="PuffHybrid")throw std::runtime_error("invalid CloudAlgorithm");
+    m_cloudPuffCount=m_runtimeConfig.getInt("Stage7Weather","CloudPuffCount","HwaSimIRCloudPuffCount",24);
+    if(m_cloudPuffCount!=12 && m_cloudPuffCount!=24)throw std::runtime_error("CloudPuffCount must be 12 or 24");
+    m_cloudPuffHybrid=cloudAlgorithm=="PuffHybrid" && !m_p6.enabled && m_cloudAppearance.enabled;
+    std::cout<<"[P20CloudAlgorithm] requested="<<cloudAlgorithm<<" effective="<<(m_cloudPuffHybrid?"PuffHybrid":"LegacyVolume")
+        <<" puffCount="<<m_cloudPuffCount<<" nativeViewport=1 opticalRepresentation="<<(m_cloudPuffHybrid?"compact_quartic_instanced":"voxel_raymarch")
+        <<" analyticPartialPath="<<(m_cloudPuffHybrid?1:0)<<" candidate="<<(m_cloudPuffHybrid?1:0)<<std::endl;
 	const int diagnosticMode=std::getenv("P6DCloudDiagnostic")?std::max(0,std::min(10,std::atoi(std::getenv("P6DCloudDiagnostic")))):0;
     version+="#define P6D_CLOUD_MODE "+std::to_string(diagnosticMode)+".0\n";
 	std::string vertexShader = version + R"(
@@ -5393,7 +5454,20 @@ void main() {
     fragColor = vec4(vec3(max(0.0,sourceFunction)),alpha);
 }
 )";
+    if(m_cloudPuffHybrid){
+        fragmentShader=version+IRCloudPuffGeometryFragment();
+        std::string puffVertex=IRCloudPuffGeometryVertex();
+#ifdef _WIN32
+        vertexShader="#version 140\n"+puffVertex;
+        fragmentShader="#version 140\n"+IRCloudPuffGeometryFragment();
+#else
+        vertexShader=version+puffVertex;
+#endif
+    }
+    // 云代理仅用RGB深度裁切真实光程，禁止写硬件深度；顶点保留对数裁剪。
+    const std::string puffFragmentBeforeDepth=fragmentShader;
 	IRDepthPrecision::apply(vertexShader,fragmentShader);
+    if(m_cloudPuffHybrid)fragmentShader=puffFragmentBeforeDepth;
 	m_stage7VolumeShader = Shader::make(Shader::SL_GLSL, vertexShader, fragmentShader);
     std::cout<<"[CloudCompositingShader] diagnosticMode="<<diagnosticMode
         <<" loopLimit=64 output=straight_alpha PandaBlend=source_alpha_one_minus_source_alpha depthWrite=0 proxyFaces=one_side_per_camera"<<std::endl;
@@ -5512,7 +5586,12 @@ void HwaSimIR::InitStage7VolumetricCloudRenderer()
 	for (size_t i = 0; i < m_stage7CloudVolumePool.size(); ++i)
 	{
 		Stage7CloudVolumeRuntime& volume = m_stage7CloudVolumePool[i];
-		volume.node = m_cloudVolumeWorldRoot.attach_new_node(CreateStage7CloudVolumeProxyNode(static_cast<int>(i)));
+		if(m_cloudPuffHybrid){
+            volume.node=m_cloudVolumeWorldRoot.attach_new_node("P20WorldCloudPuffs");
+            NodePath batch=volume.node.attach_new_node(CreateStage7CloudVolumeProxyNode(0,1.07f));
+            batch.set_attrib(CullFaceAttrib::make(CullFaceAttrib::M_cull_counter_clockwise),2);
+            batch.set_instance_count(m_cloudPuffCount);batch.set_bin("transparent",40,2);
+        }else volume.node = m_cloudVolumeWorldRoot.attach_new_node(CreateStage7CloudVolumeProxyNode(static_cast<int>(i)));
 		volume.node.set_shader(m_stage7VolumeShader, 1);
 		volume.node.set_transparency(TransparencyAttrib::M_alpha);
 		volume.node.set_depth_test(false); // exact per-ray opaque clipping uses RGB depth prepass
@@ -5528,6 +5607,7 @@ void HwaSimIR::InitStage7VolumetricCloudRenderer()
 		volume.node.set_shader_input("u_cloud_gray", LVecBase2f(0.5f, 0.0f));
         volume.node.set_shader_input("u_cloud_presentation",LVecBase4f(0,1,.62f,.98f));
 		volume.node.set_shader_input("u_cloud_incident",LVecBase4f(0,0,1,96));
+        if(m_cloudPuffHybrid)IRConfigurePuffNodes(volume.node,0,m_cloudPuffCount,NodePath(),m_stage6RawSiDomain,float(m_cameraLens->get_far()));
 		if(m_stage7SceneDepthTex)
 			volume.node.set_shader_input("u_scene_depth_rgb",m_stage7SceneDepthTex);
 		volume.node.set_shader_input("u_depth_viewport",LVecBase2f(float(m_stage6FinalWidth),float(m_stage6FinalHeight)));
@@ -5731,6 +5811,8 @@ void HwaSimIR::UpdateStage7VolumetricClouds(const IRStage7WeatherState& weatherS
 					static_cast<int>(m_stage7VolumeDensityTextures.size()) - 1,
 					desired[i].densityTemplate));
 				volume.node.set_shader_input("u_density_texture", m_stage7VolumeDensityTextures[textureIndex]);
+                    if(m_cloudPuffHybrid)IRConfigurePuffNodes(volume.node,textureIndex,m_cloudPuffCount,NodePath(),m_stage6RawSiDomain,float(m_cameraLens->get_far()));
+
 			}
 			volume.node.set_shader_input("u_noise_offset", LVecBase3f(
 				static_cast<float>(desired[i].noiseOffsetX),
@@ -5923,13 +6005,18 @@ void HwaSimIR::UpdateStage7VolumetricClouds(const IRStage7WeatherState& weatherS
 	m_stage7VolumeAverageRaySteps = m_stage7VolumeVisibleCount > 0 ? rayStepSum / m_stage7VolumeVisibleCount : 0.0;
 	if (m_stage7VolumeRegion != nullptr)
 	{
-		m_stage7VolumeRegion->set_active(m_stage7VolumeVisibleCount > 0);
+		if(m_cloudPuffHybrid)UpdatePuffVolumeConsumers();
+        else m_stage7VolumeRegion->set_active(m_stage7VolumeVisibleCount > 0);
 	}
 	const bool legacyHybrid = std::getenv("P5LegacyVisuals") && std::string(std::getenv("P5LegacyVisuals"))=="1";
 	const float hybridScale = legacyHybrid && m_stage7VolumeVisibleCount > 0 ? 0.72f : 1.0f;
 	for (size_t i = 0; i < m_cloudNodes.size(); ++i)
 	{
 		SetShaderInputCached(m_cloudNodes[i], "u_cloud_hybrid_scale", LVecBase2f(hybridScale, 0.0f));
+        // P20共享层云着色器不读取旧版圆形cutout。正常P17已禁用这些洞，
+        // 不再为未被读取的 uniform 分配及上传数组；此项不是状态缓存增长的根因。
+        // 保留Legacy/P6原路径；不删除任何云，也不改变目标遮挡。
+        if(m_cloudPuffHybrid)continue;
 		PTA_LVecBase4f cutouts;
 		int count=0;
         // A proxy circle is not cloud opacity. It punched a visible sheet hole
@@ -6046,7 +6133,6 @@ void HwaSimIR::UpdateStage7VolumetricCloudAnimation(double currentTime)
 		m_stage7VolumeCameraNode.set_transform(m_renderRoot, m_cameraNode.get_transform(m_renderRoot));
 		if(!m_stage7DepthCameraNode.is_empty())m_stage7DepthCameraNode.set_transform(m_renderRoot,m_cameraNode.get_transform(m_renderRoot));
 	}
-    UpdateCloudPresentation();
 	if(!m_stage7DepthCameraNode.is_empty() && m_cameraLens && m_stage7DepthShader){
 		const double nearM=m_cameraLens->get_near(),farM=m_cameraLens->get_far();
 		if(nearM!=m_stage7DepthNear || farM!=m_stage7DepthFar){
@@ -6113,6 +6199,8 @@ void HwaSimIR::UpdateStage7VolumetricCloudAnimation(double currentTime)
 		const LPoint3f cameraLocal = volume.node.get_relative_point(m_renderRoot, cameraWorld);
 		volume.node.set_shader_input("u_camera_local", LVecBase3f(cameraLocal[0], cameraLocal[1], cameraLocal[2]));
 		volume.node.set_shader_input("u_camera_inside", LVecBase2i(cameraLocal.length_squared() < 1.0f ? 1 : 0, 0));
+        if(m_cloudPuffHybrid)IRConfigurePuffNodes(volume.node,volume.descriptor.densityTemplate,m_cloudPuffCount,m_cameraNode,m_stage6RawSiDomain,float(m_cameraLens->get_far()),&volume.puffUniformKey);
+
 	}
 }
 
@@ -11028,6 +11116,8 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 				}
 			}
 		}
+        const char* prefixPrewarmSetting=std::getenv("HwaSimIRPuffPrewarm");
+        const bool prefixPrewarm=m_puffSiBuffer && !(prefixPrewarmSetting && std::string(prefixPrewarmSetting)=="0");
 		std::unordered_set<int> warmPlatformTypes;
 		size_t initSlotKeepaliveCount = 0;
 		auto restoreTargetPrewarmState = [&]()
@@ -11082,6 +11172,7 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 					else if (state.haloHidden) target.enginePlumeHaloNodePath.hide(); else target.enginePlumeHaloNodePath.show();
 				}
 			}
+            if(prefixPrewarm)UpdatePuffTransparent();
 			std::cout << "[InitSlotShaderKeepalive]"
 				<< " slots=" << initSlotKeepaliveCount
 				<< " policy=first_slot_per_platform_type mode=vertex_clip_no_fragments"
@@ -11096,6 +11187,12 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 
 		// The first tick processes collision-node and visible-target mutations.  The
 		// second retires their graphics work.  Both are outside the input-owned stream.
+        // 新共享透明实例、R32F参数和程序状态也必须实际绘制。只prepare shader
+        // 不会覆盖这些首次绑定成本；复用已暂存的INIT目标，恢复由上面同一函数完成。
+        if(prefixPrewarm){
+            UpdatePuffTransparent();
+            std::cout<<"[P20PrefixPrewarm] staged=1 discardOnly=1 publishedVideo=0 acceptedRealtime=0 beforeReady=1"<<std::endl;
+        }
 		for (int graphPrewarmPass = 1; graphPrewarmPass <= 2; ++graphPrewarmPass)
 		{
 			m_syncFrameActive.store(false);
@@ -18510,8 +18607,10 @@ void HwaSimIR::UpdateStage7PrecipitationBatch()
     // updated rain/snow every frame but never submitted its draw.  Bind the
     // composite lifetime to either consumer; this does not change density,
     // radiance, opacity, trajectory or the authored Weather texture.
-    if(m_stage7VolumeRegion != nullptr)
-        m_stage7VolumeRegion->set_active(m_stage7VolumeVisibleCount > 0 || visible);
+    if(m_stage7VolumeRegion != nullptr){
+        if(m_cloudPuffHybrid)UpdatePuffVolumeConsumers();
+        else m_stage7VolumeRegion->set_active(m_stage7VolumeVisibleCount > 0 || visible);
+    }
     if(!visible){node.hide();return;}
     node.show();
     node.set_mat(m_cameraNode.get_mat(m_renderRoot));
@@ -18680,6 +18779,7 @@ AsyncTask::DoneStatus HwaSimIR::shader_update_task(GenericAsyncTask* task, void*
 		{
 			self->m_perfStats.recordIrUpdate(0.0);
 		}
+        self->UpdatePuffTransparent();
 	}
 	return AsyncTask::DS_cont;
 }

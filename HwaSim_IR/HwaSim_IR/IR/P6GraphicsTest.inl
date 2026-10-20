@@ -181,6 +181,7 @@ void HwaSimIR::ArmP6LinearCapture(std::uint64_t seq){
 		return;
 	}
 	m_stage6LinearReadbackSourceSeq=seq;
+    if(m_puffSiBuffer){m_puffSiBuffer->set_active(true);std::cout<<"[P20LinearCapture] phase=armed sourceSeq="<<seq<<" materializedSi=1"<<std::endl;return;}
 #ifdef _WIN32
 	if(!m_stage6LinearReadbackTex){
 		std::cerr<<"[P6LinearCapture][ERROR] triggered_float_readback_unavailable sourceSeq="<<seq<<std::endl;
@@ -257,6 +258,10 @@ void HwaSimIR::CaptureP6LinearFrame(const unsigned char* pixels,int width,int he
 #ifdef _WIN32
 	// Desktop GL keeps the sparse triggered-copy route. Never fall back from an
 	// unattached or unfinished diagnostic texture to undefined pixels.
+    if(m_puffSiBuffer && markerMatches){
+        linearReadbackOk=ReadSceneLinear(m_pFramework->get_graphics_engine(),EffectiveStage6SiTexture(),EffectiveStage6SiBuffer(),width,height,*linear,false,&linearReadbackTiming);
+        linearReadbackRoute="p20_materialized_SI_direct_texture";
+    }else{
 	const bool ramCopyReady=markerMatches&&m_stage6LinearReadbackTex&&m_stage6LinearReadbackTex->has_ram_image();
 	if(!ramCopyReady){
 		std::cerr<<"[P6LinearCapture][ERROR] sourceSeq="<<seq
@@ -269,6 +274,7 @@ void HwaSimIR::CaptureP6LinearFrame(const unsigned char* pixels,int width,int he
 		if(!linearReadbackOk)std::cerr<<"[P6LinearCapture][ERROR] sourceSeq="<<seq
 			<<" reason=triggered_ram_image_decode_failed action=no_pfm_written"<<std::endl;
 	}
+    }
 #else
 	// The production raw texture is the actual formal SI attachment on Mali after
 	// do_frame. Read it directly through the diagnostic-only temporary FBO,
@@ -278,7 +284,7 @@ void HwaSimIR::CaptureP6LinearFrame(const unsigned char* pixels,int width,int he
 			<<" reason=direct_readback_marker_mismatch action=no_pfm_written"<<std::endl;
 	}else{
 		linearReadbackOk=ReadSceneLinear(m_pFramework->get_graphics_engine(),
-			m_stage6RawSceneTex,m_stage6RawSceneBuffer,width,height,*linear,false,&linearReadbackTiming);
+			EffectiveStage6SiTexture(),EffectiveStage6SiBuffer(),width,height,*linear,false,&linearReadbackTiming);
 		linearReadbackRoute="gles_rgba_float";
 		if(!linearReadbackOk)std::cerr<<"[P6LinearCapture][ERROR] sourceSeq="<<seq
 			<<" reason=gles_rgba_float_readback_failed action=no_pfm_written"<<std::endl;

@@ -1,4 +1,4 @@
-#include "CustomerTxWriter.h"
+﻿#include "CustomerTxWriter.h"
 #include "Generated/CustomerTxVideoDataReader.h"
 #include <chrono>
 #include <condition_variable>
@@ -64,7 +64,7 @@ int main(int argc,char** argv){
             std::this_thread::sleep_for(std::chrono::seconds(5));std::uint64_t samples=0,sent=0;
             // Deliberately split at 1/1399/... bytes so real start codes/NALs cross samples.
             const size_t sizes[]={1,1399,1400,1401,2800,2801};size_t offset=0,index=0;
-            const int pauseMs=argc==5?std::stoi(argv[4]):0;require(pauseMs>=0 && pauseMs<=5000,"fixture pause range");bool paused=false;
+            const int pauseMs=argc==5?std::stoi(argv[4]):0;require(pauseMs>=0 && pauseMs<=20000,"fixture pause range");bool paused=false;
             while(offset<stream.size()){auto n=(std::min)(sizes[index++%6],stream.size()-offset);
                 // P19: force the final five-byte standard end NAL across five Samples.
                 if(stream.size()>=5){const auto endStart=stream.size()-5;
@@ -111,6 +111,14 @@ int main(int argc,char** argv){
             }
             std::vector<unsigned char> received;for(const auto& v:sinks[i].data)received.insert(received.end(),v.begin(),v.end());
             require(received==expected && sinks[i].valid,"typed roundtrip mismatch or tail");
+            if(i>=2){
+                // 容量是IDL契约；拒绝超限整帧，不能截断后发送。
+                std::vector<unsigned char> tooLarge(640001,0x5a);
+                const auto beforeSamples=samples,beforeBytes=sent;
+                require(!writers[i].send(tooLarge.data(),tooLarge.size(),99,samples,sent,cancel),"oversize raw accepted");
+                require(samples==beforeSamples && sent==beforeBytes,"oversize raw changed sent counters");
+                std::cout<<"{\"rawCapacity\":640000,\"rejectedBytes\":640001,\"sentCountersUnchanged\":true}"<<std::endl;
+            }
             std::cout<<"{\"topic\":\""<<CustomerTX::topic(i%2==0,i<2)<<"\",\"type\":\""<<CustomerTX::type(i%2==0,i<2)
                      <<"\",\"samples\":"<<samples<<",\"bytes\":"<<sent<<",\"result\":\"PASS\"}"<<std::endl;
         }

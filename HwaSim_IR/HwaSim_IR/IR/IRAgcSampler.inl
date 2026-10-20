@@ -1,4 +1,4 @@
-void HwaSimIR::SetupStage6AgcSampler() {
+﻿void HwaSimIR::SetupStage6AgcSampler() {
     const bool active=IsStage6AgcEffective()&&m_stage6AgcMode!="Manual"&&m_stage6RawSceneTex&&m_stage6RawSceneBuffer;
     if(!active){if(m_agcSampleBuffer)m_agcSampleBuffer->set_active(false);return;}
     if(m_agcSampleBuffer&&m_agcAllocatedSize!=m_agcSampleSize){
@@ -79,7 +79,7 @@ void main(){
             <<" format="<<agcSampleFormat
             <<" rawSceneFormatUnchanged=1 fullFrameCPURead=0 sceneDepthAttachmentChanged=0 nearestTexelFetch=1"<<std::endl;
     }
-    m_agcSampleCard.set_shader_input("u_linear_scene",m_stage6RawSceneTex);
+    m_agcSampleCard.set_shader_input("u_linear_scene",EffectiveStage6SiTexture());
 	m_agcSampleCard.set_shader_input("u_source_size",LVecBase2f(float(m_stage6FinalWidth),float(m_stage6FinalHeight)));
 	m_agcSampleCard.set_shader_input("u_sample_size",LVecBase2f(float(m_agcSampleSize),float(m_agcSampleSize)));
 	double rawMinimum=0.0,rawMaximum=1.0;Stage6PhysicalDisplayWindow(rawMinimum,rawMaximum);
