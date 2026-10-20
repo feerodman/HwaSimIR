@@ -138,7 +138,13 @@ int main(int argc, char** argv)
 			auto& q=t.targetLoc;q.lat=row[10].toDouble();q.lon=row[11].toDouble();q.alt=row[12].toDouble();q.yaw=row[13].toDouble();q.pitch=row[14].toDouble();q.roll=row[15].toDouble();q.speed=row[16].toDouble();
 			auto& w=d.weaponState;w.targetType=r.model;w.targetPlatID=3;w.targetID=3;w.lookatEn=true;w.viewValid=t.viewValid;w.strikeFlag=row[28].toInt()!=0;w.strikePart=2;
 			if(config["diagnosticReferenceMismatch"].toBool()&&i>=30&&i<60)w.targetType=r.model==0x22?0x33:0x22;
-			if(!client.sendRealtime(d,error)){control(3);return 17;}
+			if(config["engineeringLifecycle"].toBool()) {
+                // Test-only packet states; no production reference fallback.
+                w.lookatEn=false; // fixed camera makes independent background comparisons meaningful
+                if(i<30 || (i>=90 && i<120))d.targetNumValid=0;
+                else if(i>=60 && i<90){t.viewValid=false;w.viewValid=false;}
+            }
+            if(!client.sendRealtime(d,error)){control(3);return 17;}
 			if(pacingFile.isOpen())
 			{
 				const double wallMs=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();

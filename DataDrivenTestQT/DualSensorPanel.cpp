@@ -3,6 +3,14 @@
 #include <QtWidgets>
 #include <cmath>
 #include <set>
+#include <chrono>
+#include <limits>
+#if defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
 
 namespace {
 struct InitField { const char* name; const char* label; double initial, low, high; int decimals; };
@@ -152,7 +160,7 @@ void DualSensorPanel::fail(const QString& error) {
     message->setText("错误："+error);message->setStyleSheet("color:#b42318");qCritical().noquote()<<"[P19UI][ERROR]"<<error;emit operationFailed(error);
 }
 void DualSensorPanel::freeze(bool value){settings->setEnabled(!value);for(auto& c:channels){c.form->setEnabled(!value);c.selected->setEnabled(!value);c.role->setEnabled(!value);c.plat->setEnabled(!value);c.sensor->setEnabled(!value);}}
-void DualSensorPanel::status(int index,const QString& state){auto& c=channels[index];c.status->setText(QString("%1 · %2 · 已发 %3\n%4").arg(state,c.topic).arg(c.sent).arg(c.replay?QString("%1 · 行 %2/%3").arg(QFileInfo(c.replay->path).fileName()).arg(c.replay->cursor).arg(c.replay->rows.size()):QString()));}
+void DualSensorPanel::status(int index,const QString& state){auto& c=channels[index];c.status->setText(QString("%1 · %2 · 已发 %3\n%4").arg(state,c.topic).arg(c.sent).arg(c.replay?QString("%1 · 行 %2/%3").arg(QFileInfo(c.replay->path).fileName()).arg(c.sent).arg(c.replay->rows.size()):QString()));}
 void DualSensorPanel::setSensorFieldAll(const QString& key,double value){for(auto& c:channels)if(c.values.contains(key))c.values[key]->setValue(value);}
 void DualSensorPanel::setEnvironmentAll(const QString& key,double value){setSensorFieldAll(key,value);}
 void DualSensorPanel::setSource(const QString& path){commonSource->setText(path);}
@@ -228,15 +236,87 @@ void DualSensorPanel::receiveAck(const BYHWICD::InitAckC2pObjectTrackingCmd& ack
     phase=Ready;message->setText("选中路 ACK 全部就绪，可共同 START。");emit allInitialized();
 }
 void DualSensorPanel::start(){if(phase!=Ready){fail("必须等待所有选中路的 INIT ACK 后再 START");return;}if(!control(2)){phase=Failed;return;}phase=Starting;phaseClock.restart();message->setText(observeStatus->isChecked()?"START 已发送，异步等待 renderer 运行状态":"START 已发送；原状态关闭，等待 2 秒准备窗口（不宣称已观察应用就绪）");}
-void DualSensorPanel::stop(){if(phase==Stopping||phase==Stopped||phase==Editable)return;const bool neverStarted=phase==AwaitingAck||phase==Ready;tick.stop();if(!control(3)){phase=Failed;return;}if(neverStarted){phase=Stopped;message->setText("已发送 STOP；本地未 START、未发送实时帧。RESET 后可重试。");emit roundStopped();return;}phase=Stopping;phaseClock.restart();message->setText("STOP 已发，等待选中实例排空；平台级控制会联动同平台实例。");}
+void DualSensorPanel::stop(){if(phase==Stopping||phase==Stopped||phase==Editable)return;const bool neverStarted=phase==AwaitingAck||phase==Ready;tick.stop();stopReplayWorker();if(!control(3)){phase=Failed;return;}if(neverStarted){phase=Stopped;message->setText("已发送 STOP；本地未 START、未发送实时帧。RESET 后可重试。");emit roundStopped();return;}phase=Stopping;phaseClock.restart();message->setText("STOP 已发，等待选中实例排空；平台级控制会联动同平台实例。");}
 void DualSensorPanel::pollState(){
     if(phase==AwaitingAck&&phaseClock.elapsed()>30000){for(int i=0;i<channels.size();++i)if(channels[i].pending)status(i,"ACK 超时");phase=Failed;fail("INIT ACK 超时。核对部署身份、Domain、QoS 和 renderer 日志");}
-    if(phase==Starting){if((observeStatus->isChecked()&&dds->runningStatusObserved())||(!observeStatus->isChecked()&&phaseClock.elapsed()>=2000)){phase=Running;ticks=0;pacing.restart();pump();}
+    if(phase==Starting){if((observeStatus->isChecked()&&dds->runningStatusObserved())||(!observeStatus->isChecked()&&phaseClock.elapsed()>=2000)){phase=Running;ticks=0;pacing.restart();beginReplayWorker();}
         else if(phaseClock.elapsed()>10000){phase=Failed;fail("START 状态超时；未发送实时数据，可 STOP / RESET");}}
+    if(phase==Running){
+        for(int i=0;i<channels.size();++i)if(channels[i].enabled){channels[i].sent=replaySent[i].load();status(i,"运行");}
+        if(replayDone.load(std::memory_order_acquire)){
+            stopReplayWorker();
+            if(!replayError.isEmpty())fail(replayError);
+            for(int i=0;i<channels.size();++i)if(channels[i].enabled){channels[i].eof=true;status(i,"数据 EOF");}
+            stop();
+        }
+    }
     if(phase==Stopping){const bool observed=dds->stoppedStatusObserved();if((observeStatus->isChecked()&&observed)||(!observeStatus->isChecked()&&phaseClock.elapsed()>=5000)){
             phase=Stopped;for(int i=0;i<channels.size();++i)if(channels[i].enabled)status(i,observed?"已停止 / 排空":"STOP 已发 / 排空未观测");
             qInfo()<<"[P19UIStop] round="<<round<<"applicationStopObserved="<<observed<<"elapsedMs="<<phaseClock.elapsed();message->setText(observed?"已观察全部选中实例停止。RESET 后可开始下一回合。":"未订阅原状态；STOP 后等待已结束，排空须由 renderer/客户日志确认。RESET 后可再 INIT。");emit roundStopped();
         }else if(phaseClock.elapsed()>30000){phase=Failed;fail("STOP 排空状态超时；保留日志，不伪造完成");}}
+}
+DualSensorPanel::~DualSensorPanel(){stopReplayWorker();}
+void DualSensorPanel::stopReplayWorker(){replayCancel.store(true);if(replayWorker.joinable())replayWorker.join();}
+void DualSensorPanel::beginReplayWorker(){
+    stopReplayWorker();replayCancel.store(false);replayDone.store(false);replayError.clear();
+    struct Packet {BYHWICD::DisplayC2cObjTrackingData value;int channel,row;double sourceTime;};
+    using Tick=std::vector<Packet>;auto packets=std::make_shared<std::vector<Tick>>();
+    int count=std::numeric_limits<int>::max();
+    for(int i=0;i<channels.size();++i){replaySent[i].store(0);const auto& c=channels[i];if(c.enabled)count=std::min(count,c.replay->rows.size()-c.replay->cursor);}
+    if(count==std::numeric_limits<int>::max()||count<=0){replayDone.store(true);return;}
+    packets->reserve(count);
+    // Snapshot only after INIT/ACK and START. The worker never touches widgets,
+    // source cursors, protocol clock anchors, or mutable channel configuration.
+    for(int n=0;n<count;++n){Tick batch;
+        for(int i=0;i<channels.size();++i){const auto& c=channels[i];if(!c.enabled)continue;
+            const int index=c.replay->cursor+n;const auto& row=c.replay->rows[index];
+            Packet packet={};packet.channel=i;packet.row=index;packet.sourceTime=row.sourceTimeMs;
+            auto& data=packet.value;data.flag=0x38;data.platID=c.init.platID;data.sensorID=c.init.sensorID;
+            data.time=epoch.toMSecsSinceEpoch()+row.sourceTimeMs-c.replay->rows.first().sourceTimeMs;
+            auto& p=data.platLoc;p.lat=row.platPos.lat;p.lon=row.platPos.lon;p.alt=row.platPos.alt;p.yaw=row.platEul.yaw;p.pitch=row.platEul.pitch;p.roll=row.platEul.roll;p.speed=row.platSpeed;
+            const bool visible=c.forceVisible->isChecked()||row.viewValid;
+            auto& w=data.weaponState;w.targetType=c.target;w.targetPlatID=3;w.targetID=3;w.lookatEn=true;w.viewValid=visible;w.strikeFlag=row.strikeFlag;w.strikePart=2;
+            data.targetNumValid=1;auto& t=data.targetState[0];t.targetType=c.target;t.targetPlatID=3;t.targetID=3;t.engineState=true;t.viewValid=visible;t.targetState=1;
+            auto& loc=t.targetLoc;loc.lat=row.tarPos.lat;loc.lon=row.tarPos.lon;loc.alt=row.tarPos.alt;loc.yaw=row.tarEul.yaw;loc.pitch=row.tarEul.pitch;loc.roll=row.tarEul.roll;loc.speed=c.target==0x11?row.platSpeed:row.tarSpeed;
+            batch.push_back(packet);
+        }packets->push_back(std::move(batch));
+    }
+    const long long periodNs=std::llround(stepMs->value()*1.e6);
+    qInfo()<<"[P20M3 Pacing] owner=dedicated_worker periodNs="<<periodNs<<"ticks="<<count<<"sourceTimes=unchanged deadline=cumulative noDrop=1";
+    replayWorker=std::thread([this,packets,periodNs]{
+#if defined(_WIN32)
+        SetThreadPriority(GetCurrentThread(),THREAD_PRIORITY_ABOVE_NORMAL);
+        typedef HANDLE (WINAPI *CreateTimer)(LPSECURITY_ATTRIBUTES,LPCWSTR,DWORD,DWORD);
+        const auto createTimer=reinterpret_cast<CreateTimer>(GetProcAddress(GetModuleHandleW(L"kernel32.dll"),"CreateWaitableTimerExW"));
+        struct TimerHandle {HANDLE value;~TimerHandle(){if(value)CloseHandle(value);}} timer={createTimer?createTimer(nullptr,nullptr,0x00000002,TIMER_ALL_ACCESS):nullptr};
+        // Windows 10+ high-resolution waitable timer. sleep_for(1ms) can round
+        // to the process's 15.6ms timer quantum and create 15/30ms packet gaps.
+        if(!timer.value){replayError="High-resolution pacing timer unavailable";replayDone.store(true,std::memory_order_release);return;}
+#endif
+        const auto start=std::chrono::steady_clock::now();
+        for(size_t n=0;n<packets->size()&&!replayCancel.load();++n){
+            const auto deadline=start+std::chrono::nanoseconds(periodNs*static_cast<long long>(n));
+            while(!replayCancel.load()){
+                const auto remaining=deadline-std::chrono::steady_clock::now();if(remaining<=std::chrono::steady_clock::duration::zero())break;
+                if(remaining>std::chrono::microseconds(200)){
+#if defined(_WIN32)
+                    LARGE_INTEGER due;due.QuadPart=-std::max<long long>(1,(std::chrono::duration_cast<std::chrono::nanoseconds>(remaining).count()-100000)/100);
+                    if(!SetWaitableTimer(timer.value,&due,0,nullptr,nullptr,FALSE)||WaitForSingleObject(timer.value,INFINITE)!=WAIT_OBJECT_0){replayError="High-resolution pacing wait failed";replayDone.store(true,std::memory_order_release);return;}
+#else
+                    std::this_thread::sleep_until(deadline-std::chrono::microseconds(100));
+#endif
+                }else std::atomic_signal_fence(std::memory_order_seq_cst);
+            }
+            if(replayCancel.load())break;
+            for(const auto& packet:(*packets)[n]){
+                std::string error;
+                if(!dds->sendRealtime(packet.value,error)){replayError=QString::fromStdString(error);replayDone.store(true,std::memory_order_release);return;}
+                const auto sent=replaySent[packet.channel].fetch_add(1)+1;
+                if(sent<=2||sent%600==0)qInfo()<<"[P19UIRealtime] route="<<packet.channel+1<<"platID="<<packet.value.platID<<"sensorID="<<packet.value.sensorID<<"sourceRow="<<packet.row<<"sourceTimeMs="<<packet.sourceTime<<"sent="<<sent<<"model="<<packet.value.targetState[0].targetType;
+            }
+        }
+        replayDone.store(true,std::memory_order_release);
+    });
 }
 void DualSensorPanel::pump(){if(phase!=Running)return;
     std::set<Source*> advanced;std::set<int> endedPlatforms;

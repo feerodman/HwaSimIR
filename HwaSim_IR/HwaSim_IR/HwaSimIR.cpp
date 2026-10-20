@@ -7209,7 +7209,7 @@ void HwaSimIR::UpdateStage7SkyHorizon(const IRRuntimeEnvironment& environment, c
 					IRBand::ShortWaveInfrared, m_m1SwirGroundEffectiveTempK);
 			const double groundReflection = m_m1SwirGroundReflectance / 3.14159265358979323846 *
 				(environmentDirect * sunOnHorizontal + environmentDiffuse);
-			skyGrayBase = environmentTau * skySurface + environmentPath;
+			skyGrayBase = m_engineeringAtmosphere ? m_engineeringSkyRadiance : environmentTau * skySurface + environmentPath;
 			groundGrayBase = environmentTau * (groundBody + groundReflection) + environmentPath;
 		}
 		else
@@ -7229,7 +7229,7 @@ void HwaSimIR::UpdateStage7SkyHorizon(const IRRuntimeEnvironment& environment, c
 					IRBand::MidWaveInfrared, m_m1MwirGroundEffectiveTempK);
 			const double groundReflection = m_m1MwirGroundReflectance / 3.14159265358979323846 *
 				(environmentDirect * sunOnHorizontal + environmentDiffuse);
-			skyGrayBase = environmentTau * skySurface + environmentPath;
+			skyGrayBase = m_engineeringAtmosphere ? m_engineeringSkyRadiance : environmentTau * skySurface + environmentPath;
 			groundGrayBase = environmentTau * (groundBody + groundReflection) + environmentPath;
 			if (forceLog)
 			{
@@ -10688,6 +10688,7 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		m_isSimRunning.store(false);
 		// Stage2B：同步转发停止控制命令，触发显示端 flush 并关闭视频/数据/标注文件。
 		IRPhysicalTrace::instance().flush();
+        std::cout << "[P20M3 AtmosphereCounters] evaluated=" << m_atmosphereEvaluated << " forcedBlack=" << m_atmosphereForcedBlack << " policy=" << (m_engineeringAtmosphere?"EngineeringContinuous":"StrictModtran") << std::endl;
 		bool outputDrainOk = true;
 		bool stopForwardOk = true;
 		if (m_pTcpThread) {
@@ -10822,6 +10823,7 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 	if ((requestedProductionBand == IRBand::ShortWaveInfrared ||
 		 requestedProductionBand == IRBand::NearInfrared ||
 		 requestedProductionBand == IRBand::MidWaveInfrared) &&
+		!(m_engineeringAtmosphere && m_engineeringProvider.ready() && requestedProductionBand != IRBand::NearInfrared) &&
 		!m_stage5ModtranRadianceLut.hasBand(requestedProductionBand))
 	{
 		m_sensorProfileRequestValid = false;
@@ -11107,6 +11109,16 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 				target.nodePath.set_pos(lateralM, 1000.0f, 0.0f);
 				target.nodePath.set_hpr(0.0f, 0.0f, 0.0f);
 				target.nodePath.show();
+				// Exercise the actual SI branch before READY. No input frame is
+				// accepted or published by this existing discard-only prewarm.
+				if (m_engineeringAtmosphere)
+				{
+					SetShaderInputCached(target.nodePath, "u_stage5_radiance_debug_en", LVecBase2i(1, 0));
+					SetShaderInputCached(target.nodePath, "u_ir_band_index", LVecBase2i(static_cast<int>(requestedProductionBand), 0));
+					SetShaderInputCached(target.nodePath, "u_ir_band_class", LVecBase2i(IRBandClassForShader(requestedProductionBand), 0));
+					SetShaderInputCached(target.nodePath, "u_m1_physics_runtime_en", LVecBase2i(1, 0));
+					SetShaderInputCached(target.nodePath, "u_m1_raw_si_output", LVecBase2i(m_stage6RawSiDomain ? 1 : 0, 0));
+				}
 				if (!target.enginePlumeCoreNodePath.is_empty())
 				{
 					target.enginePlumeCoreNodePath.set_shader_input("u_plume_enabled", LVecBase2i(1, 0));
@@ -11139,6 +11151,12 @@ void HwaSimIR::ProcessInitCmdOnMainThread(const BYHWICD::InitP2cObjectTrackingCm
 #endif
 				target.nodePath.reparent_to(state.parent);
 				target.nodePath.set_mat(state.localMat);
+				if (m_engineeringAtmosphere)
+				{
+					SetShaderInputCached(target.nodePath, "u_stage5_radiance_debug_en", LVecBase2i(0, 0));
+					SetShaderInputCached(target.nodePath, "u_m1_physics_runtime_en", LVecBase2i(0, 0));
+					SetShaderInputCached(target.nodePath, "u_m1_raw_si_output", LVecBase2i(0, 0));
+				}
 				if (keepWarmSlot)
 				{
 					target.nodePath.set_shader_input("u_draw_enabled", LVecBase2i(0, 0));
@@ -11726,6 +11744,16 @@ void HwaSimIR::InitInfraredSimulation()
 		if (!m_runtimeConfig.loadFromCandidates(BuildRuntimeConfigCandidatePaths()) && std::getenv("HWASIMIR_RUNTIME_CONFIG"))
         throw std::runtime_error("explicit HWASIMIR_RUNTIME_CONFIG is unreadable");
 	}
+    const std::string atmospherePolicy = m_runtimeConfig.getString("M1NirMwirPhysics", "AtmospherePolicy", "AtmospherePolicy", "StrictModtran", nullptr);
+    if (atmospherePolicy != "StrictModtran" && atmospherePolicy != "EngineeringContinuous")
+        throw std::runtime_error("Unknown atmosphere policy");
+    m_engineeringAtmosphere = atmospherePolicy == "EngineeringContinuous";
+    if (m_engineeringAtmosphere) {
+        const std::string path = m_runtimeConfig.getString("M1NirMwirPhysics", "EngineeringParameters", "EngineeringParameters", "Config/Atmosphere/engineering_atmosphere.txt", nullptr);
+        const std::string hash = m_runtimeConfig.getString("M1NirMwirPhysics", "EngineeringParameterSha256", "EngineeringParameterSha256", "", nullptr);
+        if (!m_engineeringProvider.load(path,hash)) throw std::runtime_error("Engineering atmosphere parameter identity failed");
+        std::cout << "[P20M3 Atmosphere] policy=" << atmospherePolicy << " model=P20M3_GREY_GAS_1 parameterPath=" << path << " parameterHash=" << hash << " quality=ENGINEERING_APPROX strictAccuracy=PENDING" << std::endl;
+    }
 	m_m1CompareOnly = m_runtimeConfig.getBool("M1NirMwirPhysics", "CompareOnly", "M1CompareOnly", false, nullptr);
 	m_m1RuntimeEnabled = m_runtimeConfig.getBool("M1NirMwirPhysics", "EnableRuntime", "M1EnableRuntime", false, nullptr);
 	m_m1NirRuntimeEnabled = m_runtimeConfig.getBool("M1NirMwirPhysics", "EnableNIRRuntime", "M1EnableNIRRuntime", false, nullptr);
@@ -11751,13 +11779,14 @@ void HwaSimIR::InitInfraredSimulation()
 	m_p13ExpectedOriginalInputSha256 = m_runtimeConfig.getString(
 		"M1NirMwirPhysics", "OriginalInputSha256", "P13OriginalInputSha256", "", nullptr);
 	m_p13CoverageManifestPath = p13CoverageManifestPath;
-	if (m_p13ExpectedFormalLutSha256.size() != 64 ||
-		m_p13ExpectedCoverageManifestSha256.size() != 64)
+	if (!m_engineeringAtmosphere && (m_p13ExpectedFormalLutSha256.size() != 64 ||
+		m_p13ExpectedCoverageManifestSha256.size() != 64))
 	{
 		throw std::runtime_error("P14 atmosphere identity requires LUT and manifest SHA-256 values");
 	}
-	const std::string actualFormalLutSha256 = HwaHash::Sha256File(modtranBandLutPath);
-	const std::string actualCoverageManifestSha256 = HwaHash::Sha256File(p13CoverageManifestPath);
+	const auto optionalHash = [](const std::string& path) { try { return HwaHash::Sha256File(path); } catch (const std::exception&) { return std::string(); } };
+	const std::string actualFormalLutSha256 = optionalHash(modtranBandLutPath);
+	const std::string actualCoverageManifestSha256 = optionalHash(p13CoverageManifestPath);
 	IRJson::Document p13CoverageManifest;
 	p13CoverageManifest.load(p13CoverageManifestPath);
 	const std::string manifestSchema = p13CoverageManifest.string("schema");
@@ -11792,7 +11821,7 @@ void HwaSimIR::InitInfraredSimulation()
 		<< " calibrationStatus=" << manifestCalibrationStatus
 		<< " binding=control_and_renderer_same_identity"
 		<< std::endl;
-	if (!m_p13AtmosphereIdentityReady)
+	if (!m_engineeringAtmosphere && !m_p13AtmosphereIdentityReady)
 	{
 		throw std::runtime_error("P14 atmosphere LUT/manifest identity mismatch");
 	}
@@ -11889,7 +11918,7 @@ void HwaSimIR::InitInfraredSimulation()
 		<< " productionGate=" << ((m_l1NaturalSolarEnabled && m_l1MaterialBandOpticsReady && m_l1SolarHeatingReady) ? "requested" : "controlled_off")
 		<< std::endl;
 	m_irAtmosphereReady = m_irAtmosphereModel.loadTransmissionTable(transmittancePath);
-	bool modtranTauLutReady = m_irAtmosphereModel.loadModtranBandLut(modtranBandLutPath);
+	bool modtranTauLutReady = m_p13AtmosphereIdentityReady && m_irAtmosphereModel.loadModtranBandLut(modtranBandLutPath);
 	std::string stage3TauDebugSource;
 	std::string stage3UseTauSource;
 	std::string stage4VisualSource;
@@ -14223,6 +14252,8 @@ void HwaSimIR::InitInfraredShader() {
     uniform float u_stage5_sensor_input_display_gray;
     uniform int u_stage5_use_sensor_input_for_display;
 	uniform int u_m1_physics_runtime_en;
+	uniform int u_m1_planck_table_en;
+	uniform highp sampler2D u_m1_planck_table;
 	uniform float u_m1_tau_up;
 	uniform float u_m1_path_radiance;
 	uniform float u_m1_direct_solar_irradiance;
@@ -14419,6 +14450,11 @@ void HwaSimIR::InitInfraredShader() {
 
     highp float P4MwirBandMeanPlanckWm2SrUm(highp float temperature_K)
     {
+		if (u_m1_planck_table_en == 1 && temperature_K >= 120.0 && temperature_K <= 4215.0) {
+			highp float x=(temperature_K-120.0)*2.0, i=min(floor(x),8190.0);
+			return mix(texture2D(u_m1_planck_table,vec2((i+0.5)/8192.0,0.75)).r,
+				texture2D(u_m1_planck_table,vec2((i+1.5)/8192.0,0.75)).r,x-i);
+		}
 		// Rectangular 3--5 um response, composite Simpson integration with
 		// 0.5 um samples.  The /12 includes both Simpson's h/3 and division
 		// by the 2 um bandwidth, matching IRRadianceModelV2 exactly.
@@ -14431,6 +14467,11 @@ void HwaSimIR::InitInfraredShader() {
 
 	 highp float P4SwirBandMeanPlanckWm2SrUm(highp float temperature_K)
 	 {
+		if (u_m1_planck_table_en == 1 && temperature_K >= 120.0 && temperature_K <= 4215.0) {
+			highp float x=(temperature_K-120.0)*2.0, i=min(floor(x),8190.0);
+			return mix(texture2D(u_m1_planck_table,vec2((i+0.5)/8192.0,0.25)).r,
+				texture2D(u_m1_planck_table,vec2((i+1.5)/8192.0,0.25)).r,x-i);
+		}
 		// Rectangular 1.1--2.5 um response, ten-interval composite Simpson
 		// integration.  This matches the CPU grid and remains within the frozen
 		// P11 <=1% error budget against the 16384-interval reference.
@@ -15071,6 +15112,22 @@ void HwaSimIR::ApplyInfraredShader(NodePath& node, bool isBackground) {
 	SetShaderInputCached(node, "u_stage5_sensor_input_display_gray", LVecBase2f(0.0f, 0.0f));
 	SetShaderInputCached(node, "u_stage5_use_sensor_input_for_display", LVecBase2i(0, 0));
 	SetShaderInputCached(node, "u_m1_physics_runtime_en", LVecBase2i(0, 0));
+	static PT(Texture) engineeringPlanckTable;
+	if (!engineeringPlanckTable) {
+		engineeringPlanckTable=new Texture("P20M3_BandMeanPlanck_HalfK");
+		engineeringPlanckTable->setup_2d_texture(8192,2,Texture::T_float,Texture::F_r32);
+		PTA_uchar bytes=PTA_uchar::empty_array(8192*2*sizeof(float));
+		for(int row=0;row<2;++row)for(int t=0;t<8192;++t) {
+			const float value=static_cast<float>(IRRadianceModelV2::bandAveragePlanckRadianceWm2SrUm(row==0?IRBand::ShortWaveInfrared:IRBand::MidWaveInfrared,120.+t*.5));
+			std::memcpy(&bytes[(row*8192+t)*sizeof(float)],&value,sizeof(float));
+		}
+		engineeringPlanckTable->set_ram_image(bytes);
+		engineeringPlanckTable->set_minfilter(SamplerState::FT_nearest);
+		engineeringPlanckTable->set_magfilter(SamplerState::FT_nearest);
+		std::cout<<"[P20M3 PlanckTable] response=existing_CPU_Simpson bands=SWIR,MWIR temperatureK=120..4215 stepK=0.5 format=R32F interpolation=manual_linear outside=analytic strictMode=analytic"<<std::endl;
+	}
+	node.set_shader_input("u_m1_planck_table",engineeringPlanckTable);
+	SetShaderInputCached(node,"u_m1_planck_table_en",LVecBase2i(m_engineeringAtmosphere?1:0,0));
 	SetShaderInputCached(node, "u_m1_raw_si_output", LVecBase2i(0, 0));
 	SetShaderInputCached(node, "u_m1_tau_up", LVecBase2f(1.0f, 0.0f));
 	SetShaderInputCached(node, "u_m1_path_radiance", LVecBase2f(0.0f, 0.0f));
@@ -15338,7 +15395,7 @@ float HwaSimIR::EstimateRangeToCamera(const NodePath& node) const
 	LPoint3f cameraPos = m_cameraNode.get_pos(m_renderRoot);
 	LVector3f delta = nodePos - cameraPos;
 	float range = delta.length();
-	return std::max(1.0f, range);
+	return range; // Positive sub-metre ranges must not collapse to an implicit 1 m node.
 }
 
 bool HwaSimIR::IsValidTargetStateKey(const BYHWICD::TargetState& targetState) const
@@ -15804,6 +15861,20 @@ bool HwaSimIR::ApplyStage4TargetState(TargetPlatformData& targetPlat, const BYHW
 
 IRModtranRadianceResult HwaSimIR::QueryStage5ModtranRadiance(const TargetPlatformData& targetPlat, const IRRuntimeEnvironment& environment, const IRObjectRadianceOutput& radiance, const std::string& targetKey)
 {
+    const IRBand band = static_cast<IRBand>(static_cast<int>(radiance.bandIndex));
+    if (m_engineeringAtmosphere && (band == IRBand::ShortWaveInfrared || band == IRBand::MidWaveInfrared)) {
+        const HwaAtmosphere::Result p = QueryEngineeringAtmosphere(targetPlat, environment);
+        IRModtranRadianceResult r; // Compatibility carrier; strict valid stays false.
+        r.engineeringUsable=p.usableForRendering;r.engineeringParameterHash=p.parameterHash;
+        r.tauUp=p.tau;r.pathThermalWm2SrUm=p.pathThermalRadiance;
+        r.pathScatteringRadianceWm2SrUm=p.pathScatteringRadiance;
+        r.directSolarIrradianceWm2Um=p.directSolarIrradiance;r.downwardSkyDiffuseIrradianceWm2Um=p.skyDiffuseIrradiance;
+        r.pathRadiance=p.pathThermalRadiance+p.pathScatteringRadiance;r.solarIrradiance=p.directSolarIrradiance;
+        r.radianceUnit=p.radianceUnit;r.irradianceUnit=p.irradianceUnit;r.responseMode="RectangularBand";
+        r.interpolationMode=p.runtimeStatus;r.fallbackReason=p.inputError.empty()?"none":p.inputError;
+        r.sourceFiles=p.source;r.sourceCaseIds="ENGINEERING_PARAMETERS:"+p.parameterHash;
+        return r;
+    }
 	IRModtranRadianceResult disabledResult;
 	if (!Stage5ModtranRadianceCompareEnabled())
 	{
@@ -15828,7 +15899,8 @@ IRModtranRadianceResult HwaSimIR::QueryStage5ModtranRadiance(const TargetPlatfor
 	double targetAltKm = IsReasonableAltitudeMeters(targetPlat.targetState.targetLoc.alt)
 		? targetPlat.targetState.targetLoc.alt / 1000.0
 		: observerAltKm;
-	const double rangeKmRaw = static_cast<double>(EstimateRangeToCamera(targetPlat.nodePath)) / 1000.0;
+	const auto& pg=m_realTimeSceneData.platLoc;const auto& tg=targetPlat.targetState.targetLoc;
+    const double rangeKmRaw = HwaAtmosphere::range(HwaAtmosphere::Geo(pg.lat,pg.lon,pg.alt), HwaAtmosphere::Geo(tg.lat,tg.lon,tg.alt))/1000.;
 	const double visibilityKmRaw = std::max(0.001, environment.visibilityMeters / 1000.0);
 	const double solarZenithDeg = std::max(0.0, std::min(180.0, 90.0 - environment.sunElevationDeg));
 
@@ -16599,7 +16671,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 		modtranRadiance.sourceFiles = "disabled";
 	}
 	stage5Input.legacyPathRadiance = legacyPathRadiance;
-	const double modtranPathRaw = modtranRadiance.valid ? std::max(0.0, modtranRadiance.pathRadiance) : 0.0;
+	const double modtranPathRaw = modtranRadiance.usableForRendering() ? std::max(0.0, modtranRadiance.pathRadiance) : 0.0;
 	const double modtranPathScaled = ClampStage5Double(
 		modtranPathRaw * m_stage5ModtranPathScale + m_stage5ModtranPathOffset,
 		m_stage5ModtranPathClampMin,
@@ -16612,16 +16684,16 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	stage5Input.modtranPathOffset = m_stage5ModtranPathOffset;
 	stage5Input.modtranPathBlend = m_stage5ModtranPathBlend;
 	stage5Input.modtranPathRuntimeMode = m_stage5ModtranPathRuntimeMode;
-	stage5Input.modtranSkyRadiance = modtranRadiance.valid ? modtranRadiance.skyRadiance : 0.0;
-	stage5Input.modtranSolarIrradiance = modtranRadiance.valid ? modtranRadiance.solarIrradiance : 0.0;
+	stage5Input.modtranSkyRadiance = modtranRadiance.usableForRendering() ? modtranRadiance.skyRadiance : 0.0;
+	stage5Input.modtranSolarIrradiance = modtranRadiance.usableForRendering() ? modtranRadiance.solarIrradiance : 0.0;
 	IRModtranRadianceResult l2Atmosphere = modtranRadiance;
 	const bool l2ProtocolRequested = m_l2ActiveIlluminatorConfig.enabled &&
 		m_realTimeSceneData.weaponState.illuminatorEn;
-	const bool reflectiveNightBoundary =
+	const bool reflectiveNightBoundary = !m_engineeringAtmosphere &&
 		(stage5Band == IRBand::NearInfrared || stage5Band == IRBand::ShortWaveInfrared) &&
 		m_m1SolarState.valid && m_m1SolarState.elevationDeg <= 0.0;
 	if ((l2ProtocolRequested || reflectiveNightBoundary) &&
-		!l2Atmosphere.valid && l2Atmosphere.fallbackAxis == "solarZenithDeg")
+		!l2Atmosphere.usableForRendering() && l2Atmosphere.fallbackAxis == "solarZenithDeg")
 	{
 		// LOS transmission does not depend on solar zenith.  NIR irradiance/path
 		// fields remain invalid at night; only the tau field is taken from the
@@ -16630,7 +16702,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 		activeTauEnvironment.sunElevationDeg = 45.0;
 		l2Atmosphere = QueryStage5ModtranRadiance(
 			targetPlat, activeTauEnvironment, radiance, targetKey + ":l2_active_tau");
-		if (l2Atmosphere.valid)
+		if (l2Atmosphere.usableForRendering())
 		{
 			l2Atmosphere.interpolationMode += "+active_tau_solar_independent_slice_sza45";
 		}
@@ -16638,22 +16710,22 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	// Below the horizon, the formal NIR natural terms are a defined zero boundary,
 	// not a reason to switch the target back to the legacy display chain.  Keeping
 	// the M1 route stable prevents illuminatorEn from changing the baseline mapping.
-	const bool reflectiveNightAtmosphereReady = reflectiveNightBoundary && l2Atmosphere.valid;
-	stage5Input.useM1Physics = (modtranRadiance.valid || reflectiveNightAtmosphereReady ||
-		(l2ProtocolRequested && l2Atmosphere.valid)) &&
+	const bool reflectiveNightAtmosphereReady = reflectiveNightBoundary && l2Atmosphere.usableForRendering();
+	stage5Input.useM1Physics = (modtranRadiance.usableForRendering() || reflectiveNightAtmosphereReady ||
+		(l2ProtocolRequested && l2Atmosphere.usableForRendering())) &&
 		(stage5Band == IRBand::NearInfrared ||
 		 stage5Band == IRBand::ShortWaveInfrared ||
 		 stage5Band == IRBand::MidWaveInfrared);
-	stage5Input.m1TauUp = modtranRadiance.valid ? modtranRadiance.tauUp :
-		(l2Atmosphere.valid ? l2Atmosphere.tauUp : 1.0);
-	stage5Input.directSolarIrradiance = modtranRadiance.valid ? modtranRadiance.directSolarIrradianceWm2Um : 0.0;
-	stage5Input.skyDiffuseIrradiance = modtranRadiance.valid ? modtranRadiance.downwardSkyDiffuseIrradianceWm2Um : 0.0;
-	stage5Input.pathScatteringRadiance = modtranRadiance.valid
+	stage5Input.m1TauUp = modtranRadiance.usableForRendering() ? modtranRadiance.tauUp :
+		(l2Atmosphere.usableForRendering() ? l2Atmosphere.tauUp : 1.0);
+	stage5Input.directSolarIrradiance = modtranRadiance.usableForRendering() ? modtranRadiance.directSolarIrradianceWm2Um : 0.0;
+	stage5Input.skyDiffuseIrradiance = modtranRadiance.usableForRendering() ? modtranRadiance.downwardSkyDiffuseIrradianceWm2Um : 0.0;
+	stage5Input.pathScatteringRadiance = modtranRadiance.usableForRendering()
 		? modtranRadiance.pathScatteringRadianceWm2SrUm : 0.0;
-	stage5Input.pathThermalRadiance = modtranRadiance.valid
+	stage5Input.pathThermalRadiance = modtranRadiance.usableForRendering()
 		? modtranRadiance.pathThermalWm2SrUm
 		: (reflectiveNightAtmosphereReady ? l2Atmosphere.pathThermalWm2SrUm : 0.0);
-	if (!m_m1SolarState.valid || m_m1SolarState.elevationDeg <= 0.0)
+	if (!m_engineeringAtmosphere && (!m_m1SolarState.valid || m_m1SolarState.elevationDeg <= 0.0))
 	{
 		stage5Input.directSolarIrradiance = 0.0;
 	}
@@ -16665,13 +16737,15 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 		(stage5Band == IRBand::ShortWaveInfrared && m_m1SwirRuntimeEnabled) ||
 		(stage5Band == IRBand::MidWaveInfrared && m_m1MwirRuntimeEnabled);
 	stage5Input.m1RuntimeAffectsImage = !m_m1CompareOnly && m_m1RuntimeEnabled && m1BandRuntimeEnabled &&
-		(modtranRadiance.valid || reflectiveNightAtmosphereReady || (l2ProtocolRequested && l2Atmosphere.valid));
+		(modtranRadiance.usableForRendering() || reflectiveNightAtmosphereReady || (l2ProtocolRequested && l2Atmosphere.usableForRendering()));
+	++m_atmosphereEvaluated;
 	const bool formalM1FailClosed = m1RuntimeRequested &&
 		(stage5Band == IRBand::ShortWaveInfrared || stage5Band == IRBand::MidWaveInfrared) &&
 		!stage5Input.m1RuntimeAffectsImage;
+	if (formalM1FailClosed) ++m_atmosphereForcedBlack;
 	stage5Input.modtranRadianceValid = modtranRadiance.valid;
 	stage5Input.modtranInterpolationMode = modtranRadiance.interpolationMode;
-	stage5Input.modtranFallbackReason = reflectiveNightBoundary && !modtranRadiance.valid
+	stage5Input.modtranFallbackReason = reflectiveNightBoundary && !modtranRadiance.usableForRendering()
 		? "night_boundary_zero_natural" : modtranRadiance.fallbackReason;
 	const IRActiveIlluminatorOutput l2Active = EvaluateL2ActiveIlluminator(
 		targetPlat, targetKey, stage5Band, m1BandReflectance, l2Atmosphere);
@@ -16687,7 +16761,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 		l2Active.halfAngleRad > 0.0 &&
 		l2Active.referenceIrradianceWm2 > 0.0 &&
 		l2Active.spectralOverlapWidthUm > 0.0 &&
-		(!m_l2ActiveIlluminatorConfig.useAtmosphericAttenuation || l2Atmosphere.valid);
+		(!m_l2ActiveIlluminatorConfig.useAtmosphericAttenuation || l2Atmosphere.usableForRendering());
 	const bool modeReplace = m_stage5ModtranPathRuntimeMode == "ReplaceLegacy";
 	const bool modeBlend = m_stage5ModtranPathRuntimeMode == "BlendLegacy";
 	const bool runtimeAffectsImage = Stage5ModtranPathRuntimeAffectsImage();
@@ -16697,7 +16771,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	const bool modtranPathRuntimeAllowed =
 		runtimeAffectsImage &&
 		runtimeBandAllowed &&
-		modtranRadiance.valid;
+		modtranRadiance.usableForRendering();
 	if (runtimeAffectsImage && !runtimeBandAllowed)
 	{
 		stage5Input.modtranFallbackReason = "runtime_band_not_supported";
@@ -16714,7 +16788,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 				<< std::endl;
 		}
 	}
-	else if (runtimeAffectsImage && !modtranRadiance.valid)
+	else if (runtimeAffectsImage && !modtranRadiance.usableForRendering())
 	{
 		stage5Input.modtranFallbackReason = modtranRadiance.fallbackReason.empty()
 			? "modtran_invalid"
@@ -16787,7 +16861,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	{
 		stage5Input.sourceFlags += "+formalM1FailClosed";
 	}
-	stage5Input.enableDebugFloor = true;
+	stage5Input.enableDebugFloor = !m_engineeringAtmosphere;
 	stage5Input.debugConfig = m_stage5DebugConfigs[stage5BandIndex];
 
 	IRRadianceComponents components = m_irRadianceModelV2.evaluateComponents(stage5Input);
@@ -16821,8 +16895,8 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	const double targetAltKmForLog = IsReasonableAltitudeMeters(targetPlat.targetState.targetLoc.alt)
 		? targetPlat.targetState.targetLoc.alt / 1000.0
 		: observerAltKmForLog;
-	const double rangeKmForLog = static_cast<double>(EstimateRangeToCamera(targetPlat.nodePath)) / 1000.0;
-	if (stage5Input.m1RuntimeAffectsImage && modtranRadiance.valid)
+	const double rangeKmForLog = HwaAtmosphere::range(HwaAtmosphere::Geo(m_realTimeSceneData.platLoc.lat,m_realTimeSceneData.platLoc.lon,m_realTimeSceneData.platLoc.alt),HwaAtmosphere::Geo(targetPlat.targetState.targetLoc.lat,targetPlat.targetState.targetLoc.lon,targetPlat.targetState.targetLoc.alt))/1000.;
+	if (!m_engineeringAtmosphere && stage5Input.m1RuntimeAffectsImage && modtranRadiance.usableForRendering())
 	{
 		const std::uint64_t atmosphereSeq = m_currentFrameTelemetry.sourceSeq > 0
 			? m_currentFrameTelemetry.sourceSeq : m_stage0DisplayFrameCount;
@@ -16856,7 +16930,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	if (formalM1FailClosed)
 	{
 		const IRModtranRadianceResult& failedQuery =
-			(!l2Atmosphere.valid && (reflectiveNightBoundary || l2ProtocolRequested))
+			(!l2Atmosphere.usableForRendering() && (reflectiveNightBoundary || l2ProtocolRequested))
 			? l2Atmosphere : modtranRadiance;
 		std::ostringstream failureState;
 		failureState << IRBandName(stage5Band) << ':' << failedQuery.fallbackReason << ':'
@@ -17141,7 +17215,8 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 		trace.targetKey = targetKey; trace.band = IRBandName(components.band);
 		trace.datasetId = m_p13AtmosphereIdentityReady ?
 			"sha256:" + m_p13ExpectedFormalLutSha256 : "IDENTITY_NOT_VERIFIED";
-		trace.cellId = "NOT_DECLARED_LEGACY"; trace.sourceCases = modtranRadiance.sourceCaseIds;
+        if (m_engineeringAtmosphere) trace.datasetId = "P20M3_GREY_GAS_1:" + m_engineeringProvider.hash();
+        trace.cellId = m_engineeringAtmosphere ? "CONTINUOUS_SEGMENTED_TRANSPORT" : "NOT_DECLARED_LEGACY"; trace.sourceCases = modtranRadiance.sourceCaseIds;
 		const auto& weapon = m_realTimeSceneData.weaponState;
 		bool matched = false;
 		for (int i = 0; i < std::min(5, static_cast<int>(m_realTimeSceneData.targetNumValid)); ++i)
@@ -17152,10 +17227,14 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 		}
 		trace.cameraStatus = !weapon.lookatEn ? "FREE_CAMERA_NOT_VERIFIED" :
 			!matched ? "INVALID_REFERENCE_OR_VIEW" : rangeKmForLog == 0.0 ? "COINCIDENT_DIRECTION_UNDEFINED" : "MATCHED_REFERENCE";
-		trace.overall = modtranRadiance.valid && trace.timeValid &&
+		trace.overall = modtranRadiance.usableForRendering() && trace.timeValid &&
 			trace.cameraStatus == "MATCHED_REFERENCE" && m_p13AtmosphereIdentityReady ?
 			"LEGACY_DIAGNOSTIC_NOT_PHYSICS_ACCEPTED" : "INVALID";
-		trace.error = !trace.timeValid ? m_physicsClock.state().status : modtranRadiance.fallbackReason;
+        if (modtranRadiance.engineeringUsable) trace.overall = "ENGINEERING_APPROX";
+        trace.input["forcedBlackDueToAtmosphereMiss"] = formalM1FailClosed ? 1 : 0;
+        trace.input["atmosphereEvaluatedTotal"] = static_cast<double>(m_atmosphereEvaluated);
+        trace.input["atmosphereForcedBlackTotal"] = static_cast<double>(m_atmosphereForcedBlack);
+        trace.error = !trace.timeValid ? m_physicsClock.state().status : modtranRadiance.fallbackReason;
 		trace.input = {{"observerAltKm", observerAltKmForLog}, {"targetAltKm", targetAltKmForLog},
 			{"rangeKm", rangeKmForLog}, {"visibilityKm", environment.visibilityMeters/1000.0},
 			{"humidityPercent", environment.humidityPercent}, {"szaDeg", m_m1SolarState.zenithDeg},
@@ -17163,8 +17242,8 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 			{"targetType", static_cast<double>(targetPlat.targetState.targetType)},
 			{"targetPlatID", static_cast<double>(targetPlat.targetState.targetPlatID)},
 			{"targetID", static_cast<double>(targetPlat.targetState.targetID)},
-			{"protocolTimeMs", m_realTimeSceneData.time}};
-		const std::string validity = modtranRadiance.valid && trace.timeValid ? "VALID" : "NOT_VERIFIED";
+			{"protocolTimeMs", m_realTimeSceneData.time}, {"forcedBlackDueToAtmosphereMiss", formalM1FailClosed ? 1.0 : 0.0}, {"atmosphereEvaluatedTotal",double(m_atmosphereEvaluated)}, {"atmosphereForcedBlackTotal",double(m_atmosphereForcedBlack)}};
+		const std::string validity = modtranRadiance.usableForRendering() && trace.timeValid ? (modtranRadiance.engineeringUsable ? "ENGINEERING_APPROX" : "VALID") : "NOT_VERIFIED";
 		trace.components["tau"] = {modtranRadiance.tauUp, "1", validity};
 		trace.components["pathThermal"] = {modtranRadiance.pathThermalWm2SrUm, "W/(m2 sr um)", validity};
 		trace.components["direct"] = {modtranRadiance.directSolarIrradianceWm2Um, "W/(m2 um)", validity};
@@ -17207,7 +17286,8 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 			<< " finalOutput=" << (stage5Input.m1RuntimeAffectsImage ? "M1" : (formalM1FailClosed ? "formal_fail_closed" : "legacy"))
 			<< " compareOnly=" << (m_m1CompareOnly ? 1 : 0)
 			<< " interpolation=" << modtranRadiance.interpolationMode
-			<< " valid=" << (modtranRadiance.valid ? 1 : 0)
+			<< " usableForRendering=" << (modtranRadiance.usableForRendering() ? 1 : 0)
+			<< " strictLutValid=" << (modtranRadiance.valid ? 1 : 0)
 			<< " fallbackReason=" << modtranRadiance.fallbackReason
 			<< " fallbackAxis=" << (modtranRadiance.fallbackAxis.empty() ? "none" : modtranRadiance.fallbackAxis)
 			<< " fallbackQuery=" << modtranRadiance.fallbackQuery
@@ -17740,7 +17820,7 @@ void HwaSimIR::UpdateL1GeometricSunVisibility(double currentTime)
 	m_l1LastShadowUpdateTime = currentTime;
 	m_l1SunVisibilityByTarget.clear();
 	const LVecBase3f sun(static_cast<float>(m_m1SolarState.east), static_cast<float>(m_m1SolarState.north), static_cast<float>(m_m1SolarState.up));
-	const bool daylight = m_m1SolarState.valid && m_m1SolarState.elevationDeg > 0.0 && sun.length_squared() > 1.0e-8f;
+	const bool daylight = m_m1SolarState.valid && (m_engineeringAtmosphere || m_m1SolarState.elevationDeg > 0.0) && sun.length_squared() > 1.0e-8f;
 	struct Volume { std::string key; LPoint3f center; float radius; };
 	std::vector<Volume> volumes;
 	for (size_t i = 0; i < m_targetPlatformList.size(); ++i)
@@ -17786,7 +17866,7 @@ void HwaSimIR::UpdateL1GeometricSunVisibility(double currentTime)
 
 std::pair<double, double> HwaSimIR::L1SunVisibilityForTarget(const std::string& targetKey) const
 {
-	if (!m_m1SolarState.valid || m_m1SolarState.elevationDeg <= 0.0) return std::make_pair(0.0, 0.0);
+	if (!m_engineeringAtmosphere && (!m_m1SolarState.valid || m_m1SolarState.elevationDeg <= 0.0)) return std::make_pair(0.0, 0.0);
 	const std::map<std::string, std::pair<double, double> >::const_iterator it = m_l1SunVisibilityByTarget.find(targetKey);
 	if (it != m_l1SunVisibilityByTarget.end()) return it->second;
 	return std::make_pair(m_l1OpticalShadowEnabled ? 0.0 : 1.0, m_l1SolarThermalEnabled ? 0.0 : 1.0);
@@ -17884,7 +17964,7 @@ IRActiveIlluminatorOutput HwaSimIR::EvaluateL2ActiveIlluminator(
 	input.protocolAngleMrad = m_sensorParam.illuminatorAngle;
 	input.protocolSpotRadiance = m_sensorParam.illuminatorSpotRad;
 	input.tauInbound = modtranRadiance.tauUp;
-	input.tauInboundValid = modtranRadiance.valid;
+	input.tauInboundValid = modtranRadiance.usableForRendering();
 	input.tauFallbackReason = modtranRadiance.fallbackReason;
 	input.activeVisibility = L2ActiveVisibilityForTarget(targetKey);
 	input.bandReflectance = sensorBand == IRBand::ShortWaveInfrared
@@ -18007,7 +18087,7 @@ void HwaSimIR::UpdateL1MaterialThermalState(TargetPlatformData& targetPlat, cons
 	const bool due = lastIt == m_l1LastThermalUpdateTime.end() || thermalDt >= 1.0 / std::max(1.0, m_l1ThermalUpdateHz);
 	IRSolarHeatingResult solar;
 	const std::pair<double, double> visibility = L1SunVisibilityForTarget(targetKey);
-	if (due && m_l1NaturalSolarEnabled && m_l1SolarThermalEnabled && m_l1SolarHeatingReady && m_m1SolarState.elevationDeg > 0.0)
+	if (!m_engineeringAtmosphere && due && m_l1NaturalSolarEnabled && m_l1SolarThermalEnabled && m_l1SolarHeatingReady && m_m1SolarState.elevationDeg > 0.0)
 	{
 		IRSolarHeatingQuery query;
 		query.atmosphereModel = m_m1AtmosphereModel;
@@ -18036,7 +18116,12 @@ void HwaSimIR::UpdateL1MaterialThermalState(TargetPlatformData& targetPlat, cons
 				<< " sourceFiles=" << solar.sourceFiles << std::endl;
 		}
 	}
-	const LVecBase3f localSun = L1SunDirectionLocal(targetPlat);
+    if (m_engineeringAtmosphere && due && m_l1NaturalSolarEnabled && m_l1SolarThermalEnabled) {
+        const auto light=QueryEngineeringAtmosphere(targetPlat,environment);
+        solar.valid=light.usableForRendering;solar.directIrradianceWm2=light.heatingDirectWm2;solar.diffuseDownIrradianceWm2=light.heatingDiffuseWm2;
+        solar.interpolationMode="ENGINEERING_APPROX_BROADBAND_0.30_2.50_UM";
+    }
+    const LVecBase3f localSun = L1SunDirectionLocal(targetPlat);
 	PTA_LVecBase4f positive;
 	PTA_LVecBase4f negative;
 	for (size_t i = 0; i < 8; ++i)
@@ -18141,6 +18226,7 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 	{
 		UpdateM1SolarPosition(environment, false);
 	}
+	if (m_engineeringAtmosphere) UpdateEngineeringBackground(environment);
 	UpdateL1GeometricSunVisibility(current_time);
 	UpdateL2ActiveVisibility(current_time);
 	const float ambientTempK = static_cast<float>(environment.airTemperatureC + 273.15);
@@ -19311,4 +19397,45 @@ AsyncTask::DoneStatus HwaSimIR::capture_task(GenericAsyncTask* task, void* data)
 			}
 	// 返回 DS_cont 让任务在下一帧继续执行
 	return AsyncTask::DoneStatus::DS_cont;
+}
+
+HwaAtmosphere::Result HwaSimIR::QueryEngineeringAtmosphere(const TargetPlatformData& target,const IRRuntimeEnvironment& env) const {
+    const auto& p=m_realTimeSceneData.platLoc;const auto& t=target.targetState.targetLoc;
+    const HwaAtmosphere::Geo observer(p.lat,p.lon,p.alt), object(t.lat,t.lon,t.alt);
+    return m_engineeringProvider.query(env.band==IRBand::ShortWaveInfrared?0:2,observer,object,
+        env.visibilityMeters/1000.,env.humidityPercent,HwaAtmosphere::sunEcef(observer,m_m1SolarState.azimuthDeg,m_m1SolarState.elevationDeg),m_m1SolarState.valid);
+}
+void HwaSimIR::UpdateEngineeringBackground(const IRRuntimeEnvironment& env) {
+    const auto& p=m_realTimeSceneData.platLoc;HwaAtmosphere::Geo observer(p.lat,p.lon,p.alt);
+    const auto sun=HwaAtmosphere::sunEcef(observer,m_m1SolarState.azimuthDeg,m_m1SolarState.elevationDeg);
+    const int band=env.band==IRBand::ShortWaveInfrared?0:2;
+    // Independent nadir grey ground and zenith sky hemispheres. Directional dome
+    // interpolation is an explicitly simplified environment, not a target LOS.
+    const auto ground=m_engineeringProvider.query(band,observer,HwaAtmosphere::Geo(p.lat,p.lon,0),env.visibilityMeters/1000.,env.humidityPercent,sun,m_m1SolarState.valid,1,true);
+    const auto sky=m_engineeringProvider.query(band,observer,HwaAtmosphere::Geo(p.lat,p.lon,100000),env.visibilityMeters/1000.,env.humidityPercent,sun,m_m1SolarState.valid,1,true);
+    const bool changed = !m_m1EnvironmentLosReady || m_m1EnvironmentLosBand!=env.band || std::abs(m_m1EnvironmentTau-ground.tau)>1e-5 || std::abs(m_engineeringSkyRadiance-sky.pathThermalRadiance-sky.pathScatteringRadiance)>1e-5;
+    m_m1EnvironmentLosReady=ground.usableForRendering&&sky.usableForRendering;
+    m_m1EnvironmentLosBand=env.band;m_m1EnvironmentTau=ground.tau;
+    m_m1EnvironmentPathRadiance=ground.pathThermalRadiance+ground.pathScatteringRadiance;
+    m_m1EnvironmentDirectSolarIrradiance=ground.directSolarIrradiance;m_m1EnvironmentSkyDiffuseIrradiance=ground.skyDiffuseIrradiance;
+    m_m1EnvironmentReferenceRangeM=ground.rangeM;
+    m_engineeringSkyRadiance=sky.pathThermalRadiance+sky.pathScatteringRadiance;
+    if(changed) m_stage7LastFullUpdateKey.clear();
+    if (IRPhysicalTrace::instance().enabled() && m_currentFrameTelemetry.sourceSeq>0) {
+        IRPhysicalTrace::Record trace;
+        trace.sourceSeq=m_currentFrameTelemetry.sourceSeq;trace.generation=m_referenceGeneration;
+        trace.utcMs=m_physicsClock.state().utcMs;trace.relativeSec=m_physicsClock.state().relativeSec;trace.timeValid=m_physicsClock.state().valid;
+        trace.targetKey="ENVIRONMENT";trace.band=IRBandName(env.band);trace.datasetId="P20M3_GREY_GAS_1:"+m_engineeringProvider.hash();
+        trace.cellId="INDEPENDENT_NADIR_GROUND_ZENITH_SKY";trace.sourceCases="ENGINEERING_PARAMETERS";
+        trace.cameraStatus="ENVIRONMENT_INDEPENDENT_OF_TARGETS";trace.overall=m_m1EnvironmentLosReady?"ENGINEERING_APPROX":"INVALID";
+        trace.error=m_m1EnvironmentLosReady?"none":ground.inputError+":"+sky.inputError;
+        trace.input={{"targetNumValid",double(m_realTimeSceneData.targetNumValid)},{"observerAltM",p.alt},{"observerLatDeg",p.lat},{"observerLonDeg",p.lon}};
+        const std::string status=m_m1EnvironmentLosReady?"ENGINEERING_APPROX":"NOT_VERIFIED";
+        trace.components["groundTau"]={ground.tau,"1",status};
+        trace.components["groundPath"]={m_m1EnvironmentPathRadiance,"W/(m2 sr um)",status};
+        trace.components["skyDirectional"]={m_engineeringSkyRadiance,"W/(m2 sr um)",status};
+        trace.components["groundDirect"]={ground.directSolarIrradiance,"W/(m2 um)",status};
+        trace.components["groundDiffuse"]={ground.skyDiffuseIrradiance,"W/(m2 um)",status};
+        IRPhysicalTrace::instance().write(trace);
+    }
 }

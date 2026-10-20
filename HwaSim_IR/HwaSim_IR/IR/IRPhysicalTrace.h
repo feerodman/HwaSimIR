@@ -68,7 +68,7 @@ public:
 		for (const auto& item : r.components)
 		{
 			if (comma) o << ','; comma = true;
-			const bool valid = item.second.status == "VALID" || item.second.status == "ANALYTIC_BOUNDARY" || item.second.status == "OCCLUDED_PHYSICAL_ZERO";
+			const bool valid = item.second.status == "VALID" || item.second.status == "ENGINEERING_APPROX" || item.second.status == "ANALYTIC_BOUNDARY" || item.second.status == "OCCLUDED_PHYSICAL_ZERO";
 			if (valid && !std::isfinite(item.second.value))
 				throw std::runtime_error("Nonfinite valid physical component");
 			o << quote(item.first) << ":{\"value\":" << (valid ? number(item.second.value) : "null")

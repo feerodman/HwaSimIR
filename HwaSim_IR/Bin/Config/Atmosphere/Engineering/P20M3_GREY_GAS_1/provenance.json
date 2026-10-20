@@ -1,0 +1,619 @@
+{
+  "quality": "ENGINEERING_APPROX",
+  "source_sha256": "48432459ac56dbb6980f3ca25e2d1e4701763ba3674703051cb0fd45da8c7cd7",
+  "scope": "Clear standard atmosphere, no cloud. Effective band coefficients, not line-by-line equivalence.",
+  "aerosol": "Koschmieder 3.912/visibility, Angstrom exponent 1.3, assumed single scatter albedo 0.9 and 1.2 km scale height",
+  "thermal": "LTE absorption only; ISA lapse rate 6.5 K/km to 11 km, then 216.65 K",
+  "solar": "5772 K blackbody normalized to 1361 W/m2 at 1 AU, one Earth-distance factor; 0.30-2.50 um heating integral",
+  "bands": {
+    "SWIR": {
+      "absorption_m_inverse": [
+        9.021555693107541e-05,
+        0.004420422781550486,
+        0.030372964976099166
+      ],
+      "weights": [
+        0.7443407513785814,
+        0.16621803484715195,
+        0.08944121377426673
+      ],
+      "fit_max_tau_absolute_error": 0.07204389803091554,
+      "anchors": [
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh30_obs0p001_tar0p001_rng0p1_vis6_sza70",
+          "range_km": "0.1",
+          "tau": "0.877448583823",
+          "sources": "SWIR_humidity_trans_rh30_obs0p001_tar0p001_rng0p1_vis6;SWIR_humidity_thermal_rh30_obs0p001_tar0p001_rng0p1_vis6;SWIR_humidity_scattering_rh30_obs0p001_tar0p001_rng0p1_vis6_sza70;SWIR_humidity_solar_rh30_tar0p001_vis6_sza70;SWIR_humidity_flux_rh30_tar0p001_vis6_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh30_obs0p001_tar0p001_rng0p1_vis23_sza70",
+          "range_km": "0.1",
+          "tau": "0.886209181179",
+          "sources": "SWIR_humidity_trans_rh30_obs0p001_tar0p001_rng0p1_vis23;SWIR_humidity_thermal_rh30_obs0p001_tar0p001_rng0p1_vis23;SWIR_humidity_scattering_rh30_obs0p001_tar0p001_rng0p1_vis23_sza70;SWIR_humidity_solar_rh30_tar0p001_vis23_sza70;SWIR_humidity_flux_rh30_tar0p001_vis23_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh30_obs0p001_tar0p001_rng0p5_vis6_sza70",
+          "range_km": "0.5",
+          "tau": "0.734946724217",
+          "sources": "SWIR_humidity_trans_rh30_obs0p001_tar0p001_rng0p5_vis6;SWIR_humidity_thermal_rh30_obs0p001_tar0p001_rng0p5_vis6;SWIR_humidity_scattering_rh30_obs0p001_tar0p001_rng0p5_vis6_sza70;SWIR_humidity_solar_rh30_tar0p001_vis6_sza70;SWIR_humidity_flux_rh30_tar0p001_vis6_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh30_obs0p001_tar0p001_rng0p5_vis23_sza70",
+          "range_km": "0.5",
+          "tau": "0.772095134885",
+          "sources": "SWIR_humidity_trans_rh30_obs0p001_tar0p001_rng0p5_vis23;SWIR_humidity_thermal_rh30_obs0p001_tar0p001_rng0p5_vis23;SWIR_humidity_scattering_rh30_obs0p001_tar0p001_rng0p5_vis23_sza70;SWIR_humidity_solar_rh30_tar0p001_vis23_sza70;SWIR_humidity_flux_rh30_tar0p001_vis23_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh30_obs0p001_tar0p001_rng1_vis6_sza70",
+          "range_km": "1",
+          "tau": "0.642348987944",
+          "sources": "SWIR_humidity_trans_rh30_obs0p001_tar0p001_rng1_vis6;SWIR_humidity_thermal_rh30_obs0p001_tar0p001_rng1_vis6;SWIR_humidity_scattering_rh30_obs0p001_tar0p001_rng1_vis6_sza70;SWIR_humidity_solar_rh30_tar0p001_vis6_sza70;SWIR_humidity_flux_rh30_tar0p001_vis6_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh30_obs0p001_tar0p001_rng1_vis23_sza70",
+          "range_km": "1",
+          "tau": "0.70838571347",
+          "sources": "SWIR_humidity_trans_rh30_obs0p001_tar0p001_rng1_vis23;SWIR_humidity_thermal_rh30_obs0p001_tar0p001_rng1_vis23;SWIR_humidity_scattering_rh30_obs0p001_tar0p001_rng1_vis23_sza70;SWIR_humidity_solar_rh30_tar0p001_vis23_sza70;SWIR_humidity_flux_rh30_tar0p001_vis23_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh30_obs1_tar1_rng0p1_vis6_sza70",
+          "range_km": "0.1",
+          "tau": "0.900793286065",
+          "sources": "SWIR_humidity_trans_rh30_obs1_tar1_rng0p1_vis6;SWIR_humidity_thermal_rh30_obs1_tar1_rng0p1_vis6;SWIR_humidity_scattering_rh30_obs1_tar1_rng0p1_vis6_sza70;SWIR_humidity_solar_rh30_tar1_vis6_sza70;SWIR_humidity_flux_rh30_tar1_vis6_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh30_obs1_tar1_rng0p1_vis23_sza70",
+          "range_km": "0.1",
+          "tau": "0.910897196845",
+          "sources": "SWIR_humidity_trans_rh30_obs1_tar1_rng0p1_vis23;SWIR_humidity_thermal_rh30_obs1_tar1_rng0p1_vis23;SWIR_humidity_scattering_rh30_obs1_tar1_rng0p1_vis23_sza70;SWIR_humidity_solar_rh30_tar1_vis23_sza70;SWIR_humidity_flux_rh30_tar1_vis23_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh30_obs1_tar1_rng0p5_vis6_sza70",
+          "range_km": "0.5",
+          "tau": "0.76694652485",
+          "sources": "SWIR_humidity_trans_rh30_obs1_tar1_rng0p5_vis6;SWIR_humidity_thermal_rh30_obs1_tar1_rng0p5_vis6;SWIR_humidity_scattering_rh30_obs1_tar1_rng0p5_vis6_sza70;SWIR_humidity_solar_rh30_tar1_vis6_sza70;SWIR_humidity_flux_rh30_tar1_vis6_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh30_obs1_tar1_rng0p5_vis23_sza70",
+          "range_km": "0.5",
+          "tau": "0.810648470136",
+          "sources": "SWIR_humidity_trans_rh30_obs1_tar1_rng0p5_vis23;SWIR_humidity_thermal_rh30_obs1_tar1_rng0p5_vis23;SWIR_humidity_scattering_rh30_obs1_tar1_rng0p5_vis23_sza70;SWIR_humidity_solar_rh30_tar1_vis23_sza70;SWIR_humidity_flux_rh30_tar1_vis23_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh30_obs1_tar1_rng1_vis6_sza70",
+          "range_km": "1",
+          "tau": "0.674251740863",
+          "sources": "SWIR_humidity_trans_rh30_obs1_tar1_rng1_vis6;SWIR_humidity_thermal_rh30_obs1_tar1_rng1_vis6;SWIR_humidity_scattering_rh30_obs1_tar1_rng1_vis6_sza70;SWIR_humidity_solar_rh30_tar1_vis6_sza70;SWIR_humidity_flux_rh30_tar1_vis6_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh30_obs1_tar1_rng1_vis23_sza70",
+          "range_km": "1",
+          "tau": "0.752711026012",
+          "sources": "SWIR_humidity_trans_rh30_obs1_tar1_rng1_vis23;SWIR_humidity_thermal_rh30_obs1_tar1_rng1_vis23;SWIR_humidity_scattering_rh30_obs1_tar1_rng1_vis23_sza70;SWIR_humidity_solar_rh30_tar1_vis23_sza70;SWIR_humidity_flux_rh30_tar1_vis23_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh60_obs0p001_tar0p001_rng0p1_vis6_sza70",
+          "range_km": "0.1",
+          "tau": "0.837820703802",
+          "sources": "SWIR_humidity_trans_rh60_obs0p001_tar0p001_rng0p1_vis6;SWIR_humidity_thermal_rh60_obs0p001_tar0p001_rng0p1_vis6;SWIR_humidity_scattering_rh60_obs0p001_tar0p001_rng0p1_vis6_sza70;SWIR_humidity_solar_rh60_tar0p001_vis6_sza70;SWIR_humidity_flux_rh60_tar0p001_vis6_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh60_obs0p001_tar0p001_rng0p1_vis23_sza70",
+          "range_km": "0.1",
+          "tau": "0.846230999054",
+          "sources": "SWIR_humidity_trans_rh60_obs0p001_tar0p001_rng0p1_vis23;SWIR_humidity_thermal_rh60_obs0p001_tar0p001_rng0p1_vis23;SWIR_humidity_scattering_rh60_obs0p001_tar0p001_rng0p1_vis23_sza70;SWIR_humidity_solar_rh60_tar0p001_vis23_sza70;SWIR_humidity_flux_rh60_tar0p001_vis23_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh60_obs0p001_tar0p001_rng0p5_vis6_sza70",
+          "range_km": "0.5",
+          "tau": "0.687988017651",
+          "sources": "SWIR_humidity_trans_rh60_obs0p001_tar0p001_rng0p5_vis6;SWIR_humidity_thermal_rh60_obs0p001_tar0p001_rng0p5_vis6;SWIR_humidity_scattering_rh60_obs0p001_tar0p001_rng0p5_vis6_sza70;SWIR_humidity_solar_rh60_tar0p001_vis6_sza70;SWIR_humidity_flux_rh60_tar0p001_vis6_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh60_obs0p001_tar0p001_rng0p5_vis23_sza70",
+          "range_km": "0.5",
+          "tau": "0.722906496219",
+          "sources": "SWIR_humidity_trans_rh60_obs0p001_tar0p001_rng0p5_vis23;SWIR_humidity_thermal_rh60_obs0p001_tar0p001_rng0p5_vis23;SWIR_humidity_scattering_rh60_obs0p001_tar0p001_rng0p5_vis23_sza70;SWIR_humidity_solar_rh60_tar0p001_vis23_sza70;SWIR_humidity_flux_rh60_tar0p001_vis23_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh60_obs0p001_tar0p001_rng1_vis6_sza70",
+          "range_km": "1",
+          "tau": "0.595996600893",
+          "sources": "SWIR_humidity_trans_rh60_obs0p001_tar0p001_rng1_vis6;SWIR_humidity_thermal_rh60_obs0p001_tar0p001_rng1_vis6;SWIR_humidity_scattering_rh60_obs0p001_tar0p001_rng1_vis6_sza70;SWIR_humidity_solar_rh60_tar0p001_vis6_sza70;SWIR_humidity_flux_rh60_tar0p001_vis6_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh60_obs0p001_tar0p001_rng1_vis23_sza70",
+          "range_km": "1",
+          "tau": "0.657474719687",
+          "sources": "SWIR_humidity_trans_rh60_obs0p001_tar0p001_rng1_vis23;SWIR_humidity_thermal_rh60_obs0p001_tar0p001_rng1_vis23;SWIR_humidity_scattering_rh60_obs0p001_tar0p001_rng1_vis23_sza70;SWIR_humidity_solar_rh60_tar0p001_vis23_sza70;SWIR_humidity_flux_rh60_tar0p001_vis23_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh60_obs1_tar1_rng0p1_vis6_sza70",
+          "range_km": "0.1",
+          "tau": "0.866651370887",
+          "sources": "SWIR_humidity_trans_rh60_obs1_tar1_rng0p1_vis6;SWIR_humidity_thermal_rh60_obs1_tar1_rng0p1_vis6;SWIR_humidity_scattering_rh60_obs1_tar1_rng0p1_vis6_sza70;SWIR_humidity_solar_rh60_tar1_vis6_sza70;SWIR_humidity_flux_rh60_tar1_vis6_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh60_obs1_tar1_rng0p1_vis23_sza70",
+          "range_km": "0.1",
+          "tau": "0.876428141106",
+          "sources": "SWIR_humidity_trans_rh60_obs1_tar1_rng0p1_vis23;SWIR_humidity_thermal_rh60_obs1_tar1_rng0p1_vis23;SWIR_humidity_scattering_rh60_obs1_tar1_rng0p1_vis23_sza70;SWIR_humidity_solar_rh60_tar1_vis23_sza70;SWIR_humidity_flux_rh60_tar1_vis23_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh60_obs1_tar1_rng0p5_vis6_sza70",
+          "range_km": "0.5",
+          "tau": "0.722350879169",
+          "sources": "SWIR_humidity_trans_rh60_obs1_tar1_rng0p5_vis6;SWIR_humidity_thermal_rh60_obs1_tar1_rng0p5_vis6;SWIR_humidity_scattering_rh60_obs1_tar1_rng0p5_vis6_sza70;SWIR_humidity_solar_rh60_tar1_vis6_sza70;SWIR_humidity_flux_rh60_tar1_vis6_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh60_obs1_tar1_rng0p5_vis23_sza70",
+          "range_km": "0.5",
+          "tau": "0.763700883481",
+          "sources": "SWIR_humidity_trans_rh60_obs1_tar1_rng0p5_vis23;SWIR_humidity_thermal_rh60_obs1_tar1_rng0p5_vis23;SWIR_humidity_scattering_rh60_obs1_tar1_rng0p5_vis23_sza70;SWIR_humidity_solar_rh60_tar1_vis23_sza70;SWIR_humidity_flux_rh60_tar1_vis23_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh60_obs1_tar1_rng1_vis6_sza70",
+          "range_km": "1",
+          "tau": "0.630203815702",
+          "sources": "SWIR_humidity_trans_rh60_obs1_tar1_rng1_vis6;SWIR_humidity_thermal_rh60_obs1_tar1_rng1_vis6;SWIR_humidity_scattering_rh60_obs1_tar1_rng1_vis6_sza70;SWIR_humidity_solar_rh60_tar1_vis6_sza70;SWIR_humidity_flux_rh60_tar1_vis6_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh60_obs1_tar1_rng1_vis23_sza70",
+          "range_km": "1",
+          "tau": "0.703820855443",
+          "sources": "SWIR_humidity_trans_rh60_obs1_tar1_rng1_vis23;SWIR_humidity_thermal_rh60_obs1_tar1_rng1_vis23;SWIR_humidity_scattering_rh60_obs1_tar1_rng1_vis23_sza70;SWIR_humidity_solar_rh60_tar1_vis23_sza70;SWIR_humidity_flux_rh60_tar1_vis23_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh85_obs0p001_tar0p001_rng0p1_vis6_sza70",
+          "range_km": "0.1",
+          "tau": "0.814413057252",
+          "sources": "SWIR_humidity_trans_rh85_obs0p001_tar0p001_rng0p1_vis6;SWIR_humidity_thermal_rh85_obs0p001_tar0p001_rng0p1_vis6;SWIR_humidity_scattering_rh85_obs0p001_tar0p001_rng0p1_vis6_sza70;SWIR_humidity_solar_rh85_tar0p001_vis6_sza70;SWIR_humidity_flux_rh85_tar0p001_vis6_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh85_obs0p001_tar0p001_rng0p1_vis23_sza70",
+          "range_km": "0.1",
+          "tau": "0.823275278532",
+          "sources": "SWIR_humidity_trans_rh85_obs0p001_tar0p001_rng0p1_vis23;SWIR_humidity_thermal_rh85_obs0p001_tar0p001_rng0p1_vis23;SWIR_humidity_scattering_rh85_obs0p001_tar0p001_rng0p1_vis23_sza70;SWIR_humidity_solar_rh85_tar0p001_vis23_sza70;SWIR_humidity_flux_rh85_tar0p001_vis23_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh85_obs0p001_tar0p001_rng0p5_vis6_sza70",
+          "range_km": "0.5",
+          "tau": "0.659239400228",
+          "sources": "SWIR_humidity_trans_rh85_obs0p001_tar0p001_rng0p5_vis6;SWIR_humidity_thermal_rh85_obs0p001_tar0p001_rng0p5_vis6;SWIR_humidity_scattering_rh85_obs0p001_tar0p001_rng0p5_vis6_sza70;SWIR_humidity_solar_rh85_tar0p001_vis6_sza70;SWIR_humidity_flux_rh85_tar0p001_vis6_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh85_obs0p001_tar0p001_rng0p5_vis23_sza70",
+          "range_km": "0.5",
+          "tau": "0.695568712544",
+          "sources": "SWIR_humidity_trans_rh85_obs0p001_tar0p001_rng0p5_vis23;SWIR_humidity_thermal_rh85_obs0p001_tar0p001_rng0p5_vis23;SWIR_humidity_scattering_rh85_obs0p001_tar0p001_rng0p5_vis23_sza70;SWIR_humidity_solar_rh85_tar0p001_vis23_sza70;SWIR_humidity_flux_rh85_tar0p001_vis23_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh85_obs0p001_tar0p001_rng1_vis6_sza70",
+          "range_km": "1",
+          "tau": "0.564407255073",
+          "sources": "SWIR_humidity_trans_rh85_obs0p001_tar0p001_rng1_vis6;SWIR_humidity_thermal_rh85_obs0p001_tar0p001_rng1_vis6;SWIR_humidity_scattering_rh85_obs0p001_tar0p001_rng1_vis6_sza70;SWIR_humidity_solar_rh85_tar0p001_vis6_sza70;SWIR_humidity_flux_rh85_tar0p001_vis6_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh85_obs0p001_tar0p001_rng1_vis23_sza70",
+          "range_km": "1",
+          "tau": "0.627782513426",
+          "sources": "SWIR_humidity_trans_rh85_obs0p001_tar0p001_rng1_vis23;SWIR_humidity_thermal_rh85_obs0p001_tar0p001_rng1_vis23;SWIR_humidity_scattering_rh85_obs0p001_tar0p001_rng1_vis23_sza70;SWIR_humidity_solar_rh85_tar0p001_vis23_sza70;SWIR_humidity_flux_rh85_tar0p001_vis23_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh85_obs1_tar1_rng0p1_vis6_sza70",
+          "range_km": "0.1",
+          "tau": "0.8457090339",
+          "sources": "SWIR_humidity_trans_rh85_obs1_tar1_rng0p1_vis6;SWIR_humidity_thermal_rh85_obs1_tar1_rng0p1_vis6;SWIR_humidity_scattering_rh85_obs1_tar1_rng0p1_vis6_sza70;SWIR_humidity_solar_rh85_tar1_vis6_sza70;SWIR_humidity_flux_rh85_tar1_vis6_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh85_obs1_tar1_rng0p1_vis23_sza70",
+          "range_km": "0.1",
+          "tau": "0.856054058517",
+          "sources": "SWIR_humidity_trans_rh85_obs1_tar1_rng0p1_vis23;SWIR_humidity_thermal_rh85_obs1_tar1_rng0p1_vis23;SWIR_humidity_scattering_rh85_obs1_tar1_rng0p1_vis23_sza70;SWIR_humidity_solar_rh85_tar1_vis23_sza70;SWIR_humidity_flux_rh85_tar1_vis23_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh85_obs1_tar1_rng0p5_vis6_sza70",
+          "range_km": "0.5",
+          "tau": "0.694832006146",
+          "sources": "SWIR_humidity_trans_rh85_obs1_tar1_rng0p5_vis6;SWIR_humidity_thermal_rh85_obs1_tar1_rng0p5_vis6;SWIR_humidity_scattering_rh85_obs1_tar1_rng0p5_vis6_sza70;SWIR_humidity_solar_rh85_tar1_vis6_sza70;SWIR_humidity_flux_rh85_tar1_vis6_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh85_obs1_tar1_rng0p5_vis23_sza70",
+          "range_km": "0.5",
+          "tau": "0.738025807123",
+          "sources": "SWIR_humidity_trans_rh85_obs1_tar1_rng0p5_vis23;SWIR_humidity_thermal_rh85_obs1_tar1_rng0p5_vis23;SWIR_humidity_scattering_rh85_obs1_tar1_rng0p5_vis23_sza70;SWIR_humidity_solar_rh85_tar1_vis23_sza70;SWIR_humidity_flux_rh85_tar1_vis23_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh85_obs1_tar1_rng1_vis6_sza70",
+          "range_km": "1",
+          "tau": "0.600148309988",
+          "sources": "SWIR_humidity_trans_rh85_obs1_tar1_rng1_vis6;SWIR_humidity_thermal_rh85_obs1_tar1_rng1_vis6;SWIR_humidity_scattering_rh85_obs1_tar1_rng1_vis6_sza70;SWIR_humidity_solar_rh85_tar1_vis6_sza70;SWIR_humidity_flux_rh85_tar1_vis6_sza70"
+        },
+        {
+          "case": "P11_SWIR_humidity_scaled_mls_surface_rh85_obs1_tar1_rng1_vis23_sza70",
+          "range_km": "1",
+          "tau": "0.676479225365",
+          "sources": "SWIR_humidity_trans_rh85_obs1_tar1_rng1_vis23;SWIR_humidity_thermal_rh85_obs1_tar1_rng1_vis23;SWIR_humidity_scattering_rh85_obs1_tar1_rng1_vis23_sza70;SWIR_humidity_solar_rh85_tar1_vis23_sza70;SWIR_humidity_flux_rh85_tar1_vis23_sza70"
+        },
+        {
+          "case": "P12_2KM_SWIR_scaled_mls_surface_rh30_obs0p001_tar0p001_rng2_vis6_sza70",
+          "range_km": "2",
+          "tau": "0.558353546794",
+          "sources": "P12_SWIR_trans_rh30_obs0p001_tar0p001_rng2_vis6;P12_SWIR_thermal_rh30_obs0p001_tar0p001_rng2_vis6;P12_SWIR_scattering_rh30_obs0p001_tar0p001_rng2_vis6_sza70;SWIR_humidity_solar_rh30_tar0p001_vis6_sza70;SWIR_humidity_flux_rh30_tar0p001_vis6_sza70"
+        },
+        {
+          "case": "P12_2KM_SWIR_scaled_mls_surface_rh30_obs0p001_tar0p001_rng2_vis23_sza70",
+          "range_km": "2",
+          "tau": "0.677303745739",
+          "sources": "P12_SWIR_trans_rh30_obs0p001_tar0p001_rng2_vis23;P12_SWIR_thermal_rh30_obs0p001_tar0p001_rng2_vis23;P12_SWIR_scattering_rh30_obs0p001_tar0p001_rng2_vis23_sza70;SWIR_humidity_solar_rh30_tar0p001_vis23_sza70;SWIR_humidity_flux_rh30_tar0p001_vis23_sza70"
+        },
+        {
+          "case": "P12_2KM_SWIR_scaled_mls_surface_rh30_obs1_tar1_rng2_vis6_sza70",
+          "range_km": "2",
+          "tau": "0.589400771658",
+          "sources": "P12_SWIR_trans_rh30_obs1_tar1_rng2_vis6;P12_SWIR_thermal_rh30_obs1_tar1_rng2_vis6;P12_SWIR_scattering_rh30_obs1_tar1_rng2_vis6_sza70;SWIR_humidity_solar_rh30_tar1_vis6_sza70;SWIR_humidity_flux_rh30_tar1_vis6_sza70"
+        },
+        {
+          "case": "P12_2KM_SWIR_scaled_mls_surface_rh30_obs1_tar1_rng2_vis23_sza70",
+          "range_km": "2",
+          "tau": "0.732391794774",
+          "sources": "P12_SWIR_trans_rh30_obs1_tar1_rng2_vis23;P12_SWIR_thermal_rh30_obs1_tar1_rng2_vis23;P12_SWIR_scattering_rh30_obs1_tar1_rng2_vis23_sza70;SWIR_humidity_solar_rh30_tar1_vis23_sza70;SWIR_humidity_flux_rh30_tar1_vis23_sza70"
+        },
+        {
+          "case": "P12_2KM_SWIR_scaled_mls_surface_rh60_obs0p001_tar0p001_rng2_vis6_sza70",
+          "range_km": "2",
+          "tau": "0.493371935058",
+          "sources": "P12_SWIR_trans_rh60_obs0p001_tar0p001_rng2_vis6;P12_SWIR_thermal_rh60_obs0p001_tar0p001_rng2_vis6;P12_SWIR_scattering_rh60_obs0p001_tar0p001_rng2_vis6_sza70;SWIR_humidity_solar_rh60_tar0p001_vis6_sza70;SWIR_humidity_flux_rh60_tar0p001_vis6_sza70"
+        },
+        {
+          "case": "P12_2KM_SWIR_scaled_mls_surface_rh60_obs0p001_tar0p001_rng2_vis23_sza70",
+          "range_km": "2",
+          "tau": "0.600137384457",
+          "sources": "P12_SWIR_trans_rh60_obs0p001_tar0p001_rng2_vis23;P12_SWIR_thermal_rh60_obs0p001_tar0p001_rng2_vis23;P12_SWIR_scattering_rh60_obs0p001_tar0p001_rng2_vis23_sza70;SWIR_humidity_solar_rh60_tar0p001_vis23_sza70;SWIR_humidity_flux_rh60_tar0p001_vis23_sza70"
+        },
+        {
+          "case": "P12_2KM_SWIR_scaled_mls_surface_rh60_obs1_tar1_rng2_vis6_sza70",
+          "range_km": "2",
+          "tau": "0.538592629055",
+          "sources": "P12_SWIR_trans_rh60_obs1_tar1_rng2_vis6;P12_SWIR_thermal_rh60_obs1_tar1_rng2_vis6;P12_SWIR_scattering_rh60_obs1_tar1_rng2_vis6_sza70;SWIR_humidity_solar_rh60_tar1_vis6_sza70;SWIR_humidity_flux_rh60_tar1_vis6_sza70"
+        },
+        {
+          "case": "P12_2KM_SWIR_scaled_mls_surface_rh60_obs1_tar1_rng2_vis23_sza70",
+          "range_km": "2",
+          "tau": "0.670513013304",
+          "sources": "P12_SWIR_trans_rh60_obs1_tar1_rng2_vis23;P12_SWIR_thermal_rh60_obs1_tar1_rng2_vis23;P12_SWIR_scattering_rh60_obs1_tar1_rng2_vis23_sza70;SWIR_humidity_solar_rh60_tar1_vis23_sza70;SWIR_humidity_flux_rh60_tar1_vis23_sza70"
+        },
+        {
+          "case": "P12_2KM_SWIR_scaled_mls_surface_rh85_obs0p001_tar0p001_rng2_vis6_sza70",
+          "range_km": "2",
+          "tau": "0.437561378312",
+          "sources": "P12_SWIR_trans_rh85_obs0p001_tar0p001_rng2_vis6;P12_SWIR_thermal_rh85_obs0p001_tar0p001_rng2_vis6;P12_SWIR_scattering_rh85_obs0p001_tar0p001_rng2_vis6_sza70;SWIR_humidity_solar_rh85_tar0p001_vis6_sza70;SWIR_humidity_flux_rh85_tar0p001_vis6_sza70"
+        },
+        {
+          "case": "P12_2KM_SWIR_scaled_mls_surface_rh85_obs0p001_tar0p001_rng2_vis23_sza70",
+          "range_km": "2",
+          "tau": "0.542535502433",
+          "sources": "P12_SWIR_trans_rh85_obs0p001_tar0p001_rng2_vis23;P12_SWIR_thermal_rh85_obs0p001_tar0p001_rng2_vis23;P12_SWIR_scattering_rh85_obs0p001_tar0p001_rng2_vis23_sza70;SWIR_humidity_solar_rh85_tar0p001_vis23_sza70;SWIR_humidity_flux_rh85_tar0p001_vis23_sza70"
+        },
+        {
+          "case": "P12_2KM_SWIR_scaled_mls_surface_rh85_obs1_tar1_rng2_vis6_sza70",
+          "range_km": "2",
+          "tau": "0.492279243746",
+          "sources": "P12_SWIR_trans_rh85_obs1_tar1_rng2_vis6;P12_SWIR_thermal_rh85_obs1_tar1_rng2_vis6;P12_SWIR_scattering_rh85_obs1_tar1_rng2_vis6_sza70;SWIR_humidity_solar_rh85_tar1_vis6_sza70;SWIR_humidity_flux_rh85_tar1_vis6_sza70"
+        },
+        {
+          "case": "P12_2KM_SWIR_scaled_mls_surface_rh85_obs1_tar1_rng2_vis23_sza70",
+          "range_km": "2",
+          "tau": "0.625240292207",
+          "sources": "P12_SWIR_trans_rh85_obs1_tar1_rng2_vis23;P12_SWIR_thermal_rh85_obs1_tar1_rng2_vis23;P12_SWIR_scattering_rh85_obs1_tar1_rng2_vis23_sza70;SWIR_humidity_solar_rh85_tar1_vis23_sza70;SWIR_humidity_flux_rh85_tar1_vis23_sza70"
+        }
+      ],
+      "extrapolation": "Above 1 km uses explicit dry/wet scale heights; 2-50 km uses three-grey-gas transport. NOT strict validated."
+    },
+    "MWIR": {
+      "absorption_m_inverse": [
+        0.00032201808148754705,
+        0.000320397470572575,
+        0.0210281164639791
+      ],
+      "weights": [
+        1.1462888044535457e-06,
+        0.79183901281062,
+        0.20815984090057565
+      ],
+      "fit_max_tau_absolute_error": 0.05001728568727337,
+      "anchors": [
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh30_obs0p001_tar0p001_rng0p1_vis6_sza70",
+          "range_km": "0.1",
+          "tau": "0.828779125536",
+          "sources": "MWIR_humidity_trans_rh30_obs0p001_tar0p001_rng0p1_vis6;MWIR_humidity_thermal_rh30_obs0p001_tar0p001_rng0p1_vis6;MWIR_humidity_scattering_rh30_obs0p001_tar0p001_rng0p1_vis6_sza70;MWIR_humidity_solar_rh30_tar0p001_vis6_sza70;MWIR_humidity_flux_rh30_tar0p001_vis6_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh30_obs0p001_tar0p001_rng0p1_vis23_sza70",
+          "range_km": "0.1",
+          "tau": "0.832747696983",
+          "sources": "MWIR_humidity_trans_rh30_obs0p001_tar0p001_rng0p1_vis23;MWIR_humidity_thermal_rh30_obs0p001_tar0p001_rng0p1_vis23;MWIR_humidity_scattering_rh30_obs0p001_tar0p001_rng0p1_vis23_sza70;MWIR_humidity_solar_rh30_tar0p001_vis23_sza70;MWIR_humidity_flux_rh30_tar0p001_vis23_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh30_obs0p001_tar0p001_rng0p5_vis6_sza70",
+          "range_km": "0.5",
+          "tau": "0.697493287788",
+          "sources": "MWIR_humidity_trans_rh30_obs0p001_tar0p001_rng0p5_vis6;MWIR_humidity_thermal_rh30_obs0p001_tar0p001_rng0p5_vis6;MWIR_humidity_scattering_rh30_obs0p001_tar0p001_rng0p5_vis6_sza70;MWIR_humidity_solar_rh30_tar0p001_vis6_sza70;MWIR_humidity_flux_rh30_tar0p001_vis6_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh30_obs0p001_tar0p001_rng0p5_vis23_sza70",
+          "range_km": "0.5",
+          "tau": "0.714320074693",
+          "sources": "MWIR_humidity_trans_rh30_obs0p001_tar0p001_rng0p5_vis23;MWIR_humidity_thermal_rh30_obs0p001_tar0p001_rng0p5_vis23;MWIR_humidity_scattering_rh30_obs0p001_tar0p001_rng0p5_vis23_sza70;MWIR_humidity_solar_rh30_tar0p001_vis23_sza70;MWIR_humidity_flux_rh30_tar0p001_vis23_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh30_obs0p001_tar0p001_rng1_vis6_sza70",
+          "range_km": "1",
+          "tau": "0.609404731699",
+          "sources": "MWIR_humidity_trans_rh30_obs0p001_tar0p001_rng1_vis6;MWIR_humidity_thermal_rh30_obs0p001_tar0p001_rng1_vis6;MWIR_humidity_scattering_rh30_obs0p001_tar0p001_rng1_vis6_sza70;MWIR_humidity_solar_rh30_tar0p001_vis6_sza70;MWIR_humidity_flux_rh30_tar0p001_vis6_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh30_obs0p001_tar0p001_rng1_vis23_sza70",
+          "range_km": "1",
+          "tau": "0.639125022745",
+          "sources": "MWIR_humidity_trans_rh30_obs0p001_tar0p001_rng1_vis23;MWIR_humidity_thermal_rh30_obs0p001_tar0p001_rng1_vis23;MWIR_humidity_scattering_rh30_obs0p001_tar0p001_rng1_vis23_sza70;MWIR_humidity_solar_rh30_tar0p001_vis23_sza70;MWIR_humidity_flux_rh30_tar0p001_vis23_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh30_obs1_tar1_rng0p1_vis6_sza70",
+          "range_km": "0.1",
+          "tau": "0.84506582382",
+          "sources": "MWIR_humidity_trans_rh30_obs1_tar1_rng0p1_vis6;MWIR_humidity_thermal_rh30_obs1_tar1_rng0p1_vis6;MWIR_humidity_scattering_rh30_obs1_tar1_rng0p1_vis6_sza70;MWIR_humidity_solar_rh30_tar1_vis6_sza70;MWIR_humidity_flux_rh30_tar1_vis6_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh30_obs1_tar1_rng0p1_vis23_sza70",
+          "range_km": "0.1",
+          "tau": "0.849612966723",
+          "sources": "MWIR_humidity_trans_rh30_obs1_tar1_rng0p1_vis23;MWIR_humidity_thermal_rh30_obs1_tar1_rng0p1_vis23;MWIR_humidity_scattering_rh30_obs1_tar1_rng0p1_vis23_sza70;MWIR_humidity_solar_rh30_tar1_vis23_sza70;MWIR_humidity_flux_rh30_tar1_vis23_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh30_obs1_tar1_rng0p5_vis6_sza70",
+          "range_km": "0.5",
+          "tau": "0.728391457945",
+          "sources": "MWIR_humidity_trans_rh30_obs1_tar1_rng0p5_vis6;MWIR_humidity_thermal_rh30_obs1_tar1_rng0p5_vis6;MWIR_humidity_scattering_rh30_obs1_tar1_rng0p5_vis6_sza70;MWIR_humidity_solar_rh30_tar1_vis6_sza70;MWIR_humidity_flux_rh30_tar1_vis6_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh30_obs1_tar1_rng0p5_vis23_sza70",
+          "range_km": "0.5",
+          "tau": "0.748165644148",
+          "sources": "MWIR_humidity_trans_rh30_obs1_tar1_rng0p5_vis23;MWIR_humidity_thermal_rh30_obs1_tar1_rng0p5_vis23;MWIR_humidity_scattering_rh30_obs1_tar1_rng0p5_vis23_sza70;MWIR_humidity_solar_rh30_tar1_vis23_sza70;MWIR_humidity_flux_rh30_tar1_vis23_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh30_obs1_tar1_rng1_vis6_sza70",
+          "range_km": "1",
+          "tau": "0.647156115028",
+          "sources": "MWIR_humidity_trans_rh30_obs1_tar1_rng1_vis6;MWIR_humidity_thermal_rh30_obs1_tar1_rng1_vis6;MWIR_humidity_scattering_rh30_obs1_tar1_rng1_vis6_sza70;MWIR_humidity_solar_rh30_tar1_vis6_sza70;MWIR_humidity_flux_rh30_tar1_vis6_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh30_obs1_tar1_rng1_vis23_sza70",
+          "range_km": "1",
+          "tau": "0.682731380774",
+          "sources": "MWIR_humidity_trans_rh30_obs1_tar1_rng1_vis23;MWIR_humidity_thermal_rh30_obs1_tar1_rng1_vis23;MWIR_humidity_scattering_rh30_obs1_tar1_rng1_vis23_sza70;MWIR_humidity_solar_rh30_tar1_vis23_sza70;MWIR_humidity_flux_rh30_tar1_vis23_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh60_obs0p001_tar0p001_rng0p1_vis6_sza70",
+          "range_km": "0.1",
+          "tau": "0.804382666609",
+          "sources": "MWIR_humidity_trans_rh60_obs0p001_tar0p001_rng0p1_vis6;MWIR_humidity_thermal_rh60_obs0p001_tar0p001_rng0p1_vis6;MWIR_humidity_scattering_rh60_obs0p001_tar0p001_rng0p1_vis6_sza70;MWIR_humidity_solar_rh60_tar0p001_vis6_sza70;MWIR_humidity_flux_rh60_tar0p001_vis6_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh60_obs0p001_tar0p001_rng0p1_vis23_sza70",
+          "range_km": "0.1",
+          "tau": "0.808332999951",
+          "sources": "MWIR_humidity_trans_rh60_obs0p001_tar0p001_rng0p1_vis23;MWIR_humidity_thermal_rh60_obs0p001_tar0p001_rng0p1_vis23;MWIR_humidity_scattering_rh60_obs0p001_tar0p001_rng0p1_vis23_sza70;MWIR_humidity_solar_rh60_tar0p001_vis23_sza70;MWIR_humidity_flux_rh60_tar0p001_vis23_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh60_obs0p001_tar0p001_rng0p5_vis6_sza70",
+          "range_km": "0.5",
+          "tau": "0.651782386683",
+          "sources": "MWIR_humidity_trans_rh60_obs0p001_tar0p001_rng0p5_vis6;MWIR_humidity_thermal_rh60_obs0p001_tar0p001_rng0p5_vis6;MWIR_humidity_scattering_rh60_obs0p001_tar0p001_rng0p5_vis6_sza70;MWIR_humidity_solar_rh60_tar0p001_vis6_sza70;MWIR_humidity_flux_rh60_tar0p001_vis6_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh60_obs0p001_tar0p001_rng0p5_vis23_sza70",
+          "range_km": "0.5",
+          "tau": "0.667856116041",
+          "sources": "MWIR_humidity_trans_rh60_obs0p001_tar0p001_rng0p5_vis23;MWIR_humidity_thermal_rh60_obs0p001_tar0p001_rng0p5_vis23;MWIR_humidity_scattering_rh60_obs0p001_tar0p001_rng0p5_vis23_sza70;MWIR_humidity_solar_rh60_tar0p001_vis23_sza70;MWIR_humidity_flux_rh60_tar0p001_vis23_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh60_obs0p001_tar0p001_rng1_vis6_sza70",
+          "range_km": "1",
+          "tau": "0.554509735593",
+          "sources": "MWIR_humidity_trans_rh60_obs0p001_tar0p001_rng1_vis6;MWIR_humidity_thermal_rh60_obs0p001_tar0p001_rng1_vis6;MWIR_humidity_scattering_rh60_obs0p001_tar0p001_rng1_vis6_sza70;MWIR_humidity_solar_rh60_tar0p001_vis6_sza70;MWIR_humidity_flux_rh60_tar0p001_vis6_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh60_obs0p001_tar0p001_rng1_vis23_sza70",
+          "range_km": "1",
+          "tau": "0.582121174979",
+          "sources": "MWIR_humidity_trans_rh60_obs0p001_tar0p001_rng1_vis23;MWIR_humidity_thermal_rh60_obs0p001_tar0p001_rng1_vis23;MWIR_humidity_scattering_rh60_obs0p001_tar0p001_rng1_vis23_sza70;MWIR_humidity_solar_rh60_tar0p001_vis23_sza70;MWIR_humidity_flux_rh60_tar0p001_vis23_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh60_obs1_tar1_rng0p1_vis6_sza70",
+          "range_km": "0.1",
+          "tau": "0.82619957475",
+          "sources": "MWIR_humidity_trans_rh60_obs1_tar1_rng0p1_vis6;MWIR_humidity_thermal_rh60_obs1_tar1_rng0p1_vis6;MWIR_humidity_scattering_rh60_obs1_tar1_rng0p1_vis6_sza70;MWIR_humidity_solar_rh60_tar1_vis6_sza70;MWIR_humidity_flux_rh60_tar1_vis6_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh60_obs1_tar1_rng0p1_vis23_sza70",
+          "range_km": "0.1",
+          "tau": "0.830762057977",
+          "sources": "MWIR_humidity_trans_rh60_obs1_tar1_rng0p1_vis23;MWIR_humidity_thermal_rh60_obs1_tar1_rng0p1_vis23;MWIR_humidity_scattering_rh60_obs1_tar1_rng0p1_vis23_sza70;MWIR_humidity_solar_rh60_tar1_vis23_sza70;MWIR_humidity_flux_rh60_tar1_vis23_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh60_obs1_tar1_rng0p5_vis6_sza70",
+          "range_km": "0.5",
+          "tau": "0.691258265462",
+          "sources": "MWIR_humidity_trans_rh60_obs1_tar1_rng0p5_vis6;MWIR_humidity_thermal_rh60_obs1_tar1_rng0p5_vis6;MWIR_humidity_scattering_rh60_obs1_tar1_rng0p5_vis6_sza70;MWIR_humidity_solar_rh60_tar1_vis6_sza70;MWIR_humidity_flux_rh60_tar1_vis6_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh60_obs1_tar1_rng0p5_vis23_sza70",
+          "range_km": "0.5",
+          "tau": "0.710463085972",
+          "sources": "MWIR_humidity_trans_rh60_obs1_tar1_rng0p5_vis23;MWIR_humidity_thermal_rh60_obs1_tar1_rng0p5_vis23;MWIR_humidity_scattering_rh60_obs1_tar1_rng0p5_vis23_sza70;MWIR_humidity_solar_rh60_tar1_vis23_sza70;MWIR_humidity_flux_rh60_tar1_vis23_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh60_obs1_tar1_rng1_vis6_sza70",
+          "range_km": "1",
+          "tau": "0.601196010212",
+          "sources": "MWIR_humidity_trans_rh60_obs1_tar1_rng1_vis6;MWIR_humidity_thermal_rh60_obs1_tar1_rng1_vis6;MWIR_humidity_scattering_rh60_obs1_tar1_rng1_vis6_sza70;MWIR_humidity_solar_rh60_tar1_vis6_sza70;MWIR_humidity_flux_rh60_tar1_vis6_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh60_obs1_tar1_rng1_vis23_sza70",
+          "range_km": "1",
+          "tau": "0.634969709586",
+          "sources": "MWIR_humidity_trans_rh60_obs1_tar1_rng1_vis23;MWIR_humidity_thermal_rh60_obs1_tar1_rng1_vis23;MWIR_humidity_scattering_rh60_obs1_tar1_rng1_vis23_sza70;MWIR_humidity_solar_rh60_tar1_vis23_sza70;MWIR_humidity_flux_rh60_tar1_vis23_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh85_obs0p001_tar0p001_rng0p1_vis6_sza70",
+          "range_km": "0.1",
+          "tau": "0.787456340599",
+          "sources": "MWIR_humidity_trans_rh85_obs0p001_tar0p001_rng0p1_vis6;MWIR_humidity_thermal_rh85_obs0p001_tar0p001_rng0p1_vis6;MWIR_humidity_scattering_rh85_obs0p001_tar0p001_rng0p1_vis6_sza70;MWIR_humidity_solar_rh85_tar0p001_vis6_sza70;MWIR_humidity_flux_rh85_tar0p001_vis6_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh85_obs0p001_tar0p001_rng0p1_vis23_sza70",
+          "range_km": "0.1",
+          "tau": "0.792186580552",
+          "sources": "MWIR_humidity_trans_rh85_obs0p001_tar0p001_rng0p1_vis23;MWIR_humidity_thermal_rh85_obs0p001_tar0p001_rng0p1_vis23;MWIR_humidity_scattering_rh85_obs0p001_tar0p001_rng0p1_vis23_sza70;MWIR_humidity_solar_rh85_tar0p001_vis23_sza70;MWIR_humidity_flux_rh85_tar0p001_vis23_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh85_obs0p001_tar0p001_rng0p5_vis6_sza70",
+          "range_km": "0.5",
+          "tau": "0.619106882573",
+          "sources": "MWIR_humidity_trans_rh85_obs0p001_tar0p001_rng0p5_vis6;MWIR_humidity_thermal_rh85_obs0p001_tar0p001_rng0p5_vis6;MWIR_humidity_scattering_rh85_obs0p001_tar0p001_rng0p5_vis6_sza70;MWIR_humidity_solar_rh85_tar0p001_vis6_sza70;MWIR_humidity_flux_rh85_tar0p001_vis6_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh85_obs0p001_tar0p001_rng0p5_vis23_sza70",
+          "range_km": "0.5",
+          "tau": "0.637568399506",
+          "sources": "MWIR_humidity_trans_rh85_obs0p001_tar0p001_rng0p5_vis23;MWIR_humidity_thermal_rh85_obs0p001_tar0p001_rng0p5_vis23;MWIR_humidity_scattering_rh85_obs0p001_tar0p001_rng0p5_vis23_sza70;MWIR_humidity_solar_rh85_tar0p001_vis23_sza70;MWIR_humidity_flux_rh85_tar0p001_vis23_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh85_obs0p001_tar0p001_rng1_vis6_sza70",
+          "range_km": "1",
+          "tau": "0.514622051183",
+          "sources": "MWIR_humidity_trans_rh85_obs0p001_tar0p001_rng1_vis6;MWIR_humidity_thermal_rh85_obs0p001_tar0p001_rng1_vis6;MWIR_humidity_scattering_rh85_obs0p001_tar0p001_rng1_vis6_sza70;MWIR_humidity_solar_rh85_tar0p001_vis6_sza70;MWIR_humidity_flux_rh85_tar0p001_vis6_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh85_obs0p001_tar0p001_rng1_vis23_sza70",
+          "range_km": "1",
+          "tau": "0.545469485039",
+          "sources": "MWIR_humidity_trans_rh85_obs0p001_tar0p001_rng1_vis23;MWIR_humidity_thermal_rh85_obs0p001_tar0p001_rng1_vis23;MWIR_humidity_scattering_rh85_obs0p001_tar0p001_rng1_vis23_sza70;MWIR_humidity_solar_rh85_tar0p001_vis23_sza70;MWIR_humidity_flux_rh85_tar0p001_vis23_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh85_obs1_tar1_rng0p1_vis6_sza70",
+          "range_km": "0.1",
+          "tau": "0.812764084928",
+          "sources": "MWIR_humidity_trans_rh85_obs1_tar1_rng0p1_vis6;MWIR_humidity_thermal_rh85_obs1_tar1_rng0p1_vis6;MWIR_humidity_scattering_rh85_obs1_tar1_rng0p1_vis6_sza70;MWIR_humidity_solar_rh85_tar1_vis6_sza70;MWIR_humidity_flux_rh85_tar1_vis6_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh85_obs1_tar1_rng0p1_vis23_sza70",
+          "range_km": "0.1",
+          "tau": "0.818270277911",
+          "sources": "MWIR_humidity_trans_rh85_obs1_tar1_rng0p1_vis23;MWIR_humidity_thermal_rh85_obs1_tar1_rng0p1_vis23;MWIR_humidity_scattering_rh85_obs1_tar1_rng0p1_vis23_sza70;MWIR_humidity_solar_rh85_tar1_vis23_sza70;MWIR_humidity_flux_rh85_tar1_vis23_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh85_obs1_tar1_rng0p5_vis6_sza70",
+          "range_km": "0.5",
+          "tau": "0.663514649999",
+          "sources": "MWIR_humidity_trans_rh85_obs1_tar1_rng0p5_vis6;MWIR_humidity_thermal_rh85_obs1_tar1_rng0p5_vis6;MWIR_humidity_scattering_rh85_obs1_tar1_rng0p5_vis6_sza70;MWIR_humidity_solar_rh85_tar1_vis6_sza70;MWIR_humidity_flux_rh85_tar1_vis6_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh85_obs1_tar1_rng0p5_vis23_sza70",
+          "range_km": "0.5",
+          "tau": "0.68592738139",
+          "sources": "MWIR_humidity_trans_rh85_obs1_tar1_rng0p5_vis23;MWIR_humidity_thermal_rh85_obs1_tar1_rng0p5_vis23;MWIR_humidity_scattering_rh85_obs1_tar1_rng0p5_vis23_sza70;MWIR_humidity_solar_rh85_tar1_vis23_sza70;MWIR_humidity_flux_rh85_tar1_vis23_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh85_obs1_tar1_rng1_vis6_sza70",
+          "range_km": "1",
+          "tau": "0.565694891223",
+          "sources": "MWIR_humidity_trans_rh85_obs1_tar1_rng1_vis6;MWIR_humidity_thermal_rh85_obs1_tar1_rng1_vis6;MWIR_humidity_scattering_rh85_obs1_tar1_rng1_vis6_sza70;MWIR_humidity_solar_rh85_tar1_vis6_sza70;MWIR_humidity_flux_rh85_tar1_vis6_sza70"
+        },
+        {
+          "case": "P11_MWIR_humidity_scaled_mls_surface_rh85_obs1_tar1_rng1_vis23_sza70",
+          "range_km": "1",
+          "tau": "0.604180875671",
+          "sources": "MWIR_humidity_trans_rh85_obs1_tar1_rng1_vis23;MWIR_humidity_thermal_rh85_obs1_tar1_rng1_vis23;MWIR_humidity_scattering_rh85_obs1_tar1_rng1_vis23_sza70;MWIR_humidity_solar_rh85_tar1_vis23_sza70;MWIR_humidity_flux_rh85_tar1_vis23_sza70"
+        },
+        {
+          "case": "P12_2KM_MWIR_scaled_mls_surface_rh30_obs0p001_tar0p001_rng2_vis6_sza70",
+          "range_km": "2",
+          "tau": "0.530968866344",
+          "sources": "P12_MWIR_trans_rh30_obs0p001_tar0p001_rng2_vis6;P12_MWIR_thermal_rh30_obs0p001_tar0p001_rng2_vis6;P12_MWIR_scattering_rh30_obs0p001_tar0p001_rng2_vis6_sza70;MWIR_humidity_solar_rh30_tar0p001_vis6_sza70;MWIR_humidity_flux_rh30_tar0p001_vis6_sza70"
+        },
+        {
+          "case": "P12_2KM_MWIR_scaled_mls_surface_rh30_obs0p001_tar0p001_rng2_vis23_sza70",
+          "range_km": "2",
+          "tau": "0.583955179452",
+          "sources": "P12_MWIR_trans_rh30_obs0p001_tar0p001_rng2_vis23;P12_MWIR_thermal_rh30_obs0p001_tar0p001_rng2_vis23;P12_MWIR_scattering_rh30_obs0p001_tar0p001_rng2_vis23_sza70;MWIR_humidity_solar_rh30_tar0p001_vis23_sza70;MWIR_humidity_flux_rh30_tar0p001_vis23_sza70"
+        },
+        {
+          "case": "P12_2KM_MWIR_scaled_mls_surface_rh30_obs1_tar1_rng2_vis6_sza70",
+          "range_km": "2",
+          "tau": "0.587044440883",
+          "sources": "P12_MWIR_trans_rh30_obs1_tar1_rng2_vis6;P12_MWIR_thermal_rh30_obs1_tar1_rng2_vis6;P12_MWIR_scattering_rh30_obs1_tar1_rng2_vis6_sza70;MWIR_humidity_solar_rh30_tar1_vis6_sza70;MWIR_humidity_flux_rh30_tar1_vis6_sza70"
+        },
+        {
+          "case": "P12_2KM_MWIR_scaled_mls_surface_rh30_obs1_tar1_rng2_vis23_sza70",
+          "range_km": "2",
+          "tau": "0.653215168358",
+          "sources": "P12_MWIR_trans_rh30_obs1_tar1_rng2_vis23;P12_MWIR_thermal_rh30_obs1_tar1_rng2_vis23;P12_MWIR_scattering_rh30_obs1_tar1_rng2_vis23_sza70;MWIR_humidity_solar_rh30_tar1_vis23_sza70;MWIR_humidity_flux_rh30_tar1_vis23_sza70"
+        },
+        {
+          "case": "P12_2KM_MWIR_scaled_mls_surface_rh60_obs0p001_tar0p001_rng2_vis6_sza70",
+          "range_km": "2",
+          "tau": "0.381754752657",
+          "sources": "P12_MWIR_trans_rh60_obs0p001_tar0p001_rng2_vis6;P12_MWIR_thermal_rh60_obs0p001_tar0p001_rng2_vis6;P12_MWIR_scattering_rh60_obs0p001_tar0p001_rng2_vis6_sza70;MWIR_humidity_solar_rh60_tar0p001_vis6_sza70;MWIR_humidity_flux_rh60_tar0p001_vis6_sza70"
+        },
+        {
+          "case": "P12_2KM_MWIR_scaled_mls_surface_rh60_obs0p001_tar0p001_rng2_vis23_sza70",
+          "range_km": "2",
+          "tau": "0.420976951366",
+          "sources": "P12_MWIR_trans_rh60_obs0p001_tar0p001_rng2_vis23;P12_MWIR_thermal_rh60_obs0p001_tar0p001_rng2_vis23;P12_MWIR_scattering_rh60_obs0p001_tar0p001_rng2_vis23_sza70;MWIR_humidity_solar_rh60_tar0p001_vis23_sza70;MWIR_humidity_flux_rh60_tar0p001_vis23_sza70"
+        },
+        {
+          "case": "P12_2KM_MWIR_scaled_mls_surface_rh60_obs1_tar1_rng2_vis6_sza70",
+          "range_km": "2",
+          "tau": "0.488302547047",
+          "sources": "P12_MWIR_trans_rh60_obs1_tar1_rng2_vis6;P12_MWIR_thermal_rh60_obs1_tar1_rng2_vis6;P12_MWIR_scattering_rh60_obs1_tar1_rng2_vis6_sza70;MWIR_humidity_solar_rh60_tar1_vis6_sza70;MWIR_humidity_flux_rh60_tar1_vis6_sza70"
+        },
+        {
+          "case": "P12_2KM_MWIR_scaled_mls_surface_rh60_obs1_tar1_rng2_vis23_sza70",
+          "range_km": "2",
+          "tau": "0.544763952063",
+          "sources": "P12_MWIR_trans_rh60_obs1_tar1_rng2_vis23;P12_MWIR_thermal_rh60_obs1_tar1_rng2_vis23;P12_MWIR_scattering_rh60_obs1_tar1_rng2_vis23_sza70;MWIR_humidity_solar_rh60_tar1_vis23_sza70;MWIR_humidity_flux_rh60_tar1_vis23_sza70"
+        },
+        {
+          "case": "P12_2KM_MWIR_scaled_mls_surface_rh85_obs0p001_tar0p001_rng2_vis6_sza70",
+          "range_km": "2",
+          "tau": "0.260766724764",
+          "sources": "P12_MWIR_trans_rh85_obs0p001_tar0p001_rng2_vis6;P12_MWIR_thermal_rh85_obs0p001_tar0p001_rng2_vis6;P12_MWIR_scattering_rh85_obs0p001_tar0p001_rng2_vis6_sza70;MWIR_humidity_solar_rh85_tar0p001_vis6_sza70;MWIR_humidity_flux_rh85_tar0p001_vis6_sza70"
+        },
+        {
+          "case": "P12_2KM_MWIR_scaled_mls_surface_rh85_obs0p001_tar0p001_rng2_vis23_sza70",
+          "range_km": "2",
+          "tau": "0.293639360802",
+          "sources": "P12_MWIR_trans_rh85_obs0p001_tar0p001_rng2_vis23;P12_MWIR_thermal_rh85_obs0p001_tar0p001_rng2_vis23;P12_MWIR_scattering_rh85_obs0p001_tar0p001_rng2_vis23_sza70;MWIR_humidity_solar_rh85_tar0p001_vis23_sza70;MWIR_humidity_flux_rh85_tar0p001_vis23_sza70"
+        },
+        {
+          "case": "P12_2KM_MWIR_scaled_mls_surface_rh85_obs1_tar1_rng2_vis6_sza70",
+          "range_km": "2",
+          "tau": "0.391358115793",
+          "sources": "P12_MWIR_trans_rh85_obs1_tar1_rng2_vis6;P12_MWIR_thermal_rh85_obs1_tar1_rng2_vis6;P12_MWIR_scattering_rh85_obs1_tar1_rng2_vis6_sza70;MWIR_humidity_solar_rh85_tar1_vis6_sza70;MWIR_humidity_flux_rh85_tar1_vis6_sza70"
+        },
+        {
+          "case": "P12_2KM_MWIR_scaled_mls_surface_rh85_obs1_tar1_rng2_vis23_sza70",
+          "range_km": "2",
+          "tau": "0.446801897441",
+          "sources": "P12_MWIR_trans_rh85_obs1_tar1_rng2_vis23;P12_MWIR_thermal_rh85_obs1_tar1_rng2_vis23;P12_MWIR_scattering_rh85_obs1_tar1_rng2_vis23_sza70;MWIR_humidity_solar_rh85_tar1_vis23_sza70;MWIR_humidity_flux_rh85_tar1_vis23_sza70"
+        }
+      ],
+      "extrapolation": "Above 1 km uses explicit dry/wet scale heights; 2-50 km uses three-grey-gas transport. NOT strict validated."
+    }
+  },
+  "parameter_sha256": "93dcb6b592ae32a31615422fcc5fd744156827020eb6bedfda875d197632ccb4"
+}

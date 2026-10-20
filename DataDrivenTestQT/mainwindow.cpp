@@ -2,6 +2,7 @@
 // mainwindow.cpp
 #include "mainwindow.h"
 #include "DualSensorPanel.h"
+#include "../Shared/EngineeringAtmosphere.h"
 #include <QCloseEvent>
 #include <QSpinBox>
 #include <QScreen>
@@ -205,6 +206,11 @@ MainWindow::MainWindow(
 		m_controlTransport != QStringLiteral("both"))
 		qFatal("invalid --control-transport; expected udp|dds|both");
     loadNetworkConfig();
+    const auto showAtmospherePolicy = [this]() {
+        QSettings settings(m_networkConfigPath,QSettings::IniFormat);
+        if(settings.value("M1NirMwirPhysics/AtmospherePolicy","StrictModtran").toString()=="EngineeringContinuous")
+            setWindowTitle(windowTitle()+QStringLiteral(" | P20M3 SWIR/MWIR 工程近似 · P20M3_GREY_GAS_1 | ")+settings.value("M1NirMwirPhysics/EngineeringParameterSha256").toString().left(12));
+    };
     const auto arguments=QCoreApplication::arguments();
     bool explicitChannel=false;for(const auto& arg:arguments)if(arg.startsWith("--channel=" )||arg=="--channel")explicitChannel=true;
     const bool dual= !arguments.contains("--legacy-single-ui") && (!explicitChannel||arguments.contains("--dual-channel=1"));
@@ -216,6 +222,7 @@ MainWindow::MainWindow(
                 QJsonObject audit;return validateFormalAtmosphereCoverage(cmd.trackingInit,cmd.trackingInit.trackerSensor[0],error,audit,&rows,path);
             },this);
         setCentralWidget(m_dualPanel);setWindowTitle("HwaSimIR · P19 双传感器 DDS 测试");
+        showAtmospherePolicy();
         setFont(QFont("Microsoft YaHei UI",9));
         const QRect available=QGuiApplication::primaryScreen()->availableGeometry();
         resize(qMin(1100,available.width()-40),qMin(850,available.height()-60));
@@ -226,6 +233,7 @@ MainWindow::MainWindow(
 #endif
     }
     setupUI();
+    showAtmospherePolicy();
     BYHWICD::trackerSensorParam initialSensor={};QString initialError;
     if(!sensorFormSnapshot(initialSensor,initialError))qFatal("Invalid initial sensor form");
     m_protocolSensorBand=initialSensor.trackerSensorBand;
@@ -282,6 +290,7 @@ MainWindow::MainWindow(
 
 MainWindow::~MainWindow()
 {
+	if (m_dualPanel) m_dualPanel->stopReplayWorker();
 #if defined(HWASIMIR_HAS_ZRDDS)
 	if (m_ddsStim && m_dualPanel) { m_ddsStim->shutdown(); }
 	else if (m_ddsStim) {
@@ -1243,6 +1252,36 @@ bool MainWindow::validateFormalAtmosphereCoverage(
 			.arg(sensor.trackerSensorBand);
 		return true;
 	}
+    QSettings atmosphereSettings(m_networkConfigPath,QSettings::IniFormat);
+    const QString policy=atmosphereSettings.value("M1NirMwirPhysics/AtmospherePolicy","StrictModtran").toString();
+    if(policy=="EngineeringContinuous") {
+        HwaAtmosphere::Provider provider;
+        QString parameters=atmosphereSettings.value("M1NirMwirPhysics/EngineeringParameters").toString();
+        if(QDir::isRelativePath(parameters)) parameters=QFileInfo(m_networkConfigPath).dir().absoluteFilePath(parameters);
+        const QString hash=atmosphereSettings.value("M1NirMwirPhysics/EngineeringParameterSha256").toString();
+        if(!provider.load(parameters.toStdString(),hash.toStdString())) {error="Engineering parameter identity failed; INIT not sent";return false;}
+        if(samples.isEmpty() || m_testUtcHour<0 || !m_simulationUtcDate.isValid()) {error="Explicit replay UTC and input rows required";return false;}
+        const qint64 startMs=QDateTime(m_simulationUtcDate,QTime(0,0),Qt::UTC).toMSecsSinceEpoch()+qint64(m_testUtcHour*3600000);
+        IRSimulationUtc clock;
+        double minTau=1,maxTau=0;
+        for(int i=0;i<samples.size();++i) {
+            const auto& row=samples.at(i);
+            const auto utc=clock.resolve(startMs+row.sourceTimeMs-samples.first().sourceTimeMs,"UnixEpochMs","");
+            IRSolarPositionInput si;si.latitudeDeg=row.platPos.lat;si.longitudeDeg=row.platPos.lon;si.altitudeM=row.platPos.alt;
+            si.utcYear=utc.year;si.utcMonth=utc.month;si.utcDay=utc.day;si.utcHour=utc.hour;
+            const auto sun=IRSolarPosition().evaluate(si);
+            HwaAtmosphere::Geo a(row.platPos.lat,row.platPos.lon,row.platPos.alt),b(row.tarPos.lat,row.tarPos.lon,row.tarPos.alt);
+            const auto value=provider.query(sensor.trackerSensorBand,a,b,initialization.envVisibility/1000.,initialization.envHumidity,
+                HwaAtmosphere::sunEcef(a,sun.azimuthDeg,sun.elevationDeg),utc.valid&&sun.valid);
+            if(!value.usableForRendering){error=QString("Engineering input rejected row %1: %2").arg(row.sourceLine).arg(QString::fromStdString(value.inputError));audit["firstInvalidDataRow"]=row.sourceLine;return false;}
+            minTau=std::min(minTau,value.tau);maxTau=std::max(maxTau,value.tau);
+        }
+        audit["result"]="accepted";audit["quality"]="ENGINEERING_APPROX";audit["policy"]=policy;
+        audit["parameterHash"]=hash;audit["rowsChecked"]=samples.size();audit["minTau"]=minTau;audit["maxTau"]=maxTau;
+        qInfo().noquote()<<"[StimAtmosphereCoverage] result=ACCEPTED quality=ENGINEERING_APPROX band="<<sensor.trackerSensorBand<<" rows="<<samples.size()<<" parameterHash="<<hash;
+        return true;
+    }
+    if(policy!="StrictModtran"){error="Unknown atmosphere policy";return false;}
 	if (!qEnvironmentVariable("WeatherCameraInput").trimmed().isEmpty())
 	{
 		audit.insert(QStringLiteral("result"), QStringLiteral("explicit_fixture_deferred"));

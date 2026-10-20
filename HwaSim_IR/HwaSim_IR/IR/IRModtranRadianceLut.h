@@ -25,7 +25,10 @@ struct IRModtranRadianceQuery
 
 struct IRModtranRadianceResult
 {
-	bool valid;
+	bool valid; // Strict LUT validity only; never set by the engineering adapter.
+    bool engineeringUsable = false;
+    std::string engineeringParameterHash;
+    bool usableForRendering() const { return valid || engineeringUsable; }
 	double tauUp;
 	double pathThermalWm2SrUm;
 	double directSolarIrradianceWm2Um;

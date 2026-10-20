@@ -1,0 +1,16 @@
+{
+  "modelVersion": "P20M3_GREY_GAS_1",
+  "quality": "ENGINEERING_APPROX",
+  "strictModtranAccuracy": "PENDING",
+  "calibration": "NOT_VERIFIED_CALIBRATION",
+  "targetEndpointAltitudeM": [3000, 20000],
+  "trueWgs84ChordRangeM": [0, 50000],
+  "declaredWeather": {"surfaceRhPercent": [30, 85], "visibilityKm": [6, 23]},
+  "humidityMeaning": "MLS surface water-vapour scaling, not constant local high-altitude RH",
+  "response": {"SWIR": [1.1, 2.5], "MWIR": [3, 5], "shape": "rectangular_band_mean"},
+  "parameterSha256": "93dcb6b592ae32a31615422fcc5fd744156827020eb6bedfda875d197632ccb4",
+  "solar": "5772 K blackbody normalized to 1361 W/m2 at fixed 1 AU; geometric occultation, no refraction certification",
+  "background": "Independent nadir grey ground and zenith sky directional radiances with existing dome interpolation; simplified angular model",
+  "planckAcceleration": {"temperatureK": [120, 4215], "stepK": 0.5, "additionalAbsoluteToleranceWm2SrUm": 1e-10, "additionalRelativeTolerance": 0.0025, "outsideTable": "existing_analytic_formula", "strictModtranMode": "existing_analytic_formula"},
+  "limitations": ["No new MODTRAN cases required for this engineering release", "No full-domain MODTRAN-equivalence claim", "3-grey-gas extrapolation above legacy anchor altitude is declared engineering modelling", "Isotropic single-scatter and empirical twilight diffuse closure", "NIR remains available through StrictModtran and legacy certified data"]
+}

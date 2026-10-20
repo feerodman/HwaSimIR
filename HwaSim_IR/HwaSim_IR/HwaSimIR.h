@@ -61,6 +61,11 @@
 #include "IR/IRSimulationUtc.h"
 #include "IR/IRSimulationClock.h"
 #include "IR/IRPhysicalTrace.h"
+#if defined(__linux__)
+#include "Shared/EngineeringAtmosphere.h"
+#else
+#include "../../Shared/EngineeringAtmosphere.h"
+#endif
 #include "IR/IRSolarHeatingLut.h"
 #include "IR/IRRadianceModelV2.h"
 #include "IR/IRRuntimeConfig.h"
@@ -470,6 +475,12 @@ private:
 	std::string m_p13ExpectedOriginalInputSha256;
 	bool m_m1CompareOnly = false;
 	bool m_m1RuntimeEnabled = false;
+    bool m_engineeringAtmosphere = false;
+    HwaAtmosphere::Provider m_engineeringProvider;
+    double m_engineeringSkyRadiance = 0;
+    unsigned long long m_atmosphereEvaluated = 0, m_atmosphereForcedBlack = 0;
+    HwaAtmosphere::Result QueryEngineeringAtmosphere(const TargetPlatformData&, const IRRuntimeEnvironment&) const;
+    void UpdateEngineeringBackground(const IRRuntimeEnvironment&);
 	bool m_m1NirRuntimeEnabled = false;
 	bool m_m1SwirRuntimeEnabled = false;
 	bool m_m1MwirRuntimeEnabled = false;

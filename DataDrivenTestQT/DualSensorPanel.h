@@ -8,6 +8,8 @@
 #include <QVector>
 #include <functional>
 #include <memory>
+#include <atomic>
+#include <thread>
 #include "ReplaySource.h"
 #include "DdsStimClient.h"
 class QCheckBox; class QComboBox; class QSpinBox; class QDoubleSpinBox;
@@ -21,6 +23,8 @@ public:
                                       const QVector<ICD::realtimeInfo>&, const QString&, QString&)>;
     DualSensorPanel(DdsStimClient* client, const QString& network, const QString& input,
                     Coverage coverage, QWidget* parent=nullptr);
+    ~DualSensorPanel() override;
+    void stopReplayWorker();
     void receiveAck(const BYHWICD::InitAckC2pObjectTrackingCmd& ack);
     bool loadConfig(const QString& path);
     bool saveConfig(const QString& path);
@@ -87,6 +91,11 @@ private:
     bool collect(QString& error, bool loadSources);
     bool control(int command);
     void pump();
+    void beginReplayWorker();
+    std::thread replayWorker;
+    std::atomic<bool> replayCancel{false}, replayDone{false};
+    std::atomic<quint64> replaySent[2];
+    QString replayError;
     void pollState();
     void status(int index, const QString& state);
     void copyChannel(int from, int to);

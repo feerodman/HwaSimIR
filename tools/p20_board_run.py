@@ -37,6 +37,11 @@ ap.add_argument('--direct-dds-sender',default=None,help='Independent sender exec
 ap.add_argument('--diagnostic-reference-mismatch',action='store_true')
 ap.add_argument('--scheduling',choices=['original','performance'],default='original')
 ap.add_argument('--p20m2-60hz',action='store_true',help='Require 60 Hz input and videoFps=60; record direct-sender deadlines')
+ap.add_argument('--receiver-directory',default='build-p19-customer-receiver/release')
+ap.add_argument('--sender-config',default='DataDrivenTestQT/NetworkConfig.ini')
+ap.add_argument('--physical-evidence',action='store_true')
+ap.add_argument('--linear-seq',type=int,default=0)
+ap.add_argument('--engineering-lifecycle',action='store_true')
 a=ap.parse_args()
 if not 1<=a.fps<=240:raise SystemExit('invalid configured video FPS')
 if a.input_hz is None:a.input_hz=float(a.fps)
@@ -57,7 +62,7 @@ opts=['-o','UpdateHostKeys=no','-o','ConnectTimeout=10']
 def ssh(command):return subprocess.check_output(['ssh',*opts,'root@192.168.1.116',command],env=env,text=True)
 def board_audit(role):
     return ('/tmp/hwasimir-p20-logs/'+a.name+'/'+role if a.tmp_board_logs else receipt['instances'][role]['root']+'/logs/'+a.name)
-rxdir=ROOT/'build-p19-customer-receiver/release';stimdir=ROOT/a.stim_directory
+rxdir=ROOT/a.receiver_directory;stimdir=ROOT/a.stim_directory
 ffdir=ROOT/'.deps/ffmpeg-n8.1-win64-gpl-shared/ffmpeg-n8.1-latest-win64-gpl-shared-8.1/bin'
 env['PATH']=str(rxdir)+os.pathsep+env['PATH']
 testQos=out/'qos.xml';testQos.write_text((ROOT/'HwaSim_IR/Bin/Config/DDS/ZRDDS_PROTOCOL_QOS.xml').read_text(encoding='utf-8-sig').replace('tcpv4://default//0',a.transport+'://default//0'),encoding='utf-8')
@@ -80,7 +85,7 @@ header=next(i for i,l in enumerate(lines) if l.strip().startswith('Time'))
 rows=[l for l in lines[header+1:] if l.strip()]
 if not 1<=a.frames<=len(rows) or not 0<=a.source_offset<=len(rows)-a.frames:raise SystemExit('frame range')
 source=out/'ordinary_replay_subset.csv';source.write_text(lines[header]+'\n'+'\n'.join(rows[a.source_offset:a.source_offset+a.frames])+'\n',encoding='utf-8')
-config=(ROOT/'DataDrivenTestQT/NetworkConfig.ini').read_text(encoding='utf-8-sig')
+config=(ROOT/a.sender_config).read_text(encoding='utf-8-sig')
 config=re.sub(r'(?m)^DomainId=.*$','DomainId='+str(a.control_domain),config)
 config=re.sub(r'(?m)^QosFile=.*$','QosFile='+str(testQos).replace('\\','/'),config)
 if a.utc_date is not None:
@@ -101,6 +106,7 @@ for index,role in enumerate(('coarse','precise')):
     if enabled:selected.append((role,item,codec,width))
 dual=dict(version=19,domain=a.control_domain,source=str(source),model=0x22,stepMs=1000/a.input_hz,qos=str(testQos).replace('\\','/'),observeStatus=not a.customer_only,channels=channels)
 dual['diagnosticReferenceMismatch']=a.diagnostic_reference_mismatch
+dual['engineeringLifecycle']=a.engineering_lifecycle
 (out/'dual.json').write_text(json.dumps(dual,indent=2))
 processes=[];files=[];commands={};results=dict(options=vars(a),status='FAIL',customerHardware='NOT_VERIFIED',actualCustomerRaw='NOT_VERIFIED',physicalAcceptance='NOT_ASSESSED',configuredVideoFps=a.fps,inputPacketHz=a.input_hz);rxs={};boards={}
 def launch(command,cwd,name,customEnv=None):
@@ -141,6 +147,8 @@ for i in range(900):
         ssh('mkdir '+shlex.quote(audit));subprocess.run(['scp',*opts,str(network),'root@192.168.1.116:'+audit+'/network.ini'],env=env,check=True)
         subprocess.run(['scp',*opts,str(testQos),'root@192.168.1.116:'+audit+'/qos.xml'],env=env,check=True)
         extra=f"HwaSimIRCustomerPixelFormat={a.pixels} "+' '.join(a.render_env)+runtimePolicy.environment()
+        if a.physical_evidence:extra+=f' HWASIMIR_RUN_ID={a.name}_{role} HWASIMIR_PHYSICAL_TRACE={audit}/physical.jsonl'
+        if a.linear_seq:extra+=f' LinearDiagnosticSeq={a.linear_seq} LinearDiagnosticPath={audit}/linear'
         if not a.use_deployed_qos:
             extra+=f' HwaSimIRDdsProtocolQosFile={audit}/qos.xml HwaSimIRDdsVideoQosFile={audit}/qos.xml'
         if not a.use_deployed_domains:
