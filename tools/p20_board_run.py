@@ -36,10 +36,13 @@ ap.add_argument('--utc-hour',type=float,default=None)
 ap.add_argument('--direct-dds-sender',default=None,help='Independent sender executable; does not disable production stim preflight')
 ap.add_argument('--diagnostic-reference-mismatch',action='store_true')
 ap.add_argument('--scheduling',choices=['original','performance'],default='original')
+ap.add_argument('--p20m2-60hz',action='store_true',help='Require 60 Hz input and videoFps=60; record direct-sender deadlines')
 a=ap.parse_args()
 if not 1<=a.fps<=240:raise SystemExit('invalid configured video FPS')
 if a.input_hz is None:a.input_hz=float(a.fps)
 if not 0<a.input_hz<=1000:raise SystemExit('invalid packet input rate')
+if a.p20m2_60hz and (a.input_hz!=60 or a.fps!=60):
+    raise SystemExit('P20M2 performance requires input-hz=60 and fps=60')
 if (a.utc_date is None)!=(a.utc_hour is None):raise SystemExit('Both replay UTC date and hour are required')
 if a.utc_date is not None:
     import datetime
@@ -169,7 +172,10 @@ for i in range(900):
         vd=old_receiver()
     stimEnv=env.copy();stimEnv['HwaInputAuditDirectory']=str(out)
     senderExe=ROOT/a.direct_dds_sender if a.direct_dds_sender else stimdir/'DataDrivenTestQT.exe'
-    sender=launch([str(senderExe),'--network-config='+str(out/'sender.ini'),'--channels-json='+str(out/'dual.json'),'--rounds='+str(a.rounds),'--duration-sec='+str(max(15,int(a.frames/a.input_hz)+8))],stimdir,'sender',stimEnv)
+    senderCommand=[str(senderExe),'--network-config='+str(out/'sender.ini'),'--channels-json='+str(out/'dual.json'),'--rounds='+str(a.rounds),'--duration-sec='+str(max(15,int(a.frames/a.input_hz)+8))]
+    if a.p20m2_60hz and a.direct_dds_sender:
+        senderCommand+=['--p20m2-60hz','--pacing-jsonl='+str(out/'send_pacing.jsonl')]
+    sender=launch(senderCommand,stimdir,'sender',stimEnv)
     if a.fault_reader:
         def induce_fault():
             events=[]

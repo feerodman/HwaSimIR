@@ -17,7 +17,8 @@ double SmoothDelta(double previous, double target, double dtSec, double heatTauS
 		return target;
 	}
 	const double tau = target >= previous ? heatTauSec : coolTauSec;
-	if (tau <= 1.0e-6 || dtSec <= 0.0)
+	if (dtSec <= 0.0) return previous;
+	if (tau <= 1.0e-6)
 	{
 		return target;
 	}
@@ -143,7 +144,7 @@ IRAeroThermalOutput IRAeroThermalModel::evaluate(
 	const double noseTarget = Clamp(aeroDeltaK * std::max(0.0, options.noseCoeff), 0.0, deltaMax);
 	const double edgeTarget = Clamp(aeroDeltaK * std::max(0.0, options.edgeCoeff), 0.0, deltaMax);
 	const double rearTarget = Clamp(aeroDeltaK * std::max(0.0, options.rearCoeff), 0.0, deltaMax);
-	const double dtSec = Clamp(input.dtSec, 0.0, 10.0);
+	const double dtSec = std::isfinite(input.dtSec) ? std::max(0.0, input.dtSec) : 0.0;
 	const bool initialized = state && state->initialized;
 
 	output.valid = true;

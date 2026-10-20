@@ -5,6 +5,7 @@
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QFile>
+#include <QTextStream>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -26,11 +27,14 @@ struct Route
 int main(int argc, char** argv)
 {
 	QCoreApplication app(argc,argv);
-	QString iniPath, jsonPath;
+	QString iniPath, jsonPath, pacingPath;
+	bool p20m2 = false;
 	for(const QString& arg:app.arguments())
 	{
 		if(arg.startsWith("--network-config=")) iniPath=arg.mid(17);
 		if(arg.startsWith("--channels-json=")) jsonPath=arg.mid(16);
+		if(arg.startsWith("--pacing-jsonl=")) pacingPath=arg.mid(15);
+		if(arg=="--p20m2-60hz") p20m2=true;
 	}
 	QFile input(jsonPath); if(!input.open(QIODevice::ReadOnly)) return 2;
 	const QJsonObject config=QJsonDocument::fromJson(input.readAll()).object();
@@ -80,6 +84,15 @@ int main(int argc, char** argv)
 	if(routes.empty())return 9;
 	const double stepMs=config["stepMs"].toDouble();
 	if(!std::isfinite(stepMs)||stepMs<=0)return 10;
+	if(p20m2)
+	{
+		if(std::abs(stepMs-1000.0/60.0)>1e-9)return 19;
+		for(const auto& r:routes)if(r.init.trackingInit.videoFps!=60||r.init.trackingInit.simMode!=1)return 19;
+		if(pacingPath.isEmpty())return 19;
+	}
+	QFile pacingFile(pacingPath);
+	if(!pacingPath.isEmpty() && (pacingFile.exists() || !pacingFile.open(QIODevice::WriteOnly))) return 20;
+	QTextStream pacing(&pacingFile); pacing.setRealNumberPrecision(17);
 	DdsStimClient client;DdsStimConfig dds;dds.domainId=config["domain"].toInt();dds.qosFile=config["qos"].toString().toStdString();dds.observeStopStatus=true;
 	std::string error;if(!client.start(dds,error)){std::cerr<<error;return 11;}
 	std::vector<DdsStimRoute> expected;
@@ -113,7 +126,8 @@ int main(int argc, char** argv)
 	const auto start=std::chrono::steady_clock::now();
 	for(size_t i=0;i<frames;++i)
 	{
-		std::this_thread::sleep_until(start+std::chrono::microseconds(static_cast<long long>(i*stepMs*1000)));
+		const auto deadline=start+std::chrono::nanoseconds(static_cast<long long>(i*stepMs*1000000.0));
+		std::this_thread::sleep_until(deadline);
 		for(const auto& r:routes)
 		{
 			const auto& row=r.rows[i];BYHWICD::DisplayC2cObjTrackingData d={};
@@ -125,8 +139,17 @@ int main(int argc, char** argv)
 			auto& w=d.weaponState;w.targetType=r.model;w.targetPlatID=3;w.targetID=3;w.lookatEn=true;w.viewValid=t.viewValid;w.strikeFlag=row[28].toInt()!=0;w.strikePart=2;
 			if(config["diagnosticReferenceMismatch"].toBool()&&i>=30&&i<60)w.targetType=r.model==0x22?0x33:0x22;
 			if(!client.sendRealtime(d,error)){control(3);return 17;}
+			if(pacingFile.isOpen())
+			{
+				const double wallMs=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();
+				pacing<<"{\"schema\":\"HwaSimIR.SendPacing.1\",\"row\":"<<qulonglong(i)
+					<<",\"platID\":"<<int(r.init.platID)<<",\"sensorID\":"<<int(r.init.sensorID)
+					<<",\"protocolUtcMs\":"<<d.time<<",\"sourceRelativeMs\":"<<row[0].toDouble()-r.rows.front()[0].toDouble()
+					<<",\"deadlineMs\":"<<i*stepMs<<",\"wallSendCompletedMs\":"<<wallMs<<"}\n";
+			}
 		}
 	}
+	if(pacingFile.isOpen()) { pacing.flush(); if(pacingFile.error()!=QFile::NoError)return 21; }
 	client.waitForAcknowledgments(1000,error);
 	if(!control(3)||!client.waitForStopStatus(120000,error)){std::cerr<<error;return 18;}
 	std::cout<<"[P20M DirectDDS] packetsPerRoute="<<frames<<" stopObserved=1"<<std::endl;

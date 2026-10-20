@@ -1,6 +1,7 @@
+param([string]$BuildDirectory='build-p20m-stim')
 $ErrorActionPreference='Stop'
 $repo=Split-Path -Parent $PSScriptRoot
-$build=Join-Path $repo 'build-p20m-stim\release'
+$build=Join-Path $repo "$BuildDirectory\release"
 $qt='D:\Qt\Qt5.12.12\5.12.12\mingw73_64'
 $sdk='F:\Programs\ZRDDS\ZRDDS_MinGW7.3.0\ZRDDS-2.4.5'
 $compiler='D:\Qt\Qt5.12.12\Tools\mingw730_64\bin\g++.exe'

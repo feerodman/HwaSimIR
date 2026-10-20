@@ -27,10 +27,13 @@ import p11_modtran_solar_heating_grid as heating
 import p11_modtran_humidity_qc as metrics
 import modtran_convert_to_si as convert
 from modtran_flux import parse_flux_at_target
+from p20m2_geometry_qc import canonical_case, actual_geometry
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT = ROOT / "logs/p20m/20261021_full_domain"
 BIN = Path("F:/Programs/PcModWin5/Bin")
+QC_FILES = ("p20m_modtran.py", "modtran_convert_to_si.py", "modtran_flux.py",
+            "p11_modtran_humidity_qc.py", "p20m2_geometry_qc.py")
 OUTPUTS = {"tape6": "MODOUT1.txt", "tape7": "MODOUT2.txt",
            "tape8": "MODOUT3.txt", "specflux": "spectral_flux.flx",
            "tape7.scn": "tape7.scn", "warnings.txt": "warnings.txt"}
@@ -156,14 +159,20 @@ def prepare_repair(root):
                             raise ValueError("Immutable repair deck differs: "+str(path))
                         path.write_text(text, encoding="ascii")
                         cases.append(dict(case_id=name, mode=mode, band=band, target=altitude,
-                                          requested_observer=altitude, requested_range=distance,
+                                          observer=altitude, range=distance,
                                           geometry_method=method, rh=85, visibility=6,
                                           input_file=str(path), input_sha256=digest(path)))
     manifest = dict(schema="HwaSimIR.P20M.Cases.1", dataset_id=root.name,
                     status="GEOMETRY_REPAIR_DEVELOPMENT_ONLY", cases=cases)
     path = root/"case_manifest.json"
     if path.exists() and read_json(path) != manifest:
-        raise ValueError("Immutable repair manifest differs")
+        previous = read_json(path)
+        previous_normalized = dict(previous, cases=[canonical_case(c) for c in previous["cases"]])
+        new_normalized = dict(manifest, cases=[canonical_case(c) for c in cases])
+        if previous_normalized != new_normalized:
+            raise ValueError("Immutable repair manifest differs")
+        print("Existing legacy repair manifest retained; QC canonicalizes field names", flush=True)
+        return
     atomic_json(path, manifest)
     print(f"Prepared {len(cases)} geometry repair experiments", flush=True)
 
@@ -210,11 +219,16 @@ def identity():
     result = dict(engine=str(BIN/"Mod5.2.1.0.exe"),
                   engine_sha256=digest(BIN/"Mod5.2.1.0.exe"),
                   database=db, engine_version="5.2.1 (confirmed in tape6)")
-    result["qc_code_sha256"] = {name: digest(ROOT/"tools"/name) for name in
-                                ("p20m_modtran.py", "modtran_convert_to_si.py", "modtran_flux.py",
-                                 "p11_modtran_humidity_qc.py")}
-    result["identity_sha256"] = hashlib.sha256(json.dumps(result, sort_keys=True).encode()).hexdigest()
+    result["identity_sha256"] = computation_identity(result)
+    result["qc_code_sha256"] = {name: digest(ROOT/"tools"/name) for name in QC_FILES}
+    result["qc_identity_sha256"] = hashlib.sha256(json.dumps(result["qc_code_sha256"], sort_keys=True).encode()).hexdigest()
     return result
+
+
+def computation_identity(value):
+    """QC code does not alter photons, nor consume an engine attempt."""
+    return hashlib.sha256(json.dumps({k: value[k] for k in
+        ("engine", "engine_sha256", "database", "engine_version")}, sort_keys=True).encode()).hexdigest()
 
 
 @contextlib.contextmanager
@@ -237,6 +251,7 @@ def run_lock():
 
 
 def qc_case(case, folder):
+    case = canonical_case(case)
     tape6 = (folder/"MODOUT1.txt").read_text(errors="replace")
     if "MODTRAN(R)svn-branch-5.2.1" not in tape6:
         raise ValueError("Missing expected official version in tape6")
@@ -273,23 +288,17 @@ def qc_case(case, folder):
     value = metrics.response_integral(rows, field, lo, hi)
     if case["band"] != "SOLAR_SHORTWAVE":
         value /= hi-lo
-    geometry = {}
-    if "observer" in case:
-        for key, label in (("observer", "H1ALT"), ("target", "H2ALT"), ("range", "HRANGE")):
-            echoes = [float(x) for x in re.findall(label+r"\s*=\s*([-+.\d]+)\s*KM", tape6)]
-            if not echoes:
-                raise ValueError(f"Missing {label} in tape6")
-            geometry[key] = dict(requested=case[key], input_echo=echoes[0], actual=echoes[-1])
-            # Echo precision is 1e-5 km; this is not an interpolation acceptance tolerance.
-            if abs(echoes[0]-case[key]) > 5.1e-6:
-                raise ValueError(f"Geometry input mismatch: {geometry[key]}")
+    geometry = actual_geometry(case, tape6)
     warnings = [line.strip() for line in tape6.splitlines() if "WARNING" in line.upper()]
     return dict(status="SPECTRUM_QC_PASS_GEOMETRY_REVIEW_REQUIRED", rows=len(rows),
                 component=field, value=value, response_um=[lo, hi],
                 response="integral" if case["band"] == "SOLAR_SHORTWAVE" else "mean",
                 flux_levels=levels, geometry=geometry, warnings=warnings,
                 diagnostic_direct_valid=all(r.get("direct_valid", True) for r in rows),
-                minimum=min(values), maximum=max(values))
+                minimum=min(values), maximum=max(values),
+                gates=dict(input="PASS_SCHEMA", engine="EXECUTED", spectrum="PASS",
+                           geometry=geometry["status"], source="NOT_VERIFIED",
+                           cell="NOT_VERIFIED", accuracy="NOT_VERIFIED", release="NOT_ELIGIBLE"))
 
 
 def run(root, resume, limit, timeout, max_attempts):
@@ -298,13 +307,19 @@ def run(root, resume, limit, timeout, max_attempts):
         # Keep the identity referenced by earlier checkpoints before advancing.
         history = root/"engine_identities"
         history.mkdir(exist_ok=True)
+        qc_history = root/"qc_identities"
+        qc_history.mkdir(exist_ok=True)
         previous = root/"engine_database_identity.json"
         if previous.exists():
             old = read_json(previous)
             atomic_json(history/(old["identity_sha256"]+".json"), old)
+            if "qc_identity_sha256" in old:
+                atomic_json(qc_history/(old["qc_identity_sha256"]+".json"), old.get("qc_code_sha256", {}))
+        atomic_json(qc_history/(ident["qc_identity_sha256"]+".json"), ident["qc_code_sha256"])
         atomic_json(history/(ident["identity_sha256"]+".json"), ident)
         atomic_json(root/"engine_database_identity.json", ident)
         cases = read_json(root/"case_manifest.json")["cases"]
+        planned_case_count = len(cases)
         if limit:
             cases = cases[:limit]
         completed = []
@@ -316,12 +331,25 @@ def run(root, resume, limit, timeout, max_attempts):
             if digest(inp) != case["input_sha256"]:
                 raise ValueError("Input manifest hash mismatch: " + str(inp))
             prior = read_json(checkpoint) if checkpoint.exists() else None
-            if (resume and prior and prior["status"] == "PASS" and
-                    prior["identity_sha256"] == ident["identity_sha256"] and
+            prior_identity_file = history/(prior.get("identity_sha256", "")+".json") if prior else None
+            prior_identity = read_json(prior_identity_file) if prior_identity_file and prior_identity_file.exists() else None
+            if (resume and prior and prior.get("exit_code") == 0 and
+                    prior_identity and computation_identity(prior_identity) == ident["identity_sha256"] and
                     prior["input_sha256"] == case["input_sha256"] and
+                    prior.get("output_sha256") and
                     all((folder/k).is_file() and digest(folder/k) == v
                         for k, v in prior["output_sha256"].items())):
-                completed.append(prior)
+                # Re-evaluate immutable raw even when the previous QC failed.
+                # Deterministic numerical failures are not rerun blindly.
+                review = dict(prior, qc_identity_sha256=ident["qc_identity_sha256"],
+                              execution_action="REUSED_IMMUTABLE_RAW_NO_ENGINE_ATTEMPT")
+                try:
+                    review.update(qc=qc_case(case, folder), status="PASS")
+                    review.pop("error", None)
+                except ValueError as exc:
+                    review.update(status="FAIL", error=str(exc))
+                atomic_json(folder/"qc_review.json", review)
+                completed.append(review)
                 continue
             # Fresh attempt directory makes stale output reuse impossible.
             attempt = 1
@@ -343,6 +371,7 @@ def run(root, resume, limit, timeout, max_attempts):
             shutil.copy2(inp, work/"modin")
             row = dict(case_id=case["case_id"], input_sha256=case["input_sha256"],
                        identity_sha256=ident["identity_sha256"], attempt=attempt,
+                       qc_identity_sha256=ident["qc_identity_sha256"],
                        started_utc=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                        mode=case["mode"], status="RUNNING")
             atomic_json(checkpoint, row)
@@ -376,7 +405,9 @@ def run(root, resume, limit, timeout, max_attempts):
             atomic_json(root/"run_manifest.json", dict(cases=completed, complete=False))
             print(f"{index+1}/{len(cases)} {case['case_id']} {row['status']} "
                   f"{row['elapsed_seconds']:.2f}s {row.get('error','')}", flush=True)
-        atomic_json(root/"run_manifest.json", dict(cases=completed, complete=True))
+        atomic_json(root/"run_manifest.json", dict(cases=completed,
+                    complete=len(completed)==planned_case_count,
+                    selected_cases_complete=True, planned_case_count=planned_case_count))
 
 
 def qc(root):
@@ -408,8 +439,7 @@ def qc(root):
                    seconds_by_mode={k: dict(count=len(v), mean=sum(v)/len(v), maximum=max(v))
                                     for k, v in groups.items()},
                    required_domain_validated=False,
-                   qc_code_sha256={name: digest(ROOT/"tools"/name) for name in
-                       ("p20m_modtran.py", "modtran_convert_to_si.py", "modtran_flux.py")},
+                   qc_code_sha256={name: digest(ROOT/"tools"/name) for name in QC_FILES},
                    cases=results,
                    failed=[r for r in results if r["status"] != "PASS"])
     atomic_json(root/"pilot_qc.json", summary)
@@ -430,7 +460,8 @@ def main():
     if args.max_attempts < 1 or args.timeout <= 0 or not math.isfinite(args.timeout):
         ap.error("max-attempts and timeout must be positive")
     root = args.root.resolve()
-    root.relative_to(ROOT/"logs/p20m")
+    if not any(root.is_relative_to(ROOT/part) for part in ("logs/p20m", "logs/p20m2")):
+        ap.error("task root must be under logs/p20m or logs/p20m2")
     root.mkdir(parents=True, exist_ok=True)
     if args.action == "prepare":
         prepare(root)

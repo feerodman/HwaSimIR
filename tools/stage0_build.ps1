@@ -4,7 +4,8 @@ param(
     [string]$FFmpegRoot = $env:FFMPEG_ROOT,
     [switch]$SkipQt,
     [switch]$SkipVs,
-    [string]$QtBuildDirectory = ''
+    [string]$QtBuildDirectory = '',
+    [string]$VsBuildDirectory = ''
 )
 
 $ErrorActionPreference = "Stop"
@@ -43,6 +44,13 @@ $qtDataFiles = @(
     (Join-Path $rootPath "DataDrivenTestQT\ordinary_demo_1km.txt.json")
 )
 $vsExe = Join-Path $rootPath "HwaSim_IR\Bin\HwaSim_IR.exe"
+if ($VsBuildDirectory) {
+    $isolatedVsRoot = [IO.Path]::GetFullPath((Join-Path $rootPath $VsBuildDirectory))
+    if (-not $isolatedVsRoot.StartsWith($rootPath.TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'VS build directory must be inside the workspace'
+    }
+    $vsExe = Join-Path $isolatedVsRoot 'bin\HwaSim_IR.exe'
+}
 
 function Assert-Path {
     param(
@@ -75,6 +83,10 @@ Write-Host ""
 if (-not $SkipVs) {
     Write-Host "Building HwaSimIR VS project..."
     $msbuildArgs = @($vsSolution, "/m", "/t:Build", "/p:Configuration=$Configuration", "/p:Platform=$Platform", "/verbosity:minimal")
+    if ($VsBuildDirectory) {
+        $msbuildArgs += "/p:OutDir=$isolatedVsRoot\bin\"
+        $msbuildArgs += "/p:IntDir=$isolatedVsRoot\obj\"
+    }
     if (-not [string]::IsNullOrWhiteSpace($FFmpegRoot)) {
         Assert-Path (Join-Path $FFmpegRoot "include\libavcodec\avcodec.h") "FFmpeg headers"
         Assert-Path (Join-Path $FFmpegRoot "lib\avcodec.lib") "FFmpeg import library"

@@ -513,7 +513,7 @@ IRHotspotState IRTemperatureModel::updateEngineRear(
 		state.currentTempK = ambientTempK;
 	}
 
-	const float safeDt = std::max(0.0f, std::min(dtSec, 2.0f));
+	const float safeDt = std::isfinite(dtSec) ? std::max(0.0f, dtSec) : 0.0f;
 	const float desiredTempK = engineState ? state.targetTempK : state.ambientTempK;
 	const float tauSec = clampPositive(engineState ? state.heatTauSec : state.coolTauSec, 1.0f);
 	const float alpha = 1.0f - std::exp(-safeDt / tauSec);

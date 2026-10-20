@@ -15,10 +15,32 @@ IRMaterialThermalOutput IRMaterialThermalModel::update(const IRMaterialThermalIn
 	IRMaterialThermalOutput out;
 	if(state==nullptr){out.fallbackReason="state_missing";return out;}
 	if(!o.enabled){out.solarDeltaK=state->solarDeltaK;out.fallbackReason="disabled";return out;}
+	for(double value : {input.baseTempK,input.aeroDeltaK,input.airTempK,input.environmentTempK,
+		input.targetSpeedMps,input.directIrradianceWm2,input.diffuseIrradianceWm2,input.sunVisibilityThermal,
+		p.solarAbsorptivity,p.thermalEmissivity,p.densityKgM3,p.specificHeatJkgK,p.conductivityWmK,
+		p.effectiveThicknessM,o.defaultEffectiveThicknessM,o.convectionBaseWm2K,
+		o.convectionSpeedCoeffWm2KPerSqrtMps,o.coreRelaxationWm2K,o.skyFactor,o.maxSolarDeltaK})
+		if(!std::isfinite(value)){out.fallbackReason="nonfinite_physical_input";return out;}
+	for(double value : input.sunDirectionLocal)
+		if(!std::isfinite(value)){out.fallbackReason="nonfinite_sun_direction";return out;}
+	for(double value : state->solarDeltaK)
+		if(!std::isfinite(value)){out.fallbackReason="nonfinite_thermal_history";return out;}
+	for(double value : {input.baseTempK,input.aeroDeltaK,input.airTempK,input.environmentTempK,
+		input.targetSpeedMps,input.directIrradianceWm2,input.diffuseIrradianceWm2,input.sunVisibilityThermal,
+		p.solarAbsorptivity,p.thermalEmissivity,p.densityKgM3,p.specificHeatJkgK,p.conductivityWmK,
+		p.effectiveThicknessM,o.defaultEffectiveThicknessM,o.convectionBaseWm2K,
+		o.convectionSpeedCoeffWm2KPerSqrtMps,o.coreRelaxationWm2K,o.skyFactor,o.maxSolarDeltaK})
+		if(!std::isfinite(value)){out.fallbackReason="nonfinite_physical_input";return out;}
+	for(double value : input.sunDirectionLocal)
+		if(!std::isfinite(value)){out.fallbackReason="nonfinite_sun_direction";return out;}
+	for(double value : state->solarDeltaK)
+		if(!std::isfinite(value)){out.fallbackReason="nonfinite_thermal_history";return out;}
 	const double thickness=p.effectiveThicknessM>1.0e-6?p.effectiveThicknessM:o.defaultEffectiveThicknessM;
 	const double capacity=p.densityKgM3*p.specificHeatJkgK*thickness;
 	if(!std::isfinite(capacity)||capacity<=1.0){out.fallbackReason="invalid_areal_heat_capacity";return out;}
-	const double dt=Clamp(input.dtSec,0.0,1.0);
+	if(!std::isfinite(input.dtSec)||input.dtSec<0.0||input.dtSec>3600.0)
+	{out.fallbackReason="invalid_or_excessive_simulation_dt";return out;}
+	const double dt=input.dtSec;
 	const double baseline=std::max(1.0,input.baseTempK+input.aeroDeltaK);
 	const double h=std::max(0.0,o.convectionBaseWm2K+o.convectionSpeedCoeffWm2KPerSqrtMps*std::sqrt(std::max(0.0,input.targetSpeedMps)));
 	const std::array<std::array<double,3>,6> normals={{{{1,0,0}},{{-1,0,0}},{{0,1,0}},{{0,-1,0}},{{0,0,1}},{{0,0,-1}}}};
@@ -28,12 +50,25 @@ IRMaterialThermalOutput IRMaterialThermalModel::update(const IRMaterialThermalIn
 	{
 		const double ndotl=std::max(0.0,(normals[i][0]*input.sunDirectionLocal[0]+normals[i][1]*input.sunDirectionLocal[1]+normals[i][2]*input.sunDirectionLocal[2])/sunLen);
 		const double qSolar=Clamp(p.solarAbsorptivity,0.0,1.0)*(std::max(0.0,input.directIrradianceWm2)*ndotl*Clamp(input.sunVisibilityThermal,0.0,1.0)+std::max(0.0,input.diffuseIrradianceWm2)*Clamp(o.skyFactor,0.0,1.0));
-		const double temp=std::max(1.0,baseline+state->solarDeltaK[i]);
-		const double qConv=h*(temp-input.airTempK);
-		const double qRad=Clamp(p.thermalEmissivity,0.0,1.0)*kSigma*(std::pow(temp,4.0)-std::pow(std::max(1.0,input.environmentTempK),4.0));
 		const double conductionLimit=std::max(0.0,o.coreRelaxationWm2K);
-		const double qCond=std::min(std::max(0.0,p.conductivityWmK/thickness),conductionLimit)*(temp-baseline);
-		state->solarDeltaK[i]=Clamp(state->solarDeltaK[i]+dt*(qSolar-qConv-qRad-qCond)/capacity,-50.0,std::max(0.0,o.maxSolarDeltaK));
+		const double conductance=std::min(std::max(0.0,p.conductivityWmK/thickness),conductionLimit);
+		const double maxTemp=std::max(1.0,baseline+std::max(0.0,o.maxSolarDeltaK));
+		const double rate=h+conductance+4.0*Clamp(p.thermalEmissivity,0.0,1.0)*kSigma*std::pow(maxTemp,3.0);
+		const double maxStep=std::min(.1,rate>0.0?.25*capacity/rate:.1);
+		if(!std::isfinite(rate)||maxStep<=0.0||dt/maxStep>1000000.0)
+		{out.fallbackReason="thermal_integration_resolution_exceeded";return out;}
+		if(!std::isfinite(rate)||maxStep<=0.0||dt/maxStep>1000000.0)
+		{out.fallbackReason="thermal_integration_resolution_exceeded";return out;}
+		const size_t steps=static_cast<size_t>(std::max(1.0,std::ceil(dt/maxStep)));
+		const double step=dt/static_cast<double>(steps);
+		for(size_t s=0;s<steps;++s)
+		{
+			const double temp=std::max(1.0,baseline+state->solarDeltaK[i]);
+			const double qConv=h*(temp-input.airTempK);
+			const double qRad=Clamp(p.thermalEmissivity,0.0,1.0)*kSigma*(std::pow(temp,4.0)-std::pow(std::max(1.0,input.environmentTempK),4.0));
+			const double qCond=conductance*(temp-baseline);
+			state->solarDeltaK[i]=Clamp(state->solarDeltaK[i]+step*(qSolar-qConv-qRad-qCond)/capacity,-50.0,std::max(0.0,o.maxSolarDeltaK));
+		}
 		out.peakSolarFluxWm2=std::max(out.peakSolarFluxWm2,qSolar);
 		out.finalTempK[i]=baseline+state->solarDeltaK[i];
 	}

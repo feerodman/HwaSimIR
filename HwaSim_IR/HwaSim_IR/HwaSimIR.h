@@ -59,6 +59,8 @@
 #include "IR/IRSceneMaterialMapper.h"
 #include "IR/IRSolarPosition.h"
 #include "IR/IRSimulationUtc.h"
+#include "IR/IRSimulationClock.h"
+#include "IR/IRPhysicalTrace.h"
 #include "IR/IRSolarHeatingLut.h"
 #include "IR/IRRadianceModelV2.h"
 #include "IR/IRRuntimeConfig.h"
@@ -474,6 +476,8 @@ private:
 	std::string m_m1FallbackUtcDate;
 	std::string m_m1UtcTimeMode = "UnixEpochMs";
 	IRSimulationUtc m_simulationUtc;
+	IRSimulationClock m_physicsClock;
+	double m_lastIrSimulationTime = -1.0;
 	std::string m_lastMissingCameraKey;
 	std::uint64_t m_missingCameraReferenceCount = 0;
 	std::string m_m1AtmosphereModel = "Mid-Latitude Summer";

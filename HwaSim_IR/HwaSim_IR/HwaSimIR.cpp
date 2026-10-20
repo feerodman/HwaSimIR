@@ -1779,6 +1779,8 @@ void HwaSimIR::run() {
 				pendingFrame.telemetry.processStartTimeNs = IRPerfStats::steadyTimeNs();
 				m_currentFrameTelemetry = pendingFrame.telemetry;
 				m_realTimeSceneData = pendingFrame.data;
+				m_physicsClock.accept(pendingFrame.telemetry.sourceSeq, pendingFrame.data.time,
+					m_m1UtcTimeMode, m_m1FallbackUtcDate);
 				hasDisplayFrame = true;
 				remainingInputQueueDepth = static_cast<int>(m_pendingDisplayFrames.size());
 			}
@@ -10685,6 +10687,7 @@ void HwaSimIR::ProcessControlCmdOnMainThread(const BYHWICD::ControlP2cX1ObjTrack
 		// TODO: 实现停止仿真逻辑（停止渲染、保存数据等）
 		m_isSimRunning.store(false);
 		// Stage2B：同步转发停止控制命令，触发显示端 flush 并关闭视频/数据/标注文件。
+		IRPhysicalTrace::instance().flush();
 		bool outputDrainOk = true;
 		bool stopForwardOk = true;
 		if (m_pTcpThread) {
@@ -15825,7 +15828,7 @@ IRModtranRadianceResult HwaSimIR::QueryStage5ModtranRadiance(const TargetPlatfor
 	double targetAltKm = IsReasonableAltitudeMeters(targetPlat.targetState.targetLoc.alt)
 		? targetPlat.targetState.targetLoc.alt / 1000.0
 		: observerAltKm;
-	const double rangeKmRaw = std::max(0.001, static_cast<double>(EstimateRangeToCamera(targetPlat.nodePath)) / 1000.0);
+	const double rangeKmRaw = static_cast<double>(EstimateRangeToCamera(targetPlat.nodePath)) / 1000.0;
 	const double visibilityKmRaw = std::max(0.001, environment.visibilityMeters / 1000.0);
 	const double solarZenithDeg = std::max(0.0, std::min(180.0, 90.0 - environment.sunElevationDeg));
 
@@ -16818,7 +16821,7 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 	const double targetAltKmForLog = IsReasonableAltitudeMeters(targetPlat.targetState.targetLoc.alt)
 		? targetPlat.targetState.targetLoc.alt / 1000.0
 		: observerAltKmForLog;
-	const double rangeKmForLog = std::max(0.001, static_cast<double>(EstimateRangeToCamera(targetPlat.nodePath)) / 1000.0);
+	const double rangeKmForLog = static_cast<double>(EstimateRangeToCamera(targetPlat.nodePath)) / 1000.0;
 	if (stage5Input.m1RuntimeAffectsImage && modtranRadiance.valid)
 	{
 		const std::uint64_t atmosphereSeq = m_currentFrameTelemetry.sourceSeq > 0
@@ -17128,6 +17131,48 @@ void HwaSimIR::ApplyStage5RadianceDebug(TargetPlatformData& targetPlat, const IR
 			<< " weatherMappingMonotonic=1"
 			<< " fallbackReason=" << stage5Input.modtranFallbackReason
 			<< std::endl;
+	}
+	if (IRPhysicalTrace::instance().enabled() && frameSeq > 0)
+	{
+		IRPhysicalTrace::Record trace;
+		trace.sourceSeq = frameSeq; trace.generation = m_referenceGeneration;
+		trace.timeValid = m_physicsClock.state().valid;
+		trace.utcMs = m_physicsClock.state().utcMs; trace.relativeSec = m_physicsClock.state().relativeSec;
+		trace.targetKey = targetKey; trace.band = IRBandName(components.band);
+		trace.datasetId = m_p13AtmosphereIdentityReady ?
+			"sha256:" + m_p13ExpectedFormalLutSha256 : "IDENTITY_NOT_VERIFIED";
+		trace.cellId = "NOT_DECLARED_LEGACY"; trace.sourceCases = modtranRadiance.sourceCaseIds;
+		const auto& weapon = m_realTimeSceneData.weaponState;
+		bool matched = false;
+		for (int i = 0; i < std::min(5, static_cast<int>(m_realTimeSceneData.targetNumValid)); ++i)
+		{
+			const auto& t = m_realTimeSceneData.targetState[i];
+			if (t.targetType == weapon.targetType && t.targetPlatID == weapon.targetPlatID &&
+				t.targetID == weapon.targetID && t.viewValid) matched = true;
+		}
+		trace.cameraStatus = !weapon.lookatEn ? "FREE_CAMERA_NOT_VERIFIED" :
+			!matched ? "INVALID_REFERENCE_OR_VIEW" : rangeKmForLog == 0.0 ? "COINCIDENT_DIRECTION_UNDEFINED" : "MATCHED_REFERENCE";
+		trace.overall = modtranRadiance.valid && trace.timeValid &&
+			trace.cameraStatus == "MATCHED_REFERENCE" && m_p13AtmosphereIdentityReady ?
+			"LEGACY_DIAGNOSTIC_NOT_PHYSICS_ACCEPTED" : "INVALID";
+		trace.error = !trace.timeValid ? m_physicsClock.state().status : modtranRadiance.fallbackReason;
+		trace.input = {{"observerAltKm", observerAltKmForLog}, {"targetAltKm", targetAltKmForLog},
+			{"rangeKm", rangeKmForLog}, {"visibilityKm", environment.visibilityMeters/1000.0},
+			{"humidityPercent", environment.humidityPercent}, {"szaDeg", m_m1SolarState.zenithDeg},
+			{"platformLatDeg", m_realTimeSceneData.platLoc.lat}, {"platformLonDeg", m_realTimeSceneData.platLoc.lon},
+			{"targetType", static_cast<double>(targetPlat.targetState.targetType)},
+			{"targetPlatID", static_cast<double>(targetPlat.targetState.targetPlatID)},
+			{"targetID", static_cast<double>(targetPlat.targetState.targetID)},
+			{"protocolTimeMs", m_realTimeSceneData.time}};
+		const std::string validity = modtranRadiance.valid && trace.timeValid ? "VALID" : "NOT_VERIFIED";
+		trace.components["tau"] = {modtranRadiance.tauUp, "1", validity};
+		trace.components["pathThermal"] = {modtranRadiance.pathThermalWm2SrUm, "W/(m2 sr um)", validity};
+		trace.components["direct"] = {modtranRadiance.directSolarIrradianceWm2Um, "W/(m2 um)", validity};
+		trace.components["downward"] = {modtranRadiance.downwardSkyDiffuseIrradianceWm2Um, "W/(m2 um)", validity};
+		trace.components["pathSolarScatter"] = {modtranRadiance.pathScatteringRadianceWm2SrUm, "W/(m2 sr um)", validity};
+		trace.components["surfaceTemperature"] = {components.materialTempK, "K", "VALID"};
+		trace.components["sensorRadiance"] = {components.m1SensorRadiance, "W/(m2 sr um)", validity};
+		IRPhysicalTrace::instance().write(trace);
 	}
 	if (modtranCompareEnabled && stage5LogDue)
 	{
@@ -17581,8 +17626,9 @@ void HwaSimIR::UpdateM1SolarPosition(IRRuntimeEnvironment& environment, bool for
 	input.utcMonth = utc.month;
 	input.utcDay = utc.day;
 	input.utcHour = utc.hour;
-	m_m1SolarState = utc.valid ? m_m1SolarPosition.evaluate(input) : IRSolarPositionOutput();
+	m_m1SolarState = utc.valid && m_physicsClock.state().valid ? m_m1SolarPosition.evaluate(input) : IRSolarPositionOutput();
 	if (!utc.valid) m_m1SolarState.fallbackReason = utc.reason;
+	else if (!m_physicsClock.state().valid) m_m1SolarState.fallbackReason = m_physicsClock.state().status;
 	if (m_m1SolarOverrideEnabled)
 	{
 		const double radiansPerDegree = 3.14159265358979323846 / 180.0;
@@ -17954,7 +18000,7 @@ void HwaSimIR::UpdateL1MaterialThermalState(TargetPlatformData& targetPlat, cons
 	const size_t count = std::min(static_cast<size_t>(8), std::max(static_cast<size_t>(1), binding.entries.size()));
 	std::vector<IRMaterialThermalState>& states = m_l1ThermalStates[targetKey];
 	if (states.size() != count) states.resize(count);
-	const double now = ClockObject::get_global_clock()->get_frame_time();
+	const double now = m_physicsClock.state().relativeSec;
 	double thermalDt = dtSec;
 	const std::map<std::string, double>::const_iterator lastIt = m_l1LastThermalUpdateTime.find(targetKey);
 	if (lastIt != m_l1LastThermalUpdateTime.end()) thermalDt = now - lastIt->second;
@@ -18019,7 +18065,7 @@ void HwaSimIR::UpdateL1MaterialThermalState(TargetPlatformData& targetPlat, cons
 				properties.thicknessSource = "fallback";
 			}
 			IRMaterialThermalInput input;
-			input.dtSec = std::min(1.0, std::max(0.0, thermalDt));
+			input.dtSec = std::max(0.0, thermalDt);
 			input.baseTempK = baseTempK;
 			// Aerodynamic heating is applied later as a spatial GPU field.  Feeding a
 			// body-wide delta into every material history would heat the complete model.
@@ -18080,8 +18126,8 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 	{
 		envBuildStart = std::chrono::steady_clock::now();
 	}
-	double current_time = ClockObject::get_global_clock()->get_frame_time();
-	float stage4DtSec = 0.033f;
+	double current_time = m_physicsClock.state().relativeSec;
+	float stage4DtSec = 0.0f;
 	if (m_lastStage4UpdateTime >= 0.0)
 	{
 		stage4DtSec = static_cast<float>(current_time - m_lastStage4UpdateTime);
@@ -18401,6 +18447,11 @@ void HwaSimIR::UpdatePlatformIRStatus() {
 void HwaSimIR::ResetRenderSchedulingState()
 {
 	m_simulationUtc.reset();
+	m_physicsClock.reset();
+	m_lastIrSimulationTime = -1.0;
+	m_lastStage4UpdateTime = -1.0;
+	m_l1LastThermalUpdateTime.clear();
+	m_l1ThermalStates.clear();
 	m_lastMissingCameraKey.clear();
 	m_missingCameraReferenceCount = 0;
     m_inputRoundPreparedByInit=false;
@@ -18759,12 +18810,19 @@ AsyncTask::DoneStatus HwaSimIR::shader_update_task(GenericAsyncTask* task, void*
 	if (self->m_isSimRunning.load() &&
 		(!frameDriven || self->m_syncFrameActive.load())) {
 		const std::uint64_t sourceSeq = self->m_currentFrameTelemetry.sourceSeq;
-		const double targetFps = std::max(1.0, static_cast<double>(self->m_targetVideoFps.load()));
-		const std::uint64_t updateStride = static_cast<std::uint64_t>(
-			std::max(1.0, std::floor(targetFps / std::max(1.0, self->m_irUpdateHz) + 0.5)));
+		const double simTime = self->m_physicsClock.state().relativeSec;
 		std::ostringstream state;
-		state << self->m_sensorParam.trackerSensorBand
+		state << std::setprecision(17) << self->m_sensorParam.trackerSensorBand
+			<< ":" << self->m_referenceGeneration
+			<< ":" << self->m_realTimeSceneData.platLoc.lat
+			<< ":" << self->m_realTimeSceneData.platLoc.lon
+			<< ":" << self->m_realTimeSceneData.platLoc.alt
+			<< ":" << self->m_realTimeSceneData.platLoc.yaw
+			<< ":" << self->m_realTimeSceneData.platLoc.pitch
+			<< ":" << self->m_realTimeSceneData.platLoc.roll
 			<< ":" << self->m_realTimeSceneData.targetNumValid
+			<< ":" << self->m_realTimeSceneData.weaponState.lookatEn
+			<< ":" << self->m_realTimeSceneData.weaponState.viewValid
 			<< ":" << self->m_realTimeSceneData.weaponState.strikeFlag
 			<< ":" << self->m_realTimeSceneData.weaponState.strikePart
 			<< ":" << self->m_realTimeSceneData.weaponState.targetType
@@ -18778,21 +18836,31 @@ AsyncTask::DoneStatus HwaSimIR::shader_update_task(GenericAsyncTask* task, void*
 				<< ":" << target.targetID
 				<< ":" << target.engineState
 				<< ":" << target.viewValid
-				<< ":" << target.targetState;
+				<< ":" << target.targetState
+				<< ":" << target.targetLoc.lat
+				<< ":" << target.targetLoc.lon
+				<< ":" << target.targetLoc.alt
+				<< ":" << target.targetLoc.yaw
+				<< ":" << target.targetLoc.pitch
+				<< ":" << target.targetLoc.roll
+				<< ":" << target.targetLoc.speed;
 		}
 		const std::string stateKey = state.str();
 		const bool stateChanged = stateKey != self->m_lastIrUpdateState;
 		const bool updateDue = sourceSeq > 0 && (
 			sourceSeq <= 3 ||
 			self->m_lastIrUpdateSourceSeq == 0 ||
-			sourceSeq >= self->m_lastIrUpdateSourceSeq + updateStride);
+			self->m_lastIrSimulationTime < 0.0 ||
+			simTime - self->m_lastIrSimulationTime >= 1.0 / self->m_irUpdateHz);
 		self->UpdateGameSpriteAnimation();
         self->UpdateStage7PrecipitationBatch();
         self->UpdateP7OrdinaryIllumination();
 		self->UpdateP5GraphicsTestScene();
         self->UpdateP6GraphicsTestScene();
-		if (stateChanged || updateDue)
+		if (self->m_physicsClock.state().valid &&
+			(stateChanged || updateDue || IRPhysicalTrace::instance().enabled()))
 		{
+			self->m_lastIrSimulationTime = simTime;
 			const auto begin = std::chrono::steady_clock::now();
 			self->UpdatePlatformIRStatus();
 			self->m_perfStats.recordIrUpdate(std::chrono::duration<double, std::milli>(
