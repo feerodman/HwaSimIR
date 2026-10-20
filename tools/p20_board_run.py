@@ -38,6 +38,7 @@ ap.add_argument('--diagnostic-reference-mismatch',action='store_true')
 ap.add_argument('--scheduling',choices=['original','performance'],default='original')
 ap.add_argument('--p20m2-60hz',action='store_true',help='Require 60 Hz input and videoFps=60; record direct-sender deadlines')
 ap.add_argument('--receiver-directory',default='build-p19-customer-receiver/release')
+ap.add_argument('--ffmpeg-directory',default='.deps/ffmpeg-n8.1-win64-gpl-shared/ffmpeg-n8.1-latest-win64-gpl-shared-8.1/bin')
 ap.add_argument('--sender-config',default='DataDrivenTestQT/NetworkConfig.ini')
 ap.add_argument('--physical-evidence',action='store_true')
 ap.add_argument('--linear-seq',type=int,default=0)
@@ -63,7 +64,7 @@ def ssh(command):return subprocess.check_output(['ssh',*opts,'root@192.168.1.116
 def board_audit(role):
     return ('/tmp/hwasimir-p20-logs/'+a.name+'/'+role if a.tmp_board_logs else receipt['instances'][role]['root']+'/logs/'+a.name)
 rxdir=ROOT/a.receiver_directory;stimdir=ROOT/a.stim_directory
-ffdir=ROOT/'.deps/ffmpeg-n8.1-win64-gpl-shared/ffmpeg-n8.1-latest-win64-gpl-shared-8.1/bin'
+ffdir=ROOT/a.ffmpeg_directory
 env['PATH']=str(rxdir)+os.pathsep+env['PATH']
 testQos=out/'qos.xml';testQos.write_text((ROOT/'HwaSim_IR/Bin/Config/DDS/ZRDDS_PROTOCOL_QOS.xml').read_text(encoding='utf-8-sig').replace('tcpv4://default//0',a.transport+'://default//0'),encoding='utf-8')
 if a.sender_tcp_nodelay:

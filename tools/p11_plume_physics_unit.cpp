@@ -234,7 +234,39 @@ int main(int argc, char** argv)
 		transientInput.dtSec = 100.0f;
 		transientInput.ambientTempK = 300.0f;
 		transientInput.band = band;
+		transientInput.dtSec = 0.0f;
+		const IREnginePlumeOutput firstRunning = transientModel.update(transientInput);
+		const IREnginePlumeOutput pausedRunning = transientModel.update(transientInput);
+		log.boolean(std::string("first_running_snapshot_hot_at_zero_dt_") + bandName(band),
+			firstRunning.coreTempK == firstRunning.coreTargetTempK &&
+			firstRunning.haloTempK == firstRunning.haloTargetTempK &&
+			pausedRunning.coreSourceRadianceWm2SrUm == firstRunning.coreSourceRadianceWm2SrUm,
+			"first engine-on observation is an operating snapshot; pause preserves state");
+		transientModel.resetRuntime();
+		transientInput.engineState = false;
+		const IREnginePlumeOutput firstOff = transientModel.update(transientInput);
+		transientInput.engineState = true;
+		const IREnginePlumeOutput ignition = transientModel.update(transientInput);
+		transientInput.dtSec = 0.1f;
+		const IREnginePlumeOutput warming = transientModel.update(transientInput);
+		log.boolean(std::string("observed_ignition_retains_transient_") + bandName(band),
+			!firstOff.nodeVisible && ignition.coreTempK == firstOff.coreTempK &&
+			warming.coreTempK > ignition.coreTempK && warming.coreTempK < warming.coreTargetTempK,
+			"off-to-on does not jump to steady state and integrates only simulation dt");
+		transientInput.dtSec = 100.0f;
 		transientModel.update(transientInput);
+		IRTemperatureModel rearModel;
+		const IRHotspotState rearRunning = rearModel.updateEngineRear("AIM120D", "rear-running", true, 0.0f, 300.0f);
+		const IRHotspotState rearPaused = rearModel.updateEngineRear("AIM120D", "rear-running", true, 0.0f, 300.0f);
+		const IRHotspotState rearOff = rearModel.updateEngineRear("AIM120D", "rear-ignition", false, 0.0f, 300.0f);
+		const IRHotspotState rearIgnition = rearModel.updateEngineRear("AIM120D", "rear-ignition", true, 0.0f, 300.0f);
+		const IRHotspotState rearWarming = rearModel.updateEngineRear("AIM120D", "rear-ignition", true, 0.1f, 300.0f);
+		log.boolean(std::string("rear_snapshot_and_ignition_") + bandName(band),
+			rearRunning.enabled && rearRunning.currentTempK == rearRunning.targetTempK &&
+			rearPaused.currentTempK == rearRunning.currentTempK && !rearOff.enabled &&
+			rearIgnition.currentTempK == 300.0f && rearWarming.currentTempK > 300.0f &&
+			rearWarming.currentTempK < rearWarming.targetTempK,
+			"local rear source uses snapshot initialization and preserves observed ignition inertia");
 		transientInput.engineState = false;
 		transientInput.dtSec = 0.0f;
 		const IREnginePlumeOutput immediateOff = transientModel.update(transientInput);

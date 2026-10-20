@@ -510,7 +510,9 @@ IRHotspotState IRTemperatureModel::updateEngineRear(
 	}
 	else
 	{
-		state.currentTempK = ambientTempK;
+		// First observation is an engine-state snapshot, not an ignition edge.
+		// Match the local plume initialization; retain history on later edges.
+		state.currentTempK = engineState ? state.targetTempK : ambientTempK;
 	}
 
 	const float safeDt = std::isfinite(dtSec) ? std::max(0.0f, dtSec) : 0.0f;

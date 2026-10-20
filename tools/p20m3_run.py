@@ -5,7 +5,7 @@ R=Path(__file__).resolve().parents[1]
 ap=argparse.ArgumentParser(description=__doc__)
 ap.add_argument('--case',choices=['native','csv1','csv2','csv3','all-csv','smoke'],required=True)
 ap.add_argument('--name',default='p20m3_'+datetime.datetime.now().strftime('%Y%m%d_%H%M%S'))
-ap.add_argument('--receipt',default='logs/p20m3/20261021_engineering/deployment_v5/receipt.json')
+ap.add_argument('--receipt',default='logs/p20m3/20261021_engineering/deployment_v6/receipt.json')
 ap.add_argument('--utc-date',required=True);ap.add_argument('--utc-hour',type=float,required=True)
 ap.add_argument('--physical-evidence',action='store_true');a=ap.parse_args()
 if 'HWASIMIR_SSH_PASSWORD' not in os.environ:raise SystemExit('Set HWASIMIR_SSH_PASSWORD for the authorized board account')

@@ -549,8 +549,12 @@ IREnginePlumeOutput IREnginePlumeModel::update(const IREnginePlumeInput& input)
 	output.haloTargetTempK = heating ? std::max(ambientMixK, profile.halo.temperatureK) : ambientMixK;
 
 	const std::string runtimeBase = input.runtimeKey.empty() ? normalizePlatformName(input.platformName) : input.runtimeKey;
-	float coreCurrent = ambientMixK;
-	float haloCurrent = ambientMixK;
+	// A first engine-on observation describes an already running engine, not
+	// an ignition event. Initialize only this local gas state at its operating
+	// temperature; otherwise paused/zero-dt snapshots draw an opaque cold plume.
+	// Once observed, off/on transitions retain the existing thermal history.
+	float coreCurrent = output.coreTargetTempK;
+	float haloCurrent = output.haloTargetTempK;
 	std::map<std::string, float>::iterator coreIt = m_runtimeTemperatureK.find(runtimeBase + "#core");
 	if (coreIt != m_runtimeTemperatureK.end())
 	{

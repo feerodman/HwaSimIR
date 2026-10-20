@@ -1,5 +1,7 @@
 # P20M3 SWIR / MWIR 工程成像交付
 
+> 尾焰/尾部热源快速修复：最新候选为 `P20_P20M3_SWIR_MWIR_Engineering_20261021_v6`，`tools/p20m3_run.py` 默认指向v6。下面v5长测数据保留为历史证据，不能算作v6性能认证。本次仅做短时成像验证，详见 [尾部热源修复交付](HwaSimIR_P20M3_Plume_Rear_Hotfix.md)。
+
 本轮在 `D:\HwaSimIR` 接续 `5d1d146b4ab14984559e4f2d3c949ece2d228616`，保留用户原有任务文件及 P19/P20/P20M/P20M2 证据。工程运行与严格精度认证分开。新模型为 `P20M3_GREY_GAS_1`，质量为 `ENGINEERING_APPROX`；不是 P14 数据改名，也不宣称正式 MODTRAN 全域认证已完成。
 
 ## 程序与运行入口

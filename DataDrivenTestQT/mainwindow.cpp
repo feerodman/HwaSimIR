@@ -784,8 +784,11 @@ void MainWindow::loadNetworkConfig()
 		QStringLiteral("Atmosphere/ExpectedFormalLutSha256"), QString()).toString().trimmed().toLower();
 	m_expectedAtmosphereCoverageManifestSha256 = settings.value(
 		QStringLiteral("Atmosphere/ExpectedCoverageManifestSha256"), QString()).toString().trimmed().toLower();
-	if (m_expectedFormalAtmosphereLutSha256.size() != 64 ||
-		m_expectedAtmosphereCoverageManifestSha256.size() != 64)
+	// Engineering clients carry their own hashed parameters, not the old LUT.
+	// Keep the strict identity prerequisite only for the strict policy.
+	if (settings.value("M1NirMwirPhysics/AtmospherePolicy", "StrictModtran").toString() != "EngineeringContinuous" &&
+		(m_expectedFormalAtmosphereLutSha256.size() != 64 ||
+		m_expectedAtmosphereCoverageManifestSha256.size() != 64))
 		qFatal("Atmosphere expected SHA-256 values must both be configured as 64 hex characters");
     m_sendStepMs=settings.value("RenderControl/sendStepMs",1000.0/60.0).toDouble();
     if(!std::isfinite(m_sendStepMs)||m_sendStepMs<.1||m_sendStepMs>100000)qFatal("Invalid sendStepMs");
